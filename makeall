@@ -1,0 +1,9 @@
+#!/bin/sh
+
+cd lib
+make $1 $2 || exit
+cd ..
+
+cd sample
+make $1 $2 || exit
+cd ..
