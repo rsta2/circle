@@ -21,8 +21,8 @@ Building
 
 Building is tested on Linux only. You need a tool-chain for the ARM1176JZF core. First edit the file *Rules.mk* and set the PREFIX of your tool-chain commands. Then go to the build root and do:
 
-`makeall clean` 
-`makeall`
+`makeall clean
+makeall`
 
 The ready build *kernel.img* file should be in the sample/ directory.
 
