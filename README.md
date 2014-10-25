@@ -1,29 +1,40 @@
 Circle
 ======
 
+> If you read this file in an editor you should switch line wrapping on.
+
 Overview
 --------
 
-Circle is a (or should be someday) a C++ bare metal environment for the Raspberry Pi. Currently it should run on all existing models but I can only test it on model B and B+. Later these will be the only supported because of the required on-board USB hub.
+Circle is a C++ bare metal environment for the Raspberry Pi. Currently it should run on all existing models but I can only test it on model B and B+. Later these will be the only supported because of the required on-board USB hub.
 
-Circle will be developed and released step by step. So it may be easier to understand it. At the
-beginning the functionality is very limited. The main goal is to setup the development environment
-first.
+Circle will be developed and released step by step. So it may be easier to understand it. At the beginning the functionality is very limited. The main goal is to setup the development environment first.
 
-The first step
+The First Step
 --------------
 
-The Act LED flashes 10 times and on the cinch audio 10 "clicks" are generated at the same time. Then
-the system reboots.
+The Act LED flashes 10 times and on the 3.5mm headphone jack 10 "clicks" are generated at the same time. Then the system reboots.
+
+For now Circle has the following features:
+
+* C++ build environment
+* Simple delay functionality
+* Get properties (model, memory size) from VideoCore
+* new and delete
+* Using GPIO pins
+* Manipulating Act LED
 
 Building
 --------
 
-Building is tested on Linux only. You need a tool-chain for the ARM1176JZF core. First edit the file *Rules.mk* and set the PREFIX of your tool-chain commands. Then go to the build root and do:
+Building is tested on PC Linux only. You need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core. First edit the file *Rules.mk* and set the PREFIX of your toolchain commands. Then go to the build root of Circle and do:
 
-`makeall clean` and `makeall`
+`./makeall clean`  
+`./makeall`
 
 The ready build *kernel.img* file should be in the sample/ directory.
+
+You can also build Circle on the Raspberry Pi itself on Debian wheezy but you need some method to put the *kernel.img* file onto the SD(HC) card.
 
 Installation
 ------------

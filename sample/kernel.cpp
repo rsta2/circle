@@ -39,7 +39,7 @@ TShutdownMode CKernel::Run (void)
 	CGPIOPin AudioLeft (40, GPIOModeOutput);
 	CGPIOPin AudioRight (45, GPIOModeOutput);
 	
-	// flash the Act LED 10 times and click on audio (cinch connector)
+	// flash the Act LED 10 times and click on audio (3.5mm headphone jack)
 	for (unsigned i = 1; i <= 10; i++)
 	{
 		m_ActLED.On ();
