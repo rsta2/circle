@@ -20,11 +20,19 @@
 #ifndef _bcm2835_h
 #define _bcm2835_h
 
+#include <circle/sysconfig.h>
+
 #define ARM_IO_BASE		0x20000000
 #define GPU_IO_BASE		0x7E000000
 
 #define GPU_CACHED_BASE		0x40000000
 #define GPU_UNCACHED_BASE	0xC0000000
+
+#ifdef GPU_L2_CACHE_ENABLED
+	#define GPU_MEM_BASE	GPU_CACHED_BASE
+#else
+	#define GPU_MEM_BASE	GPU_UNCACHED_BASE
+#endif
 
 //
 // General Purpose I/O

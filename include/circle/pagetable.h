@@ -1,5 +1,5 @@
 //
-// actled.h
+// pagetable.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,30 +17,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _actled_h
-#define _actled_h
+#ifndef _pagetable_h
+#define _pagetable_h
 
-#include <circle/gpiopin.h>
+#include <circle/armv6mmu.h>
 #include <circle/types.h>
 
-class CActLED
+class CPageTable
 {
 public:
-	CActLED (void);
-	~CActLED (void);
+	// 4GB shared device
+	CPageTable (void);
 
-	void On (void);
-	void Off (void);
+	// 0..nMemSize: normal,
+	// nMemSize..512MB: shared device
+	CPageTable (u32 nMemSize);
 
-	void Blink (unsigned nCount, unsigned nTimeOnMs = 200, unsigned nTimeOffMs = 500);
+	~CPageTable (void);
 
-	static CActLED *Get (void);
+	u32 GetBaseAddress (void) const;	// with mode bits to be loaded into TTBRn
 	
 private:
-	CGPIOPin *m_pPin;
-	boolean m_bActiveHigh;
-
-	static CActLED *s_pThis;
+	boolean m_bTableAllocated;
+	TARMV6MMU_LEVEL1_SECTION_DESCRIPTOR *m_pTable;
 };
 
 #endif

@@ -20,18 +20,34 @@
 #ifndef _memory_h
 #define _memory_h
 
+#include <circle/pagetable.h>
 #include <circle/types.h>
 
 class CMemorySystem
 {
 public:
-	CMemorySystem (void);
+	CMemorySystem (boolean bEnableMMU = TRUE);
 	~CMemorySystem (void);
 
 	u32 GetMemSize (void) const;
 
+	// use without parameters to set default page table
+	void SetPageTable0 (CPageTable *pPageTable = 0, u32 nContextID = 0);
+	
+	void SetPageTable0 (u32 nTTBR0, u32 nContextID);
+
+	u32 GetTTBR0 (void) const;
+	u32 GetContextID (void) const;
+
 private:
+	void EnableMMU (void);
+
+private:
+	boolean m_bEnableMMU;
 	u32 m_nMemSize;
+
+	CPageTable *m_pPageTable0Default;
+	CPageTable *m_pPageTable1;
 };
 
 #endif

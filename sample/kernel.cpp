@@ -18,9 +18,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/gpiopin.h>
 
 CKernel::CKernel (void)
+:	m_Memory (FALSE),	// set this to TRUE to enable MMU and to boost performance
+	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ())
 {
 }
 
@@ -30,26 +31,47 @@ CKernel::~CKernel (void)
 
 boolean CKernel::Initialize (void)
 {
-	return TRUE;
+	return m_Screen.Initialize ();
 }
 
 TShutdownMode CKernel::Run (void)
 {
-	// channels are swapped on model B+ 
-	CGPIOPin AudioLeft (40, GPIOModeOutput);
-	CGPIOPin AudioRight (45, GPIOModeOutput);
-	
-	// flash the Act LED 10 times and click on audio (3.5mm headphone jack)
-	for (unsigned i = 1; i <= 10; i++)
+	// draw rectangle on screen
+	for (unsigned nPosX = 0; nPosX < m_Screen.GetWidth (); nPosX++)
 	{
-		m_ActLED.On ();
-		AudioLeft.Invert ();
-		AudioRight.Invert ();
-		CTimer::SimpleMsDelay (200);
-
-		m_ActLED.Off ();
-		CTimer::SimpleMsDelay (500);
+		m_Screen.SetPixel (nPosX, 0, NORMAL_COLOR);
+		m_Screen.SetPixel (nPosX, m_Screen.GetHeight ()-1, NORMAL_COLOR);
+	}
+	for (unsigned nPosY = 0; nPosY < m_Screen.GetHeight (); nPosY++)
+	{
+		m_Screen.SetPixel (0, nPosY, NORMAL_COLOR);
+		m_Screen.SetPixel (m_Screen.GetWidth ()-1, nPosY, NORMAL_COLOR);
 	}
 
-	return ShutdownReboot;
+	// draw cross on screen
+	for (unsigned nPosX = 0; nPosX < m_Screen.GetWidth (); nPosX++)
+	{
+		unsigned nPosY = nPosX * m_Screen.GetHeight () / m_Screen.GetWidth ();
+
+		m_Screen.SetPixel (nPosX, nPosY, NORMAL_COLOR);
+		m_Screen.SetPixel (m_Screen.GetWidth ()-nPosX-1, nPosY, NORMAL_COLOR);
+	}
+
+	// check the blink frequency without and with MMU (see option in constructor above)
+	while (1)
+	{
+		m_ActLED.On ();
+		for (unsigned i = 1; i <= 5000000; i++)
+		{
+			// just wait
+		}
+
+		m_ActLED.Off ();
+		for (unsigned i = 1; i <= 10000000; i++)
+		{
+			// just wait
+		}
+	}
+
+	return ShutdownHalt;
 }

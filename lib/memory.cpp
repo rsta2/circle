@@ -18,13 +18,24 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/memory.h>
+#include <circle/armv6mmu.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/alloc.h>
+#include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
 
-CMemorySystem::CMemorySystem (void)
-:	m_nMemSize (0)
+#define MMU_MODE	(  ARM_CONTROL_MMU			\
+			 | ARM_CONTROL_L1_CACHE			\
+			 | ARM_CONTROL_L1_INSTRUCTION_CACHE	\
+			 | ARM_CONTROL_BRANCH_PREDICTION	\
+			 | ARM_CONTROL_EXTENDED_PAGE_TABLE)
+
+CMemorySystem::CMemorySystem (boolean bEnableMMU)
+:	m_bEnableMMU (bEnableMMU),
+	m_nMemSize (0),
+	m_pPageTable0Default (0),
+	m_pPageTable1 (0)
 {
 	CBcmPropertyTags Tags;
 	TPropertyTagMemory TagMemory;
@@ -38,13 +49,146 @@ CMemorySystem::CMemorySystem (void)
 	m_nMemSize = TagMemory.nSize;
 
 	mem_init (TagMemory.nBaseAddress, m_nMemSize);
+
+	if (m_bEnableMMU)
+	{
+		m_pPageTable0Default = new CPageTable (m_nMemSize);
+		assert (m_pPageTable0Default != 0);
+
+		m_pPageTable1 = new CPageTable;
+		assert (m_pPageTable1 != 0);
+
+		EnableMMU ();
+	}
 }
 
 CMemorySystem::~CMemorySystem (void)
 {
+	if (m_bEnableMMU)
+	{
+		// disable MMU
+		u32 nControl;
+		asm volatile ("mrc p15, 0, %0, c1, c0,  0" : "=r" (nControl));
+		nControl &=  ~MMU_MODE;
+		asm volatile ("mcr p15, 0, %0, c1, c0,  0" : : "r" (nControl) : "memory");
+
+		// invalidate unified TLB (if MMU is re-enabled later)
+		asm volatile ("mcr p15, 0, %0, c8, c7,  0" : : "r" (0) : "memory");
+	}
+	
+	delete m_pPageTable1;
+	m_pPageTable1 = 0;
+	
+	delete m_pPageTable0Default;
+	m_pPageTable0Default = 0;
 }
 
 u32 CMemorySystem::GetMemSize (void) const
 {
 	return m_nMemSize;
+}
+
+void CMemorySystem::SetPageTable0 (CPageTable *pPageTable, u32 nContextID)
+{
+	assert (m_bEnableMMU);
+	
+	if (pPageTable == 0)
+	{
+		pPageTable = m_pPageTable0Default;
+	}
+	
+	u32 nOldContextID;
+	asm volatile ("mrc p15, 0, %0, c13, c0,  1" : "=r" (nOldContextID));
+
+	asm volatile ("mcr p15, 0, %0, c2, c0,  0" : : "r" (pPageTable->GetBaseAddress ()) : "memory");
+
+	DataSyncBarrier ();
+	asm volatile ("mcr p15, 0, %0, c13, c0,  1" : : "r" (nContextID) : "memory");
+	InstructionMemBarrier ();
+
+	// invalidate on ASID match unified TLB
+	asm volatile ("mcr p15, 0, %0, c8, c7,  2" : : "r" (nOldContextID & 0xFF) : "memory");
+}
+
+void CMemorySystem::SetPageTable0 (u32 nTTBR0, u32 nContextID)
+{
+	assert (m_bEnableMMU);
+	
+	u32 nOldContextID;
+	asm volatile ("mrc p15, 0, %0, c13, c0,  1" : "=r" (nOldContextID));
+
+	asm volatile ("mcr p15, 0, %0, c2, c0,  0" : : "r" (nTTBR0) : "memory");
+
+	DataSyncBarrier ();
+	asm volatile ("mcr p15, 0, %0, c13, c0,  1" : : "r" (nContextID) : "memory");
+	InstructionMemBarrier ();
+
+	// invalidate on ASID match unified TLB
+	asm volatile ("mcr p15, 0, %0, c8, c7,  2" : : "r" (nOldContextID & 0xFF) : "memory");
+}
+
+u32 CMemorySystem::GetTTBR0 (void) const
+{
+	assert (m_bEnableMMU);
+
+	u32 nTTBR0;
+	asm volatile ("mrc p15, 0, %0, c2, c0,  0" : "=r" (nTTBR0));
+	
+	return nTTBR0;
+}
+
+u32 CMemorySystem::GetContextID (void) const
+{
+	assert (m_bEnableMMU);
+
+	u32 nContextID;
+	asm volatile ("mrc p15, 0, %0, c13, c0,  1" : "=r" (nContextID));
+	
+	return nContextID;
+}
+
+void CMemorySystem::EnableMMU (void)
+{
+	assert (m_bEnableMMU);
+	
+	// restrict cache size (no page coloring)
+	u32 nAuxControl;
+	asm volatile ("mrc p15, 0, %0, c1, c0,  1" : "=r" (nAuxControl));
+	nAuxControl |= ARM_AUX_CONTROL_CACHE_SIZE;
+	asm volatile ("mcr p15, 0, %0, c1, c0,  1" : : "r" (nAuxControl));
+
+	u32 nTLBType;
+	asm volatile ("mrc p15, 0, %0, c0, c0,  3" : "=r" (nTLBType));
+	assert (!(nTLBType & ARM_TLB_TYPE_SEPARATE_TLBS));
+
+	// set TTB control (512 MB split)
+	asm volatile ("mcr p15, 0, %0, c2, c0,  2" : : "r" (3));
+
+	// set TTBR0
+	assert (m_pPageTable0Default != 0);
+	asm volatile ("mcr p15, 0, %0, c2, c0,  0" : : "r" (m_pPageTable0Default->GetBaseAddress ()));
+
+	// set TTBR1
+	assert (m_pPageTable1 != 0);
+	asm volatile ("mcr p15, 0, %0, c2, c0,  1" : : "r" (m_pPageTable1->GetBaseAddress ()));
+	
+	// set Domain Access Control register (Domain 0 and 1 to client)
+	asm volatile ("mcr p15, 0, %0, c3, c0,  0" : : "r" (  DOMAIN_CLIENT << 0
+							    | DOMAIN_CLIENT << 2));
+
+	InvalidateDataCache ();
+	FlushPrefetchBuffer ();
+
+	// enable MMU
+	u32 nControl;
+	asm volatile ("mrc p15, 0, %0, c1, c0,  0" : "=r" (nControl));
+#ifdef ARM_STRICT_ALIGNMENT
+	nControl &= ~ARM_CONTROL_UNALIGNED_PERMITTED;
+	nControl |= ARM_CONTROL_STRICT_ALIGNMENT;
+#else
+	nControl &= ~ARM_CONTROL_STRICT_ALIGNMENT;
+	nControl |= ARM_CONTROL_UNALIGNED_PERMITTED;
+#endif
+	nControl |= MMU_MODE;
+	asm volatile ("mcr p15, 0, %0, c1, c0,  0" : : "r" (nControl) : "memory");
 }

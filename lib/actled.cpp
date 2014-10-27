@@ -19,6 +19,7 @@
 //
 #include <circle/actled.h>
 #include <circle/bcmpropertytags.h>
+#include <circle/timer.h>
 
 CActLED *CActLED::s_pThis = 0;
 
@@ -67,6 +68,18 @@ void CActLED::Off (void)
 	if (m_pPin != 0)
 	{
 		m_pPin->Write (m_bActiveHigh ? LOW : HIGH);
+	}
+}
+
+void CActLED::Blink (unsigned nCount, unsigned nTimeOnMs, unsigned nTimeOffMs)
+{
+	for (unsigned i = 1; i <= nCount; i++)
+	{
+		On ();
+		CTimer::SimpleMsDelay (nTimeOnMs);
+
+		Off ();
+		CTimer::SimpleMsDelay (nTimeOffMs);
 	}
 }
 

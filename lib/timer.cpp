@@ -22,7 +22,7 @@
 #include <circle/memio.h>
 #include <circle/synchronize.h>
 
-#define CLOCK_HZ	1000000
+#define CLOCKHZ		1000000
 
 void CTimer::SimpleMsDelay (unsigned nMilliSeconds)
 {
@@ -36,7 +36,7 @@ void CTimer::SimpleusDelay (unsigned nMicroSeconds)
 {
 	if (nMicroSeconds > 0)
 	{
-		unsigned nTicks = nMicroSeconds * (CLOCK_HZ / 1000000);
+		unsigned nTicks = nMicroSeconds * (CLOCKHZ / 1000000);
 
 		DataMemBarrier ();
 

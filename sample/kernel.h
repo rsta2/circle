@@ -21,8 +21,9 @@
 #define _kernel_h
 
 #include <circle/memory.h>
-#include <circle/timer.h>
 #include <circle/actled.h>
+#include <circle/koptions.h>
+#include <circle/screen.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -46,6 +47,8 @@ private:
 	// do not change this order
 	CMemorySystem	m_Memory;
 	CActLED		m_ActLED;
+	CKernelOptions	m_Options;
+	CScreenDevice	m_Screen;
 	
 };
 

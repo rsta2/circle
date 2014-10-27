@@ -1,5 +1,5 @@
 //
-// actled.h
+// koptions.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -16,31 +16,34 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
-#ifndef _actled_h
-#define _actled_h
+// 
+#ifndef _koptions_h
+#define _koptions_h
 
-#include <circle/gpiopin.h>
-#include <circle/types.h>
+#include <circle/bcmpropertytags.h>
 
-class CActLED
+class CKernelOptions
 {
 public:
-	CActLED (void);
-	~CActLED (void);
+	CKernelOptions (void);
+	~CKernelOptions (void);
 
-	void On (void);
-	void Off (void);
+	unsigned GetWidth (void) const;
+	unsigned GetHeight (void) const;
 
-	void Blink (unsigned nCount, unsigned nTimeOnMs = 200, unsigned nTimeOffMs = 500);
-
-	static CActLED *Get (void);
-	
 private:
-	CGPIOPin *m_pPin;
-	boolean m_bActiveHigh;
+	char *GetToken (void);				// returns next "option=value" pair, 0 if nothing follows
 
-	static CActLED *s_pThis;
+	static char *GetOptionValue (char *pOption);	// returns value and terminates option with '\0'
+
+	static unsigned GetDecimal (char *pString);	// returns decimal value, -1 on error
+
+private:
+	TPropertyTagCommandLine m_TagCommandLine;
+	char *m_pOptions;
+
+	unsigned m_nWidth;
+	unsigned m_nHeight;
 };
 
 #endif

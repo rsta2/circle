@@ -44,4 +44,8 @@
 
 #define MEM_HEAP_START		0x400000
 
+// system options
+#define ARM_STRICT_ALIGNMENT
+#define GPU_L2_CACHE_ENABLED
+
 #endif
