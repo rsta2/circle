@@ -32,7 +32,7 @@ AR	= $(PREFIX)ar
 
 AFLAGS	= -I $(CIRCLEHOME)/include
 CFLAGS	= -Wall -Wno-psabi -fno-builtin -nostdinc -nostdlib \
-	  -undef -D__circle__ -I $(CIRCLEHOME)/include -O -DNDEBUG
+	  -undef -D__circle__ -I $(CIRCLEHOME)/include -O #-DNDEBUG
 CPPFLAGS= $(CFLAGS) -fno-exceptions -fno-rtti
 
 %.o: %.S

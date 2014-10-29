@@ -23,7 +23,10 @@
 #include <circle/memory.h>
 #include <circle/actled.h>
 #include <circle/koptions.h>
+#include <circle/devicenameservice.h>
 #include <circle/screen.h>
+#include <circle/serial.h>
+#include <circle/logger.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -45,11 +48,13 @@ public:
 
 private:
 	// do not change this order
-	CMemorySystem	m_Memory;
-	CActLED		m_ActLED;
-	CKernelOptions	m_Options;
-	CScreenDevice	m_Screen;
-	
+	CMemorySystem		m_Memory;
+	CActLED			m_ActLED;
+	CKernelOptions		m_Options;
+	CDeviceNameService	m_DeviceNameService;
+	CScreenDevice		m_Screen;
+	CSerialDevice		m_Serial;
+	CLogger			m_Logger;
 };
 
 #endif

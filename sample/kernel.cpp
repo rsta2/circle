@@ -18,11 +18,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include <circle/string.h>
+#include <circle/debug.h>
+#include <assert.h>
+
+static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
-:	m_Memory (FALSE),	// set this to TRUE to enable MMU and to boost performance
-	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ())
+:	m_Memory (TRUE),
+	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
+	m_Logger (m_Options.GetLogLevel ())
 {
+	m_ActLED.Blink (5);	// show we are alive
 }
 
 CKernel::~CKernel (void)
@@ -31,47 +38,59 @@ CKernel::~CKernel (void)
 
 boolean CKernel::Initialize (void)
 {
-	return m_Screen.Initialize ();
+	boolean bOK = TRUE;
+
+	if (bOK)
+	{
+		bOK = m_Screen.Initialize ();
+	}
+	
+	if (bOK)
+	{
+		bOK = m_Serial.Initialize (115200);
+	}
+	
+	if (bOK)
+	{
+		CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
+		if (pTarget == 0)
+		{
+			pTarget = &m_Screen;
+		}
+
+		bOK = m_Logger.Initialize (pTarget);
+	}
+	
+	return bOK;
 }
 
 TShutdownMode CKernel::Run (void)
 {
-	// draw rectangle on screen
-	for (unsigned nPosX = 0; nPosX < m_Screen.GetWidth (); nPosX++)
-	{
-		m_Screen.SetPixel (nPosX, 0, NORMAL_COLOR);
-		m_Screen.SetPixel (nPosX, m_Screen.GetHeight ()-1, NORMAL_COLOR);
-	}
-	for (unsigned nPosY = 0; nPosY < m_Screen.GetHeight (); nPosY++)
-	{
-		m_Screen.SetPixel (0, nPosY, NORMAL_COLOR);
-		m_Screen.SetPixel (m_Screen.GetWidth ()-1, nPosY, NORMAL_COLOR);
-	}
+	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	// draw cross on screen
-	for (unsigned nPosX = 0; nPosX < m_Screen.GetWidth (); nPosX++)
+	// show the character set on screen
+	for (char chChar = ' '; chChar <= '~'; chChar++)
 	{
-		unsigned nPosY = nPosX * m_Screen.GetHeight () / m_Screen.GetWidth ();
-
-		m_Screen.SetPixel (nPosX, nPosY, NORMAL_COLOR);
-		m_Screen.SetPixel (m_Screen.GetWidth ()-nPosX-1, nPosY, NORMAL_COLOR);
-	}
-
-	// check the blink frequency without and with MMU (see option in constructor above)
-	while (1)
-	{
-		m_ActLED.On ();
-		for (unsigned i = 1; i <= 5000000; i++)
+		if (chChar % 8 == 0)
 		{
-			// just wait
+			m_Screen.Write ("\n", 1);
 		}
 
-		m_ActLED.Off ();
-		for (unsigned i = 1; i <= 10000000; i++)
-		{
-			// just wait
-		}
+		CString Message;
+		Message.Format ("%02X: \'%c\' ", (unsigned) chChar, chChar);
+		
+		m_Screen.Write ((const char *) Message, Message.GetLength ());
 	}
+	m_Screen.Write ("\n", 1);
+
+#ifndef NDEBUG
+	// some debugging features
+	m_Logger.Write (FromKernel, LogDebug, "Dumping the start of the ATAGS");
+	debug_hexdump ((void *) 0x100, 128, FromKernel);
+
+	m_Logger.Write (FromKernel, LogNotice, "The following assertion will fail");
+	assert (1 == 2);
+#endif
 
 	return ShutdownHalt;
 }

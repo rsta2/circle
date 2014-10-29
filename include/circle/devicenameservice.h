@@ -1,5 +1,5 @@
 //
-// koptions.h
+// devicenameservice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -16,40 +16,37 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-// 
-#ifndef _koptions_h
-#define _koptions_h
+//
+#ifndef _devicenameservice_h
+#define _devicenameservice_h
 
-#include <circle/bcmpropertytags.h>
+#include <circle/device.h>
+#include <circle/types.h>
 
-class CKernelOptions
+struct TDeviceInfo
+{
+	TDeviceInfo	*pNext;
+	char		*pName;
+	CDevice		*pDevice;
+	boolean		 bBlockDevice;
+};
+
+class CDeviceNameService
 {
 public:
-	CKernelOptions (void);
-	~CKernelOptions (void);
+	CDeviceNameService (void);
+	~CDeviceNameService (void);
 
-	unsigned GetWidth (void) const;
-	unsigned GetHeight (void) const;
+	void AddDevice (const char *pName, CDevice *pDevice, boolean bBlockDevice);
 
-	const char *GetLogDevice (void) const;
-	unsigned GetLogLevel (void) const;
-
-private:
-	char *GetToken (void);				// returns next "option=value" pair, 0 if nothing follows
-
-	static char *GetOptionValue (char *pOption);	// returns value and terminates option with '\0'
-
-	static unsigned GetDecimal (char *pString);	// returns decimal value, -1 on error
+	CDevice *GetDevice (const char *pName, boolean bBlockDevice);
+	
+	static CDeviceNameService *Get (void);
 
 private:
-	TPropertyTagCommandLine m_TagCommandLine;
-	char *m_pOptions;
-
-	unsigned m_nWidth;
-	unsigned m_nHeight;
-
-	char m_LogDevice[20];
-	unsigned m_nLogLevel;
+	TDeviceInfo *m_pList;
+	
+	static CDeviceNameService *s_This;
 };
 
 #endif

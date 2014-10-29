@@ -1,5 +1,5 @@
 //
-// koptions.h
+// assert.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -16,40 +16,26 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-// 
-#ifndef _koptions_h
-#define _koptions_h
+//
+#include <assert.h>
+#include <circle/logger.h>
+#include <circle/string.h>
+#include <circle/debug.h>
+#include <circle/types.h>
 
-#include <circle/bcmpropertytags.h>
+#ifndef NDEBUG
 
-class CKernelOptions
+void assertion_failed (const char *pExpr, const char *pFile, unsigned nLine)
 {
-public:
-	CKernelOptions (void);
-	~CKernelOptions (void);
+	u32 ulStackPtr;
+	asm volatile ("mov %0,sp" : "=r" (ulStackPtr));
 
-	unsigned GetWidth (void) const;
-	unsigned GetHeight (void) const;
+	CString Source;
+	Source.Format ("%s(%u)", pFile, nLine);
 
-	const char *GetLogDevice (void) const;
-	unsigned GetLogLevel (void) const;
-
-private:
-	char *GetToken (void);				// returns next "option=value" pair, 0 if nothing follows
-
-	static char *GetOptionValue (char *pOption);	// returns value and terminates option with '\0'
-
-	static unsigned GetDecimal (char *pString);	// returns decimal value, -1 on error
-
-private:
-	TPropertyTagCommandLine m_TagCommandLine;
-	char *m_pOptions;
-
-	unsigned m_nWidth;
-	unsigned m_nHeight;
-
-	char m_LogDevice[20];
-	unsigned m_nLogLevel;
-};
+	debug_stacktrace ((u32 *) ulStackPtr, Source);
+	
+	CLogger::Get ()->Write (Source, LogPanic, "assertion failed: %s", pExpr);
+}
 
 #endif

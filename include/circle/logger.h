@@ -1,5 +1,5 @@
 //
-// koptions.h
+// logger.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -16,40 +16,49 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-// 
-#ifndef _koptions_h
-#define _koptions_h
+//
+#ifndef _logger_h
+#define _logger_h
 
-#include <circle/bcmpropertytags.h>
+#include <circle/device.h>
+#include <circle/types.h>
 
-class CKernelOptions
+enum TLogSeverity
+{
+	LogPanic,
+	LogError,
+	LogWarning,
+	LogNotice,
+	LogDebug
+};
+
+class CLogger
 {
 public:
-	CKernelOptions (void);
-	~CKernelOptions (void);
+	CLogger (unsigned nLogLevel);
+	~CLogger ();
 
-	unsigned GetWidth (void) const;
-	unsigned GetHeight (void) const;
+	boolean Initialize (CDevice *pTarget);
 
-	const char *GetLogDevice (void) const;
-	unsigned GetLogLevel (void) const;
+	void Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...);
 
-private:
-	char *GetToken (void);				// returns next "option=value" pair, 0 if nothing follows
+	int Read (void *pBuffer, unsigned nCount);
 
-	static char *GetOptionValue (char *pOption);	// returns value and terminates option with '\0'
-
-	static unsigned GetDecimal (char *pString);	// returns decimal value, -1 on error
+	static CLogger *Get (void);
 
 private:
-	TPropertyTagCommandLine m_TagCommandLine;
-	char *m_pOptions;
+	void Write (const char *pString);
 
-	unsigned m_nWidth;
-	unsigned m_nHeight;
-
-	char m_LogDevice[20];
+private:
 	unsigned m_nLogLevel;
+
+	CDevice *m_pTarget;
+
+	char *m_pBuffer;
+	unsigned m_nInPtr;
+	unsigned m_nOutPtr;
+
+	static CLogger *s_pThis;
 };
 
 #endif

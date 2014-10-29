@@ -1,0 +1,24 @@
+ESCAPE SEQUENCES
+
+\E[B		Cursor down one line
+\E[H		Cursor home
+\E[A		Cursor up one line
+\E[%d;%dH	Cursor move to row %1 and column %2 (starting at 1)
+^H		Cursor left one character
+\E[C		Cursor right one character
+^M		Carriage return
+\E[J		Clear to end of screen
+\E[K		Clear to end of line
+\E[%dX		Erase %1 characters starting at cursor
+^J		Carriage return/linefeed
+\E[0m		End of bold or half bright mode
+\E[1m		Start bold mode
+\E[2m		Start half bright mode
+^I		Move to next hardware tab
+\E[?25h		Normal cursor visible
+\E[?25l		Cursor invisible
+
+
+^X = Control character
+\E = Escape (\x1b)
+%d = Numerical parameter (ASCII)

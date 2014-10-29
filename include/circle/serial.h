@@ -1,5 +1,5 @@
 //
-// koptions.h
+// serial.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -16,40 +16,30 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-// 
-#ifndef _koptions_h
-#define _koptions_h
+//
+#ifndef _serial_h
+#define _serial_h
 
-#include <circle/bcmpropertytags.h>
+#include <circle/device.h>
+#include <circle/gpiopin.h>
+#include <circle/types.h>
 
-class CKernelOptions
+class CSerialDevice : public CDevice
 {
 public:
-	CKernelOptions (void);
-	~CKernelOptions (void);
+	CSerialDevice (void);
+	~CSerialDevice (void);
 
-	unsigned GetWidth (void) const;
-	unsigned GetHeight (void) const;
+	boolean Initialize (unsigned nBaudrate = 115200);
 
-	const char *GetLogDevice (void) const;
-	unsigned GetLogLevel (void) const;
+	int Write (const void *pBuffer, unsigned nCount);
 
 private:
-	char *GetToken (void);				// returns next "option=value" pair, 0 if nothing follows
-
-	static char *GetOptionValue (char *pOption);	// returns value and terminates option with '\0'
-
-	static unsigned GetDecimal (char *pString);	// returns decimal value, -1 on error
+	void Write (u8 nChar);
 
 private:
-	TPropertyTagCommandLine m_TagCommandLine;
-	char *m_pOptions;
-
-	unsigned m_nWidth;
-	unsigned m_nHeight;
-
-	char m_LogDevice[20];
-	unsigned m_nLogLevel;
+	CGPIOPin m_TxDPin;
+	CGPIOPin m_RxDPin;
 };
 
 #endif

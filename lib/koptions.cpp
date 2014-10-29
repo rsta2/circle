@@ -18,14 +18,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 
 #include <circle/koptions.h>
+#include <circle/logger.h>
 #include <circle/util.h>
 
 #define INVALID_VALUE	((unsigned) -1)
 
 CKernelOptions::CKernelOptions (void)
 :	m_nWidth (0),
-	m_nHeight (0)
+	m_nHeight (0),
+	m_nLogLevel (LogDebug)
 {
+	strcpy (m_LogDevice, "tty1");
+
 	CBcmPropertyTags Tags;
 	if (!Tags.GetTag (PROPTAG_GET_COMMAND_LINE, &m_TagCommandLine, sizeof m_TagCommandLine))
 	{
@@ -63,6 +67,20 @@ CKernelOptions::CKernelOptions (void)
 				m_nHeight = nValue;
 			}
 		}
+		else if (strcmp (pOption, "logdev") == 0)
+		{
+			strncpy (m_LogDevice, pValue, sizeof m_LogDevice-1);
+			m_LogDevice[sizeof m_LogDevice-1] = '\0';
+		}
+		else if (strcmp (pOption, "loglevel") == 0)
+		{
+			unsigned nValue;
+			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
+			    && nValue <= LogDebug)
+			{
+				m_nLogLevel = nValue;
+			}
+		}
 	}
 }
 
@@ -78,6 +96,16 @@ unsigned CKernelOptions::GetWidth (void) const
 unsigned CKernelOptions::GetHeight (void) const
 {
 	return m_nHeight;
+}
+
+const char *CKernelOptions::GetLogDevice (void) const
+{
+	return m_LogDevice;
+}
+
+unsigned CKernelOptions::GetLogLevel (void) const
+{
+	return m_nLogLevel;
 }
 
 char *CKernelOptions::GetToken (void)

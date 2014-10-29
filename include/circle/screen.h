@@ -20,7 +20,10 @@
 #ifndef _screen_h
 #define _screen_h
 
+#include <circle/device.h>
 #include <circle/bcmframebuffer.h>
+#include <circle/chargenerator.h>
+#include <circle/macros.h>
 #include <circle/types.h>
 
 #define DEPTH	8		// can be: 8, 16 or 32
@@ -63,10 +66,24 @@
 	#error DEPTH must be 8, 16 or 32
 #endif
 
-class CScreenDevice
+struct TScreenStatus
+{
+	TScreenColor   *pContent;
+	unsigned	nState;
+	unsigned	nCursorX;
+	unsigned	nCursorY;
+	boolean		bCursorOn;
+	TScreenColor	Color;
+	boolean		bInsertOn;
+	unsigned	nParam1;
+	unsigned	nParam2;
+	boolean		bUpdated;
+};
+
+class CScreenDevice : public CDevice
 {
 public:
-	CScreenDevice (unsigned nWidth, unsigned nHeight);
+	CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual = FALSE);
 	~CScreenDevice (void);
 
 	boolean Initialize (void);
@@ -74,17 +91,67 @@ public:
 	unsigned GetWidth (void) const;
 	unsigned GetHeight (void) const;
 	
+	TScreenStatus GetStatus (void);
+	boolean SetStatus (TScreenStatus Status);	// returns FALSE on failure
+
+	int Write (const void *pBuffer, unsigned nCount);
+
 	void SetPixel (unsigned nPosX, unsigned nPosY, TScreenColor Color);
 	TScreenColor GetPixel (unsigned nPosX, unsigned nPosY);
+
+	void Rotor (unsigned nIndex,		// 0..3
+		    unsigned nCount);		// 0..3
+
+private:
+	void Write (char chChar);
+
+	void CarriageReturn (void);
+	void ClearDisplayEnd (void) MAXOPT;
+	void ClearLineEnd (void);
+	void CursorDown (void);
+	void CursorHome (void);
+	void CursorLeft (void);
+	void CursorMove (unsigned nRow, unsigned nColumn);
+	void CursorRight (void);
+	void CursorUp (void);
+	void DeleteChars (unsigned nCount);
+	void DeleteLines (unsigned nCount);
+	void DisplayChar (char chChar);
+	void EraseChars (unsigned nCount);
+	void InsertLines (unsigned nCount);
+	void InsertMode (boolean bBegin);
+	void NewLine (void);
+	void ReverseScroll (void);
+	void SetCursorMode (boolean bVisible);
+	void SetStandoutMode (unsigned nMode);
+	void Tabulator (void);
+
+	void Scroll (void) MAXOPT;
+
+	void DisplayChar (char chChar, unsigned nPosX, unsigned nPosY, TScreenColor Color);
+	void EraseChar (unsigned nPosX, unsigned nPosY);
+	void InvertCursor (void);
 
 private:
 	unsigned	 m_nInitWidth;
 	unsigned	 m_nInitHeight;
+	boolean		 m_bVirtual;
 	CBcmFrameBuffer	*m_pFrameBuffer;
+	CCharGenerator	 m_CharGen;
 	TScreenColor  	*m_pBuffer;
 	unsigned	 m_nSize;
 	unsigned	 m_nWidth;
 	unsigned	 m_nHeight;
+	unsigned	 m_nUsedHeight;
+	unsigned	 m_nState;
+	unsigned	 m_nCursorX;
+	unsigned	 m_nCursorY;
+	boolean		 m_bCursorOn;
+	TScreenColor	 m_Color;
+	boolean		 m_bInsertOn;
+	unsigned	 m_nParam1;
+	unsigned	 m_nParam2;
+	boolean		 m_bUpdated;
 };
 
 #endif

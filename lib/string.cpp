@@ -1,0 +1,428 @@
+//
+// string.cpp
+//
+// Circle - A C++ bare metal environment for Raspberry Pi
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+#include <circle/string.h>
+#include <circle/util.h>
+
+#define FORMAT_RESERVE		64	// additional bytes to allocate
+#define MAX_NUMBER_LEN		11	// 32 bit octal number
+
+CString::CString (void)
+:	m_pBuffer (0),
+	m_nSize (0)
+{
+}
+
+CString::CString (const char *pString)
+{
+	m_nSize = strlen (pString)+1;
+
+	m_pBuffer = new char[m_nSize];
+
+	strcpy (m_pBuffer, pString);
+}
+
+CString::~CString (void)
+{
+	delete [] m_pBuffer;
+	m_pBuffer = 0;
+}
+
+CString::operator const char *(void) const
+{
+	if (m_pBuffer != 0)
+	{
+		return m_pBuffer;
+	}
+
+	return "";
+}
+
+const char *CString::operator = (const char *pString)
+{
+	delete [] m_pBuffer;
+
+	m_nSize = strlen (pString)+1;
+
+	m_pBuffer = new char[m_nSize];
+
+	strcpy (m_pBuffer, pString);
+
+	return m_pBuffer;
+}
+
+size_t CString::GetLength (void) const
+{
+	if (m_pBuffer == 0)
+	{
+		return 0;
+	}
+	
+	return strlen (m_pBuffer);
+}
+
+void CString::Append (const char *pString)
+{
+	m_nSize = 1;		// for terminating '\0'
+	if (m_pBuffer != 0)
+	{
+		m_nSize += strlen (m_pBuffer);
+	}
+	m_nSize += strlen (pString);
+
+	char *pBuffer = new char[m_nSize];
+
+	if (m_pBuffer != 0)
+	{
+		strcpy (pBuffer, m_pBuffer);
+		delete [] m_pBuffer;
+	}
+	else
+	{
+		*pBuffer = '\0';
+	}
+
+	strcat (pBuffer, pString);
+
+	m_pBuffer = pBuffer;
+}
+
+int CString::Compare (const char *pString) const
+{
+	return strcmp (m_pBuffer, pString);
+}
+
+int CString::Find (char chChar) const
+{
+	int nPos = 0;
+
+	for (char *p = m_pBuffer; *p; p++)
+	{
+		if (*p == chChar)
+		{
+			return nPos;
+		}
+
+		nPos++;
+	}
+
+	return -1;
+}
+
+void CString::Format (const char *pFormat, ...)
+{
+	va_list var;
+	va_start (var, pFormat);
+
+	FormatV (pFormat, var);
+
+	va_end (var);
+}
+
+void CString::FormatV (const char *pFormat, va_list Args)
+{
+	delete [] m_pBuffer;
+
+	m_nSize = FORMAT_RESERVE;
+	m_pBuffer = new char[m_nSize];
+	m_pInPtr = m_pBuffer;
+
+	while (*pFormat != '\0')
+	{
+		if (*pFormat == '%')
+		{
+			if (*++pFormat == '%')
+			{
+				PutChar ('%');
+				
+				pFormat++;
+
+				continue;
+			}
+
+			boolean bLeft = FALSE;
+			if (*pFormat == '-')
+			{
+				bLeft = TRUE;
+
+				pFormat++;
+			}
+
+			boolean bNull = FALSE;
+			if (*pFormat == '0')
+			{
+				bNull = TRUE;
+
+				pFormat++;
+			}
+
+			size_t nWidth = 0;
+			while ('0' <= *pFormat && *pFormat <= '9')
+			{
+				nWidth = nWidth * 10 + (*pFormat - '0');
+
+				pFormat++;
+			}
+
+			boolean bLong = FALSE;
+			if (*pFormat == 'l')
+			{
+				bLong = TRUE;
+
+				pFormat++;
+			}
+
+			char chArg;
+			const char *pArg;
+			unsigned long ulArg;
+			size_t nLen;
+			unsigned nBase;
+			char NumBuf[MAX_NUMBER_LEN+1];
+			boolean bMinus = FALSE;
+			long lArg;
+
+			switch (*pFormat)
+			{
+			case 'c':
+				chArg = (char) va_arg (Args, int);
+				if (bLeft)
+				{
+					PutChar (chArg);
+					if (nWidth > 1)
+					{
+						PutChar (' ', nWidth-1);
+					}
+				}
+				else
+				{
+					if (nWidth > 1)
+					{
+						PutChar (' ', nWidth-1);
+					}
+					PutChar (chArg);
+				}
+				break;
+
+			case 'd':
+				if (bLong)
+				{
+					lArg = va_arg (Args, long);
+				}
+				else
+				{
+					lArg = va_arg (Args, int);
+				}
+				if (lArg < 0)
+				{
+					bMinus = TRUE;
+					lArg = -lArg;
+				}
+				ntoa (NumBuf, (unsigned long) lArg, 10, FALSE);
+				nLen = strlen (NumBuf) + (bMinus ? 1 : 0);
+				if (bLeft)
+				{
+					if (bMinus)
+					{
+						PutChar ('-');
+					}
+					PutString (NumBuf);
+					if (nWidth > nLen)
+					{
+						PutChar (' ', nWidth-nLen);
+					}
+				}
+				else
+				{
+					if (nWidth > nLen)
+					{
+						PutChar (' ', nWidth-nLen);
+					}
+					if (bMinus)
+					{
+						PutChar ('-');
+					}
+					PutString (NumBuf);
+				}
+				break;
+
+			case 'o':
+				nBase = 8;
+				goto FormatNumber;
+
+			case 's':
+				pArg = va_arg (Args, const char *);
+				nLen = strlen (pArg);
+				if (bLeft)
+				{
+					PutString(pArg);
+					if (nWidth > nLen)
+					{
+						PutChar (' ', nWidth-nLen);
+					}
+				}
+				else
+				{
+					if (nWidth > nLen)
+					{
+						PutChar (' ', nWidth-nLen);
+					}
+					PutString (pArg);
+				}
+				break;
+
+			case 'u':
+				nBase = 10;
+				goto FormatNumber;
+
+			case 'x':
+			case 'X':
+				nBase = 16;
+				goto FormatNumber;
+
+			FormatNumber:
+				if (bLong)
+				{
+					ulArg = va_arg (Args, unsigned long);
+				}
+				else
+				{
+					ulArg = va_arg (Args, unsigned);
+				}
+				ntoa (NumBuf, ulArg, nBase, *pFormat == 'X');
+				nLen = strlen (NumBuf);
+				if (bLeft)
+				{
+					PutString (NumBuf);
+					if (nWidth > nLen)
+					{
+						PutChar (' ', nWidth-nLen);
+					}
+				}
+				else
+				{
+					if (nWidth > nLen)
+					{
+						PutChar (bNull ? '0' : ' ', nWidth-nLen);
+					}
+					PutString (NumBuf);
+				}
+				break;
+
+			default:
+				PutChar ('%');
+				PutChar (*pFormat);
+				break;
+			}
+		}
+		else
+		{
+			PutChar (*pFormat);
+		}
+
+		pFormat++;
+	}
+
+	*m_pInPtr = '\0';
+}
+
+void CString::PutChar (char chChar, size_t nCount)
+{
+	ReserveSpace (nCount);
+
+	while (nCount--)
+	{
+		*m_pInPtr++ = chChar;
+	}
+}
+
+void CString::PutString (const char *pString)
+{
+	size_t nLen = strlen (pString);
+	
+	ReserveSpace (nLen);
+	
+	strcpy (m_pInPtr, pString);
+	
+	m_pInPtr += nLen;
+}
+
+void CString::ReserveSpace (size_t nSpace)
+{
+	if (nSpace == 0)
+	{
+		return;
+	}
+	
+	size_t nOffset = m_pInPtr - m_pBuffer;
+	size_t nNewSize = nOffset + nSpace + 1;
+	if (m_nSize >= nNewSize)
+	{
+		return;
+	}
+	
+	nNewSize += FORMAT_RESERVE;
+	char *pNewBuffer = new char[nNewSize];
+		
+	*m_pInPtr = '\0';
+	strcpy (pNewBuffer, m_pBuffer);
+	
+	delete [] m_pBuffer;
+
+	m_pBuffer = pNewBuffer;
+	m_nSize = nNewSize;
+
+	m_pInPtr = m_pBuffer + nOffset;
+}
+
+char *CString::ntoa (char *pDest, unsigned long ulNumber, unsigned nBase, boolean bUpcase)
+{
+	unsigned long ulDigit;
+
+	unsigned long ulDivisor = 1UL;
+	while (1)
+	{
+		ulDigit = ulNumber / ulDivisor;
+		if (ulDigit < nBase)
+		{
+			break;
+		}
+
+		ulDivisor *= nBase;
+	}
+
+	char *p = pDest;
+	while (1)
+	{
+		ulNumber %= ulDivisor;
+
+		*p++ = ulDigit < 10 ? '0' + ulDigit : '0' + ulDigit + 7 + (bUpcase ? 0 : 0x20);
+
+		ulDivisor /= nBase;
+		if (ulDivisor == 0)
+		{
+			break;
+		}
+
+		ulDigit = ulNumber / ulDivisor;
+	}
+
+	*p = '\0';
+
+	return pDest;
+}
