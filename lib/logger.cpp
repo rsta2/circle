@@ -26,8 +26,9 @@
 
 CLogger *CLogger::s_pThis = 0;
 
-CLogger::CLogger (unsigned nLogLevel)
+CLogger::CLogger (unsigned nLogLevel, CTimer *pTimer)
 :	m_nLogLevel (nLogLevel),
+	m_pTimer (pTimer),
 	m_pTarget (0),
 	m_pBuffer (0),
 	m_nInPtr (0),
@@ -46,6 +47,7 @@ CLogger::~CLogger ()
 	m_pBuffer = 0;
 
 	m_pTarget = 0;
+	m_pTimer = 0;
 }
 
 boolean CLogger::Initialize (CDevice *pTarget)
@@ -67,6 +69,15 @@ void CLogger::Write (const char *pSource, TLogSeverity Severity, const char *pMe
 	if (Severity == LogPanic)
 	{
 		Write ("\x1b[1m");
+	}
+
+	CString *pTimeString = m_pTimer->GetTimeString ();
+	if (pTimeString != 0)
+	{
+		Write (*pTimeString);
+		Write (" ");
+
+		delete pTimeString;
 	}
 
 	Write (pSource);

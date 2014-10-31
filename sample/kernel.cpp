@@ -18,16 +18,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/string.h>
-#include <circle/debug.h>
-#include <assert.h>
 
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
-:	m_Memory (TRUE),
-	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
-	m_Logger (m_Options.GetLogLevel ())
+:	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
+	m_Timer (&m_Interrupt),
+	m_Logger (m_Options.GetLogLevel (), &m_Timer)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -44,12 +41,12 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_Screen.Initialize ();
 	}
-	
+
 	if (bOK)
 	{
 		bOK = m_Serial.Initialize (115200);
 	}
-	
+
 	if (bOK)
 	{
 		CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
@@ -60,7 +57,17 @@ boolean CKernel::Initialize (void)
 
 		bOK = m_Logger.Initialize (pTarget);
 	}
-	
+
+	if (bOK)
+	{
+		bOK = m_Interrupt.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = m_Timer.Initialize ();
+	}
+
 	return bOK;
 }
 
@@ -68,29 +75,37 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	// show the character set on screen
-	for (char chChar = ' '; chChar <= '~'; chChar++)
+	m_Logger.Write (FromKernel, LogNotice, "An exception will occur after 15 seconds from now");
+
+	// start timer to elapse after 15 seconds
+	m_Timer.StartKernelTimer (15 * HZ, TimerHandler);
+
+	// generate a log message every second
+	unsigned nTime = m_Timer.GetTime ();
+	while (1)
 	{
-		if (chChar % 8 == 0)
+		while (nTime == m_Timer.GetTime ())
 		{
-			m_Screen.Write ("\n", 1);
+			// just wait a second
 		}
 
-		CString Message;
-		Message.Format ("%02X: \'%c\' ", (unsigned) chChar, chChar);
-		
-		m_Screen.Write ((const char *) Message, Message.GetLength ());
+		nTime = m_Timer.GetTime ();
+
+		m_Logger.Write (FromKernel, LogNotice, "Time is %u", nTime);
 	}
-	m_Screen.Write ("\n", 1);
-
-#ifndef NDEBUG
-	// some debugging features
-	m_Logger.Write (FromKernel, LogDebug, "Dumping the start of the ATAGS");
-	debug_hexdump ((void *) 0x100, 128, FromKernel);
-
-	m_Logger.Write (FromKernel, LogNotice, "The following assertion will fail");
-	assert (1 == 2);
-#endif
 
 	return ShutdownHalt;
+}
+
+void CKernel::TimerHandler (unsigned hTimer, void *pParam, void *pContext)
+{
+#if 1
+	// jump to an invalid address (execution is only allowed below _etext, see circle.ld)
+	void (*pInvalid) (void) = (void (*) (void)) 0x500000;
+
+	(*pInvalid) ();
+#else
+	// alternatively execute an undefined instruction
+	asm volatile (".word 0xFF000000");
+#endif
 }

@@ -1,5 +1,5 @@
 //
-// logger.h
+// interrupt.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,50 +17,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _logger_h
-#define _logger_h
+#ifndef _interrupt_h
+#define _interrupt_h
 
-#include <circle/device.h>
-#include <circle/timer.h>
-#include <circle/types.h>
+#include <circle/bcm2835int.h>
+#include <circle/exceptionstub.h>
 
-enum TLogSeverity
-{
-	LogPanic,
-	LogError,
-	LogWarning,
-	LogNotice,
-	LogDebug
-};
+typedef void TIRQHandler (void *pParam);
 
-class CLogger
+class CInterruptSystem
 {
 public:
-	CLogger (unsigned nLogLevel, CTimer *pTimer);
-	~CLogger (void);
+	CInterruptSystem (void);
+	~CInterruptSystem ();
 
-	boolean Initialize (CDevice *pTarget);
+	int Initialize (void);
 
-	void Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...);
+	void ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam);
+	void DisconnectIRQ (unsigned nIRQ);
 
-	int Read (void *pBuffer, unsigned nCount);
+	static void EnableIRQ (unsigned nIRQ);
+	static void DisableIRQ (unsigned nIRQ);
 
-	static CLogger *Get (void);
+	static void InterruptHandler (void);
 
 private:
-	void Write (const char *pString);
+	int CallIRQHandler (unsigned nIRQ);
 
 private:
-	unsigned m_nLogLevel;
-	CTimer *m_pTimer;
+	TIRQHandler	*m_apIRQHandler[IRQ_LINES];
+	void		*m_pParam[IRQ_LINES];
 
-	CDevice *m_pTarget;
-
-	char *m_pBuffer;
-	unsigned m_nInPtr;
-	unsigned m_nOutPtr;
-
-	static CLogger *s_pThis;
+	static CInterruptSystem *s_pThis;
 };
 
 #endif

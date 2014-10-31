@@ -39,13 +39,14 @@
 #define MEM_KERNEL_STACK	(MEM_KERNEL_END + KERNEL_STACK_SIZE)		// expands down
 #define MEM_ABORT_STACK		(MEM_KERNEL_STACK + EXCEPTION_STACK_SIZE)	// expands down
 #define MEM_IRQ_STACK		(MEM_ABORT_STACK + EXCEPTION_STACK_SIZE)	// expands down
-#define MEM_SYSCALL_STACK	(MEM_IRQ_STACK + EXCEPTION_STACK_SIZE)		// expands down
-#define MEM_PAGE_TABLE1		MEM_SYSCALL_STACK				// must be 16K aligned
+#define MEM_PAGE_TABLE1		MEM_IRQ_STACK				// must be 16K aligned
 
 #define MEM_HEAP_START		0x400000
 
 // system options
 #define ARM_STRICT_ALIGNMENT
 #define GPU_L2_CACHE_ENABLED
+
+#define KERNEL_TIMERS		20
 
 #endif

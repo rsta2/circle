@@ -20,12 +20,74 @@
 #ifndef _timer_h
 #define _timer_h
 
+#include <circle/interrupt.h>
+#include <circle/string.h>
+#include <circle/sysconfig.h>
+
+#define HZ		100			// ticks per second
+
+#define MSEC2HZ(msec)	((msec) * HZ / 1000)
+
+typedef void TKernelTimerHandler (unsigned hTimer, void *pParam, void *pContext);
+
+struct TKernelTimer
+{
+	TKernelTimerHandler *m_pHandler;
+	unsigned	     m_nElapsesAt;
+	void 		    *m_pParam;
+	void 		    *m_pContext;
+};
+
 class CTimer
 {
 public:
+	CTimer (CInterruptSystem *pInterruptSystem);
+	~CTimer (void);
+
+	boolean Initialize (void);
+
+	unsigned GetClockTicks (void) const;		// 1 MHz counter
+#define CLOCKHZ	1000000
+
+	unsigned GetTicks (void) const;			// 1/HZ seconds since system boot
+	unsigned GetTime (void) const;			// Seconds since system boot
+
+	// "HH:MM:SS.ss", 0 if Initialize() was not yet called
+	CString *GetTimeString (void) const;		// CString object must be deleted by caller
+
+	// returns timer handle (0 on failure)
+	unsigned StartKernelTimer (unsigned nDelay,		// in HZ units
+				   TKernelTimerHandler *pHandler,
+				   void *pParam   = 0,
+				   void *pContext = 0);
+	void CancelKernelTimer (unsigned hTimer);
+
+	// when a CTimer object is available better use these methods
+	void MsDelay (unsigned nMilliSeconds);
+	void usDelay (unsigned nMicroSeconds);
+	
+	static CTimer *Get (void);
+
 	// can be used before CTimer is constructed
 	static void SimpleMsDelay (unsigned nMilliSeconds);
 	static void SimpleusDelay (unsigned nMicroSeconds);
+
+private:
+	void PollKernelTimers (void);
+
+	void InterruptHandler (void);
+	static void InterruptHandler (void *pParam);
+
+	void TuneMsDelay (void);
+
+private:
+	CInterruptSystem	*m_pInterruptSystem;
+	volatile unsigned	 m_nTicks;
+	volatile unsigned	 m_nTime;
+	volatile TKernelTimer	 m_KernelTimer[KERNEL_TIMERS];	// TODO: should be linked list
+	unsigned		 m_nMsDelay;
+
+	static CTimer *s_pThis;
 };
 
 #endif

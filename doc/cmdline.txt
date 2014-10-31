@@ -1,0 +1,12 @@
+CMDLINE OPTIONS
+
+Create a file cmdline.txt on the SD(HC) card used for booting. The following options are available:
+
+width=640 height=480		Changes screen size (default is maximum size)
+
+logdev=ttyS1			Set device used for log messages
+				("tty1" for screen (default), "ttyS1" for UART)
+
+loglevel=4			Control amount of generated log messages
+				(0: only panic, 1: also errors, 2: also warnings,
+				 3: also notices, 4: also debug output (default))

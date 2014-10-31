@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <assert.h>
+#include <circle/exceptionhandler.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,7 +29,7 @@ unsigned Divide (unsigned nDividend, unsigned nDivisor, unsigned *pRest)
 	if (nDivisor == 0)
 	{
 		assert (0);
-		// TODO: raise software exception
+		CExceptionHandler::Get ()->Throw (EXCEPTION_DIVISION_BY_ZERO);
 	}
 	
 	unsigned long long ullDivisor = nDivisor;

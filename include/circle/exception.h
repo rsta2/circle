@@ -1,5 +1,5 @@
 //
-// logger.h
+// exception.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,50 +17,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _logger_h
-#define _logger_h
+#ifndef _exception_h
+#define _exception_h
 
-#include <circle/device.h>
-#include <circle/timer.h>
-#include <circle/types.h>
-
-enum TLogSeverity
-{
-	LogPanic,
-	LogError,
-	LogWarning,
-	LogNotice,
-	LogDebug
-};
-
-class CLogger
-{
-public:
-	CLogger (unsigned nLogLevel, CTimer *pTimer);
-	~CLogger (void);
-
-	boolean Initialize (CDevice *pTarget);
-
-	void Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...);
-
-	int Read (void *pBuffer, unsigned nCount);
-
-	static CLogger *Get (void);
-
-private:
-	void Write (const char *pString);
-
-private:
-	unsigned m_nLogLevel;
-	CTimer *m_pTimer;
-
-	CDevice *m_pTarget;
-
-	char *m_pBuffer;
-	unsigned m_nInPtr;
-	unsigned m_nOutPtr;
-
-	static CLogger *s_pThis;
-};
+#define EXCEPTION_DIVISION_BY_ZERO		0
+#define EXCEPTION_UNDEFINED_INSTRUCTION		1
+#define EXCEPTION_PREFETCH_ABORT		2
+#define EXCEPTION_DATA_ABORT			3
 
 #endif
