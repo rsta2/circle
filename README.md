@@ -55,7 +55,25 @@ Building is normally done on PC Linux. You need a [toolchain](http://elinux.org/
 
 The ready build *kernel.img* file should be in the sample/ directory.
 
+---
+
+Building Circle for the Raspberry Pi from a non-Linux host remains possible. You need a cross compiler targetting *for example* `arm-none-eabi`. OSDev.org has an [excellent document on the subject](http://wiki.osdev.org/GCC_Cross-Compiler) that you can follow if you have no idea of what a cross compiler is, or how to make one.
+
+When your compiler is ready, you need to tell the building process which compiler you are using. Create a Config.mk file and set the `PREFIX` variable to the prefix of your compiler. It should look like this:
+
+```
+	# Config.mk
+	# Circle build configuration file
+	
+	PREFIX = arm-none-eabi- # don't forget the dash at the end
+```
+
+When it's done, type in the two `makeall` commands shown above. The ready build *kernel.img* file should be in the sample/ directory.
+
+---
+
 You can also build Circle on the Raspberry Pi itself on Debian wheezy but you need some method to put the *kernel.img* file onto the SD(HC) card. With an external USB card reader on model B+ (4 USB ports) this should be no problem.
+
 
 Installation
 ------------

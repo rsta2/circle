@@ -18,7 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-PREFIX	= arm-rpi-linux-gnueabi-
+include ../Config.mk
+
+PREFIX ?= arm-rpi-linux-gnueabi-
 
 ifeq ($(strip $(CIRCLEHOME)),)
 CIRCLEHOME = ..
@@ -30,10 +32,11 @@ AS	= $(CC)
 LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
 
-AFLAGS	= -I $(CIRCLEHOME)/include
-CFLAGS	= -Wall -Wno-psabi -fno-builtin -nostdinc -nostdlib \
+AFLAGS	+= -I $(CIRCLEHOME)/include
+CFLAGS	+= -march=armv6 -mtune=arm1176jzf-s -Wall -Wno-psabi \
+	  -fno-builtin -nostdinc -nostdlib \
 	  -undef -D__circle__ -I $(CIRCLEHOME)/include -O #-DNDEBUG
-CPPFLAGS= $(CFLAGS) -fno-exceptions -fno-rtti
+CPPFLAGS+=$(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
 
 %.o: %.S
 	$(AS) $(AFLAGS) -c -o $@ $<

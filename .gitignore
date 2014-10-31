@@ -78,4 +78,6 @@ $RECYCLE.BIN/
 # Circle
 # ----------------------------------------------
 *.img
-Rules.mk
+*.lst
+*.map
+Config.mk
