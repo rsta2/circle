@@ -1,9 +1,9 @@
 #
-# Rules.mk
+# Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
 # Copyright (C) 2014  R. Stange <rsta2@o2online.de>
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -18,33 +18,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-ifeq ($(strip $(CIRCLEHOME)),)
-CIRCLEHOME = ..
-endif
+CIRCLEHOME = ../..
 
--include $(CIRCLEHOME)/Config.mk
+OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o \
+	  usbconfigparser.o usbdevice.o usbendpoint.o usbhostcontroller.o usbrequest.o
 
-PREFIX	?= arm-rpi-linux-gnueabi-
+libusb.a: $(OBJS)
+	rm -f libusb.a
+	$(AR) cr libusb.a $(OBJS)
 
-CC	= $(PREFIX)gcc
-CPP	= $(PREFIX)g++
-AS	= $(CC)
-LD	= $(PREFIX)ld
-AR	= $(PREFIX)ar
-
-AFLAGS	+= -I $(CIRCLEHOME)/include
-CFLAGS	+= -march=armv6 -mtune=arm1176jzf-s -Wall -Wno-psabi -fno-builtin -nostdinc -nostdlib \
-	   -undef -D__circle__ -I $(CIRCLEHOME)/include -O #-DNDEBUG
-CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
-
-%.o: %.S
-	$(AS) $(AFLAGS) -c -o $@ $<
-
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-%.o: %.cpp
-	$(CPP) $(CPPFLAGS) -c -o $@ $<
-
-clean:
-	rm -f *.o *.a *.elf *.lst *.img *.cir *.map *~ $(EXTRACLEAN)
+include $(CIRCLEHOME)/Rules.mk

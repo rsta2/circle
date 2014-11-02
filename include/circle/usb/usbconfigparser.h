@@ -1,5 +1,5 @@
 //
-// device.h
+// usbconfigparser.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,16 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _device_h
-#define _device_h
+#ifndef _usbconfigparser_h
+#define _usbconfigparser_h
 
-class CDevice
+#include <circle/usb/usb.h>
+#include <circle/types.h>
+
+class CUSBConfigurationParser
 {
 public:
-	virtual ~CDevice (void) {}
+	CUSBConfigurationParser (const void *pBuffer, unsigned nBufLen);
+	~CUSBConfigurationParser (void);
 
-	// returns number of written bytes or < 0 on failure
-	virtual int Write (const void *pBuffer, unsigned nCount) { return -1; }
+	boolean IsValid (void) const;
+
+	const TUSBDescriptor *GetDescriptor (u8 ucType);	// returns 0 if not found
+
+	void Error (const char *pSource) const;
+
+private:
+	const TUSBDescriptor	*m_pBuffer;
+	unsigned		 m_nBufLen;
+	boolean			 m_bValid;
+	const TUSBDescriptor	*m_pEndPosition;
+	const TUSBDescriptor	*m_pCurrentPosition;
+	const TUSBDescriptor	*m_pErrorPosition;
 };
 
 #endif

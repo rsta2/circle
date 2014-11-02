@@ -1,5 +1,5 @@
 //
-// device.h
+// dwhciframescheduler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,16 +17,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _device_h
-#define _device_h
+#ifndef _dwhciframescheduler_h
+#define _dwhciframescheduler_h
 
-class CDevice
+#include <circle/types.h>
+
+class CDWHCIFrameScheduler
 {
 public:
-	virtual ~CDevice (void) {}
+	virtual ~CDWHCIFrameScheduler (void) {}
 
-	// returns number of written bytes or < 0 on failure
-	virtual int Write (const void *pBuffer, unsigned nCount) { return -1; }
+	virtual void StartSplit (void) = 0;
+	virtual boolean CompleteSplit (void) = 0;
+	virtual void TransactionComplete (u32 nStatus) = 0;
+	
+	virtual void WaitForFrame (void) = 0;
+	
+	virtual boolean IsOddFrame (void) const = 0;
 };
 
 #endif

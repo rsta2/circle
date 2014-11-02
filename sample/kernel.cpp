@@ -18,13 +18,17 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include <circle/usb/usb.h>
+#include <circle/debug.h>
 
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
-	m_Logger (m_Options.GetLogLevel (), &m_Timer)
+	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+	m_DWHCI (&m_Interrupt, &m_Timer),
+	m_USBHub1 (&m_DWHCI, USBSpeedHigh, 0, 1)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -68,6 +72,16 @@ boolean CKernel::Initialize (void)
 		bOK = m_Timer.Initialize ();
 	}
 
+	if (bOK)
+	{
+		bOK = m_DWHCI.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = m_USBHub1.Initialize ();
+	}
+
 	return bOK;
 }
 
@@ -75,37 +89,26 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	m_Logger.Write (FromKernel, LogNotice, "An exception will occur after 15 seconds from now");
-
-	// start timer to elapse after 15 seconds
-	m_Timer.StartKernelTimer (15 * HZ, TimerHandler);
-
-	// generate a log message every second
-	unsigned nTime = m_Timer.GetTime ();
-	while (1)
+	TUSBDeviceDescriptor DeviceDescriptor;
+	if (m_DWHCI.GetDescriptor (m_USBHub1.GetEndpoint0 (),
+				   DESCRIPTOR_DEVICE, DESCRIPTOR_INDEX_DEFAULT,
+				   &DeviceDescriptor, sizeof DeviceDescriptor)
+	    == sizeof DeviceDescriptor)
 	{
-		while (nTime == m_Timer.GetTime ())
-		{
-			// just wait a second
-		}
+		m_Logger.Write (FromKernel, LogNotice,
+				"USB hub: Vendor 0x%04X, Product 0x%04X",
+				(unsigned) DeviceDescriptor.idVendor,
+				(unsigned) DeviceDescriptor.idProduct);
+#ifndef NDEBUG
+		m_Logger.Write (FromKernel, LogNotice, "Dumping device descriptor");
 
-		nTime = m_Timer.GetTime ();
-
-		m_Logger.Write (FromKernel, LogNotice, "Time is %u", nTime);
+		debug_hexdump (&DeviceDescriptor, sizeof DeviceDescriptor, FromKernel);
+#endif
+	}
+	else
+	{
+		m_Logger.Write (FromKernel, LogError, "Cannot get device descriptor");
 	}
 
 	return ShutdownHalt;
-}
-
-void CKernel::TimerHandler (unsigned hTimer, void *pParam, void *pContext)
-{
-#if 1
-	// jump to an invalid address (execution is only allowed below _etext, see circle.ld)
-	void (*pInvalid) (void) = (void (*) (void)) 0x500000;
-
-	(*pInvalid) ();
-#else
-	// alternatively execute an undefined instruction
-	asm volatile (".word 0xFF000000");
-#endif
 }

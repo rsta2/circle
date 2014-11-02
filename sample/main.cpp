@@ -23,15 +23,17 @@
 
 int main (void)
 {
+	// TODO: implement all destructors used in CKernel, otherwise cannot return from main()
+
 	CKernel Kernel;
 	if (!Kernel.Initialize ())
 	{
+		DisableInterrupts ();
+		for (;;);
 		return EXIT_HALT;
 	}
 	
 	TShutdownMode ShutdownMode = Kernel.Run ();
-
-	// TODO: implement all destructors used in CKernel, otherwise cannot return from main()
 
 	switch (ShutdownMode)
 	{

@@ -2,6 +2,11 @@
 
 cd lib
 make $1 $2 || exit
+
+cd usb
+make $1 $2 || exit
+cd ..
+
 cd ..
 
 cd sample

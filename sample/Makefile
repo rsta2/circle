@@ -8,7 +8,8 @@
 
 OBJS	= main.o kernel.o
 
-LIBS	= ../lib/libcircle.a
+LIBS	= ../lib/usb/libusb.a \
+	  ../lib/libcircle.a
 
 kernel.img: $(OBJS) $(LIBS)
 	$(LD) -o kernel.elf -Map kernel.map -T ../circle.ld ../lib/startup.o $(OBJS) $(LIBS)

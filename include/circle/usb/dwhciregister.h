@@ -1,5 +1,5 @@
 //
-// device.h
+// dwhciregister.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,16 +17,43 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _device_h
-#define _device_h
+#ifndef _dwhciregister_h
+#define _dwhciregister_h
 
-class CDevice
+#include <circle/usb/dwhci.h>
+#include <circle/types.h>
+
+class CDWHCIRegister
 {
 public:
-	virtual ~CDevice (void) {}
+	CDWHCIRegister (u32 nAddress);
+	CDWHCIRegister (u32 nAddress, u32 nValue);
+	~CDWHCIRegister (void);
 
-	// returns number of written bytes or < 0 on failure
-	virtual int Write (const void *pBuffer, unsigned nCount) { return -1; }
+	u32 Read (void);
+	void Write (void);
+
+	u32 Get (void) const;
+	void Set (u32 nValue);
+
+	boolean IsSet (u32 nMask) const;
+	
+	void And (u32 nMask);
+	void Or (u32 nMask);
+	
+	void ClearBit (unsigned nBit);
+	void SetBit (unsigned nBit);
+	void ClearAll (void);
+	void SetAll (void);
+
+#ifndef NDEBUG
+	void Dump (void) const;
+#endif
+	
+private:
+	boolean	m_bValid;
+	u32	m_nAddress;
+	u32	m_nBuffer;
 };
 
 #endif
