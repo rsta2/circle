@@ -1,5 +1,5 @@
 //
-// logger.h
+// netdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,52 +17,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _logger_h
-#define _logger_h
+#ifndef _netdevice_h
+#define _netdevice_h
 
-#include <circle/device.h>
-#include <circle/timer.h>
-#include <circle/stdarg.h>
+#include <circle/usb/usbdevice.h>
+#include <circle/usb/macaddress.h>
 #include <circle/types.h>
 
-enum TLogSeverity
-{
-	LogPanic,
-	LogError,
-	LogWarning,
-	LogNotice,
-	LogDebug
-};
+#define FRAME_BUFFER_SIZE	2048
 
-class CLogger
+class CNetDevice : public CUSBDevice
 {
 public:
-	CLogger (unsigned nLogLevel, CTimer *pTimer);
-	~CLogger (void);
+	CNetDevice (CUSBDevice *pDevice);
+	virtual ~CNetDevice (void);
 
-	boolean Initialize (CDevice *pTarget);
+	virtual boolean Configure (void) = 0;
+	
+	virtual const CMACAddress *GetMACAddress (void) const = 0;
 
-	void Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...);
-	void WriteV (const char *pSource, TLogSeverity Severity, const char *pMessage, va_list Args);
+	virtual boolean SendFrame (const void *pBuffer, unsigned nLength) = 0;
 
-	int Read (void *pBuffer, unsigned nCount);
-
-	static CLogger *Get (void);
-
-private:
-	void Write (const char *pString);
-
-private:
-	unsigned m_nLogLevel;
-	CTimer *m_pTimer;
-
-	CDevice *m_pTarget;
-
-	char *m_pBuffer;
-	unsigned m_nInPtr;
-	unsigned m_nOutPtr;
-
-	static CLogger *s_pThis;
+	// pBuffer must have size FRAME_BUFFER_SIZE
+	virtual boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength) = 0;
 };
 
 #endif

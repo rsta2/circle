@@ -61,6 +61,16 @@ boolean CLogger::Initialize (CDevice *pTarget)
 
 void CLogger::Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...)
 {
+	va_list var;
+	va_start (var, pMessage);
+
+	WriteV (pSource, Severity, pMessage, var);
+
+	va_end (var);
+}
+
+void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pMessage, va_list Args)
+{
 	if (Severity > m_nLogLevel)
 	{
 		return;
@@ -83,15 +93,10 @@ void CLogger::Write (const char *pSource, TLogSeverity Severity, const char *pMe
 	Write (pSource);
 	Write (": ");
 
-	va_list var;
-	va_start (var, pMessage);
-
 	CString Message;
-	Message.FormatV (pMessage, var);
+	Message.FormatV (pMessage, Args);
 
 	Write (Message);
-
-	va_end (var);
 
 	if (Severity == LogPanic)
 	{

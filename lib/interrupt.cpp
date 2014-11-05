@@ -137,6 +137,12 @@ void CInterruptSystem::DisableIRQ (unsigned nIRQ)
 	DataMemBarrier ();
 }
 
+CInterruptSystem *CInterruptSystem::Get (void)
+{
+	assert (s_pThis != 0);
+	return s_pThis;
+}
+
 int CInterruptSystem::CallIRQHandler (unsigned nIRQ)
 {
 	assert (nIRQ < IRQ_LINES);

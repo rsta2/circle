@@ -87,14 +87,14 @@ void CDWHCIRegister::Or (u32 nMask)
 void CDWHCIRegister::ClearBit (unsigned nBit)
 {
 	assert (m_bValid);
-	assert (nBit < sizeof m_nBuffer);
+	assert (nBit < sizeof m_nBuffer * 8);
 	m_nBuffer &= ~(1 << nBit);
 }
 
 void CDWHCIRegister::SetBit (unsigned nBit)
 {
 	assert (m_bValid);
-	assert (nBit < sizeof m_nBuffer);
+	assert (nBit < sizeof m_nBuffer * 8);
 	m_nBuffer |= 1 << nBit;
 }
 

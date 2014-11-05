@@ -1,5 +1,5 @@
 //
-// logger.h
+// usbstandardhub.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,52 +17,36 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _logger_h
-#define _logger_h
+#ifndef _usbstandardhub_h
+#define _usbstandardhub_h
 
-#include <circle/device.h>
-#include <circle/timer.h>
-#include <circle/stdarg.h>
+#include <circle/usb/usb.h>
+#include <circle/usb/usbhub.h>
+#include <circle/usb/usbdevice.h>
+#include <circle/usb/usbhostcontroller.h>
+#include <circle/string.h>
 #include <circle/types.h>
 
-enum TLogSeverity
-{
-	LogPanic,
-	LogError,
-	LogWarning,
-	LogNotice,
-	LogDebug
-};
-
-class CLogger
+class CUSBStandardHub : public CUSBDevice
 {
 public:
-	CLogger (unsigned nLogLevel, CTimer *pTimer);
-	~CLogger (void);
-
-	boolean Initialize (CDevice *pTarget);
-
-	void Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...);
-	void WriteV (const char *pSource, TLogSeverity Severity, const char *pMessage, va_list Args);
-
-	int Read (void *pBuffer, unsigned nCount);
-
-	static CLogger *Get (void);
+	CUSBStandardHub (CUSBHostController *pHost, TUSBSpeed Speed);
+	CUSBStandardHub (CUSBDevice *pDevice);				// copy constructor
+	~CUSBStandardHub (void);
+	
+	boolean Configure (void);
 
 private:
-	void Write (const char *pString);
+	boolean EnumeratePorts (void);
+
+	static CString *GetDeviceNames (CUSBDevice *pDevice);		// string deleted by caller
 
 private:
-	unsigned m_nLogLevel;
-	CTimer *m_pTimer;
+	TUSBHubDescriptor *m_pHubDesc;
 
-	CDevice *m_pTarget;
-
-	char *m_pBuffer;
-	unsigned m_nInPtr;
-	unsigned m_nOutPtr;
-
-	static CLogger *s_pThis;
+	unsigned m_nPorts;
+	CUSBDevice *m_pDevice[USB_HUB_MAX_PORTS];
+	TUSBPortStatus *m_pStatus[USB_HUB_MAX_PORTS];
 };
 
 #endif

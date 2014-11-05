@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 5 of Circle. To get access to Step 1-4 use the git tag "Step1" to "Step4".
+> This is Step 6 of Circle. To get access to Step 1-5 use the git tag "Step1" to "Step5".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -16,19 +16,21 @@ Please note that this fairly small USB library was developed in a hobby project.
 
 Circle will be developed and released step by step. So it may be easier to understand. The main goal is to integrate USB support now.
 
-The 5th Step
+The 6th Step
 ------------
 
-First blink 5 times to show the image was loaded right. After initializing the USB host controller the USB device descriptor of the on-board USB hub is read and dumped to the logger. That's it for now. You do not need to attach an USB device for this test.
+First blink 5 times to show the image was loaded right. After initializing the USB host controller the USB hub driver detects all attached high-speed USB devices (low- and full-speed devices are recognized later) and displays its identifiers (vendor, device and interface).
+
+The only supported USB device (beside the hub) is the on-board Ethernet controller. It will be initialized and after waiting 2 seconds (time for Ethernet PHY to come up) the received frames are dumped. At the moment these can only be broadcast frames. You can force sending broadcasts on your local network by using `ping address` from an other attached computer where address should be an IP-address of a not existing host at your local network (so that an ARP request is generated). For this test you only need to connect your local Ethernet to the Raspberry Pi. No external USB device is required.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt* now.
 
 Circle has the following new features:
 
-* USB host controller interface (HCI) driver (no split support and no dedicated hub driver for now)
-* USB device class (basic device initialization)
+* USB hub driver (dectects and enables the supported devices)
+* Driver for the on-board Ethernet device (receiving and transmitting frames)
 
-In Step 1-4 the following features were introduced:
+In Step 1-5 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -48,6 +50,8 @@ In Step 1-4 the following features were introduced:
 * Using interrupts
 * Timer class with clock, timers and calibrated delay loop
 * Exception handler
+* USB host controller interface (HCI) driver (no split support for now)
+* USB device class (basic device initialization)
 
 Building
 --------
@@ -86,15 +90,11 @@ Classes
 
 The following C++ classes were added to the Circle USB library in the lib/usb/ subdirectory:
 
-* CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi.
-* CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
-* CDWHCITransferStageData: Holds all the data needed for a transfer stage on one HCI channel.
-* CDWHCIRegister: Supporting class for CDWHCIDevice, encapsulates a register of the HCI.
-* CDWHCIFrameScheduler: Base class for a simple micro frame scheduler (not used so far but required to compile).
-* CUSBDevice: Encapsulates a general USB device (basic device initialization, derived from CDevice).
-* CUSBEndpoint: Encapsulates an endpoint of an USB device (supports control, bulk and interrupt EPs).
-* CUSBRequest: A request to an USB device (URB).
-* CUSBConfigurationParser: Parses and validates an USB configuration descriptor.
+* CUSBStandardHub: USB hub driver for LAN9512/9514 hub (not tested with external hubs but may work)
+* CUSBDeviceFactory: Creates the device objects of the different supported USB devices.
+* CSMSC951xDevice: Driver for the on-board USB Ethernet device.
+* CNetDevice: Base class of CSMSC951xDevice.
+* CMACAddress: Encapsulates an Ethernet MAC address.
 
 In Step 1-4 the following classes were introduced for the Circle main library:
 
@@ -116,3 +116,15 @@ In Step 1-4 the following classes were introduced for the Circle main library:
 * CExceptionHandler: Generates a stack-trace and a panic message if an abort exception occurs.
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CTimer: Supports an uptime clock, kernel timers and a calibrated delay loop.
+
+In Step 5 the following C++ classes were added to the Circle USB library in the lib/usb/ subdirectory:
+
+* CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi.
+* CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
+* CDWHCITransferStageData: Holds all the data needed for a transfer stage on one HCI channel.
+* CDWHCIRegister: Supporting class for CDWHCIDevice, encapsulates a register of the HCI.
+* CDWHCIFrameScheduler: Base class for a simple micro frame scheduler (not used so far but required to compile).
+* CUSBDevice: Encapsulates a general USB device (basic device initialization, derived from CDevice).
+* CUSBEndpoint: Encapsulates an endpoint of an USB device (supports control, bulk and interrupt EPs).
+* CUSBRequest: A request to an USB device (URB).
+* CUSBConfigurationParser: Parses and validates an USB configuration descriptor.

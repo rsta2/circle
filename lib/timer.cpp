@@ -33,7 +33,8 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 :	m_pInterruptSystem (pInterruptSystem),
 	m_nTicks (0),
 	m_nTime (0),
-	m_nMsDelay (350000)
+	m_nMsDelay (350000),
+	m_nusDelay (m_nMsDelay / 1000)
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -236,7 +237,7 @@ void CTimer::usDelay (unsigned nMicroSeconds)
 {
 	if (nMicroSeconds > 0)
 	{
-		unsigned long nCycles =  m_nMsDelay * nMicroSeconds / 1000;
+		unsigned nCycles =  m_nusDelay * nMicroSeconds;
 
 		DelayLoop (nCycles);
 	}
@@ -251,6 +252,7 @@ void CTimer::TuneMsDelay (void)
 	unsigned nFactor = 100 * HZ / nTicks;
 
 	m_nMsDelay = m_nMsDelay * nFactor / 100;
+	m_nusDelay = (m_nMsDelay + 500) / 1000;
 
 	CLogger::Get ()->Write ("timer", LogNotice, "SpeedFactor is %u.%02u",
 				nFactor / 100, nFactor % 100);

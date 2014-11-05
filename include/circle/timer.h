@@ -86,6 +86,7 @@ private:
 	volatile unsigned	 m_nTime;
 	volatile TKernelTimer	 m_KernelTimer[KERNEL_TIMERS];	// TODO: should be linked list
 	unsigned		 m_nMsDelay;
+	unsigned		 m_nusDelay;
 
 	static CTimer *s_pThis;
 };

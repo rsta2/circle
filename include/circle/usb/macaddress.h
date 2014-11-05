@@ -1,5 +1,5 @@
 //
-// logger.h
+// macaddress.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,52 +17,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _logger_h
-#define _logger_h
+#ifndef _macaddress_h
+#define _macaddress_h
 
-#include <circle/device.h>
-#include <circle/timer.h>
-#include <circle/stdarg.h>
+#include <circle/string.h>
 #include <circle/types.h>
 
-enum TLogSeverity
-{
-	LogPanic,
-	LogError,
-	LogWarning,
-	LogNotice,
-	LogDebug
-};
+#define MAC_ADDRESS_SIZE	6
 
-class CLogger
+class CMACAddress
 {
 public:
-	CLogger (unsigned nLogLevel, CTimer *pTimer);
-	~CLogger (void);
+	CMACAddress (void);
+	CMACAddress (const u8 *pAddress);
+	~CMACAddress (void);
 
-	boolean Initialize (CDevice *pTarget);
+	boolean operator== (const CMACAddress &rAddress2) const;
+	boolean operator!= (const CMACAddress &rAddress2) const;
+	
+	void Set (const u8 *pAddress);
+	void SetBroadcast (void);
+	const u8 *Get (void) const;
+	void CopyTo (u8 *pBuffer) const;
 
-	void Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...);
-	void WriteV (const char *pSource, TLogSeverity Severity, const char *pMessage, va_list Args);
+	boolean IsBroadcast (void) const;
+	unsigned GetSize (void) const;
 
-	int Read (void *pBuffer, unsigned nCount);
-
-	static CLogger *Get (void);
-
+	void Format (CString *pString) const;
+	
 private:
-	void Write (const char *pString);
+	boolean m_bValid;
 
-private:
-	unsigned m_nLogLevel;
-	CTimer *m_pTimer;
-
-	CDevice *m_pTarget;
-
-	char *m_pBuffer;
-	unsigned m_nInPtr;
-	unsigned m_nOutPtr;
-
-	static CLogger *s_pThis;
+	u8 m_Address[MAC_ADDRESS_SIZE];
 };
 
 #endif

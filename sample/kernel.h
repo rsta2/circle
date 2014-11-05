@@ -31,7 +31,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/dwhcidevice.h>
-#include <circle/usb/usbdevice.h>
+#include <circle/usb/usbstandardhub.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -51,8 +51,6 @@ public:
 
 	TShutdownMode Run (void);
 	
-	static void TimerHandler (unsigned hTimer, void *pParam, void *pContext);
-
 private:
 	// do not change this order
 	CMemorySystem		m_Memory;
@@ -66,7 +64,7 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CDWHCIDevice		m_DWHCI;
-	CUSBDevice		m_USBHub1;
+	CUSBStandardHub		m_USBHub1;
 };
 
 #endif

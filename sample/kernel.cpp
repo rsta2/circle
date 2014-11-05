@@ -19,6 +19,10 @@
 //
 #include "kernel.h"
 #include <circle/usb/usb.h>
+#include <circle/usb/netdevice.h>
+#include <circle/usb/macaddress.h>
+#include <circle/string.h>
+#include <circle/macros.h>
 #include <circle/debug.h>
 
 static const char FromKernel[] = "kernel";
@@ -28,7 +32,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_USBHub1 (&m_DWHCI, USBSpeedHigh, 0, 1)
+	m_USBHub1 (&m_DWHCI, USBSpeedHigh)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -79,7 +83,8 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_USBHub1.Initialize ();
+		bOK =    m_USBHub1.Initialize ()
+		      && m_USBHub1.Configure ();
 	}
 
 	return bOK;
@@ -89,25 +94,57 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	TUSBDeviceDescriptor DeviceDescriptor;
-	if (m_DWHCI.GetDescriptor (m_USBHub1.GetEndpoint0 (),
-				   DESCRIPTOR_DEVICE, DESCRIPTOR_INDEX_DEFAULT,
-				   &DeviceDescriptor, sizeof DeviceDescriptor)
-	    == sizeof DeviceDescriptor)
+	CNetDevice *pEth0 = (CNetDevice *) m_DeviceNameService.GetDevice ("eth0", FALSE);
+	if (pEth0 == 0)
 	{
-		m_Logger.Write (FromKernel, LogNotice,
-				"USB hub: Vendor 0x%04X, Product 0x%04X",
-				(unsigned) DeviceDescriptor.idVendor,
-				(unsigned) DeviceDescriptor.idProduct);
-#ifndef NDEBUG
-		m_Logger.Write (FromKernel, LogNotice, "Dumping device descriptor");
+		m_Logger.Write (FromKernel, LogError, "Net device not found");
 
-		debug_hexdump (&DeviceDescriptor, sizeof DeviceDescriptor, FromKernel);
-#endif
+		return ShutdownHalt;
 	}
-	else
+
+	// wait for Ethernet PHY to come up
+	m_Timer.MsDelay (2000);
+
+	m_Logger.Write (FromKernel, LogNotice, "Dumping received broadcasts");
+
+	while (1)
 	{
-		m_Logger.Write (FromKernel, LogError, "Cannot get device descriptor");
+		unsigned char FrameBuffer[FRAME_BUFFER_SIZE];
+		unsigned nFrameLength;
+
+		if (pEth0->ReceiveFrame (FrameBuffer, &nFrameLength))
+		{
+			CString Sender ("???");
+			CString Protocol ("???");
+
+			if (nFrameLength >= 14)
+			{
+				CMACAddress MACSender (FrameBuffer+6);
+				MACSender.Format (&Sender);
+
+				unsigned nProtocol = *(unsigned short *) (FrameBuffer+12);
+				switch (nProtocol)
+				{
+				case BE (0x800):
+					Protocol = "IP";
+					break;
+
+				case BE (0x806):
+					Protocol = "ARP";
+					break;
+
+				default:
+					break;
+				}
+			}
+
+			m_Logger.Write (FromKernel, LogNotice,
+					"%u bytes received from %s (protocol %s)", nFrameLength,
+					(const char *) Sender, (const char *) Protocol);
+#ifndef NDEBUG
+			debug_hexdump (FrameBuffer, nFrameLength, FromKernel);
+#endif
+		}
 	}
 
 	return ShutdownHalt;
