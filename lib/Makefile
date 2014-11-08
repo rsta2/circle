@@ -20,7 +20,7 @@
 
 OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o libhelper.o libstub.o \
 	  memio.o memory.o new.o purecall.o synchronize.o sysinit.o timer.o util.o util_fast.o \
-	  bcmframebuffer.o koptions.o pagetable.o screen.o \
+	  bcmframebuffer.o device.o koptions.o pagetable.o screen.o \
 	  assert.o chargenerator.o debug.o devicenameservice.o logger.o serial.o string.o \
 	  delayloop.o exceptionhandler.o exceptionstub.o interrupt.o
 

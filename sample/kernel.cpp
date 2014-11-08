@@ -18,12 +18,37 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/usb/usb.h>
-#include <circle/usb/netdevice.h>
-#include <circle/usb/macaddress.h>
-#include <circle/string.h>
+#include <circle/usb/usbmassdevice.h>
 #include <circle/macros.h>
-#include <circle/debug.h>
+
+struct TCHSAddress
+{
+	unsigned char Head;
+	unsigned char Sector	   : 6,
+		      CylinderHigh : 2;
+	unsigned char CylinderLow;
+}
+PACKED;
+
+struct TPartitionEntry
+{
+	unsigned char	Status;
+	TCHSAddress	FirstSector;
+	unsigned char	Type;
+	TCHSAddress	LastSector;
+	unsigned	LBAFirstSector;
+	unsigned	NumberOfSectors;
+}
+PACKED;
+
+struct TMasterBootRecord
+{
+	unsigned char	BootCode[0x1BE];
+	TPartitionEntry	Partition[4];
+	unsigned short	BootSignature;
+	#define BOOT_SIGNATURE		0xAA55
+}
+PACKED;
 
 static const char FromKernel[] = "kernel";
 
@@ -94,57 +119,48 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CNetDevice *pEth0 = (CNetDevice *) m_DeviceNameService.GetDevice ("eth0", FALSE);
-	if (pEth0 == 0)
+	CDevice *pUMSD1 = m_DeviceNameService.GetDevice ("umsd1", TRUE);
+	if (pUMSD1 == 0)
 	{
-		m_Logger.Write (FromKernel, LogError, "Net device not found");
+		m_Logger.Write (FromKernel, LogError, "USB mass storage device not found");
 
 		return ShutdownHalt;
 	}
 
-	// wait for Ethernet PHY to come up
-	m_Timer.MsDelay (2000);
-
-	m_Logger.Write (FromKernel, LogNotice, "Dumping received broadcasts");
-
-	while (1)
+	unsigned long long ullOffset = 0 * UMSD_BLOCK_SIZE;
+	if (pUMSD1->Seek (ullOffset) != ullOffset)
 	{
-		unsigned char FrameBuffer[FRAME_BUFFER_SIZE];
-		unsigned nFrameLength;
+		m_Logger.Write (FromKernel, LogError, "Seek error");
 
-		if (pEth0->ReceiveFrame (FrameBuffer, &nFrameLength))
-		{
-			CString Sender ("???");
-			CString Protocol ("???");
+		return ShutdownHalt;
+	}
 
-			if (nFrameLength >= 14)
-			{
-				CMACAddress MACSender (FrameBuffer+6);
-				MACSender.Format (&Sender);
+	TMasterBootRecord MBR;
+	if (pUMSD1->Read (&MBR, sizeof MBR) != (int) sizeof MBR)
+	{
+		m_Logger.Write (FromKernel, LogError, "Read error");
 
-				unsigned nProtocol = *(unsigned short *) (FrameBuffer+12);
-				switch (nProtocol)
-				{
-				case BE (0x800):
-					Protocol = "IP";
-					break;
+		return ShutdownHalt;
+	}
 
-				case BE (0x806):
-					Protocol = "ARP";
-					break;
+	if (MBR.BootSignature != BOOT_SIGNATURE)
+	{
+		m_Logger.Write (FromKernel, LogError, "Boot signature not found");
 
-				default:
-					break;
-				}
-			}
+		return ShutdownHalt;
+	}
 
-			m_Logger.Write (FromKernel, LogNotice,
-					"%u bytes received from %s (protocol %s)", nFrameLength,
-					(const char *) Sender, (const char *) Protocol);
-#ifndef NDEBUG
-			debug_hexdump (FrameBuffer, nFrameLength, FromKernel);
-#endif
-		}
+	m_Logger.Write (FromKernel, LogNotice, "Dumping the partition table");
+	m_Logger.Write (FromKernel, LogNotice, "# Status Type  1stSector    Sectors");
+
+	for (unsigned nPartition = 0; nPartition < 4; nPartition++)
+	{
+		m_Logger.Write (FromKernel, LogNotice, "%u %02X     %02X   %10u %10u",
+				nPartition+1,
+				(unsigned) MBR.Partition[nPartition].Status,
+				(unsigned) MBR.Partition[nPartition].Type,
+				MBR.Partition[nPartition].LBAFirstSector,
+				MBR.Partition[nPartition].NumberOfSectors);
 	}
 
 	return ShutdownHalt;

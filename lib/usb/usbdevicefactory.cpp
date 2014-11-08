@@ -23,7 +23,7 @@
 
 // for factory
 #include <circle/usb/usbstandardhub.h>
-//#include <circle/usb/usbmassdevice.h>
+#include <circle/usb/usbmassdevice.h>
 //#include <circle/usb/usbkeyboard.h>
 #include <circle/usb/smsc951x.h>
 
@@ -55,11 +55,11 @@ CUSBDevice *CUSBDeviceFactory::GetDevice (CUSBDevice *pParent, CString *pName)
 	{
 		pResult = new CUSBStandardHub (pParent);
 	}
-#if 0
 	else if (pName->Compare ("int8-6-50") == 0)
 	{
 		pResult = new CUSBBulkOnlyMassStorageDevice (pParent);
 	}
+#if 0
 	else if (pName->Compare ("int3-1-1") == 0)
 	{
 		pResult = new CUSBKeyboardDevice (pParent);

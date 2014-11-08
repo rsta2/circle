@@ -1,5 +1,5 @@
 //
-// device.h
+// device.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,23 +17,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _device_h
-#define _device_h
+#include <circle/device.h>
 
-class CDevice
+CDevice::CDevice (void)
 {
-public:
-	CDevice (void);
-	virtual ~CDevice (void);
+}
 
-	// returns number of read bytes or < 0 on failure
-	virtual int Read (void *pBuffer, unsigned nCount);
+CDevice::~CDevice (void)
+{
+}
 
-	// returns number of written bytes or < 0 on failure
-	virtual int Write (const void *pBuffer, unsigned nCount);
+int CDevice::Read (void *pBuffer, unsigned nCount)
+{
+	return -1;
+}
 
-	// returns the resulting offset, (unsigned long long) -1 on error
-	virtual unsigned long long Seek (unsigned long long ullOffset);		// byte offset
-};
+int CDevice::Write (const void *pBuffer, unsigned nCount)
+{
+	return -1;
+}
 
-#endif
+unsigned long long CDevice::Seek (unsigned long long ullOffset)
+{
+	return (unsigned long long) -1;
+}

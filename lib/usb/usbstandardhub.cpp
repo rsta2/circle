@@ -262,7 +262,7 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 
 		//CLogger::Get ()->Write (FromHub, LogDebug, "Port %u status is 0x%04X", nPort+1, (unsigned) m_pStatus[nPort]->wPortStatus);
 		
-		if (!m_pStatus[nPort]->wPortStatus & PORT_ENABLE__MASK)
+		if (!(m_pStatus[nPort]->wPortStatus & PORT_ENABLE__MASK))
 		{
 			CLogger::Get ()->Write (FromHub, LogError,
 						"Port %u is not enabled", nPort+1);
