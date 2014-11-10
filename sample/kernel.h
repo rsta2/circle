@@ -50,6 +50,12 @@ public:
 	boolean Initialize (void);
 
 	TShutdownMode Run (void);
+
+private:
+	static void KeyPressedHandler (const char *pString);
+	static void ShutdownHandler (void);
+
+	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char *pRawKeys);
 	
 private:
 	// do not change this order
@@ -65,6 +71,10 @@ private:
 	CLogger			m_Logger;
 	CDWHCIDevice		m_DWHCI;
 	CUSBStandardHub		m_USBHub1;
+
+	volatile TShutdownMode m_ShutdownMode;
+
+	static CKernel *s_pThis;
 };
 
 #endif

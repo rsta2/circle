@@ -18,14 +18,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/dwhcixferstagedata.h>
+#include <circle/usb/dwhciframeschedper.h>
+#include <circle/usb/dwhciframeschednper.h>
 #include <circle/usb/dwhci.h>
 #include <circle/logger.h>
 #include <assert.h>
-
-#ifdef SPLIT_SUPPORT				// will come in one of the next steps
-	#include "dwhciframeschedper.h"
-	#include "dwhciframeschednper.h"
-#endif
 
 #define MAX_SPLIT_CYCLES	100
 
@@ -111,7 +108,6 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 
 	if (m_bSplitTransaction)
 	{
-#ifdef SPLIT_SUPPORT
 		if (IsPeriodic ())
 		{
 			m_pFrameScheduler = new CDWHCIFrameSchedulerPeriodic;
@@ -120,7 +116,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 		{
 			m_pFrameScheduler = new CDWHCIFrameSchedulerNonPeriodic;
 		}
-#endif
+
 		assert (m_pFrameScheduler != 0);
 	}
 }

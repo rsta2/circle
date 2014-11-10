@@ -8,6 +8,8 @@
 #ifndef _dwhci_h
 #define _dwhci_h
 
+#include <circle/bcm2835.h>
+
 #define DWHCI_MAX_CHANNELS		16
 
 #define DWHCI_DATA_FIFO_SIZE 		0x1000

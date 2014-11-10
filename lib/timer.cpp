@@ -204,7 +204,7 @@ void CTimer::InterruptHandler (void)
 	DataMemBarrier ();
 
 #ifndef NDEBUG
-	debug_click ();
+	//debug_click ();
 #endif
 
 	if (++m_nTicks % HZ == 0)

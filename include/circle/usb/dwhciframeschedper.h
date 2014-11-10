@@ -1,5 +1,5 @@
 //
-// netdevice.h
+// dwhciframeschedper.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,29 +17,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _netdevice_h
-#define _netdevice_h
+#ifndef _dwhciframeschedper_h
+#define _dwhciframeschedper_h
 
-#include <circle/usb/usbdevice.h>
-#include <circle/usb/macaddress.h>
+#include <circle/usb/dwhciframescheduler.h>
+#include <circle/timer.h>
 #include <circle/types.h>
 
-#define FRAME_BUFFER_SIZE	1600
-
-class CNetDevice : public CUSBDevice
+class CDWHCIFrameSchedulerPeriodic : public CDWHCIFrameScheduler
 {
 public:
-	CNetDevice (CUSBDevice *pDevice);
-	virtual ~CNetDevice (void);
+	CDWHCIFrameSchedulerPeriodic (void);
+	~CDWHCIFrameSchedulerPeriodic (void);
 
-	virtual boolean Configure (void) = 0;
+	void StartSplit (void);
+	boolean CompleteSplit (void);
+	void TransactionComplete (u32 nStatus);
 	
-	virtual const CMACAddress *GetMACAddress (void) const = 0;
+	void WaitForFrame (void);
+	
+	boolean IsOddFrame (void) const;
 
-	virtual boolean SendFrame (const void *pBuffer, unsigned nLength) = 0;
+private:
+	CTimer *m_pTimer;
 
-	// pBuffer must have size FRAME_BUFFER_SIZE
-	virtual boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength) = 0;
+	unsigned m_nState;
+	unsigned m_nTries;
+
+	unsigned m_nNextFrame;
 };
 
 #endif

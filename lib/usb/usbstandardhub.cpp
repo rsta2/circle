@@ -286,9 +286,7 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 		TUSBSpeed Speed = USBSpeedUnknown;
 		if (m_pStatus[nPort]->wPortStatus & PORT_LOW_SPEED__MASK)
 		{
-			//Speed = USBSpeedLow;
-			CLogger::Get ()->Write (FromHub, LogWarning, "Port %u: Low-speed devices are not supported at the moment", nPort+1);
-			continue;
+			Speed = USBSpeedLow;
 		}
 		else if (m_pStatus[nPort]->wPortStatus & PORT_HIGH_SPEED__MASK)
 		{
@@ -296,9 +294,7 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 		}
 		else
 		{
-			//Speed = USBSpeedFull;
-			CLogger::Get ()->Write (FromHub, LogWarning, "Port %u: Full-speed devices are not supported at the moment", nPort+1);
-			continue;
+			Speed = USBSpeedFull;
 		}
 
 		// first create default device

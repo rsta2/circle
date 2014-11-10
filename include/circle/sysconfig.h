@@ -49,4 +49,8 @@
 
 #define KERNEL_TIMERS		20
 
+// default keyboard map (enable only one)
+//#define DEFAULT_KEYMAP_UK
+#define DEFAULT_KEYMAP_DE
+
 #endif

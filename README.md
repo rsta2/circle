@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 7 of Circle. To get access to Step 1-6 use the git tag "Step1" to "Step6".
+> This is Step 8 of Circle. To get access to Step 1-7 use the git tag "Step1" to "Step7".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -14,24 +14,27 @@ There is a model-check in the USB library to prevent non-high-speed USB devices 
 
 Please note that this fairly small USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation when it goes out to the public.
 
-Circle will be developed and released step by step. So it may be easier to understand. The main goal is to integrate USB support now.
+Circle is developed and released step by step. So it may be easier to understand. The main goal was to integrate USB support until now.
 
-The 7th Step
+The 8th Step
 ------------
 
-First blink 5 times to show the image was loaded right. After initializing the USB host controller the USB hub driver detects all attached high-speed USB devices (low- and full-speed devices are recognized later) and displays its identifiers (vendor, device and interface).
+First blink 5 times to show the image was loaded right. After initializing the USB host controller the USB hub driver detects all attached USB devices and displays its identifiers (vendor, device and interface).
 
-The new feature in this step is the support for USB mass storage devices (USB flash devices, USB hard disks should also work). You should connect one of such devices (WHICH DOES NOT CONTAIN ANY IMPORTANT DATA) to an USB port if you want to run the sample program. It simply reads the first sector of the device (master boot record) and dumps the partition table. The driver is also able to write to the device but this is not used here.
+The new feature in this step is the support for USB keyboards. Just type on the keyboard and your input will be echoed to the screen.
 
-At the moment the driver does not support devices with multiple logical units (LUN, e.g. card readers). The accessed logical unit is always LUN0.
+In "cooked mode" (used by default) a keyboard translation map is used to translate the physical key code into the right ASCII code or in an escape sequence for special keys (see the file *doc/keyboard.txt*). There are only two of these language-dependend maps at the moment (UK English (currently untested) and German). Select the wanted map at the end of the file *include/circle/sysconfig.h* before building. The "Caps Lock" and "Num Lock" keys should work as expected but the driver is not able to switch the LEDs at the moment. If you press Ctrl-Alt-Del the system reboots.
 
-The options to be used for *cmdline.txt* are described in *doc/cmdline.txt* now.
+In "raw mode" the physical key codes of the pressed keys are send to the key-pressed handler. To test this please change the #if in CKernel::Run() in the file *sample/kernel.cpp*. You can also use it to discover to physical key codes if you want to construct your own keymap (file *lib/usb/keymap_??.h*). Note that it depends on the keyboard how many keys it can detect simultaneous (maximum is 6).
+
+The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
 Circle has the following new features:
 
-* Driver for USB mass storage devices (bulk only, read and write)
+* Detects low- and full-speed devices
+* Driver for USB keyboards
 
-In Step 1-5 the following features were introduced:
+In Step 1-7 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -55,6 +58,7 @@ In Step 1-5 the following features were introduced:
 * USB device class (basic device initialization)
 * USB hub driver (dectects and enables the supported devices)
 * Driver for the on-board Ethernet device (receiving and transmitting frames)
+* Driver for USB mass storage devices (bulk only, read and write)
 
 Building
 --------
@@ -91,9 +95,12 @@ Directories
 Classes
 -------
 
-The following C++ class was added to the Circle USB library in the lib/usb/ subdirectory:
+The following C++ classes were added to the Circle USB library in the lib/usb/ subdirectory:
 
-* CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
+* CUSBKeyboardDevice: Driver for USB keyboards
+* CKeyMap: Keyboard translation map (two selectable default maps at the moment)
+* CDWHCIFrameSchedulerNonPeriodic: Schedules the transmission of non-interrupt split frames to non-high-speed devices
+* CDWHCIFrameSchedulerPeriodic: Schedules the transmission of interrupt split frames to non-high-speed devices
 
 In Step 1-4 the following classes were introduced for the Circle main library:
 
@@ -116,7 +123,7 @@ In Step 1-4 the following classes were introduced for the Circle main library:
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CTimer: Supports an uptime clock, kernel timers and a calibrated delay loop.
 
-In Step 5-6 the following C++ classes were added to the Circle USB library in the lib/usb/ subdirectory:
+In Step 5-7 the following C++ classes were added to the Circle USB library in the lib/usb/ subdirectory:
 
 * CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi.
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
@@ -132,3 +139,4 @@ In Step 5-6 the following C++ classes were added to the Circle USB library in th
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
 * CNetDevice: Base class of CSMSC951xDevice.
 * CMACAddress: Encapsulates an Ethernet MAC address.
+* CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)

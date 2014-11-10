@@ -1,0 +1,32 @@
+SPECIAL KEYS
+
+The listed special keys return the following sequences in cooked mode:
+
+\E		Escape
+\177		Backspace
+^I		Tabulator
+^J		Return
+\E[2~		Insert
+\E[1~		Home
+\E[5~		PageUp
+\E[3~		Delete
+\E[4~		End
+\E[6~		PageDown
+\E[A		Up
+\E[B		Down
+\E[D		Left
+\E[C		Right
+\E[[A		F1
+\E[[B		F2
+\E[[C		F3
+\E[[D		F4
+\E[[E		F5
+\E[17~		F6
+\E[18~		F7
+\E[19~		F8
+\E[20~		F9
+\E[G		KP_Center
+
+^X = Control character
+\E = Escape (\x1b)
+\nnn = Octal code
