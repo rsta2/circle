@@ -81,15 +81,16 @@ CDWHCIDevice::~CDWHCIDevice (void)
 
 boolean CDWHCIDevice::Initialize (void)
 {
-	// Check for model A to prevent non-high-speed devices from over-clocking
+	// Check model to prevent non-high-speed devices from over-clocking
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple BoardRevision;
 	if (Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
 	{
 		unsigned nRevision = BoardRevision.nValue & 0xFFFF;
-		if (7 <= nRevision && nRevision <= 9)
+		if (   (7 <= nRevision && nRevision <= 9)
+		    || nRevision >= 0x11)
 		{
-			CLogger::Get ()->Write (FromDWHCI, LogError, "Model A is not supported");
+			CLogger::Get ()->Write (FromDWHCI, LogError, "Model is not supported");
 			return FALSE;
 		}
 	}
