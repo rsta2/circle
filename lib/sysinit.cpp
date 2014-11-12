@@ -33,6 +33,13 @@ void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 	// TODO
 }
 
+void halt (void)
+{
+	DisableInterrupts ();
+	
+	for (;;);
+}
+
 void reboot (void)					// by PlutoniumBob@raspi-forum
 {
 	DataMemBarrier ();
@@ -69,7 +76,7 @@ void sysinit (void)
 		reboot ();
 	}
 
-	for (;;);			// halt
+	halt ();
 }
 
 #ifdef __cplusplus

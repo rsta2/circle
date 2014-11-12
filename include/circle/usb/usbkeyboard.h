@@ -34,7 +34,7 @@ typedef void TShutdownHandler (void);
 
 // The raw handler is called when the keyboard sends a status report (on status change and/or continously).
 typedef void TKeyStatusHandlerRaw (unsigned char	ucModifiers,	// see usbhid.h
-				   const unsigned char *pRawKeys);	// 0-terminated (max. 6 keys)
+				   const unsigned char	RawKeys[6]);	// key code or 0 in each byte
 
 class CUSBKeyboardDevice : public CUSBDevice
 {

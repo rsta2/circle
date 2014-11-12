@@ -55,7 +55,7 @@ private:
 	static void KeyPressedHandler (const char *pString);
 	static void ShutdownHandler (void);
 
-	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char *pRawKeys);
+	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
 	
 private:
 	// do not change this order

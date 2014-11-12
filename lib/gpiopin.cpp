@@ -18,17 +18,19 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/gpiopin.h>
+#include <circle/gpiomanager.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
 #include <circle/synchronize.h>
 #include <circle/timer.h>
 #include <assert.h>
 
-#define GPIO_PINS	54
-
-CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode)
+CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
 :	m_nPin (nPin),
-	m_Mode (GPIOModeUnknown)
+	m_Mode (GPIOModeUnknown),
+	m_pManager (pManager),
+	m_pHandler (0),
+	m_Interrupt (GPIOInterruptUnknown)
 {
 	assert (m_nPin < GPIO_PINS);
 	
@@ -37,6 +39,9 @@ CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode)
 
 CGPIOPin::~CGPIOPin (void)
 {
+	m_pHandler = 0;
+	m_pManager = 0;
+	
 	m_nPin = GPIO_PINS;
 }
 
@@ -135,6 +140,82 @@ void CGPIOPin::Invert (void)
 	Write (m_nValue ^ 1);
 }
 
+void CGPIOPin::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam)
+{
+	assert (   m_Mode == GPIOModeInput
+		|| m_Mode == GPIOModeInputPullUp
+		|| m_Mode == GPIOModeInputPullDown);
+
+	assert (m_Interrupt == GPIOInterruptUnknown);
+
+	assert (pHandler != 0);
+	assert (m_pHandler == 0);
+	m_pHandler = pHandler;
+
+	m_pParam = pParam;
+
+	assert (m_pManager != 0);
+	m_pManager->ConnectInterrupt (this);
+}
+
+void CGPIOPin::DisconnectInterrupt (void)
+{
+	assert (   m_Mode == GPIOModeInput
+		|| m_Mode == GPIOModeInputPullUp
+		|| m_Mode == GPIOModeInputPullDown);
+
+	assert (m_Interrupt == GPIOInterruptUnknown);
+
+	assert (m_pHandler != 0);
+	m_pHandler = 0;
+
+	assert (m_pManager != 0);
+	m_pManager->DisconnectInterrupt (this);
+}
+
+void CGPIOPin::EnableInterrupt (TGPIOInterrupt Interrupt)
+{
+	assert (   m_Mode == GPIOModeInput
+		|| m_Mode == GPIOModeInputPullUp
+		|| m_Mode == GPIOModeInputPullDown);
+	assert (m_pManager != 0);
+	assert (m_pHandler != 0);
+
+	assert (m_Interrupt == GPIOInterruptUnknown);
+	assert (Interrupt < GPIOInterruptUnknown);
+	m_Interrupt = Interrupt;
+
+	assert (m_nPin < GPIO_PINS);
+	unsigned nReg =   ARM_GPIO_GPREN0
+			+ (m_nPin / 32) * 4
+			+ (Interrupt - GPIOInterruptOnRisingEdge) * 12;
+
+	unsigned nMask = 1 << (m_nPin % 32);
+	
+	write32 (nReg, read32 (nReg) | nMask);
+}
+	
+
+void CGPIOPin::DisableInterrupt (void)
+{
+	assert (   m_Mode == GPIOModeInput
+		|| m_Mode == GPIOModeInputPullUp
+		|| m_Mode == GPIOModeInputPullDown);
+
+	assert (m_Interrupt < GPIOInterruptUnknown);
+
+	assert (m_nPin < GPIO_PINS);
+	unsigned nReg =   ARM_GPIO_GPREN0
+			+ (m_nPin / 32) * 4
+			+ (m_Interrupt - GPIOInterruptOnRisingEdge) * 12;
+
+	unsigned nMask = 1 << (m_nPin % 32);
+	
+	write32 (nReg, read32 (nReg) & ~nMask);
+
+	m_Interrupt = GPIOInterruptUnknown;
+}
+
 void CGPIOPin::SetPullUpMode (unsigned nMode)
 {
 	assert (m_nPin < GPIO_PINS);
@@ -163,4 +244,15 @@ void CGPIOPin::SetAlternateFunction (unsigned nFunction)
 	nValue &= ~(7 << nShift);
 	nValue |= FunctionMap[nFunction] << nShift;
 	write32 (nSelReg, nValue);
+}
+
+void CGPIOPin::InterruptHandler (void)
+{
+	assert (   m_Mode == GPIOModeInput
+		|| m_Mode == GPIOModeInputPullUp
+		|| m_Mode == GPIOModeInputPullDown);
+	assert (m_Interrupt < GPIOInterruptUnknown);
+
+	assert (m_pHandler != 0);
+	(*m_pHandler) (m_pParam);
 }

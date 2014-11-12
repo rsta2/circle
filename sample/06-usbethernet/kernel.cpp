@@ -18,31 +18,27 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/usb/usbkeyboard.h>
+#include <circle/usb/usb.h>
+#include <circle/usb/netdevice.h>
+#include <circle/usb/macaddress.h>
 #include <circle/string.h>
-#include <circle/util.h>
-#include <assert.h>
+#include <circle/macros.h>
+#include <circle/debug.h>
 
 static const char FromKernel[] = "kernel";
-
-CKernel *CKernel::s_pThis = 0;
 
 CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_USBHub1 (&m_DWHCI, USBSpeedHigh),
-	m_ShutdownMode (ShutdownNone)
+	m_USBHub1 (&m_DWHCI, USBSpeedHigh)
 {
-	s_pThis = this;
-
 	m_ActLED.Blink (5);	// show we are alive
 }
 
 CKernel::~CKernel (void)
 {
-	s_pThis = 0;
 }
 
 boolean CKernel::Initialize (void)
@@ -98,62 +94,58 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CUSBKeyboardDevice *pKeyboard = (CUSBKeyboardDevice *) m_DeviceNameService.GetDevice ("ukbd1", FALSE);
-	if (pKeyboard == 0)
+	CNetDevice *pEth0 = (CNetDevice *) m_DeviceNameService.GetDevice ("eth0", FALSE);
+	if (pEth0 == 0)
 	{
-		m_Logger.Write (FromKernel, LogError, "Keyboard not found");
+		m_Logger.Write (FromKernel, LogError, "Net device not found");
 
 		return ShutdownHalt;
 	}
 
-#if 1	// set to 0 to test raw mode
-	pKeyboard->RegisterShutdownHandler (ShutdownHandler);
-	pKeyboard->RegisterKeyPressedHandler (KeyPressedHandler);
-#else
-	pKeyboard->RegisterKeyStatusHandlerRaw (KeyStatusHandlerRaw);
+	// wait for Ethernet PHY to come up
+	m_Timer.MsDelay (2000);
+
+	m_Logger.Write (FromKernel, LogNotice, "Dumping received broadcasts");
+
+	while (1)
+	{
+		unsigned char FrameBuffer[FRAME_BUFFER_SIZE];
+		unsigned nFrameLength;
+
+		if (pEth0->ReceiveFrame (FrameBuffer, &nFrameLength))
+		{
+			CString Sender ("???");
+			CString Protocol ("???");
+
+			if (nFrameLength >= 14)
+			{
+				CMACAddress MACSender (FrameBuffer+6);
+				MACSender.Format (&Sender);
+
+				unsigned nProtocol = *(unsigned short *) (FrameBuffer+12);
+				switch (nProtocol)
+				{
+				case BE (0x800):
+					Protocol = "IP";
+					break;
+
+				case BE (0x806):
+					Protocol = "ARP";
+					break;
+
+				default:
+					break;
+				}
+			}
+
+			m_Logger.Write (FromKernel, LogNotice,
+					"%u bytes received from %s (protocol %s)", nFrameLength,
+					(const char *) Sender, (const char *) Protocol);
+#ifndef NDEBUG
+			debug_hexdump (FrameBuffer, nFrameLength, FromKernel);
 #endif
-
-	m_Logger.Write (FromKernel, LogNotice, "Just type something!");
-
-	// just wait and turn the rotor
-	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
-	{
-		m_Screen.Rotor (0, nCount);
-		m_Timer.MsDelay (100);
+		}
 	}
 
-	return m_ShutdownMode;
-}
-
-// CScreenDevice::Write() is not reentrant and should normally not be used from callbacks (interrupt context)
-// but because nobody else will use it in this demonstration this should be no problem here.
-
-void CKernel::KeyPressedHandler (const char *pString)
-{
-	assert (s_pThis != 0);
-	s_pThis->m_Screen.Write (pString, strlen (pString));
-}
-
-void CKernel::ShutdownHandler (void)
-{
-	assert (s_pThis != 0);
-	s_pThis->m_ShutdownMode = ShutdownReboot;
-}
-
-void CKernel::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char *pRawKeys)
-{
-	assert (s_pThis != 0);
-
-	CString Message;
-	Message.Format ("Key status (modifiers %02X)", (unsigned) ucModifiers);
-
-	while (*pRawKeys != 0)
-	{
-		CString KeyCode;
-		KeyCode.Format (" %02X", *pRawKeys++);
-
-		Message.Append (KeyCode);
-	}
-
-	s_pThis->m_Logger.Write (FromKernel, LogNotice, Message);
+	return ShutdownHalt;
 }

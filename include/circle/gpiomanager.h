@@ -1,5 +1,5 @@
 //
-// startup.h
+// gpiomanager.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,21 +17,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _startup_h
-#define _startup_h
+#ifndef _gpiomanager_h
+#define _gpiomanager_h
 
-#define EXIT_HALT	0
-#define EXIT_REBOOT	1
+#include <circle/interrupt.h>
+#include <circle/gpiopin.h>
+#include <circle/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+class CGPIOManager
+{
+public:
+	CGPIOManager (CInterruptSystem *pInterrupt);
+	~CGPIOManager (void);
 
-void halt (void);
-void reboot (void);
+	boolean Initialize (void);
 
-#ifdef __cplusplus
-}
-#endif
+private:
+	void ConnectInterrupt (CGPIOPin *pPin);
+	void DisconnectInterrupt (CGPIOPin *pPin);
+	friend CGPIOPin;
+
+	void InterruptHandler (void);
+	static void InterruptStub (void *pParam);
+
+private:
+	CInterruptSystem *m_pInterrupt;
+	boolean m_bIRQConnected;
+
+	CGPIOPin *m_apPin[GPIO_PINS];
+};
 
 #endif

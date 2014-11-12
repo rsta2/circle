@@ -37,7 +37,7 @@ enum TLogSeverity
 class CLogger
 {
 public:
-	CLogger (unsigned nLogLevel, CTimer *pTimer);
+	CLogger (unsigned nLogLevel, CTimer *pTimer = 0);	// time is not logged if pTimer is 0
 	~CLogger (void);
 
 	boolean Initialize (CDevice *pTarget);

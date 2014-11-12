@@ -1,0 +1,15 @@
+README
+
+This sample uses GPIO interrupts. You need a serial interface converter for your host computer to try it. You have to connect three lines (do not swap TXD and RXD!):
+
+GND	Ground
+TXD	Output from Raspberry Pi, GPIO 17, 3.3V on high level
+RXD	Input to Raspberry Pi, GPIO 18, 3.3V on high level
+
+See http://elinux.org/RPi_Low-level_peripherals for wiring!
+
+Note that the GPIO pins used have normally not an UART function. Start a terminal program with 38400 bps (8-N-1). First blink 5 times to show the image was loaded right. The charaters you have typed into the terminal program should be echoed on the Raspberry Pi screen and back to the terminal program.
+
+The soft serial implementation is not as reliable to be included into the Circle base library but it demonstrates how a GPIO interrupt can be used.
+
+The serial receiver first enables an GPIO interrupt on falling edge to detect the start bit (line 64 of softserial.cpp). When the interrupt occurs it disables this interrupt and enables an interrupt on rising edge (line 132). When the rising edge was detected the driver measures the clock cycles the level was low and calculates how many 0-bits to shift into the shift variable (line 148).

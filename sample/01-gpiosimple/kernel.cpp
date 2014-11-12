@@ -1,5 +1,5 @@
 //
-// main.c
+// kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -18,33 +18,39 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/startup.h>
-#include <circle/synchronize.h>
+#include <circle/gpiopin.h>
+#include <circle/timer.h>
 
-int main (void)
+CKernel::CKernel (void)
 {
-	// TODO: implement all destructors used in CKernel, otherwise cannot return from main()
+}
 
-	CKernel Kernel;
-	if (!Kernel.Initialize ())
-	{
-		DisableInterrupts ();
-		for (;;);
-		return EXIT_HALT;
-	}
+CKernel::~CKernel (void)
+{
+}
+
+boolean CKernel::Initialize (void)
+{
+	return TRUE;
+}
+
+TShutdownMode CKernel::Run (void)
+{
+	// channels are swapped on model B+ 
+	CGPIOPin AudioLeft (40, GPIOModeOutput);
+	CGPIOPin AudioRight (45, GPIOModeOutput);
 	
-	TShutdownMode ShutdownMode = Kernel.Run ();
-
-	switch (ShutdownMode)
+	// flash the Act LED 10 times and click on audio (3.5mm headphone jack)
+	for (unsigned i = 1; i <= 10; i++)
 	{
-	case ShutdownReboot:
-		reboot ();
-		return EXIT_REBOOT;
+		m_ActLED.On ();
+		AudioLeft.Invert ();
+		AudioRight.Invert ();
+		CTimer::SimpleMsDelay (200);
 
-	case ShutdownHalt:
-	default:
-		DisableInterrupts ();
-		for (;;);
-		return EXIT_HALT;
+		m_ActLED.Off ();
+		CTimer::SimpleMsDelay (500);
 	}
+
+	return ShutdownReboot;
 }

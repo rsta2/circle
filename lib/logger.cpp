@@ -81,13 +81,16 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 		Write ("\x1b[1m");
 	}
 
-	CString *pTimeString = m_pTimer->GetTimeString ();
-	if (pTimeString != 0)
+	if (m_pTimer != 0)
 	{
-		Write (*pTimeString);
-		Write (" ");
+		CString *pTimeString = m_pTimer->GetTimeString ();
+		if (pTimeString != 0)
+		{
+			Write (*pTimeString);
+			Write (" ");
 
-		delete pTimeString;
+			delete pTimeString;
+		}
 	}
 
 	Write (pSource);

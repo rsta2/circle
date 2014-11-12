@@ -10,5 +10,5 @@ cd ..
 cd ..
 
 cd sample
-make $1 $2 || exit
+./makelatest $1 $2 || exit
 cd ..

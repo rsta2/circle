@@ -1,5 +1,5 @@
 //
-// startup.h
+// kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,21 +17,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _startup_h
-#define _startup_h
+#ifndef _kernel_h
+#define _kernel_h
 
-#define EXIT_HALT	0
-#define EXIT_REBOOT	1
+#include <circle/memory.h>
+#include <circle/actled.h>
+#include <circle/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+enum TShutdownMode
+{
+	ShutdownNone,
+	ShutdownHalt,
+	ShutdownReboot
+};
 
-void halt (void);
-void reboot (void);
+class CKernel
+{
+public:
+	CKernel (void);
+	~CKernel (void);
 
-#ifdef __cplusplus
-}
-#endif
+	boolean Initialize (void);
+
+	TShutdownMode Run (void);
+
+private:
+	// do not change this order
+	CMemorySystem	m_Memory;
+	CActLED		m_ActLED;
+	
+};
 
 #endif

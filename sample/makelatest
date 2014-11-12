@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cd `ls -dr [0-9][0-9]-* | head -n 1`
+make $1 $2 || exit
+cd ..

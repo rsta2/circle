@@ -1,0 +1,7 @@
+README
+
+First blink 5 times to show the image was loaded right. After initializing the USB host controller the USB hub driver detects all attached USB devices and displays its identifiers (vendor, device and interface).
+
+The new feature in this step is the support for USB mass storage devices (USB flash devices, USB hard disks should also work). You should connect one of such devices (WHICH DOES NOT CONTAIN ANY IMPORTANT DATA) to an USB port if you want to run the sample program. It simply reads the first sector of the device (master boot record) and dumps the partition table. The driver is also able to write to the device but this is not used here.
+
+At the moment the driver does not support devices with multiple logical units (LUN, e.g. card readers). The accessed logical unit is always LUN0.

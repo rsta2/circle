@@ -1,0 +1,9 @@
+README
+
+First blink 5 times to show the image was loaded right. After initializing the USB host controller the USB hub driver detects all attached USB devices and displays its identifiers (vendor, device and interface).
+
+The new feature in this step is the support for USB keyboards. Just type on the keyboard and your input will be echoed to the screen.
+
+In "cooked mode" (used by default) a keyboard translation map is used to translate the physical key code into the right ASCII code or in an escape sequence for special keys (see the file doc/keyboard.txt). There are only two of these language-dependend maps at the moment (UK English and German). Select the wanted map at the end of the file include/circle/sysconfig.h before building. The "Caps Lock" and "Num Lock" keys should work as expected but the driver is not able to switch the LEDs at the moment. If you press Ctrl-Alt-Del the system reboots.
+
+In "raw mode" the physical key codes of the pressed keys are send to the key-pressed handler. To test this please change the #if in CKernel::Run() in the file *sample/kernel.cpp*. You can also use it to discover to physical key codes if you want to construct your own keymap (file lib/usb/keymap_??.h). Note that it depends on the keyboard how many keys it can detect simultaneous (maximum is 6).

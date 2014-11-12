@@ -20,6 +20,8 @@
 #ifndef _gpiopin_h
 #define _gpiopin_h
 
+#define GPIO_PINS	54
+
 enum TGPIOMode
 {
 	GPIOModeInput,
@@ -35,10 +37,26 @@ enum TGPIOMode
 	GPIOModeUnknown
 };
 
+enum TGPIOInterrupt
+{
+	GPIOInterruptOnRisingEdge,
+	GPIOInterruptOnFallingEdge,
+	GPIOInterruptOnHighLevel,
+	GPIOInterruptOnLowLevel,
+	GPIOInterruptOnAsyncRisingEdge,
+	GPIOInterruptOnAsyncFallingEdge,
+	GPIOInterruptUnknown
+};
+
+typedef void TGPIOInterruptHandler (void *pParam);
+
+class CGPIOManager;
+
 class CGPIOPin
 {
 public:
-	CGPIOPin (unsigned nPin, TGPIOMode Mode);
+	// pManager is only required for using interrupts
+	CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager = 0);
 	virtual ~CGPIOPin (void);
 
 	void SetMode (TGPIOMode Mode);
@@ -50,15 +68,29 @@ public:
 
 	void Invert (void);
 
+	void ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam);
+	void DisconnectInterrupt (void);
+
+	void EnableInterrupt (TGPIOInterrupt Interrupt);
+	void DisableInterrupt (void);
+
 private:
 	void SetPullUpMode (unsigned nMode);
 
 	void SetAlternateFunction (unsigned nFunction);
 
+	void InterruptHandler (void);
+	friend CGPIOManager;
+
 private:
 	unsigned  m_nPin;
 	TGPIOMode m_Mode;
 	unsigned  m_nValue;
+
+	CGPIOManager		*m_pManager;
+	TGPIOInterruptHandler	*m_pHandler;
+	void			*m_pParam;
+	TGPIOInterrupt		 m_Interrupt;
 };
 
 #endif

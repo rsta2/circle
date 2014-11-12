@@ -46,9 +46,8 @@ CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBDevice *pDevice)
 	m_ucLastPhyCode (0),
 	m_hTimer (0)
 {
-	m_pReportBuffer = new u8[BOOT_REPORT_SIZE+1];
+	m_pReportBuffer = new u8[BOOT_REPORT_SIZE];
 	assert (m_pReportBuffer != 0);
-	m_pReportBuffer[BOOT_REPORT_SIZE] = '\0';
 }
 
 CUSBKeyboardDevice::~CUSBKeyboardDevice (void)

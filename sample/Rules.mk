@@ -1,5 +1,9 @@
 #
-# Makefile
+# Rules.mk
+#
+# The C build process was initially taken
+#	from the "collection of low level examples"
+# 	which is Copyright (c) 2012 David Welch dwelch@dwelch.com
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
 # Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -18,19 +22,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o libhelper.o libstub.o \
-	  memio.o memory.o new.o purecall.o synchronize.o sysinit.o timer.o util.o util_fast.o \
-	  bcmframebuffer.o device.o koptions.o pagetable.o screen.o \
-	  assert.o chargenerator.o debug.o devicenameservice.o logger.o serial.o string.o \
-	  delayloop.o exceptionhandler.o exceptionstub.o interrupt.o \
-	  gpiomanager.o
+ifeq ($(strip $(CIRCLEHOME)),)
+CIRCLEHOME = ../..
+endif
 
-all: startup.o libcircle.a
+kernel.img: $(OBJS) $(LIBS)
+	$(LD) -o kernel.elf -Map kernel.map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(LIBS)
+	$(PREFIX)objdump -D kernel.elf > kernel.lst
+	$(PREFIX)objcopy kernel.elf -O binary kernel.img
+	wc -c kernel.img
 
-startup.o: startup.S
-
-libcircle.a: $(OBJS)
-	rm -f libcircle.a
-	$(AR) cr libcircle.a $(OBJS)
-
-include ../Rules.mk
+include $(CIRCLEHOME)/Rules.mk
