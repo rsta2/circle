@@ -35,7 +35,7 @@ public:
 private:
 	void ConnectInterrupt (CGPIOPin *pPin);
 	void DisconnectInterrupt (CGPIOPin *pPin);
-	friend CGPIOPin;
+	friend class CGPIOPin;
 
 	void InterruptHandler (void);
 	static void InterruptStub (void *pParam);

@@ -80,7 +80,7 @@ private:
 	void SetAlternateFunction (unsigned nFunction);
 
 	void InterruptHandler (void);
-	friend CGPIOManager;
+	friend class CGPIOManager;
 
 private:
 	unsigned  m_nPin;
