@@ -1,0 +1,8 @@
+#!/bin/sh
+
+for sample in [0-9][0-9]-* ;  do
+	echo $sample:
+	cd $sample
+	make $1 $2 || exit
+	cd ..
+done

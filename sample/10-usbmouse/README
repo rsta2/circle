@@ -1,0 +1,3 @@
+README
+
+For this sample program you need to attach an USB mouse. First blink 5 times to show the image was loaded right. After initializing the screen is blank. Press the left or right mouse button and move the mouse to draw something onto the screen. A mouse cursor is not shown. If you have a mouse button in the middle you can press it to clear the screen.

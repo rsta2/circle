@@ -2,8 +2,7 @@
 // dwhcidevice.cpp
 //
 // Supports:
-//	high-speed UTMI+ 8 bit PHY
-//	with internal DMA only,
+//	internal DMA only,
 //	no ISO transfers
 //	no dynamic attachments
 //
@@ -62,7 +61,8 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_pTimer (pTimer),
 	m_nChannels (0),
 	m_nChannelAllocated (0),
-	m_bWaiting (FALSE)
+	m_bWaiting (FALSE),
+	m_RootPort (this)
 {
 	assert (m_pInterruptSystem != 0);
 	assert (m_pTimer != 0);
@@ -136,12 +136,21 @@ boolean CDWHCIDevice::Initialize (void)
 		return FALSE;
 	}
 
+	// The following calls will fail if there is no device or no supported device connected
+	// to root port. This is not an error because the system may run without an USB device.
+
 	if (!EnableRootPort ())
 	{
-		CLogger::Get ()->Write (FromDWHCI, LogError, "Cannot enable root port");
-		return FALSE;
+		CLogger::Get ()->Write (FromDWHCI, LogWarning, "No device connected to root port");
+		return TRUE;
 	}
 
+	if (!m_RootPort.Initialize ())
+	{
+		CLogger::Get ()->Write (FromDWHCI, LogWarning, "Cannot initialize root port");
+		return TRUE;
+	}
+	
 	DataMemBarrier ();
 
 	return TRUE;
@@ -227,26 +236,92 @@ boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB)
 	return bOK;
 }
 
+TUSBSpeed CDWHCIDevice::GetPortSpeed (void)
+{
+	TUSBSpeed Result = USBSpeedUnknown;
+	
+	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
+
+	switch (DWHCI_HOST_PORT_SPEED (HostPort.Read ()))
+	{
+	case DWHCI_HOST_PORT_SPEED_HIGH:
+		Result = USBSpeedHigh;
+		break;
+
+	case DWHCI_HOST_PORT_SPEED_FULL:
+		Result = USBSpeedFull;
+		break;
+
+	case DWHCI_HOST_PORT_SPEED_LOW:
+		Result = USBSpeedLow;
+		break;
+
+	default:
+		break;
+	}
+
+	return Result;
+}
+
+boolean CDWHCIDevice::OvercurrentDetected (void)
+{
+	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
+
+	if (HostPort.Read () & DWHCI_HOST_PORT_OVERCURRENT)
+	{
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+void CDWHCIDevice::DisableRootPort (void)
+{
+	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
+
+	HostPort.Read ();
+	HostPort.And (~DWHCI_HOST_PORT_POWER);
+	HostPort.Write ();
+}
+
 boolean CDWHCIDevice::InitCore (void)
 {
+	CDWHCIRegister USBConfig (DWHCI_CORE_USB_CFG);
+	USBConfig.Read ();
+	USBConfig.And (~DWHCI_CORE_USB_CFG_ULPI_EXT_VBUS_DRV);
+	USBConfig.And (~DWHCI_CORE_USB_CFG_TERM_SEL_DL_PULSE);
+	USBConfig.Write ();
+
 	if (!Reset ())
 	{
 		CLogger::Get ()->Write (FromDWHCI, LogError, "Reset failed");
 		return FALSE;
 	}
 
-	// We only support high-speed PHY with UTMI+
-	CDWHCIRegister USBConfig (DWHCI_CORE_USB_CFG);
 	USBConfig.Read ();
 	USBConfig.And (~DWHCI_CORE_USB_CFG_ULPI_UTMI_SEL);	// select UTMI+
-	//USBConfig.Or (DWHCI_CORE_USB_CFG_PHYIF);		// if UTMI width is 16 (not in BCM2835)
+	USBConfig.And (~DWHCI_CORE_USB_CFG_PHYIF);		// UTMI width is 8
 	USBConfig.Write ();
 
 	// Internal DMA mode only
 	CDWHCIRegister HWConfig2 (DWHCI_CORE_HW_CFG2);
 	HWConfig2.Read ();
 	assert (DWHCI_CORE_HW_CFG2_ARCHITECTURE (HWConfig2.Get ()) == 2);
-	
+
+	USBConfig.Read ();
+	if (   DWHCI_CORE_HW_CFG2_HS_PHY_TYPE (HWConfig2.Get ()) == DWHCI_CORE_HW_CFG2_HS_PHY_TYPE_ULPI
+	    && DWHCI_CORE_HW_CFG2_FS_PHY_TYPE (HWConfig2.Get ()) == DWHCI_CORE_HW_CFG2_FS_PHY_TYPE_DEDICATED)
+	{
+		USBConfig.Or (DWHCI_CORE_USB_CFG_ULPI_FSLS);
+		USBConfig.Or (DWHCI_CORE_USB_CFG_ULPI_CLK_SUS_M);
+	}
+	else
+	{
+		USBConfig.And (~DWHCI_CORE_USB_CFG_ULPI_FSLS);
+		USBConfig.And (~DWHCI_CORE_USB_CFG_ULPI_CLK_SUS_M);
+	}
+	USBConfig.Write ();
+
 	assert (m_nChannels == 0);
 	m_nChannels = DWHCI_CORE_HW_CFG2_NUM_HOST_CHANNELS (HWConfig2.Get ());
 	assert (4 <= m_nChannels && m_nChannels <= DWHCI_MAX_CHANNELS);
@@ -276,6 +351,25 @@ boolean CDWHCIDevice::InitHost (void)
 	// Restart the PHY clock
 	CDWHCIRegister Power (ARM_USB_POWER, 0);
 	Power.Write ();
+
+	CDWHCIRegister HostConfig (DWHCI_HOST_CFG);
+	HostConfig.Read ();
+	HostConfig.And (~DWHCI_HOST_CFG_FSLS_PCLK_SEL__MASK);
+
+	CDWHCIRegister HWConfig2 (DWHCI_CORE_HW_CFG2);
+	CDWHCIRegister USBConfig (DWHCI_CORE_USB_CFG);
+	if (   DWHCI_CORE_HW_CFG2_HS_PHY_TYPE (HWConfig2.Read ()) == DWHCI_CORE_HW_CFG2_HS_PHY_TYPE_ULPI
+	    && DWHCI_CORE_HW_CFG2_FS_PHY_TYPE (HWConfig2.Get ()) == DWHCI_CORE_HW_CFG2_FS_PHY_TYPE_DEDICATED
+	    && (USBConfig.Read () & DWHCI_CORE_USB_CFG_ULPI_FSLS))
+	{
+		HostConfig.Or (DWHCI_HOST_CFG_FSLS_PCLK_SEL_48_MHZ);
+	}
+	else
+	{
+		HostConfig.Or (DWHCI_HOST_CFG_FSLS_PCLK_SEL_30_60_MHZ);
+	}
+
+	HostConfig.Write ();
 
 #ifdef DWC_CFG_DYNAMIC_FIFO
 	CDWHCIRegister RxFIFOSize (DWHCI_CORE_RX_FIFO_SIZ, DWC_CFG_HOST_RX_FIFO_SIZE);
@@ -333,17 +427,6 @@ boolean CDWHCIDevice::EnableRootPort (void)
 
 	m_pTimer->MsDelay (10);		// see USB 2.0 spec (tRSTRCY)
 
-	if (DWHCI_HOST_PORT_SPEED (HostPort.Read ()) != DWHCI_HOST_PORT_SPEED_HIGH)
-	{
-		HostPort.And (~DWHCI_HOST_PORT_DEFAULT_MASK);
-		HostPort.And (~DWHCI_HOST_PORT_POWER);
-		HostPort.Write ();
-
-		CLogger::Get ()->Write (FromDWHCI, LogError, "Device at root port is not high-speed");
-
-		return FALSE;
-	}
-	
 	return TRUE;
 }
 

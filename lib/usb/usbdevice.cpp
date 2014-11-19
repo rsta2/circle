@@ -334,7 +334,7 @@ void CUSBDevice::SetAddress (u8 ucAddress)
 	assert (ucAddress <= USB_MAX_ADDRESS);
 	m_ucAddress = ucAddress;
 
-	CLogger::Get ()->Write (FromDevice, LogDebug, "Device address set to %u", (unsigned) m_ucAddress);
+	//CLogger::Get ()->Write (FromDevice, LogDebug, "Device address set to %u", (unsigned) m_ucAddress);
 }
 
 u8 CUSBDevice::GetAddress (void) const

@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/usb/keymap.h>
-#include <circle/usb/usbhid.h>
+#include <circle/input/keymap.h>
+#include <circle/input/keyboardbehaviour.h>
 #include <circle/sysconfig.h>
 #include <circle/util.h>
 #include <assert.h>
@@ -147,26 +147,25 @@ u8 CKeyMap::Translate (u8 nPhyCode, u8 nModifiers)
 	u8 nLogCodeNorm = m_KeyMap[nPhyCode][K_NORMTAB];
 
 	if (   nLogCodeNorm == KeyDelete
-	    && (nModifiers & (LCTRL | RCTRL))
-	    && (nModifiers & ALT))
+	    && (nModifiers & (KEY_LCTRL_MASK | KEY_RCTRL_MASK))
+	    && (nModifiers & KEY_ALT_MASK))
 	{
 		return ActionShutdown; 
 	}
 
 	if (   (KeyF1 <= nLogCodeNorm && nLogCodeNorm <= KeyF12)
-	    && (nModifiers & ALT))
+	    && (nModifiers & KEY_ALT_MASK))
 	{
 		return ActionSelectConsole1 + (nLogCodeNorm - KeyF1);
 	}
 
-	if (nModifiers & (ALT | LWIN | RWIN))
+	if (nModifiers & (KEY_ALT_MASK | KEY_LWIN_MASK | KEY_RWIN_MASK))
 	{
 		return KeyNone;
 	}
 	
 	unsigned nTable = K_NORMTAB;
 
-	// TODO: hard-wired to keypad
 	if (KEYPAD_FIRST <= nPhyCode && nPhyCode <= KEYPAD_LAST)
 	{
 		if (m_bNumLock)
@@ -174,11 +173,11 @@ u8 CKeyMap::Translate (u8 nPhyCode, u8 nModifiers)
 			nTable = K_SHIFTTAB;
 		}
 	}
-	else if (nModifiers & ALTGR)
+	else if (nModifiers & KEY_ALTGR_MASK)
 	{
 		nTable = K_ALTTAB;
 	}
-	else if (nModifiers & (LSHIFT | RSHIFT))
+	else if (nModifiers & (KEY_LSHIFT_MASK | KEY_RSHIFT_MASK))
 	{
 		nTable = K_SHIFTTAB;
 	}
@@ -218,7 +217,7 @@ const char *CKeyMap::GetString (u8 nKeyCode, u8 nModifiers, char Buffer[2]) cons
 
 	char chChar = (char) nKeyCode;
 		
-	if (nModifiers & (LCTRL | RCTRL))
+	if (nModifiers & (KEY_LCTRL_MASK | KEY_RCTRL_MASK))
 	{
 		chChar -= 'a';
 		if ('\0' <= chChar && chChar <= 'z'-'a')
@@ -256,17 +255,17 @@ u8 CKeyMap::GetLEDStatus (void) const
 
 	if (m_bCapsLock)
 	{
-		nResult |= LED_CAPS_LOCK;
+		nResult |= KEYB_LED_CAPS_LOCK;
 	}
 
 	if (m_bNumLock)
 	{
-		nResult |= LED_NUM_LOCK;
+		nResult |= KEYB_LED_NUM_LOCK;
 	}
 
 	if (m_bScrollLock)
 	{
-		nResult |= LED_SCROLL_LOCK;
+		nResult |= KEYB_LED_SCROLL_LOCK;
 	}
 
 	return nResult;

@@ -18,10 +18,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/usb/usbkeyboard.h>
-#include <circle/string.h>
-#include <circle/util.h>
+#include <circle/usb/usbmouse.h>
 #include <assert.h>
+
+static const char ClearScreen[] = "\x1b[H\x1b[J\x1b[?25l";
 
 static const char FromKernel[] = "kernel";
 
@@ -32,6 +32,8 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer),
+	m_nPosX (0),
+	m_nPosY (0),
 	m_ShutdownMode (ShutdownNone)
 {
 	s_pThis = this;
@@ -91,22 +93,18 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CUSBKeyboardDevice *pKeyboard = (CUSBKeyboardDevice *) m_DeviceNameService.GetDevice ("ukbd1", FALSE);
-	if (pKeyboard == 0)
+	CUSBMouseDevice *pMouse = (CUSBMouseDevice *) m_DeviceNameService.GetDevice ("umouse1", FALSE);
+	if (pMouse == 0)
 	{
-		m_Logger.Write (FromKernel, LogError, "Keyboard not found");
-
-		return ShutdownHalt;
+		m_Logger.Write (FromKernel, LogPanic, "Mouse not found");
 	}
 
-#if 1	// set to 0 to test raw mode
-	pKeyboard->RegisterShutdownHandler (ShutdownHandler);
-	pKeyboard->RegisterKeyPressedHandler (KeyPressedHandler);
-#else
-	pKeyboard->RegisterKeyStatusHandlerRaw (KeyStatusHandlerRaw);
-#endif
+	m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
 
-	m_Logger.Write (FromKernel, LogNotice, "Just type something!");
+	m_nPosX = m_Screen.GetWidth () / 2;
+	m_nPosY = m_Screen.GetHeight () / 2;
+
+	pMouse->RegisterStatusHandler (MouseStatusStub);
 
 	// just wait and turn the rotor
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
@@ -118,38 +116,36 @@ TShutdownMode CKernel::Run (void)
 	return m_ShutdownMode;
 }
 
-// CScreenDevice::Write() is not reentrant and should normally not be used from callbacks (interrupt context)
-// but because nobody else will use it in this demonstration this should be no problem here.
-
-void CKernel::KeyPressedHandler (const char *pString)
+void CKernel::MouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY)
 {
-	assert (s_pThis != 0);
-	s_pThis->m_Screen.Write (pString, strlen (pString));
-}
-
-void CKernel::ShutdownHandler (void)
-{
-	assert (s_pThis != 0);
-	s_pThis->m_ShutdownMode = ShutdownReboot;
-}
-
-void CKernel::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6])
-{
-	assert (s_pThis != 0);
-
-	CString Message;
-	Message.Format ("Key status (modifiers %02X)", (unsigned) ucModifiers);
-
-	for (unsigned i = 0; i < 6; i++)
+	if (nButtons & MOUSE_BUTTON_MIDDLE)
 	{
-		if (RawKeys[i] != 0)
+		m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
+	}
+	else
+	{
+		m_nPosX += nDisplacementX;
+		if ((unsigned) m_nPosX >= m_Screen.GetWidth ())
 		{
-			CString KeyCode;
-			KeyCode.Format (" %02X", (unsigned) RawKeys[i]);
+			m_nPosX -= nDisplacementX;
+		}
 
-			Message.Append (KeyCode);
+		m_nPosY += nDisplacementY;
+		if ((unsigned) m_nPosY >= m_Screen.GetHeight ())
+		{
+			m_nPosY -= nDisplacementY;
+		}
+
+		if (nButtons & (MOUSE_BUTTON_LEFT | MOUSE_BUTTON_RIGHT))
+		{
+			m_Screen.SetPixel ((unsigned) m_nPosX, (unsigned) m_nPosY,
+					   nButtons & MOUSE_BUTTON_LEFT ? NORMAL_COLOR : HIGH_COLOR);
 		}
 	}
+}
 
-	s_pThis->m_Logger.Write (FromKernel, LogNotice, Message);
+void CKernel::MouseStatusStub (unsigned nButtons, int nDisplacementX, int nDisplacementY)
+{
+	assert (s_pThis != 0);
+	s_pThis->MouseStatusHandler (nButtons, nDisplacementX, nDisplacementY);
 }

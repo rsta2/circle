@@ -1,9 +1,0 @@
-TASK LIST
-
-abidon@GitHub asked me to include a task list for contributions. Here it is.
-
-* Change the implementation of the kernel timers in CTimer to a sorted linked list. Currently it is an array with 20 entries (configureable) which must be walked through from start to end on each timer interrupt. To improve performance the linked timer list should be sorted by elapse time so the list walk can be stopped when a timer is found which is not elapsed.
-
-* Implement the escape sequences of CScreenDevice which are unimplemented (see the TODOs): DeleteChars, DeleteLines, Insert mode, InsertLines, reverse mode.
-
-* Support USB low-speed and full-speed PHY in CDWHCIDevice for model A support.

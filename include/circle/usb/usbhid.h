@@ -65,4 +65,9 @@ PACKED;
 #define LED_CAPS_LOCK	(1 << 1)
 #define LED_SCROLL_LOCK	(1 << 2)
 
+// Mouse buttons (boot protocol)
+#define USBHID_BUTTON1	(1 << 0)
+#define USBHID_BUTTON2	(1 << 1)
+#define USBHID_BUTTON3	(1 << 2)
+
 #endif

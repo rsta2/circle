@@ -1,5 +1,5 @@
 //
-// usbstandardhub.h
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,37 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbstandardhub_h
-#define _usbstandardhub_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-#include <circle/usb/usb.h>
-#include <circle/usb/usbhub.h>
-#include <circle/usb/usbdevice.h>
-#include <circle/usb/usbhostcontroller.h>
-#include <circle/string.h>
-#include <circle/types.h>
-
-class CUSBStandardHub : public CUSBDevice
+int main (void)
 {
-public:
-	CUSBStandardHub (CUSBDevice *pDevice);				// copy constructor
-	~CUSBStandardHub (void);
+	// cannot return here because some destructors used in CKernel are not implemented
+
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
 	
-	boolean Configure (void);
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-	static CString *GetDeviceNames (CUSBDevice *pDevice);		// string deleted by caller
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
 
-private:
-	boolean EnumeratePorts (void);
-
-private:
-	TUSBHubDescriptor *m_pHubDesc;
-
-	unsigned m_nPorts;
-	CUSBDevice *m_pDevice[USB_HUB_MAX_PORTS];
-	TUSBPortStatus *m_pStatus[USB_HUB_MAX_PORTS];
-
-	static unsigned s_nDeviceNumber;
-};
-
-#endif
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

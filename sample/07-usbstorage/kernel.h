@@ -31,7 +31,6 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/dwhcidevice.h>
-#include <circle/usb/usbstandardhub.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -64,7 +63,6 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CDWHCIDevice		m_DWHCI;
-	CUSBStandardHub		m_USBHub1;
 };
 
 #endif

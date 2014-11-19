@@ -20,15 +20,10 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o \
-	  usbconfigparser.o usbdevice.o usbendpoint.o usbhostcontroller.o usbrequest.o \
-	  smsc951x.o macaddress.o netdevice.o usbdevicefactory.o usbstandardhub.o \
-	  usbmassdevice.o \
-	  dwhciframeschednper.o dwhciframeschedper.o usbkeyboard.o \
-	  dwhcirootport.o usbhiddevice.o usbmouse.o
+OBJS	= keyboardbehaviour.o keymap.o
 
-libusb.a: $(OBJS)
-	rm -f libusb.a
-	$(AR) cr libusb.a $(OBJS)
+libinput.a: $(OBJS)
+	rm -f libinput.a
+	$(AR) cr libinput.a $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

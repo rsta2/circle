@@ -7,6 +7,10 @@ cd usb
 make $1 $2 || exit
 cd ..
 
+cd input
+make $1 $2 || exit
+cd ..
+
 cd ..
 
 cd sample

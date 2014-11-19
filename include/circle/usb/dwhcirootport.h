@@ -1,5 +1,5 @@
 //
-// util.h
+// dwhcirootport.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,42 +17,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _util_h
-#define _util_h
+#ifndef _circle_usb_dwhcirootport_h
+#define _circle_usb_dwhcirootport_h
 
+#include <circle/usb/usbdevice.h>
 #include <circle/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+class CDWHCIDevice;
 
-void *memset (void *pBuffer, int nValue, size_t nLength);
+class CDWHCIRootPort
+{
+public:
+	CDWHCIRootPort (CDWHCIDevice *pHost);
+	~CDWHCIRootPort (void);
 
-void *memcpy (void *pDest, const void *pSrc, size_t nLength);
+	boolean Initialize (void);
 
-int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength);
+private:
+	CDWHCIDevice *m_pHost;
 
-size_t strlen (const char *pString);
-
-int strcmp (const char *pString1, const char *pString2);
-
-char *strcpy (char *pDest, const char *pSrc);
-
-char *strncpy (char *pDest, const char *pSrc, size_t nMaxLen);
-
-char *strcat (char *pDest, const char *pSrc);
-
-int char2int (char chValue);			// with sign extension
-
-u16 le2be16 (u16 usValue);
-
-u32 le2be32 (u32 ulValue);
-
-// util_fast
-void *memcpyblk (void *pDest, const void *pSrc, size_t nLength);	// nLength must be multiple of 16
-
-#ifdef __cplusplus
-}
-#endif
+	CUSBDevice *m_pDevice;
+};
 
 #endif

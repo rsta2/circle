@@ -19,25 +19,16 @@
 //
 #include <circle/usb/usbstandardhub.h>
 #include <circle/usb/usbdevicefactory.h>
+#include <circle/devicenameservice.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
 #include <circle/debug.h>
 #include <circle/macros.h>
 #include <assert.h>
 
-static const char FromHub[] = "usbhub";
+unsigned CUSBStandardHub::s_nDeviceNumber = 1;
 
-CUSBStandardHub::CUSBStandardHub (CUSBHostController *pHost, TUSBSpeed Speed)
-:	CUSBDevice (pHost, Speed, 0, 1),
-	m_pHubDesc (0),
-	m_nPorts (0)
-{
-	for (unsigned nPort = 0; nPort < USB_HUB_MAX_PORTS; nPort++)
-	{
-		m_pDevice[nPort] = 0;
-		m_pStatus[nPort] = 0;
-	}
-}
+static const char FromHub[] = "usbhub";
 
 CUSBStandardHub::CUSBStandardHub (CUSBDevice *pDevice)
 :	CUSBDevice (pDevice),
@@ -181,6 +172,10 @@ boolean CUSBStandardHub::Configure (void)
 		
 		return FALSE;
 	}
+
+	CString DeviceName;
+	DeviceName.Format ("uhub%u", s_nDeviceNumber++);
+	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 
 	if (!EnumeratePorts ())
 	{

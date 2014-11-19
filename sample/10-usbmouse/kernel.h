@@ -49,6 +49,11 @@ public:
 	boolean Initialize (void);
 
 	TShutdownMode Run (void);
+
+private:
+	void MouseStatusHandler (unsigned nButtons, int  nDisplacementX, int nDisplacementY);
+
+	static void MouseStatusStub (unsigned nButtons, int  nDisplacementX, int nDisplacementY);
 	
 private:
 	// do not change this order
@@ -63,6 +68,13 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CDWHCIDevice		m_DWHCI;
+
+	int m_nPosX;
+	int m_nPosY;
+
+	volatile TShutdownMode m_ShutdownMode;
+
+	static CKernel *s_pThis;
 };
 
 #endif

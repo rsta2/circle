@@ -1,5 +1,5 @@
 //
-// util.h
+// usbmouse.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,42 +17,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _util_h
-#define _util_h
+#ifndef _circle_usb_usbmouse_h
+#define _circle_usb_usbmouse_h
 
+#include <circle/usb/usbhiddevice.h>
 #include <circle/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define MOUSE_DISPLACEMENT_MIN	-127
+#define MOUSE_DISPLACEMENT_MAX	127
 
-void *memset (void *pBuffer, int nValue, size_t nLength);
+#define MOUSE_BUTTON_LEFT	(1 << 0)
+#define MOUSE_BUTTON_RIGHT	(1 << 1)
+#define MOUSE_BUTTON_MIDDLE	(1 << 2)
 
-void *memcpy (void *pDest, const void *pSrc, size_t nLength);
+typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY);
 
-int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength);
+class CUSBMouseDevice : public CUSBHIDDevice
+{
+public:
+	CUSBMouseDevice (CUSBDevice *pDevice);
+	~CUSBMouseDevice (void);
 
-size_t strlen (const char *pString);
+	boolean Configure (void);
 
-int strcmp (const char *pString1, const char *pString2);
+	void RegisterStatusHandler (TMouseStatusHandler *pStatusHandler);
 
-char *strcpy (char *pDest, const char *pSrc);
+private:
+	void ReportHandler (const u8 *pReport);
 
-char *strncpy (char *pDest, const char *pSrc, size_t nMaxLen);
+private:
+	TMouseStatusHandler *m_pStatusHandler;
 
-char *strcat (char *pDest, const char *pSrc);
-
-int char2int (char chValue);			// with sign extension
-
-u16 le2be16 (u16 usValue);
-
-u32 le2be32 (u32 ulValue);
-
-// util_fast
-void *memcpyblk (void *pDest, const void *pSrc, size_t nLength);	// nLength must be multiple of 16
-
-#ifdef __cplusplus
-}
-#endif
+	static unsigned s_nDeviceNumber;
+};
 
 #endif

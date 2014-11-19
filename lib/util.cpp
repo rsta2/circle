@@ -165,6 +165,18 @@ char *strcat (char *pDest, const char *pSrc)
 	return pDest;
 }
 
+int char2int (char chValue)
+{
+	int nResult = chValue;
+
+	if (nResult > 0x7F)
+	{
+		nResult |= -0x100;
+	}
+
+	return nResult;
+}
+
 u16 le2be16 (u16 usValue)
 {
 	return    ((usValue & 0x00FF) << 8)

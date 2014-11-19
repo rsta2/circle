@@ -25,9 +25,11 @@
 #include <circle/timer.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
+#include <circle/usb/dwhcirootport.h>
 #include <circle/usb/dwhcixferstagedata.h>
 #include <circle/usb/dwhciregister.h>
 #include <circle/usb/dwhci.h>
+#include <circle/usb/usb.h>
 #include <circle/types.h>
 
 class CDWHCIDevice : public CUSBHostController
@@ -40,6 +42,12 @@ public:
 
 	boolean SubmitBlockingRequest (CUSBRequest *pURB);
 	boolean SubmitAsyncRequest (CUSBRequest *pURB);
+
+private:
+	TUSBSpeed GetPortSpeed (void);
+	boolean OvercurrentDetected (void);
+	void DisableRootPort (void);
+	friend class CDWHCIRootPort;
 
 private:
 	boolean InitCore (void);
@@ -89,13 +97,15 @@ private:
 private:
 	CInterruptSystem *m_pInterruptSystem;
 	CTimer *m_pTimer;
-	
+
 	unsigned m_nChannels;
 	volatile unsigned m_nChannelAllocated;		// one bit per channel, set if allocated
 
 	CDWHCITransferStageData *m_pStageData[DWHCI_MAX_CHANNELS];
 
 	volatile boolean m_bWaiting;
+
+	CDWHCIRootPort m_RootPort;
 };
 
 #endif

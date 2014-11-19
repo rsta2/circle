@@ -20,23 +20,17 @@
 #ifndef _usbkeyboard_h
 #define _usbkeyboard_h
 
-#include <circle/usb/usbdevice.h>
-#include <circle/usb/usbendpoint.h>
-#include <circle/usb/usbrequest.h>
-#include <circle/usb/keymap.h>
+#include <circle/usb/usbhiddevice.h>
+#include <circle/input/keyboardbehaviour.h>
 #include <circle/types.h>
 
-#define BOOT_REPORT_SIZE	8
-
-typedef void TKeyPressedHandler (const char *pString);
-typedef void TSelectConsoleHandler (unsigned nConsole);
-typedef void TShutdownHandler (void);
+#define USBKEYB_REPORT_SIZE	8
 
 // The raw handler is called when the keyboard sends a status report (on status change and/or continously).
 typedef void TKeyStatusHandlerRaw (unsigned char	ucModifiers,	// see usbhid.h
 				   const unsigned char	RawKeys[6]);	// key code or 0 in each byte
 
-class CUSBKeyboardDevice : public CUSBDevice
+class CUSBKeyboardDevice : public CUSBHIDDevice
 {
 public:
 	CUSBKeyboardDevice (CUSBDevice *pDevice);
@@ -53,38 +47,17 @@ public:
 	void RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw);
 
 private:
-	void GenerateKeyEvent (u8 ucPhyCode);
-	
-	boolean StartRequest (void);
-	
-	void CompletionRoutine (CUSBRequest *pURB);
-	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);
+	void ReportHandler (const u8 *pReport);
 
-	u8 GetModifiers (void) const;
-	u8 GetKeyCode (void) const;
+	static boolean FindByte (const u8 *pBuffer, u8 ucByte, unsigned nLength);
 
-	void TimerHandler (unsigned hTimer);
-	static void TimerStub (unsigned hTimer, void *pParam, void *pContext);
-	
 private:
-	u8 m_ucInterfaceNumber;
-	u8 m_ucAlternateSetting;
+	CKeyboardBehaviour m_Behaviour;
 
-	CUSBEndpoint *m_pReportEndpoint;
+	TKeyStatusHandlerRaw *m_pKeyStatusHandlerRaw;
 
-	TKeyPressedHandler	*m_pKeyPressedHandler;
-	TSelectConsoleHandler	*m_pSelectConsoleHandler;
-	TShutdownHandler	*m_pShutdownHandler;
-	TKeyStatusHandlerRaw	*m_pKeyStatusHandlerRaw;
+	u8 m_LastReport[USBKEYB_REPORT_SIZE];
 
-	CUSBRequest *m_pURB;
-	u8 *m_pReportBuffer;
-
-	u8 m_ucLastPhyCode;
-	unsigned m_hTimer;
-
-	CKeyMap m_KeyMap;
-	
 	static unsigned s_nDeviceNumber;
 };
 

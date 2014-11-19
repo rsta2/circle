@@ -27,8 +27,7 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_USBHub1 (&m_DWHCI, USBSpeedHigh, 0, 1)
+	m_DWHCI (&m_Interrupt, &m_Timer)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -77,11 +76,6 @@ boolean CKernel::Initialize (void)
 		bOK = m_DWHCI.Initialize ();
 	}
 
-	if (bOK)
-	{
-		bOK = m_USBHub1.Initialize ();
-	}
-
 	return bOK;
 }
 
@@ -89,8 +83,14 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
+	CUSBDevice *pUSBHub1 = (CUSBDevice *) m_DeviceNameService.GetDevice ("uhub1", FALSE);
+	if (pUSBHub1 == 0)
+	{
+		m_Logger.Write (FromKernel, LogPanic, "USB hub not found");
+	}
+
 	TUSBDeviceDescriptor DeviceDescriptor;
-	if (m_DWHCI.GetDescriptor (m_USBHub1.GetEndpoint0 (),
+	if (m_DWHCI.GetDescriptor (pUSBHub1->GetEndpoint0 (),
 				   DESCRIPTOR_DEVICE, DESCRIPTOR_INDEX_DEFAULT,
 				   &DeviceDescriptor, sizeof DeviceDescriptor)
 	    == sizeof DeviceDescriptor)
