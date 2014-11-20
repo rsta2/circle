@@ -36,9 +36,10 @@ USB library
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
 * CUSBConfigurationParser: Parses and validates an USB configuration descriptor.
-* CUSBDevice: Encapsulates a general USB device (basic device initialization, derived from CDevice).
-* CUSBDeviceFactory: Creates the device objects of the different supported USB devices.
+* CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
+* CUSBDeviceFactory: Creates the function objects of the different supported USB functions.
 * CUSBEndpoint: Encapsulates an endpoint of an USB device (supports control, bulk and interrupt EPs).
+* CUSBFunction: Encapsulates a function (represented by an interface descriptor) of an USB device.
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse), boot protocol only
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards

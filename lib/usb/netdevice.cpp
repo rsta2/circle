@@ -19,8 +19,8 @@
 //
 #include <circle/usb/netdevice.h>
 
-CNetDevice::CNetDevice (CUSBDevice *pDevice)
-:	CUSBDevice (pDevice)
+CNetDevice::CNetDevice (CUSBFunction *pFunction)
+:	CUSBFunction (pFunction)
 {
 }
 

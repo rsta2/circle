@@ -124,23 +124,26 @@ void CKernel::MouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDi
 	}
 	else
 	{
-		m_nPosX += nDisplacementX;
-		if ((unsigned) m_nPosX >= m_Screen.GetWidth ())
+		int nPosX = m_nPosX + nDisplacementX;
+		if ((unsigned) nPosX >= m_Screen.GetWidth ())
 		{
-			m_nPosX -= nDisplacementX;
+			nPosX -= nDisplacementX;
 		}
 
-		m_nPosY += nDisplacementY;
-		if ((unsigned) m_nPosY >= m_Screen.GetHeight ())
+		int nPosY = m_nPosY + nDisplacementY;
+		if ((unsigned) nPosY >= m_Screen.GetHeight ())
 		{
-			m_nPosY -= nDisplacementY;
+			nPosY -= nDisplacementY;
 		}
 
 		if (nButtons & (MOUSE_BUTTON_LEFT | MOUSE_BUTTON_RIGHT))
 		{
-			m_Screen.SetPixel ((unsigned) m_nPosX, (unsigned) m_nPosY,
-					   nButtons & MOUSE_BUTTON_LEFT ? NORMAL_COLOR : HIGH_COLOR);
+			DrawLine (m_nPosX, m_nPosY, nPosX, nPosY,
+				  nButtons & MOUSE_BUTTON_LEFT ? NORMAL_COLOR : HIGH_COLOR);
 		}
+
+		m_nPosX = nPosX;
+		m_nPosY = nPosY;
 	}
 }
 
@@ -148,4 +151,42 @@ void CKernel::MouseStatusStub (unsigned nButtons, int nDisplacementX, int nDispl
 {
 	assert (s_pThis != 0);
 	s_pThis->MouseStatusHandler (nButtons, nDisplacementX, nDisplacementY);
+}
+
+void CKernel::DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenColor Color)
+{
+	// Bresenham algorithm
+
+	int nDeltaX = nPosX2-nPosX1 >= 0 ? nPosX2-nPosX1 : nPosX1-nPosX2;
+	int nSignX  = nPosX1 < nPosX2 ? 1 : -1;
+
+	int nDeltaY = -(nPosY2-nPosY1 >= 0 ? nPosY2-nPosY1 : nPosY1-nPosY2);
+	int nSignY  = nPosY1 < nPosY2 ? 1 : -1;
+
+	int nError = nDeltaX + nDeltaY;
+
+	while (1)
+	{
+		m_Screen.SetPixel ((unsigned) nPosX1, (unsigned) nPosY1, Color);
+
+		if (   nPosX1 == nPosX2
+		    && nPosY1 == nPosY2)
+		{
+			break;
+		}
+
+		int nError2 = nError + nError;
+
+		if (nError2 > nDeltaY)
+		{
+			nError += nDeltaY;
+			nPosX1 += nSignX;
+		}
+
+		if (nError2 < nDeltaX)
+		{
+			nError += nDeltaX;
+			nPosY1 += nSignY;
+		}
+	}
 }

@@ -19,8 +19,6 @@
 //
 #include <circle/usb/dwhcirootport.h>
 #include <circle/usb/dwhcidevice.h>
-#include <circle/usb/usbdevicefactory.h>
-#include <circle/usb/usbstandardhub.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -65,41 +63,17 @@ boolean CDWHCIRootPort::Initialize (void)
 		return FALSE;
 	}
 
-	CString *pNames = CUSBStandardHub::GetDeviceNames (m_pDevice);
-	assert (pNames != 0);
-
-	CLogger::Get ()->Write (FromDWHCIRoot, LogNotice, "Device %s found", (const char *) *pNames);
-
-	delete pNames;
-
-	// now create specific device from default device
-	CUSBDevice *pChild = CUSBDeviceFactory::GetDevice (m_pDevice);
-	if (pChild != 0)
+	if (!m_pDevice->Configure ())
 	{
-		delete m_pDevice;		// delete default device
-		m_pDevice = pChild;		// assign specific device
-
-		if (!m_pDevice->Configure ())
-		{
-			CLogger::Get ()->Write (FromDWHCIRoot, LogError, "Cannot configure device");
-
-			delete m_pDevice;
-			m_pDevice = 0;
-
-			return FALSE;
-		}
-
-		CLogger::Get ()->Write (FromDWHCIRoot, LogDebug, "Device configured");
-	}
-	else
-	{
-		CLogger::Get ()->Write (FromDWHCIRoot, LogNotice, "Device is not supported");
+		CLogger::Get ()->Write (FromDWHCIRoot, LogWarning, "Cannot configure device");
 
 		delete m_pDevice;
 		m_pDevice = 0;
 
 		return FALSE;
 	}
+
+	CLogger::Get ()->Write (FromDWHCIRoot, LogDebug, "Device configured");
 
 	// check for over-current
 	if (m_pHost->OvercurrentDetected ())

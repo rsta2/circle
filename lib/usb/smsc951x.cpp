@@ -127,8 +127,8 @@ static const char FromSMSC951x[] = "smsc951x";
 
 unsigned CSMSC951xDevice::s_nDeviceNumber = 0;
 
-CSMSC951xDevice::CSMSC951xDevice (CUSBDevice *pDevice)
-:	CNetDevice (pDevice),
+CSMSC951xDevice::CSMSC951xDevice (CUSBFunction *pFunction)
+:	CNetDevice (pFunction),
 	m_pEndpointBulkIn (0),
 	m_pEndpointBulkOut (0),
 	m_pTxBuffer (0)
@@ -167,22 +167,7 @@ boolean CSMSC951xDevice::Configure (void)
 	m_MACAddress.Format (&MACString);
 	CLogger::Get ()->Write (FromSMSC951x, LogDebug, "MAC address is %s", (const char *) MACString);
 
-	const TUSBConfigurationDescriptor *pConfigDesc =
-		(TUSBConfigurationDescriptor *) GetDescriptor (DESCRIPTOR_CONFIGURATION);
-	if (   pConfigDesc == 0
-	    || pConfigDesc->bNumInterfaces != 1)
-	{
-		ConfigurationError (FromSMSC951x);
-
-		return FALSE;
-	}
-
-	const TUSBInterfaceDescriptor *pInterfaceDesc =
-		(TUSBInterfaceDescriptor *) GetDescriptor (DESCRIPTOR_INTERFACE);
-	if (   pInterfaceDesc == 0
-	    || pInterfaceDesc->bInterfaceNumber	 != 0x00
-	    || pInterfaceDesc->bAlternateSetting != 0x00
-	    || pInterfaceDesc->bNumEndpoints	 != 3)
+	if (GetNumEndpoints () != 3)
 	{
 		ConfigurationError (FromSMSC951x);
 
@@ -203,7 +188,7 @@ boolean CSMSC951xDevice::Configure (void)
 					return FALSE;
 				}
 
-				m_pEndpointBulkIn = new CUSBEndpoint (this, pEndpointDesc);
+				m_pEndpointBulkIn = new CUSBEndpoint (GetDevice (), pEndpointDesc);
 			}
 			else							// Output
 			{
@@ -214,7 +199,7 @@ boolean CSMSC951xDevice::Configure (void)
 					return FALSE;
 				}
 
-				m_pEndpointBulkOut = new CUSBEndpoint (this, pEndpointDesc);
+				m_pEndpointBulkOut = new CUSBEndpoint (GetDevice (), pEndpointDesc);
 			}
 		}
 	}
@@ -227,9 +212,9 @@ boolean CSMSC951xDevice::Configure (void)
 		return FALSE;
 	}
 
-	if (!CUSBDevice::Configure ())
+	if (!CUSBFunction::Configure ())
 	{
-		CLogger::Get ()->Write (FromSMSC951x, LogError, "Cannot set configuration");
+		CLogger::Get ()->Write (FromSMSC951x, LogError, "Cannot set interface");
 
 		return FALSE;
 	}

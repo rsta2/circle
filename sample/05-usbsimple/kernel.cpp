@@ -83,14 +83,14 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CUSBDevice *pUSBHub1 = (CUSBDevice *) m_DeviceNameService.GetDevice ("uhub1", FALSE);
+	CUSBFunction *pUSBHub1 = (CUSBFunction *) m_DeviceNameService.GetDevice ("uhub1", FALSE);
 	if (pUSBHub1 == 0)
 	{
 		m_Logger.Write (FromKernel, LogPanic, "USB hub not found");
 	}
 
 	TUSBDeviceDescriptor DeviceDescriptor;
-	if (m_DWHCI.GetDescriptor (pUSBHub1->GetEndpoint0 (),
+	if (m_DWHCI.GetDescriptor (pUSBHub1->GetDevice ()->GetEndpoint0 (),
 				   DESCRIPTOR_DEVICE, DESCRIPTOR_INDEX_DEFAULT,
 				   &DeviceDescriptor, sizeof DeviceDescriptor)
 	    == sizeof DeviceDescriptor)

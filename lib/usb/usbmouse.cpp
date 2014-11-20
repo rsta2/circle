@@ -30,8 +30,8 @@ unsigned CUSBMouseDevice::s_nDeviceNumber = 1;
 
 static const char FromUSBMouse[] = "umouse";
 
-CUSBMouseDevice::CUSBMouseDevice (CUSBDevice *pDevice)
-:	CUSBHIDDevice (pDevice, REPORT_SIZE),
+CUSBMouseDevice::CUSBMouseDevice (CUSBFunction *pFunction)
+:	CUSBHIDDevice (pFunction, REPORT_SIZE),
 	m_pStatusHandler (0)
 {
 }
@@ -45,7 +45,7 @@ boolean CUSBMouseDevice::Configure (void)
 {
 	if (!CUSBHIDDevice::Configure ())
 	{
-		CLogger::Get ()->Write (FromUSBMouse, LogError, "Cannot set configuration");
+		CLogger::Get ()->Write (FromUSBMouse, LogError, "Cannot configure HID device");
 
 		return FALSE;
 	}

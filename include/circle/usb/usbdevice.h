@@ -20,34 +20,36 @@
 #ifndef _usbdevice_h
 #define _usbdevice_h
 
-#include <circle/device.h>
 #include <circle/usb/usb.h>
 #include <circle/usb/usbconfigparser.h>
+#include <circle/usb/usbfunction.h>
+#include <circle/logger.h>
 #include <circle/string.h>
 #include <circle/types.h>
+
+#define USBDEV_MAX_FUNCTIONS	10
 
 enum TDeviceNameSelector		// do not change this order
 {
 	DeviceNameVendor,
 	DeviceNameDevice,
-	DeviceNameInterface,
 	DeviceNameUnknown
 };
 
 class CUSBHostController;
 class CUSBEndpoint;
 
-class CUSBDevice : public CDevice
+class CUSBDevice
 {
 public:
 	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, u8 ucHubAddress, u8 ucHubPortNumber);
-	CUSBDevice (CUSBDevice *pDevice);			// copy constructor
 	virtual ~CUSBDevice (void);
 	
 	virtual boolean Initialize (void);			// onto address state (phase 1)
 	virtual boolean Configure (void);			// onto configured state (phase 2)
 
 	CString *GetName (TDeviceNameSelector Selector) const;	// string deleted by caller
+	CString *GetNames (void) const;				// string deleted by caller
 	
 	u8 GetAddress (void) const;
 	TUSBSpeed GetSpeed (void) const;
@@ -65,6 +67,8 @@ public:
 	const TUSBDescriptor *GetDescriptor (u8 ucType);	// returns 0 if not found
 	void ConfigurationError (const char *pSource) const;
 
+	void LogWrite (TLogSeverity Severity, const char *pMessage, ...);
+
 private:
 	void SetAddress (u8 ucAddress);
 
@@ -81,6 +85,8 @@ private:
 	TUSBConfigurationDescriptor *m_pConfigDesc;
 
 	CUSBConfigurationParser *m_pConfigParser;
+
+	CUSBFunction *m_pFunction[USBDEV_MAX_FUNCTIONS];
 
 	static u8 s_ucNextAddress;
 };

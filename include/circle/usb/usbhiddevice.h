@@ -20,15 +20,15 @@
 #ifndef _circle_usb_usbhiddevice_h
 #define _circle_usb_usbhiddevice_h
 
-#include <circle/usb/usbdevice.h>
+#include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/types.h>
 
-class CUSBHIDDevice : public CUSBDevice
+class CUSBHIDDevice : public CUSBFunction
 {
 public:
-	CUSBHIDDevice (CUSBDevice *pDevice, unsigned nReportSize);
+	CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize);
 	~CUSBHIDDevice (void);
 
 	boolean Configure (void);

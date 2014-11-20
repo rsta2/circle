@@ -29,7 +29,7 @@
 class CSMSC951xDevice : public CNetDevice
 {
 public:
-	CSMSC951xDevice (CUSBDevice *pDevice);
+	CSMSC951xDevice (CUSBFunction *pFunction);
 	~CSMSC951xDevice (void);
 
 	boolean Configure (void);

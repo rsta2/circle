@@ -35,7 +35,7 @@ typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDi
 class CUSBMouseDevice : public CUSBHIDDevice
 {
 public:
-	CUSBMouseDevice (CUSBDevice *pDevice);
+	CUSBMouseDevice (CUSBFunction *pFunction);
 	~CUSBMouseDevice (void);
 
 	boolean Configure (void);

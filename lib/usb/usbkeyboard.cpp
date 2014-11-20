@@ -27,8 +27,8 @@ unsigned CUSBKeyboardDevice::s_nDeviceNumber = 1;
 
 static const char FromUSBKbd[] = "usbkbd";
 
-CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBDevice *pDevice)
-:	CUSBHIDDevice (pDevice, USBKEYB_REPORT_SIZE),
+CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBFunction *pFunction)
+:	CUSBHIDDevice (pFunction, USBKEYB_REPORT_SIZE),
 	m_pKeyStatusHandlerRaw (0)
 {
 	memset (m_LastReport, 0, sizeof m_LastReport);
@@ -43,7 +43,7 @@ boolean CUSBKeyboardDevice::Configure (void)
 {
 	if (!CUSBHIDDevice::Configure ())
 	{
-		CLogger::Get ()->Write (FromUSBKbd, LogError, "Cannot set configuration");
+		CLogger::Get ()->Write (FromUSBKbd, LogError, "Cannot configure HID device");
 
 		return FALSE;
 	}

@@ -29,7 +29,8 @@ CUSBConfigurationParser::CUSBConfigurationParser (const void *pBuffer, unsigned 
 	m_nBufLen (nBufLen),
 	m_bValid (FALSE),
 	m_pEndPosition (SKIP_BYTES (m_pBuffer, nBufLen)),
-	m_pCurrentPosition (m_pBuffer),
+	m_pNextPosition (m_pBuffer),
+	m_pCurrentDescriptor (0),
 	m_pErrorPosition (m_pBuffer)
 {
 	assert (m_pBuffer != 0);
@@ -121,9 +122,28 @@ CUSBConfigurationParser::CUSBConfigurationParser (const void *pBuffer, unsigned 
 	m_bValid = TRUE;
 }
 
+CUSBConfigurationParser::CUSBConfigurationParser (CUSBConfigurationParser *pParser)
+{
+	assert (pParser != 0);
+
+	m_pBuffer	     = pParser->m_pBuffer;
+	m_nBufLen	     = pParser->m_nBufLen;
+	m_bValid	     = pParser->m_bValid;
+	m_pEndPosition	     = pParser->m_pEndPosition;
+	m_pNextPosition	     = pParser->m_pNextPosition;
+	m_pCurrentDescriptor = pParser->m_pCurrentDescriptor;
+	m_pErrorPosition     = pParser->m_pErrorPosition;
+}
+
 CUSBConfigurationParser::~CUSBConfigurationParser (void)
 {
 	m_pBuffer = 0;
+	m_nBufLen = 0;
+	m_bValid = FALSE;
+	m_pEndPosition = 0;
+	m_pNextPosition = 0;
+	m_pCurrentDescriptor = 0;
+	m_pErrorPosition = 0;
 }
 
 boolean CUSBConfigurationParser::IsValid (void) const
@@ -137,12 +157,12 @@ const TUSBDescriptor *CUSBConfigurationParser::GetDescriptor (u8 ucType)
 
 	const TUSBDescriptor *pResult = 0;
 	
-	while (m_pCurrentPosition < m_pEndPosition)
+	while (m_pNextPosition < m_pEndPosition)
 	{
-		u8 ucDescLen  = m_pCurrentPosition->Header.bLength;
-		u8 ucDescType = m_pCurrentPosition->Header.bDescriptorType;
+		u8 ucDescLen  = m_pNextPosition->Header.bLength;
+		u8 ucDescType = m_pNextPosition->Header.bDescriptorType;
 
-		TUSBDescriptor *pDescEnd = SKIP_BYTES (m_pCurrentPosition, ucDescLen);
+		TUSBDescriptor *pDescEnd = SKIP_BYTES (m_pNextPosition, ucDescLen);
 		assert (pDescEnd <= m_pEndPosition);
 
 		if (   ucType     == DESCRIPTOR_ENDPOINT
@@ -153,12 +173,12 @@ const TUSBDescriptor *CUSBConfigurationParser::GetDescriptor (u8 ucType)
 
 		if (ucDescType == ucType)
 		{
-			pResult = m_pCurrentPosition;
-			m_pCurrentPosition = pDescEnd;
+			pResult = m_pNextPosition;
+			m_pNextPosition = pDescEnd;
 			break;
 		}
 
-		m_pCurrentPosition = pDescEnd;
+		m_pNextPosition = pDescEnd;
 	}
 
 	if (pResult != 0)
@@ -166,7 +186,17 @@ const TUSBDescriptor *CUSBConfigurationParser::GetDescriptor (u8 ucType)
 		m_pErrorPosition = pResult;
 	}
 
+	m_pCurrentDescriptor = pResult;
+	
 	return pResult;
+}
+
+const TUSBDescriptor *CUSBConfigurationParser::GetCurrentDescriptor (void)
+{
+	assert (m_bValid);
+	assert (m_pCurrentDescriptor != 0);
+
+	return m_pCurrentDescriptor;
 }
 
 void CUSBConfigurationParser::Error (const char *pSource) const

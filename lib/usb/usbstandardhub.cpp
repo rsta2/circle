@@ -30,8 +30,8 @@ unsigned CUSBStandardHub::s_nDeviceNumber = 1;
 
 static const char FromHub[] = "usbhub";
 
-CUSBStandardHub::CUSBStandardHub (CUSBDevice *pDevice)
-:	CUSBDevice (pDevice),
+CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
+:	CUSBFunction (pFunction),
 	m_pHubDesc (0),
 	m_nPorts (0)
 {
@@ -61,79 +61,25 @@ CUSBStandardHub::~CUSBStandardHub (void)
 
 boolean CUSBStandardHub::Configure (void)
 {
-	const TUSBDeviceDescriptor *pDeviceDesc = GetDeviceDescriptor ();
-	assert (pDeviceDesc != 0);
-
-	if (   pDeviceDesc->bDeviceClass       != USB_DEVICE_CLASS_HUB
-	    || pDeviceDesc->bDeviceSubClass    != 0
-	    || pDeviceDesc->bDeviceProtocol    != 2		// hub with multiple TTs
-	    || pDeviceDesc->bNumConfigurations != 1)
+	if (GetNumEndpoints () != 1)
 	{
-		CLogger::Get ()->Write (FromHub, LogError, "Unsupported hub (proto %u)",
-					(unsigned) pDeviceDesc->bDeviceProtocol);
+		ConfigurationError (FromHub);
 
 		return FALSE;
 	}
-
-	const TUSBConfigurationDescriptor *pConfigDesc =
-		(TUSBConfigurationDescriptor *) GetDescriptor (DESCRIPTOR_CONFIGURATION);
-	if (   pConfigDesc == 0
-	    || pConfigDesc->bNumInterfaces != 1)
+	
+	const TUSBEndpointDescriptor *pEndpointDesc =
+		(TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT);
+	if (   pEndpointDesc == 0
+	    || (pEndpointDesc->bEndpointAddress & 0x80) != 0x80		// input EP
+	    || (pEndpointDesc->bmAttributes     & 0x3F) != 0x03)	// interrupt EP
 	{
 		ConfigurationError (FromHub);
 
 		return FALSE;
 	}
 
-	const TUSBInterfaceDescriptor *pInterfaceDesc;
-	while ((pInterfaceDesc = (TUSBInterfaceDescriptor *) GetDescriptor (DESCRIPTOR_INTERFACE)) != 0)
-	{
-		if (   pInterfaceDesc->bInterfaceClass    != USB_DEVICE_CLASS_HUB
-		    || pInterfaceDesc->bInterfaceSubClass != 0
-		    || pInterfaceDesc->bInterfaceProtocol != 2)
-		{
-			continue;
-		}
-
-		if (pInterfaceDesc->bNumEndpoints != 1)
-		{
-			ConfigurationError (FromHub);
-
-			return FALSE;
-		}
-
-		const TUSBEndpointDescriptor *pEndpointDesc =
-			(TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT);
-		if (   pEndpointDesc == 0
-		    || (pEndpointDesc->bEndpointAddress & 0x80) != 0x80		// input EP
-		    || (pEndpointDesc->bmAttributes     & 0x3F) != 0x03)	// interrupt EP
-		{
-			ConfigurationError (FromHub);
-
-			return FALSE;
-		}
-
-		break;
-	}
-
-	if (pInterfaceDesc == 0)
-	{
-		ConfigurationError (FromHub);
-
-		return FALSE;
-	}
-
-	if (!CUSBDevice::Configure ())
-	{
-		CLogger::Get ()->Write (FromHub, LogError, "Cannot set configuration");
-
-		return FALSE;
-	}
-
-	if (GetHost ()->ControlMessage (GetEndpoint0 (),
-					REQUEST_OUT | REQUEST_TO_INTERFACE, SET_INTERFACE,
-					pInterfaceDesc->bAlternateSetting,
-					pInterfaceDesc->bInterfaceNumber, 0, 0) < 0)
+	if (!CUSBFunction::Configure ())
 	{
 		CLogger::Get ()->Write (FromHub, LogError, "Cannot set interface");
 
@@ -292,9 +238,8 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 			Speed = USBSpeedFull;
 		}
 
-		// first create default device
 		assert (m_pDevice[nPort] == 0);
-		m_pDevice[nPort] = new CUSBDevice (pHost, Speed, GetAddress (), nPort+1);
+		m_pDevice[nPort] = new CUSBDevice (pHost, Speed, GetDevice ()->GetAddress (), nPort+1);
 		assert (m_pDevice[nPort] != 0);
 
 		if (!m_pDevice[nPort]->Initialize ())
@@ -304,14 +249,6 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 
 			continue;
 		}
-
-		CString *pNames = GetDeviceNames (m_pDevice[nPort]);
-		assert (pNames != 0);
-
-		CLogger::Get ()->Write (FromHub, LogNotice,
-					"Port %u: Device %s found", nPort+1, (const char *) *pNames);
-
-		delete pNames;
 	}
 
 	// now configure devices
@@ -322,31 +259,18 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 			continue;
 		}
 
-		// now create specific device from default device
-		CUSBDevice *pChild = CUSBDeviceFactory::GetDevice (m_pDevice[nPort]);
-		if (pChild != 0)
+		if (!m_pDevice[nPort]->Configure ())
 		{
-			delete m_pDevice[nPort];		// delete default device
-			m_pDevice[nPort] = pChild;		// assign specific device
+			CLogger::Get ()->Write (FromHub, LogWarning,
+						"Port %u: Cannot configure device", nPort+1);
 
-			if (!m_pDevice[nPort]->Configure ())
-			{
-				CLogger::Get ()->Write (FromHub, LogError,
-							"Port %u: Cannot configure device", nPort+1);
-
-				continue;
-			}
-			
-			CLogger::Get ()->Write (FromHub, LogDebug, "Port %u: Device configured", nPort+1);
-		}
-		else
-		{
-			CLogger::Get ()->Write (FromHub, LogNotice,
-						"Port %u: Device is not supported", nPort+1);
-			
 			delete m_pDevice[nPort];
 			m_pDevice[nPort] = 0;
+
+			continue;
 		}
+		
+		CLogger::Get ()->Write (FromHub, LogDebug, "Port %u: Device configured", nPort+1);
 	}
 
 	// again check for over-current
@@ -408,36 +332,4 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 	}
 
 	return bResult;
-}
-
-CString *CUSBStandardHub::GetDeviceNames (CUSBDevice *pDevice)
-{
-	assert (pDevice != 0);
-	
-	CString *pResult = new CString;
-
-	for (unsigned nSelector = DeviceNameVendor; nSelector < DeviceNameUnknown; nSelector++)
-	{
-		CString *pName = pDevice->GetName ((TDeviceNameSelector) nSelector);
-		assert (pName != 0);
-
-		if (pName->Compare ("unknown") != 0)
-		{
-			if (pResult->GetLength () > 0)
-			{
-				pResult->Append (", ");
-			}
-
-			pResult->Append (*pName);
-		}
-		
-		delete pName;
-	}
-
-	if (pResult->GetLength () == 0)
-	{
-		*pResult = "unknown";
-	}
-
-	return pResult;
 }

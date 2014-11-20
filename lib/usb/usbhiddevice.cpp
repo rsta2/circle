@@ -25,8 +25,8 @@
 
 static const char FromUSBHID[] = "usbhid";
 
-CUSBHIDDevice::CUSBHIDDevice (CUSBDevice *pDevice, unsigned nReportSize)
-:	CUSBDevice (pDevice),
+CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize)
+:	CUSBFunction (pFunction),
 	m_nReportSize (nReportSize),
 	m_pReportEndpoint (0),
 	m_pURB (0),
@@ -48,63 +48,29 @@ CUSBHIDDevice::~CUSBHIDDevice (void)
 
 boolean CUSBHIDDevice::Configure (void)
 {
-	TUSBConfigurationDescriptor *pConfDesc =
-		(TUSBConfigurationDescriptor *) GetDescriptor (DESCRIPTOR_CONFIGURATION);
-	if (   pConfDesc == 0
-	    || pConfDesc->bNumInterfaces <  1)
-	{
-		ConfigurationError (FromUSBHID);
-
-		return FALSE;
-	}
-
-	TUSBInterfaceDescriptor *pInterfaceDesc;
-	while ((pInterfaceDesc = (TUSBInterfaceDescriptor *) GetDescriptor (DESCRIPTOR_INTERFACE)) != 0)
-	{
-		if (   pInterfaceDesc->bNumEndpoints	  <  1
-		    || pInterfaceDesc->bInterfaceClass	  != 0x03	// HID Class
-		    || pInterfaceDesc->bInterfaceSubClass != 0x01)	// Boot Interface Subclass
-		{
-			continue;
-		}
-
-		m_ucInterfaceNumber  = pInterfaceDesc->bInterfaceNumber;
-		m_ucAlternateSetting = pInterfaceDesc->bAlternateSetting;
-
-		TUSBEndpointDescriptor *pEndpointDesc =
-			(TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT);
-		if (   pEndpointDesc == 0
-		    || (pEndpointDesc->bEndpointAddress & 0x80) != 0x80		// Input EP
-		    || (pEndpointDesc->bmAttributes     & 0x3F)	!= 0x03)	// Interrupt EP
-		{
-			continue;
-		}
-
-		assert (m_pReportEndpoint == 0);
-		m_pReportEndpoint = new CUSBEndpoint (this, pEndpointDesc);
-		assert (m_pReportEndpoint != 0);
-
-		break;
-	}
-
-	if (m_pReportEndpoint == 0)
+	if (GetNumEndpoints () < 1)
 	{
 		ConfigurationError (FromUSBHID);
 
 		return FALSE;
 	}
 	
-	if (!CUSBDevice::Configure ())
+	TUSBEndpointDescriptor *pEndpointDesc =
+		(TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT);
+	if (   pEndpointDesc == 0
+	    || (pEndpointDesc->bEndpointAddress & 0x80) != 0x80		// Input EP
+	    || (pEndpointDesc->bmAttributes     & 0x3F)	!= 0x03)	// Interrupt EP
 	{
-		CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set configuration");
+		ConfigurationError (FromUSBHID);
 
 		return FALSE;
 	}
 
-	if (GetHost ()->ControlMessage (GetEndpoint0 (),
-					REQUEST_OUT | REQUEST_TO_INTERFACE, SET_INTERFACE,
-					m_ucAlternateSetting,
-					m_ucInterfaceNumber, 0, 0) < 0)
+	assert (m_pReportEndpoint == 0);
+	m_pReportEndpoint = new CUSBEndpoint (GetDevice (), pEndpointDesc);
+	assert (m_pReportEndpoint != 0);
+
+	if (!CUSBFunction::Configure ())
 	{
 		CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set interface");
 

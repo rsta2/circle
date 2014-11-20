@@ -20,16 +20,16 @@
 #ifndef _netdevice_h
 #define _netdevice_h
 
-#include <circle/usb/usbdevice.h>
+#include <circle/usb/usbfunction.h>
 #include <circle/usb/macaddress.h>
 #include <circle/types.h>
 
 #define FRAME_BUFFER_SIZE	1600
 
-class CNetDevice : public CUSBDevice
+class CNetDevice : public CUSBFunction
 {
 public:
-	CNetDevice (CUSBDevice *pDevice);
+	CNetDevice (CUSBFunction *pFunction);
 	virtual ~CNetDevice (void);
 
 	virtual boolean Configure (void) = 0;

@@ -18,7 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/usbdevicefactory.h>
-#include <circle/logger.h>
 #include <assert.h>
 
 // for factory
@@ -28,31 +27,14 @@
 #include <circle/usb/usbmouse.h>
 #include <circle/usb/smsc951x.h>
 
-CUSBDevice *CUSBDeviceFactory::GetDevice (CUSBDevice *pParent)
-{
-	assert (pParent != 0);
-	
-	CUSBDevice *pResult;
-	if (   (pResult = GetDevice (pParent, pParent->GetName (DeviceNameVendor))) == 0
-	    && (pResult = GetDevice (pParent, pParent->GetName (DeviceNameDevice))) == 0
-	    && (pResult = GetDevice (pParent, pParent->GetName (DeviceNameInterface))) == 0)
-	{
-		return 0;
-	}
-
-	assert (pResult != 0);
-
-	return pResult;
-}
-
-CUSBDevice *CUSBDeviceFactory::GetDevice (CUSBDevice *pParent, CString *pName)
+CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
 {
 	assert (pParent != 0);
 	assert (pName != 0);
 	
-	CUSBDevice *pResult = 0;
+	CUSBFunction *pResult = 0;
 
-	if (pName->Compare ("dev9-0-2") == 0)
+	if (pName->Compare ("int9-0-2") == 0)
 	{
 		pResult = new CUSBStandardHub (pParent);
 	}
@@ -76,7 +58,7 @@ CUSBDevice *CUSBDeviceFactory::GetDevice (CUSBDevice *pParent, CString *pName)
 
 	if (pResult != 0)
 	{
-		CLogger::Get ()->Write ("usbdev", LogNotice, "Using device %s", (const char *) *pName);
+		pResult->GetDevice ()->LogWrite (LogNotice, "Using device/interface %s", (const char *) *pName);
 	}
 	
 	delete pName;

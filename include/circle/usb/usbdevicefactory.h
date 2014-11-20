@@ -20,16 +20,13 @@
 #ifndef _usbdevicefactory_h
 #define _usbdevicefactory_h
 
-#include <circle/usb/usbdevice.h>
+#include <circle/usb/usbfunction.h>
 #include <circle/string.h>
 
 class CUSBDeviceFactory
 {
 public:
-	static CUSBDevice *GetDevice (CUSBDevice *pParent);
-
-private:
-	static CUSBDevice *GetDevice (CUSBDevice *pParent, CString *pName);
+	static CUSBFunction *GetDevice (CUSBFunction *pParent, CString *pName);
 };
 
 #endif

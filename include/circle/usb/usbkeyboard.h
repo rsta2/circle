@@ -33,7 +33,7 @@ typedef void TKeyStatusHandlerRaw (unsigned char	ucModifiers,	// see usbhid.h
 class CUSBKeyboardDevice : public CUSBHIDDevice
 {
 public:
-	CUSBKeyboardDevice (CUSBDevice *pDevice);
+	CUSBKeyboardDevice (CUSBFunction *pFunction);
 	~CUSBKeyboardDevice (void);
 
 	boolean Configure (void);

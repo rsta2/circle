@@ -149,8 +149,8 @@ unsigned CUSBBulkOnlyMassStorageDevice::s_nDeviceNumber = 1;
 
 static const char FromUmsd[] = "umsd";
 
-CUSBBulkOnlyMassStorageDevice::CUSBBulkOnlyMassStorageDevice (CUSBDevice *pDevice)
-:	CUSBDevice (pDevice),
+CUSBBulkOnlyMassStorageDevice::CUSBBulkOnlyMassStorageDevice (CUSBFunction *pFunction)
+:	CUSBFunction (pFunction),
 	m_pEndpointIn (0),
 	m_pEndpointOut (0),
 	m_nCWBTag (0),
@@ -169,25 +169,7 @@ CUSBBulkOnlyMassStorageDevice::~CUSBBulkOnlyMassStorageDevice (void)
 
 int CUSBBulkOnlyMassStorageDevice::Configure (void)
 {
-	TUSBConfigurationDescriptor *pConfDesc =
-		(TUSBConfigurationDescriptor *) GetDescriptor (DESCRIPTOR_CONFIGURATION);
-	if (   pConfDesc == 0
-	    || pConfDesc->bNumInterfaces <  1)
-	{
-		ConfigurationError (FromUmsd);
-
-		return FALSE;
-	}
-
-	TUSBInterfaceDescriptor *pInterfaceDesc =
-		(TUSBInterfaceDescriptor *) GetDescriptor (DESCRIPTOR_INTERFACE);
-	if (   pInterfaceDesc == 0
-	    || pInterfaceDesc->bInterfaceNumber		!= 0x00
-	    || pInterfaceDesc->bAlternateSetting	!= 0x00
-	    || pInterfaceDesc->bNumEndpoints		<  2
-	    || pInterfaceDesc->bInterfaceClass		!= 0x08		// Mass Storage Class
-	    || pInterfaceDesc->bInterfaceSubClass	!= 0x06		// SCSI Transparent Command Set
-	    || pInterfaceDesc->bInterfaceProtocol	!= 0x50)	// Bulk-Only Transport
+	if (GetNumEndpoints () < 2)
 	{
 		ConfigurationError (FromUmsd);
 
@@ -208,7 +190,7 @@ int CUSBBulkOnlyMassStorageDevice::Configure (void)
 					return FALSE;
 				}
 
-				m_pEndpointIn = new CUSBEndpoint (this, pEndpointDesc);
+				m_pEndpointIn = new CUSBEndpoint (GetDevice (), pEndpointDesc);
 			}
 			else							// Output
 			{
@@ -219,7 +201,7 @@ int CUSBBulkOnlyMassStorageDevice::Configure (void)
 					return FALSE;
 				}
 
-				m_pEndpointOut = new CUSBEndpoint (this, pEndpointDesc);
+				m_pEndpointOut = new CUSBEndpoint (GetDevice (), pEndpointDesc);
 			}
 		}
 	}
@@ -232,9 +214,9 @@ int CUSBBulkOnlyMassStorageDevice::Configure (void)
 		return FALSE;
 	}
 
-	if (!CUSBDevice::Configure ())
+	if (!CUSBFunction::Configure ())
 	{
-		CLogger::Get ()->Write (FromUmsd, LogError, "Cannot set configuration");
+		CLogger::Get ()->Write (FromUmsd, LogError, "Cannot set interface");
 
 		return FALSE;
 	}

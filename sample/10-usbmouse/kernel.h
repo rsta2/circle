@@ -52,8 +52,9 @@ public:
 
 private:
 	void MouseStatusHandler (unsigned nButtons, int  nDisplacementX, int nDisplacementY);
-
 	static void MouseStatusStub (unsigned nButtons, int  nDisplacementX, int nDisplacementY);
+
+	void DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenColor Color);
 	
 private:
 	// do not change this order

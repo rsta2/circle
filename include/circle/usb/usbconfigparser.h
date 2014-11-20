@@ -27,11 +27,13 @@ class CUSBConfigurationParser
 {
 public:
 	CUSBConfigurationParser (const void *pBuffer, unsigned nBufLen);
+	CUSBConfigurationParser (CUSBConfigurationParser *pParser);		// copy constructor
 	~CUSBConfigurationParser (void);
 
 	boolean IsValid (void) const;
 
 	const TUSBDescriptor *GetDescriptor (u8 ucType);	// returns 0 if not found
+	const TUSBDescriptor *GetCurrentDescriptor (void);
 
 	void Error (const char *pSource) const;
 
@@ -40,7 +42,8 @@ private:
 	unsigned		 m_nBufLen;
 	boolean			 m_bValid;
 	const TUSBDescriptor	*m_pEndPosition;
-	const TUSBDescriptor	*m_pCurrentPosition;
+	const TUSBDescriptor	*m_pNextPosition;
+	const TUSBDescriptor	*m_pCurrentDescriptor;
 	const TUSBDescriptor	*m_pErrorPosition;
 };
 

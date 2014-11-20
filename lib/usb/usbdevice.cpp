@@ -20,18 +20,12 @@
 #include <circle/usb/usbdevice.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/usb/usbendpoint.h>
-#include <circle/logger.h>
+#include <circle/usb/usbdevicefactory.h>
 #include <circle/util.h>
 #include <circle/debug.h>
 #include <assert.h>
 
 #define MAX_CONFIG_DESC_SIZE		512		// best guess
-
-struct TConfigurationHeader
-{
-	TUSBConfigurationDescriptor Configuration;
-	TUSBInterfaceDescriptor	    Interface;
-};
 
 static const char FromDevice[] = "usbdev";
 
@@ -55,53 +49,21 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, u8 ucHubAddr
 	assert (m_pEndpoint0 != 0);
 	
 	assert (ucHubPortNumber >= 1);
-}
 
-CUSBDevice::CUSBDevice (CUSBDevice *pDevice)
-:	m_pEndpoint0 (0),
-	m_pDeviceDesc (0),
-	m_pConfigDesc (0),
-	m_pConfigParser (0)
-{
-	assert (pDevice != 0);
-
-	m_pHost		  = pDevice->m_pHost;
-	m_ucAddress	  = pDevice->m_ucAddress;
-	m_Speed		  = pDevice->m_Speed;
-	m_ucHubAddress	  = pDevice->m_ucHubAddress;
-	m_ucHubPortNumber = pDevice->m_ucHubPortNumber;
-	
-	m_pEndpoint0 = new CUSBEndpoint (pDevice->m_pEndpoint0, this);
-	assert (m_pEndpoint0 != 0);
-
-	if (pDevice->m_pDeviceDesc != 0)
+	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
 	{
-		m_pDeviceDesc = new TUSBDeviceDescriptor;
-		assert (m_pDeviceDesc != 0);
-
-		memcpy (m_pDeviceDesc, pDevice->m_pDeviceDesc, sizeof (TUSBDeviceDescriptor));
-	}
-
-	if (pDevice->m_pConfigDesc != 0)
-	{
-		unsigned nTotalLength = pDevice->m_pConfigDesc->wTotalLength;
-		assert (nTotalLength <= MAX_CONFIG_DESC_SIZE);
-
-		m_pConfigDesc = (TUSBConfigurationDescriptor *) new u8[nTotalLength];
-		assert (m_pConfigDesc != 0);
-
-		memcpy (m_pConfigDesc, pDevice->m_pConfigDesc, nTotalLength);
-
-		if (pDevice->m_pConfigParser != 0)
-		{
-			m_pConfigParser = new CUSBConfigurationParser (m_pConfigDesc, nTotalLength);
-			assert (m_pConfigParser != 0);
-		}
+		m_pFunction[nFunction] = 0;
 	}
 }
 
 CUSBDevice::~CUSBDevice (void)
 {
+	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
+	{
+		delete (m_pFunction[nFunction]);
+		m_pFunction[nFunction] = 0;
+	}
+
 	delete m_pConfigParser;
 	m_pConfigParser = 0;
 
@@ -132,7 +94,7 @@ boolean CUSBDevice::Initialize (void)
 				    m_pDeviceDesc, USB_DEFAULT_MAX_PACKET_SIZE)
 	    != USB_DEFAULT_MAX_PACKET_SIZE)
 	{
-		CLogger::Get ()->Write (FromDevice, LogError, "Cannot get device descriptor (short)");
+		LogWrite (LogError, "Cannot get device descriptor (short)");
 
 		delete m_pDeviceDesc;
 		m_pDeviceDesc = 0;
@@ -143,7 +105,7 @@ boolean CUSBDevice::Initialize (void)
 	if (   m_pDeviceDesc->bLength	      != sizeof *m_pDeviceDesc
 	    || m_pDeviceDesc->bDescriptorType != DESCRIPTOR_DEVICE)
 	{
-		CLogger::Get ()->Write (FromDevice, LogError, "Invalid device descriptor");
+		LogWrite (LogError, "Invalid device descriptor");
 
 		delete m_pDeviceDesc;
 		m_pDeviceDesc = 0;
@@ -158,7 +120,7 @@ boolean CUSBDevice::Initialize (void)
 				    m_pDeviceDesc, sizeof *m_pDeviceDesc)
 	    != (int) sizeof *m_pDeviceDesc)
 	{
-		CLogger::Get ()->Write (FromDevice, LogError, "Cannot get device descriptor");
+		LogWrite (LogError, "Cannot get device descriptor");
 
 		delete m_pDeviceDesc;
 		m_pDeviceDesc = 0;
@@ -173,15 +135,14 @@ boolean CUSBDevice::Initialize (void)
 	u8 ucAddress = s_ucNextAddress++;
 	if (ucAddress > USB_MAX_ADDRESS)
 	{
-		CLogger::Get ()->Write (FromDevice, LogError, "Too many devices");
+		LogWrite (LogError, "Too many devices");
 
 		return FALSE;
 	}
 
 	if (!m_pHost->SetAddress (m_pEndpoint0, ucAddress))
 	{
-		CLogger::Get ()->Write (FromDevice, LogError,
-					"Cannot set address %u", (unsigned) ucAddress);
+		LogWrite (LogError, "Cannot set address %u", (unsigned) ucAddress);
 
 		return FALSE;
 	}
@@ -197,8 +158,7 @@ boolean CUSBDevice::Initialize (void)
 				    m_pConfigDesc, sizeof *m_pConfigDesc)
 	    != (int) sizeof *m_pConfigDesc)
 	{
-		CLogger::Get ()->Write (FromDevice, LogError,
-					"Cannot get configuration descriptor (short)");
+		LogWrite (LogError, "Cannot get configuration descriptor (short)");
 
 		delete m_pConfigDesc;
 		m_pConfigDesc = 0;
@@ -210,7 +170,7 @@ boolean CUSBDevice::Initialize (void)
 	    || m_pConfigDesc->bDescriptorType != DESCRIPTOR_CONFIGURATION
 	    || m_pConfigDesc->wTotalLength    >  MAX_CONFIG_DESC_SIZE)
 	{
-		CLogger::Get ()->Write (FromDevice, LogError, "Invalid configuration descriptor");
+		LogWrite (LogError, "Invalid configuration descriptor");
 		
 		delete m_pConfigDesc;
 		m_pConfigDesc = 0;
@@ -230,7 +190,7 @@ boolean CUSBDevice::Initialize (void)
 				    m_pConfigDesc, nTotalLength)
 	    != (int) nTotalLength)
 	{
-		CLogger::Get ()->Write (FromDevice, LogError, "Cannot get configuration descriptor");
+		LogWrite (LogError, "Cannot get configuration descriptor");
 
 		delete m_pConfigDesc;
 		m_pConfigDesc = 0;
@@ -253,6 +213,96 @@ boolean CUSBDevice::Initialize (void)
 		return FALSE;
 	}
 
+	CString *pNames = GetNames ();
+	assert (pNames != 0);
+	LogWrite (LogNotice, "Device %s found", (const char *) *pNames);
+	delete pNames;
+
+	unsigned nFunction = 0;
+	u8 ucInterfaceNumber = 0;
+
+	TUSBInterfaceDescriptor *pInterfaceDesc;
+	while ((pInterfaceDesc = (TUSBInterfaceDescriptor *) m_pConfigParser->GetDescriptor (DESCRIPTOR_INTERFACE)) != 0)
+	{
+		if (   pInterfaceDesc->bInterfaceNumber != ucInterfaceNumber
+		    && pInterfaceDesc->bInterfaceNumber != ucInterfaceNumber+1)
+		{
+			LogWrite (LogDebug, "Alternate setting %u ignored",
+				  (unsigned) pInterfaceDesc->bAlternateSetting);
+
+			if (pInterfaceDesc->bInterfaceNumber == ucInterfaceNumber+1)
+			{
+				ucInterfaceNumber++;
+			}
+
+			continue;
+		}
+
+		assert (m_pConfigParser != 0);
+		assert (m_pFunction[nFunction] == 0);
+		m_pFunction[nFunction] = new CUSBFunction (this, m_pConfigParser);
+		assert (m_pFunction[nFunction] != 0);
+
+		if (!m_pFunction[nFunction]->Initialize ())
+		{
+			LogWrite (LogError, "Cannot initialize function");
+
+			delete m_pFunction[nFunction];
+			m_pFunction[nFunction] = 0;
+
+			continue;
+		}
+
+		CUSBFunction *pChild = 0;
+
+		if (nFunction == 0)
+		{
+			pChild = CUSBDeviceFactory::GetDevice (m_pFunction[nFunction], GetName (DeviceNameVendor));
+			if (pChild == 0)
+			{
+				pChild = CUSBDeviceFactory::GetDevice (m_pFunction[nFunction], GetName (DeviceNameDevice));
+			}
+		}
+
+		if (pChild == 0)
+		{
+			CString *pName = m_pFunction[nFunction]->GetInterfaceName ();
+			assert (pName != 0);
+
+			LogWrite (LogNotice, "Interface %s found", (const char *) *pName);
+
+			pChild = CUSBDeviceFactory::GetDevice (m_pFunction[nFunction], pName);
+		}
+
+		delete m_pFunction[nFunction];
+		m_pFunction[nFunction] = 0;
+
+		if (pChild == 0)
+		{
+			LogWrite (LogWarning, "Function is not supported");
+
+			continue;
+		}
+
+		m_pFunction[nFunction] = pChild;
+
+		if (++nFunction == USBDEV_MAX_FUNCTIONS)
+		{
+			LogWrite (LogWarning, "Too many functions per device");
+
+			break;
+		}
+
+		ucInterfaceNumber++;
+	}
+
+	if (nFunction == 0)
+	{
+		LogWrite (LogWarning, "Device has no supported function");
+
+		return FALSE;
+	}
+
 	return TRUE;
 }
 
@@ -268,13 +318,32 @@ boolean CUSBDevice::Configure (void)
 
 	if (!m_pHost->SetConfiguration (m_pEndpoint0, m_pConfigDesc->bConfigurationValue))
 	{
-		CLogger::Get ()->Write (FromDevice, LogError, "Cannot set configuration (%u)",
-					(unsigned) m_pConfigDesc->bConfigurationValue);
+		LogWrite (LogError, "Cannot set configuration (%u)", (unsigned) m_pConfigDesc->bConfigurationValue);
 
 		return FALSE;
 	}
 
-	return TRUE;
+	boolean bResult = FALSE;
+	
+	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
+	{
+		if (m_pFunction[nFunction] != 0)
+		{
+			if (!m_pFunction[nFunction]->Configure ())
+			{
+				LogWrite (LogError, "Cannot configure device");
+
+				delete m_pFunction[nFunction];
+				m_pFunction[nFunction] = 0;
+			}
+			else
+			{
+				bResult = TRUE;
+			}
+		}
+	}
+	
+	return bResult;
 }
 
 CString *CUSBDevice::GetName (TDeviceNameSelector Selector) const
@@ -304,21 +373,6 @@ CString *CUSBDevice::GetName (TDeviceNameSelector Selector) const
 				 (unsigned) m_pDeviceDesc->bDeviceProtocol);
 		break;
 		
-	case DeviceNameInterface: {
-		TConfigurationHeader *pConfig = (TConfigurationHeader *) m_pConfigDesc;
-		assert (pConfig != 0);
-		if (   pConfig->Configuration.wTotalLength < sizeof *pConfig
-		    || pConfig->Interface.bInterfaceClass == 0
-		    || pConfig->Interface.bInterfaceClass == 0xFF)
-		{
-			goto unknown;
-		}
-		pString->Format ("int%x-%x-%x",
-				 (unsigned) pConfig->Interface.bInterfaceClass,
-				 (unsigned) pConfig->Interface.bInterfaceSubClass,
-				 (unsigned) pConfig->Interface.bInterfaceProtocol);
-		} break;
-
 	default:
 		assert (0);
 	unknown:
@@ -329,12 +383,43 @@ CString *CUSBDevice::GetName (TDeviceNameSelector Selector) const
 	return pString;
 }
 
+CString *CUSBDevice::GetNames (void) const
+{
+	CString *pResult = new CString;
+	assert (pResult != 0);
+
+	for (unsigned nSelector = DeviceNameVendor; nSelector < DeviceNameUnknown; nSelector++)
+	{
+		CString *pName = GetName ((TDeviceNameSelector) nSelector);
+		assert (pName != 0);
+
+		if (pName->Compare ("unknown") != 0)
+		{
+			if (pResult->GetLength () > 0)
+			{
+				pResult->Append (", ");
+			}
+
+			pResult->Append (*pName);
+		}
+		
+		delete pName;
+	}
+
+	if (pResult->GetLength () == 0)
+	{
+		*pResult = "unknown";
+	}
+
+	return pResult;
+}
+
 void CUSBDevice::SetAddress (u8 ucAddress)
 {
 	assert (ucAddress <= USB_MAX_ADDRESS);
 	m_ucAddress = ucAddress;
 
-	//CLogger::Get ()->Write (FromDevice, LogDebug, "Device address set to %u", (unsigned) m_ucAddress);
+	//LogWrite (LogDebug, "Device address set to %u", (unsigned) m_ucAddress);
 }
 
 u8 CUSBDevice::GetAddress (void) const
@@ -391,4 +476,19 @@ void CUSBDevice::ConfigurationError (const char *pSource) const
 {
 	assert (m_pConfigParser != 0);
 	m_pConfigParser->Error (pSource);
+}
+
+void CUSBDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
+{
+	assert (pMessage != 0);
+
+	CString Source;
+	Source.Format ("%s%u-%u", FromDevice, (unsigned) m_ucHubAddress, (unsigned) m_ucHubPortNumber);
+
+	va_list var;
+	va_start (var, pMessage);
+
+	CLogger::Get ()->WriteV (Source, Severity, pMessage, var);
+
+	va_end (var);
 }

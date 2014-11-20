@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 9 of Circle. To get access to Step 1-8 use the git tag "Step1" to "Step8".
+> This is Step 10 of Circle. To get access to Step 1-9 use the git tag "Step1" to "Step9".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -14,16 +14,16 @@ There is a model-check in the USB library to prevent non-high-speed USB devices 
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation when it goes out to the public.
 
-The 9th Step
+The 10th Step
 ------------
 
-In this step GPIO interrupt support is introduced and demonstrated by a "software serial" sample (in *sample/09-softserial/*). See the *README* file in this directory for details.
+In this step USB mouse support is added and demonstrated by a simple "painting program" in *sample/10-usbmouse/*. See the *README* file in this directory for details.
 
-Furthermore all samples from Step 1-8 are now available in a subdirectory of *sample/* for reference. `makeall` builds only the latest sample (with the highest number).
+Please note that the class *CUSBStandardHub* must not be instanciated in *CKernel* anymore. This is done automatically from *CDWHCIDevice* now. Another change applies to the libraries used while linking. The new library *lib/input/libinput.a* must be used together with *lib/input/libusb.a*. In the samples this is already considered.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-8 the following features were introduced:
+In Step 1-9 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -50,6 +50,7 @@ In Step 1-8 the following features were introduced:
 * Driver for USB mass storage devices (bulk only, read and write)
 * Detects low- and full-speed devices
 * Driver for USB keyboards
+* Using GPIO interrupts
 
 Building
 --------
@@ -78,7 +79,7 @@ Directories
 -----------
 
 * include: The common header files, most class headers are in the include/circle/ subdirectory.
-* lib: The Circle class implementation and support files (USB library in the lib/usb/ subdirectory).
+* lib: The Circle class implementation and support files (other libraries are in subdirectories of lib/).
 * sample: Several sample applications using Circle in different subdirectories. The main function is implemented in the CKernel class.
 * boot: Do *make* in this directory to get the Raspberry Pi firmware files required to boot.
 * doc: Additional documentation files.
@@ -86,9 +87,17 @@ Directories
 Classes
 -------
 
-The following C++ classes were added to the Circle library or extended in the lib/ subdirectory:
+The following C++ classes were added to the USB library or extended in the lib/usb/ subdirectory:
 
-* CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
-* CGPIOPin: Encapsulates a GPIO pin, can be read, write or inverted. Supports interrupts. Simple initialization.
+* CDWHCIRootPort: Supporting class for CDWHCIDevice, initializes the root port.
+* CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
+* CUSBFunction: Encapsulates a function (represented by an interface descriptor) of an USB device.
+* CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse), boot protocol only
+* CUSBMouseDevice: Driver for USB mice
 
-The available Circle classes are listed in the file *doc/classes.txt* now.
+In this step the *input library* is added which currently offers the following classes in the lib/input/ subdirectory:
+
+* CKeyboardBehaviour: Generic keyboard function
+* CKeyMap: Keyboard translation map (two selectable default maps at the moment)
+
+The available Circle classes are listed in the file *doc/classes.txt*.

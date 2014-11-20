@@ -20,7 +20,7 @@
 #ifndef _usbmassdevice_h
 #define _usbmassdevice_h
 
-#include <circle/usb/usbdevice.h>
+#include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/types.h>
 
@@ -30,10 +30,10 @@
 
 #define UMSD_MAX_OFFSET		0x1FFFFFFFFFFULL		// 2TB
 
-class CUSBBulkOnlyMassStorageDevice : public CUSBDevice
+class CUSBBulkOnlyMassStorageDevice : public CUSBFunction
 {
 public:
-	CUSBBulkOnlyMassStorageDevice (CUSBDevice *pDevice);
+	CUSBBulkOnlyMassStorageDevice (CUSBFunction *pFunction);
 	~CUSBBulkOnlyMassStorageDevice (void);
 
 	boolean Configure (void);

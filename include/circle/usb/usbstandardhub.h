@@ -22,20 +22,18 @@
 
 #include <circle/usb/usb.h>
 #include <circle/usb/usbhub.h>
+#include <circle/usb/usbfunction.h>
 #include <circle/usb/usbdevice.h>
 #include <circle/usb/usbhostcontroller.h>
-#include <circle/string.h>
 #include <circle/types.h>
 
-class CUSBStandardHub : public CUSBDevice
+class CUSBStandardHub : public CUSBFunction
 {
 public:
-	CUSBStandardHub (CUSBDevice *pDevice);				// copy constructor
+	CUSBStandardHub (CUSBFunction *pFunction);
 	~CUSBStandardHub (void);
 	
 	boolean Configure (void);
-
-	static CString *GetDeviceNames (CUSBDevice *pDevice);		// string deleted by caller
 
 private:
 	boolean EnumeratePorts (void);
