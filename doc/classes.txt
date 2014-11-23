@@ -27,6 +27,7 @@ USB library
 * CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi.
 * CDWHCIFrameScheduler: Base class for a simple micro frame scheduler
 * CDWHCIFrameSchedulerNonPeriodic: Schedules the transmission of non-interrupt split frames to non-high-speed devices
+* CDWHCIFrameSchedulerNoSplit: Schedules the transmission of frames to direct attached non-high-speed devices
 * CDWHCIFrameSchedulerPeriodic: Schedules the transmission of interrupt split frames to non-high-speed devices
 * CDWHCIRegister: Supporting class for CDWHCIDevice, encapsulates a register of the HCI.
 * CDWHCIRootPort: Supporting class for CDWHCIDevice, initializes the root port.

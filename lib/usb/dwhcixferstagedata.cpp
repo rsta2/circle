@@ -20,6 +20,7 @@
 #include <circle/usb/dwhcixferstagedata.h>
 #include <circle/usb/dwhciframeschedper.h>
 #include <circle/usb/dwhciframeschednper.h>
+#include <circle/usb/dwhciframeschednsplit.h>
 #include <circle/usb/dwhci.h>
 #include <circle/logger.h>
 #include <assert.h>
@@ -118,6 +119,15 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 		}
 
 		assert (m_pFrameScheduler != 0);
+	}
+	else
+	{
+		if (   m_pDevice->GetHubAddress () == 0
+		    && m_Speed != USBSpeedHigh)
+		{
+			m_pFrameScheduler = new CDWHCIFrameSchedulerNoSplit (IsPeriodic ());
+			assert (m_pFrameScheduler != 0);
+		}
 	}
 }
 
@@ -369,7 +379,8 @@ u8 CDWHCITransferStageData::GetHubPortAddress (void) const
 
 u8 CDWHCITransferStageData::GetSplitPosition (void) const
 {
-	return DWHCI_HOST_CHAN_SPLIT_CTRL_ALL;		// TODO: may not work in any case
+	assert (m_nTransferSize <= 188);		// TODO
+	return DWHCI_HOST_CHAN_SPLIT_CTRL_ALL;
 }
 
 u32 CDWHCITransferStageData::GetStatusMask (void) const
@@ -377,7 +388,8 @@ u32 CDWHCITransferStageData::GetStatusMask (void) const
 	u32 nMask =   DWHCI_HOST_CHAN_INT_XFER_COMPLETE
 		    | DWHCI_HOST_CHAN_INT_ERROR_MASK;
 		    
-	if (m_bSplitTransaction)
+	if (   m_bSplitTransaction
+	    || IsPeriodic ())
 	{
 		nMask |=   DWHCI_HOST_CHAN_INT_ACK
 			 | DWHCI_HOST_CHAN_INT_NAK

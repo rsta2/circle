@@ -268,10 +268,16 @@ boolean CUSBDevice::Initialize (void)
 		{
 			CString *pName = m_pFunction[nFunction]->GetInterfaceName ();
 			assert (pName != 0);
+			if (pName->Compare ("unknown") != 0)
+			{
+				LogWrite (LogNotice, "Interface %s found", (const char *) *pName);
 
-			LogWrite (LogNotice, "Interface %s found", (const char *) *pName);
-
-			pChild = CUSBDeviceFactory::GetDevice (m_pFunction[nFunction], pName);
+				pChild = CUSBDeviceFactory::GetDevice (m_pFunction[nFunction], pName);
+			}
+			else
+			{
+				delete pName;
+			}
 		}
 
 		delete m_pFunction[nFunction];

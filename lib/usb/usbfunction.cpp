@@ -143,3 +143,9 @@ void CUSBFunction::ConfigurationError (const char *pSource) const
 	assert (pSource != 0);
 	m_pConfigParser->Error (pSource);
 }
+
+u8 CUSBFunction::GetInterfaceNumber (void) const
+{
+	assert (m_pInterfaceDesc != 0);
+	return m_pInterfaceDesc->bInterfaceNumber;
+}

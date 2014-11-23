@@ -51,6 +51,8 @@ public:
 	const TUSBDescriptor *GetDescriptor (u8 ucType);	// returns 0 if not found
 	void ConfigurationError (const char *pSource) const;
 
+	u8 GetInterfaceNumber (void) const;
+
 private:
 	CUSBDevice *m_pDevice;
 

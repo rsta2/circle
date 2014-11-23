@@ -1,3 +1,5 @@
 README
 
+This sample program is only working on Raspberry Pi Model B and B+.
+
 First blink 5 times to show the image was loaded right. After initializing the USB host controller the USB device descriptor of the on-board USB hub is read and dumped to the logger. That's it for now. You do not need to attach an USB device for this test.

@@ -81,20 +81,6 @@ CDWHCIDevice::~CDWHCIDevice (void)
 
 boolean CDWHCIDevice::Initialize (void)
 {
-	// Check model to prevent non-high-speed devices from over-clocking
-	CBcmPropertyTags Tags;
-	TPropertyTagSimple BoardRevision;
-	if (Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
-	{
-		unsigned nRevision = BoardRevision.nValue & 0xFFFF;
-		if (   (7 <= nRevision && nRevision <= 9)
-		    || nRevision >= 0x11)
-		{
-			CLogger::Get ()->Write (FromDWHCI, LogError, "Model is not supported");
-			return FALSE;
-		}
-	}
-
 	DataMemBarrier ();
 
 	assert (m_pInterruptSystem != 0);
@@ -425,7 +411,8 @@ boolean CDWHCIDevice::EnableRootPort (void)
 	HostPort.And (~DWHCI_HOST_PORT_RESET);
 	HostPort.Write ();
 
-	m_pTimer->MsDelay (10);		// see USB 2.0 spec (tRSTRCY)
+	// normally 10ms, seems to be too short for some devices
+	m_pTimer->MsDelay (20);		// see USB 2.0 spec (tRSTRCY)
 
 	return TRUE;
 }
@@ -802,7 +789,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		assert (   !pStageData->IsPeriodic ()
 			||    DWHCI_HOST_CHAN_XFER_SIZ_PID (TransferSize.Get ())
-				!= DWHCI_HOST_CHAN_XFER_SIZ_PID_MDATA);
+			   != DWHCI_HOST_CHAN_XFER_SIZ_PID_MDATA);
 
 		pStageData->TransactionComplete (ChanInterrupt.Read (),
 			DWHCI_HOST_CHAN_XFER_SIZ_PACKETS (TransferSize.Get ()),
@@ -819,13 +806,24 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 	switch (pStageData->GetState ())
 	{
 	case StageStateNoSplitTransfer:
-		DisableChannelInterrupt (nChannel);
-	
 		nStatus = pStageData->GetTransactionStatus ();
 		if (nStatus & DWHCI_HOST_CHAN_INT_ERROR_MASK)
 		{
 			CLogger::Get ()->Write (FromDWHCI, LogError,
 						"Transaction failed (status 0x%X)", nStatus);
+
+			pURB->SetStatus (0);
+		}
+		else if (   (nStatus & (DWHCI_HOST_CHAN_INT_NAK | DWHCI_HOST_CHAN_INT_NYET))
+			 && pStageData->IsPeriodic ())
+		{
+			pStageData->SetState (StageStatePeriodicDelay);
+
+			unsigned nInterval = pURB->GetEndpoint ()->GetInterval ();
+
+			m_pTimer->StartKernelTimer (MSEC2HZ (nInterval), TimerStub, pStageData, this);
+
+			break;
 		}
 		else
 		{
@@ -837,6 +835,8 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			pURB->SetStatus (1);
 		}
 		
+		DisableChannelInterrupt (nChannel);
+
 		delete pStageData;
 		m_pStageData[nChannel] = 0;
 
@@ -853,6 +853,8 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		{
 			CLogger::Get ()->Write (FromDWHCI, LogError,
 						"Transaction failed (status 0x%X)", nStatus);
+
+			pURB->SetStatus (0);
 
 			DisableChannelInterrupt (nChannel);
 
@@ -885,6 +887,8 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			CLogger::Get ()->Write (FromDWHCI, LogError,
 						"Transaction failed (status 0x%X)", nStatus);
 
+			pURB->SetStatus (0);
+
 			DisableChannelInterrupt (nChannel);
 
 			delete pStageData;
@@ -909,6 +913,8 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		{
 			if (!pStageData->BeginSplitCycle ())
 			{
+				pURB->SetStatus (0);
+
 				DisableChannelInterrupt (nChannel);
 
 				delete pStageData;
@@ -1029,10 +1035,18 @@ void CDWHCIDevice::TimerHandler (CDWHCITransferStageData *pStageData)
 
 	assert (pStageData != 0);
 	assert (pStageData->GetState () == StageStatePeriodicDelay);
-	pStageData->SetState (StageStateStartSplit);
+
+	if (pStageData->IsSplit ())
+	{
+		pStageData->SetState (StageStateStartSplit);
 	
-	pStageData->SetSplitComplete (FALSE);
-	pStageData->GetFrameScheduler ()->StartSplit ();
+		pStageData->SetSplitComplete (FALSE);
+		pStageData->GetFrameScheduler ()->StartSplit ();
+	}
+	else
+	{
+		pStageData->SetState (StageStateNoSplitTransfer);
+	}
 
 	StartTransaction (pStageData);
 
@@ -1103,9 +1117,9 @@ boolean CDWHCIDevice::WaitForBit (CDWHCIRegister *pRegister,
 
 		if (--nMsTimeout == 0)
 		{
-			CLogger::Get ()->Write (FromDWHCI, LogWarning, "Timeout");
+			//CLogger::Get ()->Write (FromDWHCI, LogWarning, "Timeout");
 #ifndef NDEBUG
-			pRegister->Dump ();
+			//pRegister->Dump ();
 #endif
 			return FALSE;
 		}

@@ -26,7 +26,8 @@ OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o \
 	  usbmassdevice.o \
 	  dwhciframeschednper.o dwhciframeschedper.o usbkeyboard.o \
 	  dwhcirootport.o usbhiddevice.o usbmouse.o \
-	  usbfunction.o
+	  usbfunction.o \
+	  dwhciframeschednsplit.o
 
 libusb.a: $(OBJS)
 	rm -f libusb.a

@@ -80,7 +80,7 @@ boolean CUSBHIDDevice::Configure (void)
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					SET_PROTOCOL, BOOT_PROTOCOL,
-					m_ucInterfaceNumber, 0, 0) < 0)
+					GetInterfaceNumber (), 0, 0) < 0)
 	{
 		CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set boot protocol");
 

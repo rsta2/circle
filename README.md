@@ -8,14 +8,12 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal environment for the Raspberry Pi. The main library should be useable on all existing models (but tested on model B and B+ only) but the USB library is working only on model B and B+ for now.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be useable on all existing models (tested on model A+, B and B+).
 
-There is a model-check in the USB library to prevent non-high-speed USB devices from overclocking because the USB physical layer is initialized to high-speed PHY. Furthermore there is an USB hub required to be connected to the root port to ensure device enumeration is working. This is always the case with model B and B+.
-
-Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation when it goes out to the public.
+Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
 The 10th Step
-------------
+-------------
 
 In this step USB mouse support is added and demonstrated by a simple "painting program" in *sample/10-usbmouse/*. See the *README* file in this directory for details.
 
@@ -89,6 +87,7 @@ Classes
 
 The following C++ classes were added to the USB library or extended in the lib/usb/ subdirectory:
 
+* CDWHCIFrameSchedulerNoSplit: Schedules the transmission of frames to direct attached non-high-speed devices.
 * CDWHCIRootPort: Supporting class for CDWHCIDevice, initializes the root port.
 * CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
 * CUSBFunction: Encapsulates a function (represented by an interface descriptor) of an USB device.

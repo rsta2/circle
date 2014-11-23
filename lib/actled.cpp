@@ -41,7 +41,7 @@ CActLED::CActLED (void)
 		}
 		else
 		{
-			// Model B+
+			// Model B+ and later
 			m_pPin = new CGPIOPin (47, GPIOModeOutput);
 			m_bActiveHigh = TRUE;
 		}

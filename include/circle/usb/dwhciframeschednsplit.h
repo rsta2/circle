@@ -1,5 +1,5 @@
 //
-// usbhiddevice.h
+// dwhciframeschednsplit.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,39 +17,30 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbhiddevice_h
-#define _circle_usb_usbhiddevice_h
+#ifndef _circle_usb_dwhciframeschednsplit_h
+#define _circle_usb_dwhciframeschednsplit_h
 
-#include <circle/usb/usbfunction.h>
-#include <circle/usb/usbendpoint.h>
-#include <circle/usb/usbrequest.h>
+#include <circle/usb/dwhciframescheduler.h>
 #include <circle/types.h>
 
-class CUSBHIDDevice : public CUSBFunction
+class CDWHCIFrameSchedulerNoSplit : public CDWHCIFrameScheduler
 {
 public:
-	CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize);
-	~CUSBHIDDevice (void);
+	CDWHCIFrameSchedulerNoSplit (boolean bIsPeriodic);
+	~CDWHCIFrameSchedulerNoSplit (void);
 
-	boolean Configure (void);
-
-private:
-	virtual void ReportHandler (const u8 *pReport) = 0;	// pReport is 0 on failure
-
-private:
-	boolean StartRequest (void);
-
-	void CompletionRoutine (CUSBRequest *pURB);
-	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);
+	void StartSplit (void);
+	boolean CompleteSplit (void);
+	void TransactionComplete (u32 nStatus);
+	
+	void WaitForFrame (void);
+	
+	boolean IsOddFrame (void) const;
 
 private:
-	unsigned m_nReportSize;
+	boolean m_bIsPeriodic;
 
-	CUSBEndpoint *m_pReportEndpoint;
-
-	CUSBRequest *m_pURB;
-
-	u8 *m_pReportBuffer;
+	unsigned m_nNextFrame;
 };
 
 #endif
