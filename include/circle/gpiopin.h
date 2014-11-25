@@ -20,6 +20,8 @@
 #ifndef _gpiopin_h
 #define _gpiopin_h
 
+#include <circle/types.h>
+
 #define GPIO_PINS	54
 
 enum TGPIOMode
@@ -59,7 +61,8 @@ public:
 	CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager = 0);
 	virtual ~CGPIOPin (void);
 
-	void SetMode (TGPIOMode Mode);
+	void SetMode (TGPIOMode	Mode,
+		      boolean	bInitPin = TRUE);	// also init pullup/down mode and output level
 	
 	void Write (unsigned nValue);
 	unsigned Read (void) const;

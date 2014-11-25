@@ -1,0 +1,8 @@
+README
+
+The libraries and samples in this directory (and its subdirectories) have to be build manually. To build a sample the library has to be build first.
+
+Go to the directory of your choice and do:
+
+make clean
+make

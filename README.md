@@ -79,6 +79,7 @@ Directories
 * include: The common header files, most class headers are in the include/circle/ subdirectory.
 * lib: The Circle class implementation and support files (other libraries are in subdirectories of lib/).
 * sample: Several sample applications using Circle in different subdirectories. The main function is implemented in the CKernel class.
+* addon: Contains contributed libraries and samples (only one at the moment, has to be build manually).
 * boot: Do *make* in this directory to get the Raspberry Pi firmware files required to boot.
 * doc: Additional documentation files.
 

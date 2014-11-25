@@ -34,7 +34,7 @@ AR	= $(PREFIX)ar
 
 AFLAGS	+= -I $(CIRCLEHOME)/include
 CFLAGS	+= -march=armv6 -mtune=arm1176jzf-s -Wall -Wno-psabi -fno-builtin -nostdinc -nostdlib \
-	   -undef -D__circle__ -I $(CIRCLEHOME)/include -O #-DNDEBUG
+	   -undef -D__circle__ -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -O #-DNDEBUG
 CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
 
 %.o: %.S

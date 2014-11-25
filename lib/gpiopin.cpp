@@ -34,7 +34,7 @@ CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
 {
 	assert (m_nPin < GPIO_PINS);
 	
-	SetMode (Mode);
+	SetMode (Mode, TRUE);
 }
 
 CGPIOPin::~CGPIOPin (void)
@@ -45,7 +45,7 @@ CGPIOPin::~CGPIOPin (void)
 	m_nPin = GPIO_PINS;
 }
 
-void CGPIOPin::SetMode (TGPIOMode Mode)
+void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 {
 	assert (Mode < GPIOModeUnknown);
 	m_Mode = Mode;
@@ -61,7 +61,8 @@ void CGPIOPin::SetMode (TGPIOMode Mode)
 		return;
 	}
 
-	if (m_Mode == GPIOModeOutput)		// TODO: Is this required?
+	if (   bInitPin
+	    && m_Mode == GPIOModeOutput)
 	{
 		SetPullUpMode (0);
 	}
@@ -75,22 +76,29 @@ void CGPIOPin::SetMode (TGPIOMode Mode)
 	nValue |= (m_Mode == GPIOModeOutput ? 1 : 0) << nShift;
 	write32 (nSelReg, nValue);
 
-	switch (m_Mode)
+	if (bInitPin)
 	{
-	case GPIOModeOutput:
-		Write (LOW);
-		break;
+		switch (m_Mode)
+		{
+		case GPIOModeInput:
+			SetPullUpMode (0);
+			break;
 
-	case GPIOModeInputPullUp:
-		SetPullUpMode (2);
-		break;
+		case GPIOModeOutput:
+			Write (LOW);
+			break;
 
-	case GPIOModeInputPullDown:
-		SetPullUpMode (1);
-		break;
+		case GPIOModeInputPullUp:
+			SetPullUpMode (2);
+			break;
 
-	default:
-		break;
+		case GPIOModeInputPullDown:
+			SetPullUpMode (1);
+			break;
+
+		default:
+			break;
+		}
 	}
 
 	DataMemBarrier ();
@@ -98,7 +106,8 @@ void CGPIOPin::SetMode (TGPIOMode Mode)
 
 void CGPIOPin::Write (unsigned nValue)
 {
-	assert (m_Mode == GPIOModeOutput);
+	// Output level can be set in input mode for subsequent switch to output
+	assert (m_Mode < GPIOModeAlternateFunction0);
 
 	DataMemBarrier ();
 
