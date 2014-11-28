@@ -10,6 +10,7 @@ Base library
 * CDevice: Base class for all devices
 * CDeviceNameService: Devices can be registered by name and retrieved later by this name
 * CExceptionHandler: Generates a stack-trace and a panic message if an abort exception occurs.
+* CGPIOClock: Using GPIO clocks, initialize, start and stop it.
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
 * CGPIOPin: Encapsulates a GPIO pin, can be read, write or inverted. Supports interrupts. Simple initialization.
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.

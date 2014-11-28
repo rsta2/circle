@@ -1,0 +1,3 @@
+README 
+
+This sample program shows the usage of GPIO clocks and provides a little sampling routine. GPIO clock 0 is initialized to generate an 125 KHz square wave signal on GPIO pin 4. The signal on GPIO pin 18 is sampled with a sampling rate of over 12 MHz and displayed on the screen afterwards. If you connect both pins you can see the square wave.

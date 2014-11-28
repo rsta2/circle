@@ -10,3 +10,4 @@ SAMPLES
 08-usbkeyboard		Echoing typed characters to screen, or keyboard raw mode
 09-softserial		GPIO interrupt demonstration, serial interface via non-UART GPIO-pins
 10-usbmouse		Little painting program with USB mouse support
+11-gpioclock		Using GPIO clock 0 to generate a square wave signal and sampling this signal to display it

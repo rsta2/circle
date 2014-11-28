@@ -1,27 +1,25 @@
 Circle
 ======
 
-> This is Step 10 of Circle. To get access to Step 1-9 use the git tag "Step1" to "Step9".
+> This is Step 11 of Circle. To get access to Step 1-10 use the git tag "Step1" to "Step10".
 
 > If you read this file in an editor you should switch line wrapping on.
 
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be useable on all existing models (tested on model A+, B and B+).
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be useable on all existing models (tested on model A+, B and B+). It provides several ready-tested C++ classes which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered some samples which demonstrate the use of its classes.
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
-The 10th Step
+The 11th Step
 -------------
 
-In this step USB mouse support is added and demonstrated by a simple "painting program" in *sample/10-usbmouse/*. See the *README* file in this directory for details.
-
-Please note that the class *CUSBStandardHub* must not be instanciated in *CKernel* anymore. This is done automatically from *CDWHCIDevice* now. Another change applies to the libraries used while linking. The new library *lib/input/libinput.a* must be used together with *lib/input/libusb.a*. In the samples this is already considered.
+In this step GPIO clock support is added and demonstrated in a simple "oscilloscope program" in *sample/11-gpioclock*. GPIO clock 0 generates a 125 KHz square wave signal which is sampled with about 12 MHz and displayed on the screen afterwards. See the *README* file in this directory for details.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-9 the following features were introduced:
+In Step 1-10 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -49,6 +47,7 @@ In Step 1-9 the following features were introduced:
 * Detects low- and full-speed devices
 * Driver for USB keyboards
 * Using GPIO interrupts
+* Driver for USB mice
 
 Building
 --------
@@ -86,18 +85,8 @@ Directories
 Classes
 -------
 
-The following C++ classes were added to the USB library or extended in the lib/usb/ subdirectory:
+The following C++ classes were added to the Circle base library:
 
-* CDWHCIFrameSchedulerNoSplit: Schedules the transmission of frames to direct attached non-high-speed devices.
-* CDWHCIRootPort: Supporting class for CDWHCIDevice, initializes the root port.
-* CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
-* CUSBFunction: Encapsulates a function (represented by an interface descriptor) of an USB device.
-* CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse), boot protocol only
-* CUSBMouseDevice: Driver for USB mice
-
-In this step the *input library* is added which currently offers the following classes in the lib/input/ subdirectory:
-
-* CKeyboardBehaviour: Generic keyboard function
-* CKeyMap: Keyboard translation map (two selectable default maps at the moment)
+* CGPIOClock: Using GPIO clocks, initialize, start and stop it.
 
 The available Circle classes are listed in the file *doc/classes.txt*.
