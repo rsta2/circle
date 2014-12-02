@@ -561,7 +561,7 @@ void CScreenDevice::DisplayChar (char chChar)
 {
 	// TODO: Insert mode
 	
-	if (' ' <= chChar && chChar <= '~')
+	if (' ' <= chChar)
 	{
 		DisplayChar (chChar, m_nCursorX, m_nCursorY, m_Color);
 

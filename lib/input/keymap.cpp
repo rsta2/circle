@@ -82,12 +82,14 @@ const char *CKeyMap::s_KeyStrings[KeyMaxCode-KeySpace] =
 	"."			// KeyKP_Period
 };
 
-const u8 CKeyMap::s_DefaultMap[PHY_MAX_CODE+1][K_ALTTAB+1] =
+const u16 CKeyMap::s_DefaultMap[PHY_MAX_CODE+1][K_ALTTAB+1] =
 {
 #if defined (DEFAULT_KEYMAP_UK)
 	#include "keymap_uk.h"
 #elif defined (DEFAULT_KEYMAP_DE)
 	#include "keymap_de.h"
+#elif defined (DEFAULT_KEYMAP_ES)
+	#include "keymap_es.h"
 #else
 	{KeyNone}		// ...
 #endif
@@ -121,7 +123,7 @@ boolean CKeyMap::ClearTable (u8 nTable)
 	return TRUE;
 }
 
-boolean CKeyMap::SetEntry (u8 nTable, u8 nPhyCode, u8 nValue)
+boolean CKeyMap::SetEntry (u8 nTable, u8 nPhyCode, u16 nValue)
 {
 	if (   nTable   > K_ALTTAB
 	    || nPhyCode == 0
@@ -136,7 +138,7 @@ boolean CKeyMap::SetEntry (u8 nTable, u8 nPhyCode, u8 nValue)
 	return TRUE;
 }
 
-u8 CKeyMap::Translate (u8 nPhyCode, u8 nModifiers)
+u16 CKeyMap::Translate (u8 nPhyCode, u8 nModifiers)
 {
 	if (   nPhyCode == 0
 	    || nPhyCode > PHY_MAX_CODE)
@@ -144,7 +146,7 @@ u8 CKeyMap::Translate (u8 nPhyCode, u8 nModifiers)
 		return KeyNone;
 	}
 
-	u8 nLogCodeNorm = m_KeyMap[nPhyCode][K_NORMTAB];
+	u16 nLogCodeNorm = m_KeyMap[nPhyCode][K_NORMTAB];
 
 	if (   nLogCodeNorm == KeyDelete
 	    && (nModifiers & (KEY_LCTRL_MASK | KEY_RCTRL_MASK))
@@ -182,7 +184,7 @@ u8 CKeyMap::Translate (u8 nPhyCode, u8 nModifiers)
 		nTable = K_SHIFTTAB;
 	}
 
-	u8 nLogCode = m_KeyMap[nPhyCode][nTable];
+	u16 nLogCode = m_KeyMap[nPhyCode][nTable];
 
 	switch (nLogCode)
 	{
@@ -202,7 +204,7 @@ u8 CKeyMap::Translate (u8 nPhyCode, u8 nModifiers)
 	return nLogCode;
 }
 
-const char *CKeyMap::GetString (u8 nKeyCode, u8 nModifiers, char Buffer[2]) const
+const char *CKeyMap::GetString (u16 nKeyCode, u8 nModifiers, char Buffer[2]) const
 {
 	if (   nKeyCode <= ' '
 	    || nKeyCode >= KeyMaxCode)

@@ -31,7 +31,7 @@
 enum TSpecialKey
 {
 	KeyNone  = 0x00,
-	KeySpace = 0x80,
+	KeySpace = 0x100,
 	KeyEscape,
 	KeyBackspace,
 	KeyTabulator,
@@ -113,22 +113,22 @@ public:
 	~CKeyMap (void);
 
 	boolean ClearTable (u8 nTable);
-	boolean SetEntry (u8 nTable, u8 nPhyCode, u8 nValue);
+	boolean SetEntry (u8 nTable, u8 nPhyCode, u16 nValue);
 
-	u8 Translate (u8 nPhyCode, u8 nModifiers);
-	const char *GetString (u8 nKeyCode, u8 nModifiers, char Buffer[2]) const;
+	u16 Translate (u8 nPhyCode, u8 nModifiers);
+	const char *GetString (u16 nKeyCode, u8 nModifiers, char Buffer[2]) const;
 
 	u8 GetLEDStatus (void) const;
 	
 private:
-	u8 m_KeyMap[PHY_MAX_CODE+1][K_ALTTAB+1];
+	u16 m_KeyMap[PHY_MAX_CODE+1][K_ALTTAB+1];
 
 	boolean m_bCapsLock;
 	boolean m_bNumLock;
 	boolean m_bScrollLock;
 	
 	static const char *s_KeyStrings[KeyMaxCode-KeySpace];
-	static const u8 s_DefaultMap[PHY_MAX_CODE+1][K_ALTTAB+1];
+	static const u16 s_DefaultMap[PHY_MAX_CODE+1][K_ALTTAB+1];
 };
 
 #endif

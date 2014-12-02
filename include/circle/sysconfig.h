@@ -52,5 +52,6 @@
 // default keyboard map (enable only one)
 //#define DEFAULT_KEYMAP_UK
 #define DEFAULT_KEYMAP_DE
+//#define DEFAULT_KEYMAP_ES
 
 #endif

@@ -72,9 +72,9 @@ void CKeyboardBehaviour::GenerateKeyEvent (u8 ucKeyCode)
 	char Buffer[2];
 
 	u8 ucModifiers = m_ucModifiers;
-	u8 ucLogCode = m_KeyMap.Translate (ucKeyCode, ucModifiers);
+	u16 usLogCode = m_KeyMap.Translate (ucKeyCode, ucModifiers);
 
-	switch (ucLogCode)
+	switch (usLogCode)
 	{
 	case ActionSwitchCapsLock:
 	case ActionSwitchNumLock:
@@ -95,7 +95,7 @@ void CKeyboardBehaviour::GenerateKeyEvent (u8 ucKeyCode)
 	case ActionSelectConsole12:
 		if (m_pSelectConsoleHandler != 0)
 		{
-			unsigned nConsole = ucLogCode - ActionSelectConsole1;
+			unsigned nConsole = usLogCode - ActionSelectConsole1;
 			assert (nConsole < 12);
 
 			(*m_pSelectConsoleHandler) (nConsole);
@@ -110,7 +110,7 @@ void CKeyboardBehaviour::GenerateKeyEvent (u8 ucKeyCode)
 		break;
 
 	default:
-		pKeyString = m_KeyMap.GetString (ucLogCode, ucModifiers, Buffer);
+		pKeyString = m_KeyMap.GetString (usLogCode, ucModifiers, Buffer);
 		if (   pKeyString != 0
 		    && m_pKeyPressedHandler != 0)
 		{

@@ -10,6 +10,7 @@
 #include <circle/bcm2835.h>
 #include <circle/timer.h>
 #include <circle/memio.h>
+#include <circle/synchronize.h>
 #include <assert.h>
 
 #define CLK_CTL_MASH(x)		((x) << 9)
@@ -58,15 +59,21 @@ void CGPIOClock::Start (unsigned nDivI, unsigned nDivF, unsigned nMASH)
 	CTimer::SimpleusDelay (10);
 
 	write32 (nCtlReg, read32 (nCtlReg) | ARM_CM_PASSWD | CLK_CTL_ENAB);
+
+	DataMemBarrier ();
 }
 
 void CGPIOClock::Stop (void)
 {
 	unsigned nCtlReg = ARM_CM_GP0CTL + (m_Clock * 8);
 
+	DataMemBarrier ();
+
 	write32 (nCtlReg, ARM_CM_PASSWD | CLK_CTL_KILL);
 	while (read32 (nCtlReg) & CLK_CTL_BUSY)
 	{
 		// wait for clock to stop
 	}
+
+	DataMemBarrier ();
 }

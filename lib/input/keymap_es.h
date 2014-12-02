@@ -1,3 +1,6 @@
+// by Jose Luis Sanchez
+// (modified)
+
 // Normal	Shift		AltGr
 {KeyNone,	KeyNone,	KeyNone},	// 0x00
 {KeyNone,	KeyNone,	KeyNone},	// 0x01
@@ -29,33 +32,33 @@
 {'x',		'X',		KeyNone},	// 0x1B
 {'y',		'Y',		KeyNone},	// 0x1C
 {'z',		'Z',		KeyNone},	// 0x1D
-{'1',		'!',		KeyNone},	// 0x1E
-{'2',		'\"',		KeyNone},	// 0x1F
-{'3',		'\x9C',		KeyNone},	// 0x20
-{'4',		'$',		KeyNone},	// 0x21
-{'5',		'%',		KeyNone},	// 0x22
-{'6',		'^',		KeyNone},	// 0x23
-{'7',		'&',		KeyNone},	// 0x24
-{'8',		'*',		KeyNone},	// 0x25
-{'9',		'(',		KeyNone},	// 0x26
-{'0',		')',		KeyNone},	// 0x27
+{'1',		'!',		'|'    },	// 0x1E
+{'2',		'\"',		'@'    },	// 0x1F
+{'3',		'·',		'#'    },	// 0x20
+{'4',		'$',		'~'    },	// 0x21
+{'5',		'%',		'\xAB' },	// 0x22
+{'6',		'&',		'\xAA' },	// 0x23
+{'7',		'/',		'{'    },	// 0x24
+{'8',		'(',		'['    },	// 0x25
+{'9',		')',		']'    },	// 0x26
+{'0',		'=',		'}'    },	// 0x27
 {KeyReturn,	KeyReturn,	KeyNone},	// 0x28
 {KeyEscape,	KeyEscape,	KeyNone},	// 0x29
 {KeyBackspace,	KeyBackspace,	KeyNone},	// 0x2A
 {KeyTabulator,	KeyTabulator,	KeyNone},	// 0x2B
 {KeySpace,	KeySpace,	KeyNone},	// 0x2C
-{'-',		'_',		KeyNone},	// 0x2D
-{'=',		'+',		KeyNone},	// 0x2E
-{'[',		'{',		KeyNone},	// 0x2F
-{']',		'}',		KeyNone},	// 0x30
-{'\\',		'|',		KeyNone},	// 0x31
-{'#',		'~',		KeyNone},	// 0x32
-{';',		':',		KeyNone},	// 0x33
-{'\'',		'@',		KeyNone},	// 0x34
-{'`',		'\xAA',		'|'}	,	// 0x35
-{',',		'<',		KeyNone},	// 0x36
-{'.',		'>',		KeyNone},	// 0x37
-{'/',		'?',		KeyNone},	// 0x38
+{'\'',		'?',		'\\'   },	// 0x2D
+{'\xAD',	'\xA8',		KeyNone},	// 0x2E
+{'`',		'^',		'['    },	// 0x2F
+{'+',		'*',		']'    },	// 0x30
+{KeyNone,	KeyNone,	KeyNone},	// 0x31
+{'\x87',	'\x80',		'}'    },	// 0x32
+{'\xA4',	'\xA5',		'~'    },	// 0x33
+{'´',		KeyNone,	'{'    },	// 0x34
+{'\xF8',	KeyNone,	'\\'   },	// 0x35
+{',',		';',		KeyNone},	// 0x36
+{'.',		':',		'\xFA' },	// 0x37
+{'-',		'_',		KeyNone},	// 0x38
 {KeyCapsLock,	KeyCapsLock,	KeyNone},	// 0x39
 {KeyF1,		KeyNone,	KeyNone},	// 0x3A
 {KeyF2,		KeyNone,	KeyNone},	// 0x3B
@@ -99,7 +102,7 @@
 {KeyPageUp,	KeyKP_9,	KeyNone},	// 0x61
 {KeyInsert,	KeyKP_0,	KeyNone},	// 0x62
 {KeyDelete,	KeyKP_Period,	KeyNone},	// 0x63
-{'\\',		'|',		KeyNone},	// 0x64
+{'<',		'>',		'|'    },	// 0x64
 {KeyApplication,KeyApplication,	KeyNone},	// 0x65
 {KeyNone,	KeyNone,	KeyNone},	// 0x66
 {KeyNone,	KeyNone,	KeyNone},	// 0x67
