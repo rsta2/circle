@@ -82,6 +82,8 @@ const char *CKeyMap::s_KeyStrings[KeyMaxCode-KeySpace] =
 	"."			// KeyKP_Period
 };
 
+#define C(chr)		((u16) (u8) (chr))
+
 const u16 CKeyMap::s_DefaultMap[PHY_MAX_CODE+1][K_ALTTAB+1] =
 {
 #if defined (DEFAULT_KEYMAP_UK)

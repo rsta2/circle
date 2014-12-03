@@ -17,7 +17,7 @@
 {'j',		'J',		KeyNone},	// 0x0D
 {'k',		'K',		KeyNone},	// 0x0E
 {'l',		'L',		KeyNone},	// 0x0F
-{'m',		'M',		'µ'},		// 0x10
+{'m',		'M',		C('µ')},	// 0x10
 {'n',		'N',		KeyNone},	// 0x11
 {'o',		'O',		KeyNone},	// 0x12
 {'p',		'P',		KeyNone},	// 0x13
@@ -32,8 +32,8 @@
 {'z',		'Z',		KeyNone},	// 0x1C
 {'y',		'Y',		KeyNone},	// 0x1D
 {'1',		'!',		KeyNone},	// 0x1E
-{'2',		'\"',		'²'},		// 0x1F
-{'3',		'§',		'³'},		// 0x20
+{'2',		'\"',		C('²')},	// 0x1F
+{'3',		C('§'),		C('³')},	// 0x20
 {'4',		'$',		KeyNone},	// 0x21
 {'5',		'%',		KeyNone},	// 0x22
 {'6',		'&',		KeyNone},	// 0x23
@@ -46,15 +46,15 @@
 {KeyBackspace,	KeyBackspace,	KeyNone},	// 0x2A
 {KeyTabulator,	KeyTabulator,	KeyNone},	// 0x2B
 {KeySpace,	KeySpace,	KeyNone},	// 0x2C
-{'ß',		'?',		'\\'}	,	// 0x2D
+{C('ß'),	'?',		'\\'}	,	// 0x2D
 {'\'',		'`',		KeyNone},	// 0x2E
-{'ü',		'Ü',		KeyNone},	// 0x2F
+{C('ü'),	C('Ü'),		KeyNone},	// 0x2F
 {'+',		'*',		'~'}	,	// 0x30
 {'#',		'\'',		KeyNone},	// 0x31
 {KeyNone,	KeyNone,	KeyNone},	// 0x32
-{'ö',		'Ö',		KeyNone},	// 0x33
-{'ä',		'Ä',		KeyNone},	// 0x34
-{'^',		'°',		KeyNone},	// 0x35
+{C('ö'),	C('Ö'),		KeyNone},	// 0x33
+{C('ä'),	C('Ä'),		KeyNone},	// 0x34
+{'^',		C('°'),		KeyNone},	// 0x35
 {',',		';',		KeyNone},	// 0x36
 {'.',		':',		KeyNone},	// 0x37
 {'-',		'_',		KeyNone},	// 0x38

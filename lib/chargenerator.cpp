@@ -23,7 +23,7 @@
 
 #undef GIMP_HEADER			// if font saved with GIMP with .h extension
 
-#define FIRSTCHAR	'!'
+#define FIRSTCHAR	0x21
 #define LASTCHAR	0xFF
 #define CHARCOUNT	(LASTCHAR - FIRSTCHAR + 1)
 
@@ -65,13 +65,14 @@ unsigned CCharGenerator::GetUnderline (void) const
 
 boolean CCharGenerator::GetPixel (char chAscii, unsigned nPosX, unsigned nPosY) const
 {
-	if (   chAscii < FIRSTCHAR
-	    || chAscii > LASTCHAR)
+	unsigned nAscii = (u8) chAscii;
+	if (   nAscii < FIRSTCHAR
+	    || nAscii > LASTCHAR)
 	{
 		return FALSE;
 	}
 
-	unsigned nIndex = chAscii - FIRSTCHAR;
+	unsigned nIndex = nAscii - FIRSTCHAR;
 	assert (nIndex < CHARCOUNT);
 
 	assert (nPosX < m_nCharWidth);
