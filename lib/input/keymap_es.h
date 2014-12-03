@@ -1,5 +1,6 @@
+// Use ISO-8859-1 when editing this file!
+
 // by Jose Luis Sanchez
-// (modified)
 
 // Normal	Shift		AltGr
 {KeyNone,	KeyNone,	KeyNone},	// 0x00
@@ -36,8 +37,8 @@
 {'2',		'\"',		'@'    },	// 0x1F
 {'3',		'·',		'#'    },	// 0x20
 {'4',		'$',		'~'    },	// 0x21
-{'5',		'%',		'\xAB' },	// 0x22
-{'6',		'&',		'\xAA' },	// 0x23
+{'5',		'%',		'½'    },	// 0x22
+{'6',		'&',		'¬'    },	// 0x23
 {'7',		'/',		'{'    },	// 0x24
 {'8',		'(',		'['    },	// 0x25
 {'9',		')',		']'    },	// 0x26
@@ -48,16 +49,16 @@
 {KeyTabulator,	KeyTabulator,	KeyNone},	// 0x2B
 {KeySpace,	KeySpace,	KeyNone},	// 0x2C
 {'\'',		'?',		'\\'   },	// 0x2D
-{'\xAD',	'\xA8',		KeyNone},	// 0x2E
+{'¡',		'¿',		KeyNone},	// 0x2E
 {'`',		'^',		'['    },	// 0x2F
 {'+',		'*',		']'    },	// 0x30
 {KeyNone,	KeyNone,	KeyNone},	// 0x31
-{'\x87',	'\x80',		'}'    },	// 0x32
-{'\xA4',	'\xA5',		'~'    },	// 0x33
-{'´',		KeyNone,	'{'    },	// 0x34
-{'\xF8',	KeyNone,	'\\'   },	// 0x35
+{'ç',		'Ç',		'}'    },	// 0x32
+{'ñ',		'Ñ',		'~'    },	// 0x33
+{'´',		'¨',		'{'    },	// 0x34
+{'º',		'ª',		'\\'   },	// 0x35
 {',',		';',		KeyNone},	// 0x36
-{'.',		':',		'\xFA' },	// 0x37
+{'.',		':',		'·'    },	// 0x37
 {'-',		'_',		KeyNone},	// 0x38
 {KeyCapsLock,	KeyCapsLock,	KeyNone},	// 0x39
 {KeyF1,		KeyNone,	KeyNone},	// 0x3A

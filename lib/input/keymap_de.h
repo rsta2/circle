@@ -1,3 +1,5 @@
+// Use ISO-8859-1 when editing this file!
+
 // Normal	Shift		AltGr
 {KeyNone,	KeyNone,	KeyNone},	// 0x00
 {KeyNone,	KeyNone,	KeyNone},	// 0x01
@@ -15,7 +17,7 @@
 {'j',		'J',		KeyNone},	// 0x0D
 {'k',		'K',		KeyNone},	// 0x0E
 {'l',		'L',		KeyNone},	// 0x0F
-{'m',		'M',		'\xE6'},	// 0x10
+{'m',		'M',		'µ'},		// 0x10
 {'n',		'N',		KeyNone},	// 0x11
 {'o',		'O',		KeyNone},	// 0x12
 {'p',		'P',		KeyNone},	// 0x13
@@ -30,8 +32,8 @@
 {'z',		'Z',		KeyNone},	// 0x1C
 {'y',		'Y',		KeyNone},	// 0x1D
 {'1',		'!',		KeyNone},	// 0x1E
-{'2',		'\"',		'\xFD'},	// 0x1F
-{'3',		KeyNone,	KeyNone},	// 0x20
+{'2',		'\"',		'²'},		// 0x1F
+{'3',		'§',		'³'},		// 0x20
 {'4',		'$',		KeyNone},	// 0x21
 {'5',		'%',		KeyNone},	// 0x22
 {'6',		'&',		KeyNone},	// 0x23
@@ -44,15 +46,15 @@
 {KeyBackspace,	KeyBackspace,	KeyNone},	// 0x2A
 {KeyTabulator,	KeyTabulator,	KeyNone},	// 0x2B
 {KeySpace,	KeySpace,	KeyNone},	// 0x2C
-{'\xE1',	'?',		'\\'}	,	// 0x2D
+{'ß',		'?',		'\\'}	,	// 0x2D
 {'\'',		'`',		KeyNone},	// 0x2E
-{'\x81',	'\x9A',		KeyNone},	// 0x2F
+{'ü',		'Ü',		KeyNone},	// 0x2F
 {'+',		'*',		'~'}	,	// 0x30
 {'#',		'\'',		KeyNone},	// 0x31
 {KeyNone,	KeyNone,	KeyNone},	// 0x32
-{'\x94',	'\x99',		KeyNone},	// 0x33
-{'\x84',	'\x8E',		KeyNone},	// 0x34
-{'^',		'\xF8',		KeyNone},	// 0x35
+{'ö',		'Ö',		KeyNone},	// 0x33
+{'ä',		'Ä',		KeyNone},	// 0x34
+{'^',		'°',		KeyNone},	// 0x35
 {',',		';',		KeyNone},	// 0x36
 {'.',		':',		KeyNone},	// 0x37
 {'-',		'_',		KeyNone},	// 0x38

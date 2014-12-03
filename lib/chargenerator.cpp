@@ -23,7 +23,7 @@
 
 #undef GIMP_HEADER			// if font saved with GIMP with .h extension
 
-#define FIRSTCHAR	0x00
+#define FIRSTCHAR	'!'
 #define LASTCHAR	0xFF
 #define CHARCOUNT	(LASTCHAR - FIRSTCHAR + 1)
 
