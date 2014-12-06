@@ -43,9 +43,13 @@ public:
 
 	unsigned long long Seek (unsigned long long ullOffset);
 
+	unsigned GetCapacity (void) const;
+
 private:
 	int TryRead (void *pBuffer, unsigned nCount);
 	int TryWrite (const void *pBuffer, unsigned nCount);
+
+	int Command (void *pCmdBlk, unsigned nCmdBlkLen, void *pBuffer, unsigned nBufLen, boolean bIn);
 
 	int Reset (void);
 
@@ -54,6 +58,7 @@ private:
 	CUSBEndpoint *m_pEndpointOut;
 
 	unsigned m_nCWBTag;
+	unsigned m_nBlockCount;
 	unsigned long long m_ullOffset;
 
 	static unsigned s_nDeviceNumber;

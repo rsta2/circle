@@ -21,6 +21,7 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
+#include <circle/timer.h>
 #include <circle/util.h>
 #include <circle/macros.h>
 #include <assert.h>
@@ -41,7 +42,7 @@ struct TCBW
 			Reserved1	: 4,
 			bCBWCBLength	: 5,		// valid length of the CBWCB in bytes
 			Reserved2	: 3;
-	// CBWCB follows
+	unsigned char	CBWCB[16];
 }
 PACKED;
 
@@ -61,6 +62,8 @@ PACKED;
 
 // SCSI Transparent Command Set
 
+#define SCSI_CONTROL		0x00
+
 struct TSCSIInquiry
 {
 	unsigned char	OperationCode,
@@ -70,15 +73,6 @@ struct TSCSIInquiry
 			Reserved,
 			AllocationLength,
 			Control;
-#define SCSI_INQUIRY_CONTROL	0x00
-}
-PACKED;
-
-struct TCBWInquiry
-{
-	TCBW		CBW;
-	TSCSIInquiry	SCSIInquiry;
-	unsigned char	Padding[10];
 }
 PACKED;
 
@@ -102,6 +96,70 @@ struct TSCSIInquiryResponse
 }
 PACKED;
 
+struct TSCSITestUnitReady
+{
+	unsigned char	OperationCode;
+#define SCSI_OP_TEST_UNIT_READY		0x00
+	unsigned int	Reserved;
+	unsigned char	Control;
+}
+PACKED;
+
+struct TSCSIRequestSense
+{
+	unsigned char	OperationCode;
+#define SCSI_REQUEST_SENSE		0x03
+	unsigned char	DescriptorFormat	: 1,		// set to 0
+			Reserved1		: 7;
+	unsigned short	Reserved2;
+	unsigned char	AllocationLength;
+	unsigned char	Control;
+}
+PACKED;
+
+struct TSCSIRequestSenseResponse7x
+{
+	unsigned char	ResponseCode		: 7,
+			Valid			: 1;
+	unsigned char	Obsolete;
+	unsigned char	SenseKey		: 4,
+			Reserved		: 1,
+			ILI			: 1,
+			EOM			: 1,
+			FileMark		: 1;
+	unsigned int	Information;				// big endian
+	unsigned char	AdditionalSenseLength;
+	unsigned int	CommandSpecificInformation;		// big endian
+	unsigned char	AdditionalSenseCode;
+	unsigned char	AdditionalSenseCodeQualifier;
+	unsigned char	FieldReplaceableUnitCode;
+	unsigned char	SenseKeySpecificHigh	: 7,
+			SKSV			: 1;
+	unsigned short	SenseKeySpecificLow;
+}
+PACKED;
+
+struct TSCSIReadCapacity10
+{
+	unsigned char	OperationCode;
+#define SCSI_OP_READ_CAPACITY10		0x25
+	unsigned char	Obsolete		: 1,
+			Reserved1		: 7;
+	unsigned int	LogicalBlockAddress;			// set to 0
+	unsigned short	Reserved2;
+	unsigned char	PartialMediumIndicator	: 1,		// set to 0
+			Reserved3		: 7;
+	unsigned char	Control;
+}
+PACKED;
+
+struct TSCSIReadCapacityResponse
+{
+	unsigned int	ReturnedLogicalBlockAddress;		// big endian
+	unsigned int	BlockLengthInBytes;			// big endian
+}
+PACKED;
+
 struct TSCSIRead10
 {
 	unsigned char	OperationCode,
@@ -112,14 +170,6 @@ struct TSCSIRead10
 	unsigned short	TransferLength;				// block count, big endian
 	unsigned char	Control;
 #define SCSI_READ_CONTROL	0x00
-}
-PACKED;
-
-struct TCBWRead
-{
-	TCBW		CBW;
-	TSCSIRead10	SCSIRead;
-	unsigned char	Padding[6];
 }
 PACKED;
 
@@ -137,14 +187,6 @@ struct TSCSIWrite10
 }
 PACKED;
 
-struct TCBWWrite
-{
-	TCBW		CBW;
-	TSCSIWrite10	SCSIWrite;
-	unsigned char	Padding[6];
-}
-PACKED;
-
 unsigned CUSBBulkOnlyMassStorageDevice::s_nDeviceNumber = 1;
 
 static const char FromUmsd[] = "umsd";
@@ -154,6 +196,7 @@ CUSBBulkOnlyMassStorageDevice::CUSBBulkOnlyMassStorageDevice (CUSBFunction *pFun
 	m_pEndpointIn (0),
 	m_pEndpointOut (0),
 	m_nCWBTag (0),
+	m_nBlockCount (0),
 	m_ullOffset (0)
 {
 }
@@ -221,67 +264,111 @@ int CUSBBulkOnlyMassStorageDevice::Configure (void)
 		return FALSE;
 	}
 
-	TCBWInquiry CBWInquiry;
-
-	CBWInquiry.CBW.dCWBSignature		= CBWSIGNATURE;
-	CBWInquiry.CBW.dCWBTag			= ++m_nCWBTag;
-	CBWInquiry.CBW.dCBWDataTransferLength	= sizeof (TSCSIInquiryResponse);
-	CBWInquiry.CBW.bmCBWFlags		= CBWFLAGS_DATA_IN;
-	CBWInquiry.CBW.bCBWLUN			= CBWLUN;
-	CBWInquiry.CBW.Reserved1		= 0;
-	CBWInquiry.CBW.bCBWCBLength		= sizeof (TSCSIInquiry);
-	CBWInquiry.CBW.Reserved2		= 0;
-
-	CBWInquiry.SCSIInquiry.OperationCode		= SCSI_OP_INQUIRY;
-	CBWInquiry.SCSIInquiry.LogicalUnitNumberEVPD	= 0;
-	CBWInquiry.SCSIInquiry.PageCode			= 0;
-	CBWInquiry.SCSIInquiry.Reserved			= 0;
-	CBWInquiry.SCSIInquiry.AllocationLength		= sizeof (TSCSIInquiryResponse);
-	CBWInquiry.SCSIInquiry.Control			= SCSI_INQUIRY_CONTROL;
+	TSCSIInquiry SCSIInquiry;
+	SCSIInquiry.OperationCode	  = SCSI_OP_INQUIRY;
+	SCSIInquiry.LogicalUnitNumberEVPD = 0;
+	SCSIInquiry.PageCode		  = 0;
+	SCSIInquiry.Reserved		  = 0;
+	SCSIInquiry.AllocationLength	  = sizeof (TSCSIInquiryResponse);
+	SCSIInquiry.Control		  = SCSI_CONTROL;
 
 	TSCSIInquiryResponse SCSIInquiryResponse;
-	TCSW CSW;
-
-	CUSBHostController *pHost = GetHost ();
-	assert (pHost != 0);
-
-	if (   pHost->Transfer (m_pEndpointOut, &CBWInquiry, sizeof CBWInquiry) < 0
-	    || pHost->Transfer (m_pEndpointIn, &SCSIInquiryResponse, sizeof SCSIInquiryResponse) != (int) sizeof SCSIInquiryResponse
-	    || pHost->Transfer (m_pEndpointIn, &CSW, sizeof CSW) != (int) sizeof CSW)
+	if (Command (&SCSIInquiry, sizeof SCSIInquiry,
+		     &SCSIInquiryResponse, sizeof SCSIInquiryResponse,
+		     TRUE) != (int) sizeof SCSIInquiryResponse)
 	{
 		CLogger::Get ()->Write (FromUmsd, LogError, "Device does not respond");
 
 		return FALSE;
 	}
 
-	if (   CSW.dCSWSignature != CSWSIGNATURE
-	    || CSW.dCSWTag       != m_nCWBTag)
-	{
-		CLogger::Get ()->Write (FromUmsd, LogError, "Invalid inquiry response");
-
-		return FALSE;
-	}
-
-	if (CSW.bCSWStatus != CSWSTATUS_PASSED)
-	{
-		CLogger::Get ()->Write (FromUmsd, LogError, "Inquiry failed (status 0x%02X)", (unsigned) CSW.bCSWStatus);
-
-		return FALSE;
-	}
-
-	if (CSW.dCSWDataResidue != 0)
-	{
-		CLogger::Get ()->Write (FromUmsd, LogError, "Invalid data residue on inquiry");
-
-		return FALSE;
-	}
-	
 	if (SCSIInquiryResponse.PeripheralDeviceType != SCSI_PDT_DIRECT_ACCESS_BLOCK)
 	{
 		CLogger::Get ()->Write (FromUmsd, LogError, "Unsupported device type: 0x%02X", (unsigned) SCSIInquiryResponse.PeripheralDeviceType);
 		
 		return FALSE;
 	}
+
+	unsigned nTries = 100;
+	while (--nTries)
+	{
+		TSCSITestUnitReady SCSITestUnitReady;
+		SCSITestUnitReady.OperationCode = SCSI_OP_TEST_UNIT_READY;
+		SCSITestUnitReady.Reserved	= 0;
+		SCSITestUnitReady.Control	= SCSI_CONTROL;
+
+		if (Command (&SCSITestUnitReady, sizeof SCSITestUnitReady, 0, 0, FALSE) >= 0)
+		{
+			break;
+		}
+
+		TSCSIRequestSense SCSIRequestSense;
+		SCSIRequestSense.OperationCode	  = SCSI_REQUEST_SENSE;
+		SCSIRequestSense.DescriptorFormat = 0;
+		SCSIRequestSense.Reserved1	  = 0;
+		SCSIRequestSense.Reserved2	  = 0;
+		SCSIRequestSense.AllocationLength = sizeof (TSCSIRequestSenseResponse7x);
+		SCSIRequestSense.Control	  = SCSI_CONTROL;
+
+		TSCSIRequestSenseResponse7x SCSIRequestSenseResponse7x;
+		if (Command (&SCSIRequestSense, sizeof SCSIRequestSense,
+			     &SCSIRequestSenseResponse7x, sizeof SCSIRequestSenseResponse7x,
+			     TRUE) < 0)
+		{
+			CLogger::Get ()->Write (FromUmsd, LogError, "Request sense failed");
+
+			return FALSE;
+		}
+
+		CTimer::Get ()->MsDelay (100);
+	}
+
+	if (nTries == 0)
+	{
+		CLogger::Get ()->Write (FromUmsd, LogError, "Unit is not ready");
+
+		return FALSE;
+	}
+
+	TSCSIReadCapacity10 SCSIReadCapacity;
+	SCSIReadCapacity.OperationCode		= SCSI_OP_READ_CAPACITY10;
+	SCSIReadCapacity.Obsolete		= 0;
+	SCSIReadCapacity.Reserved1		= 0;
+	SCSIReadCapacity.LogicalBlockAddress	= 0;
+	SCSIReadCapacity.Reserved2		= 0;
+	SCSIReadCapacity.PartialMediumIndicator	= 0;
+	SCSIReadCapacity.Reserved3		= 0;
+	SCSIReadCapacity.Control		= SCSI_CONTROL;
+
+	TSCSIReadCapacityResponse SCSIReadCapacityResponse;
+	if (Command (&SCSIReadCapacity, sizeof SCSIReadCapacity,
+		     &SCSIReadCapacityResponse, sizeof SCSIReadCapacityResponse,
+		     TRUE) != (int) sizeof SCSIReadCapacityResponse)
+	{
+		CLogger::Get ()->Write (FromUmsd, LogError, "Read capacity failed");
+
+		return FALSE;
+	}
+
+	unsigned nBlockSize = le2be32 (SCSIReadCapacityResponse.BlockLengthInBytes);
+	if (nBlockSize != UMSD_BLOCK_SIZE)
+	{
+		CLogger::Get ()->Write (FromUmsd, LogError, "Unsupported block size: %u", nBlockSize);
+
+		return FALSE;
+	}
+
+	m_nBlockCount = le2be32 (SCSIReadCapacityResponse.ReturnedLogicalBlockAddress);
+	if (m_nBlockCount == (u32) -1)
+	{
+		CLogger::Get ()->Write (FromUmsd, LogError, "Unsupported disk size > 2TB");
+
+		return FALSE;
+	}
+
+	m_nBlockCount++;
+
+	CLogger::Get ()->Write (FromUmsd, LogDebug, "Capacity is %u MByte", m_nBlockCount / (0x100000 / UMSD_BLOCK_SIZE));
 
 	CString DeviceName;
 	DeviceName.Format ("umsd%u", s_nDeviceNumber++);
@@ -347,6 +434,11 @@ unsigned long long CUSBBulkOnlyMassStorageDevice::Seek (unsigned long long ullOf
 	return m_ullOffset;
 }
 
+unsigned CUSBBulkOnlyMassStorageDevice::GetCapacity (void) const
+{
+	return m_nBlockCount;
+}
+
 int CUSBBulkOnlyMassStorageDevice::TryRead (void *pBuffer, unsigned nCount)
 {
 	assert (pBuffer != 0);
@@ -366,41 +458,18 @@ int CUSBBulkOnlyMassStorageDevice::TryRead (void *pBuffer, unsigned nCount)
 
 	//CLogger::Get ()->Write (FromUmsd, LogDebug, "TryRead %u/0x%X/%u", nBlockAddress, (unsigned) pBuffer, (unsigned) usTransferLength);
 
-	TCBWRead CBWRead;
+	TSCSIRead10 SCSIRead;
+	SCSIRead.OperationCode		= SCSI_OP_READ;
+	SCSIRead.Reserved1		= 0;
+	SCSIRead.LogicalBlockAddress	= le2be32 (nBlockAddress);
+	SCSIRead.Reserved2		= 0;
+	SCSIRead.TransferLength		= le2be16 (usTransferLength);
+	SCSIRead.Control		= SCSI_CONTROL;
 
-	CBWRead.CBW.dCWBSignature		= CBWSIGNATURE;
-	CBWRead.CBW.dCWBTag			= ++m_nCWBTag;
-	CBWRead.CBW.dCBWDataTransferLength	= nCount;
-	CBWRead.CBW.bmCBWFlags			= CBWFLAGS_DATA_IN;
-	CBWRead.CBW.bCBWLUN			= CBWLUN;
-	CBWRead.CBW.Reserved1			= 0;
-	CBWRead.CBW.bCBWCBLength		= sizeof (TSCSIRead10);
-	CBWRead.CBW.Reserved2			= 0;
-
-	CBWRead.SCSIRead.OperationCode		= SCSI_OP_READ;
-	CBWRead.SCSIRead.Reserved1		= 0;
-	CBWRead.SCSIRead.LogicalBlockAddress	= le2be32 (nBlockAddress);
-	CBWRead.SCSIRead.Reserved2		= 0;
-	CBWRead.SCSIRead.TransferLength		= le2be16 (usTransferLength);
-	CBWRead.SCSIRead.Control		= SCSI_READ_CONTROL;
-
-	CUSBHostController *pHost = GetHost ();
-	assert (pHost != 0);
-	
-	TCSW CSW;
-
-	if (   pHost->Transfer (m_pEndpointOut, &CBWRead, sizeof CBWRead) < 0
-	    || pHost->Transfer (m_pEndpointIn, pBuffer, nCount) != (int) nCount
-	    || pHost->Transfer (m_pEndpointIn, &CSW, sizeof CSW) != (int) sizeof CSW)
+	if (Command (&SCSIRead, sizeof SCSIRead, pBuffer, nCount, TRUE) != (int) nCount)
 	{
-		return -1;
-	}
+		CLogger::Get ()->Write (FromUmsd, LogError, "TryRead failed");
 
-	if (   CSW.dCSWSignature   != CSWSIGNATURE
-	    || CSW.dCSWTag         != m_nCWBTag
-	    || CSW.bCSWStatus      != CSWSTATUS_PASSED
-	    || CSW.dCSWDataResidue != 0)
-	{
 		return -1;
 	}
 
@@ -426,45 +495,102 @@ int CUSBBulkOnlyMassStorageDevice::TryWrite (const void *pBuffer, unsigned nCoun
 
 	//CLogger::Get ()->Write (FromUmsd, LogDebug, "TryWrite %u/0x%X/%u", nBlockAddress, (unsigned) pBuffer, (unsigned) usTransferLength);
 
-	TCBWWrite CBWWrite;
+	TSCSIWrite10 SCSIWrite;
+	SCSIWrite.OperationCode		= SCSI_OP_WRITE;
+	SCSIWrite.Flags			= SCSI_WRITE_FUA;
+	SCSIWrite.LogicalBlockAddress	= le2be32 (nBlockAddress);
+	SCSIWrite.Reserved		= 0;
+	SCSIWrite.TransferLength	= le2be16 (usTransferLength);
+	SCSIWrite.Control		= SCSI_CONTROL;
 
-	CBWWrite.CBW.dCWBSignature		= CBWSIGNATURE;
-	CBWWrite.CBW.dCWBTag			= ++m_nCWBTag;
-	CBWWrite.CBW.dCBWDataTransferLength	= nCount;
-	CBWWrite.CBW.bmCBWFlags			= 0;
-	CBWWrite.CBW.bCBWLUN			= CBWLUN;
-	CBWWrite.CBW.Reserved1			= 0;
-	CBWWrite.CBW.bCBWCBLength		= sizeof (TSCSIWrite10);
-	CBWWrite.CBW.Reserved2			= 0;
-
-	CBWWrite.SCSIWrite.OperationCode	= SCSI_OP_WRITE;
-	CBWWrite.SCSIWrite.Flags		= SCSI_WRITE_FUA;
-	CBWWrite.SCSIWrite.LogicalBlockAddress	= le2be32 (nBlockAddress);
-	CBWWrite.SCSIWrite.Reserved		= 0;
-	CBWWrite.SCSIWrite.TransferLength	= le2be16 (usTransferLength);
-	CBWWrite.SCSIWrite.Control		= SCSI_WRITE_CONTROL;
-
-	CUSBHostController *pHost = GetHost ();
-	assert (pHost != 0);
-	
-	TCSW CSW;
-
-	if (   pHost->Transfer (m_pEndpointOut, &CBWWrite, sizeof CBWWrite) < 0
-	    || pHost->Transfer (m_pEndpointOut, (void *) pBuffer, nCount) < 0
-	    || pHost->Transfer (m_pEndpointIn, &CSW, sizeof CSW) != (int) sizeof CSW)
+	if (Command (&SCSIWrite, sizeof SCSIWrite, (void *) pBuffer, nCount, FALSE) < 0)
 	{
-		return -1;
-	}
+		CLogger::Get ()->Write (FromUmsd, LogError, "TryWrite failed");
 
-	if (   CSW.dCSWSignature   != CSWSIGNATURE
-	    || CSW.dCSWTag         != m_nCWBTag
-	    || CSW.bCSWStatus      != CSWSTATUS_PASSED
-	    || CSW.dCSWDataResidue != 0)
-	{
 		return -1;
 	}
 
 	return nCount;
+}
+
+int CUSBBulkOnlyMassStorageDevice::Command (void *pCmdBlk, unsigned nCmdBlkLen,
+					    void *pBuffer, unsigned nBufLen, boolean bIn)
+{
+	assert (pCmdBlk != 0);
+	assert (6 <= nCmdBlkLen && nCmdBlkLen <= 16);
+	assert (nBufLen == 0 || pBuffer != 0);
+
+	TCBW CBW;
+	memset (&CBW, 0, sizeof CBW);
+
+	CBW.dCWBSignature	   = CBWSIGNATURE;
+	CBW.dCWBTag		   = ++m_nCWBTag;
+	CBW.dCBWDataTransferLength = nBufLen;
+	CBW.bmCBWFlags		   = bIn ? CBWFLAGS_DATA_IN : 0;
+	CBW.bCBWLUN		   = CBWLUN;
+	CBW.bCBWCBLength	   = (u8) nCmdBlkLen;
+
+	memcpy (CBW.CBWCB, pCmdBlk, nCmdBlkLen);
+
+	CUSBHostController *pHost = GetHost ();
+	assert (pHost != 0);
+
+	if (pHost->Transfer (m_pEndpointOut, &CBW, sizeof CBW) < 0)
+	{
+		CLogger::Get ()->Write (FromUmsd, LogError, "CBW transfer failed");
+
+		return -1;
+	}
+
+	int nResult = 0;
+	
+	if (nBufLen > 0)
+	{
+		nResult = pHost->Transfer (bIn ? m_pEndpointIn : m_pEndpointOut, pBuffer, nBufLen);
+		if (nResult < 0)
+		{
+			CLogger::Get ()->Write (FromUmsd, LogError, "Data transfer failed");
+
+			return -1;
+		}
+	}
+
+	TCSW CSW;
+
+	if (pHost->Transfer (m_pEndpointIn, &CSW, sizeof CSW) != (int) sizeof CSW)
+	{
+		CLogger::Get ()->Write (FromUmsd, LogError, "CSW transfer failed");
+
+		return -1;
+	}
+
+	if (CSW.dCSWSignature != CSWSIGNATURE)
+	{
+		CLogger::Get ()->Write (FromUmsd, LogError, "CSW signature is wrong");
+
+		return -1;
+	}
+
+	if (CSW.dCSWTag != m_nCWBTag)
+	{
+		CLogger::Get ()->Write (FromUmsd, LogError, "CSW tag is wrong");
+
+		return -1;
+	}
+
+	if (CSW.bCSWStatus != CSWSTATUS_PASSED)
+	{
+		return -1;
+	}
+
+	if (CSW.dCSWDataResidue != 0)
+	{
+		CLogger::Get ()->Write (FromUmsd, LogError, "Data residue is not 0");
+
+		return -1;
+	}
+
+	return nResult;
 }
 
 int CUSBBulkOnlyMassStorageDevice::Reset (void)

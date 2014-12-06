@@ -76,14 +76,17 @@ boolean CUSBFunction::Initialize (void)
 boolean CUSBFunction::Configure (void)
 {
 	assert (m_pInterfaceDesc != 0);
-	if (GetHost ()->ControlMessage (GetEndpoint0 (),
-					REQUEST_OUT | REQUEST_TO_INTERFACE, SET_INTERFACE,
-					m_pInterfaceDesc->bAlternateSetting,
-					m_pInterfaceDesc->bInterfaceNumber, 0, 0) < 0)
+	if (m_pInterfaceDesc->bAlternateSetting != 0)
 	{
-		CLogger::Get ()->Write (FromUSBFunction, LogError, "Cannot set interface");
+		if (GetHost ()->ControlMessage (GetEndpoint0 (),
+						REQUEST_OUT | REQUEST_TO_INTERFACE, SET_INTERFACE,
+						m_pInterfaceDesc->bAlternateSetting,
+						m_pInterfaceDesc->bInterfaceNumber, 0, 0) < 0)
+		{
+			CLogger::Get ()->Write (FromUSBFunction, LogError, "Cannot set interface");
 
-		return FALSE;
+			return FALSE;
+		}
 	}
 
 	return TRUE;
