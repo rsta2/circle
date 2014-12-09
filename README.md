@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 11 of Circle. To get access to Step 1-10 use the git tag "Step1" to "Step10".
+> This is Step 12 of Circle. To get access to Step 1-11 use the git tag "Step1" to "Step11".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -12,14 +12,14 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
-The 11th Step
+The 12th Step
 -------------
 
-In this step GPIO clock support is added and demonstrated in a simple "oscilloscope program" in *sample/11-gpioclock*. GPIO clock 0 generates a 125 KHz square wave signal which is sampled with about 12 MHz and displayed on the screen afterwards. See the *README* file in this directory for details.
+In this step PWM sound device and DMA controller support is added and demonstrated in a simple sound playback program in *sample/12-pwmsound*. See the *README* file in this directory for details.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-10 the following features were introduced:
+In Step 1-11 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -48,6 +48,8 @@ In Step 1-10 the following features were introduced:
 * Driver for USB keyboards
 * Using GPIO interrupts
 * Driver for USB mice
+* Using GPIO clock
+* Simple 12 MHz GPIO sampling routine
 
 Building
 --------
@@ -87,6 +89,7 @@ Classes
 
 The following C++ classes were added to the Circle base library:
 
-* CGPIOClock: Using GPIO clocks, initialize, start and stop it.
+* CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
+* CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
 
 The available Circle classes are listed in the file *doc/classes.txt*.

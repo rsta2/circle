@@ -27,8 +27,12 @@
 
 static const char FromDebug[] = "debug";
 
+#ifdef DEBUG_CLICK
+
 static CGPIOPin AudioLeft (40, GPIOModeOutput);
 static CGPIOPin AudioRight (45, GPIOModeOutput);
+
+#endif
 
 void debug_hexdump (const void *pStart, unsigned nBytes, const char *pSource)
 {
@@ -83,10 +87,14 @@ void debug_stacktrace (const u32 *pStackPtr, const char *pSource)
 	}
 }
 
+#ifdef DEBUG_CLICK
+
 void debug_click (void)
 {
 	AudioLeft.Invert ();
 	AudioRight.Invert ();
 }
+
+#endif
 
 #endif

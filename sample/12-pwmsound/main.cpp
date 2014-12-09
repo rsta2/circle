@@ -1,5 +1,5 @@
 //
-// debug.h
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,25 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _debug_h
-#define _debug_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-#include <circle/types.h>
+int main (void)
+{
+	// cannot return here because some destructors used in CKernel are not implemented
 
-#ifndef NDEBUG
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
+	
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-//#define DEBUG_CLICK
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
 
-void debug_hexdump (const void *pStart, unsigned nBytes, const char *pSource = 0);
-
-void debug_stacktrace (const u32 *pStackPtr, const char *pSource = 0);
-
-#ifdef DEBUG_CLICK
-
-void debug_click (void);
-
-#endif
-
-#endif
-
-#endif
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

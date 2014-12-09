@@ -9,6 +9,7 @@ Base library
 * CCharGenerator: Gives pixel information for console font
 * CDevice: Base class for all devices
 * CDeviceNameService: Devices can be registered by name and retrieved later by this name
+* CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
 * CExceptionHandler: Generates a stack-trace and a panic message if an abort exception occurs.
 * CGPIOClock: Using GPIO clocks, initialize, start and stop it.
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
@@ -18,6 +19,7 @@ Base library
 * CLogger: Writing logging messages to a target device
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
 * CPageTable: Encapsulates a page table to be used by MMU.
+* CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
 * CSerialDevice: Writing characters to UART
 * CString: Simple string manipulation class, Format() method works like printf() (but has less formating options)
