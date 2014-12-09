@@ -15,4 +15,4 @@ include ../Rules.mk
 kernel.o: sound.h
 
 sound.h: sound.h.gz
-	gunzip -k sound.h.gz
+	gunzip -c sound.h.gz > sound.h
