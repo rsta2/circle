@@ -52,6 +52,7 @@ public:
 	void ConfigurationError (const char *pSource) const;
 
 	u8 GetInterfaceNumber (void) const;
+	u8 GetInterfaceProtocol (void) const;
 
 private:
 	CUSBDevice *m_pDevice;

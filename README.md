@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 13 of Circle. To get access to Step 1-12 use the git tag "Step1" to "Step12".
+> This is Step 14 of Circle. To get access to Step 1-13 use the git tag "Step1" to "Step13".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -12,14 +12,14 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
-The 13th Step
+The 14th Step
 -------------
 
-In this step PWM output support is added and demonstrated in a simple LED dimmer program in *sample/13-pwmoutput*. See the *README* file in this directory for details.
+In this step simple USB printer support is added and demonstrated in a little test printing program (not for GDI printers) in *sample/14-usbprinter*. See the *README* file in this directory for details.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-12 the following features were introduced:
+In Step 1-13 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -52,6 +52,7 @@ In Step 1-12 the following features were introduced:
 * Simple 12 MHz GPIO sampling routine
 * PWM sound device
 * DMA controller support
+* PWM output (2 channels)
 
 Building
 --------
@@ -91,6 +92,6 @@ Classes
 
 The following C++ classes were added to the Circle base library:
 
-* CPWMOutput: Pulse Width Modulator output (2 channels).
+* CUSBPrinterDevice: Simple communications driver for USB printers (back-channel is not used).
 
 The available Circle classes are listed in the file *doc/classes.txt*.

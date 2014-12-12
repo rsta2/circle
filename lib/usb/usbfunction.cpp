@@ -152,3 +152,9 @@ u8 CUSBFunction::GetInterfaceNumber (void) const
 	assert (m_pInterfaceDesc != 0);
 	return m_pInterfaceDesc->bInterfaceNumber;
 }
+
+u8 CUSBFunction::GetInterfaceProtocol (void) const
+{
+	assert (m_pInterfaceDesc != 0);
+	return m_pInterfaceDesc->bInterfaceProtocol;
+}

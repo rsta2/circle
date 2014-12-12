@@ -1,0 +1,5 @@
+README
+
+To use this sample program you need an USB printer which is by default able to display characters by itself. GDI printers do not work. The printer must be connected to an USB port of the Raspberry Pi and must already be switched on and ready when the Raspberry Pi is started.
+
+First blink 5 times to show the image was loaded right. After initializing the USB driver stack the sample program sends 20 text lines and a form feed character to the printer. The text should be printed.

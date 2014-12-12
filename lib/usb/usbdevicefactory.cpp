@@ -25,6 +25,7 @@
 #include <circle/usb/usbmassdevice.h>
 #include <circle/usb/usbkeyboard.h>
 #include <circle/usb/usbmouse.h>
+#include <circle/usb/usbprinter.h>
 #include <circle/usb/smsc951x.h>
 
 CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
@@ -49,6 +50,11 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (pName->Compare ("int3-1-2") == 0)
 	{
 		pResult = new CUSBMouseDevice (pParent);
+	}
+	else if (   pName->Compare ("int7-1-1") == 0
+		 || pName->Compare ("int7-1-2") == 0)
+	{
+		pResult = new CUSBPrinterDevice (pParent);
 	}
 	else if (pName->Compare ("ven424-ec00") == 0)
 	{
