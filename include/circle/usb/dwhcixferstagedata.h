@@ -85,7 +85,6 @@ private:
 
 	boolean		 m_bSplitTransaction;
 	boolean		 m_bSplitComplete;
-	unsigned	 m_nSplitCycles;
 
 	CUSBDevice	*m_pDevice;			// cached from *pURB
 	CUSBEndpoint	*m_pEndpoint;

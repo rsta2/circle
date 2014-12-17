@@ -20,6 +20,7 @@
 #include <circle/bcmpropertytags.h>
 #include <circle/util.h>
 #include <circle/synchronize.h>
+#include <circle/bcm2835.h>
 #include <assert.h>
 
 struct TPropertyBuffer
@@ -69,7 +70,8 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	InvalidateDataCache ();
 	DataSyncBarrier ();
 
-	if (m_MailBox.WriteRead ((u32) pBuffer) != (u32) pBuffer)
+	u32 nBufferAddress = GPU_MEM_BASE + (u32) pBuffer;
+	if (m_MailBox.WriteRead (nBufferAddress) != nBufferAddress)
 	{
 		return FALSE;
 	}

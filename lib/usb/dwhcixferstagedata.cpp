@@ -25,8 +25,6 @@
 #include <circle/logger.h>
 #include <assert.h>
 
-#define MAX_SPLIT_CYCLES	100
-
 CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 						  CUSBRequest	*pURB,
 						  boolean	 bIn,
@@ -36,7 +34,6 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	m_bIn (bIn),
 	m_bStatusStage (bStatusStage),
 	m_bSplitComplete (FALSE),
-	m_nSplitCycles (MAX_SPLIT_CYCLES),
 	m_nTotalBytesTransfered (0),
 	m_nState (0),
 	m_nSubState (0),
@@ -227,7 +224,7 @@ unsigned CDWHCITransferStageData::GetSubState (void) const
 
 boolean CDWHCITransferStageData::BeginSplitCycle (void)
 {
-	return m_nSplitCycles-- > 0;
+	return TRUE;
 }
 
 unsigned CDWHCITransferStageData::GetChannelNumber (void) const
