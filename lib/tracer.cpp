@@ -25,8 +25,9 @@ static const char FromTracer[] = "trace";
 
 CTracer *CTracer::s_pThis = 0;
 
-CTracer::CTracer (unsigned nDepth)
+CTracer::CTracer (unsigned nDepth, boolean bStopIfFull)
 : 	m_nDepth (nDepth),
+	m_bStopIfFull (bStopIfFull),
 	m_bActive (FALSE),
 	m_nStartTicks (0),
 	m_nEntries (0),
@@ -62,6 +63,17 @@ void CTracer::Event (unsigned nID, unsigned nParam1, unsigned nParam2, unsigned 
 {
 	if (m_bActive)
 	{
+		if (m_nEntries < m_nDepth)
+		{
+			m_nEntries++;
+		}
+		else if (m_bStopIfFull)
+		{
+			m_bActive = FALSE;
+
+			return;
+		}
+
 		TTraceEntry *pEntry = m_pEntry + m_nCurrent;
 
 		pEntry->nClockTicks = CTimer::Get ()->GetClockTicks () - m_nStartTicks;
@@ -70,11 +82,6 @@ void CTracer::Event (unsigned nID, unsigned nParam1, unsigned nParam2, unsigned 
 		pEntry->nParam[1]   = nParam2;
 		pEntry->nParam[2]   = nParam3;
 		pEntry->nParam[3]   = nParam4;
-
-		if (m_nEntries < m_nDepth)
-		{
-			m_nEntries++;
-		}
 
 		if (++m_nCurrent == m_nDepth)
 		{
@@ -103,7 +110,7 @@ void CTracer::Dump (void)
 		TTraceEntry *pEntry = m_pEntry + nEvent;
 
 		pLogger->Write (FromTracer, LogNotice, "%2u: %2u.%06u %2u %08X %08X %08X %08X",
-				i, pEntry->nClockTicks / 1000000, pEntry->nClockTicks % 1000000,
+				i, pEntry->nClockTicks / CLOCKHZ, pEntry->nClockTicks % CLOCKHZ,
 				pEntry->nEventID, pEntry->nParam[0], pEntry->nParam[1], pEntry->nParam[2], pEntry->nParam[3]);
 
 		nEvent = (nEvent+1) % m_nDepth;

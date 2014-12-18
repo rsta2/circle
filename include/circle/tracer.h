@@ -33,7 +33,7 @@ struct TTraceEntry
 class CTracer
 {
 public:
-	CTracer (unsigned nDepth);
+	CTracer (unsigned nDepth, boolean bStopIfFull);
 	~CTracer (void);
 
 	void Start (void);
@@ -48,6 +48,7 @@ public:
 
 private:
 	unsigned	 m_nDepth;		// size of ring buffer
+	boolean		 m_bStopIfFull;
 	boolean		 m_bActive;
 	unsigned	 m_nStartTicks;
 	TTraceEntry	*m_pEntry;		// array used as ring buffer
