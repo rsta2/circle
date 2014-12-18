@@ -72,7 +72,7 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 		}
 
 		// see USB 2.0 spec chapter 9.6.6
-		if (m_pDevice->GetSpeed () == USBSpeedLow)
+		if (m_pDevice->GetSpeed () != USBSpeedHigh)
 		{
 			m_nInterval = ucInterval;
 		}
@@ -85,18 +85,11 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 
 			unsigned nValue = 1 << (ucInterval - 1);
 
-			if (m_pDevice->GetSpeed () == USBSpeedFull)
-			{
-				m_nInterval = nValue;
-			}
-			else
-			{
-				m_nInterval = nValue / 8;
+			m_nInterval = nValue / 8;
 
-				if (m_nInterval < 1)
-				{
-					m_nInterval = 1;
-				}
+			if (m_nInterval < 1)
+			{
+				m_nInterval = 1;
 			}
 		}
 	}
