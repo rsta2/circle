@@ -197,12 +197,16 @@ CUSBBulkOnlyMassStorageDevice::CUSBBulkOnlyMassStorageDevice (CUSBFunction *pFun
 	m_pEndpointOut (0),
 	m_nCWBTag (0),
 	m_nBlockCount (0),
-	m_ullOffset (0)
+	m_ullOffset (0),
+	m_pPartitionManager (0)
 {
 }
 
 CUSBBulkOnlyMassStorageDevice::~CUSBBulkOnlyMassStorageDevice (void)
 {
+	delete m_pPartitionManager;
+	m_pPartitionManager = 0;
+
 	delete m_pEndpointOut;
 	m_pEndpointOut =  0;
 	
@@ -292,6 +296,8 @@ int CUSBBulkOnlyMassStorageDevice::Configure (void)
 	unsigned nTries = 100;
 	while (--nTries)
 	{
+		CTimer::Get ()->MsDelay (100);
+
 		TSCSITestUnitReady SCSITestUnitReady;
 		SCSITestUnitReady.OperationCode = SCSI_OP_TEST_UNIT_READY;
 		SCSITestUnitReady.Reserved	= 0;
@@ -319,8 +325,6 @@ int CUSBBulkOnlyMassStorageDevice::Configure (void)
 
 			return FALSE;
 		}
-
-		CTimer::Get ()->MsDelay (100);
 	}
 
 	if (nTries == 0)
@@ -371,8 +375,18 @@ int CUSBBulkOnlyMassStorageDevice::Configure (void)
 	CLogger::Get ()->Write (FromUmsd, LogDebug, "Capacity is %u MByte", m_nBlockCount / (0x100000 / UMSD_BLOCK_SIZE));
 
 	CString DeviceName;
-	DeviceName.Format ("umsd%u", s_nDeviceNumber++);
+	DeviceName.Format ("umsd%u", s_nDeviceNumber);
+
+	assert (m_pPartitionManager == 0);
+	m_pPartitionManager = new CPartitionManager (this, DeviceName);
+	assert (m_pPartitionManager != 0);
+	if (!m_pPartitionManager->Initialize ())
+	{
+		return FALSE;
+	}
+
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, TRUE);
+	s_nDeviceNumber++;
 	
 	return TRUE;
 }

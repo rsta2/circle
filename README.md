@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 14 of Circle. To get access to Step 1-13 use the git tag "Step1" to "Step13".
+> This is Step 15 of Circle. To get access to Step 1-14 use the git tag "Step1" to "Step14".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -12,14 +12,16 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
-The 14th Step
+The 15th Step
 -------------
 
-In this step simple USB printer support is added and demonstrated in a little test printing program (not for GDI printers) in *sample/14-usbprinter*. See the *README* file in this directory for details.
+In this step FAT file system support is added and demonstrated in a little test program in *sample/15-files*. See the *README* file in this directory for details. The FAT file system driver currently supports reads and writes from/to FAT16 and FAT32 partitions and the root directory with short file names (8.3) only. Other directories cannot be accessed at the moment and will be ignored.
+
+Please note that the libraries *libinput.a* and *libfs.a* (new) must be used together with *libusb.a* to link a program.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-13 the following features were introduced:
+In Step 1-14 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -53,6 +55,7 @@ In Step 1-13 the following features were introduced:
 * PWM sound device
 * DMA controller support
 * PWM output (2 channels)
+* Simple USB printer support
 
 Building
 --------
@@ -90,8 +93,19 @@ Directories
 Classes
 -------
 
-The following C++ classes were added to the Circle base library:
+The following C++ classes were added to Circle:
 
-* CUSBPrinterDevice: Simple communications driver for USB printers (back-channel is not used).
+FS library
+
+* CPartition: Derived from CDevice, restricts access to a storage partition inside its boundaries.
+* CPartitionManager: Creates a CPartition object for each primary (non-EFI) partition.
+
+FAT FS library
+
+* CFAT: Encapsulates the File Allocation Table structure of a FAT storage partition.
+* CFATInfo: Encapsulates the configuration information describing a FAT storage partition (from BPB and FS Info).
+* CFATDirectory: Encapsulates a directory on a FAT partition (currently 8.3-names in the root directory only).
+* CFATFileSystem: File system driver for FAT16 and FAT32 storage partitions.
+* CFATCache: Sector cache for FAT storage partitions.
 
 The available Circle classes are listed in the file *doc/classes.txt*.

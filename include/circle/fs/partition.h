@@ -1,5 +1,5 @@
 //
-// usbmassdevice.h
+// partition.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014  R. Stange <rsta2@o2online.de>
@@ -17,54 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbmassdevice_h
-#define _usbmassdevice_h
+#ifndef _circle_fs_partition_h
+#define _circle_fs_partition_h
 
-#include <circle/usb/usbfunction.h>
-#include <circle/usb/usbendpoint.h>
-#include <circle/fs/partitionmanager.h>
+#include <circle/device.h>
 #include <circle/types.h>
 
-#define UMSD_BLOCK_SIZE		512
-#define UMSD_BLOCK_MASK		(UMSD_BLOCK_SIZE-1)
-#define UMSD_BLOCK_SHIFT	9
-
-#define UMSD_MAX_OFFSET		0x1FFFFFFFFFFULL		// 2TB
-
-class CUSBBulkOnlyMassStorageDevice : public CUSBFunction
+class CPartition : public CDevice
 {
 public:
-	CUSBBulkOnlyMassStorageDevice (CUSBFunction *pFunction);
-	~CUSBBulkOnlyMassStorageDevice (void);
-
-	boolean Configure (void);
+	CPartition (CDevice *pDevice, unsigned nFirstSector, unsigned nNumberOfSectors);
+	~CPartition (void);
 
 	int Read (void *pBuffer, unsigned nCount);
+
 	int Write (const void *pBuffer, unsigned nCount);
 
 	unsigned long long Seek (unsigned long long ullOffset);
 
-	unsigned GetCapacity (void) const;
-
 private:
-	int TryRead (void *pBuffer, unsigned nCount);
-	int TryWrite (const void *pBuffer, unsigned nCount);
+	CDevice *m_pDevice;
+	unsigned m_nFirstSector;
+	unsigned m_nNumberOfSectors;
 
-	int Command (void *pCmdBlk, unsigned nCmdBlkLen, void *pBuffer, unsigned nBufLen, boolean bIn);
-
-	int Reset (void);
-
-private:
-	CUSBEndpoint *m_pEndpointIn;
-	CUSBEndpoint *m_pEndpointOut;
-
-	unsigned m_nCWBTag;
-	unsigned m_nBlockCount;
 	unsigned long long m_ullOffset;
-
-	CPartitionManager *m_pPartitionManager;
-
-	static unsigned s_nDeviceNumber;
+	boolean m_bSeekError;
 };
 
 #endif

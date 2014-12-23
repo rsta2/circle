@@ -1,0 +1,5 @@
+README
+
+This sample program creates a listing of the files in the root directory of a connected USB drive (WHICH DOES NOT CONTAIN ANY IMPORTANT DATA). The first primary partition of the USB drive must be a FAT16 or FAT32 partition. Extended partitions or other file systems are not supported.
+
+After creating the directory listing a file "circle.txt" is created in the root directory and some text is written to it. After closing the file it is re-opened and its contents is read and written to the screen.

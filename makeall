@@ -11,6 +11,15 @@ cd input
 make $1 $2 || exit
 cd ..
 
+cd fs
+make $1 $2 || exit
+
+cd fat
+make $1 $2 || exit
+cd ..
+
+cd ..
+
 cd ..
 
 cd sample

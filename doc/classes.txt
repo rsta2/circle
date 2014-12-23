@@ -58,3 +58,16 @@ Input library
 
 * CKeyboardBehaviour: Generic keyboard function
 * CKeyMap: Keyboard translation map (two selectable default maps at the moment)
+
+FS library
+
+* CPartition: Derived from CDevice, restricts access to a storage partition inside its boundaries.
+* CPartitionManager: Creates a CPartition object for each primary (non-EFI) partition.
+
+FAT FS library
+
+* CFAT: Encapsulates the File Allocation Table structure of a FAT storage partition.
+* CFATInfo: Encapsulates the configuration information describing a FAT storage partition (from BPB and FS Info).
+* CFATDirectory: Encapsulates a directory on a FAT partition (currently 8.3-names in the root directory only).
+* CFATFileSystem: File system driver for FAT16 and FAT32 storage partitions.
+* CFATCache: Sector cache for FAT storage partitions.
