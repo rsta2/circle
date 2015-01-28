@@ -23,7 +23,8 @@ OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o libhelper.o lib
 	  bcmframebuffer.o device.o koptions.o pagetable.o screen.o \
 	  assert.o chargenerator.o debug.o devicenameservice.o logger.o serial.o string.o \
 	  delayloop.o exceptionhandler.o exceptionstub.o interrupt.o \
-	  gpiomanager.o gpioclock.o dmachannel.o pwmsounddevice.o pwmoutput.o tracer.o
+	  gpiomanager.o gpioclock.o dmachannel.o pwmsounddevice.o pwmoutput.o tracer.o \
+	  i2cmaster.o i2cslave.o
 
 all: startup.o libcircle.a
 

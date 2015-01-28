@@ -54,6 +54,11 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 
 	if (GPIOModeAlternateFunction0 <= m_Mode && m_Mode <= GPIOModeAlternateFunction5)
 	{
+		if (bInitPin)
+		{
+			SetPullUpMode (0);
+		}
+
 		SetAlternateFunction (m_Mode-GPIOModeAlternateFunction0);
 
 		DataMemBarrier ();

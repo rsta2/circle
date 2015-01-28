@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 15 of Circle. To get access to Step 1-14 use the git tag "Step1" to "Step14".
+> This is Step 16 of Circle. To get access to Step 1-15 use the git tag "Step1" to "Step15".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -12,16 +12,21 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
-The 15th Step
+Not a Real-Time OS
+------------------
+
+Circle is not a real-time OS. That means different simultaneous operations may interfere in respect of its timing behaviour. The provided samples are tested to work but if you try different combinations of hardware support classes this has to be tested by yourself.
+
+A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
+
+The 16th Step
 -------------
 
-In this step FAT file system support is added and demonstrated in a little test program in *sample/15-files*. See the *README* file in this directory for details. The FAT file system driver currently supports reads and writes from/to FAT16 and FAT32 partitions and the root directory with short file names (8.3) only. Other directories cannot be accessed at the moment and will be ignored.
-
-Please note that the libraries *libinput.a* and *libfs.a* (new) must be used together with *libusb.a* to link a program.
+In this step I2C (master and slave) support is added and demonstrated in an I2C ping sample in *sample/16-i2cping*. Two Raspberry Pi computers (one of them must be a Model A+ or B+) are needed to try this sample. See the *README* file in this directory for details.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-14 the following features were introduced:
+In Step 1-15 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -56,6 +61,7 @@ In Step 1-14 the following features were introduced:
 * DMA controller support
 * PWM output (2 channels)
 * Simple USB printer support
+* FAT file system support (reduced)
 
 Building
 --------
@@ -95,17 +101,9 @@ Classes
 
 The following C++ classes were added to Circle:
 
-FS library
+Base library
 
-* CPartition: Derived from CDevice, restricts access to a storage partition inside its boundaries.
-* CPartitionManager: Creates a CPartition object for each primary (non-EFI) partition.
-
-FAT FS library
-
-* CFAT: Encapsulates the File Allocation Table structure of a FAT storage partition.
-* CFATInfo: Encapsulates the configuration information describing a FAT storage partition (from BPB and FS Info).
-* CFATDirectory: Encapsulates a directory on a FAT partition (currently 8.3-names in the root directory only).
-* CFATFileSystem: File system driver for FAT16 and FAT32 storage partitions.
-* CFATCache: Sector cache for FAT storage partitions.
+* CI2CMaster: Driver for I2C master device.
+* CI2CSlave: Driver for I2C slave device.
 
 The available Circle classes are listed in the file *doc/classes.txt*.

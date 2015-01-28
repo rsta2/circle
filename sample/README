@@ -15,3 +15,4 @@ SAMPLES
 13-pwmoutput		Using PWM device to continously change the brightness of a connected LED
 14-usbprinter		Printing some text lines on an USB printer (GDI printers do not work)
 15-files		Root directory listing of a connected USB drive, writing and reading the file "circle.txt"
+16-i2cping		Transfering data blocks between two Raspberry Pis connected via I2C
