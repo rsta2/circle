@@ -2,7 +2,7 @@
 // bcmframebuffer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -124,7 +124,11 @@ u32 CBcmFrameBuffer::GetDepth (void) const
 
 u32 CBcmFrameBuffer::GetBuffer (void) const
 {
+#if RASPPI == 1
 	return m_pInfo->BufferPtr;
+#else
+	return m_pInfo->BufferPtr & 0x3FFFFFFF;
+#endif
 }
 
 u32 CBcmFrameBuffer::GetSize (void) const

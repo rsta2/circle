@@ -30,7 +30,7 @@ public:
 	CPageTable (void);
 
 	// 0..nMemSize: normal,
-	// nMemSize..512MB: shared device
+	// nMemSize..512MB: shared device (1024MB on Raspberry Pi 2)
 	CPageTable (u32 nMemSize);
 
 	~CPageTable (void);

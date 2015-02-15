@@ -2,7 +2,7 @@
 // pagetable.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,17 @@
 #include <circle/util.h>
 #include <assert.h>
 
+#if RASPPI == 1
+#define SDRAM_SIZE_MBYTE	512
+
 #define TTBR_MODE	(  ARM_TTBR_INNER_CACHEABLE		\
 			 | ARM_TTBR_OUTER_NON_CACHEABLE)
+#else
+#define SDRAM_SIZE_MBYTE	1024
+
+#define TTBR_MODE	(  ARM_TTBR_INNER_WRITE_BACK		\
+			 | ARM_TTBR_OUTER_WRITE_BACK)
+#endif
 
 CPageTable::CPageTable (void)
 :	m_bTableAllocated (FALSE),
@@ -55,7 +64,7 @@ CPageTable::CPageTable (void)
 		pEntry->SBZ	= 0;
 		pEntry->Base	= ARMV6MMUL1SECTIONBASE (nBaseAddress);
 
-		if (nEntry >= 512)
+		if (nEntry >= SDRAM_SIZE_MBYTE)
 		{
 			pEntry->XNBit = 1;
 		}
@@ -70,9 +79,9 @@ CPageTable::CPageTable (u32 nMemSize)
 	m_pTable ((TARMV6MMU_LEVEL1_SECTION_DESCRIPTOR *) palloc ())
 {
 	assert (m_pTable != 0);
-	assert (((u32) m_pTable & 0x7FF) == 0);
+	assert (((u32) m_pTable & 0xFFF) == 0);
 
-	for (unsigned nEntry = 0; nEntry < 512; nEntry++)
+	for (unsigned nEntry = 0; nEntry < SDRAM_SIZE_MBYTE; nEntry++)
 	{
 		u32 nBaseAddress = MEGABYTE * nEntry;
 

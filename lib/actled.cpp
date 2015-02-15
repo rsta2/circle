@@ -2,7 +2,7 @@
 // actled.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,8 +32,21 @@ CActLED::CActLED (void)
 	TPropertyTagSimple BoardRevision;
 	if (Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
 	{
-		unsigned nRevision = BoardRevision.nValue & 0xFFFF;
-		if (nRevision <= 0x000F)
+		boolean bOld;
+		if (BoardRevision.nValue & (1 << 23))	// new revision scheme?
+		{
+			unsigned nType = (BoardRevision.nValue >> 4) & 0xFF;
+
+			bOld = nType <= 0x01;
+		}
+		else
+		{
+			unsigned nRevision = BoardRevision.nValue & 0xFFFF;
+
+			bOld = nRevision <= 0x000F;
+		}
+
+		if (bOld)
 		{
 			// Model B and earlier
 			m_pPin = new CGPIOPin (16, GPIOModeOutput);

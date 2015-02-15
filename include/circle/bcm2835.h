@@ -2,7 +2,7 @@
 // bcm2835.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,14 +22,23 @@
 
 #include <circle/sysconfig.h>
 
+#if RASPPI == 1
 #define ARM_IO_BASE		0x20000000
+#else
+#define ARM_IO_BASE		0x3F000000
+#endif
+
 #define GPU_IO_BASE		0x7E000000
 
 #define GPU_CACHED_BASE		0x40000000
 #define GPU_UNCACHED_BASE	0xC0000000
 
-#ifdef GPU_L2_CACHE_ENABLED
-	#define GPU_MEM_BASE	GPU_CACHED_BASE
+#if RASPPI == 1
+	#ifdef GPU_L2_CACHE_ENABLED
+		#define GPU_MEM_BASE	GPU_CACHED_BASE
+	#else
+		#define GPU_MEM_BASE	GPU_UNCACHED_BASE
+	#endif
 #else
 	#define GPU_MEM_BASE	GPU_UNCACHED_BASE
 #endif

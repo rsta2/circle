@@ -2,7 +2,7 @@
 // dmachannel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -122,6 +122,8 @@ CDMAChannel::~CDMAChannel (void)
 	m_pControlBlockBuffer = 0;
 }
 
+#if RASPPI == 1		// tested on Raspberry Pi 1 only and currently not used in Circle
+
 void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t nLength)
 {
 	assert (pDestination != 0);
@@ -167,6 +169,8 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 	m_pControlBlock->nNextControlBlockAddress = 0;
 }
 
+#endif
+
 void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
 {
 	assert (pSource != 0);
@@ -189,6 +193,11 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
+
+#if RASPPI != 1
+	CleanDataCacheRange ((u32) pSource, nLength);
+	DataMemBarrier ();
+#endif
 }
 
 void CDMAChannel::SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam)
@@ -228,8 +237,12 @@ void CDMAChannel::Start (void)
 
 	write32 (ARM_DMACHAN_CONBLK_AD (m_nChannel), (u32) m_pControlBlock + GPU_MEM_BASE);
 
+#if RASPPI == 1
 	CleanDataCache ();
 	InvalidateDataCache ();
+#else
+	CleanAndInvalidateDataCacheRange ((u32) m_pControlBlock, sizeof *m_pControlBlock);
+#endif
 	DataMemBarrier ();
 
 	write32 (ARM_DMACHAN_CS (m_nChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
@@ -269,9 +282,11 @@ boolean CDMAChannel::GetStatus (void)
 
 void CDMAChannel::InterruptHandler (void)
 {
+#if RASPPI == 1
 	CleanDataCache ();
 	InvalidateDataCache ();
 	DataMemBarrier ();
+#endif
 
 	assert (m_nChannel < DMA_CHANNELS);
 

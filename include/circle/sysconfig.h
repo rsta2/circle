@@ -2,7 +2,7 @@
 // sysconfig.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,8 +44,10 @@
 #define MEM_HEAP_START		0x400000
 
 // system options
+#if RASPPI == 1			// valid on Raspberry Pi 1 only
 #define ARM_STRICT_ALIGNMENT
 #define GPU_L2_CACHE_ENABLED
+#endif
 
 #define KERNEL_TIMERS		20
 

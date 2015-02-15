@@ -7,7 +7,7 @@
 //	no dynamic attachments
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -683,8 +683,12 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 				   pStageData->GetDMAAddress () + GPU_MEM_BASE);
 	DMAAddress.Write ();
 
+#if RASPPI == 1
 	CleanDataCache ();
 	InvalidateDataCache ();
+#else
+	CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
+#endif
 	DataMemBarrier ();
 
 	// set split control
@@ -778,8 +782,12 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		return;
 
 	case StageSubStateWaitForTransactionComplete: {
+#if RASPPI == 1
 		CleanDataCache ();
 		InvalidateDataCache ();
+#else
+		CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
+#endif
 		DataMemBarrier ();
 
 		CDWHCIRegister TransferSize (DWHCI_HOST_CHAN_XFER_SIZ (nChannel));

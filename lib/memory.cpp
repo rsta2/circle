@@ -2,7 +2,7 @@
 // memory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,11 +25,22 @@
 #include <circle/sysconfig.h>
 #include <assert.h>
 
+#if RASPPI == 1
 #define MMU_MODE	(  ARM_CONTROL_MMU			\
 			 | ARM_CONTROL_L1_CACHE			\
 			 | ARM_CONTROL_L1_INSTRUCTION_CACHE	\
 			 | ARM_CONTROL_BRANCH_PREDICTION	\
 			 | ARM_CONTROL_EXTENDED_PAGE_TABLE)
+
+#define TTBCR_SPLIT	3
+#else
+#define MMU_MODE	(  ARM_CONTROL_MMU			\
+			 | ARM_CONTROL_L1_CACHE			\
+			 | ARM_CONTROL_L1_INSTRUCTION_CACHE	\
+			 | ARM_CONTROL_BRANCH_PREDICTION)
+
+#define TTBCR_SPLIT	2
+#endif
 
 CMemorySystem::CMemorySystem (boolean bEnableMMU)
 :	m_bEnableMMU (bEnableMMU),
@@ -87,6 +98,8 @@ u32 CMemorySystem::GetMemSize (void) const
 {
 	return m_nMemSize;
 }
+
+#if RASPPI == 1		// tested on Raspberry Pi 1 only and currently not used in Circle
 
 void CMemorySystem::SetPageTable0 (CPageTable *pPageTable, u32 nContextID)
 {
@@ -147,22 +160,27 @@ u32 CMemorySystem::GetContextID (void) const
 	return nContextID;
 }
 
+#endif
+
 void CMemorySystem::EnableMMU (void)
 {
 	assert (m_bEnableMMU);
-	
-	// restrict cache size (no page coloring)
+
 	u32 nAuxControl;
 	asm volatile ("mrc p15, 0, %0, c1, c0,  1" : "=r" (nAuxControl));
-	nAuxControl |= ARM_AUX_CONTROL_CACHE_SIZE;
+#if RASPPI == 1
+	nAuxControl |= ARM_AUX_CONTROL_CACHE_SIZE;	// restrict cache size (no page coloring)
+#else
+	nAuxControl |= ARM_AUX_CONTROL_SMP;
+#endif
 	asm volatile ("mcr p15, 0, %0, c1, c0,  1" : : "r" (nAuxControl));
 
 	u32 nTLBType;
 	asm volatile ("mrc p15, 0, %0, c0, c0,  3" : "=r" (nTLBType));
 	assert (!(nTLBType & ARM_TLB_TYPE_SEPARATE_TLBS));
 
-	// set TTB control (512 MB split)
-	asm volatile ("mcr p15, 0, %0, c2, c0,  2" : : "r" (3));
+	// set TTB control
+	asm volatile ("mcr p15, 0, %0, c2, c0,  2" : : "r" (TTBCR_SPLIT));
 
 	// set TTBR0
 	assert (m_pPageTable0Default != 0);
@@ -182,12 +200,14 @@ void CMemorySystem::EnableMMU (void)
 	// enable MMU
 	u32 nControl;
 	asm volatile ("mrc p15, 0, %0, c1, c0,  0" : "=r" (nControl));
+#if RASPPI == 1
 #ifdef ARM_STRICT_ALIGNMENT
 	nControl &= ~ARM_CONTROL_UNALIGNED_PERMITTED;
 	nControl |= ARM_CONTROL_STRICT_ALIGNMENT;
 #else
 	nControl &= ~ARM_CONTROL_STRICT_ALIGNMENT;
 	nControl |= ARM_CONTROL_UNALIGNED_PERMITTED;
+#endif
 #endif
 	nControl |= MMU_MODE;
 	asm volatile ("mcr p15, 0, %0, c1, c0,  0" : : "r" (nControl) : "memory");

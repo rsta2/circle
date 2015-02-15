@@ -8,7 +8,7 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be useable on all existing models (tested on model A+, B and B+). It provides several ready-tested C++ classes which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered some samples which demonstrate the use of its classes.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be useable on all existing models (tested on model A+, B, B+ and on Raspberry Pi 2). It provides several ready-tested C++ classes which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered some samples which demonstrate the use of its classes.
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
@@ -22,7 +22,7 @@ A known issue here is that the use of USB interrupt split transfers - especially
 The 16th Step
 -------------
 
-In this step I2C (master and slave) support is added and demonstrated in an I2C ping sample in *sample/16-i2cping*. Two Raspberry Pi computers (one of them must be a Model A+ or B+) are needed to try this sample. See the *README* file in this directory for details.
+In this step I2C (master and slave) support is added and demonstrated in an I2C ping sample in *sample/16-i2cping*. Two Raspberry Pi computers (one of them must be a Model A+ or B+ or Raspberry Pi 2) are needed to try this sample. See the *README* file in this directory for details.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
@@ -66,8 +66,11 @@ In Step 1-15 the following features were introduced:
 Building
 --------
 
-Building is normally done on PC Linux. You need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core. First edit the file *Rules.mk* and set the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
+Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core. For Raspberry Pi 2 you need a toolchain with Cortex-A7 support. [This one](https://github.com/raspberrypi/tools/tree/master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64) should work for both.
 
+First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1 or 2) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
+
+`RASPPI = 1`  
 `PREFIX = arm-none-eabi-`
 
 Then go to the build root of Circle and do:
@@ -77,7 +80,7 @@ Then go to the build root of Circle and do:
 
 By default only the latest sample (with the highest number) is build. The ready build *kernel.img* file should be in its subdirectory of sample/. If you want to build another sample after `makeall` go to its subdirectory and do `make`.
 
-You can also build Circle on the Raspberry Pi itself on Debian wheezy but you need some method to put the *kernel.img* file onto the SD(HC) card. With an external USB card reader on model B+ (4 USB ports) this should be no problem.
+You can also build Circle on the Raspberry Pi itself on Debian wheezy but you need some method to put the *kernel.img* file onto the SD(HC) card. With an external USB card reader on model B+ or Raspberry Pi 2 model B (4 USB ports) this should be no problem.
 
 Building Circle from a non-Linux host is possible too. Maybe you have to adapt the shell scripts in this case. You need a cross compiler targetting (for example) *arm-none-eabi*. OSDev.org has an [excellent document on the subject](http://wiki.osdev.org/GCC_Cross-Compiler) that you can follow if you have no idea of what a cross compiler is, or how to make one.
 
@@ -85,6 +88,8 @@ Installation
 ------------
 
 Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the kernel.img (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
+
+Note that the file *kernel.img* can be renamed to *kernel7.img* for the Raspberry Pi 2 but this is optional.
 
 Directories
 -----------

@@ -2,7 +2,7 @@
 // armv6mmu.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,9 @@
 
 #include <circle/macros.h>
 #include <circle/types.h>
+
+// NOTE: VMSAv6 and VMSAv7 are very similar for our purpose.
+//	 The definitions in this file are used for both.
 
 // Sizes
 #define SMALL_PAGE_SIZE		0x1000
@@ -102,17 +105,27 @@ PACKED;
 // TLB type register
 #define ARM_TLB_TYPE_SEPARATE_TLBS	(1 << 0)
 
-// Control register
+// (System) Control register
 #define ARM_CONTROL_MMU			(1 << 0)
 #define ARM_CONTROL_STRICT_ALIGNMENT	(1 << 1)
 #define ARM_CONTROL_L1_CACHE		(1 << 2)
 #define ARM_CONTROL_BRANCH_PREDICTION	(1 << 11)
 #define ARM_CONTROL_L1_INSTRUCTION_CACHE (1 << 12)
+#if RASPPI == 1
 #define ARM_CONTROL_UNALIGNED_PERMITTED	(1 << 22)
 #define ARM_CONTROL_EXTENDED_PAGE_TABLE	(1 << 23)
+#endif
 
 // Translation table base registers
+#if RASPPI == 1
 #define ARM_TTBR_INNER_CACHEABLE	(1 << 0)
+#else
+#define ARM_TTBR_INNER_NON_CACHEABLE	((0 << 6) | (0 << 0))
+#define ARM_TTBR_INNER_WRITE_ALLOCATE	((1 << 6) | (0 << 0))
+#define ARM_TTBR_INNER_WRITE_THROUGH	((0 << 6) | (1 << 0))
+#define ARM_TTBR_INNER_WRITE_BACK	((1 << 6) | (1 << 0))
+#endif
+
 #define ARM_TTBR_USE_SHAREABLE_MEM	(1 << 1)
 
 #define ARM_TTBR_OUTER_NON_CACHEABLE	(0 << 3)
@@ -120,7 +133,15 @@ PACKED;
 #define ARM_TTBR_OUTER_WRITE_THROUGH	(2 << 3)
 #define ARM_TTBR_OUTER_WRITE_BACK	(3 << 3)
 
+#if RASPPI != 1
+#define ARM_TTBR_NOT_OUTER_SHAREABLE	(1 << 5)
+#endif
+
 //  Auxiliary Control register
+#if RASPPI == 1
 #define ARM_AUX_CONTROL_CACHE_SIZE	(1 << 6)	// restrict cache size to 16K (no page coloring)
+#else
+#define ARM_AUX_CONTROL_SMP		(1 << 6)
+#endif
 
 #endif

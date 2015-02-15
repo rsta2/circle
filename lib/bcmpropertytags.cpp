@@ -2,7 +2,7 @@
 // bcmpropertytags.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -67,7 +67,6 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	*pEndTag = PROPTAG_END;
 
 	CleanDataCache ();
-	InvalidateDataCache ();
 	DataSyncBarrier ();
 
 	u32 nBufferAddress = GPU_MEM_BASE + (u32) pBuffer;
@@ -76,6 +75,9 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 		return FALSE;
 	}
 	
+	InvalidateDataCache ();
+	DataSyncBarrier ();
+
 	if (pBuffer->nCode != CODE_RESPONSE_SUCCESS)
 	{
 		return FALSE;

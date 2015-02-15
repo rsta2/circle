@@ -2,7 +2,7 @@
  * sampler.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,10 +35,6 @@ Sampler:
 	push	{r4-r7}
 	ldr	r4, [sp, #16]
 
-	mov	r5, #0
-	mcr	p15, 0, r5, c7, c10, 0		/* clean data cache */
-	mcr	p15, 0, r5, c7, c6,  0		/* invalidate data cache */
-	mcr	p15, 0, r5, c7, c10, 5		/* data mem barrier */
 	cpsid	i
 
 	ldr	r5, =ARM_GPIO_GPLEV0

@@ -23,7 +23,7 @@
 #include <circle/types.h>
 #include <circle/macros.h>
 
-#define I2C_MASTER_DEVICE	1		// 0 on Rev. 1 boards, 1 otherwise
+#define I2C_MASTER_DEVICE	1		// 0 on Raspberry Pi 1 Rev. 1 boards, 1 otherwise
 #define I2C_FAST_MODE		FALSE		// standard mode (100 Kbps) or fast mode (400 Kbps)
 
 #define I2C_SLAVE_ADDRESS	20		// 7 bit slave address
