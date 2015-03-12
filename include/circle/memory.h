@@ -2,7 +2,7 @@
 // memory.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _memory_h
 
 #include <circle/pagetable.h>
+#include <circle/sysconfig.h>
 #include <circle/types.h>
 
 class CMemorySystem
@@ -28,6 +29,10 @@ class CMemorySystem
 public:
 	CMemorySystem (boolean bEnableMMU = TRUE);
 	~CMemorySystem (void);
+
+#ifdef ARM_ALLOW_MULTI_CORE
+	void InitializeSecondary (void);
+#endif
 
 	u32 GetMemSize (void) const;
 

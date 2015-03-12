@@ -2,7 +2,7 @@
 // pwmoutput.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_pwmoutput_h
 
 #include <circle/gpioclock.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
 class CPWMOutput
@@ -45,6 +46,7 @@ private:
 	unsigned   m_nRange;
 	boolean    m_bMSMode;
 	boolean    m_bActive;
+	CSpinLock  m_SpinLock;
 };
 
 #endif

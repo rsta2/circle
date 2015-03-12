@@ -97,7 +97,11 @@ CPageTable::CPageTable (u32 nMemSize)
 		pEntry->AP	= AP_SYSTEM_ACCESS;
 		pEntry->TEX	= 0;
 		pEntry->APXBit	= APX_RW_ACCESS;
+#ifndef ARM_ALLOW_MULTI_CORE
 		pEntry->SBit	= 0;
+#else
+		pEntry->SBit	= 1;		// required for spin locks, TODO: shared pool
+#endif
 		pEntry->NGBit	= 0;
 		pEntry->Value0	= 0;
 		pEntry->SBZ	= 0;

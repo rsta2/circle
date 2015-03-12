@@ -52,7 +52,8 @@ CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode)
 	m_nBaseAddress (nDevice == 0 ? ARM_BSC0_BASE : ARM_BSC1_BASE),
 	m_bFastMode (bFastMode),
 	m_SDA (nDevice == 0 ? 0 : 2, GPIOModeAlternateFunction0),
-	m_SCL (nDevice == 0 ? 1 : 3, GPIOModeAlternateFunction0)
+	m_SCL (nDevice == 0 ? 1 : 3, GPIOModeAlternateFunction0),
+	m_SpinLock (FALSE)
 {
 	assert (nDevice <= 1);
 }
@@ -88,6 +89,8 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 		return -1;
 	}
 
+	m_SpinLock.Acquire ();
+
 	u8 *pData = (u8 *) pBuffer;
 	assert (pData != 0);
 
@@ -110,6 +113,8 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 		{
 			DataMemBarrier ();
 
+			m_SpinLock.Release ();
+
 			return -1;
 		}
 	}
@@ -122,6 +127,8 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 			if (nStatus & (S_CLKT | S_ERR))
 			{
 				DataMemBarrier ();
+
+				m_SpinLock.Release ();
 
 				return -1;
 			}
@@ -139,11 +146,15 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 		{
 			DataMemBarrier ();
 
+			m_SpinLock.Release ();
+
 			return -1;
 		}
 	}
 
 	DataMemBarrier ();
+
+	m_SpinLock.Release ();
 
 	return nResult;
 }
@@ -159,6 +170,8 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 	{
 		return -1;
 	}
+
+	m_SpinLock.Acquire ();
 
 	u8 *pData = (u8 *) pBuffer;
 	assert (pData != 0);
@@ -182,6 +195,8 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 		{
 			DataMemBarrier ();
 
+			m_SpinLock.Release ();
+
 			return -1;
 		}
 	}
@@ -194,6 +209,8 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 			if (nStatus & (S_CLKT | S_ERR))
 			{
 				DataMemBarrier ();
+
+				m_SpinLock.Release ();
 
 				return -1;
 			}
@@ -211,11 +228,15 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 		{
 			DataMemBarrier ();
 
+			m_SpinLock.Release ();
+
 			return -1;
 		}
 	}
 
 	DataMemBarrier ();
+
+	m_SpinLock.Release ();
 
 	return nResult;
 }

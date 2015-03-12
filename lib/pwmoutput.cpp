@@ -2,7 +2,7 @@
 // pwmoutput.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -127,6 +127,8 @@ void CPWMOutput::Write (unsigned nChannel, unsigned nValue)
 		|| nChannel == PWM_CHANNEL2);
 	assert (nValue <= m_nRange);
 
+	m_SpinLock.Acquire ();
+
 	DataMemBarrier ();
 
 	if (read32 (ARM_PWM_STA) & ARM_PWM_STA_BERR)
@@ -137,4 +139,6 @@ void CPWMOutput::Write (unsigned nChannel, unsigned nValue)
 	write32 (nChannel == PWM_CHANNEL1 ? ARM_PWM_DAT1 : ARM_PWM_DAT2, nValue);
 	
 	DataMemBarrier ();
+
+	m_SpinLock.Release ();
 }

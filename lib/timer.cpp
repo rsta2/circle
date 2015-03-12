@@ -89,16 +89,17 @@ unsigned CTimer::GetTime (void) const
 	return m_nTime;
 }
 
-CString *CTimer::GetTimeString (void) const
+CString *CTimer::GetTimeString (void)
 {
-	EnterCritical ();
+	m_TimeSpinLock.Acquire ();
 
 	unsigned nTime = m_nTime;
 	unsigned nTicks = m_nTicks;
 
-	LeaveCritical ();
+	m_TimeSpinLock.Release ();
 
-	if (nTicks == 0)
+	if (   nTime == 0
+	    && nTicks == 0)
 	{
 		return 0;
 	}
@@ -127,7 +128,7 @@ unsigned CTimer::StartKernelTimer (unsigned nDelay,
 				   void *pParam,
 				   void *pContext)
 {
-	EnterCritical ();
+	m_KernelTimerSpinLock.Acquire ();
 
 	unsigned hTimer;
 	for (hTimer = 0; hTimer < KERNEL_TIMERS; hTimer++)
@@ -140,7 +141,7 @@ unsigned CTimer::StartKernelTimer (unsigned nDelay,
 
 	if (hTimer >= KERNEL_TIMERS)
 	{
-		LeaveCritical ();
+		m_KernelTimerSpinLock.Release ();
 
 		return 0;
 	}
@@ -151,7 +152,7 @@ unsigned CTimer::StartKernelTimer (unsigned nDelay,
 	m_KernelTimer[hTimer].m_pParam      = pParam;
 	m_KernelTimer[hTimer].m_pContext    = pContext;
 
-	LeaveCritical ();
+	m_KernelTimerSpinLock.Release ();
 
 	return hTimer+1;
 }
@@ -164,7 +165,7 @@ void CTimer::CancelKernelTimer (unsigned hTimer)
 
 void CTimer::PollKernelTimers (void)
 {
-	EnterCritical ();
+	m_KernelTimerSpinLock.Acquire ();
 
 	for (unsigned hTimer = 0; hTimer < KERNEL_TIMERS; hTimer++)
 	{
@@ -177,12 +178,19 @@ void CTimer::PollKernelTimers (void)
 			{
 				pTimer->m_pHandler = 0;
 
-				(*pHandler) (hTimer+1, pTimer->m_pParam, pTimer->m_pContext);
+				void *pParam = pTimer->m_pParam;
+				void *pContext = pTimer->m_pContext;
+
+				m_KernelTimerSpinLock.Release ();
+
+				(*pHandler) (hTimer+1, pParam, pContext);
+
+				m_KernelTimerSpinLock.Acquire ();
 			}
 		}
 	}
 
-	LeaveCritical ();
+	m_KernelTimerSpinLock.Release ();
 }
 
 void CTimer::InterruptHandler (void)
@@ -207,10 +215,14 @@ void CTimer::InterruptHandler (void)
 	//debug_click ();
 #endif
 
+	m_TimeSpinLock.Acquire ();
+
 	if (++m_nTicks % HZ == 0)
 	{
 		m_nTime++;
 	}
+
+	m_TimeSpinLock.Release ();
 
 	PollKernelTimers ();
 }

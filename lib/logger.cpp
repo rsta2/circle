@@ -2,7 +2,7 @@
 // logger.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 #include <circle/logger.h>
 #include <circle/string.h>
 #include <circle/synchronize.h>
+#include <circle/startup.h>
+#include <circle/multicore.h>
 #include <circle/util.h>
 
 #define LOGGER_BUFSIZE	0x4000
@@ -76,9 +78,11 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 		return;
 	}
 
+	CString Buffer;
+
 	if (Severity == LogPanic)
 	{
-		Write ("\x1b[1m");
+		Buffer = "\x1b[1m";
 	}
 
 	if (m_pTimer != 0)
@@ -86,36 +90,37 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 		CString *pTimeString = m_pTimer->GetTimeString ();
 		if (pTimeString != 0)
 		{
-			Write (*pTimeString);
-			Write (" ");
+			Buffer.Append (*pTimeString);
+			Buffer.Append (" ");
 
 			delete pTimeString;
 		}
 	}
 
-	Write (pSource);
-	Write (": ");
+	Buffer.Append (pSource);
+	Buffer.Append (": ");
 
 	CString Message;
 	Message.FormatV (pMessage, Args);
 
-	Write (Message);
+	Buffer.Append (Message);
 
 	if (Severity == LogPanic)
 	{
-		Write ("\x1b[0m");
+		Buffer.Append ("\x1b[0m");
 	}
 
-	Write ("\n");
+	Buffer.Append ("\n");
+
+	Write (Buffer);
 
 	if (Severity == LogPanic)
 	{
-		DisableInterrupts ();
-
-		while (1)
-		{
-			// wait forever
-		}
+#ifndef ARM_ALLOW_MULTI_CORE
+		halt ();
+#else
+		CMultiCoreSupport::HaltAll ();
+#endif
 	}
 }
 
@@ -129,6 +134,8 @@ void CLogger::Write (const char *pString)
 	unsigned long nLength = strlen (pString);
 
 	m_pTarget->Write (pString, nLength);
+
+	m_SpinLock.Acquire ();
 
 	while (nLength--)
 	{
@@ -149,12 +156,18 @@ void CLogger::Write (const char *pString)
 			break;
 		}
 	}
+
+	m_SpinLock.Release ();
 }
 
 int CLogger::Read (void *pBuffer, unsigned nCount)
 {
+	m_SpinLock.Acquire ();
+
 	if (m_nInPtr == m_nOutPtr)
 	{
+		m_SpinLock.Release ();
+
 		return -1;
 	}
 
@@ -174,6 +187,8 @@ int CLogger::Read (void *pBuffer, unsigned nCount)
 			break;
 		}
 	}
+
+	m_SpinLock.Release ();
 
 	return nResult;
 }

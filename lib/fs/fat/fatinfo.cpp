@@ -2,7 +2,7 @@
 // fatinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,8 @@ static const char FromFATInfo[] = "fatinfo";
 
 CFATInfo::CFATInfo (CFATCache *pCache)
 :	m_pCache (pCache),
-	m_FATType (FATUnknown)
+	m_FATType (FATUnknown),
+	m_Lock (FALSE)
 {
 }
 
@@ -290,7 +291,7 @@ void CFATInfo::UpdateFSInfo (void)
 		return;
 	}
 
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 	
 	assert (m_pCache != 0);
 	TFATBuffer *pBuffer = m_pCache->GetSector (m_nFSInfoSector, 0);
@@ -304,7 +305,7 @@ void CFATInfo::UpdateFSInfo (void)
 	    || pFSInfo->nTrailingSignature != TRAILING_SIGNATURE)
 	{
 		m_pCache->FreeSector (pBuffer, 1);
-		//m_Lock.Release ();
+		m_Lock.Release ();
 		return;
 	}
 
@@ -317,12 +318,12 @@ void CFATInfo::UpdateFSInfo (void)
 	m_pCache->FreeSector (pBuffer, 1);
 	pBuffer = 0;
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 }
 
 void CFATInfo::ClusterAllocated (unsigned nCluster)
 {
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 
 	if (   m_nFreeCount != FREE_COUNT_UNKNOWN
 	    && m_nFreeCount > 0)
@@ -339,12 +340,12 @@ void CFATInfo::ClusterAllocated (unsigned nCluster)
 		m_nNextFreeCluster = 2;
 	}
 	
-	//m_Lock.Release ();
+	m_Lock.Release ();
 }
 
 void CFATInfo::ClusterFreed (unsigned nCluster)
 {
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 
 	if (   m_nFreeCount != FREE_COUNT_UNKNOWN
 	    && m_nFreeCount < m_nClusters)
@@ -360,16 +361,16 @@ void CFATInfo::ClusterFreed (unsigned nCluster)
 		m_nNextFreeCluster = nCluster;
 	}
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 }
 
 unsigned CFATInfo::GetNextFreeCluster (void)
 {
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 
 	unsigned nCluster = m_nNextFreeCluster;
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 
 	return nCluster;
 }

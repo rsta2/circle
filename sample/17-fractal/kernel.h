@@ -1,5 +1,5 @@
 //
-// i2cmaster.h
+// kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
@@ -17,37 +17,53 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_i2cmaster_h
-#define _circle_i2cmaster_h
+#ifndef _kernel_h
+#define _kernel_h
 
-#include <circle/gpiopin.h>
-#include <circle/spinlock.h>
+#include <circle/memory.h>
+#include <circle/actled.h>
+#include <circle/koptions.h>
+#include <circle/devicenameservice.h>
+#include <circle/screen.h>
+#include <circle/serial.h>
+#include <circle/exceptionhandler.h>
+#include <circle/interrupt.h>
+#include <circle/timer.h>
+#include <circle/logger.h>
 #include <circle/types.h>
+#include "mandelbrot.h"
 
-class CI2CMaster
+enum TShutdownMode
+{
+	ShutdownNone,
+	ShutdownHalt,
+	ShutdownReboot
+};
+
+class CKernel
 {
 public:
-	CI2CMaster (unsigned nDevice,			// 0 on Rev. 1 boards, 1 otherwise
-		    boolean bFastMode = FALSE);
-	~CI2CMaster (void);
+	CKernel (void);
+	~CKernel (void);
 
 	boolean Initialize (void);
 
-	// returns number of read bytes or < 0 on failure
-	int Read (u8 ucAddress, void *pBuffer, unsigned nCount);
-
-	// returns number of written bytes or < 0 on failure
-	int Write (u8 ucAddress, const void *pBuffer, unsigned nCount);
-
+	TShutdownMode Run (void);
+	
 private:
-	unsigned m_nDevice;
-	unsigned m_nBaseAddress;
-	boolean  m_bFastMode;
+	// do not change this order
+	CMemorySystem		m_Memory;
+	CActLED			m_ActLED;
+	CKernelOptions		m_Options;
+	CDeviceNameService	m_DeviceNameService;
+	CScreenDevice		m_Screen;
+	CSerialDevice		m_Serial;
+	CExceptionHandler	m_ExceptionHandler;
+	CInterruptSystem	m_Interrupt;
+	CTimer			m_Timer;
+	CLogger			m_Logger;
 
-	CGPIOPin m_SDA;
-	CGPIOPin m_SCL;
-
-	CSpinLock m_SpinLock;
+	CMandelbrotCalculator	m_Mandelbrot;
 };
 
 #endif

@@ -2,7 +2,7 @@
 // dwhcixferstagedata.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -383,6 +383,7 @@ u8 CDWHCITransferStageData::GetSplitPosition (void) const
 u32 CDWHCITransferStageData::GetStatusMask (void) const
 {
 	u32 nMask =   DWHCI_HOST_CHAN_INT_XFER_COMPLETE
+		    | DWHCI_HOST_CHAN_INT_HALTED
 		    | DWHCI_HOST_CHAN_INT_ERROR_MASK;
 		    
 	if (   m_bSplitTransaction

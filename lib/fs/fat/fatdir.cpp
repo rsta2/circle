@@ -2,7 +2,7 @@
 // fatdir.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@ CFATDirectory::CFATDirectory (CFATCache *pCache, CFATInfo *pFATInfo, CFAT *pFAT)
 :	m_pCache (pCache),
 	m_pFATInfo (pFATInfo),
 	m_pFAT (pFAT),
-	m_pBuffer (0)
+	m_pBuffer (0),
+	m_Lock (FALSE)
 {
 }
 
@@ -61,7 +62,7 @@ TFATDirectoryEntry *CFATDirectory::GetEntry (const char *pName)
 				     * FAT_DIR_ENTRIES_PER_SECTOR;
 	}
 
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 	
 	while (1)
 	{
@@ -132,7 +133,7 @@ TFATDirectoryEntry *CFATDirectory::GetEntry (const char *pName)
 		}
 	}
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 
 	return 0;
 }
@@ -162,7 +163,7 @@ TFATDirectoryEntry *CFATDirectory::CreateEntry (const char *pName)
 				     * FAT_DIR_ENTRIES_PER_SECTOR;
 	}
 
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 
 	unsigned nPrevCluster = 0;
 	
@@ -254,7 +255,7 @@ TFATDirectoryEntry *CFATDirectory::CreateEntry (const char *pName)
 		}
 	}
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 	
 	return 0;
 }
@@ -272,7 +273,7 @@ void CFATDirectory::FreeEntry (boolean bChanged)
 	m_pCache->FreeSector (m_pBuffer, 1);
 	m_pBuffer = 0;
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 }
 
 boolean CFATDirectory::FindFirst (TDirentry *pEntry, TFindCurrentEntry *pCurrentEntry)
@@ -308,7 +309,7 @@ boolean CFATDirectory::FindNext (TDirentry *pEntry, TFindCurrentEntry *pCurrentE
 				     * FAT_DIR_ENTRIES_PER_SECTOR;
 	}
 
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 
 	while (1)
 	{
@@ -388,7 +389,7 @@ boolean CFATDirectory::FindNext (TDirentry *pEntry, TFindCurrentEntry *pCurrentE
 
 		if (bFound)
 		{
-			//m_Lock.Release ();
+			m_Lock.Release ();
 
 			return TRUE;
 		}
@@ -396,7 +397,7 @@ boolean CFATDirectory::FindNext (TDirentry *pEntry, TFindCurrentEntry *pCurrentE
 
 	pCurrentEntry->nEntry = 0xFFFFFFFF;
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 
 	return FALSE;
 }

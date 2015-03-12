@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@ OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o libhelper.o lib
 	  assert.o chargenerator.o debug.o devicenameservice.o logger.o serial.o string.o \
 	  delayloop.o exceptionhandler.o exceptionstub.o interrupt.o \
 	  gpiomanager.o gpioclock.o dmachannel.o pwmsounddevice.o pwmoutput.o tracer.o \
-	  i2cmaster.o i2cslave.o
+	  i2cmaster.o i2cslave.o \
+	  multicore.o spinlock.o
 
 all: startup.o libcircle.a
 

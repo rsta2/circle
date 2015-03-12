@@ -1,8 +1,8 @@
 //
-// i2cmaster.h
+// mandelbrot.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,37 +17,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_i2cmaster_h
-#define _circle_i2cmaster_h
+#ifndef _mandelbrot_h
+#define _mandelbrot_h
 
-#include <circle/gpiopin.h>
-#include <circle/spinlock.h>
+#include <circle/multicore.h>
+#include <circle/screen.h>
+#include <circle/memory.h>
 #include <circle/types.h>
 
-class CI2CMaster
+class CMandelbrotCalculator
+#ifdef ARM_ALLOW_MULTI_CORE
+	: public CMultiCoreSupport
+#endif
 {
 public:
-	CI2CMaster (unsigned nDevice,			// 0 on Rev. 1 boards, 1 otherwise
-		    boolean bFastMode = FALSE);
-	~CI2CMaster (void);
+	CMandelbrotCalculator (CScreenDevice *pScreen, CMemorySystem *pMemorySystem);
+	~CMandelbrotCalculator (void);
 
-	boolean Initialize (void);
+#ifndef ARM_ALLOW_MULTI_CORE
+	boolean Initialize (void)	{ return TRUE; }
+#endif
 
-	// returns number of read bytes or < 0 on failure
-	int Read (u8 ucAddress, void *pBuffer, unsigned nCount);
-
-	// returns number of written bytes or < 0 on failure
-	int Write (u8 ucAddress, const void *pBuffer, unsigned nCount);
+	void Run (unsigned nCore);
 
 private:
-	unsigned m_nDevice;
-	unsigned m_nBaseAddress;
-	boolean  m_bFastMode;
+	void Calculate (float x1, float x2, float y1, float y2, unsigned nMaxIteration,
+			unsigned nPosY0, unsigned nHeight);
 
-	CGPIOPin m_SDA;
-	CGPIOPin m_SCL;
-
-	CSpinLock m_SpinLock;
+private:
+	CScreenDevice *m_pScreen;
 };
 
 #endif

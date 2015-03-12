@@ -2,7 +2,7 @@
 // dwhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,10 @@
 #include <circle/usb/dwhciregister.h>
 #include <circle/usb/dwhci.h>
 #include <circle/usb/usb.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
+
+#define DWHCI_WAIT_BLOCKS	DWHCI_MAX_CHANNELS
 
 class CDWHCIDevice : public CUSBHostController
 {
@@ -84,6 +87,9 @@ private:
 	unsigned AllocateChannel (void);
 	void FreeChannel (unsigned nChannel);
 
+	unsigned AllocateWaitBlock (void);
+	void FreeWaitBlock (unsigned nWaitBlock);
+
 	boolean WaitForBit (CDWHCIRegister *pRegister,
 			    u32		    nMask,
 			    boolean	    bWaitUntilSet,
@@ -100,10 +106,15 @@ private:
 
 	unsigned m_nChannels;
 	volatile unsigned m_nChannelAllocated;		// one bit per channel, set if allocated
+	CSpinLock m_ChannelSpinLock;
 
 	CDWHCITransferStageData *m_pStageData[DWHCI_MAX_CHANNELS];
 
-	volatile boolean m_bWaiting;
+	CSpinLock m_IntMaskSpinLock;
+
+	volatile boolean m_bWaiting[DWHCI_WAIT_BLOCKS];
+	volatile unsigned m_nWaitBlockAllocated;	// one bit per wait block, set if allocated
+	CSpinLock m_WaitBlockSpinLock;
 
 	CDWHCIRootPort m_RootPort;
 };

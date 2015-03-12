@@ -2,7 +2,7 @@
 // fatfs.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@
 CFATFileSystem::CFATFileSystem (void)
 :	m_FATInfo (&m_Cache),
 	m_FAT (&m_Cache, &m_FATInfo),
-	m_Root (&m_Cache, &m_FATInfo, &m_FAT)
+	m_Root (&m_Cache, &m_FATInfo, &m_FAT),
+	m_FileTableLock (FALSE)
 {
 	memset (&m_Files, 0, sizeof m_Files);
 }
@@ -75,7 +76,7 @@ unsigned CFATFileSystem::RootFindNext (TDirentry *pEntry, TFindCurrentEntry *pCu
 
 unsigned CFATFileSystem::FileOpen (const char *pTitle)
 {
-	//m_FileTableLock.Acquire ();
+	m_FileTableLock.Acquire ();
 
 	unsigned hFile;
 	for (hFile = 1; hFile <= FAT_FILES; hFile++)
@@ -88,7 +89,7 @@ unsigned CFATFileSystem::FileOpen (const char *pTitle)
 
 	if (hFile > FAT_FILES)
 	{
-		//m_FileTableLock.Release ();
+		m_FileTableLock.Release ();
 
 		return 0;
 	}
@@ -97,7 +98,7 @@ unsigned CFATFileSystem::FileOpen (const char *pTitle)
 	TFATDirectoryEntry *pEntry = m_Root.GetEntry (pTitle);
 	if (pEntry == 0)
 	{
-		//m_FileTableLock.Release ();
+		m_FileTableLock.Release ();
 
 		return 0;
 	}
@@ -116,14 +117,14 @@ unsigned CFATFileSystem::FileOpen (const char *pTitle)
 
 	m_Root.FreeEntry (FALSE);
 
-	//m_FileTableLock.Release ();
+	m_FileTableLock.Release ();
 
 	return hFile;
 }
 
 unsigned CFATFileSystem::FileCreate (const char *pTitle)
 {
-	//m_FileTableLock.Acquire ();
+	m_FileTableLock.Acquire ();
 
 	unsigned hFile;
 	for (hFile = 1; hFile <= FAT_FILES; hFile++)
@@ -136,7 +137,7 @@ unsigned CFATFileSystem::FileCreate (const char *pTitle)
 
 	if (hFile > FAT_FILES)
 	{
-		//m_FileTableLock.Release ();
+		m_FileTableLock.Release ();
 
 		return 0;
 	}
@@ -144,7 +145,7 @@ unsigned CFATFileSystem::FileCreate (const char *pTitle)
 	assert (pTitle != 0);
 	if (FileDelete (pTitle) < 0)
 	{
-		//m_FileTableLock.Release ();
+		m_FileTableLock.Release ();
 
 		return 0;
 	}
@@ -152,7 +153,7 @@ unsigned CFATFileSystem::FileCreate (const char *pTitle)
 	TFATDirectoryEntry *pEntry = m_Root.CreateEntry (pTitle);
 	if (pEntry == 0)
 	{
-		//m_FileTableLock.Release ();
+		m_FileTableLock.Release ();
 
 		return 0;
 	}
@@ -171,7 +172,7 @@ unsigned CFATFileSystem::FileCreate (const char *pTitle)
 	pFile->pBuffer = 0;
 	pFile->bWrite = 1;
 
-	//m_FileTableLock.Release ();
+	m_FileTableLock.Release ();
 
 	return hFile;
 }
@@ -184,19 +185,19 @@ unsigned CFATFileSystem::FileClose (unsigned hFile)
 		return 0;
 	}
 
-	//m_FileTableLock.Acquire ();
+	m_FileTableLock.Acquire ();
 
 	TFile *pFile = &FILE (hFile);
 	if (!pFile->nUseCount)
 	{
-		//m_FileTableLock.Release ();
+		m_FileTableLock.Release ();
 		return 0;
 	}
 
 	if (pFile->nUseCount > 1)
 	{
 		pFile->nUseCount--;
-		//m_FileTableLock.Release ();
+		m_FileTableLock.Release ();
 		return 1;
 	}
 
@@ -226,7 +227,7 @@ unsigned CFATFileSystem::FileClose (unsigned hFile)
 
 	pFile->nUseCount = 0;
 
-	//m_FileTableLock.Release ();
+	m_FileTableLock.Release ();
 
 	return 1;
 }
@@ -242,14 +243,14 @@ unsigned CFATFileSystem::FileRead (unsigned hFile, void *pBuffer, unsigned ulByt
 		return FS_ERROR;
 	}
 
-	//m_FileTableLock.Acquire ();
+	m_FileTableLock.Acquire ();
 
 	pFile = &FILE (hFile);
 	if (   !pFile->nUseCount
 	    || pFile->bWrite
 	    || ulBytes == 0)
 	{
-		//m_FileTableLock.Release ();
+		m_FileTableLock.Release ();
 		return FS_ERROR;
 	}
 
@@ -263,7 +264,7 @@ unsigned CFATFileSystem::FileRead (unsigned hFile, void *pBuffer, unsigned ulByt
 		ulBytesLeft = pFile->nSize - pFile->nOffset;
 		if (ulBytesLeft == 0)
 		{
-			//m_FileTableLock.Release ();
+			m_FileTableLock.Release ();
 			return ulBytesRead;
 		}
 	
@@ -278,7 +279,7 @@ unsigned CFATFileSystem::FileRead (unsigned hFile, void *pBuffer, unsigned ulByt
 					pFile->nCluster = m_FAT.GetClusterEntry (pFile->nCluster);
 					if (m_FAT.IsEOC (pFile->nCluster))
 					{
-						//m_FileTableLock.Release ();
+						m_FileTableLock.Release ();
 						return FS_ERROR;
 					}
 				}
@@ -326,7 +327,7 @@ unsigned CFATFileSystem::FileRead (unsigned hFile, void *pBuffer, unsigned ulByt
 		}
 	}
 
-	//m_FileTableLock.Release ();
+	m_FileTableLock.Release ();
 
 	return ulBytesRead;
 }
@@ -342,14 +343,14 @@ unsigned CFATFileSystem::FileWrite (unsigned hFile, const void *pBuffer, unsigne
 		return FS_ERROR;
 	}
 
-	//m_FileTableLock.Acquire ();
+	m_FileTableLock.Acquire ();
 
 	pFile = &FILE (hFile);
 	if (   !pFile->nUseCount
 	    || !pFile->bWrite
 	    || ulBytes == 0)
 	{
-		//m_FileTableLock.Release ();
+		m_FileTableLock.Release ();
 		return FS_ERROR;
 	}
 
@@ -363,7 +364,7 @@ unsigned CFATFileSystem::FileWrite (unsigned hFile, const void *pBuffer, unsigne
 		ulBytesLeft = FAT_MAX_FILESIZE - pFile->nSize;
 		if (ulBytesLeft == 0)
 		{
-			//m_FileTableLock.Release ();
+			m_FileTableLock.Release ();
 			return ulBytesWritten;
 		}
 	
@@ -376,7 +377,7 @@ unsigned CFATFileSystem::FileWrite (unsigned hFile, const void *pBuffer, unsigne
 				unsigned nNextCluster = m_FAT.AllocateCluster ();
 				if (nNextCluster == 0)
 				{
-					//m_FileTableLock.Release ();
+					m_FileTableLock.Release ();
 					return FS_ERROR;
 				}
 				
@@ -439,7 +440,7 @@ unsigned CFATFileSystem::FileWrite (unsigned hFile, const void *pBuffer, unsigne
 		}
 	}
 
-	//m_FileTableLock.Release ();
+	m_FileTableLock.Release ();
 
 	return ulBytesWritten;
 }

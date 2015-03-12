@@ -1,15 +1,12 @@
 //
 // serial.cpp
 //
-// Circle - A Raspberry Pi OS written in C++
-// Copyright (C) 2014  R. Stange
-// 
 // Based on Raspberry PI Remote Serial Protocol.
 //     Copyright 2012 Jamie Iles, jamie@jamieiles.com.
 //     Licensed under GPLv2
 // 
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -134,6 +131,8 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 
 int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 {
+	m_SpinLock.Acquire ();
+
 	DataMemBarrier ();
 
 	u8 *pChar = (u8 *) pBuffer;
@@ -154,6 +153,8 @@ int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 	}
 
 	DataMemBarrier ();
+
+	m_SpinLock.Release ();
 
 	return nResult;
 }

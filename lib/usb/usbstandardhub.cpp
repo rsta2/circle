@@ -2,7 +2,7 @@
 // usbstandardhub.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
+#include <circle/koptions.h>
 #include <circle/debug.h>
 #include <circle/macros.h>
 #include <assert.h>
@@ -156,9 +157,19 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 		}
 	}
 
-	// m_pHubDesc->bPwrOn2PwrGood delay seems to be not enough
-	// for some low speed devices, so we use the maximum here
-	CTimer::Get ()->MsDelay (510);
+	// m_pHubDesc->bPwrOn2PwrGood delay seems to be not enough for some devices,
+	// so we use the maximum or a configured value here
+	unsigned nMsDelay = 510;
+	CKernelOptions *pOptions = CKernelOptions::Get ();
+	if (pOptions != 0)
+	{
+		unsigned nUSBPowerDelay = pOptions->GetUSBPowerDelay ();
+		if (nUSBPowerDelay != 0)
+		{
+			nMsDelay = nUSBPowerDelay;
+		}
+	}
+	CTimer::Get ()->MsDelay (nMsDelay);
 
 	// now detect devices, reset and initialize them
 	for (unsigned nPort = 0; nPort < m_nPorts; nPort++)

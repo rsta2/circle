@@ -20,11 +20,13 @@ Base library
 * CKernelOptions: Providing kernel options from file cmdline.txt (see doc/cmdline.txt).
 * CLogger: Writing logging messages to a target device
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
+* CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
 * CPageTable: Encapsulates a page table to be used by MMU.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
 * CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
 * CSerialDevice: Writing characters to UART
+* CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
 * CString: Simple string manipulation class, Format() method works like printf() (but has less formating options)
 * CTimer: Supports an uptime clock, kernel timers and a calibrated delay loop.
 * CTracer: Collects tracing events in a ring buffer for debugging and dumps them to the logger later.

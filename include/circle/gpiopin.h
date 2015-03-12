@@ -2,7 +2,7 @@
 // gpiopin.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #ifndef _gpiopin_h
 #define _gpiopin_h
 
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
 #define GPIO_PINS	54
@@ -83,6 +84,7 @@ private:
 	void SetAlternateFunction (unsigned nFunction);
 
 	void InterruptHandler (void);
+	static void DisableAllInterrupts (unsigned nPin);
 	friend class CGPIOManager;
 
 private:
@@ -94,6 +96,8 @@ private:
 	TGPIOInterruptHandler	*m_pHandler;
 	void			*m_pParam;
 	TGPIOInterrupt		 m_Interrupt;
+
+	static CSpinLock s_SpinLock;
 };
 
 #endif

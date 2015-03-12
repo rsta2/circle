@@ -20,7 +20,10 @@
 #include <circle/startup.h>
 #include <circle/memio.h>
 #include <circle/bcm2835.h>
+#include <circle/bcm2836.h>
 #include <circle/synchronize.h>
+#include <circle/sysconfig.h>
+#include <circle/types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,9 +38,47 @@ void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 
 void halt (void)
 {
+#ifdef ARM_ALLOW_MULTI_CORE
+	static volatile boolean s_bCoreHalted[CORES] = {FALSE};
+
+	u32 nMPIDR;
+	asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (nMPIDR));
+	unsigned nCore = nMPIDR & (CORES-1);
+
+	// core 0 must not halt until all secondary cores have been halted
+	if (nCore == 0)
+	{
+		unsigned nSecCore = 1;
+		while (nSecCore < CORES)
+		{
+			DataMemBarrier ();
+			if (!s_bCoreHalted[nSecCore])
+			{
+				DataSyncBarrier ();
+				asm volatile ("wfi");
+
+				nSecCore = 1;
+			}
+			else
+			{
+				nSecCore++;
+			}
+		}
+	}
+
+	s_bCoreHalted[nCore] = TRUE;
+	DataMemBarrier ();
+#endif
+
 	DisableInterrupts ();
 	
-	for (;;);
+	for (;;)
+	{
+#if RASPPI != 1
+		DataSyncBarrier ();
+		asm volatile ("wfi");
+#endif
+	}
 }
 
 void reboot (void)					// by PlutoniumBob@raspi-forum
@@ -72,7 +113,15 @@ void sysinit (void)
 {
 #if RASPPI != 1
 	// L1 data cache may contain random entries after reset, delete them
-	InvalidateDataCache ();
+	InvalidateDataCacheL1Only ();
+
+#ifndef ARM_ALLOW_MULTI_CORE
+	// put all secondary cores to sleep
+	for (unsigned nCore = 1; nCore < CORES; nCore++)
+	{
+		write32 (ARM_LOCAL_MAILBOX3_SET0 + 0x10 * nCore, (u32) &_start_secondary);
+	}
+#endif
 #endif
 
 	// clear BSS
@@ -101,6 +150,22 @@ void sysinit (void)
 
 	halt ();
 }
+
+#ifdef ARM_ALLOW_MULTI_CORE
+
+void sysinit_secondary (void)
+{
+	// L1 data cache may contain random entries after reset, delete them
+	InvalidateDataCacheL1Only ();
+
+	vfpinit ();
+
+	main_secondary ();
+
+	halt ();
+}
+
+#endif
 
 #ifdef __cplusplus
 }

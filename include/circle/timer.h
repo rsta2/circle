@@ -2,7 +2,7 @@
 // timer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/interrupt.h>
 #include <circle/string.h>
 #include <circle/sysconfig.h>
+#include <circle/spinlock.h>
 
 #define HZ		100			// ticks per second
 
@@ -53,7 +54,7 @@ public:
 	unsigned GetTime (void) const;			// Seconds since system boot
 
 	// "HH:MM:SS.ss", 0 if Initialize() was not yet called
-	CString *GetTimeString (void) const;		// CString object must be deleted by caller
+	CString *GetTimeString (void);			// CString object must be deleted by caller
 
 	// returns timer handle (0 on failure)
 	unsigned StartKernelTimer (unsigned nDelay,		// in HZ units
@@ -82,9 +83,14 @@ private:
 
 private:
 	CInterruptSystem	*m_pInterruptSystem;
+
 	volatile unsigned	 m_nTicks;
 	volatile unsigned	 m_nTime;
+	CSpinLock		 m_TimeSpinLock;
+
 	volatile TKernelTimer	 m_KernelTimer[KERNEL_TIMERS];	// TODO: should be linked list
+	CSpinLock		 m_KernelTimerSpinLock;
+
 	unsigned		 m_nMsDelay;
 	unsigned		 m_nusDelay;
 

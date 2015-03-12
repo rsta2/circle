@@ -18,8 +18,53 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/synchronize.h>
+#include <circle/sysconfig.h>
 #include <circle/types.h>
 #include <assert.h>
+
+#ifdef ARM_ALLOW_MULTI_CORE
+
+static volatile unsigned s_nCriticalLevel[CORES] = {0};
+static volatile boolean s_bWereEnabled[CORES];
+
+void EnterCritical (void)
+{
+	u32 nMPIDR;
+	asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (nMPIDR));
+	unsigned nCore = nMPIDR & (CORES-1);
+
+	u32 nFlags;
+	asm volatile ("mrs %0, cpsr" : "=r" (nFlags));
+
+	DisableInterrupts ();
+
+	if (s_nCriticalLevel[nCore]++ == 0)
+	{
+		s_bWereEnabled[nCore] = nFlags & 0x80 ? FALSE : TRUE;
+	}
+
+	DataMemBarrier ();
+}
+
+void LeaveCritical (void)
+{
+	u32 nMPIDR;
+	asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (nMPIDR));
+	unsigned nCore = nMPIDR & (CORES-1);
+
+	DataMemBarrier ();
+
+	assert (s_nCriticalLevel[nCore] > 0);
+	if (--s_nCriticalLevel[nCore] == 0)
+	{
+		if (s_bWereEnabled[nCore])
+		{
+			EnableInterrupts ();
+		}
+	}
+}
+
+#else
 
 static volatile unsigned s_nCriticalLevel = 0;
 static volatile boolean s_bWereEnabled;
@@ -52,6 +97,8 @@ void LeaveCritical (void)
 		}
 	}
 }
+
+#endif
 
 #if RASPPI != 1
 
@@ -106,6 +153,22 @@ void InvalidateDataCache (void)
 			register u32 nSetWayLevel =   nWay << L2_SETWAY_WAY_SHIFT
 						    | nSet << L2_SETWAY_SET_SHIFT
 						    | 1 << SETWAY_LEVEL_SHIFT;
+
+			asm volatile ("mcr p15, 0, %0, c7, c6,  2" : : "r" (nSetWayLevel) : "memory");	// DCISW
+		}
+	}
+}
+
+void InvalidateDataCacheL1Only (void)
+{
+	// invalidate L1 data cache
+	for (register unsigned nSet = 0; nSet < L1_DATA_CACHE_SETS; nSet++)
+	{
+		for (register unsigned nWay = 0; nWay < L1_DATA_CACHE_WAYS; nWay++)
+		{
+			register u32 nSetWayLevel =   nWay << L1_SETWAY_WAY_SHIFT
+						    | nSet << L1_SETWAY_SET_SHIFT
+						    | 0 << SETWAY_LEVEL_SHIFT;
 
 			asm volatile ("mcr p15, 0, %0, c7, c6,  2" : : "r" (nSetWayLevel) : "memory");	// DCISW
 		}

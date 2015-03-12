@@ -2,7 +2,7 @@
 // alloc.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/alloc.h>
-#include <circle/synchronize.h>
+#include <circle/spinlock.h>
 #include <circle/sysconfig.h>
 #include <circle/util.h>
 #include <circle/macros.h>
@@ -79,6 +79,9 @@ static TBlockBucket s_BlockBucket[] = {{0x40}, {0x400}, {0x1000}, {0x4000}, {0x4
 
 static TPageBucket s_PageBucket;
 
+static CSpinLock s_BlockSpinLock;
+static CSpinLock s_PageSpinLock;
+
 void mem_init (unsigned long ulBase, unsigned long ulSize)
 {
 	unsigned long ulLimit = ulBase + ulSize;
@@ -107,7 +110,7 @@ void *malloc (unsigned long ulSize)
 {
 	assert (s_pNextBlock != 0);
 	
-	EnterCritical ();
+	s_BlockSpinLock.Acquire ();
 
 	TBlockBucket *pBucket;
 	for (pBucket = s_BlockBucket; pBucket->nSize > 0; pBucket++)
@@ -141,7 +144,7 @@ void *malloc (unsigned long ulSize)
 		s_pNextBlock += (sizeof (TBlockHeader) + ulSize + BLOCK_ALIGN-1) & ~ALIGN_MASK;
 		if (s_pNextBlock > s_pBlockLimit)
 		{
-			LeaveCritical ();
+			s_BlockSpinLock.Release ();
 
 			return 0;		// TODO: system should panic here
 		}
@@ -150,7 +153,7 @@ void *malloc (unsigned long ulSize)
 		pBlockHeader->nSize = (unsigned) ulSize;
 	}
 	
-	LeaveCritical ();
+	s_BlockSpinLock.Release ();
 
 	pBlockHeader->pNext = 0;
 
@@ -170,7 +173,7 @@ void free (void *pBlock)
 	{
 		if (pBlockHeader->nSize == pBucket->nSize)
 		{
-			EnterCritical ();
+			s_BlockSpinLock.Acquire ();
 
 			pBlockHeader->pNext = pBucket->pFreeList;
 			pBucket->pFreeList = pBlockHeader;
@@ -179,7 +182,7 @@ void free (void *pBlock)
 			pBucket->nCount--;
 #endif
 
-			LeaveCritical ();
+			s_BlockSpinLock.Release ();
 
 			break;
 		}
@@ -190,7 +193,7 @@ void *palloc (void)
 {
 	assert (s_pNextPage != 0);
 
-	EnterCritical ();
+	s_PageSpinLock.Acquire ();
 
 #ifdef MEM_DEBUG
 	if (++s_PageBucket.nCount > s_PageBucket.nMaxCount)
@@ -214,13 +217,13 @@ void *palloc (void)
 
 		if (s_pNextPage > s_pPageLimit)
 		{
-			LeaveCritical ();
+			s_PageSpinLock.Release ();
 
 			return 0;		// TODO: system should panic here
 		}
 	}
 
-	LeaveCritical ();
+	s_PageSpinLock.Release ();
 	
 	return pFreePage;
 }
@@ -230,7 +233,7 @@ void pfree (void *pPage)
 	assert (pPage != 0);
 	TFreePage *pFreePage = (TFreePage *) pPage;
 	
-	EnterCritical ();
+	s_PageSpinLock.Acquire ();
 
 	pFreePage->nMagic = FREEPAGE_MAGIC;
 
@@ -241,7 +244,7 @@ void pfree (void *pPage)
 	s_PageBucket.nCount--;
 #endif
 
-	LeaveCritical ();
+	s_PageSpinLock.Release ();
 }
 
 #ifdef MEM_DEBUG

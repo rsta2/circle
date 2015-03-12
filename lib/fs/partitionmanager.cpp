@@ -2,7 +2,7 @@
 // partitionmanager.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <circle/fs/partitionmanager.h>
 #include <circle/fs/fsdef.h>
 #include <circle/devicenameservice.h>
+#include <circle/logger.h>
 #include <circle/macros.h>
 #include <assert.h>
 
@@ -52,6 +53,8 @@ struct TMasterBootRecord
 }
 PACKED;
 
+static const char FromPartitionManager[] = "partm";
+
 CPartitionManager::CPartitionManager (CDevice *pDevice, const char *pDeviceName)
 :	m_pDevice (pDevice),
 	m_DeviceName (pDeviceName)
@@ -78,21 +81,27 @@ boolean CPartitionManager::Initialize (void)
 	TMasterBootRecord MBR;
 	assert (sizeof MBR == FS_BLOCK_SIZE);
 
-	if (m_pDevice->Seek (0) != 0)
+	if (   m_pDevice->Seek (0) != 0
+	    || m_pDevice->Read (&MBR, sizeof MBR) != sizeof MBR)
 	{
+		CLogger::Get ()->Write (FromPartitionManager, LogError, "Cannot read MBR");
+
 		return FALSE;
 	}
 
-	if (   m_pDevice->Read (&MBR, sizeof MBR) != sizeof MBR
-	    || MBR.BootSignature != BOOT_SIGNATURE)
+	if (MBR.BootSignature != BOOT_SIGNATURE)
 	{
-		return FALSE;
+		CLogger::Get ()->Write (FromPartitionManager, LogWarning, "Drive has no MBR");
+
+		return TRUE;
 	}
 
 	unsigned nPartition = 0;
 	for (unsigned i = 0; i < MAX_PARTITIONS; i++)
 	{
 		if (   MBR.Partition[i].Type == 0
+		    || MBR.Partition[i].Type == 0x05		// Extended partitions are not supported
+		    || MBR.Partition[i].Type == 0x0F		// Extended partitions are not supported
 		    || MBR.Partition[i].Type == 0xEF		// EFI is not supported
 		    || MBR.Partition[i].LBAFirstSector == 0
 		    || MBR.Partition[i].NumberOfSectors == 0)
@@ -112,7 +121,9 @@ boolean CPartitionManager::Initialize (void)
 
 	if (nPartition == 0)
 	{
-		return FALSE;
+		CLogger::Get ()->Write (FromPartitionManager, LogWarning, "Drive has no supported partition");
+
+		return TRUE;
 	}
 
 	return TRUE;

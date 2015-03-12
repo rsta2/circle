@@ -1,0 +1,30 @@
+MULTI-CORE SUPPORT
+
+The Cortex-A7 CPU in the Raspberry Pi 2 has four identical cores. With Circle they can be used to run four simultaneous threads of operation. The user is responsible for assigning a specific working task to a core. Despite from this all peripheral IRQs (and callbacks triggered by an IRQ, e.g. kernel timer handler or USB completion routine) are handled on core 0.
+
+Until now a (single-core) Circle application was implemented in the CKernel class (including initialization). A multi-core application now uses at least two application classes. CKernel runs on core 0 and does mostly the initialization only. The main application function is implemented in a user-defined class which is derived from CMultiCoreSupport. CMultiCoreSupport::Run() will be called on each core with the core number (0-3) as parameter. Using this number one can branch to a function which should run on the respective core.
+
+ARM_ALLOW_MULTI_CORE must be defined in include/circle/sysconfig.h to use CMultiCoreSupport (default). With this define execution may be a bit slower if only core 0 (single core) is used.
+
+The system initialization runs on core 0 only. Multi-core support (CMultiCoreSupport-derived class) has to be initialized at last in CKernel::Initialize().
+
+Some classes can be used concurrently (after initialization) from more than one core:
+
+* CScreenDevice
+* CSerialDevice
+* CLogger
+* CTimer
+* USB
+* FAT file system (not from interrupt context)
+* CDeviceNameService (not from interrupt context)
+* CBcmPropertyTags (not from interrupt context)
+* CBcmMailBox (not from interrupt context)
+* CI2CMaster (not from interrupt context)
+* CGPIOPin (multiple instances can be used concurrently, access to a specific CGPIOPin instance is allowed from one core only at a time)
+* CPWMOutput
+
+If another class - not listed above - should be used concurrently this has to be synchronized by the user. Synchronization in single-core applications was normally done by EnterCritical(). From now on the class CSpinLock will be used. EnterCritical() is only used if the thread running locally on one core should not be interrupted by an IRQ (e.g. for timing purposes) or inter-processor interrupt (IPI).
+
+Core 0 is not halted until all secondary cores have been halted because it handles the peripheral interrupts. This is ensured by Circle itself if using halt(). In case of a system panic condition all cores are halted. This can be changed by overloading CMultiCoreSupport::IPIHandler().
+
+Please note that the USB frame scheduler for interrupt transfers in Circle is very simple. If you generate heavy USB bulk traffic (by using storage devices or the Ethernet device) this may cause problems with devices using interrupt transfers (e.g. keyboard, mouse) which will respond very slowly in this case. If you recognize such problems you should give the USB some time to relax by continuously executing a short delay in your program flow from time to time.

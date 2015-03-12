@@ -2,7 +2,7 @@
 // exceptionhandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,9 +21,14 @@
 #include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/debug.h>
+#include <circle/multicore.h>
+#include <circle/sysconfig.h>
+#include <circle/string.h>
 #include <assert.h>
 
+#ifndef ARM_ALLOW_MULTI_CORE
 static const char FromExcept[] = "except";
+#endif
 
 // order must match exception identifiers in circle/exception.h
 const char *CExceptionHandler::s_pExceptionName[] =
@@ -68,11 +73,21 @@ CExceptionHandler::~CExceptionHandler (void)
 
 void CExceptionHandler::Throw (unsigned nException)
 {
+#ifdef ARM_ALLOW_MULTI_CORE
+	CString FromExcept;
+	FromExcept.Format ("core%u", CMultiCoreSupport::ThisCore ());
+#endif
+
 	CLogger::Get()->Write (FromExcept, LogPanic, "Exception: %s", s_pExceptionName[nException]);
 }
 
 void CExceptionHandler::Throw (unsigned nException, TAbortFrame *pFrame)
 {
+#ifdef ARM_ALLOW_MULTI_CORE
+	CString FromExcept;
+	FromExcept.Format ("core%u", CMultiCoreSupport::ThisCore ());
+#endif
+
 	u32 FSR = 0, FAR = 0;
 	switch (nException)
 	{

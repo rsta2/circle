@@ -70,6 +70,7 @@ void LeaveCritical (void);
 				asm volatile ("mcr p15, 0, %0, c7, c5,  6" : : "r" (0) : "memory")
 
 void InvalidateDataCache (void) MAXOPT;
+void InvalidateDataCacheL1Only (void) MAXOPT;
 void CleanDataCache (void) MAXOPT;
 
 void InvalidateDataCacheRange (u32 nAddress, u32 nLength) MAXOPT;

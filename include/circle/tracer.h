@@ -39,7 +39,7 @@ public:
 	void Start (void);
 	void Stop (void);
 
-	// not reentrant, use EnterCritical() if required
+	// not reentrant, use spin lock if required
 	void Event (unsigned nID, unsigned nParam1 = 0, unsigned nParam2 = 0, unsigned nParam3 = 0, unsigned nParam4 = 0);
 
 	void Dump (void);

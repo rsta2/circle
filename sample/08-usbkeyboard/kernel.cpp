@@ -118,9 +118,6 @@ TShutdownMode CKernel::Run (void)
 	return m_ShutdownMode;
 }
 
-// CScreenDevice::Write() is not reentrant and should normally not be used from callbacks (interrupt context)
-// but because nobody else will use it in this demonstration this should be no problem here.
-
 void CKernel::KeyPressedHandler (const char *pString)
 {
 	assert (s_pThis != 0);

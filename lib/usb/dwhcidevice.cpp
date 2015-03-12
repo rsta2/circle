@@ -61,7 +61,8 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_pTimer (pTimer),
 	m_nChannels (0),
 	m_nChannelAllocated (0),
-	m_bWaiting (FALSE),
+	m_nWaitBlockAllocated (0),
+	m_WaitBlockSpinLock (FALSE),
 	m_RootPort (this)
 {
 	assert (m_pInterruptSystem != 0);
@@ -70,6 +71,11 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	for (unsigned nChannel = 0; nChannel < DWHCI_MAX_CHANNELS; nChannel++)
 	{
 		m_pStageData[nChannel] = 0;
+	}
+
+	for (unsigned nWaitBlock = 0; nWaitBlock < DWHCI_WAIT_BLOCKS; nWaitBlock++)
+	{
+		m_bWaiting[nWaitBlock] = FALSE;
 	}
 }
 
@@ -500,26 +506,26 @@ void CDWHCIDevice::EnableChannelInterrupt (unsigned nChannel)
 {
 	CDWHCIRegister AllChanInterruptMask (DWHCI_HOST_ALLCHAN_INT_MASK);
 
-	EnterCritical ();
+	m_IntMaskSpinLock.Acquire ();
 
 	AllChanInterruptMask.Read ();
 	AllChanInterruptMask.Or (1 << nChannel);
 	AllChanInterruptMask.Write ();
 
-	LeaveCritical ();
+	m_IntMaskSpinLock.Release ();
 }
 
 void CDWHCIDevice::DisableChannelInterrupt (unsigned nChannel)
 {
 	CDWHCIRegister AllChanInterruptMask (DWHCI_HOST_ALLCHAN_INT_MASK);
 
-	EnterCritical ();
+	m_IntMaskSpinLock.Acquire ();
 
 	AllChanInterruptMask.Read ();
 	AllChanInterruptMask.And (~(1 << nChannel));
 	AllChanInterruptMask.Write ();
 
-	LeaveCritical ();
+	m_IntMaskSpinLock.Release ();
 }
 
 void CDWHCIDevice::FlushTxFIFO (unsigned nFIFO)
@@ -554,23 +560,32 @@ void CDWHCIDevice::FlushRxFIFO (void)
 
 boolean CDWHCIDevice::TransferStage (CUSBRequest *pURB, boolean bIn, boolean bStatusStage)
 {
+	unsigned nWaitBlock = AllocateWaitBlock ();
+	if (nWaitBlock >= DWHCI_WAIT_BLOCKS)
+	{
+		return FALSE;
+	}
+	
 	assert (pURB != 0);
-	pURB->SetCompletionRoutine (CompletionRoutine, 0, this);
+	pURB->SetCompletionRoutine (CompletionRoutine, (void *) nWaitBlock, this);
 
-	assert (!m_bWaiting);
-	m_bWaiting = TRUE;
+	assert (!m_bWaiting[nWaitBlock]);
+	m_bWaiting[nWaitBlock] = TRUE;
 
 	if (!TransferStageAsync (pURB, bIn, bStatusStage))
 	{
-		m_bWaiting = FALSE;
+		m_bWaiting[nWaitBlock] = FALSE;
+		FreeWaitBlock (nWaitBlock);
 
 		return FALSE;
 	}
 
-	while (m_bWaiting)
+	while (m_bWaiting[nWaitBlock])
 	{
 		// do nothing
 	}
+
+	FreeWaitBlock (nWaitBlock);
 
 	return pURB->GetStatus ();
 }
@@ -580,7 +595,10 @@ void CDWHCIDevice::CompletionRoutine (CUSBRequest *pURB, void *pParam, void *pCo
 	CDWHCIDevice *pThis = (CDWHCIDevice *) pContext;
 	assert (pThis != 0);
 
-	pThis->m_bWaiting = FALSE;
+	unsigned nWaitBlock = (unsigned) pParam;
+	assert (nWaitBlock < DWHCI_WAIT_BLOCKS);
+
+	pThis->m_bWaiting[nWaitBlock] = FALSE;
 }
 
 boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolean bStatusStage)
@@ -794,6 +812,13 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		TransferSize.Read ();
 
 		CDWHCIRegister ChanInterrupt (DWHCI_HOST_CHAN_INT (nChannel));
+
+		// restart halted transaction
+		if (ChanInterrupt.Read () == DWHCI_HOST_CHAN_INT_HALTED)
+		{
+			StartTransaction (pStageData);
+			return;
+		}
 
 		assert (   !pStageData->IsPeriodic ()
 			||    DWHCI_HOST_CHAN_XFER_SIZ_PID (TransferSize.Get ())
@@ -1074,7 +1099,7 @@ void CDWHCIDevice::TimerStub (unsigned /* hTimer */, void *pParam, void *pContex
 
 unsigned CDWHCIDevice::AllocateChannel (void)
 {
-	EnterCritical ();
+	m_ChannelSpinLock.Acquire ();
 
 	unsigned nChannelMask = 1;
 	for (unsigned nChannel = 0; nChannel < m_nChannels; nChannel++)
@@ -1083,7 +1108,7 @@ unsigned CDWHCIDevice::AllocateChannel (void)
 		{
 			m_nChannelAllocated |= nChannelMask;
 
-			LeaveCritical ();
+			m_ChannelSpinLock.Release ();
 			
 			return nChannel;
 		}
@@ -1091,7 +1116,7 @@ unsigned CDWHCIDevice::AllocateChannel (void)
 		nChannelMask <<= 1;
 	}
 	
-	LeaveCritical ();
+	m_ChannelSpinLock.Release ();
 	
 	return DWHCI_MAX_CHANNELS;
 }
@@ -1101,12 +1126,49 @@ void CDWHCIDevice::FreeChannel (unsigned nChannel)
 	assert (nChannel < m_nChannels);
 	unsigned nChannelMask = 1 << nChannel; 
 	
-	EnterCritical ();
+	m_ChannelSpinLock.Acquire ();
 	
 	assert (m_nChannelAllocated & nChannelMask);
 	m_nChannelAllocated &= ~nChannelMask;
 	
-	LeaveCritical ();
+	m_ChannelSpinLock.Release ();
+}
+
+unsigned CDWHCIDevice::AllocateWaitBlock (void)
+{
+	m_WaitBlockSpinLock.Acquire ();
+
+	unsigned nWaitBlockMask = 1;
+	for (unsigned nWaitBlock = 0; nWaitBlock < DWHCI_WAIT_BLOCKS; nWaitBlock++)
+	{
+		if (!(m_nWaitBlockAllocated & nWaitBlockMask))
+		{
+			m_nWaitBlockAllocated |= nWaitBlockMask;
+
+			m_WaitBlockSpinLock.Release ();
+			
+			return nWaitBlock;
+		}
+		
+		nWaitBlockMask <<= 1;
+	}
+	
+	m_WaitBlockSpinLock.Release ();
+	
+	return DWHCI_WAIT_BLOCKS;
+}
+
+void CDWHCIDevice::FreeWaitBlock (unsigned nWaitBlock)
+{
+	assert (nWaitBlock < DWHCI_WAIT_BLOCKS);
+	unsigned nWaitBlockMask = 1 << nWaitBlock;
+	
+	m_WaitBlockSpinLock.Acquire ();
+	
+	assert (m_nWaitBlockAllocated & nWaitBlockMask);
+	m_nWaitBlockAllocated &= ~nWaitBlockMask;
+	
+	m_WaitBlockSpinLock.Release ();
 }
 
 boolean CDWHCIDevice::WaitForBit (CDWHCIRegister *pRegister,

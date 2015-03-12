@@ -22,6 +22,7 @@
 #include <circle/bcmpropertytags.h>
 #include <circle/alloc.h>
 #include <circle/synchronize.h>
+#include <circle/spinlock.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
 
@@ -70,6 +71,10 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 		assert (m_pPageTable1 != 0);
 
 		EnableMMU ();
+
+#ifdef ARM_ALLOW_MULTI_CORE
+		CSpinLock::Enable ();
+#endif
 	}
 }
 
@@ -93,6 +98,17 @@ CMemorySystem::~CMemorySystem (void)
 	delete m_pPageTable0Default;
 	m_pPageTable0Default = 0;
 }
+
+#ifdef ARM_ALLOW_MULTI_CORE
+
+void CMemorySystem::InitializeSecondary (void)
+{
+	assert (m_bEnableMMU);		// required to use spin locks
+
+	EnableMMU ();
+}
+
+#endif
 
 u32 CMemorySystem::GetMemSize (void) const
 {
@@ -194,7 +210,11 @@ void CMemorySystem::EnableMMU (void)
 	asm volatile ("mcr p15, 0, %0, c3, c0,  0" : : "r" (  DOMAIN_CLIENT << 0
 							    | DOMAIN_CLIENT << 2));
 
+#ifndef ARM_ALLOW_MULTI_CORE
 	InvalidateDataCache ();
+#else
+	InvalidateDataCacheL1Only ();
+#endif
 	FlushPrefetchBuffer ();
 
 	// enable MMU

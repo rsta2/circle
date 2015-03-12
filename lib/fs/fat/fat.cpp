@@ -2,7 +2,7 @@
 // fat.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@
 
 CFAT::CFAT (CFATCache *pCache, CFATInfo *pFATInfo)
 :	m_pCache (pCache),
-	m_pFATInfo (pFATInfo)
+	m_pFATInfo (pFATInfo),
+	m_Lock (FALSE)
 {
 }
 
@@ -34,7 +35,7 @@ CFAT::~CFAT (void)
 
 unsigned CFAT::GetClusterEntry (unsigned nCluster)
 {
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 
 	unsigned nSectorOffset;
 
@@ -47,7 +48,7 @@ unsigned CFAT::GetClusterEntry (unsigned nCluster)
 	assert (m_pCache != 0);
 	m_pCache->FreeSector (pBuffer, 1);
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 	
 	return nEntry;
 }
@@ -77,7 +78,7 @@ boolean CFAT::IsEOC (unsigned nClusterEntry) const
 
 void CFAT::SetClusterEntry (unsigned nCluster, unsigned nEntry)
 {
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 
 	assert (m_pFATInfo != 0);
 	for (unsigned nFAT = m_pFATInfo->GetFirstWriteFAT (); nFAT <= m_pFATInfo->GetLastWriteFAT (); nFAT++)
@@ -93,12 +94,12 @@ void CFAT::SetClusterEntry (unsigned nCluster, unsigned nEntry)
 		m_pCache->FreeSector (pBuffer, 1);
 	}
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 }
 
 unsigned CFAT::AllocateCluster (void)
 {
-	//m_Lock.Acquire ();
+	m_Lock.Acquire ();
 
 	assert (m_pFATInfo != 0);
 	unsigned nCluster = m_pFATInfo->GetNextFreeCluster ();
@@ -132,7 +133,7 @@ unsigned CFAT::AllocateCluster (void)
 
 			m_pFATInfo->ClusterAllocated (nCluster);
 
-			//m_Lock.Release ();
+			m_Lock.Release ();
 
 			return nCluster;
 		}
@@ -140,7 +141,7 @@ unsigned CFAT::AllocateCluster (void)
 		nCluster++;
 	}
 
-	//m_Lock.Release ();
+	m_Lock.Release ();
 
 	return 0;
 }

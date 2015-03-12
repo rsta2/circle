@@ -37,9 +37,16 @@
 #define MEM_KERNEL_START	0x8000
 #define MEM_KERNEL_END		(MEM_KERNEL_START + KERNEL_MAX_SIZE)
 #define MEM_KERNEL_STACK	(MEM_KERNEL_END + KERNEL_STACK_SIZE)		// expands down
+#if RASPPI == 1
 #define MEM_ABORT_STACK		(MEM_KERNEL_STACK + EXCEPTION_STACK_SIZE)	// expands down
 #define MEM_IRQ_STACK		(MEM_ABORT_STACK + EXCEPTION_STACK_SIZE)	// expands down
 #define MEM_PAGE_TABLE1		MEM_IRQ_STACK				// must be 16K aligned
+#else
+#define CORES			4					// must be a power of 2
+#define MEM_ABORT_STACK		(MEM_KERNEL_STACK + KERNEL_STACK_SIZE * (CORES-1) + EXCEPTION_STACK_SIZE)
+#define MEM_IRQ_STACK		(MEM_ABORT_STACK + EXCEPTION_STACK_SIZE * (CORES-1) + EXCEPTION_STACK_SIZE)
+#define MEM_PAGE_TABLE1		(MEM_IRQ_STACK + EXCEPTION_STACK_SIZE * (CORES-1))
+#endif
 
 #define MEM_HEAP_START		0x400000
 
@@ -47,6 +54,10 @@
 #if RASPPI == 1			// valid on Raspberry Pi 1 only
 #define ARM_STRICT_ALIGNMENT
 #define GPU_L2_CACHE_ENABLED
+#endif
+
+#if RASPPI == 2			// valid on Raspberry Pi 2 only
+#define ARM_ALLOW_MULTI_CORE	// slower on single core if defined
 #endif
 
 #define KERNEL_TIMERS		20

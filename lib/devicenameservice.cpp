@@ -2,7 +2,7 @@
 // devicenameservice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@
 CDeviceNameService *CDeviceNameService::s_This = 0;
 
 CDeviceNameService::CDeviceNameService (void)
-:	m_pList (0)
+:	m_pList (0),
+	m_SpinLock (FALSE)
 {
 	assert (s_This == 0);
 	s_This = this;
@@ -49,6 +50,8 @@ CDeviceNameService::~CDeviceNameService (void)
 
 void CDeviceNameService::AddDevice (const char *pName, CDevice *pDevice, boolean bBlockDevice)
 {
+	m_SpinLock.Acquire ();
+
 	TDeviceInfo *pInfo = new TDeviceInfo;
 	assert (pInfo != 0);
 
@@ -64,11 +67,15 @@ void CDeviceNameService::AddDevice (const char *pName, CDevice *pDevice, boolean
 
 	pInfo->pNext = m_pList;
 	m_pList = pInfo;
+
+	m_SpinLock.Release ();
 }
 
 CDevice *CDeviceNameService::GetDevice (const char *pName, boolean bBlockDevice)
 {
 	assert (pName != 0);
+
+	m_SpinLock.Acquire ();
 
 	TDeviceInfo *pInfo = m_pList;
 	while (pInfo != 0)
@@ -77,12 +84,18 @@ CDevice *CDeviceNameService::GetDevice (const char *pName, boolean bBlockDevice)
 		if (   strcmp (pName, pInfo->pName) == 0
 		    && pInfo->bBlockDevice == bBlockDevice)
 		{
-			assert (pInfo->pDevice != 0);
-			return pInfo->pDevice;
+			CDevice *pResult = pInfo->pDevice;
+
+			m_SpinLock.Release ();
+
+			assert (pResult != 0);
+			return pResult;
 		}
 
 		pInfo = pInfo->pNext;
 	}
+
+	m_SpinLock.Release ();
 
 	return 0;
 }

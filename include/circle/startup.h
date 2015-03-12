@@ -2,7 +2,7 @@
 // startup.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 #ifndef _startup_h
 #define _startup_h
 
+#include <circle/sysconfig.h>
+
 #define EXIT_HALT	0
 #define EXIT_REBOOT	1
 
@@ -29,6 +31,13 @@ extern "C" {
 
 void halt (void);
 void reboot (void);
+
+#if RASPPI != 1
+void _start_secondary (void);
+#ifdef ARM_ALLOW_MULTI_CORE
+void main_secondary (void);
+#endif
+#endif
 
 #ifdef __cplusplus
 }

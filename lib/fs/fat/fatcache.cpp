@@ -2,7 +2,7 @@
 // fatcache.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,7 +31,9 @@
 
 CFATCache::CFATCache (void)
 :	m_pPartition (0),
-	m_pBufferMem (0)
+	m_pBufferMem (0),
+	m_BufferListLock (FALSE),
+	m_DiskLock (FALSE)
 {
 }
 
@@ -92,7 +94,7 @@ void CFATCache::Flush (void)
 {
 	TFATBuffer *pBuffer;
 
-	//m_BufferListLock.Acquire ();
+	m_BufferListLock.Acquire ();
 
 	for (pBuffer = m_BufferList.pFirst; pBuffer != 0; pBuffer = pBuffer->pNext)
 	{
@@ -102,7 +104,7 @@ void CFATCache::Flush (void)
 		{
 			if (pBuffer->bDirty)
 			{
-				//m_DiskLock.Acquire ();
+				m_DiskLock.Acquire ();
 
 				m_pPartition->Seek (pBuffer->nSector * FAT_SECTOR_SIZE);
 				if (m_pPartition->Write (pBuffer->Data, FAT_SECTOR_SIZE) != FAT_SECTOR_SIZE)
@@ -110,21 +112,21 @@ void CFATCache::Flush (void)
 					Fault (FAULT_WRITE_ERROR);
 				}
 
-				//m_DiskLock.Release ();
+				m_DiskLock.Release ();
 
 				pBuffer->bDirty = 0;
 			}
 		}
 	}
 
-	//m_BufferListLock.Release ();
+	m_BufferListLock.Release ();
 }
 
 TFATBuffer *CFATCache::GetSector (unsigned nSector, int bWriteOnly)
 {
 	TFATBuffer *pBuffer;
 
-	//m_BufferListLock.Acquire ();
+	m_BufferListLock.Acquire ();
 
 	for (pBuffer = m_BufferList.pFirst; pBuffer != 0; pBuffer = pBuffer->pNext)
 	{
@@ -142,7 +144,7 @@ TFATBuffer *CFATCache::GetSector (unsigned nSector, int bWriteOnly)
 
 		pBuffer->nUseCount++;
 
-		//m_BufferListLock.Release ();
+		m_BufferListLock.Release ();
 
 		return pBuffer;
 	}
@@ -173,24 +175,24 @@ TFATBuffer *CFATCache::GetSector (unsigned nSector, int bWriteOnly)
 		if (pBuffer == 0)
 		{
 			Fault (FAULT_NO_BUFFER);
-			//m_BufferListLock.Release ();
+			m_BufferListLock.Release ();
 			return 0;
 		}
 
 		if (pBuffer->bDirty)
 		{
-			//m_DiskLock.Acquire ();
+			m_DiskLock.Acquire ();
 
 			m_pPartition->Seek (pBuffer->nSector * FAT_SECTOR_SIZE);
 			if (m_pPartition->Write (pBuffer->Data, FAT_SECTOR_SIZE) != FAT_SECTOR_SIZE)
 			{
 				Fault (FAULT_WRITE_ERROR);
-				//m_DiskLock.Release ();
-				//m_BufferListLock.Release ();
+				m_DiskLock.Release ();
+				m_BufferListLock.Release ();
 				return 0;
 			}
 
-			//m_DiskLock.Release ();
+			m_DiskLock.Release ();
 		}
 
 		pBuffer->nSector = BUFFER_NOSECTOR;
@@ -204,7 +206,7 @@ TFATBuffer *CFATCache::GetSector (unsigned nSector, int bWriteOnly)
 
 	if (!bWriteOnly)
 	{
-		//m_DiskLock.Acquire ();
+		m_DiskLock.Acquire ();
 
 		m_pPartition->Seek (nSector * FAT_SECTOR_SIZE);
 		if (m_pPartition->Read (pBuffer->Data, FAT_SECTOR_SIZE) != FAT_SECTOR_SIZE)
@@ -213,17 +215,17 @@ TFATBuffer *CFATCache::GetSector (unsigned nSector, int bWriteOnly)
 			pBuffer->nSector = BUFFER_NOSECTOR;
 
 			Fault (FAULT_READ_ERROR);
-			//m_DiskLock.Release ();
-			//m_BufferListLock.Release ();
+			m_DiskLock.Release ();
+			m_BufferListLock.Release ();
 			return 0;
 		}
 
-		//m_DiskLock.Release ();
+		m_DiskLock.Release ();
 	}
 
 	MoveBufferFirst (pBuffer);
 
-	//m_BufferListLock.Release ();
+	m_BufferListLock.Release ();
 
 	return pBuffer;
 }
@@ -243,7 +245,7 @@ void CFATCache::FreeSector (TFATBuffer *pBuffer, int bCritical)
 #if 0
 		if (pBuffer->bDirty)
 		{
-			//m_DiskLock.Acquire ();
+			m_DiskLock.Acquire ();
 
 			m_pPartition->Seek (pBuffer->nSector * FAT_SECTOR_SIZE);
 			if (m_pPartition->Write (pBuffer->Data, FAT_SECTOR_SIZE) == FAT_SECTOR_SIZE)
@@ -251,17 +253,17 @@ void CFATCache::FreeSector (TFATBuffer *pBuffer, int bCritical)
 				pBuffer->bDirty = 0;
 			}
 
-			//m_DiskLock.Release ();
+			m_DiskLock.Release ();
 		}
 #endif
 	}
 	else
 	{
-		//m_BufferListLock.Acquire ();
+		m_BufferListLock.Acquire ();
 
 		MoveBufferLast (pBuffer);
 
-		//m_BufferListLock.Release ();
+		m_BufferListLock.Release ();
 	}
 }
 

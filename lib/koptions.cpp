@@ -2,7 +2,7 @@
 // koptions.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,12 +23,17 @@
 
 #define INVALID_VALUE	((unsigned) -1)
 
+CKernelOptions *CKernelOptions::s_pThis = 0;
+
 CKernelOptions::CKernelOptions (void)
 :	m_nWidth (0),
 	m_nHeight (0),
-	m_nLogLevel (LogDebug)
+	m_nLogLevel (LogDebug),
+	m_nUSBPowerDelay (0)
 {
 	strcpy (m_LogDevice, "tty1");
+
+	s_pThis = this;
 
 	CBcmPropertyTags Tags;
 	if (!Tags.GetTag (PROPTAG_GET_COMMAND_LINE, &m_TagCommandLine, sizeof m_TagCommandLine))
@@ -81,11 +86,21 @@ CKernelOptions::CKernelOptions (void)
 				m_nLogLevel = nValue;
 			}
 		}
+		else if (strcmp (pOption, "usbpowerdelay") == 0)
+		{
+			unsigned nValue;
+			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
+			    && 200 <= nValue && nValue <= 8000)
+			{
+				m_nUSBPowerDelay = nValue;
+			}
+		}
 	}
 }
 
 CKernelOptions::~CKernelOptions (void)
 {
+	s_pThis = 0;
 }
 
 unsigned CKernelOptions::GetWidth (void) const
@@ -106,6 +121,16 @@ const char *CKernelOptions::GetLogDevice (void) const
 unsigned CKernelOptions::GetLogLevel (void) const
 {
 	return m_nLogLevel;
+}
+
+unsigned CKernelOptions::GetUSBPowerDelay (void) const
+{
+	return m_nUSBPowerDelay;
+}
+
+CKernelOptions *CKernelOptions::Get (void)
+{
+	return s_pThis;
 }
 
 char *CKernelOptions::GetToken (void)

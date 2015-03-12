@@ -2,7 +2,7 @@
 // gpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 #include <circle/synchronize.h>
 #include <circle/timer.h>
 #include <assert.h>
+
+CSpinLock CGPIOPin::s_SpinLock;
 
 CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
 :	m_nPin (nPin),
@@ -76,10 +78,12 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	unsigned nSelReg = ARM_GPIO_GPFSEL0 + (m_nPin / 10) * 4;
 	unsigned nShift = (m_nPin % 10) * 3;
 
+	s_SpinLock.Acquire ();
 	unsigned nValue = read32 (nSelReg);
 	nValue &= ~(7 << nShift);
 	nValue |= (m_Mode == GPIOModeOutput ? 1 : 0) << nShift;
 	write32 (nSelReg, nValue);
+	s_SpinLock.Release ();
 
 	if (bInitPin)
 	{
@@ -205,8 +209,10 @@ void CGPIOPin::EnableInterrupt (TGPIOInterrupt Interrupt)
 			+ (Interrupt - GPIOInterruptOnRisingEdge) * 12;
 
 	unsigned nMask = 1 << (m_nPin % 32);
-	
+
+	s_SpinLock.Acquire ();
 	write32 (nReg, read32 (nReg) | nMask);
+	s_SpinLock.Release ();
 }
 	
 
@@ -224,8 +230,10 @@ void CGPIOPin::DisableInterrupt (void)
 			+ (m_Interrupt - GPIOInterruptOnRisingEdge) * 12;
 
 	unsigned nMask = 1 << (m_nPin % 32);
-	
+
+	s_SpinLock.Acquire ();
 	write32 (nReg, read32 (nReg) & ~nMask);
+	s_SpinLock.Release ();
 
 	m_Interrupt = GPIOInterruptUnknown;
 }
@@ -235,7 +243,9 @@ void CGPIOPin::SetPullUpMode (unsigned nMode)
 	assert (m_nPin < GPIO_PINS);
 	unsigned nClkReg = ARM_GPIO_GPPUDCLK0 + (m_nPin / 32) * 4;
 	unsigned nShift = m_nPin % 32;
-	
+
+	s_SpinLock.Acquire ();
+
 	assert (nMode <= 2);
 	write32 (ARM_GPIO_GPPUD, nMode);
 	CTimer::SimpleusDelay (150);		// TODO: 150 cycles (?)
@@ -243,6 +253,8 @@ void CGPIOPin::SetPullUpMode (unsigned nMode)
 	CTimer::SimpleusDelay (150);		// TODO: 150 cycles (?)
 	write32 (ARM_GPIO_GPPUD, 0);
 	write32 (nClkReg, 0);
+
+	s_SpinLock.Release ();
 }
 
 void CGPIOPin::SetAlternateFunction (unsigned nFunction)
@@ -254,10 +266,12 @@ void CGPIOPin::SetAlternateFunction (unsigned nFunction)
 	assert (nFunction <= 5);
 	static const unsigned FunctionMap[6] = {4, 5, 6, 7, 3, 2};
 	
+	s_SpinLock.Acquire ();
 	unsigned nValue = read32 (nSelReg);
 	nValue &= ~(7 << nShift);
 	nValue |= FunctionMap[nFunction] << nShift;
 	write32 (nSelReg, nValue);
+	s_SpinLock.Release ();
 }
 
 void CGPIOPin::InterruptHandler (void)
@@ -269,4 +283,21 @@ void CGPIOPin::InterruptHandler (void)
 
 	assert (m_pHandler != 0);
 	(*m_pHandler) (m_pParam);
+}
+
+void CGPIOPin::DisableAllInterrupts (unsigned nPin)
+{
+	assert (nPin < GPIO_PINS);
+
+	unsigned nReg = ARM_GPIO_GPREN0 + (nPin / 32) * 4;
+	unsigned nMask = 1 << (nPin % 32);
+
+	s_SpinLock.Acquire ();
+
+	for (; nReg < ARM_GPIO_GPAFEN0 + 4; nReg += 12)
+	{
+		write32 (nReg, read32 (nReg) & ~nMask);
+	}
+
+	s_SpinLock.Release ();
 }

@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 16 of Circle. To get access to Step 1-15 use the git tag "Step1" to "Step15".
+> This is Step 17 of Circle. To get access to Step 1-16 use the git tag "Step1" to "Step16".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -19,14 +19,16 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
 
-The 16th Step
+The 17th Step
 -------------
 
-In this step I2C (master and slave) support is added and demonstrated in an I2C ping sample in *sample/16-i2cping*. Two Raspberry Pi computers (one of them must be a Model A+ or B+ or Raspberry Pi 2) are needed to try this sample. See the *README* file in this directory for details.
+In this step Raspberry Pi 2 support including multi-core operation is added and demonstrated in a fractal image calculation sample in *sample/17-fractal* which can be run with single core (also on Raspberry Pi 1) or multi-core support. See the *README* file in this directory for details. Thanks to krom for having the idea to generate fractal images with multi-core support on the Raspberry Pi 2!
+
+Please read the notes about multi-core support in *doc/multicore.txt* if you want to use it for your own applications.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-15 the following features were introduced:
+In Step 1-16 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -62,6 +64,7 @@ In Step 1-15 the following features were introduced:
 * PWM output (2 channels)
 * Simple USB printer support
 * FAT file system support (reduced)
+* I2C (master and slave) support
 
 Building
 --------
@@ -108,7 +111,7 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CI2CMaster: Driver for I2C master device.
-* CI2CSlave: Driver for I2C slave device.
+* CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
+* CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
 
 The available Circle classes are listed in the file *doc/classes.txt*.

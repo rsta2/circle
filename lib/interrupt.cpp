@@ -2,7 +2,7 @@
 // interrupt.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 //
 #include <circle/interrupt.h>
 #include <circle/synchronize.h>
+#include <circle/multicore.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
 #include <circle/types.h>
@@ -165,6 +166,13 @@ int CInterruptSystem::CallIRQHandler (unsigned nIRQ)
 void CInterruptSystem::InterruptHandler (void)
 {
 	assert (s_pThis != 0);
+
+#ifdef ARM_ALLOW_MULTI_CORE
+	if (CMultiCoreSupport::LocalInterruptHandler ())
+	{
+		return;
+	}
+#endif
 
 	for (unsigned nIRQ = 0; nIRQ < IRQ_LINES; nIRQ++)
 	{

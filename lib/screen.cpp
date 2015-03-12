@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -145,9 +145,13 @@ TScreenStatus CScreenDevice::GetStatus (void)
 
 boolean CScreenDevice::SetStatus (TScreenStatus Status)
 {
+	m_SpinLock.Acquire ();
+
 	if (   m_bUpdated
 	    || Status.bUpdated)
 	{
+		m_SpinLock.Release ();
+
 		return FALSE;
 	}
 
@@ -162,6 +166,8 @@ boolean CScreenDevice::SetStatus (TScreenStatus Status)
 	m_nParam1    = Status.nParam1;
 	m_nParam2    = Status.nParam2;
 
+	m_SpinLock.Release ();
+
 	DataMemBarrier ();
 
 	return TRUE;
@@ -169,6 +175,8 @@ boolean CScreenDevice::SetStatus (TScreenStatus Status)
 
 int CScreenDevice::Write (const void *pBuffer, unsigned nCount)
 {
+	m_SpinLock.Acquire ();
+
 	m_bUpdated = TRUE;
 	
 	InvertCursor ();
@@ -186,6 +194,8 @@ int CScreenDevice::Write (const void *pBuffer, unsigned nCount)
 	InvertCursor ();
 	
 	m_bUpdated = FALSE;
+
+	m_SpinLock.Release ();
 
 	DataMemBarrier ();
 

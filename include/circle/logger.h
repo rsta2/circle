@@ -2,7 +2,7 @@
 // logger.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/device.h>
 #include <circle/timer.h>
 #include <circle/stdarg.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
 enum TLogSeverity
@@ -61,6 +62,7 @@ private:
 	char *m_pBuffer;
 	unsigned m_nInPtr;
 	unsigned m_nOutPtr;
+	CSpinLock m_SpinLock;
 
 	static CLogger *s_pThis;
 };
