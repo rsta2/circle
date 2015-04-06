@@ -2,7 +2,7 @@
 // util.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -163,6 +163,72 @@ char *strcat (char *pDest, const char *pSrc)
 	*p = '\0';
 
 	return pDest;
+}
+
+char *strchr (const char *pString, int chChar)
+{
+	while (*pString)
+	{
+		if (*pString == chChar)
+		{
+			return (char *) pString;
+		}
+
+		pString++;
+	}
+
+	return 0;
+}
+
+char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr)
+{
+	char *pToken;
+
+	if (pString == 0)
+	{
+		pString = *ppSavePtr;
+	}
+
+	if (pString == 0)
+	{
+		return 0;
+	}
+
+	if (*pString == '\0')
+	{
+		*ppSavePtr = 0;
+
+		return 0;
+	}
+
+	while (strchr (pDelim, *pString) != 0)
+	{
+		pString++;
+	}
+
+	if (*pString == '\0')
+	{
+		*ppSavePtr = 0;
+
+		return 0;
+	}
+
+	pToken = pString;
+
+	while (   *pString != '\0'
+	       && strchr (pDelim, *pString) == 0)
+	{
+		pString++;
+	}
+
+	if (*pString != '\0')
+	{
+		*pString++ = '\0';
+	}
+
+	*ppSavePtr = pString;
+
+	return pToken;
 }
 
 int char2int (char chValue)

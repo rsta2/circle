@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 17 of Circle. To get access to Step 1-16 use the git tag "Step1" to "Step16".
+> This is Step 18 of Circle. To get access to Step 1-17 use the git tag "Step1" to "Step17".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -19,16 +19,14 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
 
-The 17th Step
+The 18th Step
 -------------
 
-In this step Raspberry Pi 2 support including multi-core operation is added and demonstrated in a fractal image calculation sample in *sample/17-fractal* which can be run with single core (also on Raspberry Pi 1) or multi-core support. See the *README* file in this directory for details. Thanks to krom for having the idea to generate fractal images with multi-core support on the Raspberry Pi 2!
-
-Please read the notes about multi-core support in *doc/multicore.txt* if you want to use it for your own applications.
+In this step a basic experimental (UDP only) TCP/IP network stack is added and used to set the system time from an Internet time (NTP) server in *sample/18-ntptime*. You can also ping your Raspberry Pi from another computer on your local Ethernet. See the *README* file in this directory for details.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-16 the following features were introduced:
+In Step 1-17 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -65,6 +63,7 @@ In Step 1-16 the following features were introduced:
 * Simple USB printer support
 * FAT file system support (reduced)
 * I2C (master and slave) support
+* Multi-core support on Raspberry Pi 2
 
 Building
 --------
@@ -109,9 +108,23 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Base library
+Net library
 
-* CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
-* CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
+* CARPHandler: Resolves IP addresses to Ethernet MAC addresses and responds to ARP requests.
+* CChecksumCalculator: Calculates checksums in several TCP/IP packets.
+* CDNSClient: Resolves hostnames to IP addresses.
+* CICMPHandler: ICMP echo (ping) responder.
+* CIPAddress: Encapsulates an IP address.
+* CLinkLayer: Encapsulates the Ethernet MAC layer.
+* CNetConfig: Encapsulates the network configuration.
+* CNetConnection: Virtual transport layer connection (UDP or TCP (not yet available)).
+* CNetDeviceLayer: Encapsulates the network device support layer. Queues TX/RX frames before/after transmission.
+* CNetQueue: Encapsulates a network packet queue.
+* CNetSubSystem: The main network subsystem class. Create an instance of it in the CKernel class.
+* CNetworkLayer: Encapsulates the IP network layer. Does not support packet fragmentation so far.
+* CNTPClient: A NTP client which gets the current time from an Internet time server.
+* CSocket: Network application interface (socket) class.
+* CTransportLayer: Encapsulates the TCP/UDP transport layer.
+* CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.
 
 The available Circle classes are listed in the file *doc/classes.txt*.

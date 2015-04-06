@@ -1,0 +1,9 @@
+README
+
+This sample program is only working on Raspberry Pi models with on-board Ethernet controller.
+
+Before building it you have to update the network configuration and maybe your time zone in kernel.cpp to meet your local network configuration. Don't forget to connect your local Ethernet to the Ethernet connector of the Raspberry Pi.
+
+First blink 5 times to show the image was loaded right. After initialization the sample program gets the current time from a NTP (network time protocol) server on the Internet and sets the system time from it. The time will be updated every 15 minutes. A log message will be displayed after system time update.
+
+Try to ping your Raspberry Pi from another computer on your network. It should respond.

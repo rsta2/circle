@@ -75,3 +75,22 @@ FAT FS library
 * CFATDirectory: Encapsulates a directory on a FAT partition (currently 8.3-names in the root directory only).
 * CFATFileSystem: File system driver for FAT16 and FAT32 storage partitions.
 * CFATCache: Sector cache for FAT storage partitions.
+
+Net library
+
+* CARPHandler: Resolves IP addresses to Ethernet MAC addresses and responds to ARP requests.
+* CChecksumCalculator: Calculates checksums in several TCP/IP packets.
+* CDNSClient: Resolves hostnames to IP addresses.
+* CICMPHandler: ICMP echo (ping) responder.
+* CIPAddress: Encapsulates an IP address.
+* CLinkLayer: Encapsulates the Ethernet MAC layer.
+* CNetConfig: Encapsulates the network configuration.
+* CNetConnection: Virtual transport layer connection (UDP or TCP (not yet available)).
+* CNetDeviceLayer: Encapsulates the network device support layer. Queues TX/RX frames before/after transmission.
+* CNetQueue: Encapsulates a network packet queue.
+* CNetSubSystem: The main network subsystem class. Create an instance of it in the CKernel class.
+* CNetworkLayer: Encapsulates the IP network layer. Does not support packet fragmentation so far.
+* CNTPClient: A NTP client which gets the current time from an Internet time server.
+* CSocket: Network application interface (socket) class.
+* CTransportLayer: Encapsulates the TCP/UDP transport layer.
+* CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.

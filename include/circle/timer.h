@@ -47,13 +47,16 @@ public:
 
 	boolean Initialize (void);
 
+	void SetTime (unsigned nTime);			// Seconds since 1970-01-01 00:00:00
+
 	unsigned GetClockTicks (void) const;		// 1 MHz counter
 #define CLOCKHZ	1000000
 
 	unsigned GetTicks (void) const;			// 1/HZ seconds since system boot
-	unsigned GetTime (void) const;			// Seconds since system boot
+	unsigned GetTime (void) const;			// Seconds since system boot  or
+							// Seconds since 1970-01-01 00:00:00 (if time was set)
 
-	// "HH:MM:SS.ss", 0 if Initialize() was not yet called
+	// "[MMM dD ]HH:MM:SS.ss", 0 if Initialize() was not yet called
 	CString *GetTimeString (void);			// CString object must be deleted by caller
 
 	// returns timer handle (0 on failure)
@@ -81,6 +84,10 @@ private:
 
 	void TuneMsDelay (void);
 
+public:
+	static int IsLeapYear (unsigned nYear);
+	static unsigned GetDaysOfMonth (unsigned nMonth, unsigned nYear);
+
 private:
 	CInterruptSystem	*m_pInterruptSystem;
 
@@ -95,6 +102,9 @@ private:
 	unsigned		 m_nusDelay;
 
 	static CTimer *s_pThis;
+
+	static const unsigned s_nDaysOfMonth[12];
+	static const char *s_pMonthName[12];
 };
 
 #endif

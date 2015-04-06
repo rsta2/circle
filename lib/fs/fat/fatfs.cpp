@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/fs/fat/fatfs.h>
+#include <circle/timer.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -218,6 +219,10 @@ unsigned CFATFileSystem::FileClose (unsigned hFile)
 			pEntry->nFirstClusterLow  = pFile->nFirstCluster & 0xFFFF;
 
 			pEntry->nFileSize = pFile->nSize;
+
+			unsigned nDateTime = m_Root.Time2FAT (CTimer::Get ()->GetTime ());
+			pEntry->nWriteDate = nDateTime >> 16;
+			pEntry->nWriteTime = nDateTime & 0xFFFF;
 
 			m_Root.FreeEntry (TRUE);
 		}

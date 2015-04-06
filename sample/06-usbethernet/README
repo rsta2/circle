@@ -1,6 +1,6 @@
 README
 
-This sample program is only working on Raspberry Pi Model B and B+.
+This sample program is only working on Raspberry Pi models with on-board Ethernet controller.
 
 First blink 5 times to show the image was loaded right. After initializing the USB host controller the USB hub driver detects all attached USB devices and displays its identifiers (vendor, device and interface).
 

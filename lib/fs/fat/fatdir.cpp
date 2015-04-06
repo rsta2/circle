@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/fs/fat/fatdir.h>
+#include <circle/timer.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -400,6 +401,64 @@ boolean CFATDirectory::FindNext (TDirentry *pEntry, TFindCurrentEntry *pCurrentE
 	m_Lock.Release ();
 
 	return FALSE;
+}
+
+unsigned CFATDirectory::Time2FAT (unsigned nTime)
+{
+	if (nTime == 0)
+	{
+		return 0;
+	}
+
+	unsigned nSecond = nTime % 60;
+	nTime /= 60;
+	unsigned nMinute = nTime % 60;
+	nTime /= 60;
+	unsigned nHour = nTime % 24;
+	nTime /= 24;
+
+	unsigned nYear = 1970;
+	while (1)
+	{
+		unsigned nDaysOfYear = CTimer::IsLeapYear (nYear) ? 366 : 365;
+		if (nTime < nDaysOfYear)
+		{
+			break;
+		}
+
+		nTime -= nDaysOfYear;
+		nYear++;
+	}
+
+	if (nYear < 1980)
+	{
+		return 0;
+	}
+	
+	unsigned nMonth = 0;
+	while (1)
+	{
+		unsigned nDaysOfMonth = CTimer::GetDaysOfMonth (nMonth, nYear);
+		if (nTime < nDaysOfMonth)
+		{
+			break;
+		}
+
+		nTime -= nDaysOfMonth;
+		nMonth++;
+	}
+
+	unsigned nMonthDay = nTime + 1;
+
+	unsigned nFATDate = (nYear-1980) << 9;
+	nFATDate |= (nMonth+1) << 5;
+	nFATDate |= nMonthDay;
+
+	unsigned nFATTime = nHour << 11;
+	nFATTime |= nMinute << 5;
+	nFATTime |= nSecond / 2;
+
+	return nFATDate << 16 | nFATTime;
 }
 
 // TODO: standard FAT name conversion

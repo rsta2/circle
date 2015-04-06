@@ -40,6 +40,8 @@ public:
 	boolean FindFirst (TDirentry *pEntry, TFindCurrentEntry *pCurrentEntry);
 	boolean FindNext (TDirentry *pEntry, TFindCurrentEntry *pCurrentEntry);
 
+	static unsigned Time2FAT (unsigned nTime);	// returns FAT time (date << 16 | time)
+
 private:
 	static boolean Name2FAT (const char *pName, char *pFATName);
 	static void FAT2Name (const char *pFATName, char *pName);

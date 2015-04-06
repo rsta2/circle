@@ -27,6 +27,10 @@
 
 extern "C" void DelayLoop (unsigned nCount);
 
+const unsigned CTimer::s_nDaysOfMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+const char *CTimer::s_pMonthName[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
 CTimer *CTimer::s_pThis = 0;
 
 CTimer::CTimer (CInterruptSystem *pInterruptSystem)
@@ -66,6 +70,15 @@ boolean CTimer::Initialize (void)
 	DataMemBarrier ();
 
 	return TRUE;
+}
+
+void CTimer::SetTime (unsigned nTime)
+{
+	m_TimeSpinLock.Acquire ();
+
+	m_nTime = nTime;
+
+	m_TimeSpinLock.Release ();
 }
 
 unsigned CTimer::GetClockTicks (void) const
@@ -109,6 +122,36 @@ CString *CTimer::GetTimeString (void)
 	unsigned nMinute = nTime % 60;
 	nTime /= 60;
 	unsigned nHours = nTime;
+	unsigned nHour = nTime % 24;
+	nTime /= 24;
+
+	unsigned nYear = 1970;
+	while (1)
+	{
+		unsigned nDaysOfYear = IsLeapYear (nYear) ? 366 : 365;
+		if (nTime < nDaysOfYear)
+		{
+			break;
+		}
+
+		nTime -= nDaysOfYear;
+		nYear++;
+	}
+
+	unsigned nMonth = 0;
+	while (1)
+	{
+		unsigned nDaysOfMonth = GetDaysOfMonth (nMonth, nYear);
+		if (nTime < nDaysOfMonth)
+		{
+			break;
+		}
+
+		nTime -= nDaysOfMonth;
+		nMonth++;
+	}
+
+	unsigned nMonthDay = nTime + 1;
 
 	nTicks %= HZ;
 #if (HZ != 100)
@@ -118,7 +161,14 @@ CString *CTimer::GetTimeString (void)
 	CString *pString = new CString;
 	assert (pString != 0);
 
-	pString->Format ("%02u:%02u:%02u.%02lu", nHours, nMinute, nSecond, nTicks);
+	if (nYear > 1975)
+	{
+		pString->Format ("%s %2u %02u:%02u:%02u.%02u", s_pMonthName[nMonth], nMonthDay, nHour, nMinute, nSecond, nTicks);
+	}
+	else
+	{
+		pString->Format ("%02u:%02u:%02u.%02u", nHours, nMinute, nSecond, nTicks);
+	}
 
 	return pString;
 }
@@ -160,7 +210,12 @@ unsigned CTimer::StartKernelTimer (unsigned nDelay,
 void CTimer::CancelKernelTimer (unsigned hTimer)
 {
 	assert (1 <= hTimer && hTimer <= KERNEL_TIMERS);
+
+	m_KernelTimerSpinLock.Acquire ();
+
 	m_KernelTimer[hTimer-1].m_pHandler = 0;
+
+	m_KernelTimerSpinLock.Release ();
 }
 
 void CTimer::PollKernelTimers (void)
@@ -294,6 +349,27 @@ void CTimer::SimpleusDelay (unsigned nMicroSeconds)
 
 		DataMemBarrier ();
 	}
+}
+
+int CTimer::IsLeapYear (unsigned nYear)
+{
+	if (nYear % 100 == 0)
+	{
+		return nYear % 400 == 0;
+	}
+
+	return nYear % 4 == 0;
+}
+
+unsigned CTimer::GetDaysOfMonth (unsigned nMonth, unsigned nYear)
+{
+	if (   nMonth == 1
+	    && IsLeapYear (nYear))
+	{
+		return 29;
+	}
+
+	return s_nDaysOfMonth[nMonth];
 }
 
 CTimer *CTimer::Get (void)
