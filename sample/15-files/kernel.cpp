@@ -103,19 +103,17 @@ TShutdownMode CKernel::Run (void)
 	unsigned nEntry = m_FileSystem.RootFindFirst (&Direntry, &CurrentEntry);
 	for (unsigned i = 0; nEntry != 0; i++)
 	{
-		if (Direntry.nAttributes & FS_ATTRIB_SYSTEM)
+		if (!(Direntry.nAttributes & FS_ATTRIB_SYSTEM))
 		{
-			continue;
-		}
+			CString FileName;
+			FileName.Format ("%-14s", Direntry.chTitle);
 
-		CString FileName;
-		FileName.Format ("%-14s", Direntry.chTitle);
+			m_Screen.Write ((const char *) FileName, FileName.GetLength ());
 
-		m_Screen.Write ((const char *) FileName, FileName.GetLength ());
-
-		if (i % 5 == 4)
-		{
-			m_Screen.Write ("\n", 1);
+			if (i % 5 == 4)
+			{
+				m_Screen.Write ("\n", 1);
+			}
 		}
 
 		nEntry = m_FileSystem.RootFindNext (&Direntry, &CurrentEntry);
