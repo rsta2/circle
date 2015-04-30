@@ -92,12 +92,12 @@ void mem_init (unsigned long ulBase, unsigned long ulSize)
 	}
 	
 	ulSize = ulLimit - ulBase;
-	unsigned long ulQuarterSize = ulSize / 4;
+	unsigned long ulBlockReserve = ulSize - PAGE_RESERVE;
 
 	s_pNextBlock = (unsigned char *) ulBase;
-	s_pBlockLimit = (unsigned char *) (ulBase + ulQuarterSize);
+	s_pBlockLimit = (unsigned char *) (ulBase + ulBlockReserve);
 
-	s_pNextPage = (unsigned char *) ((ulBase + ulQuarterSize + PAGE_SIZE) & ~PAGE_MASK);
+	s_pNextPage = (unsigned char *) ((ulBase + ulBlockReserve + PAGE_SIZE) & ~PAGE_MASK);
 	s_pPageLimit = (unsigned char *) ulLimit;
 }
 
