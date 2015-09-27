@@ -183,12 +183,8 @@ void CInterruptSystem::InterruptHandler (void)
 		{
 			if (s_pThis->CallIRQHandler (nIRQ))
 			{
-				write32 (nPendReg, nIRQMask);
-			
 				return;
 			}
-
-			write32 (nPendReg, nIRQMask);
 		}
 	}
 }

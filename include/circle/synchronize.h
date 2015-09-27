@@ -49,6 +49,8 @@ void LeaveCritical (void);
 #define InvalidateDataCache()	asm volatile ("mcr p15, 0, %0, c7, c6,  0" : : "r" (0) : "memory")
 #define CleanDataCache()	asm volatile ("mcr p15, 0, %0, c7, c10, 0" : : "r" (0) : "memory")
 
+void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength) MAXOPT;
+
 //
 // Barriers
 //

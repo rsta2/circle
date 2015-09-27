@@ -701,12 +701,7 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 				   pStageData->GetDMAAddress () + GPU_MEM_BASE);
 	DMAAddress.Write ();
 
-#if RASPPI == 1
-	CleanDataCache ();
-	InvalidateDataCache ();
-#else
 	CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
-#endif
 	DataMemBarrier ();
 
 	// set split control
@@ -800,12 +795,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		return;
 
 	case StageSubStateWaitForTransactionComplete: {
-#if RASPPI == 1
-		CleanDataCache ();
-		InvalidateDataCache ();
-#else
 		CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
-#endif
 		DataMemBarrier ();
 
 		CDWHCIRegister TransferSize (DWHCI_HOST_CHAN_XFER_SIZ (nChannel));
