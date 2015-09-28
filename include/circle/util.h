@@ -48,9 +48,19 @@ char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr);
 
 int char2int (char chValue);			// with sign extension
 
+#ifdef __GNUC__
+
+#define le2be16		__builtin_bswap16
+
+#define le2be32		__builtin_bswap32
+
+#else
+
 u16 le2be16 (u16 usValue);
 
 u32 le2be32 (u32 ulValue);
+
+#endif
 
 // util_fast
 void *memcpyblk (void *pDest, const void *pSrc, size_t nLength);	// nLength must be multiple of 16

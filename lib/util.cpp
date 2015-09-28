@@ -243,6 +243,8 @@ int char2int (char chValue)
 	return nResult;
 }
 
+#ifndef __GNUC__
+
 u16 le2be16 (u16 usValue)
 {
 	return    ((usValue & 0x00FF) << 8)
@@ -256,3 +258,5 @@ u32 le2be32 (u32 ulValue)
 		| ((ulValue & 0x00FF0000) >> 8)
 		| ((ulValue & 0xFF000000) >> 24);
 }
+
+#endif
