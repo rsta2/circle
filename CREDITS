@@ -14,3 +14,4 @@ Spanish keymap
 Support and testing while searching for a full-speed interrupt interval bug
 Testing while fixing an USB freeze bug
 Hint how to improve le2be* functions using GCC builtins
+Enhancing class CBcmFrameBuffer
