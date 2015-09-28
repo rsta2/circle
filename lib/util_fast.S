@@ -18,4 +18,13 @@ memcpyblk:
 	pop	{r0, r3-r6}
 	bx	lr
 
+        .globl le2be16
+le2be16:
+        rev16   r0, r0
+        bx lr
+
+        .globl le2be32
+le2be32:
+        rev     r0, r0
+        bx lr
 /* End */
