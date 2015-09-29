@@ -104,7 +104,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 		TagClockRate.nRate = UART0_CLOCK;
 	}
 
-	assert (300 <= nBaudrate && nBaudrate <= 115200);
+	assert (300 <= nBaudrate && nBaudrate <= 3000000);
 	unsigned nBaud16 = nBaudrate * 16;
 	unsigned nIntDiv = TagClockRate.nRate / nBaud16;
 	assert (nIntDiv <= 0xFFFF);

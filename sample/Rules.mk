@@ -28,7 +28,7 @@ endif
 
 kernel.img: $(OBJS) $(LIBS)
 	$(LD) -o kernel.elf -Map kernel.map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(LIBS)
-	$(PREFIX)objdump -D kernel.elf > kernel.lst
+	$(PREFIX)objdump -d kernel.elf | $(PREFIX)c++filt > kernel.lst
 	$(PREFIX)objcopy kernel.elf -O binary kernel.img
 	wc -c kernel.img
 
