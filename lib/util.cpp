@@ -245,13 +245,13 @@ int char2int (char chValue)
 
 #ifndef __GNUC__
 
-u16 le2be16 (u16 usValue)
+u16 bswap16 (u16 usValue)
 {
 	return    ((usValue & 0x00FF) << 8)
 		| ((usValue & 0xFF00) >> 8);
 }
 
-u32 le2be32 (u32 ulValue)
+u32 bswap32 (u32 ulValue)
 {
 	return    ((ulValue & 0x000000FF) << 24)
 		| ((ulValue & 0x0000FF00) << 8)

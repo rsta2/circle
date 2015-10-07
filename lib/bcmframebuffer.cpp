@@ -148,14 +148,26 @@ u32 CBcmFrameBuffer::GetDepth (void) const
 
 u32 CBcmFrameBuffer::GetBuffer (void) const
 {
-#if RASPPI == 1
-	return m_pInfo->BufferPtr;
-#else
 	return m_pInfo->BufferPtr & 0x3FFFFFFF;
-#endif
 }
 
 u32 CBcmFrameBuffer::GetSize (void) const
 {
 	return m_pInfo->BufferSize;
+}
+
+boolean CBcmFrameBuffer::SetVirtualOffset (u32 nOffsetX, u32 nOffsetY)
+{
+	CBcmPropertyTags Tags;
+	TPropertyTagVirtualOffset VirtualOffset;
+	VirtualOffset.nOffsetX = nOffsetX;
+	VirtualOffset.nOffsetY = nOffsetY;
+	if (   !Tags.GetTag (PROPTAG_SET_VIRTUAL_OFFSET, &VirtualOffset, sizeof VirtualOffset, 8)
+	    || VirtualOffset.nOffsetX != nOffsetX
+	    || VirtualOffset.nOffsetY != nOffsetY)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
 }

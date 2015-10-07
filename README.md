@@ -82,7 +82,7 @@ Then go to the build root of Circle and do:
 
 By default only the latest sample (with the highest number) is build. The ready build *kernel.img* file should be in its subdirectory of sample/. If you want to build another sample after `makeall` go to its subdirectory and do `make`.
 
-You can also build Circle on the Raspberry Pi itself on Debian wheezy but you need some method to put the *kernel.img* file onto the SD(HC) card. With an external USB card reader on model B+ or Raspberry Pi 2 model B (4 USB ports) this should be no problem.
+You can also build Circle on the Raspberry Pi itself on Raspbian but you need some method to put the *kernel.img* file onto the SD(HC) card. With an external USB card reader on model B+ or Raspberry Pi 2 model B (4 USB ports) this should be no problem.
 
 Building Circle from a non-Linux host is possible too. Maybe you have to adapt the shell scripts in this case. You need a cross compiler targetting (for example) *arm-none-eabi*. OSDev.org has an [excellent document on the subject](http://wiki.osdev.org/GCC_Cross-Compiler) that you can follow if you have no idea of what a cross compiler is, or how to make one.
 
@@ -99,7 +99,7 @@ Directories
 * include: The common header files, most class headers are in the include/circle/ subdirectory.
 * lib: The Circle class implementation and support files (other libraries are in subdirectories of lib/).
 * sample: Several sample applications using Circle in different subdirectories. The main function is implemented in the CKernel class.
-* addon: Contains contributed libraries and samples (only one at the moment, has to be build manually).
+* addon: Contains contributed libraries and samples (has to be build manually).
 * boot: Do *make* in this directory to get the Raspberry Pi firmware files required to boot.
 * doc: Additional documentation files.
 
