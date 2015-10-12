@@ -76,6 +76,12 @@ FAT FS library
 * CFATFileSystem: File system driver for FAT16 and FAT32 storage partitions.
 * CFATCache: Sector cache for FAT storage partitions.
 
+Scheduler library
+
+* CTask: Overload this class, define the Run() method to implement your own task and call new on it to start it.
+* CScheduler: Cooperative non-preemtive scheduler which controls which task runs at a time.
+* CSynchronizationEvent: Provides a method to synchronize the execution of a task with an event.
+
 Net library
 
 * CARPHandler: Resolves IP addresses to Ethernet MAC addresses and responds to ARP requests.

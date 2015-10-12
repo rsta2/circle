@@ -28,3 +28,5 @@ If another class - not listed above - should be used concurrently this has to be
 Core 0 is not halted until all secondary cores have been halted because it handles the peripheral interrupts. This is ensured by Circle itself if using halt(). In case of a system panic condition all cores are halted. This can be changed by overloading CMultiCoreSupport::IPIHandler().
 
 Please note that the USB frame scheduler for interrupt transfers in Circle is very simple. If you generate heavy USB bulk traffic (by using storage devices or the Ethernet device) this may cause problems with devices using interrupt transfers (e.g. keyboard, mouse) which will respond very slowly in this case. If you recognize such problems you should give the USB some time to relax by continuously executing a short delay in your program flow from time to time.
+
+The cooperative non-preemtive scheduler is intended to allow multiple threads of operation on a single core. It cannot be used on more than one core at a time and should always run on core 0.

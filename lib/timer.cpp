@@ -27,6 +27,8 @@
 
 extern "C" void DelayLoop (unsigned nCount);
 
+static const char FromTimer[] = "timer";
+
 const unsigned CTimer::s_nDaysOfMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
 const char *CTimer::s_pMonthName[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -193,6 +195,8 @@ unsigned CTimer::StartKernelTimer (unsigned nDelay,
 	{
 		m_KernelTimerSpinLock.Release ();
 
+		CLogger::Get ()->Write (FromTimer, LogPanic, "System limit of kernel timers exceeded");
+
 		return 0;
 	}
 
@@ -321,7 +325,7 @@ void CTimer::TuneMsDelay (void)
 	m_nMsDelay = m_nMsDelay * nFactor / 100;
 	m_nusDelay = (m_nMsDelay + 500) / 1000;
 
-	CLogger::Get ()->Write ("timer", LogNotice, "SpeedFactor is %u.%02u",
+	CLogger::Get ()->Write (FromTimer, LogNotice, "SpeedFactor is %u.%02u",
 				nFactor / 100, nFactor % 100);
 }
 

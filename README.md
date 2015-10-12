@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 18 of Circle. To get access to Step 1-17 use the git tag "Step1" to "Step17".
+> This is Step 19 of Circle. To get access to Step 1-18 use the git tag "Step1" to "Step18".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -19,14 +19,14 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
 
-The 18th Step
+The 19th Step
 -------------
 
-In this step a basic experimental (UDP only) TCP/IP network stack is added and used to set the system time from an Internet time (NTP) server in *sample/18-ntptime*. You can also ping your Raspberry Pi from another computer on your local Ethernet. See the *README* file in this directory for details.
+In this step a cooperative non-preemtive scheduler is added to the new library *lib/sched/libsched.a* and demonstrated in a task sample in *sample/19-tasks*. See the *README* file in this directory for details. The scheduler is intended to ease network programming in the future.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-17 the following features were introduced:
+In Step 1-18 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -64,6 +64,8 @@ In Step 1-17 the following features were introduced:
 * FAT file system support (reduced)
 * I2C (master and slave) support
 * Multi-core support on Raspberry Pi 2
+* Experimental (UDP only) TCP/IP network stack
+* Setting system time from an Internet time (NTP) server
 
 Building
 --------
@@ -108,23 +110,10 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Net library
+Scheduler library
 
-* CARPHandler: Resolves IP addresses to Ethernet MAC addresses and responds to ARP requests.
-* CChecksumCalculator: Calculates checksums in several TCP/IP packets.
-* CDNSClient: Resolves hostnames to IP addresses.
-* CICMPHandler: ICMP echo (ping) responder.
-* CIPAddress: Encapsulates an IP address.
-* CLinkLayer: Encapsulates the Ethernet MAC layer.
-* CNetConfig: Encapsulates the network configuration.
-* CNetConnection: Virtual transport layer connection (UDP or TCP (not yet available)).
-* CNetDeviceLayer: Encapsulates the network device support layer. Queues TX/RX frames before/after transmission.
-* CNetQueue: Encapsulates a network packet queue.
-* CNetSubSystem: The main network subsystem class. Create an instance of it in the CKernel class.
-* CNetworkLayer: Encapsulates the IP network layer. Does not support packet fragmentation so far.
-* CNTPClient: A NTP client which gets the current time from an Internet time server.
-* CSocket: Network application interface (socket) class.
-* CTransportLayer: Encapsulates the TCP/UDP transport layer.
-* CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.
+* CTask: Overload this class, define the Run() method to implement your own task and call new on it to start it.
+* CScheduler: Cooperative non-preemtive scheduler which controls which task runs at a time.
+* CSynchronizationEvent: Provides a method to synchronize the execution of a task with an event.
 
 The available Circle classes are listed in the file *doc/classes.txt*.

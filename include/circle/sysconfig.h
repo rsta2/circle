@@ -63,6 +63,9 @@
 
 #define KERNEL_TIMERS		20
 
+#define MAX_TASKS		20
+#define TASK_STACK_SIZE		0x4000
+
 // default keyboard map (enable only one)
 //#define DEFAULT_KEYMAP_UK
 #define DEFAULT_KEYMAP_DE

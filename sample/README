@@ -18,3 +18,4 @@ SAMPLES
 16-i2cping		Transfering data blocks between two Raspberry Pis connected via I2C
 17-fractal		Displaying a fractal image from a Mandelbrot set (may be build for single- or multi-core)
 18-ntptime		Setting the system time from an Internet time (NTP) server
+19-tasks		Demonstrating the cooperative non-preemtive scheduler
