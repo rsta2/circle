@@ -1,5 +1,5 @@
 //
-// netsubsystem.h
+// nettask.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2015  R. Stange <rsta2@o2online.de>
@@ -17,34 +17,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_netsubsystem_h
-#define _circle_net_netsubsystem_h
+#include <circle/net/nettask.h>
+#include <circle/sched/scheduler.h>
+#include <assert.h>
 
-#include <circle/net/netconfig.h>
-#include <circle/net/netdevlayer.h>
-#include <circle/net/linklayer.h>
-#include <circle/net/networklayer.h>
-#include <circle/net/transportlayer.h>
-
-class CNetSubSystem
+CNetTask::CNetTask (CNetSubSystem *pNetSubSystem)
+:	m_pNetSubSystem (pNetSubSystem)
 {
-public:
-	CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8 *pDefaultGateway, const u8 *pDNSServer);
-	~CNetSubSystem (void);
-	
-	boolean Initialize (void);
+}
 
-	void Process (void);
+CNetTask::~CNetTask (void)
+{
+	m_pNetSubSystem = 0;
+}
 
-	CNetConfig *GetConfig (void);
-	CTransportLayer *GetTransportLayer (void);
-	
-private:
-	CNetConfig	m_Config;
-	CNetDeviceLayer	m_NetDevLayer;
-	CLinkLayer	m_LinkLayer;
-	CNetworkLayer	m_NetworkLayer;
-	CTransportLayer	m_TransportLayer;
-};
+void CNetTask::Run (void)
+{
+	while (1)
+	{
+		assert (m_pNetSubSystem != 0);
+		m_pNetSubSystem->Process ();
 
-#endif
+		CScheduler::Get ()->Yield ();
+	}
+}

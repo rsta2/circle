@@ -73,6 +73,14 @@ void CScheduler::Yield (void)
 	TaskSwitch (pOldRegs, pNewRegs);
 }
 
+void CScheduler::Sleep (unsigned nSeconds)
+{
+	while (nSeconds-- > 0)
+	{
+		usSleep (1000000);
+	}
+}
+
 void CScheduler::MsSleep (unsigned nMilliSeconds)
 {
 	if (nMilliSeconds > 0)

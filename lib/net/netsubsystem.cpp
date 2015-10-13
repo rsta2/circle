@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/netsubsystem.h>
+#include <circle/net/nettask.h>
 #include <circle/timer.h>
 #include <assert.h>
 
@@ -39,6 +40,9 @@ CNetSubSystem::~CNetSubSystem (void)
 
 boolean CNetSubSystem::Initialize (void)
 {
+	// wait for Ethernet PHY to come up
+	CTimer::Get ()->MsDelay (2000);
+
 	if (!m_NetDevLayer.Initialize ())
 	{
 		return FALSE;
@@ -59,6 +63,8 @@ boolean CNetSubSystem::Initialize (void)
 		return FALSE;
 	}
 
+	new CNetTask (this);
+
 	return TRUE;
 }
 
@@ -71,22 +77,6 @@ void CNetSubSystem::Process (void)
 	m_NetworkLayer.Process ();
 
 	m_TransportLayer.Process ();
-}
-
-void CNetSubSystem::ProcessAndDelay (unsigned nHZDelay)
-{
-	CTimer *pTimer = CTimer::Get ();
-	assert (pTimer != 0);
-
-	unsigned nStartTicks = pTimer->GetTicks ();
-
-	do
-	{
-		Process ();
-
-		pTimer->usDelay (1000);
-	}
-	while (pTimer->GetTicks () - nStartTicks < nHZDelay);
 }
 
 CNetConfig *CNetSubSystem::GetConfig (void)

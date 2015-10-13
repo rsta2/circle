@@ -22,7 +22,7 @@ A known issue here is that the use of USB interrupt split transfers - especially
 The 19th Step
 -------------
 
-In this step a cooperative non-preemtive scheduler is added to the new library *lib/sched/libsched.a* and demonstrated in a task sample in *sample/19-tasks*. See the *README* file in this directory for details. The scheduler is intended to ease network programming in the future.
+In this step a cooperative non-preemtive scheduler is added to the new library *lib/sched/libsched.a* and demonstrated in a task sample in *sample/19-tasks*. See the *README* file in this directory for details. The scheduler is intended to ease network programming in the future. The NTP client sample in *sample/18-ntptime* has already been updated to use the scheduler.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
@@ -115,5 +115,10 @@ Scheduler library
 * CTask: Overload this class, define the Run() method to implement your own task and call new on it to start it.
 * CScheduler: Cooperative non-preemtive scheduler which controls which task runs at a time.
 * CSynchronizationEvent: Provides a method to synchronize the execution of a task with an event.
+
+Net library
+
+* CNetTask: The main networking task running in the background. Processes the different network layers.
+* CNTPDaemon: Background task which uses CNTPClient to update the system time every 15 minutes.
 
 The available Circle classes are listed in the file *doc/classes.txt*.

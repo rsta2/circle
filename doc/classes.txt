@@ -95,8 +95,10 @@ Net library
 * CNetDeviceLayer: Encapsulates the network device support layer. Queues TX/RX frames before/after transmission.
 * CNetQueue: Encapsulates a network packet queue.
 * CNetSubSystem: The main network subsystem class. Create an instance of it in the CKernel class.
+* CNetTask: The main networking task running in the background. Processes the different network layers.
 * CNetworkLayer: Encapsulates the IP network layer. Does not support packet fragmentation so far.
 * CNTPClient: A NTP client which gets the current time from an Internet time server.
+* CNTPDaemon: Background task which uses CNTPClient to update the system time every 15 minutes.
 * CSocket: Network application interface (socket) class.
 * CTransportLayer: Encapsulates the TCP/UDP transport layer.
 * CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.

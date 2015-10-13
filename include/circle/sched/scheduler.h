@@ -31,6 +31,7 @@ public:
 
 	void Yield (void);			// switch to next task
 
+	void Sleep (unsigned nSeconds);
 	void MsSleep (unsigned nMilliSeconds);
 	void usSleep (unsigned nMicroSeconds);
 

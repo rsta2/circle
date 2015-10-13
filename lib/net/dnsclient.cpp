@@ -20,7 +20,7 @@
 #include <circle/net/dnsclient.h>
 #include <circle/net/socket.h>
 #include <circle/net/in.h>
-#include <circle/timer.h>
+#include <circle/sched/scheduler.h>
 #include <circle/macros.h>
 #include <circle/util.h>
 #include <assert.h>
@@ -169,7 +169,7 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 			return FALSE;
 		}
 
-		m_pNetSubSystem->ProcessAndDelay (HZ);
+		CScheduler::Get ()->MsSleep (1000);
 
 		nRecvSize = Socket.Receive (RecvBuffer, DNS_MAX_MESSAGE_SIZE, MSG_DONTWAIT);
 		assert (nRecvSize < DNS_MAX_MESSAGE_SIZE);

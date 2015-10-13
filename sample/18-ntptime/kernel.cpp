@@ -18,9 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/net/dnsclient.h>
-#include <circle/net/ntpclient.h>
-#include <circle/net/ipaddress.h>
+#include <circle/net/ntpdaemon.h>
 
 // Network configuration
 static const u8 IPAddress[]      = {192, 168, 0, 250};
@@ -39,8 +37,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_Net (IPAddress, NetMask, DefaultGateway, DNSServer),
-	m_nTicksNextUpdate (0)
+	m_Net (IPAddress, NetMask, DefaultGateway, DNSServer)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -101,56 +98,18 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	// wait for Ethernet PHY to come up
-	m_Timer.MsDelay (2000);
-
 	m_Logger.Write (FromKernel, LogNotice, "Try \"ping %u.%u.%u.%u\" from another computer!",
 			(unsigned) IPAddress[0], (unsigned) IPAddress[1],
 			(unsigned) IPAddress[2], (unsigned) IPAddress[3]);
 
+	new CNTPDaemon (NTPServer, nTimeZone, &m_Net);
+
 	for (unsigned nCount = 0; 1; nCount++)
 	{
-		if ((int) (m_nTicksNextUpdate - m_Timer.GetTicks ()) <= 0)
-		{
-			UpdateTime ();
-		}
-
-		m_Net.Process ();
+		m_Scheduler.Yield ();
 
 		m_Screen.Rotor (0, nCount);
 	}
 
 	return ShutdownHalt;
-}
-
-void CKernel::UpdateTime (void)
-{
-	CIPAddress NTPServerIP;
-	CDNSClient DNSClient (&m_Net);
-	if (!DNSClient.Resolve (NTPServer, &NTPServerIP))
-	{
-		m_Logger.Write (FromKernel, LogWarning, "Cannot resolve: %s", NTPServer);
-
-		m_nTicksNextUpdate = m_Timer.GetTicks () + 300 * HZ;
-
-		return;
-	}
-	
-	CNTPClient NTPClient (&m_Net);
-	NTPClient.SetTimeZone (nTimeZone);
-	unsigned nTime = NTPClient.GetTime (NTPServerIP);
-	if (nTime == 0)
-	{
-		m_Logger.Write (FromKernel, LogWarning, "Cannot get time from %s", NTPServer);
-
-		m_nTicksNextUpdate = m_Timer.GetTicks () + 300 * HZ;
-
-		return;
-	}
-
-	m_Timer.SetTime (nTime);
-
-	m_Logger.Write (FromKernel, LogNotice, "System time updated");
-
-	m_nTicksNextUpdate = m_Timer.GetTicks () + 900 * HZ;
 }

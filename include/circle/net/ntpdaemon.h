@@ -1,5 +1,5 @@
 //
-// netsubsystem.h
+// ntpdaemon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2015  R. Stange <rsta2@o2online.de>
@@ -17,34 +17,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_netsubsystem_h
-#define _circle_net_netsubsystem_h
+#ifndef _circle_net_ntpdaemon_h
+#define _circle_net_ntpdaemon_h
 
-#include <circle/net/netconfig.h>
-#include <circle/net/netdevlayer.h>
-#include <circle/net/linklayer.h>
-#include <circle/net/networklayer.h>
-#include <circle/net/transportlayer.h>
+#include <circle/sched/task.h>
+#include <circle/net/netsubsystem.h>
 
-class CNetSubSystem
+class CNTPDaemon : public CTask
 {
 public:
-	CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8 *pDefaultGateway, const u8 *pDNSServer);
-	~CNetSubSystem (void);
-	
-	boolean Initialize (void);
+	CNTPDaemon (const char	  *pNTPServer,		// Hostname
+		    int		   nTimeZone,		// minutes diff to UTC
+		    CNetSubSystem *pNetSubSystem);
+	~CNTPDaemon (void);
 
-	void Process (void);
+	void Run (void);
 
-	CNetConfig *GetConfig (void);
-	CTransportLayer *GetTransportLayer (void);
-	
 private:
-	CNetConfig	m_Config;
-	CNetDeviceLayer	m_NetDevLayer;
-	CLinkLayer	m_LinkLayer;
-	CNetworkLayer	m_NetworkLayer;
-	CTransportLayer	m_TransportLayer;
+	unsigned UpdateTime (void);			// returns seconds to next update attempt
+
+private:
+	const char	*m_pNTPServer;
+	int		 m_nTimeZone;
+	CNetSubSystem	*m_pNetSubSystem;
 };
 
 #endif

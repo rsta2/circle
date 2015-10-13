@@ -31,6 +31,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/dwhcidevice.h>
+#include <circle/sched/scheduler.h>
 #include <circle/net/netsubsystem.h>
 #include <circle/types.h>
 
@@ -52,9 +53,6 @@ public:
 	TShutdownMode Run (void);
 	
 private:
-	void UpdateTime (void);
-
-private:
 	// do not change this order
 	CMemorySystem		m_Memory;
 	CActLED			m_ActLED;
@@ -67,9 +65,8 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CDWHCIDevice		m_DWHCI;
+	CScheduler		m_Scheduler;
 	CNetSubSystem		m_Net;
-
-	unsigned m_nTicksNextUpdate;
 };
 
 #endif
