@@ -23,12 +23,13 @@
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
 #include <circle/net/netconnection.h>
+#include <circle/net/tcprejector.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/netqueue.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
-#define MAX_SOCKETS	10
+#define MAX_SOCKETS	20
 
 class CTransportLayer
 {
@@ -62,6 +63,8 @@ private:
 	CSpinLock m_SpinLock;
 
 	u8 *m_pBuffer;
+
+	CTCPRejector m_TCPRejector;
 };
 
 #endif

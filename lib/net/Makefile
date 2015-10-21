@@ -23,6 +23,7 @@ CIRCLEHOME = ../..
 OBJS	= netsubsystem.o nettask.o socket.o \
 	  transportlayer.o networklayer.o linklayer.o netdevlayer.o arphandler.o icmphandler.o \
 	  netconnection.o udpconnection.o \
+	  tcpconnection.o retransmissionqueue.o retranstimeoutcalc.o tcprejector.o \
 	  netconfig.o ipaddress.o netqueue.o checksumcalculator.o \
 	  dnsclient.o ntpclient.o \
 	  ntpdaemon.o

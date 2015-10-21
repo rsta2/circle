@@ -61,7 +61,7 @@
 #define ARM_ALLOW_MULTI_CORE	// slower on single core if defined
 #endif
 
-#define KERNEL_TIMERS		20
+#define KERNEL_TIMERS		40
 
 #define MAX_TASKS		20
 #define TASK_STACK_SIZE		0x4000

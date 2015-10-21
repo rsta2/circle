@@ -20,14 +20,33 @@
 #include <circle/net/socket.h>
 #include <circle/net/netsubsystem.h>
 #include <circle/net/in.h>
+#include <circle/logger.h>
 #include <circle/util.h>
 #include <assert.h>
+
+static const char FromSocket[] = "socket";
 
 CSocket::CSocket (CNetSubSystem *pNetSubSystem, int nProtocol)
 :	m_pNetConfig (pNetSubSystem->GetConfig ()),
 	m_pTransportLayer (pNetSubSystem->GetTransportLayer ()),
 	m_nProtocol (nProtocol),
+	m_nOwnPort (0),
 	m_hConnection (-1),
+	m_pBuffer (0)
+{
+	assert (m_pNetConfig != 0);
+	assert (m_pTransportLayer != 0);
+
+	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
+	assert (m_pBuffer != 0);
+}
+
+CSocket::CSocket (CSocket &rSocket)
+:	m_pNetConfig (rSocket.m_pNetConfig),
+	m_pTransportLayer (rSocket.m_pTransportLayer),
+	m_nProtocol (rSocket.m_nProtocol),
+	m_nOwnPort (rSocket.m_nOwnPort),
+	m_hConnection (rSocket.m_hConnection),
 	m_pBuffer (0)
 {
 	assert (m_pNetConfig != 0);
@@ -53,6 +72,33 @@ CSocket::~CSocket (void)
 	m_pNetConfig = 0;
 }
 
+int CSocket::Bind (u16 nOwnPort)
+{
+	if (m_nProtocol != IPPROTO_TCP)			// TODO: support UDP
+	{
+		return -1;
+	}
+
+	if (nOwnPort == 0)
+	{
+		return -1;
+	}
+	
+	if (m_nOwnPort != 0)
+	{
+		return -1;
+	}
+
+	if (m_hConnection >= 0)
+	{
+		return -1;
+	}
+	
+	m_nOwnPort = nOwnPort;				// TODO: suppress double usage of port
+	
+	return 0;
+}
+
 int CSocket::Connect (CIPAddress &rForeignIP, u16 nForeignPort)
 {
 	if (nForeignPort == 0)
@@ -76,6 +122,54 @@ int CSocket::Connect (CIPAddress &rForeignIP, u16 nForeignPort)
 	m_hConnection = m_pTransportLayer->Connect (rForeignIP, nForeignPort, 0, m_nProtocol);
 
 	return m_hConnection >= 0 ? 0 : m_hConnection;
+}
+
+int CSocket::Listen (void)
+{
+	if (   m_nProtocol != IPPROTO_TCP
+	    || m_nOwnPort == 0)
+	{
+		return -1;
+	}
+
+	if (m_hConnection >= 0)
+	{
+		return -1;
+	}
+
+	assert (m_pTransportLayer != 0);
+	m_hConnection = m_pTransportLayer->Listen (m_nOwnPort, m_nProtocol);
+
+	return m_hConnection >= 0 ? 0 : m_hConnection;
+}
+
+CSocket *CSocket::Accept (CIPAddress *pForeignIP, u16 *pForeignPort)
+{
+	if (   m_hConnection < 0
+	    || m_nOwnPort == 0)
+	{
+		return 0;
+	}
+
+	CSocket *pNewSocket = 0;
+
+	assert (pForeignIP != 0);
+	assert (pForeignPort != 0);
+	assert (m_pTransportLayer != 0);
+	if (m_pTransportLayer->Accept (pForeignIP, pForeignPort, m_hConnection) >= 0)
+	{
+		pNewSocket = new CSocket (*this);
+		assert (pNewSocket != 0);
+	}
+
+	// if this fails no further connection can be accepted
+	m_hConnection = m_pTransportLayer->Listen (m_nOwnPort, m_nProtocol);
+	if (m_hConnection < 0)
+	{
+		CLogger::Get ()->Write (FromSocket, LogPanic, "Re-Listen failed. Limit number of clients!");
+	}
+
+	return pNewSocket;
 }
 
 int CSocket::Send (const void *pBuffer, unsigned nLength, int nFlags)

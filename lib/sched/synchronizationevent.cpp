@@ -48,7 +48,10 @@ void CSynchronizationEvent::Set (void)
 	{
 		m_bState = TRUE;
 
-		CScheduler::Get ()->WakeTask (&m_pWaitTask);
+		if (m_pWaitTask != 0)
+		{
+			CScheduler::Get ()->WakeTask (&m_pWaitTask);
+		}
 	}
 }
 

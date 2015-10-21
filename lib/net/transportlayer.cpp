@@ -18,7 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/transportlayer.h>
-//#include <circle/net/tcpconnection.h>
+#include <circle/net/tcpconnection.h>
 #include <circle/net/udpconnection.h>
 #include <circle/net/in.h>
 #include <circle/macros.h>
@@ -32,7 +32,8 @@ CTransportLayer::CTransportLayer (CNetConfig *pNetConfig, CNetworkLayer *pNetwor
 	m_pNetworkLayer (pNetworkLayer),
 	m_nOwnPort (OWN_PORT_MIN),
 	m_SpinLock (FALSE),
-	m_pBuffer (0)
+	m_pBuffer (0),
+	m_TCPRejector (pNetConfig, pNetworkLayer)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pNetworkLayer != 0);
@@ -77,7 +78,8 @@ void CTransportLayer::Process (void)
 	assert (m_pBuffer != 0);
 	while (m_pNetworkLayer->Receive (m_pBuffer, &nResultLength, &Sender, &nProtocol))
 	{
-		for (unsigned i = 0; i < MAX_SOCKETS; i++)
+		unsigned i;
+		for (i = 0; i < MAX_SOCKETS; i++)
 		{
 			if (m_pConnection[i] == 0)
 			{
@@ -90,7 +92,11 @@ void CTransportLayer::Process (void)
 			}
 		}
 
-		// TODO: send RST on not consumed TCP segment
+		if (i >= MAX_SOCKETS)
+		{
+			// send RESET on not consumed TCP segment
+			m_TCPRejector.PacketReceived (m_pBuffer, nResultLength, Sender, nProtocol);
+		}
 	}
 	
 	for (unsigned i = 0; i < MAX_SOCKETS; i++)
@@ -158,11 +164,9 @@ int CTransportLayer::Connect (CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, i
 	assert (m_pNetworkLayer != 0);
 	switch (nProtocol)
 	{
-#if 0
 	case IPPROTO_TCP:
 		m_pConnection[i] = new CTCPConnection (m_pNetConfig, m_pNetworkLayer, rIPAddress, nPort, nOwnPort);
 		break;
-#endif
 
 	case IPPROTO_UDP:
 		m_pConnection[i] = new CUDPConnection (m_pNetConfig, m_pNetworkLayer, rIPAddress, nPort, nOwnPort);
@@ -189,7 +193,6 @@ int CTransportLayer::Connect (CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, i
 
 int CTransportLayer::Listen (u16 nOwnPort, int nProtocol)
 {
-#if 0
 	m_SpinLock.Acquire ();
 
 	unsigned i;
@@ -230,9 +233,6 @@ int CTransportLayer::Listen (u16 nOwnPort, int nProtocol)
 	m_SpinLock.Release ();
 
 	return i;
-#else
-	return -1;
-#endif
 }
 
 int CTransportLayer::Accept (CIPAddress *pForeignIP, u16 *pForeignPort, int hConnection)

@@ -1,5 +1,5 @@
 //
-// socket.h
+// echoserver.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2015  R. Stange <rsta2@o2online.de>
@@ -17,44 +17,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_socket_h
-#define _circle_net_socket_h
+#ifndef _echoserver_h
+#define _echoserver_h
 
+#include <circle/sched/task.h>
+#include <circle/net/netsubsystem.h>
+#include <circle/net/socket.h>
 #include <circle/net/ipaddress.h>
-#include <circle/net/netconfig.h>
-#include <circle/net/transportlayer.h>
-#include <circle/types.h>
 
-class CNetSubSystem;
+#define ECHO_PORT	7
 
-class CSocket
+#define MAX_CLIENTS	4
+
+class CEchoServer : public CTask
 {
 public:
-	CSocket (CNetSubSystem *pNetSubSystem, int nProtocol);
-	CSocket (CSocket &rSocket);
-	~CSocket (void);
+	CEchoServer (CNetSubSystem	*pNetSubSystem,
+		     CSocket		*pSocket   = 0,		// is 0 for 1st created instance (listener)
+		     const CIPAddress	*pClientIP = 0);
+	~CEchoServer (void);
 
-	int Bind (u16 nOwnPort);
-
-	int Connect (CIPAddress &rForeignIP, u16 nForeignPort);
-
-	int Listen (void);
-	CSocket *Accept (CIPAddress *pForeignIP, u16 *pForeignPort);
-
-	int Send (const void *pBuffer, unsigned nLength, int nFlags);
-
-	// buffer size (and nLength) should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
-	int Receive (void *pBuffer, unsigned nLength, int nFlags);
+	void Run (void);
 
 private:
-	CNetConfig	*m_pNetConfig;
-	CTransportLayer	*m_pTransportLayer;
+	void Listener (void);			// accepts incoming connections and creates worker task
+	void Worker (void);			// processes a connection
 
-	int m_nProtocol;
-	u16 m_nOwnPort;
-	int m_hConnection;
+private:
+	CNetSubSystem *m_pNetSubSystem;
+	CSocket	      *m_pSocket;
+	CIPAddress     m_ClientIP;
 
-	u8 *m_pBuffer;
+	static unsigned s_nInstanceCount;
 };
 
 #endif

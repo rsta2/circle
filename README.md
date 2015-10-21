@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 19 of Circle. To get access to Step 1-18 use the git tag "Step1" to "Step18".
+> This is Step 20 of Circle. To get access to Step 1-19 use the git tag "Step1" to "Step19".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -19,14 +19,16 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
 
-The 19th Step
+The 20th Step
 -------------
 
-In this step a cooperative non-preemtive scheduler is added to the new library *lib/sched/libsched.a* and demonstrated in a task sample in *sample/19-tasks*. See the *README* file in this directory for details. The scheduler is intended to ease network programming in the future. The NTP client sample in *sample/18-ntptime* has already been updated to use the scheduler.
+In this step TCP support is added to the experimental TCP/IP network stack and demonstrated in a simple TCP echo server sample in *sample/20-tcpsimple*. See the *README* file in this directory for details.
+
+Please note that this TCP/IP implementation is experimental. You should keep an eye on its behaviour and stop in case of problems!
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-18 the following features were introduced:
+In Step 1-19 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -66,6 +68,7 @@ In Step 1-18 the following features were introduced:
 * Multi-core support on Raspberry Pi 2
 * Experimental (UDP only) TCP/IP network stack
 * Setting system time from an Internet time (NTP) server
+* Cooperative non-preemtive scheduler
 
 Building
 --------
@@ -110,15 +113,11 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Scheduler library
-
-* CTask: Overload this class, define the Run() method to implement your own task and call new on it to start it.
-* CScheduler: Cooperative non-preemtive scheduler which controls which task runs at a time.
-* CSynchronizationEvent: Provides a method to synchronize the execution of a task with an event.
-
 Net library
 
-* CNetTask: The main networking task running in the background. Processes the different network layers.
-* CNTPDaemon: Background task which uses CNTPClient to update the system time every 15 minutes.
+* CRetransmissionQueue: The TCP retransmission queue.
+* CRetransmissionTimeoutCalculator: Calculates the TCP retransmission timeout according to RFC 6298.
+* CTCPConnection: Encapsulates a TCP connection. Derived from CNetConnection.
+* CTCPRejector: Rejects TCP segments which do not address an open connection. Derived from CNetConnection.
 
 The available Circle classes are listed in the file *doc/classes.txt*.
