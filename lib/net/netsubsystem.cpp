@@ -19,6 +19,8 @@
 //
 #include <circle/net/netsubsystem.h>
 #include <circle/net/nettask.h>
+#include <circle/net/dhcpclient.h>
+#include <circle/sched/scheduler.h>
 #include <circle/timer.h>
 #include <assert.h>
 
@@ -26,16 +28,23 @@ CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8
 :	m_NetDevLayer (&m_Config),
 	m_LinkLayer (&m_Config, &m_NetDevLayer),
 	m_NetworkLayer (&m_Config, &m_LinkLayer),
-	m_TransportLayer (&m_Config, &m_NetworkLayer)
+	m_TransportLayer (&m_Config, &m_NetworkLayer),
+	m_bUseDHCP (pIPAddress == 0 ? TRUE : FALSE),
+	m_pDHCPClient (0)
 {
-	m_Config.SetIPAddress (pIPAddress);
-	m_Config.SetNetMask (pNetMask);
-	m_Config.SetDefaultGateway (pDefaultGateway);
-	m_Config.SetDNSServer (pDNSServer);
+	if (!m_bUseDHCP)
+	{
+		m_Config.SetIPAddress (pIPAddress);
+		m_Config.SetNetMask (pNetMask);
+		m_Config.SetDefaultGateway (pDefaultGateway);
+		m_Config.SetDNSServer (pDNSServer);
+	}
 }
 
 CNetSubSystem::~CNetSubSystem (void)
 {
+	delete m_pDHCPClient;
+	m_pDHCPClient = 0;
 }
 
 boolean CNetSubSystem::Initialize (void)
@@ -65,6 +74,18 @@ boolean CNetSubSystem::Initialize (void)
 
 	new CNetTask (this);
 
+	if (m_bUseDHCP)
+	{
+		assert (m_pDHCPClient == 0);
+		m_pDHCPClient = new CDHCPClient (this);
+		assert (m_pDHCPClient != 0);
+	}
+
+	while (!IsRunning ())
+	{
+		CScheduler::Get ()->Yield ();
+	}
+
 	return TRUE;
 }
 
@@ -84,7 +105,23 @@ CNetConfig *CNetSubSystem::GetConfig (void)
 	return &m_Config;
 }
 
+CNetDeviceLayer *CNetSubSystem::GetNetDeviceLayer (void)
+{
+	return &m_NetDevLayer;
+}
+
 CTransportLayer *CNetSubSystem::GetTransportLayer (void)
 {
 	return &m_TransportLayer;
+}
+
+boolean CNetSubSystem::IsRunning (void) const
+{
+	if (!m_bUseDHCP)
+	{
+		return TRUE;
+	}
+
+	assert (m_pDHCPClient != 0);
+	return m_pDHCPClient->IsBound ();
 }

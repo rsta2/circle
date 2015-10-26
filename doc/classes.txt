@@ -86,6 +86,7 @@ Net library
 
 * CARPHandler: Resolves IP addresses to Ethernet MAC addresses and responds to ARP requests.
 * CChecksumCalculator: Calculates checksums in several TCP/IP packets.
+* CDHCPClient: DHCP client task. Gets and maintains an IP address lease for the network device.
 * CDNSClient: Resolves hostnames to IP addresses.
 * CICMPHandler: ICMP echo (ping) responder.
 * CIPAddress: Encapsulates an IP address.

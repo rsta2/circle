@@ -121,9 +121,20 @@ void CNetworkLayer::Process (void)
 		}
 
 		CIPAddress IPAddressDestination (pHeader->DestinationAddress);
-		if (*pOwnIPAddress != IPAddressDestination)
+		if (!pOwnIPAddress->IsNull ())
 		{
-			continue;
+			if (   *pOwnIPAddress != IPAddressDestination
+			    && !IPAddressDestination.IsBroadcast ())
+			{
+				continue;
+			}
+		}
+		else
+		{
+			if (!IPAddressDestination.IsBroadcast ())
+			{
+				continue;
+			}
 		}
 
 		if (   (pHeader->nFlagsFragmentOffset & IP_FLAGS_MF)
@@ -185,6 +196,16 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	assert (m_pNetConfig != 0);
 	const CIPAddress *pOwnIPAddress = m_pNetConfig->GetIPAddress ();
 	assert (pOwnIPAddress != 0);
+
+	if (   pOwnIPAddress->IsNull ()
+	    && !rReceiver.IsBroadcast ())
+	{
+		delete pPacketBuffer;
+		pPacketBuffer = 0;
+
+		return FALSE;
+	}
+
 	pOwnIPAddress->CopyTo (pHeader->SourceAddress);
 
 	rReceiver.CopyTo (pHeader->DestinationAddress);

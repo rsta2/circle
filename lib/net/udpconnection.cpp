@@ -112,6 +112,9 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 	assert (nLength > 0);
 	memcpy (pPacketBuffer+sizeof (TUDPHeader), pData, nLength);
 
+	assert (m_pNetConfig != 0);
+	m_Checksum.SetSourceAddress (*m_pNetConfig->GetIPAddress ());
+	m_Checksum.SetDestinationAddress (m_ForeignIP);
 	pHeader->nChecksum = m_Checksum.Calculate (pPacketBuffer, nPacketLength);
 
 	assert (m_pNetworkLayer != 0);
@@ -145,10 +148,27 @@ void CUDPConnection::Process (void)
 
 int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength, CIPAddress &rSenderIP, int nProtocol)
 {
-	if (   nProtocol   != IPPROTO_UDP
-	    || m_ForeignIP != rSenderIP)
+	if (nProtocol != IPPROTO_UDP)
 	{
 		return 0;
+	}
+
+	m_Checksum.SetSourceAddress (rSenderIP);
+
+	// TODO: may not work with some UDP based protocol, would need receiver IP from network layer here
+	if (m_ForeignIP.IsBroadcast ())
+	{
+		m_Checksum.SetDestinationAddress (m_ForeignIP);
+	}
+	else
+	{
+		if (m_ForeignIP != rSenderIP)
+		{
+			return 0;
+		}
+
+		assert (m_pNetConfig != 0);
+		m_Checksum.SetDestinationAddress (*m_pNetConfig->GetIPAddress ());
 	}
 	
 	if (nLength <= sizeof (TUDPHeader))

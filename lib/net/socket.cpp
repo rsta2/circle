@@ -74,11 +74,6 @@ CSocket::~CSocket (void)
 
 int CSocket::Bind (u16 nOwnPort)
 {
-	if (m_nProtocol != IPPROTO_TCP)			// TODO: support UDP
-	{
-		return -1;
-	}
-
 	if (nOwnPort == 0)
 	{
 		return -1;
@@ -119,7 +114,15 @@ int CSocket::Connect (CIPAddress &rForeignIP, u16 nForeignPort)
 		m_hConnection = -1;
 	}
 
-	m_hConnection = m_pTransportLayer->Connect (rForeignIP, nForeignPort, 0, m_nProtocol);
+	assert (m_pNetConfig != 0);
+	if (   m_pNetConfig->GetIPAddress ()->IsNull ()		// from null source address
+	    && !(   m_nProtocol == IPPROTO_UDP			// only UDP broadcasts are allowed
+		 && rForeignIP.IsBroadcast ()))
+	{
+		return -1;
+	}
+
+	m_hConnection = m_pTransportLayer->Connect (rForeignIP, nForeignPort, m_nOwnPort, m_nProtocol);
 
 	return m_hConnection >= 0 ? 0 : m_hConnection;
 }

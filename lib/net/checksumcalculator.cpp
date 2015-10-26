@@ -44,6 +44,11 @@ CChecksumCalculator::~CChecksumCalculator (void)
 {
 }
 
+void CChecksumCalculator::SetSourceAddress (const CIPAddress &rSourceIP)
+{
+	rSourceIP.CopyTo (m_Header.SourceAddress);
+}
+
 void CChecksumCalculator::SetDestinationAddress (const CIPAddress &rDestIP)
 {
 	rDestIP.CopyTo (m_Header.DestinationAddress);

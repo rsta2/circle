@@ -19,12 +19,17 @@
 //
 #include "kernel.h"
 #include "echoserver.h"
+#include <circle/string.h>
 
 // Network configuration
+#define USE_DHCP
+
+#ifndef USE_DHCP
 static const u8 IPAddress[]      = {192, 168, 0, 250};
 static const u8 NetMask[]        = {255, 255, 255, 0};
 static const u8 DefaultGateway[] = {192, 168, 0, 1};
 static const u8 DNSServer[]      = {192, 168, 0, 1};
+#endif
 
 static const char FromKernel[] = "kernel";
 
@@ -32,8 +37,10 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_Net (IPAddress, NetMask, DefaultGateway, DNSServer)
+	m_DWHCI (&m_Interrupt, &m_Timer)
+#ifndef USE_DHCP
+	, m_Net (IPAddress, NetMask, DefaultGateway, DNSServer)
+#endif
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -94,10 +101,10 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	m_Logger.Write (FromKernel, LogNotice, "Try \"telnet %u.%u.%u.%u %u\" from another computer!",
-			(unsigned) IPAddress[0], (unsigned) IPAddress[1],
-			(unsigned) IPAddress[2], (unsigned) IPAddress[3],
-			ECHO_PORT);
+	CString IPString;
+	m_Net.GetConfig ()->GetIPAddress ()->Format (&IPString);
+	m_Logger.Write (FromKernel, LogNotice, "Try \"telnet %s %u\" from another computer!",
+			(const char *) IPString, ECHO_PORT);
 
 	new CEchoServer (&m_Net);
 

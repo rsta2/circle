@@ -108,7 +108,8 @@ void CARPHandler::Process (void)
 			continue;
 		}
 
-		if (*pOwnIPAddress != pPacket->ProtocolAddressTarget)
+		if (   pOwnIPAddress->IsNull ()
+		    || *pOwnIPAddress != pPacket->ProtocolAddressTarget)
 		{
 			continue;
 		}

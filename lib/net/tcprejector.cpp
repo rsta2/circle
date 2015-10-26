@@ -90,7 +90,14 @@ int CTCPRejector::PacketReceived (const void *pPacket, unsigned nLength, CIPAddr
 	{
 		return -1;
 	}
-	
+
+	assert (m_pNetConfig != 0);
+	if (m_pNetConfig->GetIPAddress ()->IsNull ())
+	{
+		return 0;
+	}
+
+	m_Checksum.SetSourceAddress (*m_pNetConfig->GetIPAddress ());
 	m_Checksum.SetDestinationAddress (rSenderIP);
 
 	if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)

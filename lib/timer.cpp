@@ -38,6 +38,7 @@ CTimer *CTimer::s_pThis = 0;
 CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 :	m_pInterruptSystem (pInterruptSystem),
 	m_nTicks (0),
+	m_nUptime (0),
 	m_nTime (0),
 	m_nMsDelay (350000),
 	m_nusDelay (m_nMsDelay / 1000)
@@ -97,6 +98,11 @@ unsigned CTimer::GetClockTicks (void) const
 unsigned CTimer::GetTicks (void) const
 {
 	return m_nTicks;
+}
+
+unsigned CTimer::GetUptime (void) const
+{
+	return m_nUptime;
 }
 
 unsigned CTimer::GetTime (void) const
@@ -278,6 +284,7 @@ void CTimer::InterruptHandler (void)
 
 	if (++m_nTicks % HZ == 0)
 	{
+		m_nUptime++;
 		m_nTime++;
 	}
 

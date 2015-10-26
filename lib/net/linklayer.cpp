@@ -104,7 +104,12 @@ boolean CLinkLayer::Send (const CIPAddress &rReceiver, const void *pIPPacket, un
 {
 	assert (m_pARPHandler != 0);
 	CMACAddress MACAddressReceiver;
-	if (!m_pARPHandler->Resolve (rReceiver, &MACAddressReceiver))
+
+	if (rReceiver.IsBroadcast ())
+	{
+		MACAddressReceiver.SetBroadcast ();
+	}
+	else if (!m_pARPHandler->Resolve (rReceiver, &MACAddressReceiver))
 	{
 		return TRUE;		// ignore packet, will be retransmitted by higher layer
 	}

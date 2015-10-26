@@ -24,6 +24,8 @@ The 20th Step
 
 In this step TCP support is added to the experimental TCP/IP network stack and demonstrated in a simple TCP echo server sample in *sample/20-tcpsimple*. See the *README* file in this directory for details.
 
+The network stack supports DHCP now. In the network samples you do not need to define your network configuration any more because it is requested by using DHCP by default now. A static configuration is still supported if it is required.
+
 Please note that this TCP/IP implementation is experimental. You should keep an eye on its behaviour and stop in case of problems!
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
@@ -115,6 +117,7 @@ The following C++ classes were added to Circle:
 
 Net library
 
+* CDHCPClient: DHCP client task. Gets and maintains an IP address lease for the network device.
 * CRetransmissionQueue: The TCP retransmission queue.
 * CRetransmissionTimeoutCalculator: Calculates the TCP retransmission timeout according to RFC 6298.
 * CTCPConnection: Encapsulates a TCP connection. Derived from CNetConnection.

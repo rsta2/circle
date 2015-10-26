@@ -42,9 +42,12 @@ public:
 	void Set (u32 nAddress);
 	void Set (const u8 *pAddress);
 	void Set (const CIPAddress &rAddress);
+	void SetBroadcast (void);
 	const u8 *Get (void) const;
 	void CopyTo (u8 *pBuffer) const;
 
+	boolean IsNull (void) const;
+	boolean IsBroadcast (void) const;
 	unsigned GetSize (void) const;
 
 	void Format (CString *pString) const;

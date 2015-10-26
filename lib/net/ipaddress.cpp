@@ -88,6 +88,12 @@ void CIPAddress::Set (const CIPAddress &rAddress)
 	m_bValid = TRUE;
 }
 
+void CIPAddress::SetBroadcast (void)
+{
+	memset (m_Address, 0xFF, IP_ADDRESS_SIZE);
+	m_bValid = TRUE;
+}
+
 const u8 *CIPAddress::Get (void) const
 {
 	assert (m_bValid);
@@ -99,6 +105,36 @@ void CIPAddress::CopyTo (u8 *pBuffer) const
 	assert (m_bValid);
 	assert (pBuffer != 0);
 	memcpy (pBuffer, m_Address, IP_ADDRESS_SIZE);
+}
+
+boolean CIPAddress::IsNull (void) const
+{
+	assert (m_bValid);
+
+	for (unsigned i = 0; i < IP_ADDRESS_SIZE; i++)
+	{
+		if (m_Address[i] != 0)
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+boolean CIPAddress::IsBroadcast (void) const
+{
+	assert (m_bValid);
+
+	for (unsigned i = 0; i < IP_ADDRESS_SIZE; i++)
+	{
+		if (m_Address[i] != 0xFF)
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }
 
 unsigned CIPAddress::GetSize (void) const
@@ -117,6 +153,11 @@ void CIPAddress::Format (CString *pString) const
 
 boolean CIPAddress::OnSameNetwork (const CIPAddress &rAddress2, const u8 *pNetMask) const
 {
+	if (rAddress2.IsBroadcast ())	// a broadcast goes always to the same subnet
+	{
+		return TRUE;
+	}
+
 	assert (pNetMask != 0);
 	u32 nNetMask = *(u32 *) pNetMask;
 	

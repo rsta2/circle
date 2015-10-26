@@ -53,6 +53,7 @@ public:
 #define CLOCKHZ	1000000
 
 	unsigned GetTicks (void) const;			// 1/HZ seconds since system boot
+	unsigned GetUptime (void) const;		// Seconds since system boot (continous)
 	unsigned GetTime (void) const;			// Seconds since system boot  or
 							// Seconds since 1970-01-01 00:00:00 (if time was set)
 
@@ -92,6 +93,7 @@ private:
 	CInterruptSystem	*m_pInterruptSystem;
 
 	volatile unsigned	 m_nTicks;
+	volatile unsigned	 m_nUptime;
 	volatile unsigned	 m_nTime;
 	CSpinLock		 m_TimeSpinLock;
 
