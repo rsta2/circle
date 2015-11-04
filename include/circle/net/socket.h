@@ -46,6 +46,8 @@ public:
 	// buffer size (and nLength) should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
 	int Receive (void *pBuffer, unsigned nLength, int nFlags);
 
+	const u8 *GetForeignIP (void) const;		// returns 0 if not connected
+
 private:
 	CNetConfig	*m_pNetConfig;
 	CTransportLayer	*m_pTransportLayer;

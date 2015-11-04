@@ -222,3 +222,14 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 
 	return nResult;
 }
+
+const u8 *CSocket::GetForeignIP (void) const
+{
+	if (m_hConnection < 0)
+	{
+		return 0;
+	}
+
+	assert (m_pTransportLayer != 0);
+	return m_pTransportLayer->GetForeignIP (m_hConnection);
+}

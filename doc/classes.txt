@@ -22,6 +22,8 @@ Base library
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
 * CPageTable: Encapsulates a page table to be used by MMU.
+* CPtrArray: Container class. Dynamic array of pointers.
+* CPtrList: Container class. List of pointers.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
 * CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
@@ -88,6 +90,7 @@ Net library
 * CChecksumCalculator: Calculates checksums in several TCP/IP packets.
 * CDHCPClient: DHCP client task. Gets and maintains an IP address lease for the network device.
 * CDNSClient: Resolves hostnames to IP addresses.
+* CHTTPDaemon: Simple HTTP server class.
 * CICMPHandler: ICMP echo (ping) responder.
 * CIPAddress: Encapsulates an IP address.
 * CLinkLayer: Encapsulates the Ethernet MAC layer.

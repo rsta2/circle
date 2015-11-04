@@ -31,7 +31,6 @@
 struct TDNSHeader
 {
 	unsigned short nID;
-#define DNS_DEFAULT_ID		1			// TODO
 	unsigned short nFlags;
 #define DNS_FLAGS_QR		0x8000
 #define DNS_FLAGS_OPCODE	0x7800
@@ -79,6 +78,8 @@ PACKED;
 #define DNS_RR_TRAILER_HEADER_LENGTH	( sizeof (struct TDNSResourceRecordTrailerAIN) \
 					 - DNS_RDLENGTH_AIN)
 
+u16 CDNSClient::s_nXID = 1;
+
 CDNSClient::CDNSClient (CNetSubSystem *pNetSubSystem)
 :	m_pNetSubSystem (pNetSubSystem)
 {
@@ -112,7 +113,9 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 	memset (Buffer, 0, sizeof Buffer);
 	TDNSHeader *pDNSHeader = (TDNSHeader *) Buffer;
 
-	pDNSHeader->nID      = BE (DNS_DEFAULT_ID);
+	u16 nXID = s_nXID++;
+
+	pDNSHeader->nID      = le2be16 (nXID);
 	pDNSHeader->nFlags   = BE (DNS_FLAGS_OPCODE_QUERY | DNS_FLAGS_RD);
 	pDNSHeader->nQDCount = BE (1);
 
@@ -120,6 +123,7 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 
 	char Hostname[MAX_HOSTNAME_SIZE];
 	strncpy (Hostname, pHostname, MAX_HOSTNAME_SIZE-1);
+	Hostname[MAX_HOSTNAME_SIZE-1] = '\0';
 
 	char *pSavePtr;
 	size_t nLength;
@@ -177,7 +181,7 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 	while (nRecvSize < (int) (sizeof (TDNSHeader)+sizeof (TDNSResourceRecordTrailerAIN)));
 
 	pDNSHeader = (TDNSHeader *) RecvBuffer;
-	if (   pDNSHeader->nID != BE (DNS_DEFAULT_ID)
+	if (   pDNSHeader->nID != le2be16 (nXID)
 	    ||    (pDNSHeader->nFlags & BE (  DNS_FLAGS_QR
 	                                    | DNS_FLAGS_OPCODE
 	                                    | DNS_FLAGS_TC

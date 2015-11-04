@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 20 of Circle. To get access to Step 1-19 use the git tag "Step1" to "Step19".
+> This is Step 21 of Circle. To get access to Step 1-20 use the git tag "Step1" to "Step20".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -19,18 +19,14 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
 
-The 20th Step
+The 21th Step
 -------------
 
-In this step TCP support is added to the experimental TCP/IP network stack and demonstrated in a simple TCP echo server sample in *sample/20-tcpsimple*. See the *README* file in this directory for details.
-
-The network stack supports DHCP now. In the network samples you do not need to define your network configuration any more because it is requested by using DHCP by default now. A static configuration is still supported if it is required.
-
-Please note that this TCP/IP implementation is experimental. You should keep an eye on its behaviour and stop in case of problems!
+In this step a HTTP webserver class is added and demonstrated in a simple webserver sample in *sample/21-webserver*. See the *README* file in this directory for details.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-19 the following features were introduced:
+In Step 1-20 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -71,6 +67,8 @@ In Step 1-19 the following features were introduced:
 * Experimental (UDP only) TCP/IP network stack
 * Setting system time from an Internet time (NTP) server
 * Cooperative non-preemtive scheduler
+* TCP support
+* DHCP support
 
 Building
 --------
@@ -115,12 +113,13 @@ Classes
 
 The following C++ classes were added to Circle:
 
+Base library
+
+* CPtrArray: Container class. Dynamic array of pointers.
+* CPtrList: Container class. List of pointers.
+
 Net library
 
-* CDHCPClient: DHCP client task. Gets and maintains an IP address lease for the network device.
-* CRetransmissionQueue: The TCP retransmission queue.
-* CRetransmissionTimeoutCalculator: Calculates the TCP retransmission timeout according to RFC 6298.
-* CTCPConnection: Encapsulates a TCP connection. Derived from CNetConnection.
-* CTCPRejector: Rejects TCP segments which do not address an open connection. Derived from CNetConnection.
+* CHTTPDaemon: Simple HTTP server class.
 
 The available Circle classes are listed in the file *doc/classes.txt*.

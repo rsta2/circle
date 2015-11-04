@@ -1,5 +1,5 @@
 //
-// dnsclient.h
+// ptrarray.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2015  R. Stange <rsta2@o2online.de>
@@ -17,25 +17,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_dnsclient_h
-#define _circle_net_dnsclient_h
+#ifndef _circle_ptrarray_h
+#define _circle_ptrarray_h
 
-#include <circle/net/netsubsystem.h>
-#include <circle/net/ipaddress.h>
-#include <circle/types.h>
-
-class CDNSClient
+class CPtrArray					// dynamic array of pointers
 {
 public:
-	CDNSClient (CNetSubSystem *pNetSubSystem);
-	~CDNSClient (void);
+	CPtrArray (unsigned nInitialSize = 100, unsigned nSizeIncrement = 100);
+	~CPtrArray (void);
 
-	boolean Resolve (const char *pHostname, CIPAddress *pIPAddress);
+	unsigned GetCount (void) const;			// get number of elements in the array
+
+	void *&operator[] (unsigned nIndex);		// get element for index
+	void *operator[] (unsigned  nIndex) const;
+
+	unsigned Append (void *pPtr);			// append element to end of array
+
+	void RemoveLast (void);				// remove last element
 
 private:
-	CNetSubSystem *m_pNetSubSystem;
-
-	static u16 s_nXID;		// transaction ID
+	unsigned  m_nReservedSize;
+	unsigned  m_nSizeIncrement;
+	unsigned  m_nUsedCount;
+	void	**m_ppArray;
 };
 
 #endif

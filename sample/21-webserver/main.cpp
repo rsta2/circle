@@ -1,8 +1,8 @@
 //
-// dnsclient.h
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,25 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_dnsclient_h
-#define _circle_net_dnsclient_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-#include <circle/net/netsubsystem.h>
-#include <circle/net/ipaddress.h>
-#include <circle/types.h>
-
-class CDNSClient
+int main (void)
 {
-public:
-	CDNSClient (CNetSubSystem *pNetSubSystem);
-	~CDNSClient (void);
+	// cannot return here because some destructors used in CKernel are not implemented
 
-	boolean Resolve (const char *pHostname, CIPAddress *pIPAddress);
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
+	
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-private:
-	CNetSubSystem *m_pNetSubSystem;
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
 
-	static u16 s_nXID;		// transaction ID
-};
-
-#endif
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

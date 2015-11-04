@@ -1,5 +1,5 @@
 //
-// dnsclient.h
+// ptrlist.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2015  R. Stange <rsta2@o2online.de>
@@ -17,25 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_dnsclient_h
-#define _circle_net_dnsclient_h
+#ifndef _circle_ptrlist_h
+#define _circle_ptrlist_h
 
-#include <circle/net/netsubsystem.h>
-#include <circle/net/ipaddress.h>
-#include <circle/types.h>
+struct TPtrListElement;
 
-class CDNSClient
+class CPtrList					// list of pointers
 {
 public:
-	CDNSClient (CNetSubSystem *pNetSubSystem);
-	~CDNSClient (void);
+	CPtrList (void);
+	~CPtrList (void);
 
-	boolean Resolve (const char *pHostname, CIPAddress *pIPAddress);
+	TPtrListElement *GetFirst (void);				// returns 0 if list is empty
+	TPtrListElement *GetNext (TPtrListElement *pElement);		// returns 0 if nothing follows
+
+	void *GetPtr (TPtrListElement *pElement);			// get pointer for element
+
+	void InsertBefore (TPtrListElement *pAfter, void *pPtr);	// pAfter must be != 0
+	void InsertAfter (TPtrListElement *pBefore, void *pPtr);	// pBefore == 0 to set 1st element
+
+	void Remove (TPtrListElement *pElement);			// remove this element
+
+	TPtrListElement *Find (void *pPtr);				// find element using pointer
 
 private:
-	CNetSubSystem *m_pNetSubSystem;
-
-	static u16 s_nXID;		// transaction ID
+	TPtrListElement *m_pFirst;
 };
 
 #endif

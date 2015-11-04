@@ -20,3 +20,4 @@ SAMPLES
 18-ntptime		Setting the system time from an Internet time (NTP) server
 19-tasks		Demonstrating the cooperative non-preemtive scheduler
 20-tcpsimple		Simple TCP echo server
+21-webserver		Simple HTTP webserver which controls the Act LED
