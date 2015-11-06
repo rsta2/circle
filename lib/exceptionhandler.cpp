@@ -46,6 +46,7 @@ CExceptionHandler::CExceptionHandler (void)
 	assert (s_pThis == 0);
 	s_pThis = this;
 
+#ifndef USE_RPI_STUB_AT
 	TExceptionTable *pTable = (TExceptionTable *) ARM_EXCEPTION_TABLE_BASE;
 
 	pTable->UndefinedInstruction = ARM_OPCODE_BRANCH (ARM_DISTANCE (
@@ -64,6 +65,7 @@ CExceptionHandler::CExceptionHandler (void)
 	DataSyncBarrier ();
 
 	InstructionSyncBarrier ();
+#endif
 }
 
 CExceptionHandler::~CExceptionHandler (void)

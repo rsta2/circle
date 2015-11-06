@@ -44,11 +44,17 @@
 #endif
 
 CMemorySystem::CMemorySystem (boolean bEnableMMU)
+#ifndef USE_RPI_STUB_AT
 :	m_bEnableMMU (bEnableMMU),
 	m_nMemSize (0),
+#else
+:	m_bEnableMMU (FALSE),
+	m_nMemSize (USE_RPI_STUB_AT),
+#endif
 	m_pPageTable0Default (0),
 	m_pPageTable1 (0)
 {
+#ifndef USE_RPI_STUB_AT
 	CBcmPropertyTags Tags;
 	TPropertyTagMemory TagMemory;
 	if (!Tags.GetTag (PROPTAG_GET_ARM_MEMORY, &TagMemory, sizeof TagMemory))
@@ -61,6 +67,9 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 	m_nMemSize = TagMemory.nSize;
 
 	mem_init (TagMemory.nBaseAddress, m_nMemSize);
+#else
+	mem_init (0, m_nMemSize);
+#endif
 
 	if (m_bEnableMMU)
 	{

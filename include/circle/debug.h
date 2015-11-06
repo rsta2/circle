@@ -2,7 +2,7 @@
 // debug.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@
 #define _debug_h
 
 #include <circle/types.h>
+
+#define Breakpoint(id)		asm volatile ("bkpt %0" :: "i" (id))
 
 #ifndef NDEBUG
 

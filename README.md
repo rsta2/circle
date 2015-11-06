@@ -24,6 +24,8 @@ The 21th Step
 
 In this step a HTTP webserver class is added and demonstrated in a simple webserver sample in *sample/21-webserver*. See the *README* file in this directory for details.
 
+Single-core Circle applications can be source-level debugged on the Raspberry Pi 2 using the GNU debugger (GDB) and rpi_stub now. See *doc/debug.txt* for details.
+
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
 In Step 1-20 the following features were introduced:

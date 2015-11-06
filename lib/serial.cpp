@@ -29,6 +29,8 @@
 #include <circle/synchronize.h>
 #include <assert.h>
 
+#ifndef USE_RPI_STUB_AT
+
 #define DR_OE_MASK		(1 << 11)
 #define DR_BE_MASK		(1 << 10)
 #define DR_PE_MASK		(1 << 9)
@@ -107,7 +109,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 	assert (300 <= nBaudrate && nBaudrate <= 3000000);
 	unsigned nBaud16 = nBaudrate * 16;
 	unsigned nIntDiv = TagClockRate.nRate / nBaud16;
-	assert (nIntDiv <= 0xFFFF);
+	assert (1 <= nIntDiv && nIntDiv <= 0xFFFF);
 	unsigned nFractDiv2 = (TagClockRate.nRate % nBaud16) * 8 / nBaudrate;
 	unsigned nFractDiv = nFractDiv2 / 2 + nFractDiv2 % 2;
 	assert (nFractDiv <= 0x3F);
@@ -168,3 +170,5 @@ void CSerialDevice::Write (u8 nChar)
 		
 	write32 (ARM_UART0_DR, nChar);
 }
+
+#endif

@@ -53,8 +53,9 @@
 
 	.globl	_start
 _start:
+#ifndef USE_RPI_STUB_AT
 	safe_svcmode_maskall r0
-
+#endif
 	cps	#0x12				/* set irq mode */
 	mov	sp, #MEM_IRQ_STACK
 	cps	#0x17				/* set abort mode */
