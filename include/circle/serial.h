@@ -26,8 +26,6 @@
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
-#ifndef USE_RPI_STUB_AT
-
 class CSerialDevice : public CDevice
 {
 public:
@@ -38,6 +36,7 @@ public:
 
 	int Write (const void *pBuffer, unsigned nCount);
 
+#ifndef USE_RPI_STUB_AT
 private:
 	void Write (u8 nChar);
 
@@ -46,21 +45,7 @@ private:
 	CGPIOPin m_RxDPin;
 
 	CSpinLock m_SpinLock;
-};
-
-#else
-
-class CSerialDevice : public CDevice
-{
-public:
-	CSerialDevice (void) {}
-	~CSerialDevice (void) {}
-
-	boolean Initialize (unsigned nBaudrate = 115200) { return TRUE; }
-
-	int Write (const void *pBuffer, unsigned nCount) { return nCount; }
-};
-
 #endif
+};
 
 #endif

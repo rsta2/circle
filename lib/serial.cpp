@@ -171,4 +171,35 @@ void CSerialDevice::Write (u8 nChar)
 	write32 (ARM_UART0_DR, nChar);
 }
 
+#else
+
+CSerialDevice::CSerialDevice (void)
+{
+}
+
+CSerialDevice::~CSerialDevice (void)
+{
+}
+
+boolean CSerialDevice::Initialize (unsigned nBaudrate)
+{
+	CDeviceNameService::Get ()->AddDevice ("ttyS1", this, FALSE);
+
+	return TRUE;
+}
+
+int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
+{
+	asm volatile
+	(
+		"push {r2}\n"
+		"mov r0, r1\n"
+		"mov r1, r2\n"
+		"bkpt #0x7FFB\n"	// send message to GDB client
+		"pop {r2}\n"
+	);
+
+	return nCount;
+}
+
 #endif

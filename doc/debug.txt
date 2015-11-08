@@ -18,7 +18,9 @@ Before building a Circle application which should be debugged with rpi_stub you 
 
 	#define USE_RPI_STUB_AT		0x1F000000
 
-in include/circle/sysconfig.h. This prevents Circle from enabling the MMU by itself (it is already enabled), Circle will not install own exception handlers (done by rpi_stub) and will not access the UART any more because it is used by rpi_stub. Log messages will go to the screen in this case. Applications build with USE_RPI_STUB_AT defined do normally not run without rpi_stub loaded.
+in include/circle/sysconfig.h. This prevents Circle from enabling the MMU by itself (it is already enabled), Circle will not install own exception handlers (done by rpi_stub) and will not access the UART any more because it is used by rpi_stub. Log messages will go to the screen in this case (exception from this see below). Applications build with USE_RPI_STUB_AT defined do normally not run without rpi_stub loaded.
+
+rpi_stub versions beginning from Nov 7, 2015 allow sending log messages to the GDB client. You have to set "logdev=ttyS1" in cmdline.txt to use this.
 
 To use GDB do the following:
 
