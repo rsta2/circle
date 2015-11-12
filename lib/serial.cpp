@@ -192,11 +192,13 @@ int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 {
 	asm volatile
 	(
-		"push {r2}\n"
-		"mov r0, r1\n"
-		"mov r1, r2\n"
+		"push {r0-r2}\n"
+		"mov r0, %0\n"
+		"mov r1, %1\n"
 		"bkpt #0x7FFB\n"	// send message to GDB client
-		"pop {r2}\n"
+		"pop {r0-r2}\n"
+
+		: : "r" (pBuffer), "r" (nCount)
 	);
 
 	return nCount;
