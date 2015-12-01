@@ -1,8 +1,8 @@
 //
-// assert.cpp
+// bttask.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,32 +17,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+#include <circle/bt/bttask.h>
+#include <circle/sched/scheduler.h>
 #include <assert.h>
-#include <circle/logger.h>
-#include <circle/string.h>
-#include <circle/sysconfig.h>
-#include <circle/debug.h>
-#include <circle/types.h>
 
-#ifndef NDEBUG
-
-void assertion_failed (const char *pExpr, const char *pFile, unsigned nLine)
+CBTTask::CBTTask (CBTSubSystem *pBTSubSystem)
+:	m_pBTSubSystem (pBTSubSystem)
 {
-	u32 ulStackPtr;
-	asm volatile ("mov %0,sp" : "=r" (ulStackPtr));
-
-	CString Source;
-	Source.Format ("%s(%u)", pFile, nLine);
-
-#ifndef USE_RPI_STUB_AT
-	debug_stacktrace ((u32 *) ulStackPtr, Source);
-	
-	CLogger::Get ()->Write (Source, LogPanic, "assertion failed: %s", pExpr);
-#else
-	CLogger::Get ()->Write (Source, LogError, "assertion failed: %s", pExpr);
-
-	Breakpoint (0);
-#endif
 }
 
-#endif
+CBTTask::~CBTTask (void)
+{
+	m_pBTSubSystem = 0;
+}
+
+void CBTTask::Run (void)
+{
+	while (1)
+	{	
+		assert (m_pBTSubSystem != 0);
+		m_pBTSubSystem->Process ();
+
+		CScheduler::Get ()->Yield ();
+	}
+}

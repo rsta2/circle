@@ -28,6 +28,10 @@ cd net
 make $1 $2 || exit
 cd ..
 
+cd bt
+make $1 $2 || exit
+cd ..
+
 cd ..
 
 cd sample

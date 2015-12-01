@@ -1,8 +1,8 @@
 //
-// assert.cpp
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,32 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <assert.h>
-#include <circle/logger.h>
-#include <circle/string.h>
-#include <circle/sysconfig.h>
-#include <circle/debug.h>
-#include <circle/types.h>
+#include "kernel.h"
+#include <circle/startup.h>
 
-#ifndef NDEBUG
-
-void assertion_failed (const char *pExpr, const char *pFile, unsigned nLine)
+int main (void)
 {
-	u32 ulStackPtr;
-	asm volatile ("mov %0,sp" : "=r" (ulStackPtr));
+	// cannot return here because some destructors used in CKernel are not implemented
 
-	CString Source;
-	Source.Format ("%s(%u)", pFile, nLine);
-
-#ifndef USE_RPI_STUB_AT
-	debug_stacktrace ((u32 *) ulStackPtr, Source);
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
 	
-	CLogger::Get ()->Write (Source, LogPanic, "assertion failed: %s", pExpr);
-#else
-	CLogger::Get ()->Write (Source, LogError, "assertion failed: %s", pExpr);
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-	Breakpoint (0);
-#endif
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
+
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
 }
-
-#endif

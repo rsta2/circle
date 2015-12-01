@@ -1,8 +1,8 @@
 //
-// assert.cpp
+// btqueue.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,32 +17,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <assert.h>
-#include <circle/logger.h>
-#include <circle/string.h>
-#include <circle/sysconfig.h>
-#include <circle/debug.h>
+#ifndef _circle_bt_btqueue_h
+#define _circle_bt_btqueue_h
+
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
-#ifndef NDEBUG
+struct TBTQueueEntry;
 
-void assertion_failed (const char *pExpr, const char *pFile, unsigned nLine)
+class CBTQueue
 {
-	u32 ulStackPtr;
-	asm volatile ("mov %0,sp" : "=r" (ulStackPtr));
+public:
+	CBTQueue (void);
+	~CBTQueue (void);
 
-	CString Source;
-	Source.Format ("%s(%u)", pFile, nLine);
-
-#ifndef USE_RPI_STUB_AT
-	debug_stacktrace ((u32 *) ulStackPtr, Source);
+	boolean IsEmpty (void) const;
 	
-	CLogger::Get ()->Write (Source, LogPanic, "assertion failed: %s", pExpr);
-#else
-	CLogger::Get ()->Write (Source, LogError, "assertion failed: %s", pExpr);
+	void Flush (void);
+	
+	void Enqueue (const void *pBuffer, unsigned nLength, void *pParam = 0);
 
-	Breakpoint (0);
-#endif
-}
+	// returns length (0 if queue is empty)
+	unsigned Dequeue (void *pBuffer, void **ppParam = 0);
+
+private:
+	volatile TBTQueueEntry *m_pFirst;
+	volatile TBTQueueEntry *m_pLast;
+
+	CSpinLock m_SpinLock;
+};
 
 #endif
