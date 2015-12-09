@@ -51,8 +51,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	m_Speed = m_pDevice->GetSpeed ();
 	m_nMaxPacketSize = m_pEndpoint->GetMaxPacketSize ();
 	
-	m_bSplitTransaction =    m_pDevice->GetHubAddress () != 0
-			      && m_Speed != USBSpeedHigh;
+	m_bSplitTransaction = m_pDevice->IsSplit ();
 
 	if (!bStatusStage)
 	{

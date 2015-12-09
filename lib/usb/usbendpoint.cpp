@@ -2,7 +2,7 @@
 // usbendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -91,6 +91,12 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 			{
 				m_nInterval = 1;
 			}
+		}
+
+		// interval 20ms is minimum to reduce interrupt rate
+		if (m_nInterval < 20)
+		{
+			m_nInterval = 20;
 		}
 	}
 }

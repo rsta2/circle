@@ -52,7 +52,7 @@ boolean CDWHCIRootPort::Initialize (void)
 	
 	// first create default device
 	assert (m_pDevice == 0);
-	m_pDevice = new CUSBDevice (m_pHost, Speed, 0, 1);
+	m_pDevice = new CUSBDevice (m_pHost, Speed, FALSE, 0, 1);
 	assert (m_pDevice != 0);
 
 	if (!m_pDevice->Initialize ())

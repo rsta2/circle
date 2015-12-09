@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,7 +36,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	
 	CUSBFunction *pResult = 0;
 
-	if (pName->Compare ("int9-0-2") == 0)
+	if (   pName->Compare ("int9-0-0") == 0
+	    || pName->Compare ("int9-0-2") == 0)
 	{
 		pResult = new CUSBStandardHub (pParent);
 	}

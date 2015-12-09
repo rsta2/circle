@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,11 +31,13 @@ static const char FromDevice[] = "usbdev";
 
 u8 CUSBDevice::s_ucNextAddress = USB_FIRST_DEDICATED_ADDRESS;
 
-CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, u8 ucHubAddress, u8 ucHubPortNumber)
+CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
+			boolean bSplitTransfer, u8 ucHubAddress, u8 ucHubPortNumber)
 :	m_pHost (pHost),
 	m_ucAddress (USB_DEFAULT_ADDRESS),
 	m_Speed (Speed),
 	m_pEndpoint0 (0),
+	m_bSplitTransfer (bSplitTransfer),
 	m_ucHubAddress (ucHubAddress),
 	m_ucHubPortNumber (ucHubPortNumber),
 	m_pDeviceDesc (0),
@@ -436,6 +438,11 @@ u8 CUSBDevice::GetAddress (void) const
 TUSBSpeed CUSBDevice::GetSpeed (void) const
 {
 	return m_Speed;
+}
+
+boolean CUSBDevice::IsSplit (void) const
+{
+	return m_bSplitTransfer;
 }
 
 u8 CUSBDevice::GetHubAddress (void) const
