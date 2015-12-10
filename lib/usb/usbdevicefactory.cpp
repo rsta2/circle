@@ -62,7 +62,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CSMSC951xDevice (pParent);
 	}
-	else if (pName->Compare ("inte0-1-1") == 0)
+	else if (   pName->Compare ("inte0-1-1") == 0
+		 || pName->Compare ("ven50d-65a") == 0)		// Belkin F8T065BF Mini Bluetooth 4.0 Adapter
 	{
 		pResult = new CUSBBluetoothDevice (pParent);
 	}
