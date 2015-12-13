@@ -18,3 +18,7 @@ SAMPLES
 16-i2cping		Transfering data blocks between two Raspberry Pis connected via I2C
 17-fractal		Displaying a fractal image from a Mandelbrot set (may be build for single- or multi-core)
 18-ntptime		Setting the system time from an Internet time (NTP) server
+19-tasks		Demonstrating the cooperative non-preemtive scheduler
+20-tcpsimple		Simple TCP echo server
+21-webserver		Simple HTTP webserver which controls the Act LED
+22-btsimple		Displaying the visible Bluetooth devices (USB Bluetooth dongle needed)

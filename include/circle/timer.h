@@ -22,6 +22,7 @@
 
 #include <circle/interrupt.h>
 #include <circle/string.h>
+#include <circle/ptrlist.h>
 #include <circle/sysconfig.h>
 #include <circle/spinlock.h>
 
@@ -30,14 +31,6 @@
 #define MSEC2HZ(msec)	((msec) * HZ / 1000)
 
 typedef void TKernelTimerHandler (unsigned hTimer, void *pParam, void *pContext);
-
-struct TKernelTimer
-{
-	TKernelTimerHandler *m_pHandler;
-	unsigned	     m_nElapsesAt;
-	void 		    *m_pParam;
-	void 		    *m_pContext;
-};
 
 class CTimer
 {
@@ -53,6 +46,7 @@ public:
 #define CLOCKHZ	1000000
 
 	unsigned GetTicks (void) const;			// 1/HZ seconds since system boot
+	unsigned GetUptime (void) const;		// Seconds since system boot (continous)
 	unsigned GetTime (void) const;			// Seconds since system boot  or
 							// Seconds since 1970-01-01 00:00:00 (if time was set)
 
@@ -92,10 +86,11 @@ private:
 	CInterruptSystem	*m_pInterruptSystem;
 
 	volatile unsigned	 m_nTicks;
+	volatile unsigned	 m_nUptime;
 	volatile unsigned	 m_nTime;
 	CSpinLock		 m_TimeSpinLock;
 
-	volatile TKernelTimer	 m_KernelTimer[KERNEL_TIMERS];	// TODO: should be linked list
+	CPtrList		 m_KernelTimerList;
 	CSpinLock		 m_KernelTimerSpinLock;
 
 	unsigned		 m_nMsDelay;

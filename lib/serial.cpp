@@ -29,6 +29,8 @@
 #include <circle/synchronize.h>
 #include <assert.h>
 
+#ifndef USE_RPI_STUB_AT
+
 #define DR_OE_MASK		(1 << 11)
 #define DR_BE_MASK		(1 << 10)
 #define DR_PE_MASK		(1 << 9)
@@ -104,10 +106,10 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 		TagClockRate.nRate = UART0_CLOCK;
 	}
 
-	assert (300 <= nBaudrate && nBaudrate <= 115200);
+	assert (300 <= nBaudrate && nBaudrate <= 3000000);
 	unsigned nBaud16 = nBaudrate * 16;
 	unsigned nIntDiv = TagClockRate.nRate / nBaud16;
-	assert (nIntDiv <= 0xFFFF);
+	assert (1 <= nIntDiv && nIntDiv <= 0xFFFF);
 	unsigned nFractDiv2 = (TagClockRate.nRate % nBaud16) * 8 / nBaudrate;
 	unsigned nFractDiv = nFractDiv2 / 2 + nFractDiv2 % 2;
 	assert (nFractDiv <= 0x3F);
@@ -168,3 +170,38 @@ void CSerialDevice::Write (u8 nChar)
 		
 	write32 (ARM_UART0_DR, nChar);
 }
+
+#else
+
+CSerialDevice::CSerialDevice (void)
+{
+}
+
+CSerialDevice::~CSerialDevice (void)
+{
+}
+
+boolean CSerialDevice::Initialize (unsigned nBaudrate)
+{
+	CDeviceNameService::Get ()->AddDevice ("ttyS1", this, FALSE);
+
+	return TRUE;
+}
+
+int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
+{
+	asm volatile
+	(
+		"push {r0-r2}\n"
+		"mov r0, %0\n"
+		"mov r1, %1\n"
+		"bkpt #0x7FFB\n"	// send message to GDB client
+		"pop {r0-r2}\n"
+
+		: : "r" (pBuffer), "r" (nCount)
+	);
+
+	return nCount;
+}
+
+#endif

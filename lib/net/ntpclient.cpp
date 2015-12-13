@@ -20,6 +20,7 @@
 #include <circle/net/ntpclient.h>
 #include <circle/net/socket.h>
 #include <circle/net/in.h>
+#include <circle/sched/scheduler.h>
 #include <circle/logger.h>
 #include <circle/util.h>
 #include <circle/types.h>
@@ -81,7 +82,7 @@ unsigned CNTPClient::GetTime (CIPAddress &rServerIP)
 			return 0;
 		}
 
-		m_pNetSubSystem->ProcessAndDelay (HZ);
+		CScheduler::Get ()->MsSleep (1000);
 
 		if (Socket.Receive (RecvPacket, sizeof RecvPacket, MSG_DONTWAIT) >= 44)
 		{

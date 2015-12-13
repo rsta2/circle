@@ -2,7 +2,7 @@
 // assert.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <circle/logger.h>
 #include <circle/string.h>
+#include <circle/sysconfig.h>
 #include <circle/debug.h>
 #include <circle/types.h>
 
@@ -33,9 +34,15 @@ void assertion_failed (const char *pExpr, const char *pFile, unsigned nLine)
 	CString Source;
 	Source.Format ("%s(%u)", pFile, nLine);
 
+#ifndef USE_RPI_STUB_AT
 	debug_stacktrace ((u32 *) ulStackPtr, Source);
 	
 	CLogger::Get ()->Write (Source, LogPanic, "assertion failed: %s", pExpr);
+#else
+	CLogger::Get ()->Write (Source, LogError, "assertion failed: %s", pExpr);
+
+	Breakpoint (0);
+#endif
 }
 
 #endif

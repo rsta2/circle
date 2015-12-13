@@ -1,0 +1,7 @@
+README
+
+This sample program is only working on Raspberry Pi models with on-board Ethernet controller.
+
+Before building it you have to update the network configuration (DHCP is used by default) in kernel.cpp to meet your local network configuration. To build this sample you need a GCC compiler which targets to your build system platform to compile the converttool. Don't forget to connect your local Ethernet to the Ethernet connector of the Raspberry Pi.
+
+First blink 5 times to show the image was loaded right. After initialization the sample program is waiting for incoming TCP connections on port 80 (http). Open the URL given on the screen in your web browser on another computer on your network. You should see a simple form with which you can switch the Act LED of your Raspberry Pi.

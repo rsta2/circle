@@ -2,7 +2,7 @@
 // usbdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,7 +42,8 @@ class CUSBEndpoint;
 class CUSBDevice
 {
 public:
-	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, u8 ucHubAddress, u8 ucHubPortNumber);
+	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
+		    boolean bSplitTransfer, u8 ucHubAddress, u8 ucHubPortNumber);
 	virtual ~CUSBDevice (void);
 	
 	virtual boolean Initialize (void);			// onto address state (phase 1)
@@ -53,7 +54,8 @@ public:
 	
 	u8 GetAddress (void) const;
 	TUSBSpeed GetSpeed (void) const;
-	
+
+	boolean IsSplit (void) const;
 	u8 GetHubAddress (void) const;
 	u8 GetHubPortNumber (void) const;
 
@@ -78,6 +80,7 @@ private:
 	TUSBSpeed	    m_Speed;
 	CUSBEndpoint	   *m_pEndpoint0;
 
+	boolean		    m_bSplitTransfer;
 	u8		    m_ucHubAddress;
 	u8		    m_ucHubPortNumber;
 	

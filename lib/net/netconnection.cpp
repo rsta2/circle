@@ -58,6 +58,11 @@ CNetConnection::~CNetConnection (void)
 	m_pNetConfig = 0;
 }
 
+const u8 *CNetConnection::GetForeignIP (void) const
+{
+	return m_ForeignIP.Get ();
+}
+
 u16 CNetConnection::GetOwnPort (void) const
 {
 	assert (m_nOwnPort != 0);

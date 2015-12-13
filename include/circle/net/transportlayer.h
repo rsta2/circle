@@ -23,12 +23,12 @@
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
 #include <circle/net/netconnection.h>
+#include <circle/net/tcprejector.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/netqueue.h>
+#include <circle/ptrarray.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
-
-#define MAX_SOCKETS	10
 
 class CTransportLayer
 {
@@ -53,15 +53,19 @@ public:
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	int Receive (void *pBuffer, int nFlags, int hConnection);
 
+	const u8 *GetForeignIP (int hConnection) const;		// returns 0 if not connected
+
 private:
 	CNetConfig    *m_pNetConfig;
 	CNetworkLayer *m_pNetworkLayer;
 
-	CNetConnection *m_pConnection[MAX_SOCKETS];
+	CPtrArray m_pConnection;
 	u16 m_nOwnPort;
 	CSpinLock m_SpinLock;
 
 	u8 *m_pBuffer;
+
+	CTCPRejector m_TCPRejector;
 };
 
 #endif

@@ -1,0 +1,11 @@
+README
+
+This sample shows a flashing image which is provided in the (very specific) standard video format of the ZX Spectrum computer using an optimized Spectrum screen emulator class. The translation of the screen image from Spectrum format into Raspberry Pi frame buffer format takes about 180 usecs (with cache enabled) so it could be used as a part of a Spectrum emulator.
+
+This speed is reached using a frame buffer with 4 bit depth so that one can show eight pixels with every 32-bit transfer to the frame buffer and a lookup table which has an entry for each combination of screen/attribute that correlates with his corresponding 32-bit word for the frame buffer of the Raspberry Pi.
+
+The sample starts with 5 flashes of the Act LED. In the main loop in CKernel::Run() the frame buffer is continously updated from the Spectrum video buffer (which does not change in this sample). For pixels which have the flash bit set in its attribute byte the ink and paper color is continously swapped. The Act LED flashes with the same clock.
+
+This sample does not use options from cmdline.txt. The (rare) logging output goes to the UART.
+
+Most of the source code of this sample was provided by Jose Luis Sanchez.

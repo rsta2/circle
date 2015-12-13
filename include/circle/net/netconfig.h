@@ -29,6 +29,8 @@ public:
 	CNetConfig (void);
 	~CNetConfig (void);
 
+	void Reset (void);
+
 	void SetIPAddress (u32 nAddress);
 	void SetNetMask (u32 nNetMask);
 	void SetDefaultGateway (u32 nAddress);

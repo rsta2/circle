@@ -58,10 +58,15 @@
 #endif
 
 #if RASPPI == 2			// valid on Raspberry Pi 2 only
+//#define USE_RPI_STUB_AT 	0x1F000000	// debug with rpi_stub
+
+#ifndef USE_RPI_STUB_AT
 #define ARM_ALLOW_MULTI_CORE	// slower on single core if defined
 #endif
+#endif
 
-#define KERNEL_TIMERS		20
+#define MAX_TASKS		20
+#define TASK_STACK_SIZE		0x4000
 
 // default keyboard map (enable only one)
 //#define DEFAULT_KEYMAP_UK

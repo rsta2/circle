@@ -19,21 +19,23 @@
 //
 #include <circle/net/netconfig.h>
 
-static const u8 IPAddress[]      = {192, 168, 0, 250};
-static const u8 NetMask[]        = {255, 255, 255, 0};
-static const u8 DefaultGateway[] = {192, 168, 0, 1};
-static const u8 DNSServer[]      = {192, 168, 0, 1};
-
 CNetConfig::CNetConfig (void)
-:	m_IPAddress (IPAddress),
-	m_NetMask (NetMask),
-	m_DefaultGateway (DefaultGateway),
-	m_DNSServer (DNSServer)
 {
+	Reset ();
 }
 
 CNetConfig::~CNetConfig (void)
 {
+}
+
+void CNetConfig::Reset (void)
+{
+	static const u8 NullAddress[] = {0, 0, 0, 0};
+
+	m_IPAddress.Set (NullAddress);
+	m_NetMask.Set (NullAddress);
+	m_DefaultGateway.Set (NullAddress);
+	m_DNSServer.Set (NullAddress);
 }
 
 void CNetConfig::SetIPAddress (u32 nAddress)

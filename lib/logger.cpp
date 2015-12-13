@@ -23,6 +23,8 @@
 #include <circle/startup.h>
 #include <circle/multicore.h>
 #include <circle/util.h>
+#include <circle/sysconfig.h>
+#include <circle/debug.h>
 
 #define LOGGER_BUFSIZE	0x4000
 
@@ -116,10 +118,14 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 
 	if (Severity == LogPanic)
 	{
+#ifndef USE_RPI_STUB_AT
 #ifndef ARM_ALLOW_MULTI_CORE
 		halt ();
 #else
 		CMultiCoreSupport::HaltAll ();
+#endif
+#else
+		Breakpoint (0);
 #endif
 	}
 }

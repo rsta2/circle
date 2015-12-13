@@ -22,6 +22,8 @@ Base library
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
 * CPageTable: Encapsulates a page table to be used by MMU.
+* CPtrArray: Container class. Dynamic array of pointers.
+* CPtrList: Container class. List of pointers.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
 * CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
@@ -44,6 +46,7 @@ USB library
 * CMACAddress: Encapsulates an Ethernet MAC address.
 * CNetDevice: Base class of CSMSC951xDevice.
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
+* CUSBBluetoothDevice: Bluetooth HCI transport driver for USB Bluetooth BR/EDR dongles.
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
 * CUSBConfigurationParser: Parses and validates an USB configuration descriptor.
 * CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
@@ -61,7 +64,7 @@ USB library
 Input library
 
 * CKeyboardBehaviour: Generic keyboard function
-* CKeyMap: Keyboard translation map (two selectable default maps at the moment)
+* CKeyMap: Keyboard translation map (three selectable default maps at the moment)
 
 FS library
 
@@ -76,11 +79,19 @@ FAT FS library
 * CFATFileSystem: File system driver for FAT16 and FAT32 storage partitions.
 * CFATCache: Sector cache for FAT storage partitions.
 
+Scheduler library
+
+* CTask: Overload this class, define the Run() method to implement your own task and call new on it to start it.
+* CScheduler: Cooperative non-preemtive scheduler which controls which task runs at a time.
+* CSynchronizationEvent: Provides a method to synchronize the execution of a task with an event.
+
 Net library
 
 * CARPHandler: Resolves IP addresses to Ethernet MAC addresses and responds to ARP requests.
 * CChecksumCalculator: Calculates checksums in several TCP/IP packets.
+* CDHCPClient: DHCP client task. Gets and maintains an IP address lease for the network device.
 * CDNSClient: Resolves hostnames to IP addresses.
+* CHTTPDaemon: Simple HTTP server class.
 * CICMPHandler: ICMP echo (ping) responder.
 * CIPAddress: Encapsulates an IP address.
 * CLinkLayer: Encapsulates the Ethernet MAC layer.
@@ -89,8 +100,24 @@ Net library
 * CNetDeviceLayer: Encapsulates the network device support layer. Queues TX/RX frames before/after transmission.
 * CNetQueue: Encapsulates a network packet queue.
 * CNetSubSystem: The main network subsystem class. Create an instance of it in the CKernel class.
+* CNetTask: The main networking task running in the background. Processes the different network layers.
 * CNetworkLayer: Encapsulates the IP network layer. Does not support packet fragmentation so far.
 * CNTPClient: A NTP client which gets the current time from an Internet time server.
+* CNTPDaemon: Background task which uses CNTPClient to update the system time every 15 minutes.
+* CRetransmissionQueue: The TCP retransmission queue.
+* CRetransmissionTimeoutCalculator: Calculates the TCP retransmission timeout according to RFC 6298.
 * CSocket: Network application interface (socket) class.
+* CTCPConnection: Encapsulates a TCP connection. Derived from CNetConnection.
+* CTCPRejector: Rejects TCP segments which do not address an open connection. Derived from CNetConnection.
 * CTransportLayer: Encapsulates the TCP/UDP transport layer.
 * CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.
+
+Bluetooth library
+
+* CBTDeviceManager: Manages the local Bluetooth device. Part of the HCI layer.
+* CBTHCILayer: Bluetooth HCI layer. Basic communication with the local Bluetooth controller.
+* CBTInquiryResults: Container for the responses of an Inquiry operation.
+* CBTLogicalLayer: Bluetooth logical layer. Handles Inquiry operation only at the moment.
+* CBTQueue: Encapsulates a queue used for incoming and outgoing command, event and data packets.
+* CBTSubSystem: The main Bluetooth subsystem class. Create an instance of it in the CKernel class.
+* CBTTask: Bluetooth background task. Processes the different Bluetooth layers.

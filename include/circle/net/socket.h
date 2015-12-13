@@ -31,18 +31,29 @@ class CSocket
 {
 public:
 	CSocket (CNetSubSystem *pNetSubSystem, int nProtocol);
+	CSocket (CSocket &rSocket);
 	~CSocket (void);
+
+	int Bind (u16 nOwnPort);
 
 	int Connect (CIPAddress &rForeignIP, u16 nForeignPort);
 
+	int Listen (void);
+	CSocket *Accept (CIPAddress *pForeignIP, u16 *pForeignPort);
+
 	int Send (const void *pBuffer, unsigned nLength, int nFlags);
+
+	// buffer size (and nLength) should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
 	int Receive (void *pBuffer, unsigned nLength, int nFlags);
+
+	const u8 *GetForeignIP (void) const;		// returns 0 if not connected
 
 private:
 	CNetConfig	*m_pNetConfig;
 	CTransportLayer	*m_pTransportLayer;
 
 	int m_nProtocol;
+	u16 m_nOwnPort;
 	int m_hConnection;
 
 	u8 *m_pBuffer;

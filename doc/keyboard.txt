@@ -30,3 +30,5 @@ The listed special keys return the following sequences in cooked mode:
 ^X = Control character
 \E = Escape (\x1b)
 \nnn = Octal code
+
+The default keyboard map can be selected in include/circle/sysconfig.h before build.

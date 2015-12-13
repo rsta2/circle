@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="iso-8859-1" />
+	<link rel="stylesheet" href="style.css" type="text/css" />
+	<title>Bare metal Webserver</title>
+</head>
+<body>
+	<h1>Bare metal Webserver</h1>
+
+	<p>You can switch the Act LED with this form.</p>
+
+	<!-- Specify enctype to be sure it can be handled. -->
+	<form action="index.html" method="post" enctype="application/x-www-form-urlencoded">
+		<table>
+		<tr>
+			<th colspan="3">Act LED status</th>
+		</tr>
+		<tr>
+			<td><input type="radio" name="actled" value="0" %s />Off</td>
+			<td><input type="radio" name="actled" value="1" %s />On</td>
+			<td><img src="%s" alt="Act LED" /></td>
+		</tr>
+		<tr>
+			<td colspan="3"><input type="submit" value="OK" /></td>
+		</tr>
+		</table>
+	</form>
+
+	<hr />
+	<p class="small">Based on the <a href="https://github.com/rsta2/circle" target="_blank">Circle</a> C++ bare metal environment.</p>
+</body>
+</html>

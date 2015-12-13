@@ -22,6 +22,7 @@
 #include <circle/multicore.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
+#include <circle/sysconfig.h>
 #include <circle/types.h>
 #include <assert.h>
 
@@ -74,6 +75,7 @@ boolean CInterruptSystem::Initialize (void)
 
 	InstructionSyncBarrier ();
 
+#ifndef USE_RPI_STUB_AT
 	DataMemBarrier ();
 
 	write32 (ARM_IC_FIQ_CONTROL, 0);
@@ -82,12 +84,8 @@ boolean CInterruptSystem::Initialize (void)
 	write32 (ARM_IC_DISABLE_IRQS_2, (u32) -1);
 	write32 (ARM_IC_DISABLE_BASIC_IRQS, (u32) -1);
 
-	// Ack pending IRQs
-	write32 (ARM_IC_IRQ_BASIC_PENDING, read32 (ARM_IC_IRQ_BASIC_PENDING));
-	write32 (ARM_IC_IRQ_PENDING_1, 	   read32 (ARM_IC_IRQ_PENDING_1));
-	write32 (ARM_IC_IRQ_PENDING_2,     read32 (ARM_IC_IRQ_PENDING_2));
-
 	DataMemBarrier ();
+#endif
 
 	EnableInterrupts ();
 
@@ -183,12 +181,8 @@ void CInterruptSystem::InterruptHandler (void)
 		{
 			if (s_pThis->CallIRQHandler (nIRQ))
 			{
-				write32 (nPendReg, nIRQMask);
-			
 				return;
 			}
-
-			write32 (nPendReg, nIRQMask);
 		}
 	}
 }

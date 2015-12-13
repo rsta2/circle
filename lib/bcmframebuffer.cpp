@@ -3,7 +3,7 @@
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -23,7 +23,7 @@
 #include <circle/bcm2835.h>
 #include <circle/util.h>
 
-CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nDepth)
+CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nDepth, unsigned nVirtualWidth, unsigned nVirtualHeight)
 :	m_MailBox (MAILBOX_CHANNEL_FB)
 {
 	if (   nWidth  == 0
@@ -36,6 +36,15 @@ CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nD
 		{
 			nWidth  = Dimensions.nWidth;
 			nHeight = Dimensions.nHeight;
+
+			if (   nWidth  < 640
+			    || nWidth  > 1920
+			    || nHeight < 480
+			    || nHeight > 1080)
+			{
+				nWidth  = 640;
+				nHeight = 480;
+			}
 		}
 		else
 		{
@@ -44,7 +53,12 @@ CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nD
 		}
 	}
 
-	if (nDepth == 8)
+	if (nVirtualWidth == 0 || nVirtualHeight == 0) {
+		nVirtualWidth = nWidth;
+		nVirtualHeight = nHeight;
+	}
+
+	if (nDepth <= 8)
 	{
 		m_pInfo = (Bcm2835FrameBufferInfo *) new u8 [  sizeof (Bcm2835FrameBufferInfo)
 							     + PALETTE_ENTRIES * sizeof (u16)];
@@ -58,8 +72,8 @@ CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nD
 
 	m_pInfo->Width      = nWidth;
 	m_pInfo->Height     = nHeight;
-	m_pInfo->VirtWidth  = nWidth;
-	m_pInfo->VirtHeight = nHeight;
+	m_pInfo->VirtWidth  = nVirtualWidth;
+	m_pInfo->VirtHeight = nVirtualHeight;
 	m_pInfo->Pitch      = 0;
 	m_pInfo->Depth      = nDepth;
 	m_pInfo->OffsetX    = 0;
@@ -76,7 +90,7 @@ CBcmFrameBuffer::~CBcmFrameBuffer (void)
 
 void CBcmFrameBuffer::SetPalette (u8 nIndex, u16 nColor)
 {
-	if (m_pInfo->Depth == 8)
+	if (m_pInfo->Depth <= 8 && nIndex < 256)
 	{
 		m_pInfo->Palette[nIndex] = nColor;
 	}
@@ -88,17 +102,17 @@ boolean CBcmFrameBuffer::Initialize (void)
 	DataSyncBarrier ();
 	u32 nResult = m_MailBox.WriteRead (GPU_MEM_BASE + (u32) m_pInfo);
 	InvalidateDataCache ();
-	
+
 	if (nResult != 0)
 	{
 		return FALSE;
 	}
-	
+
 	if (m_pInfo->BufferPtr == 0)
 	{
 		return FALSE;
 	}
-	
+
 	return TRUE;
 }
 
@@ -110,6 +124,16 @@ unsigned CBcmFrameBuffer::GetWidth (void) const
 unsigned CBcmFrameBuffer::GetHeight (void) const
 {
 	return m_pInfo->Height;
+}
+
+unsigned CBcmFrameBuffer::GetVirtWidth (void) const
+{
+	return m_pInfo->VirtWidth;
+}
+
+unsigned CBcmFrameBuffer::GetVirtHeight (void) const
+{
+	return m_pInfo->VirtHeight;
 }
 
 u32 CBcmFrameBuffer::GetPitch (void) const
@@ -124,14 +148,26 @@ u32 CBcmFrameBuffer::GetDepth (void) const
 
 u32 CBcmFrameBuffer::GetBuffer (void) const
 {
-#if RASPPI == 1
-	return m_pInfo->BufferPtr;
-#else
 	return m_pInfo->BufferPtr & 0x3FFFFFFF;
-#endif
 }
 
 u32 CBcmFrameBuffer::GetSize (void) const
 {
 	return m_pInfo->BufferSize;
+}
+
+boolean CBcmFrameBuffer::SetVirtualOffset (u32 nOffsetX, u32 nOffsetY)
+{
+	CBcmPropertyTags Tags;
+	TPropertyTagVirtualOffset VirtualOffset;
+	VirtualOffset.nOffsetX = nOffsetX;
+	VirtualOffset.nOffsetY = nOffsetY;
+	if (   !Tags.GetTag (PROPTAG_SET_VIRTUAL_OFFSET, &VirtualOffset, sizeof VirtualOffset, 8)
+	    || VirtualOffset.nOffsetX != nOffsetX
+	    || VirtualOffset.nOffsetY != nOffsetY)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
 }

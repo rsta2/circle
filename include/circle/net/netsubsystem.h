@@ -25,27 +25,38 @@
 #include <circle/net/linklayer.h>
 #include <circle/net/networklayer.h>
 #include <circle/net/transportlayer.h>
+#include <circle/types.h>
+
+class CDHCPClient;
 
 class CNetSubSystem
 {
 public:
-	CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8 *pDefaultGateway, const u8 *pDNSServer);
+	CNetSubSystem (const u8 *pIPAddress      = 0,	// use DHCP if pIPAddress == 0
+		       const u8 *pNetMask        = 0,
+		       const u8 *pDefaultGateway = 0,
+		       const u8 *pDNSServer      = 0);
 	~CNetSubSystem (void);
 	
 	boolean Initialize (void);
 
 	void Process (void);
-	void ProcessAndDelay (unsigned nHZDelay);
 
 	CNetConfig *GetConfig (void);
+	CNetDeviceLayer *GetNetDeviceLayer (void);
 	CTransportLayer *GetTransportLayer (void);
-	
+
+	boolean IsRunning (void) const;			// is DHCP bound if used?
+
 private:
 	CNetConfig	m_Config;
 	CNetDeviceLayer	m_NetDevLayer;
 	CLinkLayer	m_LinkLayer;
 	CNetworkLayer	m_NetworkLayer;
 	CTransportLayer	m_TransportLayer;
+
+	boolean		m_bUseDHCP;
+	CDHCPClient    *m_pDHCPClient;
 };
 
 #endif

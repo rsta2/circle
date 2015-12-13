@@ -23,6 +23,7 @@
 #include <circle/device.h>
 #include <circle/gpiopin.h>
 #include <circle/spinlock.h>
+#include <circle/sysconfig.h>
 #include <circle/types.h>
 
 class CSerialDevice : public CDevice
@@ -35,6 +36,7 @@ public:
 
 	int Write (const void *pBuffer, unsigned nCount);
 
+#ifndef USE_RPI_STUB_AT
 private:
 	void Write (u8 nChar);
 
@@ -43,6 +45,7 @@ private:
 	CGPIOPin m_RxDPin;
 
 	CSpinLock m_SpinLock;
+#endif
 };
 
 #endif

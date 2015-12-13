@@ -20,7 +20,15 @@ cd ..
 
 cd ..
 
+cd sched
+make $1 $2 || exit
+cd ..
+
 cd net
+make $1 $2 || exit
+cd ..
+
+cd bt
 make $1 $2 || exit
 cd ..
 

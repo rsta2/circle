@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <circle/usb/usbmouse.h>
 #include <circle/usb/usbprinter.h>
 #include <circle/usb/smsc951x.h>
+#include <circle/usb/usbbluetooth.h>
 
 CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
 {
@@ -35,7 +36,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	
 	CUSBFunction *pResult = 0;
 
-	if (pName->Compare ("int9-0-2") == 0)
+	if (   pName->Compare ("int9-0-0") == 0
+	    || pName->Compare ("int9-0-2") == 0)
 	{
 		pResult = new CUSBStandardHub (pParent);
 	}
@@ -59,6 +61,11 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (pName->Compare ("ven424-ec00") == 0)
 	{
 		pResult = new CSMSC951xDevice (pParent);
+	}
+	else if (   pName->Compare ("inte0-1-1") == 0
+		 || pName->Compare ("ven50d-65a") == 0)		// Belkin F8T065BF Mini Bluetooth 4.0 Adapter
+	{
+		pResult = new CUSBBluetoothDevice (pParent);
 	}
 	// new devices follow
 

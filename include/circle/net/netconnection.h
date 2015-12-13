@@ -41,6 +41,7 @@ public:
 			int		 nProtocol);
 	virtual ~CNetConnection (void);
 
+	const u8 *GetForeignIP (void) const;
 	u16 GetOwnPort (void) const;
 	int GetProtocol (void) const;
 

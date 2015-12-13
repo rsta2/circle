@@ -43,6 +43,7 @@ public:
 	CChecksumCalculator (const CIPAddress &rSourceIP, const CIPAddress &rDestIP, int nProtocol);
 	~CChecksumCalculator (void);
 
+	void SetSourceAddress (const CIPAddress &rSourceIP);
 	void SetDestinationAddress (const CIPAddress &rDestIP);
 	
 	u16 Calculate (const void *pBuffer, unsigned nLength);

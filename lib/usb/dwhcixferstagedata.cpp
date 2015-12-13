@@ -51,8 +51,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	m_Speed = m_pDevice->GetSpeed ();
 	m_nMaxPacketSize = m_pEndpoint->GetMaxPacketSize ();
 	
-	m_bSplitTransaction =    m_pDevice->GetHubAddress () != 0
-			      && m_Speed != USBSpeedHigh;
+	m_bSplitTransaction = m_pDevice->IsSplit ();
 
 	if (!bStatusStage)
 	{
@@ -376,7 +375,7 @@ u8 CDWHCITransferStageData::GetHubPortAddress (void) const
 
 u8 CDWHCITransferStageData::GetSplitPosition (void) const
 {
-	assert (m_nTransferSize <= 188);		// TODO
+	// only important for isochronous transfers
 	return DWHCI_HOST_CHAN_SPLIT_CTRL_ALL;
 }
 

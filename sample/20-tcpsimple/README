@@ -1,0 +1,11 @@
+README
+
+This sample program is only working on Raspberry Pi models with on-board Ethernet controller.
+
+Before building it you have to update the network configuration (DHCP is used by default) in kernel.cpp to meet your local network configuration. Don't forget to connect your local Ethernet to the Ethernet connector of the Raspberry Pi.
+
+First blink 5 times to show the image was loaded right. After initialization the sample program is waiting for an incoming TCP connection on port 7 (echo). Try the "telnet" command as given on the screen from another computer in your local network. Type something in the telnet session and press Return. It will be echoed back to the session and displayed.
+
+To leave the telnet session you have to press some escape key which is normally displayed when the session starts. Enter the "quit" command then at the telnet prompt.
+
+This sample allows four simultaneous telnet sessions at a time.

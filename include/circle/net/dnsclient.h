@@ -34,6 +34,8 @@ public:
 
 private:
 	CNetSubSystem *m_pNetSubSystem;
+
+	static u16 s_nXID;		// transaction ID
 };
 
 #endif

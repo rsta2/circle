@@ -1,0 +1,9 @@
+README
+
+This sample demonstrates the optional cooperative non-preemtive scheduler which is available in Circle. The scheduler allows to have several independent threads of execution in a Circle application which may ease the programming model.
+
+The sample first blinks 5 times to show the image was loaded right. After initializing the 4 screen tasks and a LED task is started in CKernel::Run(). The screen tasks display their task ID on screen when they are running. The LED task blinks the Act LED. The main task runs in CKernel::Run() and displays "Main" on the screen. The tasks are running differently often because their sleeping duration is different.
+
+There is another task started which calculates all prime numbers until 100 million. It uses the "Sieve of Eratosthenes" algorithm and displays the largest calculated number when it completes calculation. While the calculation is running the method CScheduler::Yield() is called from time to time so that the other tasks are able to run.
+
+In the main task there is also demonstrated how a task can be made waiting for an event and resume again (in this case when a kernel timer elapses) using the CSynchronizationEvent class.
