@@ -33,11 +33,13 @@ CActLED::CActLED (void)
 	if (Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
 	{
 		boolean bOld;
+		boolean bIsPiZero = FALSE;
 		if (BoardRevision.nValue & (1 << 23))	// new revision scheme?
 		{
 			unsigned nType = (BoardRevision.nValue >> 4) & 0xFF;
 
 			bOld = nType <= 0x01;
+			bIsPiZero = nType == 0x09;
 		}
 		else
 		{
@@ -56,7 +58,7 @@ CActLED::CActLED (void)
 		{
 			// Model B+ and later
 			m_pPin = new CGPIOPin (47, GPIOModeOutput);
-			m_bActiveHigh = TRUE;
+			m_bActiveHigh = !bIsPiZero;
 		}
 
 		Off ();
