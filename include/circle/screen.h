@@ -30,9 +30,9 @@
 #define DEPTH	8		// can be: 8, 16 or 32
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
-#define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \
-					| ((green) & 0x1F) << 6 \
-					| ((blue) & 0x1F))
+#define COLOR16(red, green, blue)	  (((red>>3) & 0x1F) << 11 \
+					| ((green>>2) & 0x3F) << 6 \
+					| ((blue>>3) & 0x1F))
 
 #define COLOR32(red, green, blue, alpha)  (((red) & 0xFF)        \
 					| ((green) & 0xFF) << 8  \
@@ -91,13 +91,17 @@ public:
 
 	unsigned GetWidth (void) const;
 	unsigned GetHeight (void) const;
-	
+	TScreenColor *GetBuffer(void) const;
 	TScreenStatus GetStatus (void);
+	int GetDepth(void) const;
+	void SetPalette(u8 num, u16 color);
+	
 	boolean SetStatus (TScreenStatus Status);	// returns FALSE on failure
 
 	int Write (const void *pBuffer, unsigned nCount);
 
 	void SetPixel (unsigned nPosX, unsigned nPosY, TScreenColor Color);
+	void SetXY (int x, int y);
 	TScreenColor GetPixel (unsigned nPosX, unsigned nPosY);
 
 	void Rotor (unsigned nIndex,		// 0..3

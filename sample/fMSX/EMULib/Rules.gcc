@@ -1,0 +1,114 @@
+BASEDIR	= ../..
+EMULIB	= $(BASEDIR)/EMULib
+LIBARM	= $(BASEDIR)/ARM
+LIBZ80	= $(BASEDIR)/Z80
+LIB6502	= $(BASEDIR)/M6502
+LIB68K	= $(BASEDIR)/M68000
+LIBGBZ	= $(BASEDIR)/GBZ80
+PRIVATE	= $(BASEDIR)/Private
+
+CXX	= g++
+CC	= gcc
+CPP	= cpp
+MOC	= moc
+SDT2GAS	= perl $(EMULIB)/Tools/sdt2gas.pl
+CFLAGS	= -O2 -pthread -I. -I.. -I$(EMULIB)
+DEFINES = -DZLIB
+LIBS    = -lz -lpthread
+
+# EMULib sound, console, and other utility functions 
+OBJECTS	= $(EMULIB)/EMULib.o $(EMULIB)/Sound.o   \
+	  $(EMULIB)/Image.o  $(EMULIB)/Console.o \
+	  $(EMULIB)/Record.o $(EMULIB)/NetPlay.o \
+	  $(EMULIB)/Touch.o
+
+# Platform-specific EMULib files
+EMUUNIX	= $(EMULIB)/Unix/LibUnix.o $(EMULIB)/Unix/SndUnix.o \
+	  $(EMULIB)/Unix/NetUnix.o
+EMUMAEMO= $(EMULIB)/Maemo/LibMaemo.o $(EMULIB)/Unix/GConf.o \
+	  $(EMULIB)/Unix/NetUnix.o $(EMULIB)/LibARM-BPP16.o
+EMUMEEGO= $(EMULIB)/Meego/LibMeego.o $(EMULIB)/Unix/GConf.o \
+	  $(EMULIB)/Unix/NetUnix.o $(EMULIB)/LibARM-BPP16.o
+EMUSTMP	= $(EMULIB)/STMP3700/LibSTMP3700.o $(EMULIB)/Unix/SndALSA.o \
+	  $(EMULIB)/LibARM-BPP16.o $(EMULIB)/LibARM-BPP32.o
+EMUNXC	= $(EMULIB)/NXC2600/LibNXC2600.o $(EMULIB)/Unix/SndSDL.o
+
+# SHA1 computation library
+SHA1	= $(EMULIB)/SHA1.o
+
+# CRC32 computation library
+CRC32	= $(EMULIB)/CRC32.o
+
+# .IPS file patch library
+IPS	= $(EMULIB)/IPS.o
+
+# .INI file access library
+INIFILE	= $(EMULIB)/INIFile.o
+
+# Record/replay library
+RECORD	= $(EMULIB)/Record.o
+
+# Cheat code hunting library
+HUNT	= $(EMULIB)/Hunt.o
+
+# 720kB floppy utility library
+FLOPPY	= $(EMULIB)/Floppy.o
+
+# Disk image utility library
+FDIDISK	= $(EMULIB)/FDIDisk.o
+
+# CPU emulation libraries
+ARM	= $(LIBARM)/ARM.o $(LIBARM)/ConDebug.o
+Z80	= $(LIBZ80)/Z80.o $(LIBZ80)/ConDebug.o
+GBZ80	= $(LIBGBZ)/Z80.o $(LIBGBZ)/ConDebug.o
+M6502	= $(LIB6502)/M6502.o $(LIB6502)/ConDebug.o
+M68000	= $(LIB68K)/M68000.o $(LIB68K)/ConDebug.o
+
+# Optimized CPU emulation
+ARMONARM   = $(ARM) \
+             $(LIBARM)/ARMonARM/OptARM16.o \
+             $(LIBARM)/ARMonARM/OptARM32.o
+M6502ONARM = $(M6502) $(LIB6502)/M6502-ARM.o
+
+# TMS9918/9928/9929 VDP emulation
+TMS9918	= $(EMULIB)/TMS9918.o $(EMULIB)/DRV9918.o
+
+# Disk controller emulation libraries
+WD1793	= $(EMULIB)/WD1793.o
+UPD765	= $(EMULIB)/uPD765.o
+WD2793	= $(WD1793)
+I8272	= $(UPD765)
+
+# C93xx/C94xx EEPROM chips
+C93XX	= $(EMULIB)/C93XX.o
+
+# Intel 8255 PPI chip
+I8255	= $(EMULIB)/I8255.o
+
+# Sound chip emulation libraries
+AY8910	= $(EMULIB)/AY8910.o
+SN76489	= $(EMULIB)/SN76489.o
+SAA1099	= $(EMULIB)/SAA1099.o
+YM2413	= $(EMULIB)/YM2413.o
+SCC     = $(EMULIB)/SCC.o
+GBSND	= $(PRIVATE)/GBSND.o
+NESSND	= $(PRIVATE)/NESSND.o
+
+# Cartridge parsing utilities
+NESCART	= $(EMULIB)/NESCarts.o
+GBCART	= $(EMULIB)/GBCarts.o
+GBACART	= $(EMULIB)/GBACarts.o
+DSCART	= $(EMULIB)/DSCarts.o
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+%.o: %.cc
+	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+%.o: %.cpp
+	$(CXX) $(CFLAGS) $(DEFINES) -c -o $@ $<
+%.o: %.s
+	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+%.s: %.asm
+	$(SDT2GAS) $< >$@
+%.moc: %.h
+	$(MOC) $(DEFINES) $< >$@

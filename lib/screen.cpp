@@ -73,6 +73,24 @@ boolean CScreenDevice::Initialize (void)
 		m_pFrameBuffer->SetPalette (NORMAL_COLOR, NORMAL_COLOR16);
 		m_pFrameBuffer->SetPalette (HIGH_COLOR,   HIGH_COLOR16);
 		m_pFrameBuffer->SetPalette (HALF_COLOR,   HALF_COLOR16);
+		int c = 0;
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0x00, 0x00, 0x00)); /* BLACK */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0x07, 0xff, 0x00)); /* GREEN */ 
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0xff, 0xff, 0x00)); /* YELLOW */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0x3b, 0x08, 0xff)); /* BLUE */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0xcc, 0x00, 0x3b)); /* RED */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0xff, 0xff, 0xff)); /* BUFF */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0x07, 0xe3, 0x99)); /* CYAN */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0xff, 0x1c, 0xff)); /* MAGENTA */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0xff, 0x81, 0x00)); /* ORANGE */
+		
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0x07, 0xff, 0x00)); /* GREEN */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0xff, 0xff, 0xff)); /* BUFF */
+		
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0x00, 0x3f, 0x00)); /* ALPHANUMERIC DARK GREEN */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0x07, 0xff, 0x00)); /* ALPHANUMERIC BRIGHT GREEN */ 
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0x91, 0x00, 0x00)); /* ALPHANUMERIC DARK ORANGE */
+		m_pFrameBuffer->SetPalette(c++, COLOR16(0xff, 0x81, 0x00)); /* ALPHANUMERIC BRIGHT ORANGE */		
 #endif
 		if (!m_pFrameBuffer->Initialize ())
 		{
@@ -120,9 +138,22 @@ unsigned CScreenDevice::GetWidth (void) const
 	return m_nWidth;
 }
 
+int CScreenDevice::GetDepth (void) const 
+{
+	return DEPTH/8;
+}
+
 unsigned CScreenDevice::GetHeight (void) const
 {
 	return m_nHeight;
+}
+TScreenColor * CScreenDevice::GetBuffer (void) const
+{
+	return (TScreenColor *)m_pBuffer;
+}
+void CScreenDevice::SetPalette(u8 num, u16 color)
+{
+	m_pFrameBuffer->SetPalette(num, color);
 }
 
 TScreenStatus CScreenDevice::GetStatus (void)
@@ -141,6 +172,11 @@ TScreenStatus CScreenDevice::GetStatus (void)
 	Status.bUpdated   = m_bUpdated;
 
 	return Status;
+}
+void CScreenDevice::SetXY(int x, int y)
+{
+	m_nCursorX = x;
+	m_nCursorY = y;
 }
 
 boolean CScreenDevice::SetStatus (TScreenStatus Status)
