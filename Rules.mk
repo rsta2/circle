@@ -26,6 +26,7 @@ endif
 
 RASPPI	?= 2
 PREFIX	?= arm-none-eabi-
+ARMGCC = /d/Retro/armgcc
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
@@ -41,7 +42,7 @@ endif
 
 AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include
 CFLAGS	+= $(ARCH) -Wall -Wno-psabi -fsigned-char -fno-builtin -nostdinc -nostdlib \
-	   -D__circle__ -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -O -g #-DNDEBUG
+	   -D__circle__ -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(ARMGCC)/arm-none-eabi/include -I $(ARMGCC)/lib/gcc/arm-none-eabi/4.7.4/include  -O -g #-DNDEBUG
 CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
 
 %.o: %.S
@@ -54,4 +55,5 @@ CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
 	$(CPP) $(CPPFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.o *.a *.elf *.lst *.img *.cir *.map *~ $(EXTRACLEAN)
+	rm -f $(OBJS) *.o *.a *.elf *.lst *.img *.cir *.map *~ $(EXTRACLEAN) 
+	rmdir $(OBJDIR)

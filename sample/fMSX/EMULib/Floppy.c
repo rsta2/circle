@@ -17,7 +17,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#if defined(UIQ) || defined(S60) || defined(UNIX) || defined(MAEMO) || defined(MEEGO) || defined(ANDROID)
+#if defined(UIQ) || defined(S60) || defined(UNIX) || defined(MAEMO) || defined(MEEGO) || defined(ANDROID) || defined(CIRCLE)
 #include <dirent.h>
 #else
 #include <direct.h>
