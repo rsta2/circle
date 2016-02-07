@@ -8,8 +8,9 @@ CIRCLEHOME = ../../..
 CIRCLE=1
 OBJDIR := obj
 
-CFLAGS = -I ../Z80 -I ../EMULib -I ../fMSX -I ../Z80 -DCIRCLE -DFMSX -DLSB_FIRST -DDEBUG -DNEW_STATES -DNO_WAVE_INTERPOLATION 
+CFLAGS = -I ../Z80 -I ../EMULib -I ../fMSX -I ../Z80 -I ../Circle -DCIRCLE -DFMSX -DLSB_FIRST -DDEBUG -DNEW_STATES -DNO_WAVE_INTERPOLATION 
 LDFALGS = -lc -lg 
+
 
 VPATH 	= 	../fMSX ../EMULib ../Z80
 SRCS 	=  	../fMSX/fMSX.c 		\
@@ -21,6 +22,8 @@ SRCS 	=  	../fMSX/fMSX.c 		\
 			../EMULib/AY8910.c 	\
 			../EMULib/EMULib.c 	\
 			../EMULib/Floppy.c 	\
+			../EMULib/FDIDisk.c \
+			../EMULib/Hunt.c 	\
 			../EMULib/I8255.c  	\
 			../EMULib/Record.c 	\
 			../EMULib/SCC.c    	\
@@ -28,9 +31,11 @@ SRCS 	=  	../fMSX/fMSX.c 		\
 			../EMULib/Sound.c 	\
 			../EMULib/WD1793.c 	\
 			../EMULib/YM2413.c  \
+			../EMULib/Console.c \
 			../Z80/Z80.c		\
 			../Z80/Debug.c		\
-			Circle.c			
+			Circle.c			\
+			LibCircle.c
 
 SRCX	=	kernel.cpp
 
@@ -48,7 +53,7 @@ LIBS =$(CIRCLEHOME)/lib/usb/libusb.a \
 	  
 include ../../Rules.mk
 
-LIBS += $(ARMGCC)/lib/gcc/arm-none-eabi/4.7.4/libgcc.a  $(ARMGCC)/arm-none-eabi/lib/fpu/libg.a
+LIBS += $(ARMGCC)/lib/gcc/arm-none-eabi/$(GCCVER)/libgcc.a $(ARMGCC)/arm-none-eabi/lib/armv7-ar/thumb/fpu/libnosys.a $(ARMGCC)/arm-none-eabi/lib/armv7-ar/thumb/fpu/libc_nano.a 
 
 all: $(OBJDIR) $(OBJS) kernel.img
 

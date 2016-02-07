@@ -26,13 +26,16 @@ endif
 
 RASPPI	?= 2
 PREFIX	?= arm-none-eabi-
-ARMGCC = /d/Retro/armgcc
+ARMGCC = /mingw32/armgcc
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
 AS	= $(CC)
 LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
+
+#GCCVER = `$(CC) -dumpversion`
+
 
 ifeq ($(strip $(RASPPI)),1)
 ARCH	?= -march=armv6j -mtune=arm1176jzf-s -mfloat-abi=hard 
@@ -42,7 +45,7 @@ endif
 
 AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include
 CFLAGS	+= $(ARCH) -Wall -Wno-psabi -fsigned-char -fno-builtin -nostdinc -nostdlib \
-	   -D__circle__ -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(ARMGCC)/arm-none-eabi/include -I $(ARMGCC)/lib/gcc/arm-none-eabi/4.7.4/include  -O -g #-DNDEBUG
+	   -D__circle__ -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(ARMGCC)/arm-none-eabi/include -I $(ARMGCC)/lib/gcc/arm-none-eabi/$(GCCVER)/include  -O -g #-DNDEBUG
 CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
 
 %.o: %.S

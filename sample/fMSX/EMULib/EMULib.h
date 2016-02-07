@@ -61,6 +61,8 @@
 #elif defined(UNIX)
 #define EFF_MITSHM   0x100000  /* Use MITSHM X11 extension   */
 #define EFF_VARBPP   0x200000  /* X11 determines Image depth */
+#elif defined(CIRCLE)
+#define EFF_VARBPP   0x200000  /* X11 determines Image depth */
 #endif
 
 #define EFF_2XSAL    (EFF_SOFTEN)
@@ -169,6 +171,10 @@
 #define ARM_CPU
 #include "LibSym.h"
 #include "LibSym.rh"
+#endif
+#if defined(CIRCLE)
+#define ARM_CPU
+#include "LibCircle.h"
 #endif
 
 #ifdef __cplusplus
