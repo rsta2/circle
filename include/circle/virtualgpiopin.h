@@ -1,5 +1,5 @@
 //
-// actled.h
+// virtualgpiopin.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2016  R. Stange <rsta2@o2online.de>
@@ -17,32 +17,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _actled_h
-#define _actled_h
+#ifndef _virtualgpiopin_h
+#define _virtualgpiopin_h
 
-#include <circle/gpiopin.h>
-#include <circle/virtualgpiopin.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
-class CActLED
+#define VIRTUAL_GPIO_PINS	2
+
+class CVirtualGPIOPin
 {
 public:
-	CActLED (void);
-	~CActLED (void);
+	CVirtualGPIOPin (unsigned nPin);		// can be used for output only
+	virtual ~CVirtualGPIOPin (void);
 
-	void On (void);
-	void Off (void);
+	void Write (unsigned nValue);
+#define LOW		0
+#define HIGH		1
 
-	void Blink (unsigned nCount, unsigned nTimeOnMs = 200, unsigned nTimeOffMs = 500);
+	void Invert (void);
 
-	static CActLED *Get (void);
-	
 private:
-	CGPIOPin *m_pPin;
-	CVirtualGPIOPin *m_pVirtualPin;
-	boolean m_bActiveHigh;
+	unsigned  m_nPin;
+	unsigned  m_nValue;
+	u16	  m_nEnableCount;
+	u16	  m_nDisableCount;
 
-	static CActLED *s_pThis;
+	static u32 s_nGPIOBaseAddress;
+
+	static CSpinLock s_SpinLock;
 };
 
 #endif

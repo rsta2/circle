@@ -2,7 +2,7 @@
 // actled.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@
 CActLED *CActLED::s_pThis = 0;
 
 CActLED::CActLED (void)
-:	m_pPin (0)
+:	m_pPin (0),
+	m_pVirtualPin (0)
 {
 	s_pThis = this;
 
@@ -34,11 +35,13 @@ CActLED::CActLED (void)
 	{
 		boolean bOld;
 		boolean bIsPiZero = FALSE;
+		boolean bIsPi3 = FALSE;
 		if (BoardRevision.nValue & (1 << 23))	// new revision scheme?
 		{
 			unsigned nType = (BoardRevision.nValue >> 4) & 0xFF;
 
 			bOld = nType <= 0x01;
+			bIsPi3 = nType == 0x08;
 			bIsPiZero = nType == 0x09;
 		}
 		else
@@ -57,7 +60,15 @@ CActLED::CActLED (void)
 		else
 		{
 			// Model B+ and later
-			m_pPin = new CGPIOPin (47, GPIOModeOutput);
+			if (!bIsPi3)
+			{
+				m_pPin = new CGPIOPin (47, GPIOModeOutput);
+			}
+			else
+			{
+				m_pVirtualPin = new CVirtualGPIOPin (0);
+			}
+
 			m_bActiveHigh = !bIsPiZero;
 		}
 
@@ -76,6 +87,10 @@ void CActLED::On (void)
 	{
 		m_pPin->Write (m_bActiveHigh ? HIGH : LOW);
 	}
+	else if (m_pVirtualPin != 0)
+	{
+		m_pVirtualPin->Write (m_bActiveHigh ? HIGH : LOW);
+	}
 }
 
 void CActLED::Off (void)
@@ -83,6 +98,10 @@ void CActLED::Off (void)
 	if (m_pPin != 0)
 	{
 		m_pPin->Write (m_bActiveHigh ? LOW : HIGH);
+	}
+	else if (m_pVirtualPin != 0)
+	{
+		m_pVirtualPin->Write (m_bActiveHigh ? LOW : HIGH);
 	}
 }
 

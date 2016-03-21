@@ -2,7 +2,7 @@
 // bcmpropertytags.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <circle/util.h>
 #include <circle/synchronize.h>
 #include <circle/bcm2835.h>
+#include <circle/sysconfig.h>
 #include <assert.h>
 
 struct TPropertyBuffer
@@ -50,9 +51,13 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	unsigned nBufferSize = sizeof (TPropertyBuffer) + nTagSize + sizeof (u32);
 	assert ((nBufferSize & 3) == 0);
 
+#if RASPPI != 3
 	// cannot use "new" here because this is used before mem_init() is called
 	u8 Buffer[nBufferSize + 15];
 	TPropertyBuffer *pBuffer = (TPropertyBuffer *) (((u32) Buffer + 15) & ~15);
+#else
+	TPropertyBuffer *pBuffer = (TPropertyBuffer *) MEM_COHERENT_REGION;
+#endif
 	
 	pBuffer->nBufferSize = nBufferSize;
 	pBuffer->nCode = CODE_REQUEST;
@@ -66,8 +71,10 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	u32 *pEndTag = (u32 *) (pBuffer->Tags + nTagSize);
 	*pEndTag = PROPTAG_END;
 
+#if RASPPI != 3
 	CleanDataCache ();
 	DataSyncBarrier ();
+#endif
 
 	u32 nBufferAddress = GPU_MEM_BASE + (u32) pBuffer;
 	if (m_MailBox.WriteRead (nBufferAddress) != nBufferAddress)
@@ -75,8 +82,12 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 		return FALSE;
 	}
 	
+#if RASPPI != 3
 	InvalidateDataCache ();
 	DataSyncBarrier ();
+#else
+	DataMemBarrier ();
+#endif
 
 	if (pBuffer->nCode != CODE_RESPONSE_SUCCESS)
 	{

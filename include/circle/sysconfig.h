@@ -2,7 +2,7 @@
 // sysconfig.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,7 +49,15 @@
 #define MEM_PAGE_TABLE1		(MEM_IRQ_STACK + EXCEPTION_STACK_SIZE * (CORES-1))
 #endif
 
+// On Raspberry Pi 3 we need a coherent memory region (1 section) for the property mailbox.
+// This does not work with rpi_stub on Raspberry Pi 2 so we stay here with the previous
+// solution (also to reduce test effort).
+#if RASPPI == 3
+#define MEM_COHERENT_REGION	0x400000
+#define MEM_HEAP_START		0x500000
+#else
 #define MEM_HEAP_START		0x400000
+#endif
 
 // system options
 #if RASPPI == 1			// valid on Raspberry Pi 1 only
@@ -57,7 +65,7 @@
 #define GPU_L2_CACHE_ENABLED
 #endif
 
-#if RASPPI == 2			// valid on Raspberry Pi 2 only
+#if RASPPI >= 2			// valid on Raspberry Pi 2/3 only
 //#define USE_RPI_STUB_AT 	0x1F000000	// debug with rpi_stub
 
 #ifndef USE_RPI_STUB_AT
