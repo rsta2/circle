@@ -2,7 +2,7 @@
 // transportlayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,6 +40,9 @@ public:
 
 	void Process (void);
 
+	// nOwnPort must not be 0
+	int Bind (u16 nOwnPort, int nProtocol);
+
 	// nOwnPort may be 0 (dynamic port assignment)
 	int Connect (CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol);
 
@@ -52,6 +55,13 @@ public:
 
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	int Receive (void *pBuffer, int nFlags, int hConnection);
+
+	int SendTo (const void *pData, unsigned nLength, int nFlags,
+		    CIPAddress &rForeignIP, u16 nForeignPort, int hConnection);
+
+	// pBuffer must have size FRAME_BUFFER_SIZE
+	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,
+			 u16 *pForeignPort, int hConnection);
 
 	const u8 *GetForeignIP (int hConnection) const;		// returns 0 if not connected
 

@@ -13,7 +13,7 @@
 //	user timeout
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -459,6 +459,31 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 	}
 
 	return nLength;
+}
+
+int CTCPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
+			    CIPAddress	&rForeignIP, u16 nForeignPort)
+{
+	// ignore rForeignIP and nForeignPort
+	return Send (pData, nLength, nFlags);
+}
+
+int CTCPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort)
+{
+	int nResult = Receive (pBuffer, nFlags);
+	if (nResult <= 0)
+	{
+		return nResult;
+	}
+
+	if (   pForeignIP != 0
+	    && pForeignPort != 0)
+	{
+		pForeignIP->Set (m_ForeignIP);
+		*pForeignPort = m_nForeignPort;
+	}
+
+	return 0;
 }
 
 boolean CTCPConnection::IsTerminated (void) const
