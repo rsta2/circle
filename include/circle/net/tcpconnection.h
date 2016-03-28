@@ -2,7 +2,7 @@
 // tcpconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -75,6 +75,9 @@ public:
 	
 	int Send (const void *pData, unsigned nLength, int nFlags);
 	int Receive (void *pBuffer, int nFlags);
+
+	int SendTo (const void *pData, unsigned nLength, int nFlags, CIPAddress	&rForeignIP, u16 nForeignPort);
+	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort);
 
 	boolean IsTerminated (void) const;
 	

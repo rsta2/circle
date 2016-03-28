@@ -2,7 +2,7 @@
 // socket.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,6 +45,13 @@ public:
 
 	// buffer size (and nLength) should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
 	int Receive (void *pBuffer, unsigned nLength, int nFlags);
+
+	int SendTo (const void *pBuffer, unsigned nLength, int nFlags,
+		    CIPAddress &rForeignIP, u16 nForeignPort);
+
+	// buffer size (and nLength) should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
+	int ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
+			 CIPAddress *pForeignIP, u16 *pForeignPort);
 
 	const u8 *GetForeignIP (void) const;		// returns 0 if not connected
 

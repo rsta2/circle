@@ -2,7 +2,7 @@
 // transportlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -122,7 +122,54 @@ void CTransportLayer::Process (void)
 
 	m_SpinLock.Release ();
 }
-	
+
+int CTransportLayer::Bind (u16 nOwnPort, int nProtocol)
+{
+	if (nProtocol != IPPROTO_UDP)
+	{
+		return -1;
+	}
+
+	m_SpinLock.Acquire ();
+
+	unsigned i;
+	for (i = 0; i < m_pConnection.GetCount (); i++)
+	{
+		if (m_pConnection[i] == 0)
+		{
+			break;
+		}
+	}
+
+	if (i >= m_pConnection.GetCount ())
+	{
+		i = m_pConnection.Append (0);
+	}
+
+	if (nOwnPort == 0)
+	{
+		m_SpinLock.Release ();
+
+		return -1;
+	}
+
+	if (nProtocol != IPPROTO_UDP)
+	{
+		m_SpinLock.Release ();
+
+		return -1;
+	}
+
+	assert (m_pNetConfig != 0);
+	assert (m_pNetworkLayer != 0);
+	m_pConnection[i] = new CUDPConnection (m_pNetConfig, m_pNetworkLayer, nOwnPort);
+	assert (m_pConnection[i] != 0);
+
+	m_SpinLock.Release ();
+
+	return i;
+}
+
 int CTransportLayer::Connect (CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol)
 {
 	m_SpinLock.Acquire ();
@@ -289,6 +336,37 @@ int CTransportLayer::Receive (void *pBuffer, int nFlags, int hConnection)
 
 	assert (pBuffer != 0);
 	return ((CNetConnection *) m_pConnection[hConnection])->Receive (pBuffer, nFlags);
+}
+
+int CTransportLayer::SendTo (const void *pData, unsigned nLength, int nFlags,
+			     CIPAddress &rForeignIP, u16 nForeignPort, int hConnection)
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return -1;
+	}
+
+	assert (pData != 0);
+	assert (nLength > 0);
+	return ((CNetConnection *) m_pConnection[hConnection])->SendTo (pData, nLength, nFlags,
+									rForeignIP, nForeignPort);
+}
+
+int CTransportLayer::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,
+				  u16 *pForeignPort, int hConnection)
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return -1;
+	}
+
+	assert (pBuffer != 0);
+	return ((CNetConnection *) m_pConnection[hConnection])->ReceiveFrom (pBuffer, nFlags,
+									     pForeignIP, pForeignPort);
 }
 
 const u8 *CTransportLayer::GetForeignIP (int hConnection) const

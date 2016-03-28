@@ -2,7 +2,7 @@
 // socket.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -91,6 +91,15 @@ int CSocket::Bind (u16 nOwnPort)
 	
 	m_nOwnPort = nOwnPort;				// TODO: suppress double usage of port
 	
+	if (m_nProtocol == IPPROTO_UDP)
+	{
+		m_hConnection = m_pTransportLayer->Bind (m_nOwnPort, m_nProtocol);
+		if (m_hConnection < 0)
+		{
+			return m_hConnection;		// return error code
+		}
+	}
+
 	return 0;
 }
 
@@ -207,6 +216,68 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 	assert (m_pTransportLayer != 0);
 	assert (m_pBuffer != 0);
 	int nResult = m_pTransportLayer->Receive (m_pBuffer, nFlags, m_hConnection);
+	if (nResult < 0)
+	{
+		return nResult;
+	}
+
+	if (nLength < (unsigned) nResult)
+	{
+		nResult = nLength;
+	}
+
+	assert (pBuffer != 0);
+	memcpy (pBuffer, m_pBuffer, nResult);
+
+	return nResult;
+}
+
+int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
+		     CIPAddress &rForeignIP, u16 nForeignPort)
+{
+	if (m_hConnection < 0)
+	{
+		return -1;
+	}
+
+	if (nLength == 0)
+	{
+		return -1;
+	}
+	
+	assert (m_pNetConfig != 0);
+	if (m_pNetConfig->GetIPAddress ()->IsNull ())		// from null source address
+	{
+		return -1;
+	}
+
+	if (nForeignPort == 0)
+	{
+		return -1;
+	}
+
+	assert (m_pTransportLayer != 0);
+	assert (pBuffer != 0);
+	return m_pTransportLayer->SendTo (pBuffer, nLength, nFlags, rForeignIP, nForeignPort, m_hConnection);
+}
+
+int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
+			  CIPAddress *pForeignIP, u16 *pForeignPort)
+{
+	if (m_hConnection < 0)
+	{
+		return -1;
+	}
+	
+	if (nLength == 0)
+	{
+		return -1;
+	}
+	
+	assert (m_pTransportLayer != 0);
+	assert (m_pBuffer != 0);
+	int nResult = m_pTransportLayer->ReceiveFrom (m_pBuffer, nFlags,
+						      pForeignIP, pForeignPort, m_hConnection);
 	if (nResult < 0)
 	{
 		return nResult;
