@@ -1,7 +1,7 @@
 Circle
 ======
 
-> This is Step 22 of Circle. To get access to Step 1-21 use the git tag "Step1" to "Step21".
+> This is Step 23 of Circle. To get access to Step 1-22 use the git tag "Step1" to "Step22".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -19,16 +19,16 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
 
-The 22th Step
+The 23th Step
 -------------
 
-In this step some basic Bluetooth support is added to Circle and demonstrated in a simple Bluetooth Inquiry (device search) sample in *sample/22-btsimple*. You need an USB Bluetooth BR/EDR dongle to use this sample. See the *README* file in this directory for details.
+In this step a driver for the SPI0 master is added to Circle and demonstrated in a simple test program in *sample/23-spisimple*. This program should be modified to be used with real SPI slaves. See the *README* file in this directory for details.
 
-Single-core Circle applications can be source-level debugged on the Raspberry Pi 2 using the GNU debugger (GDB) and rpi_stub now. See *doc/debug.txt* for details.
+There has been added a library and sample program for WS2801, WS2812 and WS2812B controlled LED stripes to the addon/ section too.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-21 the following features were introduced:
+In Step 1-22 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -73,6 +73,7 @@ In Step 1-21 the following features were introduced:
 * DHCP support
 * Simple HTTP webserver class
 * GDB debug support on Raspberry Pi 2 using rpi_stub
+* Bluetooth device inquiry support
 
 Building
 --------
@@ -117,18 +118,8 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Bluetooth library
+Base library
 
-* CBTDeviceManager: Manages the local Bluetooth device. Part of the HCI layer.
-* CBTHCILayer: Bluetooth HCI layer. Basic communication with the local Bluetooth controller.
-* CBTInquiryResults: Container for the responses of an Inquiry operation.
-* CBTLogicalLayer: Bluetooth logical layer. Handles Inquiry operation only at the moment.
-* CBTQueue: Encapsulates a queue used for incoming and outgoing command, event and data packets.
-* CBTSubSystem: The main Bluetooth subsystem class. Create an instance of it in the CKernel class.
-* CBTTask: Bluetooth background task. Processes the different Bluetooth layers.
-
-USB library
-
-* CUSBBluetoothDevice: Bluetooth HCI transport driver for USB Bluetooth BR/EDR dongles.
+* CSPIMaster: Driver for SPI0 master device.
 
 The available Circle classes are listed in the file *doc/classes.txt*.

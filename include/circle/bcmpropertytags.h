@@ -95,6 +95,7 @@ struct TPropertyTagClockRate
 	u32		nClockId;
 	#define CLOCK_ID_EMMC		1
 	#define CLOCK_ID_UART		2
+	#define CLOCK_ID_CORE		4
 	u32		nRate;			// Hz
 };
 
