@@ -1,6 +1,8 @@
 Circle
 ======
 
+> Raspberry Pi is a trademark of the Raspberry Pi Foundation.
+
 > This is Step 23 of Circle. To get access to Step 1-22 use the git tag "Step1" to "Step22".
 
 > If you read this file in an editor you should switch line wrapping on.

@@ -19,6 +19,7 @@ Base library
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CKernelOptions: Providing kernel options from file cmdline.txt (see doc/cmdline.txt).
 * CLogger: Writing logging messages to a target device
+* CMachineInfo: Helper class to get different information about the running computer.
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
 * CPageTable: Encapsulates a page table to be used by MMU.
