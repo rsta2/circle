@@ -46,6 +46,8 @@ char *strchr (const char *pString, int chChar);
 
 char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr);
 
+unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase);
+
 int char2int (char chValue);			// with sign extension
 
 #ifdef __GNUC__

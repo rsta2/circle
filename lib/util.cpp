@@ -231,6 +231,138 @@ char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr)
 	return pToken;
 }
 
+unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase)
+{
+	unsigned long ulResult = 0;
+	unsigned long ulPrevResult;
+	int bMinus = 0;
+	int bFirst = 1;
+
+	if (ppEndPtr != 0)
+	{
+		*ppEndPtr = (char *) pString;
+	}
+
+	if (   nBase != 0
+	    && (   nBase < 2
+	        || nBase > 36))
+	{
+		return ulResult;
+	}
+
+	int c;
+	while ((c = *pString) == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v')
+	{
+		pString++;
+	}
+
+	if (   *pString == '+'
+	    || *pString == '-')
+	{
+		if (*pString++ == '-')
+		{
+			bMinus = 1;
+		}
+	}
+
+	if (*pString == '0')
+	{
+		pString++;
+
+		if (   *pString == 'x'
+		    || *pString == 'X')
+		{
+			if (   nBase != 0
+			    && nBase != 16)
+			{
+				return ulResult;
+			}
+
+			nBase = 16;
+
+			pString++;
+		}
+		else
+		{
+			if (nBase == 0)
+			{
+				nBase =  8;
+			}
+		}
+	}
+	else
+	{
+		if (nBase == 0)
+		{
+			nBase = 10;
+		}
+	}
+
+	while (1)
+	{
+		int c = *pString;
+
+		if (c < '0')
+		{
+			break;
+		}
+
+		if ('a' <= c && c <= 'z')
+		{
+			c -= 'a' - 'A';
+		}
+
+		if (c >= 'A')
+		{
+			c -= 'A' - '9' - 1;
+		}
+
+		c -= '0';
+
+		if (c >= nBase)
+		{
+			break;
+		}
+
+		ulPrevResult = ulResult;
+
+		ulResult *= nBase;
+		ulResult += c;
+
+		if (ulResult < ulPrevResult)
+		{
+			ulResult = (unsigned long) -1;
+
+			if (ppEndPtr != 0)
+			{
+				*ppEndPtr = (char *) pString;
+			}
+
+			return ulResult;
+		}
+
+		pString++;
+		bFirst = 0;
+	}	
+
+	if (ppEndPtr != 0)
+	{
+		*ppEndPtr = (char *) pString;
+	}
+
+	if (bFirst)
+	{
+		return ulResult;
+	}
+
+	if (bMinus)
+	{
+		ulResult = -ulResult;
+	}
+
+	return ulResult;
+}
+
 int char2int (char chValue)
 {
 	int nResult = chValue;
