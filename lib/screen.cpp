@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtua
 	m_pFrameBuffer (0),
 	m_pBuffer (0),
 	m_nState (ScreenStateStart),
+	m_nScrollStart (0),
 	m_nCursorX (0),
 	m_nCursorY (0),
 	m_bCursorOn (TRUE),
@@ -105,6 +106,7 @@ boolean CScreenDevice::Initialize (void)
 	}
 
 	m_nUsedHeight = m_nHeight / m_CharGen.GetCharHeight () * m_CharGen.GetCharHeight ();
+	m_nScrollEnd = m_nUsedHeight;
 
 	CursorHome ();
 	ClearDisplayEnd ();
@@ -125,12 +127,24 @@ unsigned CScreenDevice::GetHeight (void) const
 	return m_nHeight;
 }
 
+unsigned CScreenDevice::GetColumns (void) const
+{
+	return m_nWidth / m_CharGen.GetCharWidth ();
+}
+
+unsigned CScreenDevice::GetRows (void) const
+{
+	return m_nUsedHeight / m_CharGen.GetCharHeight ();
+}
+
 TScreenStatus CScreenDevice::GetStatus (void)
 {
 	TScreenStatus Status;
 
 	Status.pContent   = m_pBuffer;
 	Status.nState     = m_nState;
+	Status.nScrollStart = m_nScrollStart;
+	Status.nScrollEnd   = m_nScrollEnd;
 	Status.nCursorX   = m_nCursorX;
 	Status.nCursorY   = m_nCursorY;
 	Status.bCursorOn  = m_bCursorOn;
@@ -158,6 +172,8 @@ boolean CScreenDevice::SetStatus (TScreenStatus Status)
 	memcpyblk (m_pBuffer, Status.pContent, m_nSize);
 
 	m_nState     = Status.nState;
+	m_nScrollStart = Status.nScrollStart;
+	m_nScrollEnd   = Status.nScrollEnd;
 	m_nCursorX   = Status.nCursorX;
 	m_nCursorY   = Status.nCursorY;
 	m_bCursorOn  = Status.bCursorOn;
@@ -411,6 +427,11 @@ void CScreenDevice::Write (char chChar)
 			m_nState = ScreenStateStart;
 			break;
 
+		case 'r':
+			SetScrollRegion (m_nParam1, m_nParam2);
+			m_nState = ScreenStateStart;
+			break;
+
 		default:
 			if ('0' <= chChar && chChar <= '9')
 			{
@@ -499,7 +520,7 @@ void CScreenDevice::ClearLineEnd (void)
 void CScreenDevice::CursorDown (void)
 {
 	m_nCursorY += m_CharGen.GetCharHeight ();
-	if (m_nCursorY >= m_nUsedHeight)
+	if (m_nCursorY >= m_nScrollEnd)
 	{
 		Scroll ();
 
@@ -510,7 +531,7 @@ void CScreenDevice::CursorDown (void)
 void CScreenDevice::CursorHome (void)
 {
 	m_nCursorX = 0;
-	m_nCursorY = 0;
+	m_nCursorY = m_nScrollStart;
 }
 
 void CScreenDevice::CursorLeft (void)
@@ -521,7 +542,7 @@ void CScreenDevice::CursorLeft (void)
 	}
 	else
 	{
-		if (m_nCursorY > 0)
+		if (m_nCursorY > m_nScrollStart)
 		{
 			m_nCursorX = m_nWidth - m_CharGen.GetCharWidth ();
 			m_nCursorY -= m_CharGen.GetCharHeight ();
@@ -535,7 +556,8 @@ void CScreenDevice::CursorMove (unsigned nRow, unsigned nColumn)
 	unsigned nPosY = (nRow - 1) * m_CharGen.GetCharHeight ();
 
 	if (   nPosX < m_nWidth
-	    && nPosY < m_nUsedHeight)
+	    && nPosY >= m_nScrollStart
+	    && nPosY < m_nScrollEnd)
 	{
 		m_nCursorX = nPosX;
 		m_nCursorY = nPosY;
@@ -553,7 +575,7 @@ void CScreenDevice::CursorRight (void)
 
 void CScreenDevice::CursorUp (void)
 {
-	if (m_nCursorY >= m_CharGen.GetCharHeight ())
+	if (m_nCursorY > m_nScrollStart)
 	{
 		m_nCursorY -= m_CharGen.GetCharHeight ();
 	}
@@ -628,6 +650,23 @@ void CScreenDevice::SetCursorMode (boolean bVisible)
 	m_bCursorOn = bVisible;
 }
 
+void CScreenDevice::SetScrollRegion (unsigned nStartRow, unsigned nEndRow)
+{
+	unsigned nScrollStart = (nStartRow - 1) * m_CharGen.GetCharHeight ();
+	unsigned nScrollEnd   = nEndRow * m_CharGen.GetCharHeight ();
+
+	if (   nScrollStart <  m_nUsedHeight
+	    && nScrollEnd   >  0
+	    && nScrollEnd   <= m_nUsedHeight
+	    && nScrollStart <  nScrollEnd)
+	{
+		m_nScrollStart = nScrollStart;
+		m_nScrollEnd   = nScrollEnd;
+	}
+
+	CursorHome ();
+}
+
 // TODO: standout mode should be useable together with one other mode
 void CScreenDevice::SetStandoutMode (unsigned nMode)
 {
@@ -667,13 +706,15 @@ void CScreenDevice::Scroll (void)
 {
 	unsigned nLines = m_CharGen.GetCharHeight ();
 
-	u32 *pTo = (u32 *) m_pBuffer;
-	u32 *pFrom = (u32 *) (m_pBuffer + nLines * m_nWidth);
+	u32 *pTo = (u32 *) (m_pBuffer + m_nScrollStart * m_nWidth);
+	u32 *pFrom = (u32 *) (m_pBuffer + (m_nScrollStart + nLines) * m_nWidth);
 
-	unsigned nSize = m_nWidth * (m_nUsedHeight - nLines) * sizeof (TScreenColor);
-
-	memcpyblk (pTo, pFrom, nSize);
-	pTo += nSize / sizeof (u32);
+	unsigned nSize = m_nWidth * (m_nScrollEnd - m_nScrollStart - nLines) * sizeof (TScreenColor);
+	if (nSize > 0)
+	{
+		memcpyblk (pTo, pFrom, nSize);
+		pTo += nSize / sizeof (u32);
+	}
 
 	nSize = m_nWidth * nLines * sizeof (TScreenColor) / sizeof (u32);
 	while (nSize--)

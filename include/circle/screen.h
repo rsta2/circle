@@ -2,7 +2,7 @@
 // screen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _screen_h
-#define _screen_h
+#ifndef _circle_screen_h
+#define _circle_screen_h
 
 #include <circle/device.h>
 #include <circle/bcmframebuffer.h>
@@ -71,6 +71,8 @@ struct TScreenStatus
 {
 	TScreenColor   *pContent;
 	unsigned	nState;
+	unsigned	nScrollStart;
+	unsigned	nScrollEnd;
 	unsigned	nCursorX;
 	unsigned	nCursorY;
 	boolean		bCursorOn;
@@ -89,9 +91,14 @@ public:
 
 	boolean Initialize (void);
 
+	// size in pixels
 	unsigned GetWidth (void) const;
 	unsigned GetHeight (void) const;
-	
+
+	// size in characters
+	unsigned GetColumns (void) const;
+	unsigned GetRows (void) const;
+
 	TScreenStatus GetStatus (void);
 	boolean SetStatus (TScreenStatus Status);	// returns FALSE on failure
 
@@ -124,6 +131,7 @@ private:
 	void NewLine (void);
 	void ReverseScroll (void);
 	void SetCursorMode (boolean bVisible);
+	void SetScrollRegion (unsigned nStartRow, unsigned nEndRow);
 	void SetStandoutMode (unsigned nMode);
 	void Tabulator (void);
 
@@ -145,6 +153,8 @@ private:
 	unsigned	 m_nHeight;
 	unsigned	 m_nUsedHeight;
 	unsigned	 m_nState;
+	unsigned	 m_nScrollStart;
+	unsigned	 m_nScrollEnd;
 	unsigned	 m_nCursorX;
 	unsigned	 m_nCursorY;
 	boolean		 m_bCursorOn;
