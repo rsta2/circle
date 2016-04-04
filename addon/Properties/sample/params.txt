@@ -1,0 +1,9 @@
+#
+# Sample properties file
+#
+
+width=640
+height=480
+
+logdev=ttyS1
+loglevel=4

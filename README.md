@@ -28,6 +28,8 @@ In this step a driver for the SPI0 master is added to Circle and demonstrated in
 
 There has been added a library and sample program for WS2801, WS2812 and WS2812B controlled LED stripes to the addon/ section too.
 
+Please note that the multi-core support is disabled by default now because it noticeable drops performance of single core applications. If you want to use multi-core applications (using class CMultiCoreSupport) you have to enable the define ARM_ALLOW_MULTI_CORE in *include/circle/sysconfig.h*.
+
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
 In Step 1-22 the following features were introduced:

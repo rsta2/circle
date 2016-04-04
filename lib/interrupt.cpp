@@ -2,7 +2,7 @@
 // interrupt.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 #include <assert.h>
+
+#define ARM_IC_IRQ_REGS		3
 
 #define ARM_IC_IRQ_PENDING(irq)	(  (irq) < ARM_IRQ2_BASE	\
 				 ? ARM_IC_IRQ_PENDING_1		\
@@ -56,7 +58,7 @@ CInterruptSystem::CInterruptSystem (void)
 	s_pThis = this;
 }
 
-CInterruptSystem::~CInterruptSystem ()
+CInterruptSystem::~CInterruptSystem (void)
 {
 	s_pThis = 0;
 }
@@ -142,7 +144,7 @@ CInterruptSystem *CInterruptSystem::Get (void)
 	return s_pThis;
 }
 
-int CInterruptSystem::CallIRQHandler (unsigned nIRQ)
+boolean CInterruptSystem::CallIRQHandler (unsigned nIRQ)
 {
 	assert (nIRQ < IRQ_LINES);
 	TIRQHandler *pHandler = m_apIRQHandler[nIRQ];
@@ -151,14 +153,14 @@ int CInterruptSystem::CallIRQHandler (unsigned nIRQ)
 	{
 		(*pHandler) (m_pParam[nIRQ]);
 		
-		return 1;
+		return TRUE;
 	}
 	else
 	{
 		DisableIRQ (nIRQ);
 	}
 	
-	return 0;
+	return FALSE;
 }
 
 void CInterruptSystem::InterruptHandler (void)
@@ -172,17 +174,30 @@ void CInterruptSystem::InterruptHandler (void)
 	}
 #endif
 
-	for (unsigned nIRQ = 0; nIRQ < IRQ_LINES; nIRQ++)
+	u32 Pending[ARM_IC_IRQ_REGS];
+	Pending[0] = read32 (ARM_IC_IRQ_PENDING_1);
+	Pending[1] = read32 (ARM_IC_IRQ_PENDING_2);
+	Pending[2] = read32 (ARM_IC_IRQ_BASIC_PENDING) & 0xFF;
+
+	for (unsigned nReg = 0; nReg < ARM_IC_IRQ_REGS; nReg++)
 	{
-		u32 nPendReg = ARM_IC_IRQ_PENDING (nIRQ);
-		u32 nIRQMask = ARM_IRQ_MASK (nIRQ);
-		
-		if (read32 (nPendReg) & nIRQMask)
+		u32 nPending = Pending[nReg];
+		if (nPending != 0)
 		{
-			if (s_pThis->CallIRQHandler (nIRQ))
+			unsigned nIRQ = nReg * ARM_IRQS_PER_REG;
+
+			do
 			{
-				return;
+				if (   (nPending & 1)
+				    && s_pThis->CallIRQHandler (nIRQ))
+				{
+					return;
+				}
+
+				nPending >>= 1;
+				nIRQ++;
 			}
+			while (nPending != 0);
 		}
 	}
 }

@@ -2,7 +2,7 @@
 // memio.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _memio_h
-#define _memio_h
+#ifndef _circle_memio_h
+#define _circle_memio_h
 
 #include <circle/types.h>
 
@@ -26,9 +26,15 @@
 extern "C" {
 #endif
 
-u32 read32 (u32 nAddress);
+static inline u32 read32 (uintptr nAddress)
+{
+	return *(u32 volatile *) nAddress;
+}
 
-void write32 (u32 nAddress, u32 nValue);
+static inline void write32 (uintptr nAddress, u32 nValue)
+{
+	*(u32 volatile *) nAddress = nValue;
+}
 
 #ifdef __cplusplus
 }

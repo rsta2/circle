@@ -2,7 +2,11 @@
 // i2cmaster.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// 
+// Large portions are:
+//	Copyright (C) 2011-2013 Mike McCauley
+//	Copyright (C) 2014, 2015, 2016 by Arjan van Vught <info@raspberrypi-dmx.nl>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,8 +24,15 @@
 #include <circle/i2cmaster.h>
 #include <circle/memio.h>
 #include <circle/bcm2835.h>
+#include <circle/bcmpropertytags.h>
 #include <circle/synchronize.h>
 #include <assert.h>
+
+#if RASPPI != 3
+	#define DEFAULT_CORE_CLOCK	250000000
+#else
+	#define DEFAULT_CORE_CLOCK	300000000
+#endif
 
 // Control register
 #define C_I2CEN			(1 << 15)
@@ -29,7 +40,7 @@
 #define C_INTT			(1 << 9)
 #define C_INTD			(1 << 8)
 #define C_ST			(1 << 7)
-#define C_CLEAR			(1 << 4)
+#define C_CLEAR			(1 << 5)
 #define C_READ			(1 << 0)
 
 // Status register
@@ -47,15 +58,26 @@
 // FIFO register
 #define FIFO__MASK		0xFF
 
+#define FIFO_SIZE		16
+
 CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode)
 :	m_nDevice (nDevice),
 	m_nBaseAddress (nDevice == 0 ? ARM_BSC0_BASE : ARM_BSC1_BASE),
 	m_bFastMode (bFastMode),
 	m_SDA (nDevice == 0 ? 0 : 2, GPIOModeAlternateFunction0),
 	m_SCL (nDevice == 0 ? 1 : 3, GPIOModeAlternateFunction0),
+	m_nCoreClockRate (DEFAULT_CORE_CLOCK),
 	m_SpinLock (FALSE)
 {
 	assert (nDevice <= 1);
+
+	CBcmPropertyTags Tags;
+	TPropertyTagClockRate TagClockRate;
+	TagClockRate.nClockId = CLOCK_ID_CORE;
+	if (Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
+	{
+		m_nCoreClockRate = TagClockRate.nRate;
+	}
 }
 
 CI2CMaster::~CI2CMaster (void)
@@ -65,28 +87,32 @@ CI2CMaster::~CI2CMaster (void)
 
 boolean CI2CMaster::Initialize (void)
 {
-	DataMemBarrier ();
-
-	u32 nDivider = m_bFastMode ? 150000 / 400 : 150000 / 100;
-	write32 (m_nBaseAddress + ARM_BSC_DIV__OFFSET, nDivider);
-	
-	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET, C_I2CEN);
-
-	DataMemBarrier ();
+	SetClock (m_bFastMode ? 400000 : 100000);
 
 	return TRUE;
+}
+
+void CI2CMaster::SetClock (unsigned nClockSpeed)
+{
+	DataMemBarrier ();
+
+	assert (nClockSpeed > 0);
+	u16 nDivider = (u16) (m_nCoreClockRate / nClockSpeed);
+	write32 (m_nBaseAddress + ARM_BSC_DIV__OFFSET, nDivider);
+	
+	DataMemBarrier ();
 }
 
 int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 {
 	if (ucAddress >= 0x80)
 	{
-		return -1;
+		return -I2C_MASTER_INALID_PARM;
 	}
 
 	if (nCount == 0)
 	{
-		return -1;
+		return -I2C_MASTER_INALID_PARM;
 	}
 
 	m_SpinLock.Acquire ();
@@ -98,59 +124,55 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 
 	DataMemBarrier ();
 
+	// setup transfer
 	write32 (m_nBaseAddress + ARM_BSC_A__OFFSET, ucAddress);
+
+	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET, C_CLEAR);
+	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_CLKT | S_ERR | S_DONE);
+
 	write32 (m_nBaseAddress + ARM_BSC_DLEN__OFFSET, nCount);
 
-	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_CLKT | S_ERR | S_DONE);
-	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET,   read32 (m_nBaseAddress + ARM_BSC_C__OFFSET)
-						     | C_ST | C_READ | C_CLEAR);
+	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET, C_I2CEN | C_ST | C_READ);
 
-	// wait for transfer to start
-	u32 nStatus;
-	while (!((nStatus = read32 (m_nBaseAddress + ARM_BSC_S__OFFSET)) & S_TA))
+	// transfer active
+	while (!(read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_DONE))
 	{
-		if (nStatus & (S_CLKT | S_ERR))
+		while (read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_RXD)
 		{
-			DataMemBarrier ();
+			*pData++ = read32 (m_nBaseAddress + ARM_BSC_FIFO__OFFSET) & FIFO__MASK;
 
-			m_SpinLock.Release ();
-
-			return -1;
+			nCount--;
+			nResult++;
 		}
 	}
 
-	// transfer active
-	while (nCount-- > 0)
+	// transfer has finished, grab any remaining stuff from FIFO
+	while (   nCount > 0
+	       && (read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_RXD))
 	{
-		while (!((nStatus = read32 (m_nBaseAddress + ARM_BSC_S__OFFSET)) & S_RXD))
-		{
-			if (nStatus & (S_CLKT | S_ERR))
-			{
-				DataMemBarrier ();
-
-				m_SpinLock.Release ();
-
-				return -1;
-			}
-		}
-
 		*pData++ = read32 (m_nBaseAddress + ARM_BSC_FIFO__OFFSET) & FIFO__MASK;
 
+		nCount--;
 		nResult++;
 	}
 
-	// wait for transfer to stop
-	while ((nStatus = read32 (m_nBaseAddress + ARM_BSC_S__OFFSET)) & S_TA)
+	u32 nStatus = read32 (m_nBaseAddress + ARM_BSC_S__OFFSET);
+	if (nStatus & S_ERR)
 	{
-		if (nStatus & (S_CLKT | S_ERR))
-		{
-			DataMemBarrier ();
+		write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_ERR);
 
-			m_SpinLock.Release ();
-
-			return -1;
-		}
+		nResult = -I2C_MASTER_ERROR_NACK;
 	}
+	else if (nStatus & S_CLKT)
+	{
+		nResult = -I2C_MASTER_ERROR_CLKT;
+	}
+	else if (nCount > 0)
+	{
+		nResult = -I2C_MASTER_DATA_LEFT;
+	}
+
+	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_DONE);
 
 	DataMemBarrier ();
 
@@ -163,76 +185,73 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 {
 	if (ucAddress >= 0x80)
 	{
-		return -1;
+		return -I2C_MASTER_INALID_PARM;
 	}
 
-	if (nCount == 0)
+	if (nCount != 0 && pBuffer == 0)
 	{
-		return -1;
+		return -I2C_MASTER_INALID_PARM;
 	}
 
 	m_SpinLock.Acquire ();
 
 	u8 *pData = (u8 *) pBuffer;
-	assert (pData != 0);
 
 	int nResult = 0;
 
 	DataMemBarrier ();
 
+	// setup transfer
 	write32 (m_nBaseAddress + ARM_BSC_A__OFFSET, ucAddress);
+
+	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET, C_CLEAR);
+	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_CLKT | S_ERR | S_DONE);
+
 	write32 (m_nBaseAddress + ARM_BSC_DLEN__OFFSET, nCount);
 
-	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_CLKT | S_ERR | S_DONE);
-	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET,  (read32 (m_nBaseAddress + ARM_BSC_C__OFFSET) & ~C_READ)
-						     | C_ST | C_CLEAR);
-
-	// wait for transfer to start
-	u32 nStatus;
-	while (!((nStatus = read32 (m_nBaseAddress + ARM_BSC_S__OFFSET)) & S_TA))
+	// fill FIFO
+	for (unsigned i = 0; nCount > 0 && i < FIFO_SIZE; i++)
 	{
-		if (nStatus & (S_CLKT | S_ERR))
-		{
-			DataMemBarrier ();
-
-			m_SpinLock.Release ();
-
-			return -1;
-		}
-	}
-
-	// transfer active
-	while (nCount-- > 0)
-	{
-		while (!((nStatus = read32 (m_nBaseAddress + ARM_BSC_S__OFFSET)) & S_TXD))
-		{
-			if (nStatus & (S_CLKT | S_ERR))
-			{
-				DataMemBarrier ();
-
-				m_SpinLock.Release ();
-
-				return -1;
-			}
-		}
-
 		write32 (m_nBaseAddress + ARM_BSC_FIFO__OFFSET, *pData++);
 
+		nCount--;
 		nResult++;
 	}
 
-	// wait for transfer to stop
-	while ((nStatus = read32 (m_nBaseAddress + ARM_BSC_S__OFFSET)) & S_TA)
+	// start transfer
+	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET, C_I2CEN | C_ST);
+
+	// transfer active
+	while (!(read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_DONE))
 	{
-		if (nStatus & (S_CLKT | S_ERR))
+		while (   nCount > 0
+		       && (read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_TXD))
 		{
-			DataMemBarrier ();
+			write32 (m_nBaseAddress + ARM_BSC_FIFO__OFFSET, *pData++);
 
-			m_SpinLock.Release ();
-
-			return -1;
+			nCount--;
+			nResult++;
 		}
 	}
+
+	// check status
+	u32 nStatus = read32 (m_nBaseAddress + ARM_BSC_S__OFFSET);
+	if (nStatus & S_ERR)
+	{
+		write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_ERR);
+
+		nResult = -I2C_MASTER_ERROR_NACK;
+	}
+	else if (nStatus & S_CLKT)
+	{
+		nResult = -I2C_MASTER_ERROR_CLKT;
+	}
+	else if (nCount > 0)
+	{
+		nResult = -I2C_MASTER_DATA_LEFT;
+	}
+
+	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_DONE);
 
 	DataMemBarrier ();
 

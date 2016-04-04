@@ -65,8 +65,16 @@ CSPIMaster::CSPIMaster (unsigned nClockSpeed, unsigned CPOL, unsigned CPHA)
 	m_MISO ( 9, GPIOModeAlternateFunction0),
 	m_CE0  ( 8, GPIOModeAlternateFunction0),
 	m_CE1  ( 7, GPIOModeAlternateFunction0),
+	m_nCoreClockRate (DEFAULT_CORE_CLOCK),
 	m_SpinLock (FALSE)
 {
+	CBcmPropertyTags Tags;
+	TPropertyTagClockRate TagClockRate;
+	TagClockRate.nClockId = CLOCK_ID_CORE;
+	if (Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
+	{
+		m_nCoreClockRate = TagClockRate.nRate;
+	}
 }
 
 CSPIMaster::~CSPIMaster (void)
@@ -78,7 +86,7 @@ boolean CSPIMaster::Initialize (void)
 	DataMemBarrier ();
 
 	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
-	write32 (ARM_SPI0_CLK, GetDivider (m_nClockSpeed));
+	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
 
 	assert (m_CPOL <= 1);
 	assert (m_CPHA <= 1);
@@ -87,6 +95,32 @@ boolean CSPIMaster::Initialize (void)
 	DataMemBarrier ();
 
 	return TRUE;
+}
+
+void CSPIMaster::SetClock (unsigned nClockSpeed)
+{
+	m_nClockSpeed = nClockSpeed;
+
+	DataMemBarrier ();
+
+	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
+	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
+
+	DataMemBarrier ();
+}
+
+void CSPIMaster::SetMode (unsigned CPOL, unsigned CPHA)
+{
+	m_CPOL = CPOL;
+	m_CPHA = CPHA;
+
+	DataMemBarrier ();
+
+	assert (m_CPOL <= 1);
+	assert (m_CPHA <= 1);
+	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
+
+	DataMemBarrier ();
 }
 
 int CSPIMaster::Read (unsigned nChipSelect, void *pBuffer, unsigned nCount)
@@ -161,17 +195,4 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 	m_SpinLock.Release ();
 
 	return (int) nCount;
-}
-
-u16 CSPIMaster::GetDivider (unsigned nClockSpeed)
-{
-	CBcmPropertyTags Tags;
-	TPropertyTagClockRate TagClockRate;
-	TagClockRate.nClockId = CLOCK_ID_CORE;
-	if (!Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
-	{
-		TagClockRate.nRate = DEFAULT_CORE_CLOCK;
-	}
-
-	return TagClockRate.nRate / nClockSpeed;
 }

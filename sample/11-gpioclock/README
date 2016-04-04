@@ -2,4 +2,4 @@ README
 
 This sample program shows the usage of GPIO clocks and provides a little sampling routine. GPIO clock 0 is initialized to generate an 125 KHz square wave signal on GPIO pin 4. The signal on GPIO pin 18 is sampled with a sampling rate of some MHz and displayed on the screen afterwards. If you connect both pins you can see the square wave.
 
-If you want to run this sample on the Raspberry Pi 2 you should undefine ARM_ALLOW_MULTI_CORE in include/circle/sysconfig.h before build. This has much influence on the available sampling rate.
+If you want to run this sample on the Raspberry Pi 2/3 you should undefine ARM_ALLOW_MULTI_CORE in include/circle/sysconfig.h before build. This has much influence on the available sampling rate. This is done by default now.

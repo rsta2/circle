@@ -38,6 +38,11 @@ public:
 
 	boolean Initialize (void);
 
+	// modify default configuration before specific transfer
+	// not protected by internal spinlock for multi-core operation
+	void SetClock (unsigned nClockSpeed);			// in Hz
+	void SetMode (unsigned CPOL, unsigned CPHA);
+
 	// returns number of read bytes or < 0 on failure
 	int Read (unsigned nChipSelect, void *pBuffer, unsigned nCount);
 
@@ -46,9 +51,6 @@ public:
 
 	// returns number of bytes transfered or < 0 on failure
 	int WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void *pReadBuffer, unsigned nCount);
-
-private:
-	static u16 GetDivider (unsigned nClockSpeed);
 
 private:
 	unsigned m_nClockSpeed;
@@ -60,6 +62,8 @@ private:
 	CGPIOPin m_MISO;
 	CGPIOPin m_CE0;
 	CGPIOPin m_CE1;
+
+	unsigned m_nCoreClockRate;
 
 	CSpinLock m_SpinLock;
 };

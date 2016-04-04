@@ -4,7 +4,7 @@ This sample displays a fractal image from a Mandelbrot set. It may be build for 
 
 This sample was chosen because it is well suited to demonstrate the performance gain of a multi-core architecture. On a single-core CPU the whole image is calculated by the only available core. On a multi-core CPU (Raspberry Pi 2 only) each of the four available cores calculates a quarter of the fractal image which is much faster.
 
-If you want to run this sample with only one core on the Raspberry Pi 2 you have to undefine ARM_ALLOW_MULTI_CORE in include/circle/sysconfig.h.
+If you want to run this sample with multiple cores on the Raspberry Pi 2/3 you have to define ARM_ALLOW_MULTI_CORE in include/circle/sysconfig.h.
 
 Please note that the calculation of the Mandelbrot set could be improved very much by choosing other parameters (e.g. MAX_ITERATION) and by implementing it in assembly language using the NEON FPU instructions. This has been done by krom. Please check out his very impressive samples here: 
 

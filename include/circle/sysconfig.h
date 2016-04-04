@@ -69,7 +69,7 @@
 //#define USE_RPI_STUB_AT 	0x1F000000	// debug with rpi_stub
 
 #ifndef USE_RPI_STUB_AT
-#define ARM_ALLOW_MULTI_CORE	// slower on single core if defined
+//#define ARM_ALLOW_MULTI_CORE	// slower on single core if defined
 #endif
 #endif
 
