@@ -22,3 +22,4 @@ Arjan van Vught
 Support while adding Raspberry Pi 3 support
 Testing and improving SPI support
 Providing code for WS28XX LED stripes
+Providing CString::ftoa()

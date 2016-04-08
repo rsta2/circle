@@ -2,7 +2,7 @@
 // string.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _string_h
-#define _string_h
+#ifndef _circle_string_h
+#define _circle_string_h
 
 #include <circle/stdarg.h>
 #include <circle/types.h>
@@ -48,6 +48,7 @@ private:
 	void ReserveSpace (size_t nSpace);
 	
 	static char *ntoa (char *pDest, unsigned long ulNumber, unsigned nBase, boolean bUpcase);
+	static char *ftoa (char *pDest, double fNumber, unsigned nPrecision);
 
 private:
 	char 	 *m_pBuffer;

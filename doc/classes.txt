@@ -22,6 +22,7 @@ Base library
 * CMachineInfo: Helper class to get different information about the running computer.
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
+* CNullDevice: Character device which ignores sent data and returns 0 bytes on read.
 * CPageTable: Encapsulates a page table to be used by MMU.
 * CPtrArray: Container class. Dynamic array of pointers.
 * CPtrList: Container class. List of pointers.

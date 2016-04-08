@@ -2,7 +2,7 @@
 // libhelper.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-unsigned Divide (unsigned nDividend, unsigned nDivisor, unsigned *pRest)
+unsigned __Divide (unsigned nDividend, unsigned nDivisor, unsigned *pRest)
 {
 	if (nDivisor == 0)
 	{
@@ -61,6 +61,32 @@ unsigned Divide (unsigned nDividend, unsigned nDivisor, unsigned *pRest)
 	}
 	
 	return nQuotient;
+}
+
+int __DivideInteger (int nDividend, int nDivisor)
+{
+	if (nDividend < 0)
+	{
+		if (nDivisor < 0)
+		{
+			return __Divide (-nDividend, -nDivisor, 0);
+		}
+		else
+		{
+			return -__Divide (-nDividend, nDivisor, 0);
+		}
+	}
+	else
+	{
+		if (nDivisor < 0)
+		{
+			return -__Divide (nDividend, -nDivisor, 0);
+		}
+		else
+		{
+			return __Divide (nDividend, nDivisor, 0);
+		}
+	}
 }
 
 #ifdef __cplusplus
