@@ -1,12 +1,12 @@
 DEBUG
 
-Single-core Circle applications can be source-level debugged on the Raspberry Pi 2 using the GNU debugger (GDB) and rpi_stub. To do this you need:
+Single-core Circle applications can be source-level debugged on the Raspberry Pi 2 and 3 using the GNU debugger (GDB) and rpi_stub. To do this you need:
 
-* An USB to serial converter (which uses 3.3V) connected to the UART of the Raspberry Pi 2
+* An USB to serial converter (which uses 3.3V) connected to the UART of the Raspberry Pi 2/3
 * GNU debugger which was build with target support for ARM. You can get it with this toolchain:
   https://github.com/raspberrypi/tools/tree/master/arm-bcm2708/
 * rpi_stub from https://github.com/turboscrew/rpi_stub
-  There is already a ready build kernel7.img in the Debug/ subdirectory.
+  There is already a ready build kernel7.img in the Debug/ subdirectory. For the Raspberry Pi 3 you need a recent version of it.
  
 The file kernel7.img has to be installed on a Micro-SD card along with the firmware files also required to boot Circle (see the main README.md for this). You have to create a cmdline.txt file on the Micro-SD card (if it is not already there) and write the following options into it:
 
@@ -25,7 +25,7 @@ rpi_stub versions beginning from Nov 7, 2015 allow sending log messages to the G
 To use GDB do the following:
 
 * Connect your USB to serial converter to your host computer.
-* Put the Micro-SD card into your Raspberry Pi 2 and power it on.
+* Put the Micro-SD card into your Raspberry Pi 2/3 and power it on.
 * Start GDB and give the following commands:
 
 	file kernel.elf			# the executable to be debugged (in current directory here)

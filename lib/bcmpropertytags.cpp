@@ -56,7 +56,27 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	u8 Buffer[nBufferSize + 15];
 	TPropertyBuffer *pBuffer = (TPropertyBuffer *) (((u32) Buffer + 15) & ~15);
 #else
+#ifndef USE_RPI_STUB_AT
 	TPropertyBuffer *pBuffer = (TPropertyBuffer *) MEM_COHERENT_REGION;
+#else
+	TPropertyBuffer *pBuffer;
+	u32 nSize;
+
+	asm volatile
+	(
+		"push {r0-r1}\n"
+		"mov r0, #1\n"
+		"bkpt #0x7FFA\n"	// get coherent region from rpi_stub
+		"mov %0, r0\n"
+		"mov %1, r1\n"
+		"pop {r0-r1}\n"
+
+		: "=r" (pBuffer), "=r" (nSize)
+	);
+
+	assert (pBuffer != 0);
+	assert (nSize >= nBufferSize);
+#endif
 #endif
 	
 	pBuffer->nBufferSize = nBufferSize;
