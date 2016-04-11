@@ -11,6 +11,7 @@ DIRECTORIES
 
 OneWire		Support library for 1-wire devices (by Paul Stoffregen)
 Properties	Library providing access to configuration properties saved in a file
+rtc		Library providing drivers for real-time clocks (RTC)
 SDCard		Driver for SD card access using the internal EMMC controller (by John Cronin)
 Spectrum	ZX Spectrum screen emulator class (by Jose Luis Sanchez)
 WS28XX		Driver for WS28XX controlled LED stripes (by Arjan van Vught)

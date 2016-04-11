@@ -26,7 +26,7 @@ OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o libhelper.o lib
 	  gpiomanager.o gpioclock.o dmachannel.o pwmsounddevice.o pwmoutput.o tracer.o \
 	  i2cmaster.o i2cslave.o spimaster.o virtualgpiopin.o machineinfo.o \
 	  multicore.o spinlock.o \
-	  ptrarray.o ptrlist.o
+	  ptrarray.o ptrlist.o time.o
 
 all: startup.o libcircle.a
 

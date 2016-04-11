@@ -452,6 +452,8 @@ boolean CDHCPClient::SendAndReceive (boolean bRequest, u32 nCIAddr)
 
 			CScheduler::Get ()->Yield ();
 		}
+
+		CLogger::Get ()->Write (FromDHCPClient, LogWarning, "No response from server. Retrying.");
 	}
 
 	CLogger::Get ()->Write (FromDHCPClient, LogWarning, "Did not receive %s",
