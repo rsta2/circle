@@ -114,6 +114,7 @@ Directories
 * lib: The Circle class implementation and support files (other libraries are in subdirectories of lib/).
 * sample: Several sample applications using Circle in different subdirectories. The main function is implemented in the CKernel class.
 * addon: Contains contributed libraries and samples (has to be build manually).
+* app: Place your own applications here. If you have own libraries put them into app/lib/.
 * boot: Do *make* in this directory to get the Raspberry Pi firmware files required to boot.
 * doc: Additional documentation files.
 

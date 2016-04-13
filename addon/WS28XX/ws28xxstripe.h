@@ -48,6 +48,8 @@ public:
 
 	boolean Update (void);
 
+	boolean Blackout (void);		// temporary switch all LEDs off
+
 private:
 	void SetColorWS2812 (unsigned nOffset, u8 nValue);
 
@@ -56,6 +58,7 @@ private:
 	unsigned	 m_nLEDCount;
 	unsigned	 m_nBufSize;
 	u8		*m_pBuffer;
+	u8		*m_pBlackoutBuffer;
 	CSPIMaster	 m_SPIMaster;
 };
 

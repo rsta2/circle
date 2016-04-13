@@ -38,10 +38,13 @@ public:
 	// resulting string is available as long this class is instanciated
 	const char *GetString (const char *pPropertyName, const char *pDefault = 0) const;
 	unsigned GetNumber (const char *pPropertyName, unsigned nDefault = 0) const;
+	// returns 0 if not set, result is valid until the next call of this method
+	const u8 *GetIPAddress (const char *pPropertyName);
 
 	// existing properties will be replaced
 	void SetString (const char *pPropertyName, const char *pValue);
 	void SetNumber (const char *pPropertyName, unsigned nValue, unsigned nBase = 10);
+	void SetIPAddress (const char *pPropertyName, const u8 *pAddress);
 
 	void RemoveAll (void);
 
@@ -51,7 +54,7 @@ public:
 
 protected:
 	// existing properties will be ignored
-	void AddProperty (const char*pPropertyName, const char *pValue);
+	void AddProperty (const char *pPropertyName, const char *pValue);
 
 	// iterating over all properties
 	boolean GetFirst (void);
@@ -67,6 +70,8 @@ private:
 private:
 	CPtrArray m_PropArray;
 	unsigned m_nGetIndex;
+
+	u8 m_IPAddress[4];
 };
 
 #endif

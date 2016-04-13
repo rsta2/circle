@@ -41,9 +41,11 @@ else
 ARCH	?= -march=armv8-a -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard
 endif
 
-AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include
+INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
+
+AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) $(INCLUDE)
 CFLAGS	+= $(ARCH) -Wall -Wno-psabi -fsigned-char -fno-builtin -nostdinc -nostdlib \
-	   -D__circle__ -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -O -g #-DNDEBUG
+	   -D__circle__ -DRASPPI=$(RASPPI) $(INCLUDE) -O -g #-DNDEBUG
 CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
 
 %.o: %.S

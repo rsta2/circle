@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 
-#ifndef _bcmpropertytags_h
-#define _bcmpropertytags_h
+#ifndef _circle_bcmpropertytags_h
+#define _circle_bcmpropertytags_h
 
 #include <circle/bcmmailbox.h>
 #include <circle/types.h>
@@ -36,6 +36,7 @@
 #define PROPTAG_GET_CLOCK_RATE		0x00030002
 #define PROPTAG_GET_TEMPERATURE		0x00030006
 #define PROPTAG_GET_EDID_BLOCK		0x00030020
+#define PROPTAG_SET_CLOCK_RATE		0x00038002
 #define PROPTAG_GET_DISPLAY_DIMENSIONS	0x00040003
 #define PROPTAG_GET_GPIO_VIRTBUF	0x00040010
 #define PROPTAG_SET_VIRTUAL_OFFSET	0x00048009
@@ -115,6 +116,14 @@ struct TPropertyTagEDIDBlock
 	u32		nStatus;
 	#define EDID_STATUS_SUCCESS	0
 	u8		Block[128];
+};
+
+struct TPropertyTagSetClockRate
+{
+	TPropertyTag	Tag;
+	u32		nClockId;
+	u32		nRate;			// Hz
+	u32		nSkipSettingTurbo;
 };
 
 struct TPropertyTagDisplayDimensions

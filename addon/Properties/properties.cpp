@@ -74,6 +74,53 @@ unsigned CProperties::GetNumber (const char *pPropertyName, unsigned nDefault) c
 	return (unsigned) ulResult;
 }
 
+const u8 *CProperties::GetIPAddress (const char *pPropertyName)
+{
+	TPropertyPair *pProperty = Lookup (pPropertyName);
+	if (pProperty == 0)
+	{
+		return 0;
+	}
+
+	const char *pToken = pProperty->pValue;
+
+	for (unsigned i = 0; i <= 3; i++)
+	{
+		char *pEnd;
+		assert (pToken != 0);
+		unsigned long nNumber = strtoul (pToken, &pEnd, 10);
+
+		if (i < 3)
+		{
+			if (    pEnd == 0
+			    || *pEnd != '.')
+			{
+				return 0;
+			}
+		}
+		else
+		{
+			if (    pEnd != 0
+			    && *pEnd != '\0')
+			{
+				return 0;
+			}
+		}
+
+		if (nNumber > 255)
+		{
+			return 0;
+		}
+
+		m_IPAddress[i] = (u8) nNumber;
+
+		assert (pEnd != 0);
+		pToken = pEnd + 1;
+	}
+
+	return m_IPAddress;
+}
+
 void CProperties::SetString (const char *pPropertyName, const char *pValue)
 {
 	if (pValue == 0)
@@ -102,6 +149,17 @@ void CProperties::SetNumber (const char *pPropertyName, unsigned nValue, unsigne
 	CString Value;
 	assert (nBase == 10 || nBase == 16);
 	Value.Format (nBase == 10 ? "%d" : "0x%X", nValue);
+
+	assert (pPropertyName != 0);
+	SetString (pPropertyName, Value);
+}
+
+void CProperties::SetIPAddress (const char *pPropertyName, const u8 *pAddress)
+{
+	CString Value;
+	assert (pAddress != 0);
+	Value.Format ("%u.%u.%u.%u", (unsigned) pAddress[0], (unsigned) pAddress[1],
+				     (unsigned) pAddress[2], (unsigned) pAddress[3]);
 
 	assert (pPropertyName != 0);
 	SetString (pPropertyName, Value);

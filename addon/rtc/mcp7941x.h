@@ -40,7 +40,7 @@ public:
 	boolean ReadSRAM (u8 ucAddress, void *pBuffer, unsigned nCount);
 	boolean WriteSRAM (u8 ucAddress, const void *pBuffer, unsigned nCount);
 
-public:
+private:
 	CI2CMaster *m_pI2CMaster;
 	unsigned    m_nI2CClockHz;
 	u8	    m_ucSlaveAddress;

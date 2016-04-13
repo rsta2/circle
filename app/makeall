@@ -1,0 +1,23 @@
+#!/bin/sh
+
+cd lib
+
+cd template
+make $1 $2 || exit
+cd ..
+
+# TODO: Add new libs here
+#cd subdir
+#make $1 $2 || exit
+#cd ..
+
+cd ..
+
+cd template
+make $1 $2 || exit
+cd ..
+
+# TODO: Add new apps here
+#cd subdir
+#make $1 $2 || exit
+#cd ..

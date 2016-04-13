@@ -21,6 +21,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "ws28xxstripe.h"
+#include <circle/util.h>
 #include <assert.h>
 
 CWS28XXStripe::CWS28XXStripe (TWS28XXType Type, unsigned nLEDCount, unsigned nClockSpeed)
@@ -45,10 +46,17 @@ CWS28XXStripe::CWS28XXStripe (TWS28XXType Type, unsigned nLEDCount, unsigned nCl
 	{
 		SetLED (nLEDIndex, 0, 0, 0);
 	}
+
+	m_pBlackoutBuffer = new u8[m_nBufSize];
+	assert (m_pBlackoutBuffer != 0);
+	memset (m_pBlackoutBuffer, m_Type == WS2801 ? 0 : 0xC0, m_nBufSize);
 }
 
 CWS28XXStripe::~CWS28XXStripe (void)
 {
+	delete [] m_pBlackoutBuffer;
+	m_pBlackoutBuffer = 0;
+
 	delete [] m_pBuffer;
 	m_pBuffer = 0;
 }
@@ -90,6 +98,12 @@ boolean CWS28XXStripe::Update (void)
 {
 	assert (m_pBuffer != 0);
 	return m_SPIMaster.Write (0, m_pBuffer, m_nBufSize) == (int) m_nBufSize;
+}
+
+boolean CWS28XXStripe::Blackout (void)
+{
+	assert (m_pBlackoutBuffer != 0);
+	return m_SPIMaster.Write (0, m_pBlackoutBuffer, m_nBufSize) == (int) m_nBufSize;
 }
 
 void CWS28XXStripe::SetColorWS2812 (unsigned nOffset, u8 nValue)

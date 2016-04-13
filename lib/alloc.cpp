@@ -2,7 +2,7 @@
 // alloc.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -165,7 +165,11 @@ void *malloc (unsigned long ulSize)
 
 void free (void *pBlock)
 {
-	assert (pBlock != 0);
+	if (pBlock == 0)
+	{
+		return;
+	}
+
 	TBlockHeader *pBlockHeader = (TBlockHeader *) ((unsigned long) pBlock - sizeof (TBlockHeader));
 	assert (pBlockHeader->nMagic == BLOCK_MAGIC);
 
@@ -230,7 +234,11 @@ void *palloc (void)
 
 void pfree (void *pPage)
 {
-	assert (pPage != 0);
+	if (pPage == 0)
+	{
+		return;
+	}
+
 	TFreePage *pFreePage = (TFreePage *) pPage;
 	
 	s_PageSpinLock.Acquire ();

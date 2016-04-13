@@ -93,10 +93,17 @@ void debug_stacktrace (const u32 *pStackPtr, const char *pSource)
 
 #ifdef DEBUG_CLICK
 
-void debug_click (void)
+void debug_click (unsigned nMask)
 {
-	AudioLeft.Invert ();
-	AudioRight.Invert ();
+	if (nMask & DEBUG_CLICK_LEFT)
+	{
+		AudioLeft.Invert ();
+	}
+
+	if (nMask & DEBUG_CLICK_RIGHT)
+	{
+		AudioRight.Invert ();
+	}
 }
 
 #endif
