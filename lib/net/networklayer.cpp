@@ -2,7 +2,7 @@
 // networklayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -124,7 +124,8 @@ void CNetworkLayer::Process (void)
 		if (!pOwnIPAddress->IsNull ())
 		{
 			if (   *pOwnIPAddress != IPAddressDestination
-			    && !IPAddressDestination.IsBroadcast ())
+			    && !IPAddressDestination.IsBroadcast ()
+			    && *m_pNetConfig->GetBroadcastAddress () != IPAddressDestination)
 			{
 				continue;
 			}

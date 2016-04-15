@@ -308,7 +308,12 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength, CIPAd
 		m_Checksum.SetDestinationAddress (BroadcastIP);
 		if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
 		{
-			return -1;
+			assert (m_pNetConfig != 0);
+			m_Checksum.SetDestinationAddress (*m_pNetConfig->GetBroadcastAddress ());
+			if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
+			{
+				return -1;
+			}
 		}
 	}
 
