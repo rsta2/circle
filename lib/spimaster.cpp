@@ -22,6 +22,7 @@
 #include <circle/memio.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/synchronize.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 #if RASPPI != 3
@@ -66,6 +67,7 @@ CSPIMaster::CSPIMaster (unsigned nClockSpeed, unsigned CPOL, unsigned CPHA)
 	m_CE0  ( 8, GPIOModeAlternateFunction0),
 	m_CE1  ( 7, GPIOModeAlternateFunction0),
 	m_nCoreClockRate (DEFAULT_CORE_CLOCK),
+	m_nCSHoldTime (0),
 	m_SpinLock (FALSE)
 {
 	CBcmPropertyTags Tags;
@@ -121,6 +123,12 @@ void CSPIMaster::SetMode (unsigned CPOL, unsigned CPHA)
 	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
 
 	DataMemBarrier ();
+}
+
+void CSPIMaster::SetCSHoldTime (unsigned nMicroSeconds)
+{
+	assert (nMicroSeconds < 200);
+	m_nCSHoldTime = nMicroSeconds;
 }
 
 int CSPIMaster::Read (unsigned nChipSelect, void *pBuffer, unsigned nCount)
@@ -185,7 +193,17 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 
 	while (!(read32 (ARM_SPI0_CS) & CS_DONE))
 	{
-		// do nothing
+		while (read32 (ARM_SPI0_CS) & CS_RXD)
+		{
+			read32 (ARM_SPI0_FIFO);
+		}
+	}
+
+	if (m_nCSHoldTime > 0)
+	{
+		CTimer::Get ()->usDelay (m_nCSHoldTime);
+
+		m_nCSHoldTime = 0;
 	}
 
 	write32 (ARM_SPI0_CS, read32 (ARM_SPI0_CS) & ~CS_TA);

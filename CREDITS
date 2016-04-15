@@ -23,3 +23,6 @@ Support while adding Raspberry Pi 3 support
 Testing and improving SPI support
 Providing code for WS28XX LED stripes
 Providing CString::ftoa()
+
+Rogier Wolff
+Helping to get spi_dio running and to improve the SPI master driver

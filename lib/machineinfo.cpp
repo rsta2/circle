@@ -79,6 +79,14 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Unknown"
 };
 
+static const char *s_SoCName[] =		// must match TSoCType
+{
+	"BCM2835",
+	"BCM2836",
+	"BCM2837",
+	"Unknown"
+};
+
 CMachineInfo::CMachineInfo (void)
 :	m_nRevisionRaw (0),
 	m_MachineModel (MachineModelUnknown),
@@ -117,6 +125,11 @@ CMachineInfo::CMachineInfo (void)
 		m_nModelRevision = (m_nRevisionRaw & 0xF) + 1;
 		m_SoCType        = (TSoCType) ((m_nRevisionRaw >> 12) & 0xF);
 		m_nRAMSize       = 256 << ((m_nRevisionRaw >> 20) & 7);
+
+		if (m_SoCType >= SoCTypeUnknown)
+		{
+			m_SoCType = SoCTypeUnknown;
+		}
 
 		if (   m_MachineModel == MachineModelBRelease2MB512
 		    && m_nRAMSize     == 256)
@@ -183,6 +196,11 @@ TSoCType CMachineInfo::GetSoCType (void) const
 unsigned CMachineInfo::GetRAMSize (void) const
 {
 	return m_nRAMSize;
+}
+
+const char *CMachineInfo::GetSoCName (void) const
+{
+	return s_SoCName[m_SoCType];
 }
 
 u32 CMachineInfo::GetRevisionRaw (void) const

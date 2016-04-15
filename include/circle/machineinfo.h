@@ -61,6 +61,8 @@ public:
 	TSoCType GetSoCType (void) const;
 	unsigned GetRAMSize (void) const;		// MByte, 0 on error
 
+	const char *GetSoCName (void) const;
+
 	// Raw info
 	u32 GetRevisionRaw (void) const;
 

@@ -2,7 +2,7 @@
 // netconfig.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <circle/net/netconfig.h>
 
 CNetConfig::CNetConfig (void)
+:	m_bUseDHCP (TRUE)
 {
 	Reset ();
 }
@@ -36,6 +37,11 @@ void CNetConfig::Reset (void)
 	m_NetMask.Set (NullAddress);
 	m_DefaultGateway.Set (NullAddress);
 	m_DNSServer.Set (NullAddress);
+}
+
+void CNetConfig::SetDHCP (boolean bUsed)
+{
+	m_bUseDHCP = bUsed;
 }
 
 void CNetConfig::SetIPAddress (u32 nAddress)
@@ -81,6 +87,11 @@ void CNetConfig::SetDNSServer (const u8 *pAddress)
 const CIPAddress *CNetConfig::GetIPAddress (void) const
 {
 	return &m_IPAddress;
+}
+
+boolean CNetConfig::IsDHCPUsed (void) const
+{
+	return m_bUseDHCP;
 }
 
 const u8 *CNetConfig::GetNetMask (void) const

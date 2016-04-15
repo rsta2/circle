@@ -255,7 +255,6 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength, CIPAd
 
 	m_Checksum.SetSourceAddress (rSenderIP);
 
-	// TODO: may not work with some UDP based protocol, would need receiver IP from network layer here
 	if (   m_bActiveOpen
 	    && m_ForeignIP.IsBroadcast ())
 	{
@@ -299,7 +298,18 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength, CIPAd
 	if (   pHeader->nChecksum != UDP_CHECKSUM_NONE
 	    && m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
 	{
-		return -1;
+		if (m_bActiveOpen)
+		{
+			return -1;
+		}
+
+		CIPAddress BroadcastIP;
+		BroadcastIP.SetBroadcast ();
+		m_Checksum.SetDestinationAddress (BroadcastIP);
+		if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
+		{
+			return -1;
+		}
 	}
 
 	nLength -= sizeof (TUDPHeader);

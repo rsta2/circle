@@ -32,6 +32,8 @@ CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8
 	m_bUseDHCP (pIPAddress == 0 ? TRUE : FALSE),
 	m_pDHCPClient (0)
 {
+	m_Config.SetDHCP (m_bUseDHCP);
+
 	if (!m_bUseDHCP)
 	{
 		m_Config.SetIPAddress (pIPAddress);
@@ -50,6 +52,7 @@ CNetSubSystem::~CNetSubSystem (void)
 boolean CNetSubSystem::Initialize (void)
 {
 	m_bUseDHCP = m_Config.GetIPAddress ()->IsNull ();
+	m_Config.SetDHCP (m_bUseDHCP);
 
 	// wait for Ethernet PHY to come up
 	CTimer::Get ()->MsDelay (2000);

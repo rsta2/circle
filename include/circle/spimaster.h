@@ -43,6 +43,10 @@ public:
 	void SetClock (unsigned nClockSpeed);			// in Hz
 	void SetMode (unsigned CPOL, unsigned CPHA);
 
+	// normally chip select goes inactive very soon after transfer,
+	// this sets the additional time, select stays active (for the next transfer only)
+	void SetCSHoldTime (unsigned nMicroSeconds);
+
 	// returns number of read bytes or < 0 on failure
 	int Read (unsigned nChipSelect, void *pBuffer, unsigned nCount);
 
@@ -64,6 +68,8 @@ private:
 	CGPIOPin m_CE1;
 
 	unsigned m_nCoreClockRate;
+
+	unsigned m_nCSHoldTime;
 
 	CSpinLock m_SpinLock;
 };

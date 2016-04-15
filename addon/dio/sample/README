@@ -1,0 +1,5 @@
+README
+
+This sample demonstrates the digital input and output functions of the spi_dio board by BitWizard.nl. This board must be connected to your Raspberry Pi. By default SPI chip select 0 is used (can be changed in kernel.cpp).
+
+The sample generates a little "light show" if a dio_leds board is connected to the spi_dio (output mode, default) or displays the state of input IO6..IO0. For the second case you have to change the "#if 1" in CKernel::Run() to "#if 0".
