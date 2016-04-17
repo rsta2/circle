@@ -38,8 +38,16 @@ CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8
 	{
 		m_Config.SetIPAddress (pIPAddress);
 		m_Config.SetNetMask (pNetMask);
-		m_Config.SetDefaultGateway (pDefaultGateway);
-		m_Config.SetDNSServer (pDNSServer);
+
+		if (pDefaultGateway != 0)
+		{
+			m_Config.SetDefaultGateway (pDefaultGateway);
+		}
+
+		if (pDNSServer != 0)
+		{
+			m_Config.SetDNSServer (pDNSServer);
+		}
 	}
 }
 

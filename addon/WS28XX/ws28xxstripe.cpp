@@ -111,7 +111,7 @@ void CWS28XXStripe::SetColorWS2812 (unsigned nOffset, u8 nValue)
 	assert (m_Type != WS2801);
 	u8 nHighCode = m_Type == WS2812 ? 0xF0 : 0xF8;
 
-	assert (nOffset+23 < m_nBufSize);
+	assert (nOffset+7 < m_nBufSize);
 
 	for (u8 nMask = 0x80; nMask != 0; nMask >>= 1)
 	{

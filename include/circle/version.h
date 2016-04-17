@@ -20,6 +20,12 @@
 #ifndef _circle_version_h
 #define _circle_version_h
 
+#define CIRCLE_NAME			"Circle"
+
 #define CIRCLE_MAJOR_VERSION		23
+#define CIRCLE_VERSION_STRING		"23"
+
+#define OS_NAME				CIRCLE_NAME
+#define OS_VERSION			CIRCLE_VERSION_STRING
 
 #endif

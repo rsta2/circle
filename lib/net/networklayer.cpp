@@ -222,6 +222,13 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	if (!pOwnIPAddress->OnSameNetwork (rReceiver, m_pNetConfig->GetNetMask ()))
 	{
 		pNextHop = m_pNetConfig->GetDefaultGateway ();
+		if (pNextHop->IsNull ())
+		{
+			delete pPacketBuffer;
+			pPacketBuffer = 0;
+
+			return FALSE;
+		}
 	}
 	
 	assert (m_pLinkLayer != 0);
