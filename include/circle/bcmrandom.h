@@ -1,9 +1,9 @@
 //
-// version.h
+// bcmrandom.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
-//
+// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,15 +17,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_version_h
-#define _circle_version_h
+#ifndef _circle_bcmrandom_h
+#define _circle_bcmrandom_h
 
-#define CIRCLE_NAME			"Circle"
+#include <circle/spinlock.h>
+#include <circle/types.h>
 
-#define CIRCLE_MAJOR_VERSION		24
-#define CIRCLE_VERSION_STRING		"24"
+class CBcmRandomNumberGenerator		/// Driver for the build-in hardware random number generator
+{
+public:
+	CBcmRandomNumberGenerator (void);
+	~CBcmRandomNumberGenerator (void);
 
-#define OS_NAME				CIRCLE_NAME
-#define OS_VERSION			CIRCLE_VERSION_STRING
+	/// \return Random number (32-bit)
+	u32 GetNumber (void);
+
+private:
+	static CSpinLock s_SpinLock;
+	static boolean s_bInitialized;
+};
 
 #endif

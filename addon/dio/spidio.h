@@ -40,6 +40,26 @@
 
 #define DIO_MASK(func, val)	((val) << (func))
 
+// analog modes
+#define DIO_ANALOG_IO0		0x07		// single input
+#define DIO_ANALOG_IO1		0x03
+#define DIO_ANALOG_IO3		0x02
+#define DIO_ANALOG_IO4		0x01
+#define DIO_ANALOG_IO6		0x00
+
+#define DIO_ANALOG_IO0_IO1	0x38		// differential measurement
+#define DIO_ANALOG_IO1_IO0	0x18
+#define DIO_ANALOG_IO1_IO3	0x30
+#define DIO_ANALOG_IO1_IO4	0x2E
+#define DIO_ANALOG_IO1_IO6	0x2A
+#define DIO_ANALOG_IO3_IO1	0x10
+#define DIO_ANALOG_IO3_IO4	0x2C
+#define DIO_ANALOG_IO4_IO1	0x0E
+#define DIO_ANALOG_IO4_IO3	0x0C
+#define DIO_ANALOG_IO4_IO6	0x28
+#define DIO_ANALOG_IO6_IO1	0x0A
+#define DIO_ANALOG_IO6_IO4	0x08
+
 class CSPIDIODevice
 {
 public:
@@ -50,6 +70,7 @@ public:
 
 	unsigned GetVersion (void) const;	// returns 10 up
 
+	// digital output/input
 	boolean SetModes (u8 ucModeMask);
 
 	boolean SetAllOutputs (u8 ucMask);
@@ -57,6 +78,24 @@ public:
 
 	boolean GetAllInputs (u8 *pMask);
 	boolean GetInput (unsigned nFunction, unsigned *pLevel);
+
+	// analog input (on dio v1.2 and up only)
+	boolean SetAnalogChannels (unsigned nChannels);			// number of channels to use
+#define DIO_ANALOG_CHANNELS	7
+
+	boolean CoupleAnalogChannel (unsigned nChannel,			// 0..6
+				     unsigned nAnalogMode,		// DIO_ANALOG_*
+				     boolean  bReference_1_1V = FALSE);	// default: power supply voltage
+
+	// may add multiple samples and shift the result down, to increase resolution
+	// See: http://www.bitwizard.nl/wiki/index.php/Analog_inputs#Adding_and_averaging
+	boolean SetAnalogSamples (unsigned nSamples,			// should be a power of 2
+				  unsigned nBitShift);
+
+	boolean GetAnalogValueRaw (unsigned nChannel, unsigned *pValue);
+#define DIO_ANALOG_VALUE_MAX	1023
+
+	boolean GetAnalogValue (unsigned nChannel, unsigned *pValue);	// added and shifted value
 
 private:
 	static unsigned ConvertVersion (const char *pString);

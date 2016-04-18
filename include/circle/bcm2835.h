@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _bcm2835_h
-#define _bcm2835_h
+#ifndef _circle_bcm2835_h
+#define _circle_bcm2835_h
 
 #include <circle/sysconfig.h>
 
@@ -235,5 +235,15 @@
 #define ARM_BSC_SPI_SLAVE_RIS	(ARM_BSC_SPI_SLAVE_BASE + 0x1C)
 #define ARM_BSC_SPI_SLAVE_MIS	(ARM_BSC_SPI_SLAVE_BASE + 0x20)
 #define ARM_BSC_SPI_SLAVE_ICR	(ARM_BSC_SPI_SLAVE_BASE + 0x24)
+
+//
+// Hardware Random Number Generator
+//
+#define ARM_HW_RNG_BASE		(ARM_IO_BASE + 0x104000)
+
+#define ARM_HW_RNG_CTRL		(ARM_HW_RNG_BASE + 0x00)
+	#define ARM_HW_RNG_CTRL_EN	0x01
+#define ARM_HW_RNG_STATUS	(ARM_HW_RNG_BASE + 0x04)
+#define ARM_HW_RNG_DATA		(ARM_HW_RNG_BASE + 0x08)
 
 #endif

@@ -26,3 +26,4 @@ Providing CString::ftoa()
 
 Rogier Wolff
 Helping to get spi_dio running and to improve the SPI master driver
+Hardware support for testing MCP7941x and spi_dio drivers

@@ -29,6 +29,7 @@
 #define READ_CLOCK	20000
 
 #define CS_HOLD_USEC	1
+#define SET_MODE_USEC	100
 
 CSPIDIODevice::CSPIDIODevice (CSPIMaster *pSPIMaster, unsigned nChipSelect, u8 ucAddress)
 :	m_pSPIMaster (pSPIMaster),
@@ -85,6 +86,8 @@ boolean CSPIDIODevice::SetModes (u8 ucModeMask)
 	{
 		return FALSE;
 	}
+
+	CTimer::Get ()->usDelay (SET_MODE_USEC);
 
 	return TRUE;
 }
@@ -148,6 +151,136 @@ boolean CSPIDIODevice::GetInput (unsigned nFunction, unsigned *pLevel)
 
 	assert (pLevel != 0);
 	*pLevel = Buffer[2];
+
+	return TRUE;
+}
+
+boolean CSPIDIODevice::SetAnalogChannels (unsigned nChannels)
+{
+	if (m_nVersion < 12)
+	{
+		return FALSE;
+	}
+
+	assert (1 <= nChannels && nChannels <= DIO_ANALOG_CHANNELS);
+	u8 Buffer[] = {m_ucAddress, 0x80, (u8) nChannels};
+
+	assert (m_pSPIMaster != 0);
+	m_pSPIMaster->SetClock (WRITE_CLOCK);
+	m_pSPIMaster->SetCSHoldTime (CS_HOLD_USEC);
+
+	if (m_pSPIMaster->Write (m_nChipSelect, Buffer, sizeof Buffer) != sizeof Buffer)
+	{
+		return FALSE;
+	}
+
+	CTimer::Get ()->usDelay (SET_MODE_USEC);
+
+	return TRUE;
+}
+
+boolean CSPIDIODevice::CoupleAnalogChannel (unsigned nChannel, unsigned nAnalogMode, boolean bReference_1_1V)
+{
+	if (m_nVersion < 12)
+	{
+		return FALSE;
+	}
+
+	assert (nAnalogMode < 0x40);
+	if (bReference_1_1V)
+	{
+		nAnalogMode |= 0x80;
+	}
+
+	assert (nChannel < DIO_ANALOG_CHANNELS);
+	u8 Buffer[] = {m_ucAddress, (u8) (0x70 + nChannel), (u8) nAnalogMode};
+
+	assert (m_pSPIMaster != 0);
+	m_pSPIMaster->SetClock (WRITE_CLOCK);
+	m_pSPIMaster->SetCSHoldTime (CS_HOLD_USEC);
+
+	if (m_pSPIMaster->Write (m_nChipSelect, Buffer, sizeof Buffer) != sizeof Buffer)
+	{
+		return FALSE;
+	}
+
+	CTimer::Get ()->usDelay (SET_MODE_USEC);
+
+	return TRUE;
+}
+
+boolean CSPIDIODevice::SetAnalogSamples (unsigned nSamples, unsigned nBitShift)
+{
+	if (m_nVersion < 12)
+	{
+		return FALSE;
+	}
+
+	assert (1 <= nSamples && nSamples <= 0xFFFF);
+	u8 Buffer[] = {m_ucAddress, 0x81, (u8) (nSamples & 0xFF), (u8) ((nSamples >> 8) & 0xFF)};
+
+	assert (m_pSPIMaster != 0);
+	m_pSPIMaster->SetClock (WRITE_CLOCK);
+	m_pSPIMaster->SetCSHoldTime (CS_HOLD_USEC);
+
+	if (m_pSPIMaster->Write (m_nChipSelect, Buffer, sizeof Buffer) != sizeof Buffer)
+	{
+		return FALSE;
+	}
+
+	CTimer::Get ()->usDelay (SET_MODE_USEC);
+
+	assert (nBitShift < 16);
+	u8 Buffer2[] = {m_ucAddress, 0x82, (u8) nBitShift};
+
+	m_pSPIMaster->SetCSHoldTime (CS_HOLD_USEC);
+
+	if (m_pSPIMaster->Write (m_nChipSelect, Buffer2, sizeof Buffer2) != sizeof Buffer2)
+	{
+		return FALSE;
+	}
+
+	CTimer::Get ()->usDelay (SET_MODE_USEC);
+
+	return TRUE;
+}
+
+boolean CSPIDIODevice::GetAnalogValueRaw (unsigned nChannel, unsigned *pValue)
+{
+	assert (nChannel < DIO_ANALOG_CHANNELS);
+	u8 Buffer[4] = {(u8) (m_ucAddress+1), (u8) (0x60 + nChannel)};
+
+	assert (m_pSPIMaster != 0);
+	m_pSPIMaster->SetClock (READ_CLOCK);
+	m_pSPIMaster->SetCSHoldTime (CS_HOLD_USEC);
+
+	if (m_pSPIMaster->WriteRead (m_nChipSelect, Buffer, Buffer, sizeof Buffer) != sizeof Buffer)
+	{
+		return FALSE;
+	}
+
+	assert (pValue != 0);
+	*pValue = (unsigned) Buffer[3] << 8 | Buffer[2];
+
+	return TRUE;
+}
+
+boolean CSPIDIODevice::GetAnalogValue (unsigned nChannel, unsigned *pValue)
+{
+	assert (nChannel < DIO_ANALOG_CHANNELS);
+	u8 Buffer[4] = {(u8) (m_ucAddress+1), (u8) (0x68 + nChannel)};
+
+	assert (m_pSPIMaster != 0);
+	m_pSPIMaster->SetClock (READ_CLOCK);
+	m_pSPIMaster->SetCSHoldTime (CS_HOLD_USEC);
+
+	if (m_pSPIMaster->WriteRead (m_nChipSelect, Buffer, Buffer, sizeof Buffer) != sizeof Buffer)
+	{
+		return FALSE;
+	}
+
+	assert (pValue != 0);
+	*pValue = (unsigned) Buffer[3] << 8 | Buffer[2];
 
 	return TRUE;
 }

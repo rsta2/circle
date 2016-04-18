@@ -23,3 +23,4 @@ SAMPLES
 21-webserver		Simple HTTP webserver which controls the Act LED
 22-btsimple		Displaying the visible Bluetooth devices (USB Bluetooth dongle needed)
 23-spisimple		Transfers some data bytes to/from a SPI slave device. Dumps the received bytes.
+24-hwrandom		Demonstrating the hardware random number generator.

@@ -117,7 +117,7 @@ TShutdownMode CKernel::Run (void)
 			m_Timer.MsDelay (100);
 		}
 	}
-#else
+#elif 1
 	// Displaying dio inputs
 	m_DIO.SetModes (  DIO_MASK (DIO_FUNC_IO0, DIO_INPUT)
 			| DIO_MASK (DIO_FUNC_IO1, DIO_INPUT)
@@ -144,6 +144,36 @@ TShutdownMode CKernel::Run (void)
 		m_Screen.Write ((const char *) Msg, Msg.GetLength ());
 
 		m_Timer.MsDelay (100);
+	}
+#else
+
+#define REF_VOLTAGE	5.0
+
+	// reading analog inputs
+	if (m_DIO.GetVersion () < 12)
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Analog input is not supported by dio version");
+	}
+
+	// See: http://www.bitwizard.nl/wiki/index.php/DIO_protocol#Using_the_analog_inputs
+	m_DIO.SetAnalogChannels (1);
+	m_DIO.CoupleAnalogChannel (0, DIO_ANALOG_IO0);
+	m_DIO.SetAnalogSamples (256, 4);
+
+	while (1)
+	{
+		unsigned nValueRaw, nValue;
+		m_DIO.GetAnalogValueRaw (0, &nValueRaw);
+		m_DIO.GetAnalogValue (0, &nValue);
+
+		CString Msg;
+		Msg.Format ("%4.2fV %5.3fV\n",
+			    (double) nValueRaw * REF_VOLTAGE / DIO_ANALOG_VALUE_MAX,
+			    (double) nValue    * REF_VOLTAGE / DIO_ANALOG_VALUE_MAX / 16.0);
+
+		m_Screen.Write ((const char *) Msg, Msg.GetLength ());
+
+		m_Timer.MsDelay (500);
 	}
 #endif
 

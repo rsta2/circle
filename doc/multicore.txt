@@ -22,6 +22,7 @@ Some classes can be used concurrently (after initialization) from more than one 
 * CI2CMaster (not from interrupt context)
 * CGPIOPin (multiple instances can be used concurrently, access to a specific CGPIOPin instance is allowed from one core only at a time)
 * CPWMOutput
+* CBcmRandomNumberGenerator
 
 If another class - not listed above - should be used concurrently this has to be synchronized by the user. Synchronization in single-core applications was normally done by EnterCritical(). From now on the class CSpinLock will be used. EnterCritical() is only used if the thread running locally on one core should not be interrupted by an IRQ (e.g. for timing purposes) or inter-processor interrupt (IPI).
 

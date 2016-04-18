@@ -3,7 +3,7 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 23 of Circle. To get access to Step 1-22 use the git tag "Step1" to "Step22".
+> This is Step 24 of Circle. To get access to Step 1-23 use the git tag "Step1" to "Step23".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -21,18 +21,16 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
 
-The 23th Step
+The 24th Step
 -------------
 
-In this step a driver for the SPI0 master is added to Circle and demonstrated in a simple test program in *sample/23-spisimple*. This program should be modified to be used with real SPI slaves. See the *README* file in this directory for details.
-
-There has been added a library and sample program for WS2801, WS2812 and WS2812B controlled LED stripes to the addon/ section too.
+In this step a driver for the hardware random number generator is added to Circle and demonstrated in a simple test program in *sample/24-hwrandom*. See the *README* file in this directory for details.
 
 Please note that the multi-core support is disabled by default now because it noticeable drops performance of single core applications. If you want to use multi-core applications (using class CMultiCoreSupport) you have to enable the define ARM_ALLOW_MULTI_CORE in *include/circle/sysconfig.h*.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-22 the following features were introduced:
+In Step 1-23 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -78,11 +76,12 @@ In Step 1-22 the following features were introduced:
 * Simple HTTP webserver class
 * GDB debug support on Raspberry Pi 2 using rpi_stub
 * Bluetooth device inquiry support
+* SPI0 master support
 
 Building
 --------
 
-Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core. For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. [This one](https://github.com/raspberrypi/tools/tree/master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64) should work for all of these.
+Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core. For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. [This one](https://github.com/raspberrypi/tools/tree/master/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf) should work for all of these.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2 or 3) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -125,6 +124,10 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CSPIMaster: Driver for SPI0 master device.
+* CBcmRandomNumberGenerator: Driver for the built-in hardware random number generator.
 
-The available Circle classes are listed in the file *doc/classes.txt*.
+The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
+
+`./makedoc`
+
+At the moment there are only a few classes described in detail for doxygen.
