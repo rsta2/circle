@@ -4,7 +4,7 @@
 // A simple HTTP webserver
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,19 +34,18 @@
 
 #define MAX_CLIENTS		10
 
-#define HTTP_PORT		80
-
 #define HTTPD_STACK_SIZE	TASK_STACK_SIZE
 
 static const char FromHTTPDaemon[] = "httpd";
 
 unsigned CHTTPDaemon::s_nInstanceCount = 0;
 
-CHTTPDaemon::CHTTPDaemon (CNetSubSystem *pNetSubSystem, CSocket *pSocket, unsigned nMaxContentSize)
+CHTTPDaemon::CHTTPDaemon (CNetSubSystem *pNetSubSystem, CSocket *pSocket, unsigned nMaxContentSize, u16 nPort)
 :	CTask (HTTPD_STACK_SIZE),
 	m_pNetSubSystem (pNetSubSystem),
 	m_pSocket (pSocket),
 	m_nMaxContentSize (nMaxContentSize),
+	m_nPort (nPort),
 	m_pContentBuffer (0)
 {
 	s_nInstanceCount++;
@@ -88,9 +87,9 @@ void CHTTPDaemon::Listener (void)
 	m_pSocket = new CSocket (m_pNetSubSystem, IPPROTO_TCP);
 	assert (m_pSocket != 0);
 
-	if (m_pSocket->Bind (HTTP_PORT) < 0)
+	if (m_pSocket->Bind (m_nPort) < 0)
 	{
-		CLogger::Get ()->Write (FromHTTPDaemon, LogError, "Cannot bind socket (port %u)", HTTP_PORT);
+		CLogger::Get ()->Write (FromHTTPDaemon, LogError, "Cannot bind socket (port %u)", m_nPort);
 
 		delete m_pSocket;
 		m_pSocket = 0;
@@ -218,7 +217,7 @@ void CHTTPDaemon::Worker (void)
 	default:			pMethod = "UNKNOWN";	break;
 	}
 
-	CLogger::Get ()->Write (FromHTTPDaemon, LogNotice, "%s \"%s %s\" %u %u",
+	CLogger::Get ()->Write (FromHTTPDaemon, LogDebug, "%s \"%s %s\" %u %u",
 				(const char *) IPString, pMethod, m_RequestURI, Status, nContentLength);
 
 	// send HTTP response header
