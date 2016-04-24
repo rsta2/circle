@@ -2,7 +2,7 @@
 // ipaddress.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,123 +18,133 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/ipaddress.h>
-#include <circle/util.h>
 #include <assert.h>
 
 CIPAddress::CIPAddress (void)
+#ifndef NDEBUG
 :	m_bValid (FALSE)
+#endif
 {
 }
 
 CIPAddress::CIPAddress (u32 nAddress)
 {
-	Set (nAddress);
+	m_nAddress = nAddress;
+#ifndef NDEBUG
+	m_bValid = TRUE;
+#endif
 }
 
 CIPAddress::CIPAddress (const u8 *pAddress)
 {
-	Set (pAddress);
+	assert (pAddress != 0);
+	m_nAddress = *(u32 *) pAddress;
+#ifndef NDEBUG
+	m_bValid = TRUE;
+#endif
 }
 
 CIPAddress::CIPAddress (const CIPAddress &rAddress)
 {
-	Set (rAddress.Get ());
+	assert (rAddress.m_bValid);
+	m_nAddress = rAddress.m_nAddress;
+#ifndef NDEBUG
+	m_bValid = TRUE;
+#endif
 }
 
 CIPAddress::~CIPAddress (void)
 {
+#ifndef NDEBUG
 	m_bValid = FALSE;
+#endif
 }
 
 boolean CIPAddress::operator== (const CIPAddress &rAddress2) const
 {
 	assert (m_bValid);
-	return memcmp (m_Address, rAddress2.Get (), IP_ADDRESS_SIZE) == 0 ? TRUE : FALSE;
+	assert (rAddress2.m_bValid);
+	return m_nAddress == rAddress2.m_nAddress;
 }
 
 boolean CIPAddress::operator!= (const CIPAddress &rAddress2) const
 {
-	return !operator== (rAddress2);
+	assert (m_bValid);
+	assert (rAddress2.m_bValid);
+	return m_nAddress != rAddress2.m_nAddress;
 }
 
 boolean CIPAddress::operator== (const u8 *pAddress2) const
 {
 	assert (m_bValid);
 	assert (pAddress2 != 0);
-	return memcmp (m_Address, pAddress2, IP_ADDRESS_SIZE) == 0 ? TRUE : FALSE;
+	return m_nAddress == *(u32 *) pAddress2;
 }
 
 boolean CIPAddress::operator!= (const u8 *pAddress2) const
 {
-	return !operator== (pAddress2);
+	assert (m_bValid);
+	assert (pAddress2 != 0);
+	return m_nAddress != *(u32 *) pAddress2;
 }
 
 void CIPAddress::Set (u32 nAddress)
 {
-	memcpy (m_Address, &nAddress, IP_ADDRESS_SIZE);
+	m_nAddress = nAddress;
+#ifndef NDEBUG
 	m_bValid = TRUE;
+#endif
 }
 
 void CIPAddress::Set (const u8 *pAddress)
 {
 	assert (pAddress != 0);
-	memcpy (m_Address, pAddress, IP_ADDRESS_SIZE);
+	m_nAddress = *(u32 *) pAddress;
+#ifndef NDEBUG
 	m_bValid = TRUE;
+#endif
 }
 
 void CIPAddress::Set (const CIPAddress &rAddress)
 {
-	rAddress.CopyTo (m_Address);
+	assert (rAddress.m_bValid);
+	m_nAddress = rAddress.m_nAddress;
+#ifndef NDEBUG
 	m_bValid = TRUE;
+#endif
 }
 
 void CIPAddress::SetBroadcast (void)
 {
-	memset (m_Address, 0xFF, IP_ADDRESS_SIZE);
+	m_nAddress = 0xFFFFFFFF;
+#ifndef NDEBUG
 	m_bValid = TRUE;
+#endif
 }
 
 const u8 *CIPAddress::Get (void) const
 {
 	assert (m_bValid);
-	return m_Address;
+	return (const u8 *) &m_nAddress;
 }
 
 void CIPAddress::CopyTo (u8 *pBuffer) const
 {
 	assert (m_bValid);
 	assert (pBuffer != 0);
-	memcpy (pBuffer, m_Address, IP_ADDRESS_SIZE);
+	*(u32 *) pBuffer = m_nAddress;
 }
 
 boolean CIPAddress::IsNull (void) const
 {
 	assert (m_bValid);
-
-	for (unsigned i = 0; i < IP_ADDRESS_SIZE; i++)
-	{
-		if (m_Address[i] != 0)
-		{
-			return FALSE;
-		}
-	}
-
-	return TRUE;
+	return m_nAddress == 0;
 }
 
 boolean CIPAddress::IsBroadcast (void) const
 {
 	assert (m_bValid);
-
-	for (unsigned i = 0; i < IP_ADDRESS_SIZE; i++)
-	{
-		if (m_Address[i] != 0xFF)
-		{
-			return FALSE;
-		}
-	}
-
-	return TRUE;
+	return m_nAddress == 0xFFFFFFFF;
 }
 
 unsigned CIPAddress::GetSize (void) const
@@ -147,8 +157,8 @@ void CIPAddress::Format (CString *pString) const
 	assert (m_bValid);
 	assert (pString != 0);
 	pString->Format ("%u.%u.%u.%u",
-			(unsigned) m_Address[0], (unsigned) m_Address[1],
-			(unsigned) m_Address[2], (unsigned) m_Address[3]);
+			m_nAddress & 0xFF, m_nAddress >> 8 & 0xFF,
+			m_nAddress >> 16 & 0xFF, m_nAddress >> 24 & 0xFF);
 }
 
 boolean CIPAddress::OnSameNetwork (const CIPAddress &rAddress2, const u8 *pNetMask) const
@@ -160,13 +170,12 @@ boolean CIPAddress::OnSameNetwork (const CIPAddress &rAddress2, const u8 *pNetMa
 
 	assert (pNetMask != 0);
 	u32 nNetMask = *(u32 *) pNetMask;
-	
-	u32 nAddress1;
-	CopyTo ((u8 *) &nAddress1);
+
+	assert (m_bValid);
+	u32 nAddress1 = m_nAddress;
 	nAddress1 &= nNetMask;
-	
-	u32 nAddress2;
-	rAddress2.CopyTo ((u8 *) &nAddress2);
+
+	u32 nAddress2 = rAddress2.m_nAddress;
 	nAddress2 &= nNetMask;
 
 	return nAddress1 == nAddress2 ? TRUE : FALSE;

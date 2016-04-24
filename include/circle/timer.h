@@ -2,7 +2,7 @@
 // timer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _timer_h
-#define _timer_h
+#ifndef _circle_timer_h
+#define _circle_timer_h
 
 #include <circle/interrupt.h>
 #include <circle/string.h>
@@ -32,7 +32,7 @@
 
 typedef void TKernelTimerHandler (unsigned hTimer, void *pParam, void *pContext);
 
-class CTimer
+class CTimer	/// Manages the system clock, supports kernel timers and a calibrated delay loop
 {
 public:
 	CTimer (CInterruptSystem *pInterruptSystem);
@@ -40,34 +40,74 @@ public:
 
 	boolean Initialize (void);
 
-	void SetTime (unsigned nTime);			// Seconds since 1970-01-01 00:00:00
+	/// \brief Sets the time zone (defaults to 0, GMT)
+	/// \param nMinutesDiff	Minutes diff to UTC
+	/// \return Operation successful?
+	boolean SetTimeZone (int nMinutesDiff);
+	/// \return Minutes diff to UTC
+	int GetTimeZone (void) const;
 
-	unsigned GetClockTicks (void) const;		// 1 MHz counter
+	/// \param nTime	Seconds since 1970-01-01 00:00:00
+	/// \param bLocal	Is time given according to our time zone? (UTC otherwise)
+	/// \return Operation successful? May fail for very small values if bLocal == FALSE
+	boolean SetTime (unsigned nTime, boolean bLocal = TRUE);
+
+	/// \return Current clock ticks of an 1 MHz counter, may wrap
+	unsigned GetClockTicks (void) const;
 #define CLOCKHZ	1000000
 
-	unsigned GetTicks (void) const;			// 1/HZ seconds since system boot
-	unsigned GetUptime (void) const;		// Seconds since system boot (continous)
-	unsigned GetTime (void) const;			// Seconds since system boot  or
-							// Seconds since 1970-01-01 00:00:00 (if time was set)
+	/// \return 1/HZ seconds since system boot, may wrap
+	unsigned GetTicks (void) const;
+	/// \return Seconds since system boot (continous)
+	unsigned GetUptime (void) const;
 
-	// "[MMM dD ]HH:MM:SS.ss", 0 if Initialize() was not yet called
-	CString *GetTimeString (void);			// CString object must be deleted by caller
+	/// \return Seconds since system boot\n
+	/// or since 1970-01-01 00:00:00 (if time was set)\n
+	/// Current time according to our time zone
+	unsigned GetTime (void) const;
+	/// \brief Same function as GetTime()
+	unsigned GetLocalTime (void) const	{ return GetTime (); }
 
-	// returns timer handle (0 on failure)
-	unsigned StartKernelTimer (unsigned nDelay,		// in HZ units
+	/// \return Current time (UTC) in seconds since 1970-01-01 00:00:00\n
+	/// may be 0 if time was not set and time zone diff is > 0
+	unsigned GetUniversalTime (void) const;
+
+	/// \return "[MMM dD ]HH:MM:SS.ss" or 0 if Initialize() was not called yet,\n
+	/// resulting CString object must be deleted by caller\n
+	/// Current time according to our time zone
+	CString *GetTimeString (void);
+
+	/// \brief Starts a kernel timer which elapses after a given delay,\n
+	/// a timer handler gets called then
+	/// \param nDelay	Timer elapses after nDelay/HZ seconds from now
+	/// \param pHandler	The handler to be called when the timer elapses
+	/// \param pParam	First user defined parameter to hand over to the handler
+	/// \param pContext	Second user defined parameter to hand over to the handler
+	/// \return Timer handle (cannot be 0)
+	unsigned StartKernelTimer (unsigned nDelay,
 				   TKernelTimerHandler *pHandler,
 				   void *pParam   = 0,
 				   void *pContext = 0);
+	/// \brief Cancel a running kernel timer,\n
+	/// The timer will not elapse any more.
+	/// \param hTimer	Timer handle
 	void CancelKernelTimer (unsigned hTimer);
 
-	// when a CTimer object is available better use these methods
+	/// When a CTimer object is available better use this instead of SimpleMsDelay()\n
+	/// \param nMilliSeconds Delay in milliseconds (<= 2000)
 	void MsDelay (unsigned nMilliSeconds);
+	/// When a CTimer object is available better use this instead of SimpleusDelay()\n
+	/// \param nMicroSeconds Delay in microseconds
 	void usDelay (unsigned nMicroSeconds);
 	
+	/// \return Pointer to the only CTimer object in the system
 	static CTimer *Get (void);
 
-	// can be used before CTimer is constructed
+	/// Can be used before CTimer is constructed
+	/// \param nMilliSeconds Delay in milliseconds
 	static void SimpleMsDelay (unsigned nMilliSeconds);
+	/// Can be used before CTimer is constructed
+	/// \param nMicroSeconds Delay in microseconds
 	static void SimpleusDelay (unsigned nMicroSeconds);
 
 private:
@@ -87,8 +127,10 @@ private:
 
 	volatile unsigned	 m_nTicks;
 	volatile unsigned	 m_nUptime;
-	volatile unsigned	 m_nTime;
+	volatile unsigned	 m_nTime;			// local time
 	CSpinLock		 m_TimeSpinLock;
+
+	int			 m_nMinutesDiff;		// diff to UTC
 
 	CPtrList		 m_KernelTimerList;
 	CSpinLock		 m_KernelTimerSpinLock;

@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_timer_h
-#define _circle_timer_h
+#ifndef _circle_time_h
+#define _circle_time_h
 
 #include <circle/string.h>
 #include <circle/types.h>

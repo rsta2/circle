@@ -2,7 +2,7 @@
 // ntpdaemon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ class CNTPDaemon : public CTask
 {
 public:
 	CNTPDaemon (const char	  *pNTPServer,		// Hostname
-		    int		   nTimeZone,		// minutes diff to UTC
 		    CNetSubSystem *pNetSubSystem);
 	~CNTPDaemon (void);
 
@@ -38,7 +37,6 @@ private:
 
 private:
 	const char	*m_pNTPServer;
-	int		 m_nTimeZone;
 	CNetSubSystem	*m_pNetSubSystem;
 };
 

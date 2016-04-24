@@ -2,7 +2,7 @@
 // ntpclient.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,14 +29,11 @@ public:
 	CNTPClient (CNetSubSystem *pNetSubSystem);
 	~CNTPClient (void);
 
-	void SetTimeZone (int nMinutesDiff);		// set minutes diff to UTC
-
-	unsigned GetTime (CIPAddress &rServerIP);	// returns Seconds since 1970-01-01 00:00:00, 0 on error
+	/// \return Seconds since 1970-01-01 00:00:00 UTC, 0 on error
+	unsigned GetTime (CIPAddress &rServerIP);
 
 private:
 	CNetSubSystem *m_pNetSubSystem;
-
-	int m_nMinutesDiff;
 };
 
 #endif

@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 	m_nTicks (0),
 	m_nUptime (0),
 	m_nTime (0),
+	m_nMinutesDiff (0),
 	m_nMsDelay (350000),
 	m_nusDelay (m_nMsDelay / 1000)
 {
@@ -97,13 +98,44 @@ boolean CTimer::Initialize (void)
 	return TRUE;
 }
 
-void CTimer::SetTime (unsigned nTime)
+boolean CTimer::SetTimeZone (int nMinutesDiff)
 {
+	if (-24*60 < nMinutesDiff && nMinutesDiff < 24*60)
+	{
+		m_nMinutesDiff = nMinutesDiff;
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+int CTimer::GetTimeZone (void) const
+{
+	return m_nMinutesDiff;
+}
+
+boolean CTimer::SetTime (unsigned nTime, boolean bLocal)
+{
+	if (!bLocal)
+	{
+		int nSecondsDiff = m_nMinutesDiff * 60;
+		if (    nSecondsDiff < 0
+		    && -nSecondsDiff > (int) nTime)
+		{
+			return FALSE;
+		}
+
+		nTime += nSecondsDiff;
+	}
+
 	m_TimeSpinLock.Acquire ();
 
 	m_nTime = nTime;
 
 	m_TimeSpinLock.Release ();
+
+	return TRUE;
 }
 
 unsigned CTimer::GetClockTicks (void) const
@@ -130,6 +162,19 @@ unsigned CTimer::GetUptime (void) const
 unsigned CTimer::GetTime (void) const
 {
 	return m_nTime;
+}
+
+unsigned CTimer::GetUniversalTime (void) const
+{
+	unsigned nResult = m_nTime;
+
+	int nSecondsDiff = m_nMinutesDiff * 60;
+	if (nSecondsDiff > (int) nResult)
+	{
+		return 0;
+	}
+
+	return nResult - nSecondsDiff;
 }
 
 CString *CTimer::GetTimeString (void)

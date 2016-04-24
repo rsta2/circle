@@ -2,7 +2,7 @@
 // ntpclient.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,8 +26,6 @@
 #include <circle/types.h>
 #include <assert.h>
 
-#define MAX_MINUTES_DIFF	(23*60+30)
-
 #define NTP_PACKET_SIZE		48
 
 #define SEVENTY_YEARS		2208988800U
@@ -35,8 +33,7 @@
 static const char FromNTPClient[] = "ntp";
 
 CNTPClient::CNTPClient (CNetSubSystem *pNetSubSystem)
-:	m_pNetSubSystem (pNetSubSystem),
-	m_nMinutesDiff (0)
+:	m_pNetSubSystem (pNetSubSystem)
 {
 	assert (m_pNetSubSystem != 0);
 }
@@ -44,13 +41,6 @@ CNTPClient::CNTPClient (CNetSubSystem *pNetSubSystem)
 CNTPClient::~CNTPClient (void)
 {
 	m_pNetSubSystem = 0;
-}
-
-void CNTPClient::SetTimeZone (int nMinutesDiff)
-{
-	assert (-MAX_MINUTES_DIFF <= nMinutesDiff && nMinutesDiff <= MAX_MINUTES_DIFF);
-
-	m_nMinutesDiff = nMinutesDiff;
 }
 
 unsigned CNTPClient::GetTime (CIPAddress &rServerIP)
@@ -103,18 +93,12 @@ unsigned CNTPClient::GetTime (CIPAddress &rServerIP)
 			     | (unsigned) RecvPacket[42] << 8
 			     | (unsigned) RecvPacket[43];
 
+	if (nSecondsSince1900 < SEVENTY_YEARS)
+	{
+		return 0;
+	}
+
 	unsigned nTime = nSecondsSince1900 - SEVENTY_YEARS;
 	
-	if (m_nMinutesDiff >= 0)
-	{
-		nTime += m_nMinutesDiff * 60;
-	}
-	else
-	{
-		unsigned nMinutesDiffAbs = (unsigned) -m_nMinutesDiff;
-
-		nTime -= nMinutesDiffAbs * 60;
-	}
-
 	return nTime;
 }

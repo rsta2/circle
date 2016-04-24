@@ -26,6 +26,7 @@
 
 // Time configuration
 static const char NTPServer[]    = "pool.ntp.org";
+static const int nTimeZone       = 0*60;		// minutes diff to UTC
 
 // Network configuration
 #define USE_DHCP
@@ -119,6 +120,8 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
+	m_Timer.SetTimeZone (nTimeZone);
+
 	CTime Time;
 
 #if 1
@@ -129,17 +132,20 @@ TShutdownMode CKernel::Run (void)
 		m_Logger.Write (FromKernel, LogPanic, "Cannot get time from RTC");
 	}
 
-	m_Timer.SetTime (Time.Get ());
+	if (!m_Timer.SetTime (Time.Get (), FALSE))
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Cannot set system time");
+	}
 #else
 	m_Logger.Write (FromKernel, LogNotice, "Setting RTC time from NTP server");
 
-	new CNTPDaemon (NTPServer, 0, &m_Net);
+	new CNTPDaemon (NTPServer, &m_Net);
 
 	do
 	{
 		m_Scheduler.Sleep (1);
 
-		Time.Set (m_Timer.GetTime ());
+		Time.Set (m_Timer.GetUniversalTime ());
 	}
 	while (Time.GetYear () < 2000);
 

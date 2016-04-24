@@ -2,7 +2,7 @@
 // ipaddress.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -55,9 +55,11 @@ public:
 	boolean OnSameNetwork (const CIPAddress &rAddress2, const u8 *pNetMask) const;
 
 private:
+#ifndef NDEBUG
 	boolean m_bValid;
+#endif
 
-	u8 m_Address[IP_ADDRESS_SIZE];
+	u32 m_nAddress;
 };
 
 #endif
