@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/ipaddress.h>
+#include <circle/util.h>
 #include <assert.h>
 
 CIPAddress::CIPAddress (void)
@@ -37,11 +38,7 @@ CIPAddress::CIPAddress (u32 nAddress)
 
 CIPAddress::CIPAddress (const u8 *pAddress)
 {
-	assert (pAddress != 0);
-	m_nAddress = *(u32 *) pAddress;
-#ifndef NDEBUG
-	m_bValid = TRUE;
-#endif
+	Set (pAddress);
 }
 
 CIPAddress::CIPAddress (const CIPAddress &rAddress)
@@ -78,14 +75,12 @@ boolean CIPAddress::operator== (const u8 *pAddress2) const
 {
 	assert (m_bValid);
 	assert (pAddress2 != 0);
-	return m_nAddress == *(u32 *) pAddress2;
+	return memcmp (&m_nAddress, pAddress2, IP_ADDRESS_SIZE) == 0 ? TRUE : FALSE;
 }
 
 boolean CIPAddress::operator!= (const u8 *pAddress2) const
 {
-	assert (m_bValid);
-	assert (pAddress2 != 0);
-	return m_nAddress != *(u32 *) pAddress2;
+	return !operator== (pAddress2);
 }
 
 void CIPAddress::Set (u32 nAddress)
@@ -99,7 +94,7 @@ void CIPAddress::Set (u32 nAddress)
 void CIPAddress::Set (const u8 *pAddress)
 {
 	assert (pAddress != 0);
-	m_nAddress = *(u32 *) pAddress;
+	memcpy (&m_nAddress, pAddress, IP_ADDRESS_SIZE);
 #ifndef NDEBUG
 	m_bValid = TRUE;
 #endif
@@ -132,7 +127,7 @@ void CIPAddress::CopyTo (u8 *pBuffer) const
 {
 	assert (m_bValid);
 	assert (pBuffer != 0);
-	*(u32 *) pBuffer = m_nAddress;
+	memcpy (pBuffer, &m_nAddress, IP_ADDRESS_SIZE);
 }
 
 boolean CIPAddress::IsNull (void) const
@@ -169,7 +164,8 @@ boolean CIPAddress::OnSameNetwork (const CIPAddress &rAddress2, const u8 *pNetMa
 	}
 
 	assert (pNetMask != 0);
-	u32 nNetMask = *(u32 *) pNetMask;
+	u32 nNetMask;
+	memcpy (&nNetMask, pNetMask, IP_ADDRESS_SIZE);
 
 	assert (m_bValid);
 	u32 nAddress1 = m_nAddress;
