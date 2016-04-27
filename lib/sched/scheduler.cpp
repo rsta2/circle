@@ -2,7 +2,7 @@
 // scheduler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -75,10 +75,16 @@ void CScheduler::Yield (void)
 
 void CScheduler::Sleep (unsigned nSeconds)
 {
-	while (nSeconds-- > 0)
+	// be sure the clock does not run over taken as signed int
+	const unsigned nSleepMax = 1800;	// normally 2147 but to be sure
+	while (nSeconds > nSleepMax)
 	{
-		usSleep (1000000);
+		usSleep (nSleepMax * 1000000);
+
+		nSeconds -= nSleepMax;
 	}
+
+	usSleep (nSeconds * 1000000);
 }
 
 void CScheduler::MsSleep (unsigned nMilliSeconds)
@@ -96,10 +102,13 @@ void CScheduler::usSleep (unsigned nMicroSeconds)
 		unsigned nTicks = nMicroSeconds * (CLOCKHZ / 1000000);
 
 		unsigned nStartTicks = CTimer::Get ()->GetClockTicks ();
-		while (CTimer::Get ()->GetClockTicks () - nStartTicks < nTicks)
-		{
-			Yield ();
-		}
+
+		assert (m_pCurrent != 0);
+		assert (m_pCurrent->GetState () == TaskStateReady);
+		m_pCurrent->SetWakeTicks (nStartTicks + nTicks);
+		m_pCurrent->SetState (TaskStateSleeping);
+
+		Yield ();
 	}
 }
 
@@ -183,6 +192,8 @@ unsigned CScheduler::GetNextTask (void)
 {
 	unsigned nTask = m_nCurrent < MAX_TASKS ? m_nCurrent : 0;
 
+	unsigned nTicks = CTimer::Get ()->GetClockTicks ();
+
 	for (unsigned i = 1; i <= m_nTasks; i++)
 	{
 		if (++nTask >= m_nTasks)
@@ -203,6 +214,14 @@ unsigned CScheduler::GetNextTask (void)
 
 		case TaskStateBlocked:
 			continue;
+
+		case TaskStateSleeping:
+			if ((int) (pTask->GetWakeTicks () - nTicks) > 0)
+			{
+				continue;
+			}
+			pTask->SetState (TaskStateReady);
+			return nTask;
 
 		case TaskStateTerminated:
 			RemoveTask (pTask);
