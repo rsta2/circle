@@ -61,7 +61,7 @@
 
 // system options
 #if RASPPI == 1			// valid on Raspberry Pi 1 only
-#define ARM_STRICT_ALIGNMENT
+//#define ARM_STRICT_ALIGNMENT
 #define GPU_L2_CACHE_ENABLED
 #endif
 

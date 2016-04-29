@@ -59,7 +59,7 @@
 //#define EMMC_POLL_STATUS_REG
 
 // Enable 1.8V support
-#define SD_1_8V_SUPPORT
+//#define SD_1_8V_SUPPORT
 
 // Enable 4-bit support
 #define SD_4BIT_DATA
@@ -73,7 +73,7 @@
 
 // Enable SDXC maximum performance mode
 // Requires 150 mA power so disabled on the RPi for now
-//#define SDXC_MAXIMUM_PERFORMANCE
+#define SDXC_MAXIMUM_PERFORMANCE
 
 // Enable card interrupts
 //#define SD_CARD_INTERRUPTS
