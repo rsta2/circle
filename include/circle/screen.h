@@ -70,6 +70,7 @@
 struct TScreenStatus
 {
 	TScreenColor   *pContent;
+	unsigned	nSize;
 	unsigned	nState;
 	unsigned	nScrollStart;
 	unsigned	nScrollEnd;
@@ -149,6 +150,7 @@ private:
 	CCharGenerator	 m_CharGen;
 	TScreenColor  	*m_pBuffer;
 	unsigned	 m_nSize;
+	unsigned	 m_nPitch;
 	unsigned	 m_nWidth;
 	unsigned	 m_nHeight;
 	unsigned	 m_nUsedHeight;

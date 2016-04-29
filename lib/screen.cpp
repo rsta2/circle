@@ -87,20 +87,23 @@ boolean CScreenDevice::Initialize (void)
 
 		m_pBuffer = (TScreenColor *) m_pFrameBuffer->GetBuffer ();
 		m_nSize   = m_pFrameBuffer->GetSize ();
+		m_nPitch  = m_pFrameBuffer->GetPitch ();
 		m_nWidth  = m_pFrameBuffer->GetWidth ();
 		m_nHeight = m_pFrameBuffer->GetHeight ();
 
-		// Makes things easier and is normally the case
-		if (m_pFrameBuffer->GetPitch () != m_nWidth * sizeof (TScreenColor))
+		// Ensure that each row is word-aligned so that we can safely use memcpyblk()
+		if (m_nPitch % sizeof (u32) != 0)
 		{
 			return FALSE;
 		}
+		m_nPitch /= sizeof (TScreenColor);
 	}
 	else
 	{
 		m_nWidth = m_nInitWidth;
 		m_nHeight = m_nInitHeight;
 		m_nSize = m_nWidth * m_nHeight * sizeof (TScreenColor);
+		m_nPitch = m_nWidth;
 
 		m_pBuffer = new TScreenColor[m_nWidth * m_nHeight];
 	}
@@ -142,6 +145,7 @@ TScreenStatus CScreenDevice::GetStatus (void)
 	TScreenStatus Status;
 
 	Status.pContent   = m_pBuffer;
+	Status.nSize	  = m_nSize;
 	Status.nState     = m_nState;
 	Status.nScrollStart = m_nScrollStart;
 	Status.nScrollEnd   = m_nScrollEnd;
@@ -159,6 +163,12 @@ TScreenStatus CScreenDevice::GetStatus (void)
 
 boolean CScreenDevice::SetStatus (TScreenStatus Status)
 {
+	if (   m_nSize  != Status.nSize
+	    || m_nPitch != m_nWidth)
+	{
+		return FALSE;
+	}
+
 	m_SpinLock.Acquire ();
 
 	if (   m_bUpdated
@@ -498,7 +508,7 @@ void CScreenDevice::ClearDisplayEnd (void)
 	ClearLineEnd ();
 	
 	unsigned nPosY = m_nCursorY + m_CharGen.GetCharHeight ();
-	unsigned nOffset = nPosY * m_nWidth;
+	unsigned nOffset = nPosY * m_nPitch;
 	
 	TScreenColor *pBuffer = m_pBuffer + nOffset;
 	unsigned nSize = m_nSize / sizeof (TScreenColor) - nOffset;
@@ -706,17 +716,22 @@ void CScreenDevice::Scroll (void)
 {
 	unsigned nLines = m_CharGen.GetCharHeight ();
 
-	u32 *pTo = (u32 *) (m_pBuffer + m_nScrollStart * m_nWidth);
-	u32 *pFrom = (u32 *) (m_pBuffer + (m_nScrollStart + nLines) * m_nWidth);
+	u32 *pTo = (u32 *) (m_pBuffer + m_nScrollStart * m_nPitch);
+	u32 *pFrom = (u32 *) (m_pBuffer + (m_nScrollStart + nLines) * m_nPitch);
 
-	unsigned nSize = m_nWidth * (m_nScrollEnd - m_nScrollStart - nLines) * sizeof (TScreenColor);
+	unsigned nSize = m_nPitch * (m_nScrollEnd - m_nScrollStart - nLines) * sizeof (TScreenColor);
 	if (nSize > 0)
 	{
-		memcpyblk (pTo, pFrom, nSize);
+		unsigned nSizeBlk = nSize & ~0xF;
+		memcpyblk (pTo, pFrom, nSizeBlk);
+
+		// Handle framebuffers with row lengths not aligned to 16 bytes
+		memcpy ((u8 *) pTo + nSizeBlk, (u8 *) pFrom + nSizeBlk, nSize & 0xF);
+
 		pTo += nSize / sizeof (u32);
 	}
 
-	nSize = m_nWidth * nLines * sizeof (TScreenColor) / sizeof (u32);
+	nSize = m_nPitch * nLines * sizeof (TScreenColor) / sizeof (u32);
 	while (nSize--)
 	{
 		*pTo++ = BLACK_COLOR;
@@ -774,7 +789,7 @@ void CScreenDevice::SetPixel (unsigned nPosX, unsigned nPosY, TScreenColor Color
 	if (   nPosX < m_nWidth
 	    && nPosY < m_nHeight)
 	{
-		m_pBuffer[m_nWidth * nPosY + nPosX] = Color;
+		m_pBuffer[m_nPitch * nPosY + nPosX] = Color;
 	}
 }
 
@@ -783,7 +798,7 @@ TScreenColor CScreenDevice::GetPixel (unsigned nPosX, unsigned nPosY)
 	if (   nPosX < m_nWidth
 	    && nPosY < m_nHeight)
 	{
-		return m_pBuffer[m_nWidth * nPosY + nPosX];
+		return m_pBuffer[m_nPitch * nPosY + nPosX];
 	}
 	
 	return BLACK_COLOR;
