@@ -83,6 +83,27 @@ boolean CIPAddress::operator!= (const u8 *pAddress2) const
 	return !operator== (pAddress2);
 }
 
+boolean CIPAddress::operator== (u32 nAddress2) const
+{
+	assert (m_bValid);
+	return m_nAddress == nAddress2;
+}
+
+boolean CIPAddress::operator!= (u32 nAddress2) const
+{
+	assert (m_bValid);
+	return m_nAddress != nAddress2;
+}
+
+CIPAddress &CIPAddress::operator= (u32 nAddress)
+{
+	m_nAddress = nAddress;
+#ifndef NDEBUG
+	m_bValid = TRUE;
+#endif
+	return *this;
+}
+
 void CIPAddress::Set (u32 nAddress)
 {
 	m_nAddress = nAddress;
@@ -115,6 +136,12 @@ void CIPAddress::SetBroadcast (void)
 #ifndef NDEBUG
 	m_bValid = TRUE;
 #endif
+}
+
+CIPAddress::operator u32 (void) const
+{
+	assert (m_bValid);
+	return m_nAddress;
 }
 
 const u8 *CIPAddress::Get (void) const

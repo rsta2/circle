@@ -38,11 +38,16 @@ public:
 	boolean operator!= (const CIPAddress &rAddress2) const;
 	boolean operator== (const u8 *pAddress2) const;
 	boolean operator!= (const u8 *pAddress2) const;
-	
+	boolean operator== (u32 nAddress2) const;
+	boolean operator!= (u32 nAddress2) const;
+
+	CIPAddress &operator= (u32 nAddress);
 	void Set (u32 nAddress);
 	void Set (const u8 *pAddress);
 	void Set (const CIPAddress &rAddress);
 	void SetBroadcast (void);
+
+	operator u32 (void) const;
 	const u8 *Get (void) const;
 	void CopyTo (u8 *pBuffer) const;
 
