@@ -32,7 +32,8 @@ Base library
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
 * CSerialDevice: Writing characters to UART
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
-* CSPIMaster: Driver for SPI0 master device.
+* CSPIMaster: Driver for SPI0 master device. Synchronous polling operation.
+* CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.
 * CString: Simple string manipulation class, Format() method works like printf() (but has less formating options)
 * CTime: Holds, makes and breaks the time.
 * CTimer: Manages the system clock, supports kernel timers and a calibrated delay loop.

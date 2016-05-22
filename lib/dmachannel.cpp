@@ -2,7 +2,7 @@
 // dmachannel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,8 +31,10 @@
 	#define CS_RESET			(1 << 31)
 	#define CS_ABORT			(1 << 30)
 	#define CS_WAIT_FOR_OUTSTANDING_WRITES	(1 << 28)
+	#define CS_PANIC_PRIORITY_SHIFT		20
+		#define DEFAULT_PANIC_PRIORITY		15
 	#define CS_PRIORITY_SHIFT		16
-		#define DEFAULT_PRIORITY		0
+		#define DEFAULT_PRIORITY		1
 	#define CS_ERROR			(1 << 8)
 	#define CS_INT				(1 << 2)
 	#define CS_END				(1 << 1)
@@ -122,8 +124,6 @@ CDMAChannel::~CDMAChannel (void)
 	m_pControlBlockBuffer = 0;
 }
 
-#if RASPPI == 1		// tested on Raspberry Pi 1 only and currently not used in Circle
-
 void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t nLength)
 {
 	assert (pDestination != 0);
@@ -143,6 +143,13 @@ void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t 
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
+
+	m_nDestinationAddress = (u32) pDestination;
+	m_nBufferLength = nLength;
+
+	CleanAndInvalidateDataCacheRange ((u32) pSource, nLength);
+	CleanAndInvalidateDataCacheRange ((u32) pDestination, nLength);
+	DataMemBarrier ();
 }
 
 void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ)
@@ -167,9 +174,13 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
-}
 
-#endif
+	m_nDestinationAddress = (u32) pDestination;
+	m_nBufferLength = nLength;
+
+	CleanAndInvalidateDataCacheRange ((u32) pDestination, nLength);
+	DataMemBarrier ();
+}
 
 void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
 {
@@ -194,10 +205,10 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
 
-#if RASPPI != 1
-	CleanDataCacheRange ((u32) pSource, nLength);
+	m_nDestinationAddress = 0;
+
+	CleanAndInvalidateDataCacheRange ((u32) pSource, nLength);
 	DataMemBarrier ();
-#endif
 }
 
 void CDMAChannel::SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam)
@@ -237,15 +248,11 @@ void CDMAChannel::Start (void)
 
 	write32 (ARM_DMACHAN_CONBLK_AD (m_nChannel), (u32) m_pControlBlock + GPU_MEM_BASE);
 
-#if RASPPI == 1
-	CleanDataCache ();
-	InvalidateDataCache ();
-#else
 	CleanAndInvalidateDataCacheRange ((u32) m_pControlBlock, sizeof *m_pControlBlock);
-#endif
 	DataMemBarrier ();
 
 	write32 (ARM_DMACHAN_CS (m_nChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
+					      | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
 					      | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
 					      | CS_ACTIVE);
 
@@ -267,6 +274,11 @@ boolean CDMAChannel::Wait (void)
 
 	m_bStatus = nCS & CS_ERROR ? FALSE : TRUE;
 
+	if (m_nDestinationAddress != 0)
+	{
+		CleanAndInvalidateDataCacheRange (m_nDestinationAddress, m_nBufferLength);
+	}
+
 	DataMemBarrier ();
 
 	return m_bStatus;
@@ -282,11 +294,12 @@ boolean CDMAChannel::GetStatus (void)
 
 void CDMAChannel::InterruptHandler (void)
 {
-#if RASPPI == 1
-	CleanDataCache ();
-	InvalidateDataCache ();
+	if (m_nDestinationAddress != 0)
+	{
+		CleanAndInvalidateDataCacheRange (m_nDestinationAddress, m_nBufferLength);
+	}
+
 	DataMemBarrier ();
-#endif
 
 	assert (m_nChannel < DMA_CHANNELS);
 
