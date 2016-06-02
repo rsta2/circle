@@ -9,7 +9,7 @@
 // See the file lib/usb/README for details!
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -221,8 +221,12 @@ boolean CSMSC951xDevice::Configure (void)
 
 	u8 MACAddressBuffer[MAC_ADDRESS_SIZE];
 	m_MACAddress.CopyTo (MACAddressBuffer);
-	u16 usMACAddressHigh = *(u16 *) &MACAddressBuffer[4];
-	u32 nMACAddressLow   = *(u32 *) &MACAddressBuffer[0];
+	u16 usMACAddressHigh =   (u16) MACAddressBuffer[4]
+			       | (u16) MACAddressBuffer[5] << 8;
+	u32 nMACAddressLow   =   (u32) MACAddressBuffer[0]
+			       | (u32) MACAddressBuffer[1] << 8
+			       | (u32) MACAddressBuffer[2] << 16
+			       | (u32) MACAddressBuffer[3] << 24;
 	if (   !WriteReg (ADDRH, usMACAddressHigh)
 	    || !WriteReg (ADDRL, nMACAddressLow))
 	{
