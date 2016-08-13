@@ -201,7 +201,7 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	if (   pOwnIPAddress->IsNull ()
 	    && !rReceiver.IsBroadcast ())
 	{
-		delete pPacketBuffer;
+		delete [] pPacketBuffer;
 		pPacketBuffer = 0;
 
 		return FALSE;
@@ -224,7 +224,7 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 		pNextHop = m_pNetConfig->GetDefaultGateway ();
 		if (pNextHop->IsNull ())
 		{
-			delete pPacketBuffer;
+			delete [] pPacketBuffer;
 			pPacketBuffer = 0;
 
 			return FALSE;
@@ -235,7 +235,7 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	assert (pNextHop != 0);
 	boolean bOK = m_pLinkLayer->Send (*pNextHop, pPacketBuffer, nPacketLength);
 	
-	delete pPacketBuffer;
+	delete [] pPacketBuffer;
 	pPacketBuffer = 0;
 
 	return bOK;

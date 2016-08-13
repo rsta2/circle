@@ -129,7 +129,7 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 	assert (m_pNetworkLayer != 0);
 	boolean bOK = m_pNetworkLayer->Send (m_ForeignIP, pPacketBuffer, nPacketLength, IPPROTO_UDP);
 	
-	delete pPacketBuffer;
+	delete [] pPacketBuffer;
 	pPacketBuffer = 0;
 
 	return bOK ? nLength : -1;
@@ -201,7 +201,7 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 	assert (m_pNetworkLayer != 0);
 	boolean bOK = m_pNetworkLayer->Send (rForeignIP, pPacketBuffer, nPacketLength, IPPROTO_UDP);
 	
-	delete pPacketBuffer;
+	delete [] pPacketBuffer;
 	pPacketBuffer = 0;
 
 	return bOK ? nLength : -1;
