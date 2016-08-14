@@ -90,7 +90,7 @@ CBcmFrameBuffer::~CBcmFrameBuffer (void)
 
 void CBcmFrameBuffer::SetPalette (u8 nIndex, u16 nColor)
 {
-	if (m_pInfo->Depth <= 8 && nIndex < 256)
+	if (m_pInfo->Depth <= 8)
 	{
 		m_pInfo->Palette[nIndex] = nColor;
 	}
