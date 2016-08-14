@@ -29,12 +29,12 @@ void *operator new[] (unsigned nSize)
 	return malloc (nSize);
 }
 
-void operator delete (void *pBlock)
+void operator delete (void *pBlock) noexcept
 {
 	free (pBlock);
 }
 
-void operator delete[] (void *pBlock)
+void operator delete[] (void *pBlock) noexcept
 {
 	free (pBlock);
 }

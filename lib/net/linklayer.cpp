@@ -142,7 +142,7 @@ boolean CLinkLayer::Send (const CIPAddress &rReceiver, const void *pIPPacket, un
 
 	m_pNetDevLayer->Send (pFrameBuffer, nFrameLength);
 
-	delete pFrameBuffer;
+	delete [] pFrameBuffer;
 	pFrameBuffer = 0;
 	
 	return TRUE;
