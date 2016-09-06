@@ -47,7 +47,7 @@ CLogger::~CLogger ()
 {
 	s_pThis = 0;
 
-	delete m_pBuffer;
+	delete [] m_pBuffer;
 	m_pBuffer = 0;
 
 	m_pTarget = 0;
