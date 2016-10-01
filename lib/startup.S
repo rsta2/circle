@@ -55,6 +55,9 @@
 _start:
 #ifndef USE_RPI_STUB_AT
 	safe_svcmode_maskall r0
+
+	mov	r0, #0
+	mcr	p15, 0, r0, c12, c0, 0		/* reset VBAR (if changed by u-boot) */
 #endif
 	cps	#0x12				/* set irq mode */
 	mov	sp, #MEM_IRQ_STACK
