@@ -2,7 +2,7 @@
 // gpiopin.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _gpiopin_h
-#define _gpiopin_h
+#ifndef _circle_gpiopin_h
+#define _circle_gpiopin_h
 
 #include <circle/spinlock.h>
 #include <circle/types.h>
@@ -78,6 +78,10 @@ public:
 	void EnableInterrupt (TGPIOInterrupt Interrupt);
 	void DisableInterrupt (void);
 
+	// for a 2nd interrupt source use this
+	void EnableInterrupt2 (TGPIOInterrupt Interrupt);
+	void DisableInterrupt2 (void);
+
 private:
 	void SetPullUpMode (unsigned nMode);
 
@@ -96,6 +100,7 @@ private:
 	TGPIOInterruptHandler	*m_pHandler;
 	void			*m_pParam;
 	TGPIOInterrupt		 m_Interrupt;
+	TGPIOInterrupt		 m_Interrupt2;
 
 	static CSpinLock s_SpinLock;
 };

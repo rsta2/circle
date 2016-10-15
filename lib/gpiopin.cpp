@@ -2,7 +2,7 @@
 // gpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,7 +32,8 @@ CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
 	m_Mode (GPIOModeUnknown),
 	m_pManager (pManager),
 	m_pHandler (0),
-	m_Interrupt (GPIOInterruptUnknown)
+	m_Interrupt (GPIOInterruptUnknown),
+	m_Interrupt2 (GPIOInterruptUnknown)
 {
 	assert (m_nPin < GPIO_PINS);
 	
@@ -165,6 +166,7 @@ void CGPIOPin::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam)
 		|| m_Mode == GPIOModeInputPullDown);
 
 	assert (m_Interrupt == GPIOInterruptUnknown);
+	assert (m_Interrupt2 == GPIOInterruptUnknown);
 
 	assert (pHandler != 0);
 	assert (m_pHandler == 0);
@@ -183,6 +185,7 @@ void CGPIOPin::DisconnectInterrupt (void)
 		|| m_Mode == GPIOModeInputPullDown);
 
 	assert (m_Interrupt == GPIOInterruptUnknown);
+	assert (m_Interrupt2 == GPIOInterruptUnknown);
 
 	assert (m_pHandler != 0);
 	m_pHandler = 0;
@@ -201,6 +204,7 @@ void CGPIOPin::EnableInterrupt (TGPIOInterrupt Interrupt)
 
 	assert (m_Interrupt == GPIOInterruptUnknown);
 	assert (Interrupt < GPIOInterruptUnknown);
+	assert (Interrupt != m_Interrupt2);
 	m_Interrupt = Interrupt;
 
 	assert (m_nPin < GPIO_PINS);
@@ -236,6 +240,54 @@ void CGPIOPin::DisableInterrupt (void)
 	s_SpinLock.Release ();
 
 	m_Interrupt = GPIOInterruptUnknown;
+}
+
+void CGPIOPin::EnableInterrupt2 (TGPIOInterrupt Interrupt)
+{
+	assert (   m_Mode == GPIOModeInput
+		|| m_Mode == GPIOModeInputPullUp
+		|| m_Mode == GPIOModeInputPullDown);
+	assert (m_pManager != 0);
+	assert (m_pHandler != 0);
+
+	assert (m_Interrupt2 == GPIOInterruptUnknown);
+	assert (Interrupt < GPIOInterruptUnknown);
+	assert (Interrupt != m_Interrupt);
+	m_Interrupt2 = Interrupt;
+
+	assert (m_nPin < GPIO_PINS);
+	unsigned nReg =   ARM_GPIO_GPREN0
+			+ (m_nPin / 32) * 4
+			+ (Interrupt - GPIOInterruptOnRisingEdge) * 12;
+
+	unsigned nMask = 1 << (m_nPin % 32);
+
+	s_SpinLock.Acquire ();
+	write32 (nReg, read32 (nReg) | nMask);
+	s_SpinLock.Release ();
+}
+
+
+void CGPIOPin::DisableInterrupt2 (void)
+{
+	assert (   m_Mode == GPIOModeInput
+		|| m_Mode == GPIOModeInputPullUp
+		|| m_Mode == GPIOModeInputPullDown);
+
+	assert (m_Interrupt2 < GPIOInterruptUnknown);
+
+	assert (m_nPin < GPIO_PINS);
+	unsigned nReg =   ARM_GPIO_GPREN0
+			+ (m_nPin / 32) * 4
+			+ (m_Interrupt2 - GPIOInterruptOnRisingEdge) * 12;
+
+	unsigned nMask = 1 << (m_nPin % 32);
+
+	s_SpinLock.Acquire ();
+	write32 (nReg, read32 (nReg) & ~nMask);
+	s_SpinLock.Release ();
+
+	m_Interrupt2 = GPIOInterruptUnknown;
 }
 
 void CGPIOPin::SetPullUpMode (unsigned nMode)
@@ -279,7 +331,8 @@ void CGPIOPin::InterruptHandler (void)
 	assert (   m_Mode == GPIOModeInput
 		|| m_Mode == GPIOModeInputPullUp
 		|| m_Mode == GPIOModeInputPullDown);
-	assert (m_Interrupt < GPIOInterruptUnknown);
+	assert (   m_Interrupt  < GPIOInterruptUnknown
+		|| m_Interrupt2 < GPIOInterruptUnknown);
 
 	assert (m_pHandler != 0);
 	(*m_pHandler) (m_pParam);
