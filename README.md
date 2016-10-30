@@ -88,6 +88,8 @@ First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2 
 `RASPPI = 1`  
 `PREFIX = arm-none-eabi-`
 
+> For the Raspberry Pi 2 model B v1.2 you have to select *RASPPI = 3* because it uses the BCM2837 SoC which was introduced with the Raspberry Pi 3 (not tested so far).
+
 Then go to the build root of Circle and do:
 
 `./makeall clean`  

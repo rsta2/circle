@@ -43,7 +43,9 @@ s_OldInfo[]
 	{0x10, MachineModelBPlus,          1, 512},
 	{0x11, MachineModelCM,             1, 512},
 	{0x12, MachineModelAPlus,          1, 256},
-	{0x13, MachineModelBPlus,          2, 512}
+	{0x13, MachineModelBPlus,          2, 512},
+	{0x14, MachineModelCM,             1, 512},
+	{0x15, MachineModelAPlus,          1, 256}
 };
 
 static struct

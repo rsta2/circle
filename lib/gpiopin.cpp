@@ -290,6 +290,7 @@ void CGPIOPin::DisableInterrupt2 (void)
 	m_Interrupt2 = GPIOInterruptUnknown;
 }
 
+// See: http://www.raspberrypi.org/forums/viewtopic.php?t=163352&p=1059178#p1059178
 void CGPIOPin::SetPullUpMode (unsigned nMode)
 {
 	assert (m_nPin < GPIO_PINS);
@@ -300,9 +301,9 @@ void CGPIOPin::SetPullUpMode (unsigned nMode)
 
 	assert (nMode <= 2);
 	write32 (ARM_GPIO_GPPUD, nMode);
-	CTimer::SimpleusDelay (150);		// TODO: 150 cycles (?)
+	CTimer::SimpleusDelay (5);		// 1us should be enough, but to be sure
 	write32 (nClkReg, 1 << nShift);
-	CTimer::SimpleusDelay (150);		// TODO: 150 cycles (?)
+	CTimer::SimpleusDelay (5);		// 1us should be enough, but to be sure
 	write32 (ARM_GPIO_GPPUD, 0);
 	write32 (nClkReg, 0);
 

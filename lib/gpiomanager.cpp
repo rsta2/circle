@@ -24,7 +24,7 @@
 #include <circle/synchronize.h>
 #include <assert.h>
 
-#define GPIO_IRQ	ARM_IRQ_GPIO3		// TODO: shared IRQ line for all GPIOs (?)
+#define GPIO_IRQ	ARM_IRQ_GPIO3		// shared IRQ line for all GPIOs
 
 CGPIOManager::CGPIOManager (CInterruptSystem *pInterrupt)
 :	m_pInterrupt (pInterrupt),

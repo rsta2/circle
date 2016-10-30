@@ -80,7 +80,7 @@
 #define INT_DCDM		(1 << 2)
 #define INT_CTSM		(1 << 1)
 
-#define UART0_CLOCK		3000000
+#define UART0_CLOCK		48000000
 
 CSerialDevice::CSerialDevice (void)
 :
