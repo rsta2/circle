@@ -1,3 +1,4 @@
-/bootcode.bin
-/fixup.dat
-/LICENCE.broadcom
+bootcode.bin
+fixup.dat
+LICENCE.broadcom
+start.elf
