@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _sysconfig_h
-#define _sysconfig_h
+#ifndef _circle_sysconfig_h
+#define _circle_sysconfig_h
 
 // memory addresses and sizes
 #define MEGABYTE		0x100000
@@ -77,8 +77,8 @@
 #define TASK_STACK_SIZE		0x4000
 
 // default keyboard map (enable only one)
-//#define DEFAULT_KEYMAP_UK
-#define DEFAULT_KEYMAP_DE
-//#define DEFAULT_KEYMAP_ES
+#define DEFAULT_KEYMAP		"DE"
+//#define DEFAULT_KEYMAP		"ES"
+//#define DEFAULT_KEYMAP		"UK"
 
 #endif

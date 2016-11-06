@@ -3,7 +3,7 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 24 of Circle. To get access to Step 1-23 use the git tag "Step1" to "Step23".
+> This is Step 25 of Circle. To get access to Step 1-24 use the git tag "Step1" to "Step24".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -21,16 +21,14 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
 
-The 24th Step
+The 25th Step
 -------------
 
-In this step a driver for the hardware random number generator is added to Circle and demonstrated in a simple test program in *sample/24-hwrandom*. See the *README* file in this directory for details.
-
-Please note that the multi-core support is disabled by default now because it noticeable drops performance of single core applications. If you want to use multi-core applications (using class CMultiCoreSupport) you have to enable the define ARM_ALLOW_MULTI_CORE in *include/circle/sysconfig.h*.
+In this step a driver for the SPI0 master with DMA support has been added to Circle and is demonstrated in a test program in *sample/25-spidma*. See the *README* file in this directory for details. Because of the DMA operation SPI transfers are running parallel to the program execution on the CPU. A callback routine is entered when the SPI transfer has been completed.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-23 the following features were introduced:
+In Step 1-24 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -77,6 +75,7 @@ In Step 1-23 the following features were introduced:
 * GDB debug support on Raspberry Pi 2 using rpi_stub
 * Bluetooth device inquiry support
 * SPI0 master support
+* Driver for hardware random number generator
 
 Building
 --------
@@ -126,7 +125,7 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CBcmRandomNumberGenerator: Driver for the built-in hardware random number generator.
+* CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

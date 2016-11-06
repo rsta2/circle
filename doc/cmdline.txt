@@ -12,6 +12,10 @@ loglevel=4			Control amount of generated log messages
 				(0: only panic, 1: also errors, 2: also warnings,
 				 3: also notices, 4: also debug output (default))
 
+keymap=UK			Select keyboard mapping ("DE", "ES" or "UK")
+				The default mapping can be selected at the end of the file
+				include/circle/sysconfig.h (normally "DE").
+
 usbpowerdelay=510		Delay in milliseconds between powering on an USB device on an attached
 				USB hub (both internal and external) and accessing the device
 				(default 510, which is sometimes not enough to detect a device)

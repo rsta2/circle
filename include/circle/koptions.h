@@ -2,7 +2,7 @@
 // koptions.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 
-#ifndef _koptions_h
-#define _koptions_h
+#ifndef _circle_koptions_h
+#define _circle_koptions_h
 
 #include <circle/bcmpropertytags.h>
 
@@ -33,6 +33,8 @@ public:
 
 	const char *GetLogDevice (void) const;
 	unsigned GetLogLevel (void) const;
+
+	const char *GetKeyMap (void) const;
 
 	unsigned GetUSBPowerDelay (void) const;
 
@@ -54,6 +56,8 @@ private:
 
 	char m_LogDevice[20];
 	unsigned m_nLogLevel;
+
+	char m_KeyMap[3];
 
 	unsigned m_nUSBPowerDelay;
 

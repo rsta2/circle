@@ -24,3 +24,4 @@ SAMPLES
 22-btsimple		Displaying the visible Bluetooth devices (USB Bluetooth dongle needed)
 23-spisimple		Transfers some data bytes to/from a SPI slave device. Dumps the received bytes.
 24-hwrandom		Demonstrating the hardware random number generator.
+25-spidma		Transfers some data bytes to/from a SPI slave device using DMA.

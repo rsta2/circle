@@ -2,7 +2,7 @@
 // koptions.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <circle/koptions.h>
 #include <circle/logger.h>
 #include <circle/util.h>
+#include <circle/sysconfig.h>
 
 #define INVALID_VALUE	((unsigned) -1)
 
@@ -32,6 +33,7 @@ CKernelOptions::CKernelOptions (void)
 	m_nUSBPowerDelay (0)
 {
 	strcpy (m_LogDevice, "tty1");
+	strcpy (m_KeyMap, DEFAULT_KEYMAP);
 
 	s_pThis = this;
 
@@ -86,6 +88,11 @@ CKernelOptions::CKernelOptions (void)
 				m_nLogLevel = nValue;
 			}
 		}
+		else if (strcmp (pOption, "keymap") == 0)
+		{
+			strncpy (m_KeyMap, pValue, sizeof m_KeyMap-1);
+			m_KeyMap[sizeof m_KeyMap-1] = '\0';
+		}
 		else if (strcmp (pOption, "usbpowerdelay") == 0)
 		{
 			unsigned nValue;
@@ -121,6 +128,11 @@ const char *CKernelOptions::GetLogDevice (void) const
 unsigned CKernelOptions::GetLogLevel (void) const
 {
 	return m_nLogLevel;
+}
+
+const char *CKernelOptions::GetKeyMap (void) const
+{
+	return m_KeyMap;
 }
 
 unsigned CKernelOptions::GetUSBPowerDelay (void) const
