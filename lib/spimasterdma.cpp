@@ -20,15 +20,9 @@
 #include <circle/spimasterdma.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
-#include <circle/bcmpropertytags.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <assert.h>
-
-#if RASPPI != 3
-	#define DEFAULT_CORE_CLOCK	250000000
-#else
-	#define DEFAULT_CORE_CLOCK	300000000
-#endif
 
 // CS Register
 #define CS_LEN_LONG	(1 << 25)
@@ -68,16 +62,10 @@ CSPIMasterDMA::CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
 	m_MISO ( 9, GPIOModeAlternateFunction0),
 	m_CE0  ( 8, GPIOModeAlternateFunction0),
 	m_CE1  ( 7, GPIOModeAlternateFunction0),
-	m_nCoreClockRate (DEFAULT_CORE_CLOCK),
+	m_nCoreClockRate (CMachineInfo::Get ()->GetClockRate (CLOCK_ID_CORE)),
 	m_pCompletionRoutine (0)
 {
-	CBcmPropertyTags Tags;
-	TPropertyTagClockRate TagClockRate;
-	TagClockRate.nClockId = CLOCK_ID_CORE;
-	if (Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
-	{
-		m_nCoreClockRate = TagClockRate.nRate;
-	}
+	assert (m_nCoreClockRate > 0);
 }
 
 CSPIMasterDMA::~CSPIMasterDMA (void)

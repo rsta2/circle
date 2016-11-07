@@ -25,6 +25,13 @@
 
 #define GPIO_PINS	54
 
+enum TGPIOVirtualPin
+{
+	GPIOPinAudioLeft	= GPIO_PINS,
+	GPIOPinAudioRight,
+	GPIOPinUnknown
+};
+
 enum TGPIOMode
 {
 	GPIOModeInput,
@@ -58,6 +65,7 @@ class CGPIOManager;
 class CGPIOPin
 {
 public:
+	// nPin can be physical number or TGPIOVirtualPin
 	// pManager is only required for using interrupts
 	CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager = 0);
 	virtual ~CGPIOPin (void);

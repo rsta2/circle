@@ -120,7 +120,6 @@ CPageTable::CPageTable (u32 nMemSize)
 				pEntry->TEX   = 0;
 				pEntry->SBit  = 1;
 			}
-#if RASPPI == 3
 			else if (nBaseAddress == MEM_COHERENT_REGION)
 			{
 				// strongly ordered
@@ -129,7 +128,6 @@ CPageTable::CPageTable (u32 nMemSize)
 				pEntry->TEX   = 0;
 				pEntry->SBit  = 1;
 			}
-#endif
 		}
 	}
 

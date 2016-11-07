@@ -51,11 +51,6 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	unsigned nBufferSize = sizeof (TPropertyBuffer) + nTagSize + sizeof (u32);
 	assert ((nBufferSize & 3) == 0);
 
-#if RASPPI != 3
-	// cannot use "new" here because this is used before mem_init() is called
-	u8 Buffer[nBufferSize + 15];
-	TPropertyBuffer *pBuffer = (TPropertyBuffer *) (((u32) Buffer + 15) & ~15);
-#else
 #ifndef USE_RPI_STUB_AT
 	TPropertyBuffer *pBuffer = (TPropertyBuffer *) MEM_COHERENT_REGION;
 #else
@@ -77,7 +72,6 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	assert (pBuffer != 0);
 	assert (nSize >= nBufferSize);
 #endif
-#endif
 	
 	pBuffer->nBufferSize = nBufferSize;
 	pBuffer->nCode = CODE_REQUEST;
@@ -91,23 +85,13 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	u32 *pEndTag = (u32 *) (pBuffer->Tags + nTagSize);
 	*pEndTag = PROPTAG_END;
 
-#if RASPPI != 3
-	CleanDataCache ();
-	DataSyncBarrier ();
-#endif
-
 	u32 nBufferAddress = GPU_MEM_BASE + (u32) pBuffer;
 	if (m_MailBox.WriteRead (nBufferAddress) != nBufferAddress)
 	{
 		return FALSE;
 	}
 	
-#if RASPPI != 3
-	InvalidateDataCache ();
-	DataSyncBarrier ();
-#else
 	DataMemBarrier ();
-#endif
 
 	if (pBuffer->nCode != CODE_RESPONSE_SUCCESS)
 	{

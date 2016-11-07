@@ -25,7 +25,7 @@
 #include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
-#include <circle/bcmpropertytags.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <assert.h>
 
@@ -80,11 +80,9 @@
 #define INT_DCDM		(1 << 2)
 #define INT_CTSM		(1 << 1)
 
-#define UART0_CLOCK		48000000
-
 CSerialDevice::CSerialDevice (void)
 :
-#if RASPPI == 3
+#if RASPPI >= 2
 	// to be sure there is no collision with the Bluetooth controller
 	m_GPIO32 (32, GPIOModeInput),
 	m_GPIO33 (33, GPIOModeInput),
@@ -104,19 +102,14 @@ CSerialDevice::~CSerialDevice (void)
 
 boolean CSerialDevice::Initialize (unsigned nBaudrate)
 {
-	CBcmPropertyTags Tags;
-	TPropertyTagClockRate TagClockRate;
-	TagClockRate.nClockId = CLOCK_ID_UART;
-	if (!Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate))
-	{
-		TagClockRate.nRate = UART0_CLOCK;
-	}
+	unsigned nClockRate = CMachineInfo::Get ()->GetClockRate (CLOCK_ID_UART);
+	assert (nClockRate > 0);
 
 	assert (300 <= nBaudrate && nBaudrate <= 3000000);
 	unsigned nBaud16 = nBaudrate * 16;
-	unsigned nIntDiv = TagClockRate.nRate / nBaud16;
+	unsigned nIntDiv = nClockRate / nBaud16;
 	assert (1 <= nIntDiv && nIntDiv <= 0xFFFF);
-	unsigned nFractDiv2 = (TagClockRate.nRate % nBaud16) * 8 / nBaudrate;
+	unsigned nFractDiv2 = (nClockRate % nBaud16) * 8 / nBaudrate;
 	unsigned nFractDiv = nFractDiv2 / 2 + nFractDiv2 % 2;
 	assert (nFractDiv <= 0x3F);
 

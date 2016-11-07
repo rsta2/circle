@@ -20,6 +20,8 @@
 #ifndef _circle_machineinfo_h
 #define _circle_machineinfo_h
 
+#include <circle/bcmpropertytags.h>
+#include <circle/gpiopin.h>
 #include <circle/types.h>
 
 enum TMachineModel
@@ -45,6 +47,12 @@ enum TSoCType
 	SoCTypeUnknown
 };
 
+enum TDeviceId
+{
+	DeviceI2CMaster,
+	DeviceUnkown
+};
+
 class CMachineInfo
 {
 public:
@@ -66,6 +74,13 @@ public:
 	// Raw info
 	u32 GetRevisionRaw (void) const;
 
+	// Clock and peripheral info
+	unsigned GetClockRate (u32 nClockId) const;	// see circle/bcmpropertytags.h for nClockId
+	unsigned GetGPIOPin (TGPIOVirtualPin Pin) const;// see circle/gpiopin.h for Pin
+	unsigned GetDevice (TDeviceId DeviceId) const;
+
+	static CMachineInfo *Get (void);
+
 private:
 	u32		m_nRevisionRaw;
 	TMachineModel	m_MachineModel;
@@ -73,6 +88,8 @@ private:
 	unsigned	m_nModelRevision;
 	TSoCType	m_SoCType;
 	unsigned	m_nRAMSize;
+
+	static CMachineInfo *s_pThis;
 };
 
 #endif

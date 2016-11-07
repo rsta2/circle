@@ -18,7 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/machineinfo.h>
-#include <circle/bcmpropertytags.h>
+#include <assert.h>
 
 static struct
 {
@@ -89,6 +89,8 @@ static const char *s_SoCName[] =		// must match TSoCType
 	"Unknown"
 };
 
+CMachineInfo *CMachineInfo::s_pThis = 0;
+
 CMachineInfo::CMachineInfo (void)
 :	m_nRevisionRaw (0),
 	m_MachineModel (MachineModelUnknown),
@@ -97,6 +99,19 @@ CMachineInfo::CMachineInfo (void)
 	m_SoCType (SoCTypeUnknown),
 	m_nRAMSize (0)
 {
+	if (s_pThis != 0)
+	{
+		m_nRevisionRaw	 = s_pThis->m_nRevisionRaw;
+		m_MachineModel	 = s_pThis->m_MachineModel;
+		m_nModelMajor	 = s_pThis->m_nModelMajor;
+		m_nModelRevision = s_pThis->m_nModelRevision;
+		m_SoCType	 = s_pThis->m_SoCType;
+		m_nRAMSize	 = s_pThis->m_nRAMSize;
+
+		return;
+	}
+	s_pThis = this;
+
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple BoardRevision;
 	if (!Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
@@ -168,6 +183,11 @@ CMachineInfo::CMachineInfo (void)
 CMachineInfo::~CMachineInfo (void)
 {
 	m_MachineModel = MachineModelUnknown;
+
+	if (s_pThis == this)
+	{
+		s_pThis = 0;
+	}
 }
 
 TMachineModel CMachineInfo::GetMachineModel (void) const
@@ -208,4 +228,120 @@ const char *CMachineInfo::GetSoCName (void) const
 u32 CMachineInfo::GetRevisionRaw (void) const
 {
 	return m_nRevisionRaw;
+}
+
+unsigned CMachineInfo::GetClockRate (u32 nClockId) const
+{
+	CBcmPropertyTags Tags;
+	TPropertyTagClockRate TagClockRate;
+	TagClockRate.nClockId = nClockId;
+	if (Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
+	{
+		return TagClockRate.nRate;
+	}
+
+	// if clock rate can not be requested, use a default rate
+	unsigned nResult = 0;
+
+	switch (nClockId)
+	{
+	case CLOCK_ID_EMMC:
+		nResult = 100000000;
+		break;
+
+	case CLOCK_ID_UART:
+		nResult = 48000000;
+		break;
+
+	case CLOCK_ID_CORE:
+		if (m_nModelMajor < 3)
+		{
+			nResult = 250000000;
+		}
+		else
+		{
+			nResult = 300000000;		// TODO
+		}
+		break;
+
+	default:
+		assert (0);
+		break;
+	}
+
+	return nResult;
+}
+
+unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
+{
+	unsigned nResult = 0;
+
+	switch (Pin)
+	{
+	case GPIOPinAudioLeft:
+		if (m_MachineModel <= MachineModelBRelease2MB512)
+		{
+			nResult = 40;
+		}
+		else
+		{
+			if (m_nModelMajor < 3)
+			{
+				nResult = 45;
+			}
+			else
+			{
+				nResult = 41;
+			}
+		}
+		break;
+
+	case GPIOPinAudioRight:
+		if (m_MachineModel <= MachineModelBRelease2MB512)
+		{
+			nResult = 45;
+		}
+		else
+		{
+			nResult = 40;
+		}
+		break;
+
+	default:
+		assert (0);
+		break;
+	}
+
+	return nResult;
+}
+
+unsigned CMachineInfo::GetDevice (TDeviceId DeviceId) const
+{
+	unsigned nResult = 0;
+
+	switch (DeviceId)
+	{
+	case DeviceI2CMaster:
+		if (m_MachineModel == MachineModelBRelease1MB256)
+		{
+			nResult = 0;
+		}
+		else
+		{
+			nResult = 1;
+		}
+		break;
+
+	default:
+		assert (0);
+		break;
+	}
+
+	return nResult;
+}
+
+CMachineInfo *CMachineInfo::Get (void)
+{
+	assert (s_pThis != 0);
+	return s_pThis;
 }

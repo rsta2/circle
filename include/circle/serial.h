@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _serial_h
-#define _serial_h
+#ifndef _circle_serial_h
+#define _circle_serial_h
 
 #include <circle/device.h>
 #include <circle/gpiopin.h>
@@ -41,7 +41,7 @@ private:
 	void Write (u8 nChar);
 
 private:
-#if RASPPI == 3
+#if RASPPI >= 2
 	CGPIOPin m_GPIO32;
 	CGPIOPin m_GPIO33;
 #endif

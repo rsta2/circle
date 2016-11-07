@@ -21,6 +21,7 @@
 #include <circle/memio.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2836.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
@@ -134,6 +135,8 @@ void sysinit (void)
 	{
 		*pBSS = 0;
 	}
+
+	CMachineInfo MachineInfo;
 
 	// call construtors of static objects
 	extern void (*__init_start) (void);

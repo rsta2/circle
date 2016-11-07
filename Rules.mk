@@ -35,10 +35,13 @@ AR	= $(PREFIX)ar
 
 ifeq ($(strip $(RASPPI)),1)
 ARCH	?= -march=armv6j -mtune=arm1176jzf-s -mfloat-abi=hard 
+TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
-ARCH	?= -march=armv7-a -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+ARCH	?= -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard
+TARGET	?= kernel7
 else
 ARCH	?= -march=armv8-a -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard
+TARGET	?= kernel7
 endif
 
 OPTIMIZE ?= -O
@@ -58,6 +61,12 @@ CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
 
 %.o: %.cpp
 	$(CPP) $(CPPFLAGS) -c -o $@ $<
+
+$(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.ld
+	$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(LIBS)
+	$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
+	$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
+	wc -c $(TARGET).img
 
 clean:
 	rm -f *.o *.a *.elf *.lst *.img *.cir *.map *~ $(EXTRACLEAN)

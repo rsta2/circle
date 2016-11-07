@@ -21,6 +21,7 @@
 #include <circle/gpiomanager.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/timer.h>
 #include <assert.h>
@@ -35,8 +36,12 @@ CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
 	m_Interrupt (GPIOInterruptUnknown),
 	m_Interrupt2 (GPIOInterruptUnknown)
 {
+	if (m_nPin >= GPIO_PINS)
+	{
+		m_nPin = CMachineInfo::Get ()->GetGPIOPin ((TGPIOVirtualPin) nPin);
+	}
 	assert (m_nPin < GPIO_PINS);
-	
+
 	SetMode (Mode, TRUE);
 }
 

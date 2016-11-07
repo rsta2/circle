@@ -84,12 +84,8 @@
 #define ARM_PWM_DMAC_ENAB		(1 << 31)
 
 CPWMSoundDevice::CPWMSoundDevice (CInterruptSystem *pInterrupt)
-:	m_Audio1 (40, GPIOModeAlternateFunction0),
-#if RASPPI != 3
-	m_Audio2 (45, GPIOModeAlternateFunction0),
-#else
-	m_Audio2 (41, GPIOModeAlternateFunction0),
-#endif
+:	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction0),
+	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction0),
 	m_Clock (GPIOClockPWM, GPIOClockSourcePLLD),
 	m_DMAChannel (DMA_CHANNEL_PWM, pInterrupt),
 	m_pSoundData (0),

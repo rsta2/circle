@@ -87,7 +87,15 @@ First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2 
 `RASPPI = 1`  
 `PREFIX = arm-none-eabi-`
 
-> For the Raspberry Pi 2 model B v1.2 you have to select *RASPPI = 3* because it uses the BCM2837 SoC which was introduced with the Raspberry Pi 3 (not tested so far).
+The following table gives support for selecting the right *RASPPI* value:
+
+| RASPPI | Target      | Models                   | Optimized for |
+| ------ | ----------- | ------------------------ | ------------- |
+|      1 | kernel.img  | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
+|      2 | kernel7.img | 2, 3                     | ARMv7-A       |
+|      3 | kernel7.img | 3                        | Cortex-A53    |
+
+For a binary distribution you should make one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*.
 
 Then go to the build root of Circle and do:
 
@@ -105,7 +113,7 @@ Installation
 
 Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the kernel.img (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
 
-Note that the file *kernel.img* can be renamed to *kernel7.img* for the Raspberry Pi 2/3 but this is optional.
+Note that the file *kernel.img* has been renamed to *kernel7.img* for the Raspberry Pi 2/3.
 
 Directories
 -----------
