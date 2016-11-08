@@ -85,7 +85,7 @@ boolean CTimer::Initialize (void)
 	assert (m_pInterruptSystem != 0);
 	m_pInterruptSystem->ConnectIRQ (ARM_IRQ_TIMER3, InterruptHandler, this);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_SYSTIMER_CLO, -(30 * CLOCKHZ));	// timer wraps soon, to check for problems
 
@@ -93,7 +93,7 @@ boolean CTimer::Initialize (void)
 	
 	TuneMsDelay ();
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return TRUE;
 }
@@ -140,11 +140,11 @@ boolean CTimer::SetTime (unsigned nTime, boolean bLocal)
 
 unsigned CTimer::GetClockTicks (void) const
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	unsigned nResult = read32 (ARM_SYSTIMER_CLO);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return nResult;
 }
@@ -362,7 +362,7 @@ void CTimer::PollKernelTimers (void)
 
 void CTimer::InterruptHandler (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (read32 (ARM_SYSTIMER_CS) & (1 << 3));
 	
@@ -376,7 +376,7 @@ void CTimer::InterruptHandler (void)
 
 	write32 (ARM_SYSTIMER_CS, 1 << 3);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 #ifndef NDEBUG
 	//debug_click ();
@@ -452,7 +452,7 @@ void CTimer::SimpleusDelay (unsigned nMicroSeconds)
 	{
 		unsigned nTicks = nMicroSeconds * (CLOCKHZ / 1000000);
 
-		DataMemBarrier ();
+		PeripheralEntry ();
 
 		unsigned nStartTicks = read32 (ARM_SYSTIMER_CLO);
 		while (read32 (ARM_SYSTIMER_CLO) - nStartTicks < nTicks)
@@ -460,7 +460,7 @@ void CTimer::SimpleusDelay (unsigned nMicroSeconds)
 			// do nothing
 		}
 
-		DataMemBarrier ();
+		PeripheralExit ();
 	}
 }
 

@@ -74,7 +74,7 @@ CSPIMasterDMA::~CSPIMasterDMA (void)
 
 boolean CSPIMasterDMA::Initialize (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
 	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
@@ -83,7 +83,7 @@ boolean CSPIMasterDMA::Initialize (void)
 	assert (m_CPHA <= 1);
 	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return TRUE;
 }
@@ -92,12 +92,12 @@ void CSPIMasterDMA::SetClock (unsigned nClockSpeed)
 {
 	m_nClockSpeed = nClockSpeed;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
 	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CSPIMasterDMA::SetMode (unsigned CPOL, unsigned CPHA)
@@ -105,13 +105,13 @@ void CSPIMasterDMA::SetMode (unsigned CPOL, unsigned CPHA)
 	m_CPOL = CPOL;
 	m_CPHA = CPHA;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (m_CPOL <= 1);
 	assert (m_CPHA <= 1);
 	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CSPIMasterDMA::SetCompletionRoutine (TSPICompletionRoutine *pRoutine, void *pParam)
@@ -134,7 +134,7 @@ void CSPIMasterDMA::StartWriteRead (unsigned	nChipSelect,
 	assert (pReadBuffer != 0);
 	m_RxDMA.SetupIORead (pReadBuffer, ARM_SPI0_FIFO, nCount, DREQSourceSPIRX);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (nCount <= 0xFFFF);
 	write32 (ARM_SPI0_DLEN, nCount);
@@ -146,7 +146,7 @@ void CSPIMasterDMA::StartWriteRead (unsigned	nChipSelect,
 			      | CS_DMAEN | CS_ADCS
 			      | CS_TA);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_RxDMA.SetCompletionRoutine (DMACompletionStub, this);
 
@@ -156,9 +156,9 @@ void CSPIMasterDMA::StartWriteRead (unsigned	nChipSelect,
 
 void CSPIMasterDMA::DMACompletionRoutine (boolean bStatus)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 	write32 (ARM_SPI0_CS, read32 (ARM_SPI0_CS) & ~CS_TA);
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	TSPICompletionRoutine *pCompletionRoutine = m_pCompletionRoutine;
 	m_pCompletionRoutine = 0;

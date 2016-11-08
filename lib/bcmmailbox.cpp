@@ -2,7 +2,7 @@
 // bcmmailbox.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ CBcmMailBox::~CBcmMailBox (void)
 
 unsigned CBcmMailBox::WriteRead (unsigned nData)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	m_SpinLock.Acquire ();
 
@@ -47,7 +47,7 @@ unsigned CBcmMailBox::WriteRead (unsigned nData)
 
 	m_SpinLock.Release ();
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return nResult;
 }

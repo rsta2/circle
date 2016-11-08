@@ -81,13 +81,13 @@ boolean CI2CMaster::Initialize (void)
 
 void CI2CMaster::SetClock (unsigned nClockSpeed)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (nClockSpeed > 0);
 	u16 nDivider = (u16) (m_nCoreClockRate / nClockSpeed);
 	write32 (m_nBaseAddress + ARM_BSC_DIV__OFFSET, nDivider);
 	
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
@@ -109,7 +109,7 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 
 	int nResult = 0;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	// setup transfer
 	write32 (m_nBaseAddress + ARM_BSC_A__OFFSET, ucAddress);
@@ -161,7 +161,7 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 
 	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_DONE);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_SpinLock.Release ();
 
@@ -186,7 +186,7 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 
 	int nResult = 0;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	// setup transfer
 	write32 (m_nBaseAddress + ARM_BSC_A__OFFSET, ucAddress);
@@ -240,7 +240,7 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 
 	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_DONE);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_SpinLock.Release ();
 

@@ -2,7 +2,7 @@
 // pwmoutput.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ void CPWMOutput::Start (void)
 	m_Clock.Start (m_nDivider);
 	CTimer::SimpleusDelay (2000);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_PWM_RNG1, m_nRange);
 	write32 (ARM_PWM_RNG2, m_nRange);
@@ -99,7 +99,7 @@ void CPWMOutput::Start (void)
 	write32 (ARM_PWM_CTL, nControl);
 	CTimer::SimpleusDelay (2000);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_bActive = TRUE;
 }
@@ -112,12 +112,12 @@ void CPWMOutput::Stop (void)
 	m_Clock.Stop ();
 	CTimer::SimpleusDelay (2000);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_PWM_CTL, 0);
 	CTimer::SimpleusDelay (2000);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CPWMOutput::Write (unsigned nChannel, unsigned nValue)
@@ -129,7 +129,7 @@ void CPWMOutput::Write (unsigned nChannel, unsigned nValue)
 
 	m_SpinLock.Acquire ();
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	if (read32 (ARM_PWM_STA) & ARM_PWM_STA_BERR)
 	{
@@ -138,7 +138,7 @@ void CPWMOutput::Write (unsigned nChannel, unsigned nValue)
 
 	write32 (nChannel == PWM_CHANNEL1 ? ARM_PWM_DAT1 : ARM_PWM_DAT2, nValue);
 	
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_SpinLock.Release ();
 }

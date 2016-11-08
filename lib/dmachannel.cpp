@@ -78,7 +78,7 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 	m_pCompletionRoutine (0),
 	m_pCompletionParam (0)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (m_nChannel < DMA_CHANNELS);
 	assert (!(read32 (ARM_DMACHAN_DEBUG (m_nChannel)) & DEBUG_LITE));
@@ -99,7 +99,7 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 		// do nothing
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 	
 
@@ -241,7 +241,7 @@ void CDMAChannel::Start (void)
 		m_pControlBlock->nTransferInformation |= TI_INTEN;
 	}
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (!(read32 (ARM_DMACHAN_CS (m_nChannel)) & CS_INT));
 	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nChannel)));
@@ -256,7 +256,7 @@ void CDMAChannel::Start (void)
 					      | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
 					      | CS_ACTIVE);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 boolean CDMAChannel::Wait (void)
@@ -264,7 +264,7 @@ boolean CDMAChannel::Wait (void)
 	assert (m_nChannel < DMA_CHANNELS);
 	assert (m_pCompletionRoutine == 0);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	u32 nCS;
 	while ((nCS = read32 (ARM_DMACHAN_CS (m_nChannel))) & CS_ACTIVE)
@@ -277,9 +277,10 @@ boolean CDMAChannel::Wait (void)
 	if (m_nDestinationAddress != 0)
 	{
 		CleanAndInvalidateDataCacheRange (m_nDestinationAddress, m_nBufferLength);
+		DataMemBarrier ();
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return m_bStatus;
 }
@@ -297,9 +298,10 @@ void CDMAChannel::InterruptHandler (void)
 	if (m_nDestinationAddress != 0)
 	{
 		CleanAndInvalidateDataCacheRange (m_nDestinationAddress, m_nBufferLength);
+		DataMemBarrier ();
 	}
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (m_nChannel < DMA_CHANNELS);
 
@@ -313,7 +315,7 @@ void CDMAChannel::InterruptHandler (void)
 	assert (!(nCS & CS_ACTIVE));
 	write32 (ARM_DMACHAN_CS (m_nChannel), CS_INT); 
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_bStatus = nCS & CS_ERROR ? FALSE : TRUE;
 

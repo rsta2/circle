@@ -94,10 +94,10 @@ CSerialDevice::CSerialDevice (void)
 
 CSerialDevice::~CSerialDevice (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 	write32 (ARM_UART0_IMSC, 0);
 	write32 (ARM_UART0_CR, 0);
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 boolean CSerialDevice::Initialize (unsigned nBaudrate)
@@ -113,7 +113,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 	unsigned nFractDiv = nFractDiv2 / 2 + nFractDiv2 % 2;
 	assert (nFractDiv <= 0x3F);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_UART0_IMSC, 0);
 	write32 (ARM_UART0_ICR,  0x7FF);
@@ -123,7 +123,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 	write32 (ARM_UART0_IFLS, 0);
 	write32 (ARM_UART0_CR,   CR_UART_EN_MASK | CR_TXE_MASK | CR_RXE_MASK);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	CDeviceNameService::Get ()->AddDevice ("ttyS1", this, FALSE);
 
@@ -134,7 +134,7 @@ int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 {
 	m_SpinLock.Acquire ();
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	u8 *pChar = (u8 *) pBuffer;
 	assert (pChar != 0);
@@ -153,7 +153,7 @@ int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 		nResult++;
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_SpinLock.Release ();
 

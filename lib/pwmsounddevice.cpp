@@ -94,18 +94,18 @@ CPWMSoundDevice::CPWMSoundDevice (CInterruptSystem *pInterrupt)
 	m_pDMABuffer = new u32[DMA_BUF_SIZE];
 	assert (m_pDMABuffer != 0);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 	Run ();
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 CPWMSoundDevice::~CPWMSoundDevice (void)
 {
 	assert (!m_bActive);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 	Stop ();
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	delete m_pDMABuffer;
 	m_pDMABuffer = 0;
@@ -137,7 +137,7 @@ void CPWMSoundDevice::Playback (void *pSoundData, unsigned nSamples, unsigned nC
 				   m_pDMABuffer, nTransferSize, DREQSourcePWM);
 	m_DMAChannel.SetCompletionRoutine (DMACompletionStub, this);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_PWM_DMAC,   ARM_PWM_DMAC_ENAB
 			       | (7 << ARM_PWM_DMAC_PANIC__SHIFT)
@@ -148,7 +148,7 @@ void CPWMSoundDevice::Playback (void *pSoundData, unsigned nSamples, unsigned nC
 	// switched this on when playback stops to avoid clicks, switch it off here
 	write32 (ARM_PWM_CTL, read32 (ARM_PWM_CTL) & ~(ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 boolean CPWMSoundDevice::PlaybackActive (void) const

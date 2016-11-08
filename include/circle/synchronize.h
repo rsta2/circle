@@ -2,7 +2,7 @@
 // synchronize.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _synchronize_h
-#define _synchronize_h
+#ifndef _circle_synchronize_h
+#define _circle_synchronize_h
 
 #include <circle/macros.h>
 #include <circle/types.h>
@@ -60,6 +60,12 @@ void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength) MAXOPT;
 #define InstructionSyncBarrier() FlushPrefetchBuffer()
 #define InstructionMemBarrier()	FlushPrefetchBuffer()
 
+// According to the "BCM2835 ARM Peripherals" document pg. 7 the BCM2835
+// requires to insert barriers before writing and after reading to/from
+// a peripheral for in-order processing of data transferred on the AXI bus.
+#define PeripheralEntry()	DataSyncBarrier()
+#define PeripheralExit()	DataMemBarrier()
+
 #else
 
 //
@@ -87,6 +93,9 @@ void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength) MAXOPT;
 
 #define InstructionSyncBarrier() asm volatile ("isb" ::: "memory")
 #define InstructionMemBarrier()	asm volatile ("isb" ::: "memory")
+
+#define PeripheralEntry()	((void) 0)	// ignored here
+#define PeripheralExit()	((void) 0)
 
 #endif
 

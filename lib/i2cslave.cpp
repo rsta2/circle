@@ -2,7 +2,7 @@
 // i2cslave.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@ CI2CSlave::~CI2CSlave (void)
 
 boolean CI2CSlave::Initialize (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_BSC_SPI_SLAVE_SLV, m_ucAddress);
 
@@ -87,7 +87,7 @@ boolean CI2CSlave::Initialize (void)
 
 	write32 (ARM_BSC_SPI_SLAVE_CR, CR_I2C | CR_EN);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return TRUE;
 }
@@ -102,7 +102,7 @@ int CI2CSlave::Read (void *pBuffer, unsigned nCount)
 	u8 *pData = (u8 *) pBuffer;
 	assert (pData != 0);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_BSC_SPI_SLAVE_RSR, 0);
 	write32 (ARM_BSC_SPI_SLAVE_CR, read32 (ARM_BSC_SPI_SLAVE_CR) | CR_RXE);
@@ -144,7 +144,7 @@ int CI2CSlave::Read (void *pBuffer, unsigned nCount)
 
 	write32 (ARM_BSC_SPI_SLAVE_CR, read32 (ARM_BSC_SPI_SLAVE_CR) & ~CR_RXE);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return nResult;
 }
@@ -159,7 +159,7 @@ int CI2CSlave::Write (const void *pBuffer, unsigned nCount)
 	const u8 *pData = (const u8 *) pBuffer;
 	assert (pData != 0);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_BSC_SPI_SLAVE_RSR, 0);
 	write32 (ARM_BSC_SPI_SLAVE_CR, read32 (ARM_BSC_SPI_SLAVE_CR) | CR_TXE);
@@ -216,7 +216,7 @@ int CI2CSlave::Write (const void *pBuffer, unsigned nCount)
 
 	write32 (ARM_BSC_SPI_SLAVE_CR, read32 (ARM_BSC_SPI_SLAVE_CR) & ~CR_TXE);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return nResult;
 }

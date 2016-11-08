@@ -84,7 +84,7 @@ void halt (void)
 
 void reboot (void)					// by PlutoniumBob@raspi-forum
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_PM_WDOG, ARM_PM_PASSWD | 1);	// set some timeout
 
