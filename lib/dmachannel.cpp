@@ -149,7 +149,6 @@ void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t 
 
 	CleanAndInvalidateDataCacheRange ((u32) pSource, nLength);
 	CleanAndInvalidateDataCacheRange ((u32) pDestination, nLength);
-	DataMemBarrier ();
 }
 
 void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ)
@@ -179,7 +178,6 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 	m_nBufferLength = nLength;
 
 	CleanAndInvalidateDataCacheRange ((u32) pDestination, nLength);
-	DataMemBarrier ();
 }
 
 void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
@@ -208,7 +206,6 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 	m_nDestinationAddress = 0;
 
 	CleanAndInvalidateDataCacheRange ((u32) pSource, nLength);
-	DataMemBarrier ();
 }
 
 void CDMAChannel::SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam)
@@ -249,7 +246,6 @@ void CDMAChannel::Start (void)
 	write32 (ARM_DMACHAN_CONBLK_AD (m_nChannel), (u32) m_pControlBlock + GPU_MEM_BASE);
 
 	CleanAndInvalidateDataCacheRange ((u32) m_pControlBlock, sizeof *m_pControlBlock);
-	DataMemBarrier ();
 
 	write32 (ARM_DMACHAN_CS (m_nChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
 					      | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
@@ -277,7 +273,6 @@ boolean CDMAChannel::Wait (void)
 	if (m_nDestinationAddress != 0)
 	{
 		CleanAndInvalidateDataCacheRange (m_nDestinationAddress, m_nBufferLength);
-		DataMemBarrier ();
 	}
 
 	PeripheralExit ();
@@ -298,7 +293,6 @@ void CDMAChannel::InterruptHandler (void)
 	if (m_nDestinationAddress != 0)
 	{
 		CleanAndInvalidateDataCacheRange (m_nDestinationAddress, m_nBufferLength);
-		DataMemBarrier ();
 	}
 
 	PeripheralEntry ();

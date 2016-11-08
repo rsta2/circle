@@ -46,10 +46,16 @@ void LeaveCritical (void);
 #define FlushPrefetchBuffer()	asm volatile ("mcr p15, 0, %0, c7, c5,  4" : : "r" (0) : "memory")
 #define FlushBranchTargetCache()	\
 				asm volatile ("mcr p15, 0, %0, c7, c5,  6" : : "r" (0) : "memory")
-#define InvalidateDataCache()	asm volatile ("mcr p15, 0, %0, c7, c6,  0" : : "r" (0) : "memory")
-#define CleanDataCache()	asm volatile ("mcr p15, 0, %0, c7, c10, 0" : : "r" (0) : "memory")
+
+// NOTE: Data cache operations include a DataSyncBarrier
+#define InvalidateDataCache()	asm volatile ("mcr p15, 0, %0, c7, c6,  0\n" \
+					      "mcr p15, 0, %0, c7, c10, 4\n" : : "r" (0) : "memory")
+#define CleanDataCache()	asm volatile ("mcr p15, 0, %0, c7, c10, 0\n" \
+					      "mcr p15, 0, %0, c7, c10, 4\n" : : "r" (0) : "memory")
 
 void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength) MAXOPT;
+
+void SyncDataAndInstructionCache (void);
 
 //
 // Barriers
@@ -77,13 +83,15 @@ void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength) MAXOPT;
 #define FlushBranchTargetCache()	\
 				asm volatile ("mcr p15, 0, %0, c7, c5,  6" : : "r" (0) : "memory")
 
-void InvalidateDataCache (void) MAXOPT;
-void InvalidateDataCacheL1Only (void) MAXOPT;
-void CleanDataCache (void) MAXOPT;
+// cache-v7.S
+//
+// NOTE: Data cache operations include a DataSyncBarrier
+void InvalidateDataCacheL1Only (void);
+void InvalidateDataCache (void);
+void CleanDataCache (void);
+void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength);
 
-void InvalidateDataCacheRange (u32 nAddress, u32 nLength) MAXOPT;
-void CleanDataCacheRange (u32 nAddress, u32 nLength) MAXOPT;
-void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength) MAXOPT;
+void SyncDataAndInstructionCache (void);
 
 //
 // Barriers

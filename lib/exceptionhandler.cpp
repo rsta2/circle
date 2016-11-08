@@ -57,14 +57,7 @@ CExceptionHandler::CExceptionHandler (void)
 
 	pTable->DataAbort = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->DataAbort, DataAbortStub));
 
-	CleanDataCache ();
-	DataSyncBarrier ();
-
-	InvalidateInstructionCache ();
-	FlushBranchTargetCache ();
-	DataSyncBarrier ();
-
-	InstructionSyncBarrier ();
+	SyncDataAndInstructionCache ();
 #endif
 }
 

@@ -130,6 +130,21 @@ void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength)
 		nAddress += DATA_CACHE_LINE_LENGTH;
 		nLength  -= DATA_CACHE_LINE_LENGTH;
 	}
+
+	DataSyncBarrier ();
 }
 
 #endif
+
+// ARMv7 ARM A3.5.4
+void SyncDataAndInstructionCache (void)
+{
+	CleanDataCache ();
+	//DataSyncBarrier ();		// included in CleanDataCache()
+
+	InvalidateInstructionCache ();
+	FlushBranchTargetCache ();
+	DataSyncBarrier ();
+
+	InstructionSyncBarrier ();
+}

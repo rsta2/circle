@@ -223,52 +223,6 @@ CleanAndInvalidateDataCacheRange:
 	pop	{r3}
 	bx	lr
 
-
-	.globl	InvalidateDataCacheRange
-InvalidateDataCacheRange:
-	push	{r3}
-	dcache_line_size r2, r3
-	add	r1, r0, r1
-	sub	r3, r2, #1
-	bic	r0, r0, r3
-#ifdef CONFIG_ARM_ERRATA_764369
-#ifdef ARM_ALLOW_MULTI_CORE
-	dsb
-#else
-	nop
-#endif
-#endif
-1:	mcr	p15, 0, r0, c7, c6, 1		@ invalidate D line / unified line
-	add	r0, r0, r2
-	cmp	r0, r1
-	blo	1b
-	dsb	st
-	pop	{r3}
-	bx	lr
-
-
-	.globl	CleanDataCacheRange
-CleanDataCacheRange:
-	push	{r3}
-	dcache_line_size r2, r3
-	add	r1, r0, r1
-	sub	r3, r2, #1
-	bic	r0, r0, r3
-#ifdef CONFIG_ARM_ERRATA_764369
-#ifdef ARM_ALLOW_MULTI_CORE
-	dsb
-#else
-	nop
-#endif
-#endif
-1:	mcr	p15, 0, r0, c7, c10, 1		@ clean D line / unified line
-	add	r0, r0, r2
-	cmp	r0, r1
-	blo	1b
-	dsb	st
-	pop	{r3}
-	bx	lr
-
 #endif		/* RASPPI >= 2 */
 
 /* End */

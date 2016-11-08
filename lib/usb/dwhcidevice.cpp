@@ -702,7 +702,6 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 	DMAAddress.Write ();
 
 	CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
-	DataMemBarrier ();
 
 	// set split control
 	CDWHCIRegister SplitControl (DWHCI_HOST_CHAN_SPLIT_CTRL (nChannel), 0);
@@ -796,7 +795,6 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 	case StageSubStateWaitForTransactionComplete: {
 		CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
-		DataMemBarrier ();
 
 		CDWHCIRegister TransferSize (DWHCI_HOST_CHAN_XFER_SIZ (nChannel));
 		TransferSize.Read ();

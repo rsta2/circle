@@ -71,7 +71,6 @@ CPageTable::CPageTable (void)
 	}
 
 	CleanDataCache ();
-	DataSyncBarrier ();
 }
 
 CPageTable::CPageTable (u32 nMemSize)
@@ -132,7 +131,6 @@ CPageTable::CPageTable (u32 nMemSize)
 	}
 
 	CleanDataCache ();
-	DataSyncBarrier ();
 }
 
 CPageTable::~CPageTable (void)

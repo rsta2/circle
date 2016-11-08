@@ -68,14 +68,7 @@ boolean CInterruptSystem::Initialize (void)
 	TExceptionTable *pTable = (TExceptionTable *) ARM_EXCEPTION_TABLE_BASE;
 	pTable->IRQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->IRQ, IRQStub));
 
-	CleanDataCache ();
-	DataSyncBarrier ();
-
-	InvalidateInstructionCache ();
-	FlushBranchTargetCache ();
-	DataSyncBarrier ();
-
-	InstructionSyncBarrier ();
+	SyncDataAndInstructionCache ();
 
 #ifndef USE_RPI_STUB_AT
 	PeripheralEntry ();

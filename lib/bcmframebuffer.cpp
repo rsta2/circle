@@ -99,7 +99,6 @@ void CBcmFrameBuffer::SetPalette (u8 nIndex, u16 nColor)
 boolean CBcmFrameBuffer::Initialize (void)
 {
 	CleanDataCache ();
-	DataSyncBarrier ();
 	u32 nResult = m_MailBox.WriteRead (GPU_MEM_BASE + (u32) m_pInfo);
 	InvalidateDataCache ();
 
