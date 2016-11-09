@@ -17,6 +17,7 @@ Hint how to improve le2be* functions using GCC builtins
 Enhancing class CBcmFrameBuffer
 Providing Spectrum screen emulator code
 Testing while adding support for USB full-speed hubs (compound devices)
+Providing fixes for using u-boot
 
 Arjan van Vught
 Support while adding Raspberry Pi 3 support
