@@ -9,13 +9,13 @@
 
 	.globl	memcpyblk
 memcpyblk:
-	push	{r0, r3-r6}
+	push	{r0, r4-r6}
 1:	ldmia	r1!, {r3-r6}
 	subs	r2, #4*4
 	stmia	r0!, {r3-r6}
 	pld	[r1, #4*4*4]
 	bne	1b
-	pop	{r0, r3-r6}
+	pop	{r0, r4-r6}
 	bx	lr
 
 /* End */

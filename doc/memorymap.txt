@@ -1,0 +1,79 @@
+MEMORY MAP
+
+Circle on Raspberry Pi 1
+
+------------------------------------------------------------------------------
+Base		Size		Contents		Remarks
+------------------------------------------------------------------------------
+00000000	32 Bytes	Exception vector table
+...
+00000100	variable	ATAGS			unused
+...
+00008000	max. 2 MByte	Kernel image
+				 .text
+				 .rodata
+				 .init_array		static constructors
+				 .data
+				 .bss
+...
+00208000	128 KByte	Kernel stack
+00228000	32 KByte	Abort exception stack
+00230000	32 KByte	IRQ exception stack
+00238000	16 KByte	Page table 1
+...
+00400000	1 MByte		Coherent region		for property mailbox
+00500000	variable	Heap allocator		malloc()
+????????	4 MByte		Page allocator		palloc()
+????????	variable	GPU memory
+20000000			Peripherals
+...
+------------------------------------------------------------------------------
+
+Circle on Raspberry Pi 2 and 3
+
+------------------------------------------------------------------------------
+Base		Size		Contents		Remarks
+------------------------------------------------------------------------------
+00000000	256 Bytes	ARM stub		Core 1-3 spin here
+00000000	32 Bytes	 Exception vector table
+
+00000100	variable	ATAGS			unused
+...
+00008000	max. 2 MByte	Kernel image
+				 .text
+				 .rodata
+				 .init_array		static constructors
+				 .data
+				 .bss
+...
+				Kernel stacks
+00208000	128 KByte	 for Core 0
+00228000	128 KByte	 for Core 1		may be unused
+00248000	128 KByte	 for Core 2		may be unused
+00268000	128 KByte	 for Core 3		may be unused
+
+				Abort exception stacks
+00288000	32 KByte	 for Core 0
+00290000	32 KByte	 for Core 1		may be unused
+00298000	32 KByte	 for Core 2		may be unused
+002A0000	32 KByte	 for Core 3		may be unused
+
+				IRQ exception stacks
+002A8000	32 KByte	 for Core 0
+002B0000	32 KByte	 for Core 1		may be unused
+002B8000	32 KByte	 for Core 2		may be unused
+002C0000	32 KByte	 for Core 3		may be unused
+
+002C8000	16 KByte	Page table 1
+...
+00400000	1 MByte		Coherent region		for property mailbox
+00500000	variable	Heap allocator		malloc()
+????????	4 MByte		Page allocator		palloc()
+
+1F000000	variable	rpi_stub		if used for debugging
+...
+????????	variable	GPU memory
+3F000000	16 MByte	Peripherals
+40000000			Local peripherals
+...
+------------------------------------------------------------------------------

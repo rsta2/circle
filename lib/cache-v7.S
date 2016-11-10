@@ -49,7 +49,7 @@
  */
        .globl  InvalidateDataCacheL1Only
 InvalidateDataCacheL1Only:
-	push	{r3-r6}
+	push	{r4-r6}
 	mov	r0, #0
 	mcr	p15, 2, r0, c0, c0, 0
 	mrc	p15, 1, r0, c0, c0, 0
@@ -79,7 +79,7 @@ InvalidateDataCacheL1Only:
 	bgt	1b
 	dsb	st
 	isb
-	pop	{r3-r6}
+	pop	{r4-r6}
 	bx	lr
 
 /*
@@ -91,7 +91,7 @@ InvalidateDataCacheL1Only:
  */
 	.globl	InvalidateDataCache
 InvalidateDataCache:
-	push	{r3-r5, r7, r9-r11}
+	push	{r4-r5, r7, r9-r11}
 	dmb					@ ensure ordering with previous memory accesses
 	mrc	p15, 1, r0, c0, c0, 1		@ read clidr
 	mov	r3, r0, lsr #23			@ move LoC into position
@@ -135,7 +135,7 @@ InvalidateDataCache:
 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
 	dsb	st
 	isb
-	pop	{r3-r5, r7, r9-r11}
+	pop	{r4-r5, r7, r9-r11}
 	bx	lr
 
 /*
@@ -145,7 +145,7 @@ InvalidateDataCache:
  */
 	.globl	CleanDataCache
 CleanDataCache:
-	push	{r3-r5, r7, r9-r11}
+	push	{r4-r5, r7, r9-r11}
 	dmb					@ ensure ordering with previous memory accesses
 	mrc	p15, 1, r0, c0, c0, 1		@ read clidr
 	mov	r3, r0, lsr #23			@ move LoC into position
@@ -189,7 +189,7 @@ CleanDataCache:
 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
 	dsb	st
 	isb
-	pop	{r3-r5, r7, r9-r11}
+	pop	{r4-r5, r7, r9-r11}
 	bx	lr
 
 /*
@@ -203,7 +203,6 @@ CleanDataCache:
  */
 	.globl	CleanAndInvalidateDataCacheRange
 CleanAndInvalidateDataCacheRange:
-	push	{r3}
 	dcache_line_size r2, r3
 	add	r1, r0, r1
 	sub	r3, r2, #1
@@ -220,7 +219,6 @@ CleanAndInvalidateDataCacheRange:
 	cmp	r0, r1
 	blo	1b
 	dsb	st
-	pop	{r3}
 	bx	lr
 
 #endif		/* RASPPI >= 2 */
