@@ -68,6 +68,15 @@
 #endif
 #endif
 
+// USE THIS ON YOUR OWN RISK!
+// On the Raspberry Pi 2 and 3 the default CPU clock frequency is 600 MHz only. If
+// SET_MAX_CPU_CLOCK_FREQ is defined, the CPU clock will be set to the maximum
+// frequency which is normally allowed (900 resp. 1200 MHz). This is not
+// overclocking and should not effect warranty. Nevertheless you will use this on
+// your own risk. If you have set overclocking options in config.txt, these will be
+// applied too. This may effect warranty.
+//#define SET_MAX_CPU_CLOCK_FREQ
+
 #define MAX_TASKS		20
 #define TASK_STACK_SIZE		0x4000
 

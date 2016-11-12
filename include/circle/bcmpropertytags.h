@@ -34,9 +34,14 @@
 #define PROPTAG_GET_VC_MEMORY		0x00010006
 #define PROPTAG_SET_POWER_STATE		0x00028001
 #define PROPTAG_GET_CLOCK_RATE		0x00030002
+#define PROPTAG_GET_MAX_CLOCK_RATE	0x00030004
 #define PROPTAG_GET_TEMPERATURE		0x00030006
+#define PROPTAG_GET_MIN_CLOCK_RATE	0x00030007
+#define PROPTAG_GET_TURBO		0x00030009
+#define PROPTAG_GET_MAX_TEMPERATURE	0x0003000A
 #define PROPTAG_GET_EDID_BLOCK		0x00030020
 #define PROPTAG_SET_CLOCK_RATE		0x00038002
+#define PROPTAG_SET_TURBO		0x00038009
 #define PROPTAG_GET_DISPLAY_DIMENSIONS	0x00040003
 #define PROPTAG_GET_GPIO_VIRTBUF	0x00040010
 #define PROPTAG_SET_VIRTUAL_OFFSET	0x00048009
@@ -96,6 +101,7 @@ struct TPropertyTagClockRate
 	u32		nClockId;
 	#define CLOCK_ID_EMMC		1
 	#define CLOCK_ID_UART		2
+	#define CLOCK_ID_ARM		3
 	#define CLOCK_ID_CORE		4
 	u32		nRate;			// Hz
 };
@@ -106,6 +112,17 @@ struct TPropertyTemperature
 	u32		nTemperatureId;
 	#define TEMPERATURE_ID		0
 	u32		nValue;			// degree Celsius * 1000
+};
+#define TPropertyTagTemperature		TPropertyTemperature
+
+struct TPropertyTagTurbo
+{
+	TPropertyTag	Tag;
+	u32		nTurboId;
+	#define TURBO_ID		0
+	u32		nLevel;
+	#define TURBO_OFF		0
+	#define TURBO_ON		1
 };
 
 struct TPropertyTagEDIDBlock
@@ -124,6 +141,7 @@ struct TPropertyTagSetClockRate
 	u32		nClockId;
 	u32		nRate;			// Hz
 	u32		nSkipSettingTurbo;
+	#define SKIP_SETTING_TURBO	1	// when setting ARM clock
 };
 
 struct TPropertyTagDisplayDimensions
