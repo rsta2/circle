@@ -123,7 +123,7 @@ static void clockinit (void)
 		TPropertyTagSetClockRate TagSetClockRate;
 		TagSetClockRate.nClockId = CLOCK_ID_ARM;
 		TagSetClockRate.nRate = TagClockRate.nRate;
-		TagSetClockRate.nSkipSettingTurbo = SKIP_SETTING_TURBO;
+		TagSetClockRate.nSkipSettingTurbo = 0;
 		Tags.GetTag (PROPTAG_SET_CLOCK_RATE, &TagSetClockRate, sizeof TagSetClockRate, 12);
 	}
 }
