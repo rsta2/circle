@@ -6,7 +6,7 @@
 //	Licensed under GPL2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -57,6 +57,8 @@ boolean CMultiCoreSupport::Initialize (void)
 	nRouting &= ~0x0C;
 	nRouting |= 1 << 2;
 	write32 (ARM_LOCAL_GPU_INT_ROUTING, nRouting);
+
+	write32 (ARM_LOCAL_MAILBOX_INT_CONTROL0, 1);		// enable IPI on core 0
 
 	for (unsigned nCore = 1; nCore < CORES; nCore++)
 	{

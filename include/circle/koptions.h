@@ -21,6 +21,7 @@
 #define _circle_koptions_h
 
 #include <circle/bcmpropertytags.h>
+#include <circle/cputhrottle.h>
 
 class CKernelOptions
 {
@@ -37,6 +38,9 @@ public:
 	const char *GetKeyMap (void) const;
 
 	unsigned GetUSBPowerDelay (void) const;
+
+	TCPUSpeed GetCPUSpeed (void) const;
+	unsigned GetSoCMaxTemp (void) const;
 
 	static CKernelOptions *Get (void);
 
@@ -60,6 +64,9 @@ private:
 	char m_KeyMap[3];
 
 	unsigned m_nUSBPowerDelay;
+
+	TCPUSpeed m_CPUSpeed;
+	unsigned m_nSoCMaxTemp;
 
 	static CKernelOptions *s_pThis;
 };

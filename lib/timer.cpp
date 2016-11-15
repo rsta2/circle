@@ -403,30 +403,10 @@ void CTimer::InterruptHandler (void *pParam)
 	pThis->InterruptHandler ();
 }
 
-void CTimer::MsDelay (unsigned nMilliSeconds)
-{
-	if (nMilliSeconds > 0)
-	{
-		unsigned nCycles =  m_nMsDelay * nMilliSeconds;
-
-		DelayLoop (nCycles);
-	}
-}
-
-void CTimer::usDelay (unsigned nMicroSeconds)
-{
-	if (nMicroSeconds > 0)
-	{
-		unsigned nCycles =  m_nusDelay * nMicroSeconds;
-
-		DelayLoop (nCycles);
-	}
-}
-
 void CTimer::TuneMsDelay (void)
 {
 	unsigned nTicks = GetTicks ();
-	MsDelay (1000);
+	DelayLoop (m_nMsDelay * 1000);
 	nTicks = GetTicks () - nTicks;
 
 	unsigned nFactor = 100 * HZ / nTicks;
@@ -450,7 +430,7 @@ void CTimer::SimpleusDelay (unsigned nMicroSeconds)
 {
 	if (nMicroSeconds > 0)
 	{
-		unsigned nTicks = nMicroSeconds * (CLOCKHZ / 1000000);
+		unsigned nTicks = nMicroSeconds * (CLOCKHZ / 1000000) + 1;
 
 		PeripheralEntry ();
 

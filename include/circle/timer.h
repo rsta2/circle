@@ -95,10 +95,10 @@ public:
 
 	/// When a CTimer object is available better use this instead of SimpleMsDelay()\n
 	/// \param nMilliSeconds Delay in milliseconds (<= 2000)
-	void MsDelay (unsigned nMilliSeconds);
+	void MsDelay (unsigned nMilliSeconds)	{ SimpleMsDelay (nMilliSeconds); }
 	/// When a CTimer object is available better use this instead of SimpleusDelay()\n
 	/// \param nMicroSeconds Delay in microseconds
-	void usDelay (unsigned nMicroSeconds);
+	void usDelay (unsigned nMicroSeconds)	{ SimpleusDelay (nMicroSeconds); }
 	
 	/// \return Pointer to the only CTimer object in the system
 	static CTimer *Get (void);

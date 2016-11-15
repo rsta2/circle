@@ -3,7 +3,7 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 25 of Circle. To get access to Step 1-24 use the git tag "Step1" to "Step24".
+> This is Step 26 of Circle. To get access to Step 1-25 use the git tag "Step1" to "Step25".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -21,14 +21,16 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
 
-The 25th Step
+The 26th Step
 -------------
 
-In this step a driver for the SPI0 master with DMA support has been added to Circle and is demonstrated in a test program in *sample/25-spidma*. See the *README* file in this directory for details. Because of the DMA operation SPI transfers are running parallel to the program execution on the CPU. A callback routine is entered when the SPI transfer has been completed.
+In this step support for CPU clock rate management (depending on application/user requirements and the SoC temperature) has been added to Circle and is demonstrated in a test program in *sample/26-cpustress*. See the *README* file in this directory for details.
+
+Circle kernel images build with *RASPPI = 2* are run-able on both Raspberry Pi 2 and 3 now and automatically get the name *kernel7.img*. For a binary distribution you should do one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-24 the following features were introduced:
+In Step 1-25 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -76,6 +78,7 @@ In Step 1-24 the following features were introduced:
 * Bluetooth device inquiry support
 * SPI0 master support
 * Driver for hardware random number generator
+* SPI0 master support using DMA
 
 Building
 --------
@@ -95,7 +98,7 @@ The following table gives support for selecting the right *RASPPI* value:
 |      2 | kernel7.img | 2, 3                     | ARMv7-A       |
 |      3 | kernel7.img | 3                        | Cortex-A53    |
 
-For a binary distribution you should make one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*.
+For a binary distribution you should do one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*.
 
 Then go to the build root of Circle and do:
 
@@ -133,7 +136,7 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.
+* CCPUThrottle: Manages CPU clock rate depending on user requirements and SoC temperature.
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

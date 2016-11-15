@@ -21,7 +21,6 @@
 #include <circle/memio.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2836.h>
-#include <circle/bcmpropertytags.h>
 #include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
@@ -111,25 +110,6 @@ static void vfpinit (void)
 	__asm volatile ("fmxr fpscr, %0" : : "r" (0));
 }
 
-#ifdef SET_MAX_CPU_CLOCK_FREQ
-
-static void clockinit (void)
-{
-	CBcmPropertyTags Tags;
-	TPropertyTagClockRate TagClockRate;
-	TagClockRate.nClockId = CLOCK_ID_ARM;
-	if (Tags.GetTag (PROPTAG_GET_MAX_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
-	{
-		TPropertyTagSetClockRate TagSetClockRate;
-		TagSetClockRate.nClockId = CLOCK_ID_ARM;
-		TagSetClockRate.nRate = TagClockRate.nRate;
-		TagSetClockRate.nSkipSettingTurbo = 0;
-		Tags.GetTag (PROPTAG_SET_CLOCK_RATE, &TagSetClockRate, sizeof TagSetClockRate, 12);
-	}
-}
-
-#endif
-
 void sysinit (void)
 {
 #if RASPPI != 1
@@ -155,10 +135,6 @@ void sysinit (void)
 	{
 		*pBSS = 0;
 	}
-
-#ifdef SET_MAX_CPU_CLOCK_FREQ
-	clockinit ();
-#endif
 
 	CMachineInfo MachineInfo;
 
