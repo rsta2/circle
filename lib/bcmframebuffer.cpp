@@ -2,7 +2,7 @@
 // bcmframebuffer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -98,9 +98,8 @@ void CBcmFrameBuffer::SetPalette (u8 nIndex, u16 nColor)
 
 boolean CBcmFrameBuffer::Initialize (void)
 {
-	CleanDataCache ();
+	CleanAndInvalidateDataCacheRange ((u32) m_pInfo, sizeof m_pInfo);
 	u32 nResult = m_MailBox.WriteRead (GPU_MEM_BASE + (u32) m_pInfo);
-	InvalidateDataCache ();
 
 	if (nResult != 0)
 	{
