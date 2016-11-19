@@ -32,7 +32,7 @@ CKernelOptions::CKernelOptions (void)
 	m_nLogLevel (LogDebug),
 	m_nUSBPowerDelay (0),
 	m_CPUSpeed (CPUSpeedLow),
-	m_nSoCMaxTemp (70)
+	m_nSoCMaxTemp (60)
 {
 	strcpy (m_LogDevice, "tty1");
 	strcpy (m_KeyMap, DEFAULT_KEYMAP);
@@ -102,15 +102,6 @@ CKernelOptions::CKernelOptions (void)
 			    && 200 <= nValue && nValue <= 8000)
 			{
 				m_nUSBPowerDelay = nValue;
-			}
-		}
-		else if (strcmp (pOption, "cpuspeed") == 0)
-		{
-			unsigned nValue;
-			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
-			    && nValue < CPUSpeedUnknown)
-			{
-				m_CPUSpeed = (TCPUSpeed) nValue;
 			}
 		}
 		else if (strcmp (pOption, "fast") == 0)

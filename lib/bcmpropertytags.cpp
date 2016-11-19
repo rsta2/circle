@@ -48,7 +48,36 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 {
 	assert (pTag != 0);
 	assert (nTagSize >= sizeof (TPropertyTagSimple));
-	unsigned nBufferSize = sizeof (TPropertyBuffer) + nTagSize + sizeof (u32);
+
+	TPropertyTag *pHeader = (TPropertyTag *) pTag;
+	pHeader->nTagId = nTagId;
+	pHeader->nValueBufSize = nTagSize - sizeof (TPropertyTag);
+	pHeader->nValueLength = nRequestParmSize & ~VALUE_LENGTH_RESPONSE;
+
+	if (!GetTags (pTag, nTagSize))
+	{
+		return FALSE;
+	}
+
+	if (!(pHeader->nValueLength & VALUE_LENGTH_RESPONSE))
+	{
+		return FALSE;
+	}
+
+	pHeader->nValueLength &= ~VALUE_LENGTH_RESPONSE;
+	if (pHeader->nValueLength == 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
+{
+	assert (pTags != 0);
+	assert (nTagsSize >= sizeof (TPropertyTagSimple));
+	unsigned nBufferSize = sizeof (TPropertyBuffer) + nTagsSize + sizeof (u32);
 	assert ((nBufferSize & 3) == 0);
 
 #ifndef USE_RPI_STUB_AT
@@ -72,44 +101,30 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	assert (pBuffer != 0);
 	assert (nSize >= nBufferSize);
 #endif
-	
+
 	pBuffer->nBufferSize = nBufferSize;
 	pBuffer->nCode = CODE_REQUEST;
-	memcpy (pBuffer->Tags, pTag, nTagSize);
-	
-	TPropertyTag *pHeader = (TPropertyTag *) pBuffer->Tags;
-	pHeader->nTagId = nTagId;
-	pHeader->nValueBufSize = nTagSize - sizeof (TPropertyTag);
-	pHeader->nValueLength = nRequestParmSize & ~VALUE_LENGTH_RESPONSE;
+	memcpy (pBuffer->Tags, pTags, nTagsSize);
 
-	u32 *pEndTag = (u32 *) (pBuffer->Tags + nTagSize);
+	u32 *pEndTag = (u32 *) (pBuffer->Tags + nTagsSize);
 	*pEndTag = PROPTAG_END;
+
+	DataSyncBarrier ();
 
 	u32 nBufferAddress = GPU_MEM_BASE + (u32) pBuffer;
 	if (m_MailBox.WriteRead (nBufferAddress) != nBufferAddress)
 	{
 		return FALSE;
 	}
-	
+
 	DataMemBarrier ();
 
 	if (pBuffer->nCode != CODE_RESPONSE_SUCCESS)
 	{
 		return FALSE;
 	}
-	
-	if (!(pHeader->nValueLength & VALUE_LENGTH_RESPONSE))
-	{
-		return FALSE;
-	}
-	
-	pHeader->nValueLength &= ~VALUE_LENGTH_RESPONSE;
-	if (pHeader->nValueLength == 0)
-	{
-		return FALSE;
-	}
 
-	memcpy (pTag, pBuffer->Tags, nTagSize);
+	memcpy (pTags, pBuffer->Tags, nTagsSize);
 
 	return TRUE;
 }

@@ -17,8 +17,7 @@ in include/circle/sysconfig.h.
 The behaviour of the sample can be influenced by two options which may be
 defined in the file cmdline.txt:
 
-cpuspeed=2	Set CPU speed (0: low speed (default), 1: half speed,
-		2: maximum speed)
+fast=true	Set maximum CPU speed (default is low speed on Raspberry Pi 2/3)
 
-socmaxtemp=50	Set maximum temperature of the SoC (the main chip) to be enforced
-		in degrees Celsius (range 40 to 78, default 70)
+socmaxtemp=60	Set maximum temperature of the SoC (the main chip) to be enforced
+		in degrees Celsius (range 40 to 78, default 60)

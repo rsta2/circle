@@ -53,7 +53,7 @@ public:
 	boolean SetTime (unsigned nTime, boolean bLocal = TRUE);
 
 	/// \return Current clock ticks of an 1 MHz counter, may wrap
-	unsigned GetClockTicks (void) const;
+	static unsigned GetClockTicks (void);
 #define CLOCKHZ	1000000
 
 	/// \return 1/HZ seconds since system boot, may wrap

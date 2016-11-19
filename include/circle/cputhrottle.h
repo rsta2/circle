@@ -25,7 +25,6 @@
 enum TCPUSpeed
 {
 	CPUSpeedLow,
-	CPUSpeedHalf,
 	CPUSpeedMaximum,
 	CPUSpeedUnknown
 };
@@ -63,12 +62,12 @@ public:
 	/// \brief Sets the CPU speed
 	/// \param Speed Speed to be set (overwrites intial value)
 	/// \param bWait Wait for new clock rate to settle?
-	/// \return Operation successful?
-	boolean SetSpeed (TCPUSpeed Speed, boolean bWait = TRUE);
+	/// \return Previous setting or CPUSpeedUnknown on error
+	TCPUSpeed SetSpeed (TCPUSpeed Speed, boolean bWait = TRUE);
 
 	/// \brief Sets the CPU speed depending on current SoC temperature.\n
 	/// Call this repeatedly all 2 to 5 seconds to hold temperature down!\n
-	/// Throttles the CPU down when the SoC temperature reaches 70 degrees Celsius\n
+	/// Throttles the CPU down when the SoC temperature reaches 60 degrees Celsius\n
 	/// (or the value set using the cmdline.txt parameter "socmaxtemp").
 	/// \return Operation successful?
 	boolean SetOnTemperature (void);
@@ -83,6 +82,8 @@ public:
 private:
 	boolean SetSpeedInternal (TCPUSpeed Speed, boolean bWait);
 
+	void SetToSetDelay (void);
+
 	static unsigned GetClockRate (unsigned nTagId);		// returns 0 on failure
 	static unsigned GetTemperature (unsigned nTagId);	// returns 0 on failure
 	static boolean SetClockRate (unsigned nRate, boolean bSkipTurbo);
@@ -95,6 +96,7 @@ private:
 	unsigned m_nEnforcedTemperature;
 
 	TCPUSpeed m_SpeedSet;
+	unsigned  m_nTicksLastSet;
 
 	static CCPUThrottle *s_pThis;
 };

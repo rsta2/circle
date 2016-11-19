@@ -42,9 +42,15 @@
 #define PROPTAG_GET_EDID_BLOCK		0x00030020
 #define PROPTAG_SET_CLOCK_RATE		0x00038002
 #define PROPTAG_SET_TURBO		0x00038009
+#define PROPTAG_ALLOCATE_BUFFER		0x00040001
 #define PROPTAG_GET_DISPLAY_DIMENSIONS	0x00040003
+#define PROPTAG_GET_PITCH		0x00040008
 #define PROPTAG_GET_GPIO_VIRTBUF	0x00040010
+#define PROPTAG_SET_PHYS_WIDTH_HEIGHT	0x00048003
+#define PROPTAG_SET_VIRT_WIDTH_HEIGHT	0x00048004
+#define PROPTAG_SET_DEPTH		0x00048005
 #define PROPTAG_SET_VIRTUAL_OFFSET	0x00048009
+#define PROPTAG_SET_PALETTE		0x0004800B
 #define PROPTAG_GET_COMMAND_LINE	0x00050001
 
 struct TPropertyTag
@@ -144,6 +150,17 @@ struct TPropertyTagSetClockRate
 	#define SKIP_SETTING_TURBO	1	// when setting ARM clock
 };
 
+struct TPropertyTagAllocateBuffer
+{
+	TPropertyTag	Tag;
+	union
+	{
+		u32	nAlignment;		// in bytes
+		u32	nBufferBaseAddress;
+	};
+	u32		nBufferSize;
+};
+
 struct TPropertyTagDisplayDimensions
 {
 	TPropertyTag	Tag;
@@ -158,10 +175,23 @@ struct TPropertyTagVirtualOffset
 	u32		nOffsetY;
 };
 
+struct TPropertyTagSetPalette
+{
+	TPropertyTag	Tag;
+	union
+	{
+		u32	nOffset;		// first palette index to set (0-255)
+		u32	nResult;
+	#define SET_PALETTE_VALID	0
+	};
+	u32		nLength;		// number of palette entries to set (1-256)
+	u32		Palette[0];		// RGBA values, offset to offset+length-1
+};
+
 struct TPropertyTagCommandLine
 {
 	TPropertyTag	Tag;
-	u8		String[1024];
+	u8		String[2048];
 };
 
 class CBcmPropertyTags
@@ -175,6 +205,9 @@ public:
 			unsigned  nTagSize,			// size of tag struct
 			unsigned  nRequestParmSize = 0);	// number of parameter bytes
 	
+	boolean GetTags (void	 *pTags,			// pointer to tags struct
+			 unsigned nTagsSize);			// size of tags struct
+
 private:
 	CBcmMailBox m_MailBox;
 };

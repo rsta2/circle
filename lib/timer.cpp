@@ -138,7 +138,7 @@ boolean CTimer::SetTime (unsigned nTime, boolean bLocal)
 	return TRUE;
 }
 
-unsigned CTimer::GetClockTicks (void) const
+unsigned CTimer::GetClockTicks (void)
 {
 	PeripheralEntry ();
 

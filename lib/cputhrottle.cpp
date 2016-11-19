@@ -24,6 +24,8 @@
 #include <circle/logger.h>
 #include <assert.h>
 
+#define TRANSITION_DELAY_USECS		355	// See: linux/drivers/cpufreq/bcm2835-cpufreq.c
+
 static const char FromCPUThrottle[] = "throttle";
 
 CCPUThrottle *CCPUThrottle::s_pThis = 0;
@@ -32,9 +34,10 @@ CCPUThrottle::CCPUThrottle (TCPUSpeed InitialSpeed)
 :	m_bDynamic (FALSE),
 	m_nMinClockRate (600),
 	m_nMaxClockRate (600),
-	m_nMaxTemperature (85),
-	m_nEnforcedTemperature (70),
-	m_SpeedSet (CPUSpeedUnknown)
+	m_nMaxTemperature (85000),
+	m_nEnforcedTemperature (60000),
+	m_SpeedSet (CPUSpeedUnknown),
+	m_nTicksLastSet (0)
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -120,21 +123,22 @@ unsigned CCPUThrottle::GetMaxTemperature (void) const
 	return (m_nMaxTemperature + 500) / 1000;
 }
 
-boolean CCPUThrottle::SetSpeed (TCPUSpeed Speed, boolean bWait)
+TCPUSpeed CCPUThrottle::SetSpeed (TCPUSpeed Speed, boolean bWait)
 {
 	if (!m_bDynamic)
 	{
-		return TRUE;
+		return CPUSpeedMaximum;
 	}
 
 	if (!SetSpeedInternal (Speed, bWait))
 	{
-		return FALSE;
+		return CPUSpeedUnknown;
 	}
 
+	TCPUSpeed PreviousSpeed = m_SpeedSet;
 	m_SpeedSet = Speed;
 
-	return TRUE;
+	return PreviousSpeed;
 }
 
 boolean CCPUThrottle::SetOnTemperature (void)
@@ -170,8 +174,9 @@ boolean CCPUThrottle::SetOnTemperature (void)
 			return FALSE;
 		}
 	}
-	else if (   nTemperature < (m_nEnforcedTemperature-2000)	// 2 degrees hysteresis
-		 && nCurrentRate < m_nMaxClockRate)
+	else if (   nTemperature < (m_nEnforcedTemperature-3000)	// 3 degrees hysteresis
+		 && nCurrentRate < m_nMaxClockRate
+		 && m_SpeedSet == CPUSpeedMaximum)
 	{
 		if (!SetSpeedInternal (m_SpeedSet, FALSE))
 		{
@@ -222,6 +227,8 @@ boolean CCPUThrottle::SetSpeedInternal (TCPUSpeed Speed, boolean bWait)
 {
 	assert (m_bDynamic);
 
+	SetToSetDelay ();
+
 	unsigned nClockRate;
 	boolean bSkipTurbo;
 
@@ -229,12 +236,7 @@ boolean CCPUThrottle::SetSpeedInternal (TCPUSpeed Speed, boolean bWait)
 	{
 	case CPUSpeedLow:
 		nClockRate = m_nMinClockRate;
-		bSkipTurbo = TRUE;
-		break;
-
-	case CPUSpeedHalf:
-		nClockRate = m_nMinClockRate + (m_nMaxClockRate-m_nMinClockRate) / 2;
-		bSkipTurbo = TRUE;
+		bSkipTurbo = FALSE;
 		break;
 
 	case CPUSpeedMaximum:
@@ -255,10 +257,22 @@ boolean CCPUThrottle::SetSpeedInternal (TCPUSpeed Speed, boolean bWait)
 
 	if (bWait)
 	{
-		CTimer::SimpleusDelay (355);	// See: linux/drivers/cpufreq/bcm2835-cpufreq.c
+		CTimer::SimpleusDelay (TRANSITION_DELAY_USECS);
 	}
 
 	return TRUE;
+}
+
+void CCPUThrottle::SetToSetDelay (void)
+{
+	unsigned nUsecElapsed = (CTimer::GetClockTicks () - m_nTicksLastSet) * (CLOCKHZ / 1000000);
+
+	if (nUsecElapsed < TRANSITION_DELAY_USECS)
+	{
+		CTimer::SimpleusDelay (TRANSITION_DELAY_USECS - nUsecElapsed);
+	}
+
+	m_nTicksLastSet = CTimer::GetClockTicks ();
 }
 
 unsigned CCPUThrottle::GetClockRate (unsigned nTagId)

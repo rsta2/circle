@@ -20,10 +20,9 @@ usbpowerdelay=510		Delay in milliseconds between powering on an USB device on an
 				USB hub (both internal and external) and accessing the device
 				(default 510, which is sometimes not enough to detect a device)
 
-cpuspeed=0			Set CPU speed (if class CCPUThrottle is in the system)
-				(0: low speed (default), 1: half speed, 2: maximum speed)
-fast=true			Same as "cpuspeed=2"
+fast=true			Set maximum CPU speed (if class CCPUThrottle is in the system,
+				default is low speed on Raspberry Pi 2/3)
 
-socmaxtemp=70			Set maximum temperature of the SoC (the main chip) to be enforced
+socmaxtemp=60			Set maximum temperature of the SoC (the main chip) to be enforced
 				in degrees Celsius (if class CCPUThrottle is in the system,
-				range 40 to 78, default 70)
+				range 40 to 78, default 60)
