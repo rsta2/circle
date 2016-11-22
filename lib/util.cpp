@@ -2,7 +2,7 @@
 // util.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,19 +29,6 @@ void *memset (void *pBuffer, int nValue, size_t nLength)
 	}
 
 	return pBuffer;
-}
-
-void *memcpy (void *pDest, const void *pSrc, size_t nLength)
-{
-	char *pd = (char *) pDest;
-	char *ps = (char *) pSrc;
-
-	while (nLength--)
-	{
-		*pd++ = *ps++;
-	}
-
-	return pDest;
 }
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength)

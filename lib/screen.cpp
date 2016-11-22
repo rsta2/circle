@@ -20,6 +20,7 @@
 #include <circle/screen.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
+#include <circle/sysconfig.h>
 #include <circle/util.h>
 
 #define ROTORS		4
@@ -50,6 +51,9 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtua
 	m_Color (NORMAL_COLOR),
 	m_bInsertOn (FALSE),
 	m_bUpdated (FALSE)
+#ifdef REALTIME
+	, m_SpinLock (FALSE)
+#endif
 {
 }
 

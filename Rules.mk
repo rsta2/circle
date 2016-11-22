@@ -44,7 +44,7 @@ ARCH	?= -march=armv8-a -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard
 TARGET	?= kernel7
 endif
 
-OPTIMIZE ?= -O
+OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
 

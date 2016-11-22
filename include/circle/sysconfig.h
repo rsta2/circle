@@ -68,6 +68,9 @@
 #endif
 #endif
 
+// Optimizes IRQ latency, disables some features
+//#define REALTIME
+
 #define MAX_TASKS		20
 #define TASK_STACK_SIZE		0x4000
 

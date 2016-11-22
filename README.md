@@ -14,12 +14,12 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
-Not a Real-Time OS
-------------------
+A Real-Time OS?
+---------------
 
 Circle is not a real-time OS. That means different simultaneous operations may interfere in respect of its timing behaviour. The provided samples are tested to work but if you try different combinations of hardware support classes this has to be tested by yourself.
 
-A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
+Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
 The 26th Step
 -------------

@@ -27,6 +27,7 @@
 #include <circle/memio.h>
 #include <circle/machineinfo.h>
 #include <circle/synchronize.h>
+#include <circle/sysconfig.h>
 #include <assert.h>
 
 #ifndef USE_RPI_STUB_AT
@@ -89,6 +90,9 @@ CSerialDevice::CSerialDevice (void)
 #endif
 	m_TxDPin (14, GPIOModeAlternateFunction0),
 	m_RxDPin (15, GPIOModeAlternateFunction0)
+#ifdef REALTIME
+	, m_SpinLock (FALSE)
+#endif
 {
 }
 
