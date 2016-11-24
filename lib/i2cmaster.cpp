@@ -24,15 +24,9 @@
 #include <circle/i2cmaster.h>
 #include <circle/memio.h>
 #include <circle/bcm2835.h>
-#include <circle/bcmpropertytags.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <assert.h>
-
-#if RASPPI != 3
-	#define DEFAULT_CORE_CLOCK	250000000
-#else
-	#define DEFAULT_CORE_CLOCK	300000000
-#endif
 
 // Control register
 #define C_I2CEN			(1 << 15)
@@ -66,18 +60,11 @@ CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode)
 	m_bFastMode (bFastMode),
 	m_SDA (nDevice == 0 ? 0 : 2, GPIOModeAlternateFunction0),
 	m_SCL (nDevice == 0 ? 1 : 3, GPIOModeAlternateFunction0),
-	m_nCoreClockRate (DEFAULT_CORE_CLOCK),
+	m_nCoreClockRate (CMachineInfo::Get ()->GetClockRate (CLOCK_ID_CORE)),
 	m_SpinLock (FALSE)
 {
 	assert (nDevice <= 1);
-
-	CBcmPropertyTags Tags;
-	TPropertyTagClockRate TagClockRate;
-	TagClockRate.nClockId = CLOCK_ID_CORE;
-	if (Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
-	{
-		m_nCoreClockRate = TagClockRate.nRate;
-	}
+	assert (m_nCoreClockRate > 0);
 }
 
 CI2CMaster::~CI2CMaster (void)
@@ -94,13 +81,13 @@ boolean CI2CMaster::Initialize (void)
 
 void CI2CMaster::SetClock (unsigned nClockSpeed)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (nClockSpeed > 0);
 	u16 nDivider = (u16) (m_nCoreClockRate / nClockSpeed);
 	write32 (m_nBaseAddress + ARM_BSC_DIV__OFFSET, nDivider);
 	
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
@@ -122,7 +109,7 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 
 	int nResult = 0;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	// setup transfer
 	write32 (m_nBaseAddress + ARM_BSC_A__OFFSET, ucAddress);
@@ -174,7 +161,7 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 
 	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_DONE);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_SpinLock.Release ();
 
@@ -199,7 +186,7 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 
 	int nResult = 0;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	// setup transfer
 	write32 (m_nBaseAddress + ARM_BSC_A__OFFSET, ucAddress);
@@ -253,7 +240,7 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 
 	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_DONE);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_SpinLock.Release ();
 

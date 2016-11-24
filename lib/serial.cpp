@@ -25,8 +25,9 @@
 #include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
-#include <circle/bcmpropertytags.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
+#include <circle/sysconfig.h>
 #include <assert.h>
 
 #ifndef USE_RPI_STUB_AT
@@ -80,47 +81,43 @@
 #define INT_DCDM		(1 << 2)
 #define INT_CTSM		(1 << 1)
 
-#define UART0_CLOCK		48000000
-
 CSerialDevice::CSerialDevice (void)
 :
-#if RASPPI == 3
+#if RASPPI >= 2
 	// to be sure there is no collision with the Bluetooth controller
 	m_GPIO32 (32, GPIOModeInput),
 	m_GPIO33 (33, GPIOModeInput),
 #endif
 	m_TxDPin (14, GPIOModeAlternateFunction0),
 	m_RxDPin (15, GPIOModeAlternateFunction0)
+#ifdef REALTIME
+	, m_SpinLock (FALSE)
+#endif
 {
 }
 
 CSerialDevice::~CSerialDevice (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 	write32 (ARM_UART0_IMSC, 0);
 	write32 (ARM_UART0_CR, 0);
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 boolean CSerialDevice::Initialize (unsigned nBaudrate)
 {
-	CBcmPropertyTags Tags;
-	TPropertyTagClockRate TagClockRate;
-	TagClockRate.nClockId = CLOCK_ID_UART;
-	if (!Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate))
-	{
-		TagClockRate.nRate = UART0_CLOCK;
-	}
+	unsigned nClockRate = CMachineInfo::Get ()->GetClockRate (CLOCK_ID_UART);
+	assert (nClockRate > 0);
 
 	assert (300 <= nBaudrate && nBaudrate <= 3000000);
 	unsigned nBaud16 = nBaudrate * 16;
-	unsigned nIntDiv = TagClockRate.nRate / nBaud16;
+	unsigned nIntDiv = nClockRate / nBaud16;
 	assert (1 <= nIntDiv && nIntDiv <= 0xFFFF);
-	unsigned nFractDiv2 = (TagClockRate.nRate % nBaud16) * 8 / nBaudrate;
+	unsigned nFractDiv2 = (nClockRate % nBaud16) * 8 / nBaudrate;
 	unsigned nFractDiv = nFractDiv2 / 2 + nFractDiv2 % 2;
 	assert (nFractDiv <= 0x3F);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_UART0_IMSC, 0);
 	write32 (ARM_UART0_ICR,  0x7FF);
@@ -130,7 +127,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 	write32 (ARM_UART0_IFLS, 0);
 	write32 (ARM_UART0_CR,   CR_UART_EN_MASK | CR_TXE_MASK | CR_RXE_MASK);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	CDeviceNameService::Get ()->AddDevice ("ttyS1", this, FALSE);
 
@@ -141,7 +138,7 @@ int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 {
 	m_SpinLock.Acquire ();
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	u8 *pChar = (u8 *) pBuffer;
 	assert (pChar != 0);
@@ -160,7 +157,7 @@ int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 		nResult++;
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_SpinLock.Release ();
 

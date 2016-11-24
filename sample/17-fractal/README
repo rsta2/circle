@@ -2,7 +2,7 @@ README
 
 This sample displays a fractal image from a Mandelbrot set. It may be build for single- or multi-core. Before building you should set the DEPTH define in include/circle/screen.h to 16 to increase the number of available colors. Furthermore you should set "loglevel=1" in the file cmdline.txt on the SD card. Otherwise some logging messages may be generated which will overwrite the image.
 
-This sample was chosen because it is well suited to demonstrate the performance gain of a multi-core architecture. On a single-core CPU the whole image is calculated by the only available core. On a multi-core CPU (Raspberry Pi 2 only) each of the four available cores calculates a quarter of the fractal image which is much faster.
+This sample was chosen because it is well suited to demonstrate the performance gain of a multi-core architecture. On a single-core CPU the whole image is calculated by the only available core. On a multi-core CPU (Raspberry Pi 2/3 only) each of the four available cores calculates a quarter of the fractal image which is much faster.
 
 If you want to run this sample with multiple cores on the Raspberry Pi 2/3 you have to define ARM_ALLOW_MULTI_CORE in include/circle/sysconfig.h.
 

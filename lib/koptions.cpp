@@ -30,7 +30,9 @@ CKernelOptions::CKernelOptions (void)
 :	m_nWidth (0),
 	m_nHeight (0),
 	m_nLogLevel (LogDebug),
-	m_nUSBPowerDelay (0)
+	m_nUSBPowerDelay (0),
+	m_CPUSpeed (CPUSpeedLow),
+	m_nSoCMaxTemp (60)
 {
 	strcpy (m_LogDevice, "tty1");
 	strcpy (m_KeyMap, DEFAULT_KEYMAP);
@@ -102,6 +104,22 @@ CKernelOptions::CKernelOptions (void)
 				m_nUSBPowerDelay = nValue;
 			}
 		}
+		else if (strcmp (pOption, "fast") == 0)
+		{
+			if (strcmp (pValue, "true") == 0)
+			{
+				m_CPUSpeed = CPUSpeedMaximum;
+			}
+		}
+		else if (strcmp (pOption, "socmaxtemp") == 0)
+		{
+			unsigned nValue;
+			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
+			    && 40 <= nValue && nValue <= 78)
+			{
+				m_nSoCMaxTemp = nValue;
+			}
+		}
 	}
 }
 
@@ -138,6 +156,16 @@ const char *CKernelOptions::GetKeyMap (void) const
 unsigned CKernelOptions::GetUSBPowerDelay (void) const
 {
 	return m_nUSBPowerDelay;
+}
+
+TCPUSpeed CKernelOptions::GetCPUSpeed (void) const
+{
+	return m_CPUSpeed;
+}
+
+unsigned CKernelOptions::GetSoCMaxTemp (void) const
+{
+	return m_nSoCMaxTemp;
 }
 
 CKernelOptions *CKernelOptions::Get (void)

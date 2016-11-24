@@ -1,8 +1,8 @@
 //
-// serial.h
+// mandelbrot.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,39 +17,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_serial_h
-#define _circle_serial_h
+#ifndef _mandelbrot_h
+#define _mandelbrot_h
 
-#include <circle/device.h>
-#include <circle/gpiopin.h>
-#include <circle/spinlock.h>
-#include <circle/sysconfig.h>
+#include <circle/multicore.h>
+#include <circle/screen.h>
+#include <circle/memory.h>
 #include <circle/types.h>
 
-class CSerialDevice : public CDevice
+class CMandelbrotCalculator
+#ifdef ARM_ALLOW_MULTI_CORE
+	: public CMultiCoreSupport
+#endif
 {
 public:
-	CSerialDevice (void);
-	~CSerialDevice (void);
+	CMandelbrotCalculator (CScreenDevice *pScreen, CMemorySystem *pMemorySystem);
+	~CMandelbrotCalculator (void);
 
-	boolean Initialize (unsigned nBaudrate = 115200);
+#ifndef ARM_ALLOW_MULTI_CORE
+	boolean Initialize (void)	{ return TRUE; }
+#endif
 
-	int Write (const void *pBuffer, unsigned nCount);
-
-#ifndef USE_RPI_STUB_AT
-private:
-	void Write (u8 nChar);
+	void Run (unsigned nCore);
 
 private:
-#if RASPPI >= 2
-	CGPIOPin m_GPIO32;
-	CGPIOPin m_GPIO33;
-#endif
-	CGPIOPin m_TxDPin;
-	CGPIOPin m_RxDPin;
+	void Calculate (double x1, double x2, double y1, double y2, unsigned nMaxIteration,
+			unsigned nPosX0, unsigned nWidth, unsigned nPosY0, unsigned nHeight);
 
-	CSpinLock m_SpinLock;
-#endif
+private:
+	CScreenDevice *m_pScreen;
 };
 
 #endif

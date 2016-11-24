@@ -36,13 +36,8 @@ boolean CKernel::Initialize (void)
 
 TShutdownMode CKernel::Run (void)
 {
-	// channels are swapped on model B+ 
-	CGPIOPin AudioLeft (40, GPIOModeOutput);
-#if RASPPI != 3
-	CGPIOPin AudioRight (45, GPIOModeOutput);
-#else
-	CGPIOPin AudioRight (41, GPIOModeOutput);
-#endif
+	CGPIOPin AudioLeft (GPIOPinAudioLeft, GPIOModeOutput);
+	CGPIOPin AudioRight (GPIOPinAudioRight, GPIOModeOutput);
 	
 	// flash the Act LED 10 times and click on audio (3.5mm headphone jack)
 	for (unsigned i = 1; i <= 10; i++)

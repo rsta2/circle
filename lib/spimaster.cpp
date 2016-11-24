@@ -20,16 +20,10 @@
 #include <circle/spimaster.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
-#include <circle/bcmpropertytags.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/timer.h>
 #include <assert.h>
-
-#if RASPPI != 3
-	#define DEFAULT_CORE_CLOCK	250000000
-#else
-	#define DEFAULT_CORE_CLOCK	300000000
-#endif
 
 // CS Register
 #define CS_LEN_LONG	(1 << 25)
@@ -66,17 +60,11 @@ CSPIMaster::CSPIMaster (unsigned nClockSpeed, unsigned CPOL, unsigned CPHA)
 	m_MISO ( 9, GPIOModeAlternateFunction0),
 	m_CE0  ( 8, GPIOModeAlternateFunction0),
 	m_CE1  ( 7, GPIOModeAlternateFunction0),
-	m_nCoreClockRate (DEFAULT_CORE_CLOCK),
+	m_nCoreClockRate (CMachineInfo::Get ()->GetClockRate (CLOCK_ID_CORE)),
 	m_nCSHoldTime (0),
 	m_SpinLock (FALSE)
 {
-	CBcmPropertyTags Tags;
-	TPropertyTagClockRate TagClockRate;
-	TagClockRate.nClockId = CLOCK_ID_CORE;
-	if (Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
-	{
-		m_nCoreClockRate = TagClockRate.nRate;
-	}
+	assert (m_nCoreClockRate > 0);
 }
 
 CSPIMaster::~CSPIMaster (void)
@@ -85,7 +73,7 @@ CSPIMaster::~CSPIMaster (void)
 
 boolean CSPIMaster::Initialize (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
 	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
@@ -94,7 +82,7 @@ boolean CSPIMaster::Initialize (void)
 	assert (m_CPHA <= 1);
 	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return TRUE;
 }
@@ -103,12 +91,12 @@ void CSPIMaster::SetClock (unsigned nClockSpeed)
 {
 	m_nClockSpeed = nClockSpeed;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
 	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CSPIMaster::SetMode (unsigned CPOL, unsigned CPHA)
@@ -116,13 +104,13 @@ void CSPIMaster::SetMode (unsigned CPOL, unsigned CPHA)
 	m_CPOL = CPOL;
 	m_CPHA = CPHA;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (m_CPOL <= 1);
 	assert (m_CPHA <= 1);
 	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CSPIMaster::SetCSHoldTime (unsigned nMicroSeconds)
@@ -149,7 +137,7 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 
 	m_SpinLock.Acquire ();
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (nChipSelect <= 1);
 	write32 (ARM_SPI0_CS,   (read32 (ARM_SPI0_CS) & ~CS_CS)
@@ -208,7 +196,7 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 
 	write32 (ARM_SPI0_CS, read32 (ARM_SPI0_CS) & ~CS_TA);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_SpinLock.Release ();
 

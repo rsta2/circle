@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/util.h>
+#include <circle/sysconfig.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -83,6 +84,15 @@ CUSBDevice::~CUSBDevice (void)
 
 boolean CUSBDevice::Initialize (void)
 {
+#ifdef REALTIME
+	if (m_Speed != USBSpeedHigh)
+	{
+		LogWrite (LogWarning, "Device speed is not allowed with REALTIME");
+
+		return FALSE;
+	}
+#endif
+
 	assert (m_pDeviceDesc == 0);
 	m_pDeviceDesc = new TUSBDeviceDescriptor;
 	assert (m_pDeviceDesc != 0);

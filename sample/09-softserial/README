@@ -8,6 +8,8 @@ RXD	Input to Raspberry Pi, GPIO 18, 3.3V on high level
 
 See http://elinux.org/RPi_Low-level_peripherals for wiring!
 
+Before building this sample you should uncomment the #define REALTIME in include/circle/sysconfig.h because it requires a low interrupt (IRQ) latency.
+
 Note that the GPIO pins used have normally not an UART function. Start a terminal program with 38400 bps (8-N-1). First blink 5 times to show the image was loaded right. The charaters you have typed into the terminal program should be echoed on the Raspberry Pi screen and back to the terminal program.
 
 The soft serial implementation is not as reliable to be included into the Circle base library but it demonstrates how a GPIO interrupt can be used.

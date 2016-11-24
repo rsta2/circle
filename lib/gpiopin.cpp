@@ -21,6 +21,7 @@
 #include <circle/gpiomanager.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/timer.h>
 #include <assert.h>
@@ -35,8 +36,12 @@ CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
 	m_Interrupt (GPIOInterruptUnknown),
 	m_Interrupt2 (GPIOInterruptUnknown)
 {
+	if (m_nPin >= GPIO_PINS)
+	{
+		m_nPin = CMachineInfo::Get ()->GetGPIOPin ((TGPIOVirtualPin) nPin);
+	}
 	assert (m_nPin < GPIO_PINS);
-	
+
 	SetMode (Mode, TRUE);
 }
 
@@ -53,7 +58,7 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	assert (Mode < GPIOModeUnknown);
 	m_Mode = Mode;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	if (GPIOModeAlternateFunction0 <= m_Mode && m_Mode <= GPIOModeAlternateFunction5)
 	{
@@ -64,7 +69,7 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 
 		SetAlternateFunction (m_Mode-GPIOModeAlternateFunction0);
 
-		DataMemBarrier ();
+		PeripheralExit ();
 
 		return;
 	}
@@ -111,7 +116,7 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 		}
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CGPIOPin::Write (unsigned nValue)
@@ -119,7 +124,7 @@ void CGPIOPin::Write (unsigned nValue)
 	// Output level can be set in input mode for subsequent switch to output
 	assert (m_Mode < GPIOModeAlternateFunction0);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (nValue == LOW || nValue == HIGH);
 	m_nValue = nValue;
@@ -130,7 +135,7 @@ void CGPIOPin::Write (unsigned nValue)
 
 	write32 (nSetClrReg, 1 << nShift);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 unsigned CGPIOPin::Read (void) const
@@ -139,7 +144,7 @@ unsigned CGPIOPin::Read (void) const
 		|| m_Mode == GPIOModeInputPullUp
 		|| m_Mode == GPIOModeInputPullDown);
 	
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (m_nPin < GPIO_PINS);
 	unsigned nLevReg = ARM_GPIO_GPLEV0 + (m_nPin / 32) * 4;
@@ -147,7 +152,7 @@ unsigned CGPIOPin::Read (void) const
 
 	unsigned nResult = read32 (nLevReg) & (1 << nShift) ? HIGH : LOW;
 	
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return nResult;
 }

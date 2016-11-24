@@ -68,17 +68,10 @@ boolean CInterruptSystem::Initialize (void)
 	TExceptionTable *pTable = (TExceptionTable *) ARM_EXCEPTION_TABLE_BASE;
 	pTable->IRQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->IRQ, IRQStub));
 
-	CleanDataCache ();
-	DataSyncBarrier ();
-
-	InvalidateInstructionCache ();
-	FlushBranchTargetCache ();
-	DataSyncBarrier ();
-
-	InstructionSyncBarrier ();
+	SyncDataAndInstructionCache ();
 
 #ifndef USE_RPI_STUB_AT
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_IC_FIQ_CONTROL, 0);
 
@@ -86,7 +79,7 @@ boolean CInterruptSystem::Initialize (void)
 	write32 (ARM_IC_DISABLE_IRQS_2, (u32) -1);
 	write32 (ARM_IC_DISABLE_BASIC_IRQS, (u32) -1);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 #endif
 
 	EnableInterrupts ();
@@ -118,24 +111,24 @@ void CInterruptSystem::DisconnectIRQ (unsigned nIRQ)
 
 void CInterruptSystem::EnableIRQ (unsigned nIRQ)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (nIRQ < IRQ_LINES);
 
 	write32 (ARM_IC_IRQS_ENABLE (nIRQ), ARM_IRQ_MASK (nIRQ));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CInterruptSystem::DisableIRQ (unsigned nIRQ)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (nIRQ < IRQ_LINES);
 
 	write32 (ARM_IC_IRQS_DISABLE (nIRQ), ARM_IRQ_MASK (nIRQ));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 CInterruptSystem *CInterruptSystem::Get (void)
@@ -204,9 +197,9 @@ void CInterruptSystem::InterruptHandler (void)
 
 void InterruptHandler (void)
 {
-	DataMemBarrier ();
+	PeripheralExit ();	// exit from interrupted peripheral
 	
 	CInterruptSystem::InterruptHandler ();
 
-	DataMemBarrier ();
+	PeripheralEntry ();	// continuing with interrupted peripheral
 }

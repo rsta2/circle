@@ -451,16 +451,16 @@ CEMMCDevice::~CEMMCDevice (void)
 
 boolean CEMMCDevice::Initialize (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	if (CardInit () != 0)
 	{
-		DataMemBarrier ();
+		PeripheralExit ();
 
 		return FALSE;
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	const char DeviceName[] = "emmc1";
 
@@ -490,11 +490,11 @@ int CEMMCDevice::Read (void *pBuffer, unsigned nCount)
 		m_pActLED->On ();
 	}
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	if (DoRead ((u8 *) pBuffer, nCount, nBlock) != (int) nCount)
 	{
-		DataMemBarrier ();
+		PeripheralExit ();
 
 		if (m_pActLED != 0)
 		{
@@ -504,7 +504,7 @@ int CEMMCDevice::Read (void *pBuffer, unsigned nCount)
 		return -1;
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	if (m_pActLED != 0)
 	{
@@ -527,11 +527,11 @@ int CEMMCDevice::Write (const void *pBuffer, unsigned nCount)
 		m_pActLED->On ();
 	}
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	if (DoWrite ((u8 *) pBuffer, nCount, nBlock) != (int) nCount)
 	{
-		DataMemBarrier ();
+		PeripheralExit ();
 
 		if (m_pActLED != 0)
 		{
@@ -541,7 +541,7 @@ int CEMMCDevice::Write (const void *pBuffer, unsigned nCount)
 		return -1;
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	if (m_pActLED != 0)
 	{

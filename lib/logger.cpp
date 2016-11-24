@@ -24,6 +24,7 @@
 #include <circle/multicore.h>
 #include <circle/util.h>
 #include <circle/sysconfig.h>
+#include <circle/machineinfo.h>
 #include <circle/version.h>
 #include <circle/debug.h>
 
@@ -58,8 +59,9 @@ CLogger::~CLogger ()
 boolean CLogger::Initialize (CDevice *pTarget)
 {
 	m_pTarget = pTarget;
-	
-	Write ("logger", LogNotice, CIRCLE_NAME " #" CIRCLE_VERSION_STRING " started");
+
+	Write ("logger", LogNotice, CIRCLE_NAME " " CIRCLE_VERSION_STRING " started on %s",
+	       CMachineInfo::Get ()->GetMachineName ());
 
 	return TRUE;
 }

@@ -3,7 +3,7 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 25 of Circle. To get access to Step 1-24 use the git tag "Step1" to "Step24".
+> This is Step 26 of Circle. To get access to Step 1-25 use the git tag "Step1" to "Step25".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -14,21 +14,23 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
-Not a Real-Time OS
-------------------
+A Real-Time OS?
+---------------
 
 Circle is not a real-time OS. That means different simultaneous operations may interfere in respect of its timing behaviour. The provided samples are tested to work but if you try different combinations of hardware support classes this has to be tested by yourself.
 
-A known issue here is that the use of USB interrupt split transfers - especially used by USB keyboard and mouse - will drop the interrupt response time to about one millisecond at worst.
+Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 25th Step
+The 26th Step
 -------------
 
-In this step a driver for the SPI0 master with DMA support has been added to Circle and is demonstrated in a test program in *sample/25-spidma*. See the *README* file in this directory for details. Because of the DMA operation SPI transfers are running parallel to the program execution on the CPU. A callback routine is entered when the SPI transfer has been completed.
+In this step support for CPU clock rate management (depending on application/user requirements and the SoC temperature) has been added to Circle and is demonstrated in a test program in *sample/26-cpustress*. See the *README* file in this directory for details.
+
+Circle kernel images build with *RASPPI = 2* are run-able on both Raspberry Pi 2 and 3 now and automatically get the name *kernel7.img*. For a binary distribution you should do one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-24 the following features were introduced:
+In Step 1-25 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -76,18 +78,27 @@ In Step 1-24 the following features were introduced:
 * Bluetooth device inquiry support
 * SPI0 master support
 * Driver for hardware random number generator
+* SPI0 master support using DMA
 
 Building
 --------
 
-Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core. For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. [This one](https://github.com/raspberrypi/tools/tree/master/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf) should work for all of these.
+Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. [This one](https://github.com/raspberrypi/tools/tree/master/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf) should work for all of these.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2 or 3) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
 `RASPPI = 1`  
 `PREFIX = arm-none-eabi-`
 
-> For the Raspberry Pi 2 model B v1.2 you have to select *RASPPI = 3* because it uses the BCM2837 SoC which was introduced with the Raspberry Pi 3 (not tested so far).
+The following table gives support for selecting the right *RASPPI* value:
+
+| RASPPI | Target      | Models                   | Optimized for |
+| ------ | ----------- | ------------------------ | ------------- |
+|      1 | kernel.img  | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
+|      2 | kernel7.img | 2, 3                     | ARMv7-A       |
+|      3 | kernel7.img | 3                        | Cortex-A53    |
+
+For a binary distribution you should do one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*.
 
 Then go to the build root of Circle and do:
 
@@ -105,7 +116,7 @@ Installation
 
 Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the kernel.img (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
 
-Note that the file *kernel.img* can be renamed to *kernel7.img* for the Raspberry Pi 2/3 but this is optional.
+Note that the file *kernel.img* has been renamed to *kernel7.img* for the Raspberry Pi 2/3.
 
 Directories
 -----------
@@ -125,7 +136,7 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.
+* CCPUThrottle: Manages CPU clock rate depending on user requirements and SoC temperature.
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

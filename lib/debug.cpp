@@ -29,12 +29,8 @@ static const char FromDebug[] = "debug";
 
 #ifdef DEBUG_CLICK
 
-static CGPIOPin AudioLeft (40, GPIOModeOutput);
-#if RASPPI != 3
-static CGPIOPin AudioRight (45, GPIOModeOutput);
-#else
-static CGPIOPin AudioRight (41, GPIOModeOutput);
-#endif
+static CGPIOPin AudioLeft (GPIOPinAudioLeft, GPIOModeOutput);
+static CGPIOPin AudioRight (GPIOPinAudioRight, GPIOModeOutput);
 
 #endif
 

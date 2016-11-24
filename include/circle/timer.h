@@ -53,7 +53,7 @@ public:
 	boolean SetTime (unsigned nTime, boolean bLocal = TRUE);
 
 	/// \return Current clock ticks of an 1 MHz counter, may wrap
-	unsigned GetClockTicks (void) const;
+	static unsigned GetClockTicks (void);
 #define CLOCKHZ	1000000
 
 	/// \return 1/HZ seconds since system boot, may wrap
@@ -95,10 +95,10 @@ public:
 
 	/// When a CTimer object is available better use this instead of SimpleMsDelay()\n
 	/// \param nMilliSeconds Delay in milliseconds (<= 2000)
-	void MsDelay (unsigned nMilliSeconds);
+	void MsDelay (unsigned nMilliSeconds)	{ SimpleMsDelay (nMilliSeconds); }
 	/// When a CTimer object is available better use this instead of SimpleusDelay()\n
 	/// \param nMicroSeconds Delay in microseconds
-	void usDelay (unsigned nMicroSeconds);
+	void usDelay (unsigned nMicroSeconds)	{ SimpleusDelay (nMicroSeconds); }
 	
 	/// \return Pointer to the only CTimer object in the system
 	static CTimer *Get (void);

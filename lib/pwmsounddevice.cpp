@@ -84,12 +84,8 @@
 #define ARM_PWM_DMAC_ENAB		(1 << 31)
 
 CPWMSoundDevice::CPWMSoundDevice (CInterruptSystem *pInterrupt)
-:	m_Audio1 (40, GPIOModeAlternateFunction0),
-#if RASPPI != 3
-	m_Audio2 (45, GPIOModeAlternateFunction0),
-#else
-	m_Audio2 (41, GPIOModeAlternateFunction0),
-#endif
+:	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction0),
+	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction0),
 	m_Clock (GPIOClockPWM, GPIOClockSourcePLLD),
 	m_DMAChannel (DMA_CHANNEL_PWM, pInterrupt),
 	m_pSoundData (0),
@@ -98,18 +94,18 @@ CPWMSoundDevice::CPWMSoundDevice (CInterruptSystem *pInterrupt)
 	m_pDMABuffer = new u32[DMA_BUF_SIZE];
 	assert (m_pDMABuffer != 0);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 	Run ();
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 CPWMSoundDevice::~CPWMSoundDevice (void)
 {
 	assert (!m_bActive);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 	Stop ();
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	delete m_pDMABuffer;
 	m_pDMABuffer = 0;
@@ -141,7 +137,7 @@ void CPWMSoundDevice::Playback (void *pSoundData, unsigned nSamples, unsigned nC
 				   m_pDMABuffer, nTransferSize, DREQSourcePWM);
 	m_DMAChannel.SetCompletionRoutine (DMACompletionStub, this);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_PWM_DMAC,   ARM_PWM_DMAC_ENAB
 			       | (7 << ARM_PWM_DMAC_PANIC__SHIFT)
@@ -152,7 +148,7 @@ void CPWMSoundDevice::Playback (void *pSoundData, unsigned nSamples, unsigned nC
 	// switched this on when playback stops to avoid clicks, switch it off here
 	write32 (ARM_PWM_CTL, read32 (ARM_PWM_CTL) & ~(ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 boolean CPWMSoundDevice::PlaybackActive (void) const

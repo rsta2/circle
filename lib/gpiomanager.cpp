@@ -2,7 +2,7 @@
 // gpiomanager.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ void CGPIOManager::InterruptHandler (void)
 {
 	assert (m_bIRQConnected);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	unsigned nEventStatus = read32 (ARM_GPIO_GPEDS0);
 
@@ -129,7 +129,7 @@ void CGPIOManager::InterruptHandler (void)
 		write32 (ARM_GPIO_GPEDS0 + (nPin / 32) * 4, nMask);
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CGPIOManager::InterruptStub (void *pParam)

@@ -20,15 +20,9 @@
 #include <circle/spimasterdma.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
-#include <circle/bcmpropertytags.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <assert.h>
-
-#if RASPPI != 3
-	#define DEFAULT_CORE_CLOCK	250000000
-#else
-	#define DEFAULT_CORE_CLOCK	300000000
-#endif
 
 // CS Register
 #define CS_LEN_LONG	(1 << 25)
@@ -68,16 +62,10 @@ CSPIMasterDMA::CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
 	m_MISO ( 9, GPIOModeAlternateFunction0),
 	m_CE0  ( 8, GPIOModeAlternateFunction0),
 	m_CE1  ( 7, GPIOModeAlternateFunction0),
-	m_nCoreClockRate (DEFAULT_CORE_CLOCK),
+	m_nCoreClockRate (CMachineInfo::Get ()->GetClockRate (CLOCK_ID_CORE)),
 	m_pCompletionRoutine (0)
 {
-	CBcmPropertyTags Tags;
-	TPropertyTagClockRate TagClockRate;
-	TagClockRate.nClockId = CLOCK_ID_CORE;
-	if (Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
-	{
-		m_nCoreClockRate = TagClockRate.nRate;
-	}
+	assert (m_nCoreClockRate > 0);
 }
 
 CSPIMasterDMA::~CSPIMasterDMA (void)
@@ -86,7 +74,7 @@ CSPIMasterDMA::~CSPIMasterDMA (void)
 
 boolean CSPIMasterDMA::Initialize (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
 	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
@@ -95,7 +83,7 @@ boolean CSPIMasterDMA::Initialize (void)
 	assert (m_CPHA <= 1);
 	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return TRUE;
 }
@@ -104,12 +92,12 @@ void CSPIMasterDMA::SetClock (unsigned nClockSpeed)
 {
 	m_nClockSpeed = nClockSpeed;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
 	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CSPIMasterDMA::SetMode (unsigned CPOL, unsigned CPHA)
@@ -117,13 +105,13 @@ void CSPIMasterDMA::SetMode (unsigned CPOL, unsigned CPHA)
 	m_CPOL = CPOL;
 	m_CPHA = CPHA;
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (m_CPOL <= 1);
 	assert (m_CPHA <= 1);
 	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CSPIMasterDMA::SetCompletionRoutine (TSPICompletionRoutine *pRoutine, void *pParam)
@@ -146,7 +134,7 @@ void CSPIMasterDMA::StartWriteRead (unsigned	nChipSelect,
 	assert (pReadBuffer != 0);
 	m_RxDMA.SetupIORead (pReadBuffer, ARM_SPI0_FIFO, nCount, DREQSourceSPIRX);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (nCount <= 0xFFFF);
 	write32 (ARM_SPI0_DLEN, nCount);
@@ -158,7 +146,7 @@ void CSPIMasterDMA::StartWriteRead (unsigned	nChipSelect,
 			      | CS_DMAEN | CS_ADCS
 			      | CS_TA);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	m_RxDMA.SetCompletionRoutine (DMACompletionStub, this);
 
@@ -168,9 +156,9 @@ void CSPIMasterDMA::StartWriteRead (unsigned	nChipSelect,
 
 void CSPIMasterDMA::DMACompletionRoutine (boolean bStatus)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 	write32 (ARM_SPI0_CS, read32 (ARM_SPI0_CS) & ~CS_TA);
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	TSPICompletionRoutine *pCompletionRoutine = m_pCompletionRoutine;
 	m_pCompletionRoutine = 0;

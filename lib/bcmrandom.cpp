@@ -25,6 +25,7 @@
 #include <circle/bcmrandom.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
+#include <circle/synchronize.h>
 
 // the initial numbers generated are "less random" so will be discarded
 #define RNG_WARMUP_COUNT	0x40000
@@ -41,8 +42,12 @@ CBcmRandomNumberGenerator::CBcmRandomNumberGenerator (void)
 	{
 		s_bInitialized = TRUE;
 
+		PeripheralEntry ();
+
 		write32 (ARM_HW_RNG_STATUS, RNG_WARMUP_COUNT);
 		write32 (ARM_HW_RNG_CTRL, ARM_HW_RNG_CTRL_EN);
+
+		PeripheralExit ();
 	}
 
 	s_SpinLock.Release ();
@@ -56,12 +61,16 @@ u32 CBcmRandomNumberGenerator::GetNumber (void)
 {
 	s_SpinLock.Acquire ();
 
+	PeripheralEntry ();
+
 	while ((read32 (ARM_HW_RNG_STATUS) >> 24) == 0)
 	{
 		// just wait
 	}
 	
 	u32 nResult = read32 (ARM_HW_RNG_DATA);
+
+	PeripheralExit ();
 
 	s_SpinLock.Release ();
 
