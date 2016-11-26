@@ -2,7 +2,7 @@
 // bthcilayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,7 +28,8 @@ static const char FromHCILayer[] = "bthci";
 CBTHCILayer *CBTHCILayer::s_pThis = 0;
 
 CBTHCILayer::CBTHCILayer (u32 nClassOfDevice, const char *pLocalName)
-:	m_pHCITransport (0),
+:	m_pHCITransportUSB (0),
+	m_pHCITransportUART (0),
 	m_DeviceManager (this, &m_DeviceEventQueue, nClassOfDevice, pLocalName),
 	m_pEventBuffer (0),
 	m_nEventLength (0),
@@ -42,7 +43,8 @@ CBTHCILayer::CBTHCILayer (u32 nClassOfDevice, const char *pLocalName)
 
 CBTHCILayer::~CBTHCILayer (void)
 {
-	m_pHCITransport = 0;
+	m_pHCITransportUSB = 0;
+	m_pHCITransportUART = 0;
 
 	delete [] m_pBuffer;
 	m_pBuffer = 0;
@@ -55,12 +57,16 @@ CBTHCILayer::~CBTHCILayer (void)
 
 boolean CBTHCILayer::Initialize (void)
 {
-	m_pHCITransport = (CUSBBluetoothDevice *) CDeviceNameService::Get ()->GetDevice ("ubt1", FALSE);
-	if (m_pHCITransport == 0)
+	m_pHCITransportUSB = (CUSBBluetoothDevice *) CDeviceNameService::Get ()->GetDevice ("ubt1", FALSE);
+	if (m_pHCITransportUSB == 0)
 	{
-		CLogger::Get ()->Write (FromHCILayer, LogError, "Bluetooth dongle not found");
+		m_pHCITransportUART = (CBTUARTTransport *) CDeviceNameService::Get ()->GetDevice ("ttyBT1", FALSE);
+		if (m_pHCITransportUART == 0)
+		{
+			CLogger::Get ()->Write (FromHCILayer, LogError, "Bluetooth controller not found");
 
-		return FALSE;
+			return FALSE;
+		}
 	}
 
 	m_pEventBuffer = new u8[BT_MAX_HCI_EVENT_SIZE];
@@ -69,21 +75,46 @@ boolean CBTHCILayer::Initialize (void)
 	m_pBuffer = new u8[BT_MAX_DATA_SIZE];
 	assert (m_pBuffer != 0);
 
-	m_pHCITransport->RegisterHCIEventHandler (EventStub);
+	if (m_pHCITransportUSB != 0)
+	{
+		m_pHCITransportUSB->RegisterHCIEventHandler (EventStub);
+	}
+	else
+	{
+		assert (m_pHCITransportUART != 0);
+		m_pHCITransportUART->RegisterHCIEventHandler (EventStub);
+	}
 
 	return m_DeviceManager.Initialize ();
 }
 
+TBTTransportType CBTHCILayer::GetTransportType (void) const
+{
+	if (m_pHCITransportUSB != 0)
+	{
+		return BTTransportTypeUSB;
+	}
+
+	if (m_pHCITransportUART != 0)
+	{
+		return BTTransportTypeUART;
+	}
+
+	return BTTransportTypeUnknown;
+}
+
 void CBTHCILayer::Process (void)
 {
-	assert (m_pHCITransport != 0);
+	assert (m_pHCITransportUSB != 0 || m_pHCITransportUART != 0);
 	assert (m_pBuffer != 0);
 
 	unsigned nLength;
 	while (   m_nCommandPackets > 0
 	       && (nLength = m_CommandQueue.Dequeue (m_pBuffer)) > 0)
 	{
-		if (!m_pHCITransport->SendHCICommand (m_pBuffer, nLength))
+		if (  m_pHCITransportUSB != 0
+		    ? !m_pHCITransportUSB->SendHCICommand (m_pBuffer, nLength)
+		    : !m_pHCITransportUART->SendHCICommand (m_pBuffer, nLength))
 		{
 			CLogger::Get ()->Write (FromHCILayer, LogError, "HCI command dropped");
 

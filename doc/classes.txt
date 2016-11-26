@@ -129,3 +129,4 @@ Bluetooth library
 * CBTQueue: Encapsulates a queue used for incoming and outgoing command, event and data packets.
 * CBTSubSystem: The main Bluetooth subsystem class. Create an instance of it in the CKernel class.
 * CBTTask: Bluetooth background task. Processes the different Bluetooth layers.
+* CBTUARTTransport: Bluetooth UART HCI transport driver for the internal BT device of the Raspberry Pi 3.

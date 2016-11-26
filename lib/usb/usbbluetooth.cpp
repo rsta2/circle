@@ -2,7 +2,7 @@
 // usbbluetooth.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include <circle/string.h>
 #include <assert.h>
 
-static const char FromBluetooth[] = "ubt";
+static const char FromBluetooth[] = "btusb";
 
 unsigned CUSBBluetoothDevice::s_nDeviceNumber = 1;
 
@@ -150,7 +150,7 @@ boolean CUSBBluetoothDevice::SendHCICommand (const void *pBuffer, unsigned nLeng
 	return TRUE;
 }
 
-void CUSBBluetoothDevice::RegisterHCIEventHandler (TUSBBluetoothHCIEventHandler *pHandler)
+void CUSBBluetoothDevice::RegisterHCIEventHandler (TBTHCIEventHandler *pHandler)
 {
 	m_pEventHandler = pHandler;
 	assert (m_pEventHandler != 0);
