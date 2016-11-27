@@ -1,9 +1,9 @@
 //
-// usbmouse.h
+// mousebehaviour.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,27 +17,33 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbmouse_h
-#define _circle_usb_usbmouse_h
+#ifndef _circle_input_mousebehaviour_h
+#define _circle_input_mousebehaviour_h
 
-#include <circle/usb/usbhiddevice.h>
-#include <circle/input/mousebehaviour.h>
 #include <circle/types.h>
 
-#define MOUSE_DISPLACEMENT_MIN	-127
-#define MOUSE_DISPLACEMENT_MAX	127
+enum TMouseEvent
+{
+	MouseEventMouseMove,
+	MouseEventMouseDown,
+	MouseEventMouseUp,
+	//MouseEventClick,
+	//MouseEventDoubleClick,
+	MouseEventUnknown
+};
 
-typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY);
+#define MOUSE_BUTTON_LEFT	(1 << 0)
+#define MOUSE_BUTTON_RIGHT	(1 << 1)
+#define MOUSE_BUTTON_MIDDLE	(1 << 2)
 
-class CUSBMouseDevice : public CUSBHIDDevice
+typedef void TMouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY);
+
+class CMouseBehaviour
 {
 public:
-	CUSBMouseDevice (CUSBFunction *pFunction);
-	~CUSBMouseDevice (void);
+	CMouseBehaviour (void);
+	~CMouseBehaviour (void);
 
-	boolean Configure (void);
-
-	// cooked mode
 	boolean Setup (unsigned nScreenWidth, unsigned nScreenHeight);	// returns FALSE on failure
 
 	void RegisterEventHandler (TMouseEventHandler *pEventHandler);
@@ -45,18 +51,24 @@ public:
 	boolean SetCursor (unsigned nPosX, unsigned nPosY);		// returns FALSE on failure
 	boolean ShowCursor (boolean bShow);				// returns previous state
 
-	// raw mode
-	void RegisterStatusHandler (TMouseStatusHandler *pStatusHandler);
+public:
+	void MouseStatusChanged (unsigned nButtons, int nDisplacementX, int nDisplacementY);
 
 private:
-	void ReportHandler (const u8 *pReport);
+	static boolean SetCursorState (unsigned nPosX, unsigned nPosY, boolean bVisible);
 
 private:
-	CMouseBehaviour m_Behaviour;
+	unsigned m_nScreenWidth;
+	unsigned m_nScreenHeight;
 
-	TMouseStatusHandler *m_pStatusHandler;
+	unsigned m_nPosX;
+	unsigned m_nPosY;
 
-	static unsigned s_nDeviceNumber;
+	boolean m_bCursorOn;
+
+	unsigned m_nButtons;
+
+	TMouseEventHandler *m_pEventHandler;
 };
 
 #endif

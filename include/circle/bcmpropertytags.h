@@ -26,6 +26,8 @@
 #define PROPTAG_END			0x00000000
 
 #define PROPTAG_GET_FIRMWARE_REVISION	0x00000001
+#define PROPTAG_SET_CURSOR_INFO		0x00008010
+#define PROPTAG_SET_CURSOR_STATE	0x00008011
 #define PROPTAG_GET_BOARD_MODEL		0x00010001
 #define PROPTAG_GET_BOARD_REVISION	0x00010002
 #define PROPTAG_GET_MAC_ADDRESS		0x00010003
@@ -60,6 +62,39 @@ struct TPropertyTagSimple
 {
 	TPropertyTag	Tag;
 	u32		nValue;
+};
+
+struct TPropertyTagSetCursorInfo
+{
+	TPropertyTag	Tag;
+	union
+	{
+		u32	nWidth;			// should be >= 16
+		u32	nResponse;
+	#define CURSOR_RESPONSE_VALID	0	// response
+	};
+	u32		nHeight;		// should be >= 16
+	u32		nUnused;
+	u32		nPixelPointer;		// physical address, format 32bpp ARGB
+	u32		nHotspotX;
+	u32		nHotspotY;
+};
+
+struct TPropertyTagSetCursorState
+{
+	TPropertyTag	Tag;
+	union
+	{
+		u32	nEnable;
+	#define CURSOR_ENABLE_INVISIBLE		0
+	#define CURSOR_ENABLE_VISIBLE		1
+		u32	nResponse;
+	};
+	u32		nPosX;
+	u32		nPosY;
+	u32		nFlags;
+	#define CURSOR_FLAGS_DISP_COORDS	0
+	#define CURSOR_FLAGS_FB_COORDS		1
 };
 
 struct TPropertyTagMACAddress
