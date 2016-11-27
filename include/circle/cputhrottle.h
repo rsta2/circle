@@ -33,11 +33,15 @@ enum TCPUSpeed
 ///	     See the description of SetOnTemperature() for details!\n
 ///	     IF YOU ARE NOT SURE ABOUT HOW TO MANAGE THIS, DO NOT USE THIS CLASS!
 
+/// \warning CCPUThrottle cannot be used together with code doing I2C or SPI transfers.\n
+///	     Because clock rate changes to the CPU clock may also effect the CORE clock,\n
+///	     this could result in a changing transfer speed.
+
 class CCPUThrottle	/// Manages CPU clock rate depending on app/user requirements and SoC temperature
 {
 public:
 	/// \param InitialSpeed CPU speed to be set initially\n
-	/// CPUSpeedUnknown: use the cmdline.txt parameter "cpuspeed" or CPUSpeedLow (if not set)\n
+	/// CPUSpeedUnknown: use the cmdline.txt parameter "fast=true" or CPUSpeedLow (if not set)\n
 	/// Otherwise: the selected value
 	CCPUThrottle (TCPUSpeed InitialSpeed = CPUSpeedUnknown);
 	~CCPUThrottle (void);
