@@ -1,0 +1,6 @@
+README
+
+This sample displays the controls of an attached USB gamepad. On start-up an
+information about the available controls (buttons, axes and hats) is shown and
+later, when you push a button or move an axis or hat, the current position
+status of all controls is displayed.

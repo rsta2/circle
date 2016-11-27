@@ -61,6 +61,7 @@ USB library
 * CUSBDeviceFactory: Creates the function objects of the different supported USB functions.
 * CUSBEndpoint: Encapsulates an endpoint of an USB device (supports control, bulk and interrupt EPs).
 * CUSBFunction: Encapsulates a function (represented by an interface descriptor) of an USB device.
+* CUSBGamePadDevice: Driver for USB gamepads
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse), boot protocol only
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards
