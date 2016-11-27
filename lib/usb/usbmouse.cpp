@@ -2,7 +2,7 @@
 // usbmouse.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 #include <circle/usb/usbhid.h>
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
-#include <circle/util.h>
 #include <assert.h>
 
 #define REPORT_SIZE	3
@@ -57,6 +56,26 @@ boolean CUSBMouseDevice::Configure (void)
 	return TRUE;
 }
 
+boolean CUSBMouseDevice::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
+{
+	return m_Behaviour.Setup (nScreenWidth, nScreenHeight);
+}
+
+void CUSBMouseDevice::RegisterEventHandler (TMouseEventHandler *pEventHandler)
+{
+	m_Behaviour.RegisterEventHandler (pEventHandler);
+}
+
+boolean CUSBMouseDevice::SetCursor (unsigned nPosX, unsigned nPosY)
+{
+	return m_Behaviour.SetCursor (nPosX, nPosY);
+}
+
+boolean CUSBMouseDevice::ShowCursor (boolean bShow)
+{
+	return m_Behaviour.ShowCursor (bShow);
+}
+
 void CUSBMouseDevice::RegisterStatusHandler (TMouseStatusHandler *pStatusHandler)
 {
 	assert (m_pStatusHandler == 0);
@@ -66,8 +85,7 @@ void CUSBMouseDevice::RegisterStatusHandler (TMouseStatusHandler *pStatusHandler
 
 void CUSBMouseDevice::ReportHandler (const u8 *pReport)
 {
-	if (   pReport != 0
-	    && m_pStatusHandler != 0)
+	if (pReport != 0)
 	{
 		u8 ucHIDButtons = pReport[0];
 
@@ -85,6 +103,11 @@ void CUSBMouseDevice::ReportHandler (const u8 *pReport)
 			nButtons |= MOUSE_BUTTON_MIDDLE;
 		}
 
-		(*m_pStatusHandler) (nButtons, char2int ((char) pReport[1]), char2int ((char) pReport[2]));
+		m_Behaviour.MouseStatusChanged (nButtons, (char) pReport[1], (char) pReport[2]);
+
+		if (m_pStatusHandler != 0)
+		{
+			(*m_pStatusHandler) (nButtons, (char) pReport[1], (char) pReport[2]);
+		}
 	}
 }

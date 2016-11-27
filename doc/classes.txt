@@ -73,6 +73,7 @@ Input library
 
 * CKeyboardBehaviour: Generic keyboard function
 * CKeyMap: Keyboard translation map (three selectable default maps at the moment)
+* CMouseBehaviour: Generic mouse function, handles the mouse cursor
 
 FS library
 

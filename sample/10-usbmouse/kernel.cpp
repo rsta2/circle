@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/usb/usbmouse.h>
 #include <assert.h>
 
 static const char ClearScreen[] = "\x1b[H\x1b[J\x1b[?25l";
@@ -101,10 +100,18 @@ TShutdownMode CKernel::Run (void)
 
 	m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
 
+	if (!pMouse->Setup (m_Screen.GetWidth (), m_Screen.GetHeight ()))
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Cannot setup mouse");
+	}
+
 	m_nPosX = m_Screen.GetWidth () / 2;
 	m_nPosY = m_Screen.GetHeight () / 2;
 
-	pMouse->RegisterStatusHandler (MouseStatusStub);
+	pMouse->SetCursor (m_nPosX, m_nPosY);
+	pMouse->ShowCursor (TRUE);
+
+	pMouse->RegisterEventHandler (MouseEventStub);
 
 	// just wait and turn the rotor
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
@@ -116,26 +123,11 @@ TShutdownMode CKernel::Run (void)
 	return m_ShutdownMode;
 }
 
-void CKernel::MouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY)
+void CKernel::MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY)
 {
-	if (nButtons & MOUSE_BUTTON_MIDDLE)
+	switch (Event)
 	{
-		m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
-	}
-	else
-	{
-		int nPosX = m_nPosX + nDisplacementX;
-		if ((unsigned) nPosX >= m_Screen.GetWidth ())
-		{
-			nPosX -= nDisplacementX;
-		}
-
-		int nPosY = m_nPosY + nDisplacementY;
-		if ((unsigned) nPosY >= m_Screen.GetHeight ())
-		{
-			nPosY -= nDisplacementY;
-		}
-
+	case MouseEventMouseMove:
 		if (nButtons & (MOUSE_BUTTON_LEFT | MOUSE_BUTTON_RIGHT))
 		{
 			DrawLine (m_nPosX, m_nPosY, nPosX, nPosY,
@@ -144,13 +136,24 @@ void CKernel::MouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDi
 
 		m_nPosX = nPosX;
 		m_nPosY = nPosY;
+		break;
+
+	case MouseEventMouseDown:
+		if (nButtons & MOUSE_BUTTON_MIDDLE)
+		{
+			m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
+		}
+		break;
+
+	default:
+		break;
 	}
 }
 
-void CKernel::MouseStatusStub (unsigned nButtons, int nDisplacementX, int nDisplacementY)
+void CKernel::MouseEventStub (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY)
 {
 	assert (s_pThis != 0);
-	s_pThis->MouseStatusHandler (nButtons, nDisplacementX, nDisplacementY);
+	s_pThis->MouseEventHandler (Event, nButtons, nPosX, nPosY);
 }
 
 void CKernel::DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenColor Color)
