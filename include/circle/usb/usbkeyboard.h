@@ -2,7 +2,7 @@
 // usbkeyboard.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <circle/usb/usbhiddevice.h>
 #include <circle/input/keyboardbehaviour.h>
+#include <circle/usb/usbhid.h>
 #include <circle/types.h>
 
 #define USBKEYB_REPORT_SIZE	8
@@ -43,8 +44,13 @@ public:
 	void RegisterSelectConsoleHandler (TSelectConsoleHandler *pSelectConsoleHandler);
 	void RegisterShutdownHandler (TShutdownHandler *pShutdownHandler);
 
+	u8 GetLEDStatus (void) const;	// returns USB LED status to be handed-over to SetLEDs()
+
 	// raw mode (if this handler is registered the others are ignored)
 	void RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw);
+
+	// works in cooked and raw mode
+	boolean SetLEDs (u8 ucStatus);		// must not be called in interrupt context
 
 private:
 	void ReportHandler (const u8 *pReport);
