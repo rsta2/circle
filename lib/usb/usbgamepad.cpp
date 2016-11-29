@@ -129,7 +129,7 @@ boolean CUSBGamePadDevice::Configure (void)
 	m_pHIDReportDescriptor = new u8[m_usReportDescriptorLength];
 	assert (m_pHIDReportDescriptor != 0);
 
-	if (   GetHost ()->GetDescriptor (GetDevice ()->GetEndpoint0 (),
+	if (   GetHost ()->GetDescriptor (GetEndpoint0 (),
 					  pHIDDesc->bReportDescriptorType, DESCRIPTOR_INDEX_DEFAULT,
 					  m_pHIDReportDescriptor, m_usReportDescriptorLength)
 	    != m_usReportDescriptorLength)
@@ -143,12 +143,11 @@ boolean CUSBGamePadDevice::Configure (void)
 	u8 ReportBuffer[8] = {0};
 	DecodeReport (ReportBuffer);
 
+	// ignoring unsupported HID interface
 	if (   m_State.naxes    == 0
 	    && m_State.nhats    == 0
 	    && m_State.nbuttons == 0)
 	{
-		CLogger::Get ()->Write (FromUSBPad, LogWarning, "Ignoring unsupported HID interface");
-
 		return FALSE;
 	}
 
@@ -181,7 +180,7 @@ const TGamePadState *CUSBGamePadDevice::GetReport (void)
 {
 	assert (0 < m_usReportSize && m_usReportSize < 64);
 	u8 ReportBuffer[m_usReportSize];
-	if (GetHost ()->ControlMessage (GetDevice ()->GetEndpoint0 (),
+	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					GET_REPORT, (REPORT_TYPE_INPUT << 8) | 0x00,
 					GetInterfaceNumber (),
@@ -448,14 +447,14 @@ void CUSBGamePadDevice::PS3Configure (void)
 
 	/* Special PS3 Controller enable commands */
 	static u8 Enable[] = {0x42, 0x0C, 0x00, 0x00};
-	GetHost ()->ControlMessage (GetDevice ()->GetEndpoint0 (),
+	GetHost ()->ControlMessage (GetEndpoint0 (),
 				    REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 				    SET_REPORT, (REPORT_TYPE_FEATURE << 8) | 0xF4,
 				    GetInterfaceNumber (), Enable, sizeof Enable);
 
 	/* Turn on LED */
 	writeBuf[9] = (u8)(leds[m_nDeviceNumber] << 1);
-	GetHost ()->ControlMessage (GetDevice ()->GetEndpoint0 (),
+	GetHost ()->ControlMessage (GetEndpoint0 (),
 				    REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 				    SET_REPORT, (REPORT_TYPE_OUTPUT << 8) | 0x01,
 				    GetInterfaceNumber (), writeBuf, sizeof writeBuf);
