@@ -57,11 +57,17 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 		return FALSE;
 	}
 
-	TUSBEndpointDescriptor *pEndpointDesc =
-		(TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT);
-	if (   pEndpointDesc == 0
-	    || (pEndpointDesc->bEndpointAddress & 0x80) != 0x80		// Input EP
-	    || (pEndpointDesc->bmAttributes     & 0x3F)	!= 0x03)	// Interrupt EP
+	const TUSBEndpointDescriptor *pEndpointDesc;
+	while ((pEndpointDesc = (TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT)) != 0)
+	{
+		if (   (pEndpointDesc->bEndpointAddress & 0x80) == 0x80		// Input EP
+		    && (pEndpointDesc->bmAttributes     & 0x3F)	== 0x03)	// Interrupt EP
+		{
+			break;
+		}
+	}
+
+	if (pEndpointDesc == 0)
 	{
 		ConfigurationError (FromUSBHID);
 

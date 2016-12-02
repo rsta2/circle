@@ -131,7 +131,8 @@ boolean CUSBGamePadDevice::Configure (void)
 
 	if (   GetHost ()->GetDescriptor (GetEndpoint0 (),
 					  pHIDDesc->bReportDescriptorType, DESCRIPTOR_INDEX_DEFAULT,
-					  m_pHIDReportDescriptor, m_usReportDescriptorLength)
+					  m_pHIDReportDescriptor, m_usReportDescriptorLength,
+					  REQUEST_IN | REQUEST_TO_INTERFACE, GetInterfaceNumber ())
 	    != m_usReportDescriptorLength)
 	{
 		CLogger::Get ()->Write (FromUSBPad, LogError, "Cannot get HID report descriptor");
