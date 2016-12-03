@@ -119,6 +119,7 @@ Net library
 * CSocket: Network application interface (socket) class.
 * CTCPConnection: Encapsulates a TCP connection. Derived from CNetConnection.
 * CTCPRejector: Rejects TCP segments which do not address an open connection. Derived from CNetConnection.
+* CTFTPDaemon: TFTP server task.
 * CTransportLayer: Encapsulates the TCP/UDP transport layer.
 * CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.
 

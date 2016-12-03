@@ -156,6 +156,7 @@ void CNetworkLayer::Process (void)
 		assert (pParam != 0);
 		pParam->nProtocol = pHeader->nProtocol;
 		memcpy (pParam->SourceAddress, pHeader->SourceAddress, IP_ADDRESS_SIZE);
+		memcpy (pParam->DestinationAddress, pHeader->DestinationAddress, IP_ADDRESS_SIZE);
 
 		nResultLength -= nHeaderLength;
 
@@ -241,7 +242,8 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	return bOK;
 }
 
-boolean CNetworkLayer::Receive (void *pBuffer, unsigned *pResultLength, CIPAddress *pSender, int *pProtocol)
+boolean CNetworkLayer::Receive (void *pBuffer, unsigned *pResultLength,
+				CIPAddress *pSender, CIPAddress *pReceiver, int *pProtocol)
 {
 	void *pParam;
 	assert (pBuffer != 0);
@@ -260,6 +262,9 @@ boolean CNetworkLayer::Receive (void *pBuffer, unsigned *pResultLength, CIPAddre
 
 	assert (pSender != 0);
 	pSender->Set (pData->SourceAddress);
+
+	assert (pReceiver != 0);
+	pReceiver->Set (pData->DestinationAddress);
 
 	delete pData;
 	pData = 0;

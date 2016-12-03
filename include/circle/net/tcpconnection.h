@@ -79,12 +79,15 @@ public:
 	int SendTo (const void *pData, unsigned nLength, int nFlags, CIPAddress	&rForeignIP, u16 nForeignPort);
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort);
 
+	int SetOptionBroadcast (boolean bAllowed);
+
 	boolean IsTerminated (void) const;
 	
 	void Process (void);
 	
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	int PacketReceived (const void *pPacket, unsigned nLength, CIPAddress &rSenderIP, int nProtocol);
+	int PacketReceived (const void *pPacket, unsigned nLength,
+			    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol);
 
 private:
 	boolean SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber = 0,

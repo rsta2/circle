@@ -4,7 +4,7 @@
 // This implements a DHCP client (RFC 2131 and RFC 2132).
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -226,6 +226,13 @@ TDHCPStatus CDHCPClient::SelectAndRequest (void)
 		return DHCPStatusConnectError;
 	}
 
+	if (m_Socket.SetOptionBroadcast (TRUE))
+	{
+		CLogger::Get ()->Write (FromDHCPClient, LogError, "Cannot set broadcast option");
+
+		return DHCPStatusConnectError;
+	}
+
 	m_nXID = GetXID ();		// new transaction ID
 
 	// SELECTING state
@@ -329,6 +336,13 @@ TDHCPStatus CDHCPClient::RenewOrRebind (boolean bRenew, unsigned nTimeout)
 		return DHCPStatusConnectError;
 	}
 
+	if (m_Socket.SetOptionBroadcast (m_bUseBroadcast))
+	{
+		CLogger::Get ()->Write (FromDHCPClient, LogError, "Cannot set broadcast option");
+
+		return DHCPStatusConnectError;
+	}
+
 	boolean bReceiveOK = FALSE;
 	while (CTimer::Get ()->GetUptime () - m_nBoundSince < nTimeout)
 	{
@@ -419,7 +433,7 @@ boolean CDHCPClient::SendAndReceive (boolean bRequest, u32 nCIAddr)
 	{
 		if (!(bRequest ? SendRequest (nCIAddr) : SendDiscover ()))
 		{
-			CLogger::Get ()->Write (FromDHCPClient, LogError, "Cannot send %",
+			CLogger::Get ()->Write (FromDHCPClient, LogError, "Cannot send %s",
 						bRequest ? "REQUEST" : "DISCOVER");
 
 			return FALSE;

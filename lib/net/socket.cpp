@@ -294,6 +294,22 @@ int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
 	return nResult;
 }
 
+int CSocket::SetOptionBroadcast (boolean bAllowed)
+{
+	if (m_hConnection < 0)
+	{
+		return -1;
+	}
+
+	if (m_nProtocol != IPPROTO_UDP)
+	{
+		return 0;
+	}
+
+	assert (m_pTransportLayer != 0);
+	return m_pTransportLayer->SetOptionBroadcast (bAllowed, m_hConnection);
+}
+
 const u8 *CSocket::GetForeignIP (void) const
 {
 	if (m_hConnection < 0)

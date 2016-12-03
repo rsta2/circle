@@ -1,0 +1,29 @@
+README
+
+This sample features a TFTP (Trivial file transfer protocol) file server on your
+Raspberry Pi. You can put files in the root directory of the boot partition of
+the SD card via the network or get files from there.
+
+Its main purpose is to provide a way to update the firmware and kernel images on
+the SD card without removing the SD card from Raspberry Pi. If you include the
+CTFTPFileServer class into your own application and start the TFTP server task
+in the background, you can update your kernel(7).img file after testing the
+previous version. This service is intended for development and testing. You
+should not enable it in the release version, because otherwise anybody on your
+local network could write to your SD card. That's why you should be behind a
+network firewall when using TFTP.
+
+After booting and 5 blinks of the Act LED the sample application is waiting for
+incoming TFTP requests. You need a TFTP client program on your host computer to
+put or get files. The client will be normally executed like this:
+
+	tftp -m binary ipaddress -c put file
+
+"ipaddress" is the IP address of your Raspberry Pi which is shown on its screen.
+"file" is the name of the file to be send to the Raspberry Pi (e.g. kernel.img).
+Alternatively you can use the "get" command to receive a file from the Raspberry
+Pi and save it to the current working directory on your host computer.
+
+Please note that there may be a "Transfer timed out" message on your Raspberry
+Pi on the first "put" command after boot, before the transfer runs and completes
+successfully. This is normal and can be ignored.

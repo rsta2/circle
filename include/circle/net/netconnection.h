@@ -55,12 +55,15 @@ public:
 	virtual int SendTo (const void *pData, unsigned nLength, int nFlags, CIPAddress	&rForeignIP, u16 nForeignPort) = 0;
 	virtual int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
 
+	virtual int SetOptionBroadcast (boolean bAllowed) = 0;
+
 	virtual boolean IsTerminated (void) const = 0;
 	
 	virtual void Process (void) = 0;
 
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	virtual int PacketReceived (const void *pPacket, unsigned nLength, CIPAddress &rSenderIP, int nProtocol) = 0;
+	virtual int PacketReceived (const void *pPacket, unsigned nLength,
+				    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol) = 0;
 
 protected:
 	CNetConfig    *m_pNetConfig;
