@@ -486,6 +486,11 @@ int CTCPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 	return 0;
 }
 
+int CTCPConnection::SetOptionBroadcast (boolean bAllowed)
+{
+	return 0;
+}
+
 boolean CTCPConnection::IsTerminated (void) const
 {
 	return m_State == TCPStateClosed;
@@ -600,6 +605,7 @@ void CTCPConnection::Process (void)
 int CTCPConnection::PacketReceived (const void	*pPacket,
 				    unsigned	 nLength,
 				    CIPAddress	&rSenderIP,
+				    CIPAddress	&rReceiverIP,
 				    int		 nProtocol)
 {
 	if (nProtocol != IPPROTO_TCP)

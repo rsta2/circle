@@ -25,6 +25,7 @@
 #include <circle/net/networklayer.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/netqueue.h>
+#include <circle/sched/synchronizationevent.h>
 #include <circle/types.h>
 
 class CUDPConnection : public CNetConnection
@@ -50,17 +51,22 @@ public:
 	int SendTo (const void *pData, unsigned nLength, int nFlags, CIPAddress	&rForeignIP, u16 nForeignPort);
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort);
 
+	int SetOptionBroadcast (boolean bAllowed);
+
 	boolean IsTerminated (void) const;
 	
 	void Process (void);
 
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	int PacketReceived (const void *pPacket, unsigned nLength, CIPAddress &rSenderIP, int nProtocol);
+	int PacketReceived (const void *pPacket, unsigned nLength,
+			    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol);
 
 private:
 	boolean m_bOpen;
 	boolean m_bActiveOpen;
 	CNetQueue m_RxQueue;
+	CSynchronizationEvent m_Event;
+	boolean m_bBroadcastsAllowed;
 };
 
 #endif

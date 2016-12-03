@@ -63,6 +63,8 @@ public:
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,
 			 u16 *pForeignPort, int hConnection);
 
+	int SetOptionBroadcast (boolean bAllowed, int hConnection);
+
 	const u8 *GetForeignIP (int hConnection) const;		// returns 0 if not connected
 
 private:

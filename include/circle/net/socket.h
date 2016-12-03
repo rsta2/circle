@@ -27,33 +27,84 @@
 
 class CNetSubSystem;
 
-class CSocket
+class CSocket		/// Application programming interface to the TCP/IP network
 {
 public:
+	/// \param pNetSubSystem Pointer to the network subsystem
+	/// \param nProtocol	 IPPROTO_TCP or IPPROTO_UDP (include circle/net/in.h)
 	CSocket (CNetSubSystem *pNetSubSystem, int nProtocol);
+
+	/// \brief Copy constructor (used internally)
 	CSocket (CSocket &rSocket);
+
+	/// \brief Destructor (terminates an active connection)
 	~CSocket (void);
 
+	/// \brief Bind own port number to this socket
+	/// \param nOwnPort Port number
+	/// \return Status (0 success, < 0 on error)
 	int Bind (u16 nOwnPort);
 
+	/// \brief Connect to foreign host/port (TCP), setup foreign host/port address (UDP)
+	/// \param rForeignIP IP address of host to be connected
+	/// \param nOwnPort   Number of port to be connected
+	/// \return Status (0 success, < 0 on error)
 	int Connect (CIPAddress &rForeignIP, u16 nForeignPort);
 
+	/// \brief Listen for incoming connections (TCP only, must call Bind() before)
+	/// \return Status (0 success, < 0 on error)
 	int Listen (void);
+	/// \brief Accept an incoming connection (TCP only, must call Listen() before)
+	/// \param pForeignIP	IP address of the remote host will be returned here
+	/// \param pForeignPort	Remote port number will be returned here
+	/// \return Newly created socket to be used to communicate with the remote host (0 on error)
 	CSocket *Accept (CIPAddress *pForeignIP, u16 *pForeignPort);
 
+	/// \brief Send a message to a remote host
+	/// \param pBuffer Pointer to the message
+	/// \param nLength Length of the message
+	/// \param nFlags  MSG_DONTWAIT or 0 (both doesn't wait for completion of the send operation)
+	/// \return Length of the sent message (< 0 on error)
 	int Send (const void *pBuffer, unsigned nLength, int nFlags);
 
-	// buffer size (and nLength) should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
+	/// \brief Receive a message from a remote host
+	/// \param pBuffer Pointer to the message buffer
+	/// \param nLength Size of the message buffer in bytes\n
+	/// Should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
+	/// \param nFlags MSG_DONTWAIT (non-blocking operation) or 0 (blocking operation)
+	/// \return Length of received message (0 with MSG_DONTWAIT if no message available, < 0 on error)
 	int Receive (void *pBuffer, unsigned nLength, int nFlags);
 
+	/// \brief Send a message to a specific remote host
+	/// \param pBuffer	Pointer to the message
+	/// \param nLength	Length of the message
+	/// \param nFlags	MSG_DONTWAIT or 0 (both doesn't wait for completion of the send operation)
+	/// \param rForeignIP	IP address of host to be sent to (ignored on TCP socket)
+	/// \param nForeignPort	Number of port to be sent to (ignored on TCP socket)
+	/// \return Length of the sent message (< 0 on error)
 	int SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 		    CIPAddress &rForeignIP, u16 nForeignPort);
 
-	// buffer size (and nLength) should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
+	/// \brief Receive a message from a remote host, return host/port of remote host
+	/// \param pBuffer Pointer to the message buffer
+	/// \param nLength Size of the message buffer in bytes\n
+	/// Should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
+	/// \param nFlags MSG_DONTWAIT (non-blocking operation) or 0 (blocking operation)
+	/// \param pForeignIP	IP address of host which has sent the message will be returned here
+	/// \param pForeignPort	Number of port from which the message has been sent will be returned here
+	/// \return Length of received message (0 with MSG_DONTWAIT if no message available, < 0 on error)
 	int ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
 			 CIPAddress *pForeignIP, u16 *pForeignPort);
 
-	const u8 *GetForeignIP (void) const;		// returns 0 if not connected
+	/// \brief Call this with bAllowed == TRUE after Bind() or Connect() to be able\n
+	/// to send and receive broadcast messages (ignored on TCP socket)
+	/// \param bAllowed Sending and receiving broadcast messages allowed on this socket? (default FALSE)
+	/// \return Status (0 success, < 0 on error)
+	int SetOptionBroadcast (boolean bAllowed);
+
+	/// \brief Get IP address of connected remote host
+	/// \return Pointer to IP address (four bytes, 0-pointer if not connected)
+	const u8 *GetForeignIP (void) const;
 
 private:
 	CNetConfig	*m_pNetConfig;

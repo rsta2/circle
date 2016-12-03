@@ -2,7 +2,7 @@
 // networklayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ struct TNetworkPrivateData
 {
 	u8	nProtocol;
 	u8	SourceAddress[IP_ADDRESS_SIZE];
+	u8	DestinationAddress[IP_ADDRESS_SIZE];
 };
 
 class CNetworkLayer
@@ -48,7 +49,8 @@ public:
 	boolean Send (const CIPAddress &rReceiver, const void *pPacket, unsigned nLength, int nProtocol);
 
 	// pBuffer must have size FRAME_BUFFER_SIZE
-	boolean Receive (void *pBuffer, unsigned *pResultLength, CIPAddress *pSender, int *pProtocol);
+	boolean Receive (void *pBuffer, unsigned *pResultLength,
+			 CIPAddress *pSender, CIPAddress *pReceiver, int *pProtocol);
 
 private:
 	CNetConfig   *m_pNetConfig;

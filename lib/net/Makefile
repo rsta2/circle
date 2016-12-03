@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ OBJS	= netsubsystem.o nettask.o socket.o \
 	  tcpconnection.o retransmissionqueue.o retranstimeoutcalc.o tcprejector.o \
 	  netconfig.o ipaddress.o netqueue.o checksumcalculator.o \
 	  dnsclient.o ntpclient.o \
-	  dhcpclient.o ntpdaemon.o httpdaemon.o
+	  dhcpclient.o ntpdaemon.o httpdaemon.o tftpdaemon.o
 
 libnet.a: $(OBJS)
 	rm -f libnet.a
