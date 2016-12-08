@@ -139,7 +139,7 @@ void CTFTPDaemon::Run (void)
 		{
 			CLogger::Get ()->Write (FromTFPTDaemon, LogError, "Cannot receive request");
 
-			return;
+			continue;
 		}
 
 		int nLength = nResult - sizeof ReqPacket.OpCode;

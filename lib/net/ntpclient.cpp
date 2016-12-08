@@ -74,7 +74,15 @@ unsigned CNTPClient::GetTime (CIPAddress &rServerIP)
 
 		CScheduler::Get ()->MsSleep (1000);
 
-		if (Socket.Receive (RecvPacket, sizeof RecvPacket, MSG_DONTWAIT) >= 44)
+		int nResult = Socket.Receive (RecvPacket, sizeof RecvPacket, MSG_DONTWAIT);
+		if (nResult < 0)
+		{
+			CLogger::Get ()->Write (FromNTPClient, LogError, "Receive failed");
+
+			return 0;
+		}
+
+		if (nResult >= 44)
 		{
 			break;
 		}

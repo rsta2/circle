@@ -96,7 +96,29 @@ void CTransportLayer::Process (void)
 						      Sender, Receiver, nProtocol);
 		}
 	}
-	
+
+	TICMPNotificationType Type;
+	u16 nSendPort;
+	u16 nReceivePort;
+	while (m_pNetworkLayer->ReceiveNotification (&Type, &Sender, &Receiver,
+						     &nSendPort, &nReceivePort, &nProtocol))
+	{
+		unsigned i;
+		for (i = 0; i < m_pConnection.GetCount (); i++)
+		{
+			if (m_pConnection[i] == 0)
+			{
+				continue;
+			}
+
+			if (((CNetConnection *) m_pConnection[i])->NotificationReceived (
+				Type, Sender, Receiver, nSendPort, nReceivePort, nProtocol) != 0)
+			{
+				break;
+			}
+		}
+	}
+
 	for (unsigned i = 0; i < m_pConnection.GetCount (); i++)
 	{
 		if (m_pConnection[i] != 0)

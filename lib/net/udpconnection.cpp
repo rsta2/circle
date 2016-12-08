@@ -47,7 +47,8 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 :	CNetConnection (pNetConfig, pNetworkLayer, rForeignIP, nForeignPort, nOwnPort, IPPROTO_UDP),
 	m_bOpen (TRUE),
 	m_bActiveOpen (TRUE),
-	m_bBroadcastsAllowed (FALSE)
+	m_bBroadcastsAllowed (FALSE),
+	m_nErrno (0)
 {
 }
 
@@ -57,7 +58,8 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 :	CNetConnection (pNetConfig, pNetworkLayer, nOwnPort, IPPROTO_UDP),
 	m_bOpen (TRUE),
 	m_bActiveOpen (FALSE),
-	m_bBroadcastsAllowed (FALSE)
+	m_bBroadcastsAllowed (FALSE),
+	m_nErrno (0)
 {
 }
 
@@ -92,6 +94,14 @@ int CUDPConnection::Close (void)
 	
 int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 {
+	if (m_nErrno < 0)
+	{
+		int nErrno = m_nErrno;
+		m_nErrno = 0;
+
+		return nErrno;
+	}
+
 	if (!m_bActiveOpen)
 	{
 		return -1;
@@ -150,6 +160,14 @@ int CUDPConnection::Receive (void *pBuffer, int nFlags)
 	unsigned nLength;
 	do
 	{
+		if (m_nErrno < 0)
+		{
+			int nErrno = m_nErrno;
+			m_nErrno = 0;
+
+			return nErrno;
+		}
+
 		assert (pBuffer != 0);
 		nLength = m_RxQueue.Dequeue (pBuffer, &pParam);
 		if (nLength == 0)
@@ -161,6 +179,14 @@ int CUDPConnection::Receive (void *pBuffer, int nFlags)
 
 			m_Event.Clear ();
 			m_Event.Wait ();
+
+			if (m_nErrno < 0)
+			{
+				int nErrno = m_nErrno;
+				m_nErrno = 0;
+
+				return nErrno;
+			}
 		}
 	}
 	while (nLength == 0);
@@ -176,6 +202,14 @@ int CUDPConnection::Receive (void *pBuffer, int nFlags)
 int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 			    CIPAddress	&rForeignIP, u16 nForeignPort)
 {
+	if (m_nErrno < 0)
+	{
+		int nErrno = m_nErrno;
+		m_nErrno = 0;
+
+		return nErrno;
+	}
+
 	if (m_bActiveOpen)
 	{
 		// ignore rForeignIP and nForeignPort
@@ -235,6 +269,14 @@ int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 	unsigned nLength;
 	do
 	{
+		if (m_nErrno < 0)
+		{
+			int nErrno = m_nErrno;
+			m_nErrno = 0;
+
+			return nErrno;
+		}
+
 		assert (pBuffer != 0);
 		nLength = m_RxQueue.Dequeue (pBuffer, &pParam);
 		if (nLength == 0)
@@ -246,6 +288,14 @@ int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 
 			m_Event.Clear ();
 			m_Event.Wait ();
+
+			if (m_nErrno < 0)
+			{
+				int nErrno = m_nErrno;
+				m_nErrno = 0;
+
+				return nErrno;
+			}
 		}
 	}
 	while (nLength == 0);
@@ -350,6 +400,49 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength,
 	pData->nSourcePort = nSourcePort;
 
 	m_RxQueue.Enqueue ((u8 *) pPacket + sizeof (TUDPHeader), nLength, pData);
+
+	m_Event.Set ();
+
+	return 1;
+}
+
+int CUDPConnection::NotificationReceived (TICMPNotificationType  Type,
+					  CIPAddress		&rSenderIP,
+					  CIPAddress		&rReceiverIP,
+					  u16			 nSendPort,
+					  u16			 nReceivePort,
+					  int			 nProtocol)
+{
+	if (nProtocol != IPPROTO_UDP)
+	{
+		return 0;
+	}
+
+	if (m_nOwnPort != nReceivePort)
+	{
+		return 0;
+	}
+
+	assert (m_pNetConfig != 0);
+	if (rReceiverIP != *m_pNetConfig->GetIPAddress ())
+	{
+		return 0;
+	}
+
+	if (m_bActiveOpen)
+	{
+		if (m_nForeignPort != nSendPort)
+		{
+			return 0;
+		}
+
+		if (m_ForeignIP != rSenderIP)
+		{
+			return 0;
+		}
+	}
+
+	m_nErrno = -1;
 
 	m_Event.Set ();
 

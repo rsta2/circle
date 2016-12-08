@@ -23,6 +23,7 @@
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
 #include <circle/net/ipaddress.h>
+#include <circle/net/icmphandler.h>
 #include <circle/net/checksumcalculator.h>
 #include <circle/types.h>
 
@@ -64,6 +65,12 @@ public:
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
 	virtual int PacketReceived (const void *pPacket, unsigned nLength,
 				    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol) = 0;
+
+	// returns: 0: not to me, 1: notification consumed
+	virtual int NotificationReceived (TICMPNotificationType Type,
+					  CIPAddress &rSenderIP, CIPAddress &rReceiverIP,
+					  u16 nSendPort, u16 nReceivePort,
+					  int nProtocol) = 0;
 
 protected:
 	CNetConfig    *m_pNetConfig;

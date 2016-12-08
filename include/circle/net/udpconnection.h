@@ -24,6 +24,7 @@
 #include <circle/net/netconnection.h>
 #include <circle/net/networklayer.h>
 #include <circle/net/ipaddress.h>
+#include <circle/net/icmphandler.h>
 #include <circle/net/netqueue.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/types.h>
@@ -61,12 +62,20 @@ public:
 	int PacketReceived (const void *pPacket, unsigned nLength,
 			    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol);
 
+	// returns: 0: not to me, 1: notification consumed
+	int NotificationReceived (TICMPNotificationType Type,
+				  CIPAddress &rSenderIP, CIPAddress &rReceiverIP,
+				  u16 nSendPort, u16 nReceivePort,
+				  int nProtocol);
+
 private:
 	boolean m_bOpen;
 	boolean m_bActiveOpen;
 	CNetQueue m_RxQueue;
 	CSynchronizationEvent m_Event;
 	boolean m_bBroadcastsAllowed;
+
+	int m_nErrno;				// signalize error to the user
 };
 
 #endif
