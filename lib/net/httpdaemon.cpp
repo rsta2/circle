@@ -364,7 +364,7 @@ THTTPStatus CHTTPDaemon::ParseRequest (void)
 	{
 		CLogger::Get ()->Write (FromHTTPDaemon, LogError, "Receive failed");
 
-		return HTTPInternalServerError;
+		return HTTPUnknownError;
 	}
 	
 	if (Status != HTTPOK)

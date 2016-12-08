@@ -102,7 +102,7 @@ Net library
 * CDHCPClient: DHCP client task. Gets and maintains an IP address lease for the network device.
 * CDNSClient: Resolves hostnames to IP addresses.
 * CHTTPDaemon: Simple HTTP server class.
-* CICMPHandler: ICMP echo (ping) responder.
+* CICMPHandler: ICMP error message handler and echo (ping) responder.
 * CIPAddress: Encapsulates an IP address.
 * CLinkLayer: Encapsulates the Ethernet MAC layer.
 * CNetConfig: Encapsulates the network configuration.
@@ -116,6 +116,7 @@ Net library
 * CNTPDaemon: Background task which uses CNTPClient to update the system time every 15 minutes.
 * CRetransmissionQueue: The TCP retransmission queue.
 * CRetransmissionTimeoutCalculator: Calculates the TCP retransmission timeout according to RFC 6298.
+* CRouteCache: Caches special routes, received via ICMP redirect requests.
 * CSocket: Network application interface (socket) class.
 * CTCPConnection: Encapsulates a TCP connection. Derived from CNetConnection.
 * CTCPRejector: Rejects TCP segments which do not address an open connection. Derived from CNetConnection.

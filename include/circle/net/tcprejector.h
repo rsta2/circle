@@ -24,6 +24,7 @@
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
 #include <circle/net/ipaddress.h>
+#include <circle/net/icmphandler.h>
 #include <circle/types.h>
 
 class CTCPRejector : public CNetConnection
@@ -49,6 +50,10 @@ public:
 	int SetOptionBroadcast (boolean bAllowed)			{ return -1; }
 	boolean IsTerminated (void) const				{ return FALSE; }
 	void Process (void)						{ }
+	int NotificationReceived (TICMPNotificationType Type,
+				  CIPAddress &rSenderIP, CIPAddress &rReceiverIP,
+				  u16 nSendPort, u16 nReceivePort,
+				  int nProtocol)			{ return 0; }
 
 private:
 	boolean SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber = 0);
