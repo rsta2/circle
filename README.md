@@ -3,7 +3,7 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 26 of Circle. To get access to Step 1-25 use the git tag "Step1" to "Step25".
+> This is Step 27 of Circle. To get access to Step 1-26 use the git tag "Step1" to "Step26".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -21,16 +21,22 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 26th Step
+The 27th Step
 -------------
 
-In this step support for CPU clock rate management (depending on application/user requirements and the SoC temperature) has been added to Circle and is demonstrated in a test program in *sample/26-cpustress*. See the *README* file in this directory for details.
+This step adds some basic support for USB gamepads with a standard USB HID class report interface (3-0-0). It is demonstrated in a simple test program in *sample/27-usbgamepad*. See the *README* file in this directory for details. The USB HID class gamepad driver was ported from USPi and was originally developed by Marco Maccaferri. Please note that the gamepad API may change in the future if further gamepads will be supported.
 
-Circle kernel images build with *RASPPI = 2* are run-able on both Raspberry Pi 2 and 3 now and automatically get the name *kernel7.img*. For a binary distribution you should do one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*.
+The USB keyboard driver has three new keyboard maps now (FR, IT and US International) and can handle the keyboard status LEDs, if the application supports this, like shown in *sample/08-usbkeyboard*. The USB mouse driver has been extended to support a mouse cursor. *sample/10-usbmouse* has been updated to use this.
+
+TFTP file server support has been added to addon/ which is intended to support kernel image and firmware updates while developing and testing.
+
+The Bluetooth library is working with the internal Bluetooth host controller of the Raspberry Pi 3 now. The support is still limited to the Bluetooth inquiry function (see *sample/22-btsimple*).
+
+There is an important change in the networking code. UDP sockets do not send and receive broadcast messages by default any more for security reasons. CSocket::SetOptionBroadcast(TRUE) has to be called after Bind() or Connect() to allow this. So if you use broadcasts with UDP sockets you have to update your application.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-25 the following features were introduced:
+In Step 1-26 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -79,6 +85,7 @@ In Step 1-25 the following features were introduced:
 * SPI0 master support
 * Driver for hardware random number generator
 * SPI0 master support using DMA
+* CPU clock rate management support
 
 Building
 --------
@@ -134,9 +141,22 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Base library
+USB library
 
-* CCPUThrottle: Manages CPU clock rate depending on user requirements and SoC temperature.
+* CUSBGamePadDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
+
+Input library
+
+* CMouseBehaviour: Generic mouse function, handles the mouse cursor
+
+Net library
+
+* CRouteCache: Caches special routes, received via ICMP redirect requests
+* CTFTPDaemon: TFTP server task
+
+Bluetooth library
+
+* CBTUARTTransport: Bluetooth UART HCI transport driver for the internal BT device of the Raspberry Pi 3
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
