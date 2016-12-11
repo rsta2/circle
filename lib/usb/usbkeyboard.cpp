@@ -108,7 +108,7 @@ boolean CUSBKeyboardDevice::SetLEDs (u8 ucStatus)
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					SET_REPORT, REPORT_TYPE_OUTPUT << 8,
-					GetInterfaceNumber (), Buffer, sizeof Buffer) != sizeof Buffer)
+					GetInterfaceNumber (), Buffer, sizeof Buffer) < 0)
 	{
 		return FALSE;
 	}
