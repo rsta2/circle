@@ -108,7 +108,7 @@ void CBTDeviceManager::Process (void)
 			{
 			case OP_CODE_RESET: {
 				assert (m_State == BTDeviceStateResetPending);
-
+#if RASPPI >= 2
 				if (m_pHCILayer->GetTransportType () != BTTransportTypeUART)
 				{
 					goto NoFirmwareLoad;
@@ -156,6 +156,7 @@ void CBTDeviceManager::Process (void)
 				CScheduler::Get ()->MsSleep (250);
 
 			NoFirmwareLoad:
+#endif
 				TBTHCICommandHeader Cmd;
 				Cmd.OpCode = OP_CODE_READ_BD_ADDR;
 				Cmd.ParameterTotalLength = PARM_TOTAL_LEN (Cmd);
