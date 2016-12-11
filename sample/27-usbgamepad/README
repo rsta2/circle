@@ -1,0 +1,15 @@
+README
+
+This sample displays the controls of an attached USB gamepad. On start-up an
+information about the available controls (buttons, axes and hats) is shown and
+later, when you push a button or move an axis or hat, the current position
+status of all controls is displayed.
+
+Circle currently supports only gamepads with a standard USB HID class report
+interface (3-0-0). That's why some widely spread gamepads with proprietary
+interfaces cannot be used. There are also USB gamepads out, which support this
+standard report interface but do not have a fully qualified report descriptor.
+It is likely that their support is limited to some gamepad controls.
+
+Please note that the gamepad API may change in the future if further gamepads
+will be supported.

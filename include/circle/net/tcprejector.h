@@ -24,6 +24,7 @@
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
 #include <circle/net/ipaddress.h>
+#include <circle/net/icmphandler.h>
 #include <circle/types.h>
 
 class CTCPRejector : public CNetConnection
@@ -33,7 +34,8 @@ public:
 	~CTCPRejector (void);
 
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	int PacketReceived (const void *pPacket, unsigned nLength, CIPAddress &rSenderIP, int nProtocol);
+	int PacketReceived (const void *pPacket, unsigned nLength,
+			    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol);
 
 	// unused
 	int Connect (void)						{ return -1; }
@@ -45,8 +47,13 @@ public:
 		    CIPAddress	&rForeignIP, u16 nForeignPort)		{ return -1; }
 	int ReceiveFrom (void *pBuffer, int nFlags,
 			 CIPAddress *pForeignIP, u16 *pForeignPort)	{ return -1; }
+	int SetOptionBroadcast (boolean bAllowed)			{ return -1; }
 	boolean IsTerminated (void) const				{ return FALSE; }
 	void Process (void)						{ }
+	int NotificationReceived (TICMPNotificationType Type,
+				  CIPAddress &rSenderIP, CIPAddress &rReceiverIP,
+				  u16 nSendPort, u16 nReceivePort,
+				  int nProtocol)			{ return 0; }
 
 private:
 	boolean SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber = 0);

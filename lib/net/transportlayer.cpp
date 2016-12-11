@@ -68,10 +68,11 @@ void CTransportLayer::Process (void)
 {
 	unsigned nResultLength;
 	CIPAddress Sender;
+	CIPAddress Receiver;
 	int nProtocol;
 	assert (m_pNetworkLayer != 0);
 	assert (m_pBuffer != 0);
-	while (m_pNetworkLayer->Receive (m_pBuffer, &nResultLength, &Sender, &nProtocol))
+	while (m_pNetworkLayer->Receive (m_pBuffer, &nResultLength, &Sender, &Receiver, &nProtocol))
 	{
 		unsigned i;
 		for (i = 0; i < m_pConnection.GetCount (); i++)
@@ -81,7 +82,8 @@ void CTransportLayer::Process (void)
 				continue;
 			}
 
-			if (((CNetConnection *) m_pConnection[i])->PacketReceived (m_pBuffer, nResultLength, Sender, nProtocol) != 0)
+			if (((CNetConnection *) m_pConnection[i])->PacketReceived (
+				m_pBuffer, nResultLength, Sender, Receiver, nProtocol) != 0)
 			{
 				break;
 			}
@@ -90,10 +92,33 @@ void CTransportLayer::Process (void)
 		if (i >= m_pConnection.GetCount ())
 		{
 			// send RESET on not consumed TCP segment
-			m_TCPRejector.PacketReceived (m_pBuffer, nResultLength, Sender, nProtocol);
+			m_TCPRejector.PacketReceived (m_pBuffer, nResultLength,
+						      Sender, Receiver, nProtocol);
 		}
 	}
-	
+
+	TICMPNotificationType Type;
+	u16 nSendPort;
+	u16 nReceivePort;
+	while (m_pNetworkLayer->ReceiveNotification (&Type, &Sender, &Receiver,
+						     &nSendPort, &nReceivePort, &nProtocol))
+	{
+		unsigned i;
+		for (i = 0; i < m_pConnection.GetCount (); i++)
+		{
+			if (m_pConnection[i] == 0)
+			{
+				continue;
+			}
+
+			if (((CNetConnection *) m_pConnection[i])->NotificationReceived (
+				Type, Sender, Receiver, nSendPort, nReceivePort, nProtocol) != 0)
+			{
+				break;
+			}
+		}
+	}
+
 	for (unsigned i = 0; i < m_pConnection.GetCount (); i++)
 	{
 		if (m_pConnection[i] != 0)
@@ -367,6 +392,18 @@ int CTransportLayer::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeig
 	assert (pBuffer != 0);
 	return ((CNetConnection *) m_pConnection[hConnection])->ReceiveFrom (pBuffer, nFlags,
 									     pForeignIP, pForeignPort);
+}
+
+int CTransportLayer::SetOptionBroadcast (boolean bAllowed, int hConnection)
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return -1;
+	}
+
+	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionBroadcast (bAllowed);
 }
 
 const u8 *CTransportLayer::GetForeignIP (int hConnection) const

@@ -181,6 +181,10 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 
 		nRecvSize = Socket.Receive (RecvBuffer, DNS_MAX_MESSAGE_SIZE, MSG_DONTWAIT);
 		assert (nRecvSize < DNS_MAX_MESSAGE_SIZE);
+		if (nRecvSize < 0)
+		{
+			return FALSE;
+		}
 	}
 	while (nRecvSize < (int) (sizeof (TDNSHeader)+sizeof (TDNSResourceRecordTrailerAIN)));
 

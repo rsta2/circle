@@ -2,7 +2,7 @@
 // usbhostcontroller.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,7 +35,8 @@ public:
 	int GetDescriptor (CUSBEndpoint *pEndpoint,
 			   unsigned char ucType, unsigned char ucIndex,
 			   void *pBuffer, unsigned nBufSize,
-			   unsigned char ucRequestType = REQUEST_IN);
+			   unsigned char ucRequestType = REQUEST_IN,
+			   unsigned short wIndex = 0);		// endpoint, interface or language ID
 	
 	boolean SetAddress (CUSBEndpoint *pEndpoint, u8 ucDeviceAddress);
 	

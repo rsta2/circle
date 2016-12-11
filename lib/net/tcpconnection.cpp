@@ -260,6 +260,11 @@ int CTCPConnection::Connect (void)
 
 int CTCPConnection::Accept (CIPAddress *pForeignIP, u16 *pForeignPort)
 {
+	if (m_nErrno < 0)
+	{
+		return m_nErrno;
+	}
+
 	switch (m_State)
 	{
 	case TCPStateSynSent:
@@ -291,7 +296,7 @@ int CTCPConnection::Accept (CIPAddress *pForeignIP, u16 *pForeignPort)
 	assert (pForeignPort != 0);
 	*pForeignPort = m_nForeignPort;
 
-	return 0;
+	return m_nErrno;
 }
 
 int CTCPConnection::Close (void)
@@ -486,6 +491,11 @@ int CTCPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 	return 0;
 }
 
+int CTCPConnection::SetOptionBroadcast (boolean bAllowed)
+{
+	return 0;
+}
+
 boolean CTCPConnection::IsTerminated (void) const
 {
 	return m_State == TCPStateClosed;
@@ -600,6 +610,7 @@ void CTCPConnection::Process (void)
 int CTCPConnection::PacketReceived (const void	*pPacket,
 				    unsigned	 nLength,
 				    CIPAddress	&rSenderIP,
+				    CIPAddress	&rReceiverIP,
 				    int		 nProtocol)
 {
 	if (nProtocol != IPPROTO_TCP)
@@ -1273,6 +1284,43 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		}
 		break;
 	}
+
+	return 1;
+}
+
+int CTCPConnection::NotificationReceived (TICMPNotificationType  Type,
+					  CIPAddress		&rSenderIP,
+					  CIPAddress		&rReceiverIP,
+					  u16			 nSendPort,
+					  u16			 nReceivePort,
+					  int			 nProtocol)
+{
+	if (nProtocol != IPPROTO_TCP)
+	{
+		return 0;
+	}
+
+	if (m_State < TCPStateSynSent)
+	{
+		return 0;
+	}
+
+	if (   m_ForeignIP != rSenderIP
+	    || m_nForeignPort != nSendPort)
+	{
+		return 0;
+	}
+
+	assert (m_pNetConfig != 0);
+	if (   rReceiverIP != *m_pNetConfig->GetIPAddress ()
+	    || m_nOwnPort != nReceivePort)
+	{
+		return 0;
+	}
+
+	m_nErrno = -1;
+
+	m_Event.Set ();
 
 	return 1;
 }

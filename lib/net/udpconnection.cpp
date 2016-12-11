@@ -46,7 +46,9 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 				u16		 nOwnPort)
 :	CNetConnection (pNetConfig, pNetworkLayer, rForeignIP, nForeignPort, nOwnPort, IPPROTO_UDP),
 	m_bOpen (TRUE),
-	m_bActiveOpen (TRUE)
+	m_bActiveOpen (TRUE),
+	m_bBroadcastsAllowed (FALSE),
+	m_nErrno (0)
 {
 }
 
@@ -55,7 +57,9 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 				u16		 nOwnPort)
 :	CNetConnection (pNetConfig, pNetworkLayer, nOwnPort, IPPROTO_UDP),
 	m_bOpen (TRUE),
-	m_bActiveOpen (FALSE)
+	m_bActiveOpen (FALSE),
+	m_bBroadcastsAllowed (FALSE),
+	m_nErrno (0)
 {
 }
 
@@ -90,6 +94,14 @@ int CUDPConnection::Close (void)
 	
 int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 {
+	if (m_nErrno < 0)
+	{
+		int nErrno = m_nErrno;
+		m_nErrno = 0;
+
+		return nErrno;
+	}
+
 	if (!m_bActiveOpen)
 	{
 		return -1;
@@ -108,6 +120,14 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 		return -1;
 	}
 
+	assert (m_pNetConfig != 0);
+	if (   !m_bBroadcastsAllowed
+	    && (   m_ForeignIP.IsBroadcast ()
+	        || m_ForeignIP == *m_pNetConfig->GetBroadcastAddress ()))
+	{
+		return -1;
+	}
+
 	u8 *pPacketBuffer = new u8[nPacketLength];
 	assert (pPacketBuffer != 0);
 	TUDPHeader *pHeader = (TUDPHeader *) pPacketBuffer;
@@ -121,7 +141,6 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 	assert (nLength > 0);
 	memcpy (pPacketBuffer+sizeof (TUDPHeader), pData, nLength);
 
-	assert (m_pNetConfig != 0);
 	m_Checksum.SetSourceAddress (*m_pNetConfig->GetIPAddress ());
 	m_Checksum.SetDestinationAddress (m_ForeignIP);
 	pHeader->nChecksum = m_Checksum.Calculate (pPacketBuffer, nPacketLength);
@@ -137,18 +156,40 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 
 int CUDPConnection::Receive (void *pBuffer, int nFlags)
 {
-	if (nFlags != MSG_DONTWAIT)
-	{
-		return -1;
-	}
-
 	void *pParam;
-	assert (pBuffer != 0);
-	unsigned nLength = m_RxQueue.Dequeue (pBuffer, &pParam);
-	if (nLength == 0)
+	unsigned nLength;
+	do
 	{
-		return 0;
+		if (m_nErrno < 0)
+		{
+			int nErrno = m_nErrno;
+			m_nErrno = 0;
+
+			return nErrno;
+		}
+
+		assert (pBuffer != 0);
+		nLength = m_RxQueue.Dequeue (pBuffer, &pParam);
+		if (nLength == 0)
+		{
+			if (nFlags == MSG_DONTWAIT)
+			{
+				return 0;
+			}
+
+			m_Event.Clear ();
+			m_Event.Wait ();
+
+			if (m_nErrno < 0)
+			{
+				int nErrno = m_nErrno;
+				m_nErrno = 0;
+
+				return nErrno;
+			}
+		}
 	}
+	while (nLength == 0);
 
 	TUDPPrivateData *pData = (TUDPPrivateData *) pParam;
 	assert (pData != 0);
@@ -161,6 +202,14 @@ int CUDPConnection::Receive (void *pBuffer, int nFlags)
 int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 			    CIPAddress	&rForeignIP, u16 nForeignPort)
 {
+	if (m_nErrno < 0)
+	{
+		int nErrno = m_nErrno;
+		m_nErrno = 0;
+
+		return nErrno;
+	}
+
 	if (m_bActiveOpen)
 	{
 		// ignore rForeignIP and nForeignPort
@@ -180,6 +229,14 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 		return -1;
 	}
 
+	assert (m_pNetConfig != 0);
+	if (   !m_bBroadcastsAllowed
+	    && (   rForeignIP.IsBroadcast ()
+	        || rForeignIP == *m_pNetConfig->GetBroadcastAddress ()))
+	{
+		return -1;
+	}
+
 	u8 *pPacketBuffer = new u8[nPacketLength];
 	assert (pPacketBuffer != 0);
 	TUDPHeader *pHeader = (TUDPHeader *) pPacketBuffer;
@@ -193,7 +250,6 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 	assert (nLength > 0);
 	memcpy (pPacketBuffer+sizeof (TUDPHeader), pData, nLength);
 
-	assert (m_pNetConfig != 0);
 	m_Checksum.SetSourceAddress (*m_pNetConfig->GetIPAddress ());
 	m_Checksum.SetDestinationAddress (rForeignIP);
 	pHeader->nChecksum = m_Checksum.Calculate (pPacketBuffer, nPacketLength);
@@ -209,18 +265,40 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 
 int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort)
 {
-	if (nFlags != MSG_DONTWAIT)
-	{
-		return -1;
-	}
-
 	void *pParam;
-	assert (pBuffer != 0);
-	unsigned nLength = m_RxQueue.Dequeue (pBuffer, &pParam);
-	if (nLength == 0)
+	unsigned nLength;
+	do
 	{
-		return 0;
+		if (m_nErrno < 0)
+		{
+			int nErrno = m_nErrno;
+			m_nErrno = 0;
+
+			return nErrno;
+		}
+
+		assert (pBuffer != 0);
+		nLength = m_RxQueue.Dequeue (pBuffer, &pParam);
+		if (nLength == 0)
+		{
+			if (nFlags == MSG_DONTWAIT)
+			{
+				return 0;
+			}
+
+			m_Event.Clear ();
+			m_Event.Wait ();
+
+			if (m_nErrno < 0)
+			{
+				int nErrno = m_nErrno;
+				m_nErrno = 0;
+
+				return nErrno;
+			}
+		}
 	}
+	while (nLength == 0);
 
 	TUDPPrivateData *pData = (TUDPPrivateData *) pParam;
 	assert (pData != 0);
@@ -237,6 +315,13 @@ int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 	return nLength;
 }
 
+int CUDPConnection::SetOptionBroadcast (boolean bAllowed)
+{
+	m_bBroadcastsAllowed = bAllowed;
+
+	return 0;
+}
+
 boolean CUDPConnection::IsTerminated (void) const
 {
 	return !m_bOpen;
@@ -246,35 +331,17 @@ void CUDPConnection::Process (void)
 {
 }
 
-int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength, CIPAddress &rSenderIP, int nProtocol)
+int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength,
+				    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol)
 {
 	if (nProtocol != IPPROTO_UDP)
 	{
 		return 0;
 	}
 
-	m_Checksum.SetSourceAddress (rSenderIP);
-
-	if (   m_bActiveOpen
-	    && m_ForeignIP.IsBroadcast ())
-	{
-		m_Checksum.SetDestinationAddress (m_ForeignIP);
-	}
-	else
-	{
-		if (   m_bActiveOpen
-		    && m_ForeignIP != rSenderIP)
-		{
-			return 0;
-		}
-
-		assert (m_pNetConfig != 0);
-		m_Checksum.SetDestinationAddress (*m_pNetConfig->GetIPAddress ());
-	}
-	
 	if (nLength <= sizeof (TUDPHeader))
 	{
-		return 0;
+		return -1;
 	}
 	TUDPHeader *pHeader = (TUDPHeader *) pPacket;
 
@@ -283,11 +350,22 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength, CIPAd
 		return 0;
 	}
 
+	assert (m_pNetConfig != 0);
+
 	u16 nSourcePort = be2le16 (pHeader->nSourcePort);
-	if (   m_bActiveOpen
-	    && m_nForeignPort != nSourcePort)
+	if (m_bActiveOpen)
 	{
-		return 0;
+		if (m_nForeignPort != nSourcePort)
+		{
+			return 0;
+		}
+
+		if (   m_ForeignIP != rSenderIP
+		    && !m_ForeignIP.IsBroadcast ()
+		    && m_ForeignIP != *m_pNetConfig->GetBroadcastAddress ())
+		{
+			return 0;
+		}
 	}
 
 	if (nLength < be2le16 (pHeader->nLength))
@@ -295,26 +373,22 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength, CIPAd
 		return -1;
 	}
 	
-	if (   pHeader->nChecksum != UDP_CHECKSUM_NONE
-	    && m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
+	if (pHeader->nChecksum != UDP_CHECKSUM_NONE)
 	{
-		if (m_bActiveOpen)
+		m_Checksum.SetSourceAddress (rSenderIP);
+		m_Checksum.SetDestinationAddress (rReceiverIP);
+
+		if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
 		{
 			return -1;
 		}
+	}
 
-		CIPAddress BroadcastIP;
-		BroadcastIP.SetBroadcast ();
-		m_Checksum.SetDestinationAddress (BroadcastIP);
-		if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
-		{
-			assert (m_pNetConfig != 0);
-			m_Checksum.SetDestinationAddress (*m_pNetConfig->GetBroadcastAddress ());
-			if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
-			{
-				return -1;
-			}
-		}
+	if (   !m_bBroadcastsAllowed
+	    && (   rReceiverIP.IsBroadcast ()
+	        || rReceiverIP == *m_pNetConfig->GetBroadcastAddress ()))
+	{
+		return 1;
 	}
 
 	nLength -= sizeof (TUDPHeader);
@@ -326,6 +400,51 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength, CIPAd
 	pData->nSourcePort = nSourcePort;
 
 	m_RxQueue.Enqueue ((u8 *) pPacket + sizeof (TUDPHeader), nLength, pData);
+
+	m_Event.Set ();
+
+	return 1;
+}
+
+int CUDPConnection::NotificationReceived (TICMPNotificationType  Type,
+					  CIPAddress		&rSenderIP,
+					  CIPAddress		&rReceiverIP,
+					  u16			 nSendPort,
+					  u16			 nReceivePort,
+					  int			 nProtocol)
+{
+	if (nProtocol != IPPROTO_UDP)
+	{
+		return 0;
+	}
+
+	if (m_nOwnPort != nReceivePort)
+	{
+		return 0;
+	}
+
+	assert (m_pNetConfig != 0);
+	if (rReceiverIP != *m_pNetConfig->GetIPAddress ())
+	{
+		return 0;
+	}
+
+	if (m_bActiveOpen)
+	{
+		if (m_nForeignPort != nSendPort)
+		{
+			return 0;
+		}
+
+		if (m_ForeignIP != rSenderIP)
+		{
+			return 0;
+		}
+	}
+
+	m_nErrno = -1;
+
+	m_Event.Set ();
 
 	return 1;
 }

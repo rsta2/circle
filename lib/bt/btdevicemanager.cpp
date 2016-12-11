@@ -2,7 +2,7 @@
 // btdevicemanager.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,18 @@
 //
 #include <circle/bt/btdevicemanager.h>
 #include <circle/bt/bthcilayer.h>
+#include <circle/bt/bcmvendor.h>
+#include <circle/sched/scheduler.h>
+#include <circle/logger.h>
 #include <circle/util.h>
 #include <assert.h>
+
+static const u8 Firmware[] =
+{
+#if RASPPI >= 2				// this takes 35 KByte and is not needed on RPi 1
+	#include "BCM43430A1.h"
+#endif
+};
 
 static const char FromDeviceManager[] = "btdev";
 
@@ -98,12 +108,60 @@ void CBTDeviceManager::Process (void)
 			{
 			case OP_CODE_RESET: {
 				assert (m_State == BTDeviceStateResetPending);
+#if RASPPI >= 2
+				if (m_pHCILayer->GetTransportType () != BTTransportTypeUART)
+				{
+					goto NoFirmwareLoad;
+				}
 
+				TBTHCICommandHeader Cmd;
+				Cmd.OpCode = OP_CODE_DOWNLOAD_MINIDRIVER;
+				Cmd.ParameterTotalLength = PARM_TOTAL_LEN (Cmd);
+				m_pHCILayer->SendCommand (&Cmd, sizeof Cmd);
+				CScheduler::Get ()->MsSleep (50);
+
+				m_nFirmwareOffset = 0;
+				m_State = BTDeviceStateWriteRAMPending;
+				} break;
+
+			case OP_CODE_DOWNLOAD_MINIDRIVER:
+			case OP_CODE_WRITE_RAM: {
+				assert (m_State == BTDeviceStateWriteRAMPending);
+
+				assert (m_nFirmwareOffset+3 <= sizeof Firmware);
+				u16 nOpCode  = Firmware[m_nFirmwareOffset++];
+				    nOpCode |= Firmware[m_nFirmwareOffset++] << 8;
+				u8 nLength = Firmware[m_nFirmwareOffset++];
+
+				TBTHCIBcmVendorCommand Cmd;
+				Cmd.Header.OpCode = nOpCode;
+				Cmd.Header.ParameterTotalLength = nLength;
+
+				for (unsigned i = 0; i < nLength; i++)
+				{
+					assert (m_nFirmwareOffset < sizeof Firmware);
+					Cmd.Data[i] = Firmware[m_nFirmwareOffset++];
+				}
+
+				m_pHCILayer->SendCommand (&Cmd, sizeof Cmd.Header + nLength);
+
+				if (nOpCode == OP_CODE_LAUNCH_RAM)
+				{
+					m_State = BTDeviceStateLaunchRAMPending;
+				}
+				} break;
+
+			case OP_CODE_LAUNCH_RAM: {
+				assert (m_State == BTDeviceStateLaunchRAMPending);
+				CScheduler::Get ()->MsSleep (250);
+
+			NoFirmwareLoad:
+#endif
 				TBTHCICommandHeader Cmd;
 				Cmd.OpCode = OP_CODE_READ_BD_ADDR;
 				Cmd.ParameterTotalLength = PARM_TOTAL_LEN (Cmd);
 				m_pHCILayer->SendCommand (&Cmd, sizeof Cmd);
-				
+
 				m_State = BTDeviceStateReadBDAddrPending;
 				} break;
 

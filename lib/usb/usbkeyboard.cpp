@@ -2,7 +2,7 @@
 // usbkeyboard.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 //
 #include <circle/usb/usbkeyboard.h>
 #include <circle/devicenameservice.h>
+#include <circle/usb/usbhostcontroller.h>
 #include <circle/logger.h>
 #include <circle/util.h>
 #include <assert.h>
@@ -70,10 +71,49 @@ void CUSBKeyboardDevice::RegisterShutdownHandler (TShutdownHandler *pShutdownHan
 	m_Behaviour.RegisterShutdownHandler (pShutdownHandler);
 }
 
+u8 CUSBKeyboardDevice::GetLEDStatus (void) const
+{
+	u8 ucStatus = m_Behaviour.GetLEDStatus ();
+
+	u8 ucResult = 0;
+
+	if (ucStatus & KEYB_LED_NUM_LOCK)
+	{
+		ucResult |= LED_NUM_LOCK;
+	}
+
+	if (ucStatus & KEYB_LED_CAPS_LOCK)
+	{
+		ucResult |= LED_CAPS_LOCK;
+	}
+
+	if (ucStatus & KEYB_LED_SCROLL_LOCK)
+	{
+		ucResult |= LED_SCROLL_LOCK;
+	}
+
+	return ucResult;
+}
+
 void CUSBKeyboardDevice::RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw)
 {
 	assert (pKeyStatusHandlerRaw != 0);
 	m_pKeyStatusHandlerRaw = pKeyStatusHandlerRaw;
+}
+
+boolean CUSBKeyboardDevice::SetLEDs (u8 ucStatus)
+{
+	u8 Buffer[1] = {ucStatus};
+
+	if (GetHost ()->ControlMessage (GetEndpoint0 (),
+					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+					SET_REPORT, REPORT_TYPE_OUTPUT << 8,
+					GetInterfaceNumber (), Buffer, sizeof Buffer) < 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 void CUSBKeyboardDevice::ReportHandler (const u8 *pReport)

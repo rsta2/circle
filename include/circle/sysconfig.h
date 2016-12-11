@@ -77,6 +77,9 @@
 // default keyboard map (enable only one)
 #define DEFAULT_KEYMAP		"DE"
 //#define DEFAULT_KEYMAP		"ES"
+//#define DEFAULT_KEYMAP		"FR"
+//#define DEFAULT_KEYMAP		"IT"
 //#define DEFAULT_KEYMAP		"UK"
+//#define DEFAULT_KEYMAP		"US"
 
 #endif

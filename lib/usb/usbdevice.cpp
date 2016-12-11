@@ -349,7 +349,7 @@ boolean CUSBDevice::Configure (void)
 		{
 			if (!m_pFunction[nFunction]->Configure ())
 			{
-				LogWrite (LogError, "Cannot configure device");
+				//LogWrite (LogError, "Cannot configure device");
 
 				delete m_pFunction[nFunction];
 				m_pFunction[nFunction] = 0;

@@ -36,3 +36,6 @@ Providing support for framebuffers where pitch != width * bytes per pixel
 
 Stephan Muehlstrasser
 Correcting problems for building with clang
+
+Marco Maccaferri
+USB HID class gamepad driver

@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <circle/usb/usbmassdevice.h>
 #include <circle/usb/usbkeyboard.h>
 #include <circle/usb/usbmouse.h>
+#include <circle/usb/usbgamepad.h>
 #include <circle/usb/usbprinter.h>
 #include <circle/usb/smsc951x.h>
 #include <circle/usb/usbbluetooth.h>
@@ -52,6 +53,10 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (pName->Compare ("int3-1-2") == 0)
 	{
 		pResult = new CUSBMouseDevice (pParent);
+	}
+	else if (pName->Compare ("int3-0-0") == 0)
+	{
+		pResult = new CUSBGamePadDevice (pParent);
 	}
 	else if (   pName->Compare ("int7-1-1") == 0
 		 || pName->Compare ("int7-1-2") == 0)

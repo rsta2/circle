@@ -2,7 +2,7 @@
 // usbhid.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,12 +17,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbhid_h
-#define _usbhid_h
+#ifndef _circle_usb_usbhid_h
+#define _circle_usb_usbhid_h
 
 #include <circle/macros.h>
 
 // Class-specific requests
+#define GET_REPORT		0x01
 #define SET_REPORT		0x09
 #define SET_PROTOCOL		0x0B
 
@@ -37,6 +38,7 @@
 // Report types
 #define REPORT_TYPE_INPUT	0x01
 #define REPORT_TYPE_OUTPUT	0x02
+#define REPORT_TYPE_FEATURE	0x03
 
 struct TUSBHIDDescriptor
 {

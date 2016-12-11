@@ -2,7 +2,7 @@
 // bluetooth.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,7 +36,8 @@
 // Sizes
 
 #define BT_MAX_HCI_EVENT_SIZE	257
-#define BT_MAX_DATA_SIZE	BT_MAX_HCI_EVENT_SIZE
+#define BT_MAX_HCI_COMMAND_SIZE	258
+#define BT_MAX_DATA_SIZE	BT_MAX_HCI_COMMAND_SIZE
 
 #define BT_BD_ADDR_SIZE		6
 #define BT_CLASS_SIZE		3
@@ -67,6 +68,7 @@ struct TBTHCICommandHeader
 	#define OP_CODE_WRITE_CLASS_OF_DEVICE	(OGF_HCI_CONTROL_BASEBAND | 0x024)
 #define OGF_INFORMATIONAL_COMMANDS	(4 << 10)
 	#define OP_CODE_READ_BD_ADDR		(OGF_INFORMATIONAL_COMMANDS | 0x009)
+#define OGF_VENDOR_COMMANDS		(0x3F << 10)
 	u8	ParameterTotalLength;
 }
 PACKED;

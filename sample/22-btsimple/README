@@ -1,6 +1,6 @@
 README
 
-You need an USB Bluetooth BR/EDR dongle to use this sample. It was tested with an older USB Full-speed dongle but should work with newer USB 2.0 High-speed dongles too. Unfortunately I cannot tell which dongles will work because there are many different out there. The Bluetooth dongle has to be connected to an USB port of your Raspberry Pi.
+You need a Raspberry Pi 3 (with internal Bluetooth device) or an external USB Bluetooth BR/EDR dongle to use this sample. Unfortunately I cannot tell which dongles will work because there are many different out there. The Bluetooth dongle has to be connected to an USB port of your Raspberry Pi.
 
 After switching on the Raspberry Pi the Act LED blinks 5 times to show the image was loaded right. When the system initialization is over (see notice below) the sample program does a Bluetooth Inquiry operation for 20 seconds to find all visible Bluetooth devices. Displaying the results (address, class code and name of each device) may take some additional seconds because the names of the found devices have to be requested.
 

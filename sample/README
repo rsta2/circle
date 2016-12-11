@@ -21,8 +21,9 @@ SAMPLES
 19-tasks		Demonstrating the cooperative non-preemtive scheduler
 20-tcpsimple		Simple TCP echo server
 21-webserver		Simple HTTP webserver which controls the Act LED
-22-btsimple		Displaying the visible Bluetooth devices (USB Bluetooth dongle needed)
+22-btsimple		Displaying the visible Bluetooth devices (Bluetooth controller needed)
 23-spisimple		Transfers some data bytes to/from a SPI slave device. Dumps the received bytes.
 24-hwrandom		Demonstrating the hardware random number generator.
 25-spidma		Transfers some data bytes to/from a SPI slave device using DMA.
 26-cpustress		Calculates fractal images to stress the CPU. Displays a SoC temperature chart.
+27-usbgamepad		Displaying information about an attached USB HID class gamepad and its current status.
