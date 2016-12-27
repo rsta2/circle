@@ -2,7 +2,7 @@
  * sampler.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,10 @@ Sampler:
 	push	{r4-r7}
 	ldr	r4, [sp, #16]
 
+.ifeq RASPPI-1
+	mcr	p15, 0, r0, c7, c10, 4		/* data sync barrier */
+.endif
+
 	cpsid	i
 
 	ldr	r5, =ARM_GPIO_GPLEV0
@@ -42,6 +46,10 @@ Sampler:
 	and	r7, r6, r2
 	cmp	r7, r3
 	bne	1b
+
+.ifeq RASPPI-1
+	mcr	p15, 0, r0, c7, c10, 4		/* data sync barrier */
+.endif
 
 	ldr	r2, =ARM_SYSTIMER_CLO
 	ldr	r3, [r2]			/* get start time */
@@ -59,11 +67,19 @@ Sampler:
 	subs	r1, r1, #1
 	bhi	2b
 
-4:	ldr	r2, [r2]			/* get end time */
+4:
+
+.ifeq RASPPI-1
+	mcr	p15, 0, r0, c7, c10, 4		/* data sync barrier */
+.endif
+
+	ldr	r2, [r2]			/* get end time */
 
 	cpsie	i
-	mov	r0, #0
+
+.ifeq RASPPI-1
 	mcr	p15, 0, r0, c7, c10, 5		/* data mem barrier */
+.endif
 
 	sub	r0, r2, r3			/* calculate run time */
 
