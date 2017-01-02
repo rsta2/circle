@@ -2,10 +2,10 @@ README
 
 TinyScope Pi is a digital oscilloscope sample for the Raspberry Pi based on the
 uGUI library (by Achim Doebler). Its main purpose is to show, how a GUI with
-mouse support can be implemented on top of Circle. But TinyScope Pi can be used
-for simple projects to analyze digital signals too. As a bare metal application
-it can provide higher sample rates than similar solutions using Raspbian.
-
+mouse and touch screen support can be implemented on top of Circle. But
+TinyScope Pi can be used for simple projects to analyze digital signals too. As
+a bare metal application it can provide higher sample rates than similar
+solutions using Raspbian.
 
 FEATURES
 
@@ -53,9 +53,10 @@ normally used for the SPI master in other applications. Don't forget to connect
 the ground (GND). See http://elinux.org/RPi_Low-level_peripherals for wiring!
 Remember that all input signals must be in a range from 0 to 3.3 Volts!
 
-TinyScope Pi is controlled using an USB mouse. It must be connected before the
-system is started. The screen resolution is fixed to 800x480 pixels. Your HDMI
-display has to support this.
+TinyScope Pi is controlled using an USB mouse or the official Raspberry Pi touch
+screen. If an USB mouse is used, it must be connected before the system is
+started. The screen resolution is fixed to 800x480 pixels. Your display has to
+support this.
 
 When the Raspberry Pi is powered on, the sample recorder is calibrated. This
 takes some seconds. After that the TinyScope Pi GUI appears. The oscilloscope
@@ -96,8 +97,8 @@ that a trigger condition which is never passed, may hang the system. There is no
 time-out. You have to restart the Raspberry Pi if this happens.
 
 When all configuration is done, you can start the sample recorder with the "RUN"
-button. The sample process takes up to two seconds after the trigger condition
-has been passed. The mouse is not use-able in this moment.
+button. The sample process takes up to one second after the trigger condition
+has been passed. The mouse and the touch screen is not use-able in this moment.
 
 When the sample process has been completed, the acquired signals are shown on
 the oscilloscope window. Above the chart display the following data is
