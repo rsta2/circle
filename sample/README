@@ -27,3 +27,4 @@ SAMPLES
 25-spidma		Transfers some data bytes to/from a SPI slave device using DMA.
 26-cpustress		Calculates fractal images to stress the CPU. Displays a SoC temperature chart.
 27-usbgamepad		Displaying information about an attached USB HID class gamepad and its current status.
+28-touchscreen		Displaying touch events from the official Raspberry Pi touch screen.

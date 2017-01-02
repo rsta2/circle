@@ -75,6 +75,7 @@ Input library
 * CKeyboardBehaviour: Generic keyboard function
 * CKeyMap: Keyboard translation map (six selectable default maps at the moment)
 * CMouseBehaviour: Generic mouse function, handles the mouse cursor
+* CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
 
 FS library
 

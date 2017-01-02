@@ -3,7 +3,7 @@
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2016  R. Stange <rsta2@o2online.de>
-//
+// 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -18,26 +18,26 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include "scopewindow.h"
-#include "controlwindow.h"
+#include <circle/string.h>
+#include <assert.h>
 
 static const char FromKernel[] = "kernel";
+
+CKernel *CKernel::s_pThis = 0;
 
 CKernel::CKernel (void)
 :	m_Screen (800, 480),
 	m_Timer (&m_Interrupt),
-	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_Recorder (8, 9, 10, 11, &m_Config),
-	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_Clock0 (GPIOClock0, GPIOClockSourceOscillator),	// clock source OSC, 19.2 MHz
-	m_ClockPin (4, GPIOModeAlternateFunction0),
-	m_GUI (&m_Screen)
+	m_Logger (m_Options.GetLogLevel (), &m_Timer)
 {
-	m_Clock0.Start (192);		// 19.2 MHz / 192 = 100 KHz
+	s_pThis = this;
+
+	m_ActLED.Blink (5);	// show we are alive
 }
 
 CKernel::~CKernel (void)
 {
+	s_pThis = 0;
 }
 
 boolean CKernel::Initialize (void)
@@ -77,19 +77,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_Recorder.Initialize ();
-	}
-
-	if (bOK)
-	{
-		bOK = m_DWHCI.Initialize ();
-	}
-
-	if (bOK)
-	{
-		m_TouchScreen.Initialize ();
-
-		bOK = m_GUI.Initialize ();
+		bOK = m_TouchScreen.Initialize ();
 	}
 
 	return bOK;
@@ -99,23 +87,53 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CScopeWindow ScopeWindow (0, 0, &m_Recorder, &m_Config);
-	CControlWindow ControlWindow (600, 0, &ScopeWindow, &m_Recorder, &m_Config);
-
-	unsigned nLastTicks = m_Timer.GetClockTicks ();
-
-	while (1)
+	CTouchScreenDevice *pTouchScreen =
+		(CTouchScreenDevice *) m_DeviceNameService.GetDevice ("touch1", FALSE);
+	if (pTouchScreen == 0)
 	{
-		m_GUI.Update ();
+		m_Logger.Write (FromKernel, LogPanic, "Touchscreen not found");
+	}
 
-		unsigned nTicks = m_Timer.GetClockTicks ();
-		if (nTicks - nLastTicks >= 4*CLOCKHZ)
-		{
-			m_CPUThrottle.SetOnTemperature ();	// call this every 4 seconds
+	pTouchScreen->RegisterEventHandler (TouchScreenEventHandler);
 
-			nLastTicks = nTicks;
-		}
+	m_Logger.Write (FromKernel, LogNotice, "Just use your touchscreen!");
+
+	for (unsigned nCount = 0; 1; nCount++)
+	{
+		pTouchScreen->Update ();
+
+		m_Screen.Rotor (0, nCount);
+		m_Timer.MsDelay (1000/60);
 	}
 
 	return ShutdownHalt;
+}
+
+void CKernel::TouchScreenEventHandler (TTouchScreenEvent Event,
+				       unsigned nID, unsigned nPosX, unsigned nPosY)
+{
+	assert (s_pThis != 0);
+
+	CString Message;
+
+	switch (Event)
+	{
+	case TouchScreenEventFingerDown:
+		Message.Format ("Finger #%u down at %u / %u", nID+1, nPosX, nPosY);
+		break;
+
+	case TouchScreenEventFingerUp:
+		Message.Format ("Finger #%u up", nID+1);
+		break;
+
+	case TouchScreenEventFingerMove:
+		Message.Format ("Finger #%u moved to %u / %u", nID+1, nPosX, nPosY);
+		break;
+
+	default:
+		assert (0);
+		break;
+	}
+
+	s_pThis->m_Logger.Write (FromKernel, LogNotice, Message);
 }
