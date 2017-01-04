@@ -20,7 +20,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= keyboardbehaviour.o keymap.o mousebehaviour.o
+OBJS	= keyboardbehaviour.o keymap.o mousebehaviour.o touchscreen.o
 
 libinput.a: $(OBJS)
 	rm -f libinput.a

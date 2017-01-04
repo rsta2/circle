@@ -1,9 +1,9 @@
 //
-// version.h
+// sampler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
-//
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,15 +17,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_version_h
-#define _circle_version_h
+#ifndef _sampler_h
+#define _sampler_h
 
-#define CIRCLE_NAME			"Circle"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define CIRCLE_MAJOR_VERSION		28
-#define CIRCLE_VERSION_STRING		"28"
+// returns run time (micro seconds)
+unsigned Sampler (unsigned *pBuffer, unsigned nSamples,
+		  unsigned nTriggerMask, unsigned nTriggerLevel,
+		  unsigned nDelayCount);
 
-#define OS_NAME				CIRCLE_NAME
-#define OS_VERSION			CIRCLE_VERSION_STRING
+#ifdef __cplusplus
+}
+#endif
 
 #endif

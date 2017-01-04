@@ -3,7 +3,7 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 27 of Circle. To get access to Step 1-26 use the git tag "Step1" to "Step26".
+> This is Step 28 of Circle. To get access to Step 1-27 use the git tag "Step1" to "Step27".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -21,22 +21,16 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 27th Step
+The 28th Step
 -------------
 
-This step adds some basic support for USB gamepads with a standard USB HID class report interface (3-0-0). It is demonstrated in a simple test program in *sample/27-usbgamepad*. See the *README* file in this directory for details. The USB HID class gamepad driver was ported from USPi and was originally developed by Marco Maccaferri. Please note that the gamepad API may change in the future if further gamepads will be supported.
+This step adds support for the official Raspberry Pi touch screen and demonstrates it in a simple test program in *sample/28-touchscreen*. See the *README* file in this directory for details.
 
-The USB keyboard driver has three new keyboard maps now (FR, IT and US International) and can handle the keyboard status LEDs, if the application supports this, like shown in *sample/08-usbkeyboard*. The USB mouse driver has been extended to support a mouse cursor. *sample/10-usbmouse* has been updated to use this.
-
-TFTP file server support has been added to addon/ which is intended to support kernel image and firmware updates while developing and testing.
-
-The Bluetooth library is working with the internal Bluetooth host controller of the Raspberry Pi 3 now. The support is still limited to the Bluetooth inquiry function (see *sample/22-btsimple*).
-
-There is an important change in the networking code. UDP sockets do not send and receive broadcast messages by default any more for security reasons. CSocket::SetOptionBroadcast(TRUE) has to be called after Bind() or Connect() to allow this. So if you use broadcasts with UDP sockets you have to update your application.
+This touch screen can also be used to control the new digital oscilloscope sample in *addon/ugui/sample/*. Another option is to use an USB mouse on non-touch-screen displays. This digital oscilloscope sample features a graphical user interface (GUI) on top of Circle for the first time. It is based on uGUI (by Achim Doebler). Please see *addon/ugui/* for details.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-26 the following features were introduced:
+In Step 1-27 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -86,6 +80,9 @@ In Step 1-26 the following features were introduced:
 * Driver for hardware random number generator
 * SPI0 master support using DMA
 * CPU clock rate management support
+* Basic support for standard USB HID class gamepads
+* TFTP file server support
+* Basic support for the internal Bluetooth host controller of the Raspberry Pi 3
 
 Building
 --------
@@ -141,22 +138,9 @@ Classes
 
 The following C++ classes were added to Circle:
 
-USB library
-
-* CUSBGamePadDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
-
 Input library
 
-* CMouseBehaviour: Generic mouse function, handles the mouse cursor
-
-Net library
-
-* CRouteCache: Caches special routes, received via ICMP redirect requests
-* CTFTPDaemon: TFTP server task
-
-Bluetooth library
-
-* CBTUARTTransport: Bluetooth UART HCI transport driver for the internal BT device of the Raspberry Pi 3
+* CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

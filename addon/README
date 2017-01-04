@@ -16,5 +16,6 @@ rtc		Library providing drivers for real-time clocks (RTC)
 SDCard		Driver for SD card access using the internal EMMC controller (by John Cronin)
 Spectrum	ZX Spectrum screen emulator class (by Jose Luis Sanchez)
 tftpfileserver	TFTP file server supporting kernel image and firmware updates
+ugui		Digital oscilloscope sample using the uGUI library (by Achim Doebler)
 webconsole	Library providing remote access to the system log using a web browser
 WS28XX		Driver for WS28XX controlled LED stripes (by Arjan van Vught)

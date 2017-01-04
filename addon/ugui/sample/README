@@ -1,0 +1,119 @@
+README 
+
+TinyScope Pi is a digital oscilloscope sample for the Raspberry Pi based on the
+uGUI library (by Achim Doebler). Its main purpose is to show, how a GUI with
+mouse and touch screen support can be implemented on top of Circle. But
+TinyScope Pi can be used for simple projects to analyze digital signals too. As
+a bare metal application it can provide higher sample rates than similar
+solutions using Raspbian.
+
+FEATURES
+
+* 4 Channel digital oscilloscope
+* Selectable sample rate up to 15 MHz (on RPi 3)
+* Sample duration up to 1 second or 100 KB
+* Simple 1-level trigger facility
+* Fixed 100 KHz reference clock provided on GPIO 4
+
+
+BUILDING
+
+TinyScope Pi is based on uGUI, which uses the RGB565 (16 bit) color model on
+Circle. That's why you have to change the DEPTH define in
+include/circle/screen.h before building like that:
+
+	#define DEPTH	16
+
+Building TinyScope Pi takes place in three steps:
+
+* Building the native Circle libraries using "./makeall" from Circle root
+* Building the uGUI library in addon/ugui/ using "make"
+* Building the TinyScope Pi sample in addon/ugui/sample/ using "make"
+
+If you want to re-build the libraries or the sample, you should do "./makeall
+clean" or "make clean" before. Please have a look on the build notes in the main
+Circle README.md too, to know how to configure Circle for your Raspberry Pi
+model and toolchain.
+
+
+USING
+
+To reach the maximum sample rate on the Raspberry Pi 2, 3 and Zero you can add
+the following option to the file cmdline.txt on the boot partition of your SD
+card:
+
+	fast=true
+
+This will set the CPU clock rate to the allowed maximum for this Raspberry Pi
+model. It has no effect on other Raspberry Pi models (A, A+, B, B+).
+
+The input signals for the four oscilloscope channels have to be connected to
+GPIO 8, 9, 10 and 11 (Broadcom numbering, in this order). These pins are
+normally used for the SPI master in other applications. Don't forget to connect
+the ground (GND). See http://elinux.org/RPi_Low-level_peripherals for wiring!
+Remember that all input signals must be in a range from 0 to 3.3 Volts!
+
+TinyScope Pi is controlled using an USB mouse or the official Raspberry Pi touch
+screen. If an USB mouse is used, it must be connected before the system is
+started. The screen resolution is fixed to 800x480 pixels. Your display has to
+support this.
+
+When the Raspberry Pi is powered on, the sample recorder is calibrated. This
+takes some seconds. After that the TinyScope Pi GUI appears. The oscilloscope
+window is still cleared. The control panel looks like that:
+
+	     VERTICAL
+	CH1  CH2  CH3  CH4
+	 x    x    x    x
+
+	    HORIZONTAL
+	 <<   <    >   >>
+	 |<   >|   +   -
+
+	     TRIGGER
+	CH1 CH2 CH3 CH4
+	x   x   x   x ENABLE
+	x   x   x   x LEVEL
+
+	     ACQUIRE
+	   <  10 MHz  >
+	       RUN
+
+When you move the USB mouse the mouse cursor should move on the screen. First
+you should select the channels, you want to use ("Ch1" and "Ch2" by default) by
+clicking the check-boxes in the VERTICAL section. Next you can choose an
+appropriate sample rate from the ACQUIRE section by clicking the "<" and ">"
+buttons.
+
+Please note that the actual sample rate differs from the selected value by up to
+15%, especially for higher sample rates. This is caused by the implementation of
+the sample recorder, which works without additional hardware.
+
+If you need a trigger you can enable the channels used for that purpose in the
+"ENABLE" row. If a cross (x) is shown in the "LEVEL" row for an enabled channel,
+the signal feed to this channel, must be "high" (otherwise "low") to pass the
+trigger point. All enabled trigger channels are checked in parallel. Please note
+that a trigger condition which is never passed, may hang the system. There is no
+time-out. You have to restart the Raspberry Pi if this happens.
+
+When all configuration is done, you can start the sample recorder with the "RUN"
+button. The sample process takes up to one second after the trigger condition
+has been passed. The mouse and the touch screen is not use-able in this moment.
+
+When the sample process has been completed, the acquired signals are shown on
+the oscilloscope window. Above the chart display the following data is
+available:
+
+* SC: Time duration of a scale division (between two vertical white lines)
+      in microseconds
+* OF: Time offset of the chart at the left window border from the beginning
+      of the sample process in microseconds
+* TO: Total duration of the sample process in microseconds
+* ZO: Zoom factor of the chart display
+* FQ: Actual sample rate (frequency) applied (normally differs from the chosen
+      rate in the ACQUIRE section by up to 15%)
+
+The displayed signal can be scrolled using the "<" and ">" buttons (by 10
+pixels) or the "<<" and ">>" buttons (by 100 pixels). "|<" goes back to the
+beginning of the sample, ">|" goes to the end. The "+" button increases the
+display zoom (up to 32 times), the "-" button decreases it.
