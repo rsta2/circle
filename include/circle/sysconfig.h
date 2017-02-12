@@ -2,7 +2,7 @@
 // sysconfig.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,11 +48,12 @@
 #define MEM_IRQ_STACK		(MEM_ABORT_STACK + EXCEPTION_STACK_SIZE * (CORES-1) + EXCEPTION_STACK_SIZE)
 #define MEM_PAGE_TABLE1		(MEM_IRQ_STACK + EXCEPTION_STACK_SIZE * (CORES-1))
 #endif
+#define MEM_PAGE_TABLE1_END	(MEM_PAGE_TABLE1 + PAGE_TABLE1_SIZE)
 
 // coherent memory region (1 section) for the property mailbox
-#define MEM_COHERENT_REGION	0x400000
+#define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 2*MEGABYTE) & ~(MEGABYTE-1))
 
-#define MEM_HEAP_START		0x500000
+#define MEM_HEAP_START		(MEM_COHERENT_REGION + MEGABYTE)
 
 // system options
 #if RASPPI == 1			// valid on Raspberry Pi 1 only
