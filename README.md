@@ -138,9 +138,9 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Input library
+Base library
 
-* CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
+* CPWMSoundDevice2: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

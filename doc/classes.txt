@@ -30,6 +30,7 @@ Base library
 * CPtrList: Container class. List of pointers.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
 * CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
+* CPWMSoundDevice2: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
 * CSerialDevice: Writing characters to UART
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
