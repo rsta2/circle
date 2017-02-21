@@ -96,13 +96,13 @@ First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2 
 
 The following table gives support for selecting the right *RASPPI* value:
 
-| RASPPI | Target      | Models                   | Optimized for |
-| ------ | ----------- | ------------------------ | ------------- |
-|      1 | kernel.img  | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
-|      2 | kernel7.img | 2, 3                     | ARMv7-A       |
-|      3 | kernel7.img | 3                        | Cortex-A53    |
+| RASPPI | Target         | Models                   | Optimized for |
+| ------ | -------------- | ------------------------ | ------------- |
+|      1 | kernel.img     | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
+|      2 | kernel7.img    | 2, 3, (CM3)              | ARMv7-A       |
+|      3 | kernel8-32.img | 3, (CM3)                 | Cortex-A53    |
 
-For a binary distribution you should do one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*.
+For a binary distribution you should do one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*. Optionally you can do a build with *RASPPI = 3* and add the created file *kernel8-32.img* to provide an optimized version for the Raspberry Pi 3.
 
 Then go to the build root of Circle and do:
 
