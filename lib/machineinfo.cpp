@@ -64,7 +64,8 @@ s_NewInfo[]
 	{6, MachineModelCM,		1},
 	{8, MachineModel3B,		3},
 	{9, MachineModelZero,		1},
-	{10, MachineModelCM3,		3}
+	{10, MachineModelCM3,		3},
+	{12, MachineModelZeroW,		1}
 };
 
 static const char *s_MachineName[] =		// must match TMachineModel
@@ -76,6 +77,7 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Raspberry Pi Model A+",
 	"Raspberry Pi Model B+",
 	"Raspberry Pi Zero",
+	"Raspberry Pi Zero W",
 	"Raspberry Pi 2 Model B",
 	"Raspberry Pi 3 Model B",
 	"Compute Module",

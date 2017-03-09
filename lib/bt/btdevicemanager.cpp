@@ -2,7 +2,7 @@
 // btdevicemanager.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,9 +27,7 @@
 
 static const u8 Firmware[] =
 {
-#if RASPPI >= 2				// this takes 35 KByte and is not needed on RPi 1
 	#include "BCM43430A1.h"
-#endif
 };
 
 static const char FromDeviceManager[] = "btdev";
@@ -108,7 +106,7 @@ void CBTDeviceManager::Process (void)
 			{
 			case OP_CODE_RESET: {
 				assert (m_State == BTDeviceStateResetPending);
-#if RASPPI >= 2
+
 				if (m_pHCILayer->GetTransportType () != BTTransportTypeUART)
 				{
 					goto NoFirmwareLoad;
@@ -156,7 +154,6 @@ void CBTDeviceManager::Process (void)
 				CScheduler::Get ()->MsSleep (250);
 
 			NoFirmwareLoad:
-#endif
 				TBTHCICommandHeader Cmd;
 				Cmd.OpCode = OP_CODE_READ_BD_ADDR;
 				Cmd.ParameterTotalLength = PARM_TOTAL_LEN (Cmd);

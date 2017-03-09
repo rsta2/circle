@@ -6,7 +6,7 @@
 //     Licensed under GPLv2
 // 
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -83,11 +83,10 @@
 
 CSerialDevice::CSerialDevice (void)
 :
-#if RASPPI >= 2
 	// to be sure there is no collision with the Bluetooth controller
 	m_GPIO32 (32, GPIOModeInput),
 	m_GPIO33 (33, GPIOModeInput),
-#endif
+
 	m_TxDPin (14, GPIOModeAlternateFunction0),
 	m_RxDPin (15, GPIOModeAlternateFunction0)
 #ifdef REALTIME

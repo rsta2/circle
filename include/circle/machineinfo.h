@@ -33,6 +33,7 @@ enum TMachineModel
 	MachineModelAPlus,
 	MachineModelBPlus,
 	MachineModelZero,
+	MachineModelZeroW,
 	MachineModel2B,
 	MachineModel3B,
 	MachineModelCM,
