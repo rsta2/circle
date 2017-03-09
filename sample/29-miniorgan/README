@@ -1,8 +1,8 @@
 README 
 
-This sample is a simple monophonic mini organ. You have to attach an USB
+This sample is a simple monophonic mini organ. You have to attach an USB PC
 keyboard to your Raspberry Pi to use it. The output signal is available on the
-3.5mm headphone jack.
+3.5mm headphones jack.
 
 The mini organ uses the PWM sound device to generate a square wave of the
 required frequency for one octave (note C4 to B4). A more complex sound
@@ -20,5 +20,6 @@ The keyboard mapping is as follows:
 |Z C4 |X D4 |C E4 |V F4 |B G4 |N A4 |M B4 |
 +-----+-----+-----+-----+-----+-----+-----+
 
-Please note that the 'Z' key (note C4) is actually the 'Y' key on some
-keyboards.
+The inscription of the keyboard may vary, but the physical position of the
+piano keys is the same on all keyboards. Using this scheme you should be able to
+find them.

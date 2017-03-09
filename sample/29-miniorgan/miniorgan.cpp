@@ -23,7 +23,7 @@
 #include <circle/logger.h>
 #include <assert.h>
 
-#define SAMPLE_RATE	44100
+#define SAMPLE_RATE	48000
 
 #define VOLUME_PERCENT	20
 
@@ -97,7 +97,7 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 	unsigned nSampleDelay = 0;
 	if (m_nFrequency != 0)
 	{
-		nSampleDelay = (SAMPLE_RATE + m_nFrequency/2) / m_nFrequency;
+		nSampleDelay = (SAMPLE_RATE/2 + m_nFrequency/2) / m_nFrequency;
 	}
 
 	for (; nChunkSize > 0; nChunkSize -= 2)		// fill the whole buffer
@@ -142,7 +142,7 @@ void CMiniOrgan::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned 
 	{
 		if (RawKeys[i] != 0)
 		{
-			chKey = RawKeys[0]-0x04+'A';	// key code of 'A' is 0x04
+			chKey = RawKeys[i]-0x04+'A';	// key code of 'A' is 0x04
 
 			break;
 		}
