@@ -1,5 +1,5 @@
 //
-// pwmsounddevice2.cpp
+// pwmsoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/pwmsounddevice2.h>
+#include <circle/pwmsoundbasedevice.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2835int.h>
 #include <circle/memio.h>
@@ -121,9 +121,9 @@
 #define ARM_DMA_INT_STATUS		(ARM_DMA_BASE + 0xFE0)
 #define ARM_DMA_ENABLE			(ARM_DMA_BASE + 0xFF0)
 
-CPWMSoundDevice2::CPWMSoundDevice2 (CInterruptSystem *pInterrupt,
-				    unsigned	      nSampleRate,
-				    unsigned	      nChunkSize)
+CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
+					  unsigned	    nSampleRate,
+					  unsigned	    nChunkSize)
 :	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
 	m_nRange ((CLOCK_FREQ / CLOCK_DIVIDER + nSampleRate/2) / nSampleRate),
@@ -163,7 +163,7 @@ CPWMSoundDevice2::CPWMSoundDevice2 (CInterruptSystem *pInterrupt,
 	PeripheralExit ();
 }
 
-CPWMSoundDevice2::~CPWMSoundDevice2 (void)
+CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
 {
 	assert (m_State == PWMSoundIdle);
 
@@ -193,12 +193,12 @@ CPWMSoundDevice2::~CPWMSoundDevice2 (void)
 	m_pDMABuffer[1] = 0;
 }
 
-unsigned CPWMSoundDevice2::GetRange (void) const
+unsigned CPWMSoundBaseDevice::GetRange (void) const
 {
 	return m_nRange;
 }
 
-void CPWMSoundDevice2::Start (void)
+void CPWMSoundBaseDevice::Start (void)
 {
 	assert (m_State == PWMSoundIdle);
 
@@ -268,7 +268,7 @@ void CPWMSoundDevice2::Start (void)
 	}
 }
 
-void CPWMSoundDevice2::Cancel (void)
+void CPWMSoundBaseDevice::Cancel (void)
 {
 	m_SpinLock.Acquire ();
 
@@ -280,12 +280,12 @@ void CPWMSoundDevice2::Cancel (void)
 	m_SpinLock.Release ();
 }
 
-boolean CPWMSoundDevice2::IsActive (void) const
+boolean CPWMSoundBaseDevice::IsActive (void) const
 {
 	return m_State != PWMSoundIdle ? TRUE : FALSE;
 }
 
-boolean CPWMSoundDevice2::GetNextChunk (void)
+boolean CPWMSoundBaseDevice::GetNextChunk (void)
 {
 	assert (m_pDMABuffer[m_nNextBuffer] != 0);
 	unsigned nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
@@ -308,7 +308,7 @@ boolean CPWMSoundDevice2::GetNextChunk (void)
 	return TRUE;
 }
 
-void CPWMSoundDevice2::RunPWM (void)
+void CPWMSoundBaseDevice::RunPWM (void)
 {
 	PeripheralEntry ();
 
@@ -327,7 +327,7 @@ void CPWMSoundDevice2::RunPWM (void)
 	PeripheralExit ();
 }
 
-void CPWMSoundDevice2::StopPWM (void)
+void CPWMSoundBaseDevice::StopPWM (void)
 {
 	PeripheralEntry ();
 
@@ -341,7 +341,7 @@ void CPWMSoundDevice2::StopPWM (void)
 	PeripheralExit ();
 }
 
-void CPWMSoundDevice2::InterruptHandler (void)
+void CPWMSoundBaseDevice::InterruptHandler (void)
 {
 	assert (m_State != PWMSoundIdle);
 
@@ -401,15 +401,15 @@ void CPWMSoundDevice2::InterruptHandler (void)
 	m_SpinLock.Release ();
 }
 
-void CPWMSoundDevice2::InterruptStub (void *pParam)
+void CPWMSoundBaseDevice::InterruptStub (void *pParam)
 {
-	CPWMSoundDevice2 *pThis = (CPWMSoundDevice2 *) pParam;
+	CPWMSoundBaseDevice *pThis = (CPWMSoundBaseDevice *) pParam;
 	assert (pThis != 0);
 
 	pThis->InterruptHandler ();
 }
 
-void CPWMSoundDevice2::SetupDMAControlBlock (unsigned nID)
+void CPWMSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 {
 	assert (nID <= 1);
 

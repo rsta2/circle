@@ -20,11 +20,11 @@
 #ifndef _circle_pwmsounddevice_h
 #define _circle_pwmsounddevice_h
 
-#include <circle/pwmsounddevice2.h>
+#include <circle/pwmsoundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/types.h>
 
-class CPWMSoundDevice : private CPWMSoundDevice2
+class CPWMSoundDevice : private CPWMSoundBaseDevice
 {
 public:
 	CPWMSoundDevice (CInterruptSystem *pInterrupt);

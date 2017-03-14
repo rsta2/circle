@@ -140,7 +140,11 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CPWMSoundDevice2: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack
+* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack
+
+USB library
+
+* CUSBMIDIDevice: Driver for USB Audio Class MIDI devices (input only)
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

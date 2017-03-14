@@ -33,6 +33,7 @@ Hardware support for testing MCP7941x and spi_dio drivers
 
 Joshua Otto
 Providing support for framebuffers where pitch != width * bytes per pixel
+USB Audio Class MIDI device support
 
 Stephan Muehlstrasser
 Correcting problems for building with clang
