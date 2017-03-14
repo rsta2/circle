@@ -2,7 +2,7 @@
 // usbrequest.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbrequest_h
-#define _usbrequest_h
+#ifndef _circle_usb_usbrequest_h
+#define _circle_usb_usbrequest_h
 
 #include <circle/usb/usb.h>
 #include <circle/usb/usbendpoint.h>
@@ -48,6 +48,10 @@ public:
 	
 	void SetCompletionRoutine (TURBCompletionRoutine *pRoutine, void *pParam, void *pContext);
 	void CallCompletionRoutine (void);
+
+	// do not retry if request cannot be served immediately (for Bulk in only)
+	void SetCompleteOnNAK (void);
+	boolean IsCompleteOnNAK (void) const;
 	
 private:
 	CUSBEndpoint *m_pEndpoint;
@@ -62,6 +66,8 @@ private:
 	TURBCompletionRoutine *m_pCompletionRoutine;
 	void *m_pCompletionParam;
 	void *m_pCompletionContext;
+
+	boolean m_bCompleteOnNAK;
 };
 
 #endif

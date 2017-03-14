@@ -20,17 +20,17 @@
 #ifndef _miniorgan_h
 #define _miniorgan_h
 
-#include <circle/pwmsounddevice2.h>
+#include <circle/pwmsoundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/types.h>
 
 struct TNoteInfo
 {
 	char	Key;
-	float	Frequency;
+	u8	KeyNumber;	// MIDI number
 };
 
-class CMiniOrgan : public CPWMSoundDevice2
+class CMiniOrgan : public CPWMSoundBaseDevice
 {
 public:
 	CMiniOrgan (CInterruptSystem *pInterrupt);
@@ -41,6 +41,8 @@ public:
 	unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
+	static void MIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength);
+
 	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
 
 private:
@@ -50,7 +52,10 @@ private:
 	unsigned m_nFrequency;		// 0 if no key pressed
 	unsigned m_nPrevFrequency;
 
-	static TNoteInfo s_Keys[];
+	u8 m_ucKeyNumber;
+
+	static const float s_KeyFrequency[];
+	static const TNoteInfo s_Keys[];
 
 	static CMiniOrgan *s_pThis;
 };

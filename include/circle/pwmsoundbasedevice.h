@@ -1,5 +1,5 @@
 //
-// pwmsounddevice2.h
+// pwmsoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_pwmsounddevice2_h
-#define _circle_pwmsounddevice2_h
+#ifndef _circle_pwmsoundbasedevice_h
+#define _circle_pwmsoundbasedevice_h
 
 #include <circle/interrupt.h>
 #include <circle/gpiopin.h>
@@ -37,18 +37,18 @@ enum TPWMSoundState
 	PWMSoundUnknown
 };
 
-class CPWMSoundDevice2		/// Low level access to the PWM sound device (on 3.5mm headphone jack)
+class CPWMSoundBaseDevice	/// Low level access to the PWM sound device (on 3.5mm headphone jack)
 {
 public:
 	/// \param pInterrupt	pointer to the interrupt system object
 	/// \param nSampleRate	sample rate in Hz
 	/// \param nChunkSize	twice the number of samples (words) to be handled\n
 	///			with one call to GetChunk() (one word per stereo channel)
-	CPWMSoundDevice2 (CInterruptSystem *pInterrupt,
-			  unsigned	    nSampleRate = 44100,
-			  unsigned	    nChunkSize  = 2048);
+	CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
+			     unsigned	       nSampleRate = 44100,
+			     unsigned	       nChunkSize  = 2048);
 
-	virtual ~CPWMSoundDevice2 (void);
+	virtual ~CPWMSoundBaseDevice (void);
 
 	/// \return PWM range available for one sample
 	unsigned GetRange (void) const;

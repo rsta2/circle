@@ -26,7 +26,7 @@
 #define SAMPLE_RATE		44100
 
 CPWMSoundDevice::CPWMSoundDevice (CInterruptSystem *pInterrupt)
-:	CPWMSoundDevice2 (pInterrupt, SAMPLE_RATE),
+:	CPWMSoundBaseDevice (pInterrupt, SAMPLE_RATE),
 	m_pSoundData (0)
 {
 	assert ((1 << 12) <= GetRange () && GetRange () < (1 << 13));	// 12 bit range
