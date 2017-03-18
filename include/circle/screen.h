@@ -2,7 +2,7 @@
 // screen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include <circle/macros.h>
 #include <circle/types.h>
 
-#define DEPTH	8		// can be: 8, 16 or 32
+#define DEPTH	16		// can be: 8, 16 or 32
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \

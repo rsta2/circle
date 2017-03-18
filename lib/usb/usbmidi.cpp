@@ -204,7 +204,7 @@ void CUSBMIDIDevice::CompletionRoutine (CUSBRequest *pURB)
 	else
 	{
 		assert (m_hTimer == 0);
-		m_hTimer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (20), TimerStub, 0, this);
+		m_hTimer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (10), TimerStub, 0, this);
 		assert (m_hTimer != 0);
 	}
 }

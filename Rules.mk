@@ -25,7 +25,7 @@ endif
 -include $(CIRCLEHOME)/Config.mk
 
 RASPPI	?= 1
-PREFIX	?= arm-linux-gnueabihf-
+PREFIX	?= arm-none-eabi-
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
