@@ -2,7 +2,7 @@
 // interrupt.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -167,10 +167,14 @@ void CInterruptSystem::InterruptHandler (void)
 	}
 #endif
 
+	PeripheralEntry ();
+
 	u32 Pending[ARM_IC_IRQ_REGS];
 	Pending[0] = read32 (ARM_IC_IRQ_PENDING_1);
 	Pending[1] = read32 (ARM_IC_IRQ_PENDING_2);
 	Pending[2] = read32 (ARM_IC_IRQ_BASIC_PENDING) & 0xFF;
+
+	PeripheralExit ();
 
 	for (unsigned nReg = 0; nReg < ARM_IC_IRQ_REGS; nReg++)
 	{

@@ -30,6 +30,7 @@ Base library
 * CPtrList: Container class. List of pointers.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
 * CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
+* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
 * CSerialDevice: Writing characters to UART
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
@@ -65,6 +66,7 @@ USB library
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse, gamepad)
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards
+* CUSBMIDIDevice: Driver for USB Audio Class MIDI devices (input only)
 * CUSBMouseDevice: Driver for USB mice
 * CUSBPrinterDevice: Simple communications driver for USB printers (back-channel is not used).
 * CUSBRequest: A request to an USB device (URB).

@@ -3,7 +3,7 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 28 of Circle. To get access to Step 1-27 use the git tag "Step1" to "Step27".
+> This is Step 29 of Circle. To get access to Step 1-28 use the git tag "Step1" to "Step28".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -21,16 +21,18 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 28th Step
+The 29th Step
 -------------
 
-This step adds support for the official Raspberry Pi touch screen and demonstrates it in a simple test program in *sample/28-touchscreen*. See the *README* file in this directory for details.
+In this step a new PWM sound generation class *CPWMSoundBaseDevice* is added, which is more flexible than the previously available class. Additionally USB Audio Class MIDI input support has been ported from the USPi driver (by Joshua Otto) to Circle.
 
-This touch screen can also be used to control the new digital oscilloscope sample in *addon/ugui/sample/*. Another option is to use an USB mouse on non-touch-screen displays. This digital oscilloscope sample features a graphical user interface (GUI) on top of Circle for the first time. It is based on uGUI (by Achim Doebler). Please see *addon/ugui/* for details.
+Both features are demonstrated in a sample program in *sample/29-miniorgan/* which is a simple mini organ instrument. It generates PWM sound and can be played using a keyboard controller with USB Audio Class MIDI interface or a standard USB PC keyboard. See the *README* file in sample's directory for details.
+
+Please note that the Circle screen DEPTH is 16 by default now. Circle is tested using a newer toolchain (with GCC 6.3.1) from now (see *Building*).
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-27 the following features were introduced:
+In Step 1-28 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -50,7 +52,7 @@ In Step 1-27 the following features were introduced:
 * Using interrupts
 * Timer class with clock, timers and calibrated delay loop
 * Exception handler
-* USB host controller interface (HCI) driver (no split support for now)
+* USB host controller interface (HCI) driver
 * USB device class (basic device initialization)
 * USB hub driver (dectects and enables the supported devices)
 * Driver for the on-board Ethernet device (receiving and transmitting frames)
@@ -83,11 +85,13 @@ In Step 1-27 the following features were introduced:
 * Basic support for standard USB HID class gamepads
 * TFTP file server support
 * Basic support for the internal Bluetooth host controller of the Raspberry Pi 3
+* Official Raspberry Pi touch screen support
+* Supporting GUI creation using uGUI (by Achim Doebler)
 
 Building
 --------
 
-Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. [This one](https://github.com/raspberrypi/tools/tree/master/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf) should work for all of these.
+Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads). Circle has been tested with the version *6-2017-q1-update* from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2 or 3) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -96,13 +100,13 @@ First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2 
 
 The following table gives support for selecting the right *RASPPI* value:
 
-| RASPPI | Target      | Models                   | Optimized for |
-| ------ | ----------- | ------------------------ | ------------- |
-|      1 | kernel.img  | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
-|      2 | kernel7.img | 2, 3                     | ARMv7-A       |
-|      3 | kernel7.img | 3                        | Cortex-A53    |
+| RASPPI | Target         | Models                   | Optimized for |
+| ------ | -------------- | ------------------------ | ------------- |
+|      1 | kernel.img     | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
+|      2 | kernel7.img    | 2, 3, (CM3)              | ARMv7-A       |
+|      3 | kernel8-32.img | 3, (CM3)                 | Cortex-A53    |
 
-For a binary distribution you should do one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*.
+For a binary distribution you should do one build with *RASPPI = 1* and one with *RASPPI = 2* and include the created files *kernel.img* and *kernel7.img*. Optionally you can do a build with *RASPPI = 3* and add the created file *kernel8-32.img* to provide an optimized version for the Raspberry Pi 3.
 
 Then go to the build root of Circle and do:
 
@@ -138,9 +142,13 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Input library
+Base library
 
-* CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
+* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack
+
+USB library
+
+* CUSBMIDIDevice: Driver for USB Audio Class MIDI devices (input only)
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

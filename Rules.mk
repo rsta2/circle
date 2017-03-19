@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ endif
 -include $(CIRCLEHOME)/Config.mk
 
 RASPPI	?= 1
-PREFIX	?= arm-linux-gnueabihf-
+PREFIX	?= arm-none-eabi-
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
@@ -41,7 +41,7 @@ ARCH	?= -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard
 TARGET	?= kernel7
 else
 ARCH	?= -march=armv8-a -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard
-TARGET	?= kernel7
+TARGET	?= kernel8-32
 endif
 
 OPTIMIZE ?= -O2
@@ -51,7 +51,7 @@ INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/
 AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) $(INCLUDE)
 CFLAGS	+= $(ARCH) -Wall -Wno-psabi -fsigned-char -fno-builtin -nostdinc -nostdlib \
 	   -D__circle__ -DRASPPI=$(RASPPI) $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
-CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
+CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++14
 
 %.o: %.S
 	$(AS) $(AFLAGS) -c -o $@ $<

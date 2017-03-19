@@ -1,9 +1,9 @@
 //
-// pwmsounddevice.h
+// miniorgan.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,35 +17,47 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_pwmsounddevice_h
-#define _circle_pwmsounddevice_h
+#ifndef _miniorgan_h
+#define _miniorgan_h
 
 #include <circle/pwmsoundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/types.h>
 
-class CPWMSoundDevice : private CPWMSoundBaseDevice
+struct TNoteInfo
+{
+	char	Key;
+	u8	KeyNumber;	// MIDI number
+};
+
+class CMiniOrgan : public CPWMSoundBaseDevice
 {
 public:
-	CPWMSoundDevice (CInterruptSystem *pInterrupt);
-	~CPWMSoundDevice (void);
+	CMiniOrgan (CInterruptSystem *pInterrupt);
+	~CMiniOrgan (void);
 
-	void Playback (void	*pSoundData,		// sample rate 44100 Hz
-		       unsigned  nSamples,		// for Stereo the L/R samples are count as one
-		       unsigned  nChannels,		// 1 (Mono) or 2 (Stereo)
-		       unsigned  nBitsPerSample);	// 8 (unsigned sound data) or 16 (signed sound data)
+	boolean Initialize (void);
 
-	boolean PlaybackActive (void) const;
-
-	void CancelPlayback (void);			// will be canceled with a short delay
-
-	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
+	unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
-	u8	 *m_pSoundData;
-	unsigned  m_nSamples;
-	unsigned  m_nChannels;
-	unsigned  m_nBitsPerSample;
+	static void MIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength);
+
+	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
+
+private:
+	unsigned m_nHighLevel;
+	unsigned m_nCurrentLevel;
+	unsigned m_nSampleCount;
+	unsigned m_nFrequency;		// 0 if no key pressed
+	unsigned m_nPrevFrequency;
+
+	u8 m_ucKeyNumber;
+
+	static const float s_KeyFrequency[];
+	static const TNoteInfo s_Keys[];
+
+	static CMiniOrgan *s_pThis;
 };
 
 #endif

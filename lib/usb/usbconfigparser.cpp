@@ -2,7 +2,7 @@
 // usbconfigparser.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ CUSBConfigurationParser::CUSBConfigurationParser (const void *pBuffer, unsigned 
 
 	const TUSBDescriptor *pCurrentPosition = m_pBuffer;
 	u8 ucLastDescType = 0;
+	boolean bInAudioInterface = FALSE;
 	while (SKIP_BYTES (pCurrentPosition, 2) < m_pEndPosition)
 	{
 		u8 ucDescLen  = pCurrentPosition->Header.bLength;
@@ -86,6 +87,7 @@ CUSBConfigurationParser::CUSBConfigurationParser (const void *pBuffer, unsigned 
 				return;
 			}
 			ucExpectedLen = sizeof (TUSBInterfaceDescriptor);
+			bInAudioInterface = pCurrentPosition->Interface.bInterfaceClass == 0x01; // Audio class
 			break;
 
 		case DESCRIPTOR_ENDPOINT:
@@ -95,7 +97,8 @@ CUSBConfigurationParser::CUSBConfigurationParser (const void *pBuffer, unsigned 
 				m_pErrorPosition = pCurrentPosition;
 				return;
 			}
-			ucExpectedLen = sizeof (TUSBEndpointDescriptor);
+			ucExpectedLen = bInAudioInterface ? sizeof (TUSBAudioEndpointDescriptor)
+							  : sizeof (TUSBEndpointDescriptor);
 			break;
 
 		default:
