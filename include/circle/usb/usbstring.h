@@ -1,5 +1,5 @@
 //
-// netdevice.cpp
+// usbstring.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
@@ -17,24 +17,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/usb/netdevice.h>
-#include <circle/devicenameservice.h>
+#ifndef _circle_usb_usbstring_h
+#define _circle_usb_usbstring_h
+
+#include <circle/usb/usb.h>
 #include <circle/string.h>
+#include <circle/types.h>
 
-unsigned CNetDevice::s_nDeviceNumber = 0;
+class CUSBDevice;
 
-CNetDevice::CNetDevice (CUSBFunction *pFunction)
-:	CUSBFunction (pFunction)
+class CUSBString
 {
-}
+public:
+	CUSBString (CUSBDevice *pDevice);
+	CUSBString (CUSBString *pParent);	// copy constructor
+	~CUSBString (void);
 
-CNetDevice::~CNetDevice (void)
-{
-}
+	boolean GetFromDescriptor (u8 ucID, u16 usLanguageID);
 
-void CNetDevice::AddNetDevice (void)
-{
-	CString DeviceName;
-	DeviceName.Format ("eth%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
-}
+	const char *Get (void) const;
+
+	u16 GetLanguageID (void);
+
+private:
+	CUSBDevice *m_pDevice;
+
+	TUSBStringDescriptor *m_pUSBString;
+
+	CString *m_pString;
+};
+
+#endif

@@ -24,6 +24,7 @@
 
 #include <circle/usb/usbmidi.h>
 #include <circle/usb/usbaudio.h>
+#include <circle/usb/usb.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
 #include <circle/timer.h>

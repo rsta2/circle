@@ -25,10 +25,6 @@
 
 #include <circle/macros.h>
 
-// Class-specific descriptors
-#define DESCRIPTOR_CS_INTERFACE		36
-#define DESCRIPTOR_CS_ENDPOINT		37
-
 // Audio class endpoint descriptor
 struct TUSBAudioEndpointDescriptor
 {

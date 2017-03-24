@@ -57,6 +57,7 @@ USB library
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
 * CUSBBluetoothDevice: Bluetooth HCI transport driver for USB Bluetooth BR/EDR dongles.
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
+* CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU.
 * CUSBConfigurationParser: Parses and validates an USB configuration descriptor.
 * CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
 * CUSBDeviceFactory: Creates the function objects of the different supported USB functions.
@@ -71,6 +72,7 @@ USB library
 * CUSBPrinterDevice: Simple communications driver for USB printers (back-channel is not used).
 * CUSBRequest: A request to an USB device (URB).
 * CUSBStandardHub: USB hub driver for LAN9512/9514 and external hubs (max. 8 ports)
+* CUSBString: Encapsulates a string descriptor, available on an USB device.
 
 Input library
 

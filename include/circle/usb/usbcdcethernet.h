@@ -1,8 +1,8 @@
 //
-// smsc951x.h
+// usbcdcethernet.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_smsc951x_h
-#define _circle_usb_smsc951x_h
+#ifndef _circle_usb_usbcdcethernet_h
+#define _circle_usb_usbcdcethernet_h
 
 #include <circle/usb/netdevice.h>
 #include <circle/usb/usbendpoint.h>
@@ -26,37 +26,29 @@
 #include <circle/usb/macaddress.h>
 #include <circle/types.h>
 
-class CSMSC951xDevice : public CNetDevice
+class CUSBCDCEthernetDevice : public CNetDevice
 {
 public:
-	CSMSC951xDevice (CUSBFunction *pFunction);
-	~CSMSC951xDevice (void);
+	CUSBCDCEthernetDevice (CUSBFunction *pFunction);
+	~CUSBCDCEthernetDevice (void);
 
 	boolean Configure (void);
 
 	const CMACAddress *GetMACAddress (void) const;
 
 	boolean SendFrame (const void *pBuffer, unsigned nLength);
-	
+
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength);
-	
-private:
-	boolean WriteReg (u32 nIndex, u32 nValue);
-	boolean ReadReg (u32 nIndex, u32 *pValue);
 
-#ifndef NDEBUG
-	void DumpReg (const char *pName, u32 nIndex);
-	void DumpRegs (void);
-#endif
+private:
+	boolean InitMACAddress (u8 iMACAddress);
 
 private:
 	CUSBEndpoint *m_pEndpointBulkIn;
 	CUSBEndpoint *m_pEndpointBulkOut;
 
 	CMACAddress m_MACAddress;
-
-	u8 *m_pTxBuffer;
 };
 
 #endif

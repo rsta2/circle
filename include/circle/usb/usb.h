@@ -86,6 +86,10 @@ PACKED;
 #define DESCRIPTOR_INTERFACE		4
 #define DESCRIPTOR_ENDPOINT		5
 
+// Class-specific descriptors
+#define DESCRIPTOR_CS_INTERFACE		36
+#define DESCRIPTOR_CS_ENDPOINT		37
+
 #define DESCRIPTOR_INDEX_DEFAULT	0
 
 // Device Descriptor
@@ -166,6 +170,15 @@ union TUSBDescriptor
 
 	TUSBAudioEndpointDescriptor	AudioEndpoint;
 	TUSBMIDIStreamingEndpointDescriptor MIDIStreamingEndpoint;
+}
+PACKED;
+
+// String Descriptor
+struct TUSBStringDescriptor
+{
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned short	bString[0];
 }
 PACKED;
 
