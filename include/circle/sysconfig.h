@@ -66,6 +66,8 @@
 
 #ifndef USE_RPI_STUB_AT
 //#define ARM_ALLOW_MULTI_CORE	// slower on single core if defined
+
+//#define USE_QEMU_USB_FIX	// for QEMU use only
 #endif
 #endif
 

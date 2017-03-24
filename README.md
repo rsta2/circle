@@ -142,13 +142,10 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Base library
-
-* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack
-
 USB library
 
-* CUSBMIDIDevice: Driver for USB Audio Class MIDI devices (input only)
+* CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU
+* CUSBString: Encapsulates a string descriptor, available on an USB device
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
