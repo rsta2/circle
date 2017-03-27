@@ -2,7 +2,7 @@
 // usbkeyboard.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,8 @@ static const char FromUSBKbd[] = "usbkbd";
 
 CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBFunction *pFunction)
 :	CUSBHIDDevice (pFunction, USBKEYB_REPORT_SIZE),
-	m_pKeyStatusHandlerRaw (0)
+	m_pKeyStatusHandlerRaw (0),
+	m_ucLastLEDStatus (0xFF)
 {
 	memset (m_LastReport, 0, sizeof m_LastReport);
 }
@@ -69,6 +70,22 @@ void CUSBKeyboardDevice::RegisterSelectConsoleHandler (TSelectConsoleHandler *pS
 void CUSBKeyboardDevice::RegisterShutdownHandler (TShutdownHandler *pShutdownHandler)
 {
 	m_Behaviour.RegisterShutdownHandler (pShutdownHandler);
+}
+
+void CUSBKeyboardDevice::UpdateLEDs (void)
+{
+	if (m_pKeyStatusHandlerRaw == 0)
+	{
+		u8 ucLEDStatus = GetLEDStatus ();
+		if (ucLEDStatus != m_ucLastLEDStatus)
+		{
+			m_ucLastLEDStatus = ucLEDStatus;
+			if (!SetLEDs (m_ucLastLEDStatus))
+			{
+				CLogger::Get ()->Write (FromUSBKbd, LogError, "Cannot set LED status");
+			}
+		}
+	}
 }
 
 u8 CUSBKeyboardDevice::GetLEDStatus (void) const
