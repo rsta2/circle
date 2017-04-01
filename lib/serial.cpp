@@ -1,13 +1,9 @@
 //
 // serial.cpp
 //
-// Based on Raspberry PI Remote Serial Protocol.
-//     Copyright 2012 Jamie Iles, jamie@jamieiles.com.
-//     Licensed under GPLv2
-// 
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -27,11 +23,13 @@
 #include <circle/memio.h>
 #include <circle/machineinfo.h>
 #include <circle/synchronize.h>
-#include <circle/sysconfig.h>
 #include <assert.h>
 
 #ifndef USE_RPI_STUB_AT
 
+// Definitions from Raspberry PI Remote Serial Protocol.
+//     Copyright 2012 Jamie Iles, jamie@jamieiles.com.
+//     Licensed under GPLv2
 #define DR_OE_MASK		(1 << 11)
 #define DR_BE_MASK		(1 << 10)
 #define DR_PE_MASK		(1 << 9)
@@ -69,6 +67,11 @@
 #define IFLS_RXIFSEL_MASK	(7 << IFLS_RXIFSEL_SHIFT)
 #define IFLS_TXIFSEL_SHIFT	0
 #define IFLS_TXIFSEL_MASK	(7 << IFLS_TXIFSEL_SHIFT)
+	#define IFLS_IFSEL_1_8		0
+	#define IFLS_IFSEL_1_4		1
+	#define IFLS_IFSEL_1_2		2
+	#define IFLS_IFSEL_3_4		3
+	#define IFLS_IFSEL_7_8		4
 
 #define INT_OE			(1 << 10)
 #define INT_BE			(1 << 9)
@@ -81,16 +84,24 @@
 #define INT_DCDM		(1 << 2)
 #define INT_CTSM		(1 << 1)
 
-CSerialDevice::CSerialDevice (void)
+CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem)
 :
 	// to be sure there is no collision with the Bluetooth controller
 	m_GPIO32 (32, GPIOModeInput),
 	m_GPIO33 (33, GPIOModeInput),
 
 	m_TxDPin (14, GPIOModeAlternateFunction0),
-	m_RxDPin (15, GPIOModeAlternateFunction0)
+	m_RxDPin (15, GPIOModeAlternateFunction0),
+	m_pInterruptSystem (pInterruptSystem),
+	m_bInterruptConnected (FALSE),
+	m_nRxInPtr (0),
+	m_nRxOutPtr (0),
+	m_nRxStatus (0),
+	m_nTxInPtr (0),
+	m_nTxOutPtr (0),
+	m_nOptions (SERIAL_OPTION_ONLCR)
 #ifdef REALTIME
-	, m_SpinLock (FALSE)
+	, m_LineSpinLock (FALSE)
 #endif
 {
 }
@@ -101,6 +112,14 @@ CSerialDevice::~CSerialDevice (void)
 	write32 (ARM_UART0_IMSC, 0);
 	write32 (ARM_UART0_CR, 0);
 	PeripheralExit ();
+
+	if (m_bInterruptConnected)
+	{
+		assert (m_pInterruptSystem != 0);
+		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_UART);
+	}
+
+	m_pInterruptSystem = 0;
 }
 
 boolean CSerialDevice::Initialize (unsigned nBaudrate)
@@ -108,7 +127,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 	unsigned nClockRate = CMachineInfo::Get ()->GetClockRate (CLOCK_ID_UART);
 	assert (nClockRate > 0);
 
-	assert (300 <= nBaudrate && nBaudrate <= 3000000);
+	assert (300 <= nBaudrate && nBaudrate <= 4000000);
 	unsigned nBaud16 = nBaudrate * 16;
 	unsigned nIntDiv = nClockRate / nBaud16;
 	assert (1 <= nIntDiv && nIntDiv <= 0xFFFF);
@@ -116,15 +135,32 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 	unsigned nFractDiv = nFractDiv2 / 2 + nFractDiv2 % 2;
 	assert (nFractDiv <= 0x3F);
 
+	if (m_pInterruptSystem != 0)
+	{
+		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_UART, InterruptStub, this);
+		m_bInterruptConnected = TRUE;
+	}
+
 	PeripheralEntry ();
 
 	write32 (ARM_UART0_IMSC, 0);
 	write32 (ARM_UART0_ICR,  0x7FF);
 	write32 (ARM_UART0_IBRD, nIntDiv);
 	write32 (ARM_UART0_FBRD, nFractDiv);
-	write32 (ARM_UART0_LCRH, LCRH_WLEN8_MASK);	// 8N1
-	write32 (ARM_UART0_IFLS, 0);
-	write32 (ARM_UART0_CR,   CR_UART_EN_MASK | CR_TXE_MASK | CR_RXE_MASK);
+
+	if (m_pInterruptSystem != 0)
+	{
+		write32 (ARM_UART0_IFLS,   IFLS_IFSEL_1_4 << IFLS_TXIFSEL_SHIFT
+					 | IFLS_IFSEL_1_4 << IFLS_RXIFSEL_SHIFT);
+		write32 (ARM_UART0_LCRH, LCRH_WLEN8_MASK | LCRH_FEN_MASK);		// 8N1
+		write32 (ARM_UART0_IMSC, INT_RX | INT_RT | INT_OE);
+	}
+	else
+	{
+		write32 (ARM_UART0_LCRH, LCRH_WLEN8_MASK);	// 8N1
+	}
+
+	write32 (ARM_UART0_CR, CR_UART_EN_MASK | CR_TXE_MASK | CR_RXE_MASK);
 
 	PeripheralExit ();
 
@@ -135,53 +171,258 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 
 int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 {
-	m_SpinLock.Acquire ();
-
-	PeripheralEntry ();
+	m_LineSpinLock.Acquire ();
 
 	u8 *pChar = (u8 *) pBuffer;
 	assert (pChar != 0);
-	
+
 	int nResult = 0;
 
 	while (nCount--)
 	{
-		Write (*pChar);
+		if (!Write (*pChar))
+		{
+			break;
+		}
 
 		if (*pChar++ == '\n')
 		{
-			Write ('\r');
+			if (m_nOptions & SERIAL_OPTION_ONLCR)
+			{
+				if (!Write ('\r'))
+				{
+					break;
+				}
+			}
 		}
 
 		nResult++;
 	}
 
-	PeripheralExit ();
+	m_LineSpinLock.Release ();
 
-	m_SpinLock.Release ();
+	if (m_pInterruptSystem != 0)
+	{
+		m_SpinLock.Acquire ();
+
+		if (m_nTxInPtr != m_nTxOutPtr)
+		{
+			PeripheralEntry ();
+
+			while (m_nTxInPtr != m_nTxOutPtr)
+			{
+				if (!(read32 (ARM_UART0_FR) & FR_TXFF_MASK))
+				{
+					write32 (ARM_UART0_DR, m_TxBuffer[m_nTxOutPtr++]);
+					m_nTxOutPtr &= SERIAL_BUF_MASK;
+				}
+				else
+				{
+					write32 (ARM_UART0_IMSC, read32 (ARM_UART0_IMSC) | INT_TX);
+
+					break;
+				}
+			}
+
+			PeripheralExit ();
+		}
+
+		m_SpinLock.Release ();
+	}
 
 	return nResult;
 }
 
-void CSerialDevice::Write (u8 nChar)
+int CSerialDevice::Read (void *pBuffer, unsigned nCount)
 {
-	while (read32 (ARM_UART0_FR) & FR_TXFF_MASK)
+	u8 *pChar = (u8 *) pBuffer;
+	assert (pChar != 0);
+
+	int nResult = 0;
+
+	if (m_pInterruptSystem != 0)
 	{
-		// do nothing
+		m_SpinLock.Acquire ();
+
+		if (m_nRxStatus < 0)
+		{
+			nResult = m_nRxStatus;
+			m_nRxStatus = 0;
+		}
+		else
+		{
+			while (nCount > 0)
+			{
+				if (m_nRxInPtr == m_nRxOutPtr)
+				{
+					break;
+				}
+
+				*pChar++ = m_RxBuffer[m_nRxOutPtr++];
+				m_nRxOutPtr &= SERIAL_BUF_MASK;
+
+				nCount--;
+				nResult++;
+			}
+		}
+
+		m_SpinLock.Release ();
 	}
-		
-	write32 (ARM_UART0_DR, nChar);
+	else
+	{
+		PeripheralEntry ();
+
+		while (nCount > 0)
+		{
+			if (read32 (ARM_UART0_FR) & FR_RXFE_MASK)
+			{
+				break;
+			}
+
+			u32 nDR = read32 (ARM_UART0_DR);
+			if (nDR & DR_BE_MASK)
+			{
+				nResult = -SERIAL_ERROR_BREAK;
+
+				break;
+			}
+			else if (nDR & DR_OE_MASK)
+			{
+				nResult = -SERIAL_ERROR_OVERRUN;
+
+				break;
+			}
+			else if (nDR & DR_FE_MASK)
+			{
+				nResult = -SERIAL_ERROR_FRAMING;
+
+				break;
+			}
+
+			*pChar++ = nDR & 0xFF;
+
+			nCount--;
+			nResult++;
+		}
+
+		PeripheralExit ();
+	}
+
+	return nResult;
 }
 
-#else
-
-CSerialDevice::CSerialDevice (void)
+unsigned CSerialDevice::GetOptions (void) const
 {
+	return m_nOptions;
 }
 
-CSerialDevice::~CSerialDevice (void)
+void CSerialDevice::SetOptions (unsigned nOptions)
 {
+	m_nOptions = nOptions;
 }
+
+boolean CSerialDevice::Write (u8 uchChar)
+{
+	boolean bOK = TRUE;
+
+	if (m_pInterruptSystem != 0)
+	{
+		m_SpinLock.Acquire ();
+
+		if (((m_nTxInPtr+1) & SERIAL_BUF_MASK) != m_nTxOutPtr)
+		{
+			m_TxBuffer[m_nTxInPtr++] = uchChar;
+			m_nTxInPtr &= SERIAL_BUF_MASK;
+		}
+		else
+		{
+			bOK = FALSE;
+		}
+
+		m_SpinLock.Release ();
+	}
+	else
+	{
+		PeripheralEntry ();
+
+		while (read32 (ARM_UART0_FR) & FR_TXFF_MASK)
+		{
+			// do nothing
+		}
+
+		write32 (ARM_UART0_DR, uchChar);
+
+		PeripheralExit ();
+	}
+
+	return bOK;
+}
+
+void CSerialDevice::InterruptHandler (void)
+{
+	m_SpinLock.Acquire ();
+
+	PeripheralEntry ();
+
+	// acknowledge pending interrupts
+	write32 (ARM_UART0_ICR, read32 (ARM_UART0_MIS));
+
+	while (!(read32 (ARM_UART0_FR) & FR_RXFE_MASK))
+	{
+		if (((m_nRxInPtr+1) & SERIAL_BUF_MASK) != m_nRxOutPtr)
+		{
+			u32 nDR = read32 (ARM_UART0_DR);
+			if (nDR & DR_BE_MASK)
+			{
+				m_nRxStatus = -SERIAL_ERROR_BREAK;
+			}
+			else if (nDR & DR_OE_MASK)
+			{
+				m_nRxStatus = -SERIAL_ERROR_OVERRUN;
+			}
+			else if (nDR & DR_FE_MASK)
+			{
+				m_nRxStatus = -SERIAL_ERROR_FRAMING;
+			}
+
+			m_RxBuffer[m_nRxInPtr++] = nDR & 0xFF;
+			m_nRxInPtr &= SERIAL_BUF_MASK;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	while (!(read32 (ARM_UART0_FR) & FR_TXFF_MASK))
+	{
+		if (m_nTxInPtr != m_nTxOutPtr)
+		{
+			write32 (ARM_UART0_DR, m_TxBuffer[m_nTxOutPtr++]);
+			m_nTxOutPtr &= SERIAL_BUF_MASK;
+		}
+		else
+		{
+			write32 (ARM_UART0_IMSC, read32 (ARM_UART0_IMSC) & ~INT_TX);
+
+			break;
+		}
+	}
+
+	PeripheralExit ();
+
+	m_SpinLock.Release ();
+}
+
+void CSerialDevice::InterruptStub (void *pParam)
+{
+	CSerialDevice *pThis = (CSerialDevice *) pParam;
+	assert (pThis != 0);
+
+	pThis->InterruptHandler ();
+}
+
+#else	// #ifndef USE_RPI_STUB_AT
 
 boolean CSerialDevice::Initialize (unsigned nBaudrate)
 {

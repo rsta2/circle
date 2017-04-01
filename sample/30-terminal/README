@@ -1,0 +1,24 @@
+README
+
+This sample is a simple terminal program for the serial interface UART0. You
+need an USB keyboard and some serial interface adapter to use it. Connect the
+device of your choice to your Raspberry Pi as follows (Broadcom numbering):
+
+Raspberry Pi		Device
+
+TXD / GPIO14	<--->	RXD
+RXD / GPIO15	<--->	TXD
+GND		<--->	GND
+
+Please note that the Raspberry Pi uses 3.3V levels on the TXD / RXD pins.
+
+If you need an interface speed different to 115200 bits per second, you can
+change the BAUDRATE define in the file kernel.cpp before building the sample.
+
+A keyboard translation map is used to translate the physical key code into the
+right ASCII code or in an escape sequence for special keys (see the file
+doc/keyboard.txt). There are six of these language-depended maps at the moment
+(UK English, Spanish, French, Italian, US International and German). Select the
+wanted map at the end of the file include/circle/sysconfig.h before building
+(default map) or by using the file cmdline.txt (e.g. "keymap=UK"). If you press
+Ctrl-Alt-Del the terminal reboots.
