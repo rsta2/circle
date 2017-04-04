@@ -2,7 +2,7 @@
 // exceptionstub.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,10 +66,22 @@ struct TAbortFrame
 	u32	pc;
 };
 
+// FIQ data
+typedef void TFIQHandler (void *pParam);
+
+struct TFIQData
+{
+	TFIQHandler *pHandler;
+	void *pParam;
+};
+
+extern TFIQData FIQData;
+
 void UndefinedInstructionStub (void);
 void PrefetchAbortStub (void);
 void DataAbortStub (void);
 void IRQStub (void);
+void FIQStub (void);
 
 void ExceptionHandler (u32 nException, TAbortFrame *pFrame);
 void InterruptHandler (void);

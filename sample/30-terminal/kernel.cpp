@@ -22,7 +22,7 @@
 #include <circle/util.h>
 #include <assert.h>
 
-#define BAUDRATE	115200		// bits per second
+#define BAUDRATE	38400		// bits per second
 
 #ifdef USE_RPI_STUB_AT
 	#error This sample does not work with rpi_stub!
@@ -36,7 +36,7 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_Serial (&m_Interrupt),
+	m_Serial (&m_Interrupt, TRUE),
 	m_DWHCI (&m_Interrupt, &m_Timer),
 	m_ShutdownMode (ShutdownNone)
 {
@@ -107,11 +107,12 @@ TShutdownMode CKernel::Run (void)
 
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
 	{
-		char Buffer[500];
+		char Buffer[100];
 		int nResult = m_Serial.Read (Buffer, sizeof Buffer);
 		if (nResult < 0)
 		{
-			m_Logger.Write (FromKernel, LogWarning, "Serial read error (%d)", nResult);
+			static const char ErrorMsg[] = "#ERR#";
+			m_Screen.Write (ErrorMsg, sizeof ErrorMsg-1);
 		}
 		else if (nResult > 0)
 		{

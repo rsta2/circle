@@ -2,7 +2,7 @@
 // synchronize.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,12 +28,25 @@ extern "C" {
 #endif
 
 //
+// Execution levels
+//
+#define TASK_LEVEL		0		// IRQs and FIQs enabled
+#define IRQ_LEVEL		1		// IRQs disabled, FIQs enabled
+#define FIQ_LEVEL		2		// IRQs and FIQs disabled
+
+//
 // Interrupt control
 //
-#define	EnableInterrupts()	asm volatile ("cpsie i")
-#define	DisableInterrupts()	asm volatile ("cpsid i")
+#define	EnableIRQs()		asm volatile ("cpsie i")
+#define	DisableIRQs()		asm volatile ("cpsid i")
+#define	EnableInterrupts()	EnableIRQs()			// deprecated
+#define	DisableInterrupts()	DisableIRQs()			// deprecated
 
-void EnterCritical (void);
+#define	EnableFIQs()		asm volatile ("cpsie f")
+#define	DisableFIQs()		asm volatile ("cpsid f")
+
+// EnterCritical() can be nested with same or increasing nTargetLevel
+void EnterCritical (unsigned nTargetLevel = IRQ_LEVEL);
 void LeaveCritical (void);
 
 #if RASPPI == 1

@@ -2,7 +2,7 @@
 // bcmrandom.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
 // 
 // This file contains code taken from Linux:
 //	drivers/char/hw_random/bcm2835-rng.c
@@ -30,7 +30,7 @@
 // the initial numbers generated are "less random" so will be discarded
 #define RNG_WARMUP_COUNT	0x40000
 
-CSpinLock CBcmRandomNumberGenerator::s_SpinLock (FALSE);
+CSpinLock CBcmRandomNumberGenerator::s_SpinLock (TASK_LEVEL);
 
 boolean CBcmRandomNumberGenerator::s_bInitialized = FALSE;
 

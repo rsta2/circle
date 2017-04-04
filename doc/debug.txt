@@ -12,7 +12,7 @@ The file kernel7.img has to be installed on a Micro-SD card along with the firmw
 
 	rpi_stub_mmu rpi_stub_interrupt=fiq
 
-This enables the MMU and caches in rpi_stub and the FIQ interrupt mode. Because Circle does not use the FIQ this mode is recommended for Circle.
+This enables the MMU and caches in rpi_stub and the FIQ interrupt mode. Because Circle mostly does not use the FIQ this mode is recommended for Circle.
 
 Before building a Circle application which should be debugged with rpi_stub you have to enable the define
 

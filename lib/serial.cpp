@@ -84,7 +84,7 @@
 #define INT_DCDM		(1 << 2)
 #define INT_CTSM		(1 << 1)
 
-CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem)
+CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFIQ)
 :
 	// to be sure there is no collision with the Bluetooth controller
 	m_GPIO32 (32, GPIOModeInput),
@@ -93,15 +93,17 @@ CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem)
 	m_TxDPin (14, GPIOModeAlternateFunction0),
 	m_RxDPin (15, GPIOModeAlternateFunction0),
 	m_pInterruptSystem (pInterruptSystem),
+	m_bUseFIQ (bUseFIQ),
 	m_bInterruptConnected (FALSE),
 	m_nRxInPtr (0),
 	m_nRxOutPtr (0),
 	m_nRxStatus (0),
 	m_nTxInPtr (0),
 	m_nTxOutPtr (0),
-	m_nOptions (SERIAL_OPTION_ONLCR)
+	m_nOptions (SERIAL_OPTION_ONLCR),
+	m_SpinLock (bUseFIQ ? FIQ_LEVEL : IRQ_LEVEL)
 #ifdef REALTIME
-	, m_LineSpinLock (FALSE)
+	, m_LineSpinLock (TASK_LEVEL)
 #endif
 {
 }
@@ -116,7 +118,14 @@ CSerialDevice::~CSerialDevice (void)
 	if (m_bInterruptConnected)
 	{
 		assert (m_pInterruptSystem != 0);
-		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_UART);
+		if (!m_bUseFIQ)
+		{
+			m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_UART);
+		}
+		else
+		{
+			m_pInterruptSystem->DisconnectFIQ ();
+		}
 	}
 
 	m_pInterruptSystem = 0;
@@ -137,7 +146,15 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 
 	if (m_pInterruptSystem != 0)
 	{
-		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_UART, InterruptStub, this);
+		if (!m_bUseFIQ)
+		{
+			m_pInterruptSystem->ConnectIRQ (ARM_IRQ_UART, InterruptStub, this);
+		}
+		else
+		{
+			m_pInterruptSystem->ConnectFIQ (ARM_FIQ_UART, InterruptStub, this);
+		}
+
 		m_bInterruptConnected = TRUE;
 	}
 
@@ -369,28 +386,40 @@ void CSerialDevice::InterruptHandler (void)
 
 	while (!(read32 (ARM_UART0_FR) & FR_RXFE_MASK))
 	{
-		if (((m_nRxInPtr+1) & SERIAL_BUF_MASK) != m_nRxOutPtr)
+		u32 nDR = read32 (ARM_UART0_DR);
+		if (nDR & DR_BE_MASK)
 		{
-			u32 nDR = read32 (ARM_UART0_DR);
-			if (nDR & DR_BE_MASK)
+			if (m_nRxStatus == 0)
 			{
 				m_nRxStatus = -SERIAL_ERROR_BREAK;
 			}
-			else if (nDR & DR_OE_MASK)
+		}
+		else if (nDR & DR_OE_MASK)
+		{
+			if (m_nRxStatus == 0)
 			{
 				m_nRxStatus = -SERIAL_ERROR_OVERRUN;
 			}
-			else if (nDR & DR_FE_MASK)
+		}
+		else if (nDR & DR_FE_MASK)
+		{
+			if (m_nRxStatus == 0)
 			{
 				m_nRxStatus = -SERIAL_ERROR_FRAMING;
 			}
+		}
 
+		if (((m_nRxInPtr+1) & SERIAL_BUF_MASK) != m_nRxOutPtr)
+		{
 			m_RxBuffer[m_nRxInPtr++] = nDR & 0xFF;
 			m_nRxInPtr &= SERIAL_BUF_MASK;
 		}
 		else
 		{
-			break;
+			if (m_nRxStatus == 0)
+			{
+				m_nRxStatus = -SERIAL_ERROR_OVERRUN;
+			}
 		}
 	}
 

@@ -6,14 +6,16 @@ device of your choice to your Raspberry Pi as follows (Broadcom numbering):
 
 Raspberry Pi		Device
 
-TXD / GPIO14	<--->	RXD
-RXD / GPIO15	<--->	TXD
+TXD / GPIO14	---->	RXD
+RXD / GPIO15	<----	TXD
 GND		<--->	GND
 
 Please note that the Raspberry Pi uses 3.3V levels on the TXD / RXD pins.
 
-If you need an interface speed different to 115200 bits per second, you can
+If you need an interface speed different to 38400 bits per second, you can
 change the BAUDRATE define in the file kernel.cpp before building the sample.
+Please note that you may get buffer overruns on receive (#ERR#) with higher
+speeds because the screen driver is not designed for fast scrolling.
 
 A keyboard translation map is used to translate the physical key code into the
 right ASCII code or in an escape sequence for special keys (see the file

@@ -8,6 +8,12 @@ If you have a MIDI keyboard with USB interface, you can also use it to play. It
 has to support the USB Audio Class MIDI device specification. This sample does
 not support the MIDI velocity parameter.
 
+You can also attach a serial MIDI interface to your Raspberry Pi (31250 Baud).
+The MIDI input data has to be feeded to GPIO15 (Broadcom numbering) at 3.3V
+level. Because the MIDI standard uses a current loop, you need a converter
+circuit. Serial MIDI input is enabled, if an other keyboard is not attached.
+The MIDI output is not used by this sample.
+
 The mini organ uses the PWM sound device to generate a square wave of the
 required frequency for about one octave (note C3 to C4). A more complex sound
 synthesis using the CPWMSoundBaseDevice class should be possible.
