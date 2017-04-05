@@ -42,6 +42,9 @@ public:
 	static void EnableIRQ (unsigned nIRQ);
 	static void DisableIRQ (unsigned nIRQ);
 
+	static void EnableFIQ (unsigned nFIQ);
+	static void DisableFIQ (void);
+
 	static CInterruptSystem *Get (void);
 
 	static void InterruptHandler (void);

@@ -2,7 +2,7 @@
 // assert.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 #include <assert.h>
 #include <circle/logger.h>
 #include <circle/string.h>
+#include <circle/interrupt.h>
+#include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/debug.h>
 #include <circle/types.h>
@@ -30,6 +32,10 @@ void assertion_failed (const char *pExpr, const char *pFile, unsigned nLine)
 {
 	u32 ulStackPtr;
 	asm volatile ("mov %0,sp" : "=r" (ulStackPtr));
+
+	// if an assertion fails on FIQ_LEVEL, the system would otherwise hang in the next spin lock
+	CInterruptSystem::DisableFIQ ();
+	EnableFIQs ();
 
 	CString Source;
 	Source.Format ("%s(%u)", pFile, nLine);

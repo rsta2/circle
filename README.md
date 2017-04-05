@@ -142,6 +142,10 @@ Classes
 
 The following C++ classes were added to Circle:
 
+Base library
+
+* CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system)
+
 USB library
 
 * CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU

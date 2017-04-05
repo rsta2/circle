@@ -39,6 +39,8 @@ void EnterCritical (unsigned nTargetLevel)
 
 	u32 nCPSR;
 	asm volatile ("mrs %0, cpsr" : "=r" (nCPSR));
+
+	// if we are already on FIQ_LEVEL, we must not go back to IRQ_LEVEL here
 	assert (nTargetLevel == FIQ_LEVEL || !(nCPSR & 0x40));
 
 	DisableIRQs ();
@@ -78,6 +80,8 @@ void EnterCritical (unsigned nTargetLevel)
 
 	u32 nCPSR;
 	asm volatile ("mrs %0, cpsr" : "=r" (nCPSR));
+
+	// if we are already on FIQ_LEVEL, we must not go back to IRQ_LEVEL here
 	assert (nTargetLevel == FIQ_LEVEL || !(nCPSR & 0x40));
 
 	DisableIRQs ();

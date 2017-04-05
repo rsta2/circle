@@ -124,22 +124,14 @@ void CInterruptSystem::ConnectFIQ (unsigned nFIQ, TFIQHandler *pHandler, void *p
 	FIQData.pHandler = pHandler;
 	FIQData.pParam = pParam;
 
-	PeripheralEntry ();
-
-	write32 (ARM_IC_FIQ_CONTROL, nFIQ | 0x80);
-
-	PeripheralExit ();
+	EnableFIQ (nFIQ);
 }
 
 void CInterruptSystem::DisconnectFIQ (void)
 {
 	assert (FIQData.pHandler != 0);
 
-	PeripheralEntry ();
-
-	write32 (ARM_IC_FIQ_CONTROL, 0);
-
-	PeripheralExit ();
+	DisableFIQ ();
 
 	FIQData.pHandler = 0;
 	FIQData.pParam = 0;
@@ -163,6 +155,26 @@ void CInterruptSystem::DisableIRQ (unsigned nIRQ)
 	assert (nIRQ < IRQ_LINES);
 
 	write32 (ARM_IC_IRQS_DISABLE (nIRQ), ARM_IRQ_MASK (nIRQ));
+
+	PeripheralExit ();
+}
+
+void CInterruptSystem::EnableFIQ (unsigned nFIQ)
+{
+	PeripheralEntry ();
+
+	assert (nFIQ <= ARM_MAX_FIQ);
+
+	write32 (ARM_IC_FIQ_CONTROL, nFIQ | 0x80);
+
+	PeripheralExit ();
+}
+
+void CInterruptSystem::DisableFIQ (void)
+{
+	PeripheralEntry ();
+
+	write32 (ARM_IC_FIQ_CONTROL, 0);
 
 	PeripheralExit ();
 }
