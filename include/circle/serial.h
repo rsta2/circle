@@ -43,7 +43,8 @@ class CSerialDevice : public CDevice		/// Driver for PL011 UART0 at GPIO14/15
 public:
 #ifndef USE_RPI_STUB_AT
 	/// \param pInterruptSystem Pointer to interrupt system object (or 0 for polling driver)
-	CSerialDevice (CInterruptSystem *pInterruptSystem = 0);
+	/// \param bUseFIQ Use FIQ instead of IRQ
+	CSerialDevice (CInterruptSystem *pInterruptSystem = 0, boolean bUseFIQ = FALSE);
 
 	~CSerialDevice (void);
 #endif
@@ -81,6 +82,7 @@ private:
 	CGPIOPin m_RxDPin;
 
 	CInterruptSystem *m_pInterruptSystem;
+	boolean m_bUseFIQ;
 	boolean m_bInterruptConnected;
 
 	u8 m_RxBuffer[SERIAL_BUF_SIZE];

@@ -347,7 +347,9 @@ void CPWMSoundBaseDevice::InterruptHandler (void)
 
 	PeripheralEntry ();
 
+#ifndef NDEBUG
 	u32 nIntStatus = read32 (ARM_DMA_INT_STATUS);
+#endif
 	u32 nIntMask = 1 << DMA_CHANNEL_PWM;
 	assert (nIntStatus & nIntMask);
 	write32 (ARM_DMA_INT_STATUS, nIntMask);

@@ -2,7 +2,7 @@
 // fatcache.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,8 +32,8 @@
 CFATCache::CFATCache (void)
 :	m_pPartition (0),
 	m_pBufferMem (0),
-	m_BufferListLock (FALSE),
-	m_DiskLock (FALSE)
+	m_BufferListLock (TASK_LEVEL),
+	m_DiskLock (TASK_LEVEL)
 {
 }
 

@@ -2,7 +2,7 @@
 // virtualgpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
 // 
 // This file contains code taken from Linux:
 //	from file drivers/gpio/gpio-bcm-virt.c
@@ -28,7 +28,7 @@
 
 u32 CVirtualGPIOPin::s_nGPIOBaseAddress = 0;
 
-CSpinLock CVirtualGPIOPin::s_SpinLock (FALSE);
+CSpinLock CVirtualGPIOPin::s_SpinLock (TASK_LEVEL);
 
 CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
 :	m_nPin (nPin),

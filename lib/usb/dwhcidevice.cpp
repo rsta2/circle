@@ -63,7 +63,7 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_nChannels (0),
 	m_nChannelAllocated (0),
 	m_nWaitBlockAllocated (0),
-	m_WaitBlockSpinLock (FALSE),
+	m_WaitBlockSpinLock (TASK_LEVEL),
 	m_RootPort (this)
 {
 	assert (m_pInterruptSystem != 0);

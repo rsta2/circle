@@ -74,6 +74,9 @@ CMiniOrgan *CMiniOrgan::s_pThis = 0;
 
 CMiniOrgan::CMiniOrgan (CInterruptSystem *pInterrupt)
 :	CPWMSoundBaseDevice (pInterrupt, SAMPLE_RATE),
+	m_Serial (pInterrupt, TRUE),
+	m_bUseSerial (FALSE),
+	m_nSerialState (0),
 	m_nCurrentLevel (0),
 	m_nSampleCount (0),
 	m_nFrequency (0),
@@ -110,9 +113,75 @@ boolean CMiniOrgan::Initialize (void)
 		return TRUE;
 	}
 
+	if (m_Serial.Initialize (31250))
+	{
+		CLogger::Get ()->Write (FromMiniOrgan, LogNotice, "Using serial MIDI interface");
+
+		m_bUseSerial = TRUE;
+
+		return TRUE;
+	}
+
 	CLogger::Get ()->Write (FromMiniOrgan, LogError, "Keyboard not found");
 
 	return FALSE;
+}
+
+void CMiniOrgan::Process (void)
+{
+	if (!m_bUseSerial)
+	{
+		return;
+	}
+
+	// Read serial MIDI data
+	u8 Buffer[20];
+	int nResult = m_Serial.Read (Buffer, sizeof Buffer);
+	if (nResult <= 0)
+	{
+		return;
+	}
+
+	// Process MIDI messages
+	// See: https://www.midi.org/specifications/item/table-1-summary-of-midi-message
+	for (int i = 0; i < nResult; i++)
+	{
+		u8 uchData = Buffer[i];
+
+		switch (m_nSerialState)
+		{
+		case 0:
+		MIDIRestart:
+			if ((uchData & 0xE0) == 0x80)		// Note on or off, all channels
+			{
+				m_SerialMessage[m_nSerialState++] = uchData;
+			}
+			break;
+
+		case 1:
+		case 2:
+			if (uchData & 0x80)			// got status when parameter expected
+			{
+				m_nSerialState = 0;
+
+				goto MIDIRestart;
+			}
+
+			m_SerialMessage[m_nSerialState++] = uchData;
+
+			if (m_nSerialState == 3)		// message is complete
+			{
+				MIDIPacketHandler (0, m_SerialMessage, sizeof m_SerialMessage);
+
+				m_nSerialState = 0;
+			}
+			break;
+
+		default:
+			assert (0);
+			break;
+		}
+	}
 }
 
 unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
