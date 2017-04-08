@@ -3,7 +3,7 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 29 of Circle. To get access to Step 1-28 use the git tag "Step1" to "Step28".
+> This is Step 30 of Circle. To get access to Step 1-29 use the git tag "Step1" to "Step29".
 
 > If you read this file in an editor you should switch line wrapping on.
 
@@ -21,18 +21,18 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 29th Step
+The 30th Step
 -------------
 
-In this step a new PWM sound generation class *CPWMSoundBaseDevice* is added, which is more flexible than the previously available class. Additionally USB Audio Class MIDI input support has been ported from the USPi driver (by Joshua Otto) to Circle.
+In this step FIQ (fast interrupt) support has been added to Circle. It is used in the class CSerialDevice, which allows an interrupt-driven access to the UART0 device. This is demonstrated in *sample/30-terminal*, a simple terminal program. See the *README* file in this directory for details. *sample/29-miniorgan* has been updated to use the UART0 device (at option) as a serial MIDI interface too.
 
-Both features are demonstrated in a sample program in *sample/29-miniorgan/* which is a simple mini organ instrument. It generates PWM sound and can be played using a keyboard controller with USB Audio Class MIDI interface or a standard USB PC keyboard. See the *README* file in sample's directory for details.
+FIQ support is also used to implement the CGPIOPinFIQ class, which allows fast interrupt-driven event capture from a GPIO pin.
 
-Please note that the Circle screen DEPTH is 16 by default now. Circle is tested using a newer toolchain (with GCC 6.3.1) from now (see *Building*).
+Finally in this step QEMU support has been added. See the file *doc/qemu.txt* for details!
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-28 the following features were introduced:
+In Step 1-29 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -87,6 +87,7 @@ In Step 1-28 the following features were introduced:
 * Basic support for the internal Bluetooth host controller of the Raspberry Pi 3
 * Official Raspberry Pi touch screen support
 * Supporting GUI creation using uGUI (by Achim Doebler)
+* USB Audio Class MIDI input support
 
 Building
 --------

@@ -27,7 +27,7 @@
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
-#define SERIAL_BUF_SIZE		1024			// must be a power of 2
+#define SERIAL_BUF_SIZE		2048			// must be a power of 2
 #define SERIAL_BUF_MASK		(SERIAL_BUF_SIZE-1)
 
 // serial options
