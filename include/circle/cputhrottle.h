@@ -2,7 +2,7 @@
 // cputhrottle.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ enum TCPUSpeed
 	CPUSpeedUnknown
 };
 
-/// \warning You have to repeatedly call SetOnTemperature() if you use this class!\n
+/// \warning You have to repeatedly call SetOnTemperature() or Update() if you use this class!\n
 ///	     See the description of SetOnTemperature() for details!\n
 ///	     IF YOU ARE NOT SURE ABOUT HOW TO MANAGE THIS, DO NOT USE THIS CLASS!
 
@@ -76,6 +76,11 @@ public:
 	/// \return Operation successful?
 	boolean SetOnTemperature (void);
 
+	/// \brief Same function as SetOnTemperature(), but can be called\n
+	/// as often as you want without checking the calling interval.
+	/// \return Operation successful?
+	boolean Update (void);
+
 	/// \brief Dump some information on the current CPU status
 	/// \param bAll Dump all information (only current clock rate and temperature otherwise)
 	void DumpStatus (boolean bAll = TRUE);
@@ -101,6 +106,7 @@ private:
 
 	TCPUSpeed m_SpeedSet;
 	unsigned  m_nTicksLastSet;
+	unsigned  m_nTicksLastUpdate;
 
 	static CCPUThrottle *s_pThis;
 };

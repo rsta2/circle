@@ -7,7 +7,7 @@
 //	no dynamic attachments
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <circle/bcm2835.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
+#include <circle/sysconfig.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -62,7 +63,7 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_nChannels (0),
 	m_nChannelAllocated (0),
 	m_nWaitBlockAllocated (0),
-	m_WaitBlockSpinLock (FALSE),
+	m_WaitBlockSpinLock (TASK_LEVEL),
 	m_RootPort (this)
 {
 	assert (m_pInterruptSystem != 0);
@@ -756,6 +757,7 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 	Character.And (~DWHCI_HOST_CHAN_CHARACTER_EP_NUMBER__MASK);
 	Character.Or (pStageData->GetEndpointNumber () << DWHCI_HOST_CHAN_CHARACTER_EP_NUMBER__SHIFT);
 
+#ifndef USE_QEMU_USB_FIX
 	CDWHCIFrameScheduler *pFrameScheduler = pStageData->GetFrameScheduler ();
 	if (pFrameScheduler != 0)
 	{
@@ -770,6 +772,7 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 			Character.And (~DWHCI_HOST_CHAN_CHARACTER_PER_ODD_FRAME);
 		}
 	}
+#endif
 
 	CDWHCIRegister ChanInterruptMask (DWHCI_HOST_CHAN_INT_MASK(nChannel));
 	ChanInterruptMask.Set (pStageData->GetStatusMask ());

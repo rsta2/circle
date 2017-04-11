@@ -2,7 +2,7 @@
 // spinlock.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,8 +29,11 @@
 class CSpinLock
 {
 public:
-	// call constructor with bDisableIRQ = FALSE if spin lock is not used from IRQ context
-	CSpinLock (boolean bDisableIRQ = TRUE);
+	// nTargetLevel is the maximum execution level from which the spin lock is used.
+	// This has been a boolean parameter before and valid values were TRUE and FALSE.
+	// These parameters are still working, but are deprecated. Use the *_LEVEL defines
+	// from circle/sysconfig.h instead!
+	CSpinLock (unsigned nTargetLevel = IRQ_LEVEL);
 	~CSpinLock (void);
 
 	void Acquire (void);
@@ -39,7 +42,7 @@ public:
 	static void Enable (void);
 
 private:
-	boolean m_bDisableIRQ;
+	unsigned m_nTargetLevel;
 	u32 m_nCPSR[CORES];
 
 	boolean m_bLocked;
@@ -52,29 +55,29 @@ private:
 class CSpinLock
 {
 public:
-	CSpinLock (boolean bDisableIRQ = TRUE)
-	:	m_bDisableIRQ (bDisableIRQ)
+	CSpinLock (unsigned nTargetLevel = IRQ_LEVEL)
+	:	m_nTargetLevel (nTargetLevel)
 	{
 	}
 
 	void Acquire (void)
 	{
-		if (m_bDisableIRQ)
+		if (m_nTargetLevel >= IRQ_LEVEL)
 		{
-			EnterCritical ();
+			EnterCritical (m_nTargetLevel);
 		}
 	}
 
 	void Release (void)
 	{
-		if (m_bDisableIRQ)
+		if (m_nTargetLevel >= IRQ_LEVEL)
 		{
 			LeaveCritical ();
 		}
 	}
 
 private:
-	boolean m_bDisableIRQ;
+	unsigned m_nTargetLevel;
 };
 
 #endif

@@ -2,7 +2,7 @@
 // i2cmaster.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // Large portions are:
 //	Copyright (C) 2011-2013 Mike McCauley
@@ -61,7 +61,7 @@ CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode)
 	m_SDA (nDevice == 0 ? 0 : 2, GPIOModeAlternateFunction0),
 	m_SCL (nDevice == 0 ? 1 : 3, GPIOModeAlternateFunction0),
 	m_nCoreClockRate (CMachineInfo::Get ()->GetClockRate (CLOCK_ID_CORE)),
-	m_SpinLock (FALSE)
+	m_SpinLock (TASK_LEVEL)
 {
 	assert (nDevice <= 1);
 	assert (m_nCoreClockRate > 0);

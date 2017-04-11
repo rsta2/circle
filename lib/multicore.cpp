@@ -6,7 +6,7 @@
 //	Licensed under GPL2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -166,14 +166,6 @@ boolean CMultiCoreSupport::LocalInterruptHandler (void)
 	return TRUE;
 }
 
-unsigned CMultiCoreSupport::ThisCore (void)
-{
-	u32 nMPIDR;
-	asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (nMPIDR));
-
-	return nMPIDR & (CORES-1);
-}
-
 void CMultiCoreSupport::EntrySecondary (void)
 {
 	assert (s_pThis != 0);
@@ -185,7 +177,7 @@ void CMultiCoreSupport::EntrySecondary (void)
 	write32 (ARM_LOCAL_MAILBOX3_CLR0 + 0x10 * nCore, 0);
 
 	write32 (ARM_LOCAL_MAILBOX_INT_CONTROL0 + 4 * nCore, 1);
-	EnableInterrupts ();
+	EnableIRQs ();
 
 	CLogger::Get ()->Write (FromMultiCore, LogDebug, "CPU core %u started", nCore);
 

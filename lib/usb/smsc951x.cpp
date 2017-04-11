@@ -26,9 +26,7 @@
 //
 #include <circle/usb/smsc951x.h>
 #include <circle/usb/usbhostcontroller.h>
-#include <circle/devicenameservice.h>
 #include <circle/bcmpropertytags.h>
-#include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/util.h>
 #include <circle/debug.h>
@@ -124,8 +122,6 @@
 					 | RX_STS_CRC)
 
 static const char FromSMSC951x[] = "smsc951x";
-
-unsigned CSMSC951xDevice::s_nDeviceNumber = 0;
 
 CSMSC951xDevice::CSMSC951xDevice (CUSBFunction *pFunction)
 :	CNetDevice (pFunction),
@@ -251,9 +247,7 @@ boolean CSMSC951xDevice::Configure (void)
 
 	// TODO: check if PHY is up (wait for it)
 
-	CString DeviceName;
-	DeviceName.Format ("eth%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	AddNetDevice ();
 
 	return TRUE;
 }

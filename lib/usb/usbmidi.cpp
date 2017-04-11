@@ -24,6 +24,7 @@
 
 #include <circle/usb/usbmidi.h>
 #include <circle/usb/usbaudio.h>
+#include <circle/usb/usb.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
 #include <circle/timer.h>
@@ -76,6 +77,12 @@ boolean CUSBMIDIDevice::Configure (void)
 		return FALSE;
 	}
 
+	// special handling for Roland UM-ONE MIDI interface
+	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
+	assert (pDeviceDesc != 0);
+	boolean bIsRolandUMOne =    pDeviceDesc->idVendor  == 0x0582
+				 && pDeviceDesc->idProduct == 0x012A;
+
 	// Our strategy for now is simple: we'll take the first MIDI streaming
 	// bulk-in endpoint on this interface we can find.  To distinguish
 	// between the MIDI streaming bulk-in endpoints we want (which carry
@@ -92,12 +99,15 @@ boolean CUSBMIDIDevice::Configure (void)
 			continue;
 		}
 
-		TUSBMIDIStreamingEndpointDescriptor *pMIDIDesc =
-			(TUSBMIDIStreamingEndpointDescriptor *) GetDescriptor (DESCRIPTOR_CS_ENDPOINT);
-		if (   pMIDIDesc == 0
-		    || (u8 *) pEndpointDesc + pEndpointDesc->bLength != (u8 *) pMIDIDesc)
+		if (!bIsRolandUMOne)
 		{
-			continue;
+			TUSBMIDIStreamingEndpointDescriptor *pMIDIDesc =
+				(TUSBMIDIStreamingEndpointDescriptor *) GetDescriptor (DESCRIPTOR_CS_ENDPOINT);
+			if (   pMIDIDesc == 0
+			    || (u8 *) pEndpointDesc + pEndpointDesc->bLength != (u8 *) pMIDIDesc)
+			{
+				continue;
+			}
 		}
 
 		if (m_pEndpointIn != 0)

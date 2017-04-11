@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_ucLEDStatus (0xFF),
 	m_ShutdownMode (ShutdownNone)
 {
 	s_pThis = this;
@@ -111,17 +110,9 @@ TShutdownMode CKernel::Run (void)
 
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
 	{
-		// CUSBKeyboardDevice::SetLEDs() must not be called in interrupt context,
-		// that's why this must be done here.
-		u8 ucLEDStatus = pKeyboard->GetLEDStatus ();
-		if (ucLEDStatus != m_ucLEDStatus)
-		{
-			m_ucLEDStatus = ucLEDStatus;
-			if (!pKeyboard->SetLEDs (m_ucLEDStatus))
-			{
-				m_Logger.Write (FromKernel, LogError, "Cannot set LED status");
-			}
-		}
+		// CUSBKeyboardDevice::UpdateLEDs() must not be called in interrupt context,
+		// that's why this must be done here. This does nothing in raw mode.
+		pKeyboard->UpdateLEDs ();
 
 		m_Screen.Rotor (0, nCount);
 		m_Timer.MsDelay (100);

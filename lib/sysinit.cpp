@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -71,7 +71,10 @@ void halt (void)
 	DataMemBarrier ();
 #endif
 
-	DisableInterrupts ();
+	DisableIRQs ();
+#ifndef USE_RPI_STUB_AT
+	DisableFIQs ();
+#endif
 	
 	for (;;)
 	{
@@ -112,6 +115,8 @@ static void vfpinit (void)
 
 void sysinit (void)
 {
+	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
+
 #if RASPPI != 1
 #ifndef USE_RPI_STUB_AT
 	// L1 data cache may contain random entries after reset, delete them
@@ -159,6 +164,8 @@ void sysinit (void)
 
 void sysinit_secondary (void)
 {
+	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
+
 	// L1 data cache may contain random entries after reset, delete them
 	InvalidateDataCacheL1Only ();
 

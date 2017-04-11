@@ -22,6 +22,7 @@
 
 #include <circle/pwmsoundbasedevice.h>
 #include <circle/interrupt.h>
+#include <circle/serial.h>
 #include <circle/types.h>
 
 struct TNoteInfo
@@ -38,6 +39,8 @@ public:
 
 	boolean Initialize (void);
 
+	void Process (void);
+
 	unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
@@ -46,6 +49,11 @@ private:
 	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
 
 private:
+	CSerialDevice m_Serial;
+	boolean m_bUseSerial;
+	unsigned m_nSerialState;
+	u8 m_SerialMessage[3];
+
 	unsigned m_nHighLevel;
 	unsigned m_nCurrentLevel;
 	unsigned m_nSampleCount;

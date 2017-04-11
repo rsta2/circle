@@ -2,7 +2,7 @@
 // synchronize.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,26 +22,35 @@
 #include <circle/types.h>
 #include <assert.h>
 
+#define MAX_CRITICAL_LEVEL	20		// maximum nested level of EnterCritical()
+
 #ifdef ARM_ALLOW_MULTI_CORE
 
 static volatile unsigned s_nCriticalLevel[CORES] = {0};
-static volatile boolean s_bWereEnabled[CORES];
+static volatile u32 s_nCPSR[CORES][MAX_CRITICAL_LEVEL];
 
-void EnterCritical (void)
+void EnterCritical (unsigned nTargetLevel)
 {
+	assert (nTargetLevel == IRQ_LEVEL || nTargetLevel == FIQ_LEVEL);
+
 	u32 nMPIDR;
 	asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (nMPIDR));
 	unsigned nCore = nMPIDR & (CORES-1);
 
-	u32 nFlags;
-	asm volatile ("mrs %0, cpsr" : "=r" (nFlags));
+	u32 nCPSR;
+	asm volatile ("mrs %0, cpsr" : "=r" (nCPSR));
 
-	DisableInterrupts ();
+	// if we are already on FIQ_LEVEL, we must not go back to IRQ_LEVEL here
+	assert (nTargetLevel == FIQ_LEVEL || !(nCPSR & 0x40));
 
-	if (s_nCriticalLevel[nCore]++ == 0)
+	DisableIRQs ();
+	if (nTargetLevel == FIQ_LEVEL)
 	{
-		s_bWereEnabled[nCore] = nFlags & 0x80 ? FALSE : TRUE;
+		DisableFIQs ();
 	}
+
+	assert (s_nCriticalLevel[nCore] < MAX_CRITICAL_LEVEL);
+	s_nCPSR[nCore][s_nCriticalLevel[nCore]++] = nCPSR;
 
 	DataMemBarrier ();
 }
@@ -55,31 +64,34 @@ void LeaveCritical (void)
 	DataMemBarrier ();
 
 	assert (s_nCriticalLevel[nCore] > 0);
-	if (--s_nCriticalLevel[nCore] == 0)
-	{
-		if (s_bWereEnabled[nCore])
-		{
-			EnableInterrupts ();
-		}
-	}
+	u32 nCPSR = s_nCPSR[nCore][--s_nCriticalLevel[nCore]];
+
+	asm volatile ("msr cpsr_c, %0" :: "r" (nCPSR));
 }
 
 #else
 
 static volatile unsigned s_nCriticalLevel = 0;
-static volatile boolean s_bWereEnabled;
+static volatile u32 s_nCPSR[MAX_CRITICAL_LEVEL];
 
-void EnterCritical (void)
+void EnterCritical (unsigned nTargetLevel)
 {
-	u32 nFlags;
-	asm volatile ("mrs %0, cpsr" : "=r" (nFlags));
+	assert (nTargetLevel == IRQ_LEVEL || nTargetLevel == FIQ_LEVEL);
 
-	DisableInterrupts ();
+	u32 nCPSR;
+	asm volatile ("mrs %0, cpsr" : "=r" (nCPSR));
 
-	if (s_nCriticalLevel++ == 0)
+	// if we are already on FIQ_LEVEL, we must not go back to IRQ_LEVEL here
+	assert (nTargetLevel == FIQ_LEVEL || !(nCPSR & 0x40));
+
+	DisableIRQs ();
+	if (nTargetLevel == FIQ_LEVEL)
 	{
-		s_bWereEnabled = nFlags & 0x80 ? FALSE : TRUE;
+		DisableFIQs ();
 	}
+
+	assert (s_nCriticalLevel < MAX_CRITICAL_LEVEL);
+	s_nCPSR[s_nCriticalLevel++] = nCPSR;
 
 	DataMemBarrier ();
 }
@@ -89,13 +101,9 @@ void LeaveCritical (void)
 	DataMemBarrier ();
 
 	assert (s_nCriticalLevel > 0);
-	if (--s_nCriticalLevel == 0)
-	{
-		if (s_bWereEnabled)
-		{
-			EnableInterrupts ();
-		}
-	}
+	u32 nCPSR = s_nCPSR[--s_nCriticalLevel];
+
+	asm volatile ("msr cpsr_c, %0" :: "r" (nCPSR));
 }
 
 #endif

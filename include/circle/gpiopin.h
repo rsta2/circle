@@ -2,7 +2,7 @@
 // gpiopin.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,33 +62,44 @@ typedef void TGPIOInterruptHandler (void *pParam);
 
 class CGPIOManager;
 
-class CGPIOPin
+class CGPIOPin		/// Encapsulates a GPIO pin
 {
 public:
-	// nPin can be physical number or TGPIOVirtualPin
-	// pManager is only required for using interrupts
+	/// \param nPin Pin number, can be physical (Broadcom) number or TGPIOVirtualPin
+	/// \param pManager Is only required for using interrupts (IRQ)
 	CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager = 0);
 	virtual ~CGPIOPin (void);
 
+	/// \param Mode Pin mode to be set
+	/// \param bInitPin Also init pullup/down mode and output level
 	void SetMode (TGPIOMode	Mode,
-		      boolean	bInitPin = TRUE);	// also init pullup/down mode and output level
+		      boolean	bInitPin = TRUE);
 	
+	/// \param nValue Value to be written to the pin (LOW or HIGH)
 	void Write (unsigned nValue);
+	/// \return Value read from pin (LOW or HIGH)
 	unsigned Read (void) const;
 #define LOW		0
 #define HIGH		1
 
+	/// \brief Write inverted value to pin
 	void Invert (void);
 
+	/// \param pHandler Interrupt handler to be called on GPIO event
+	/// \param pParam Any parameter, will be handed over to the interrupt handler
 	void ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam);
 	void DisconnectInterrupt (void);
 
+	/// \brief Enable interrupt on GPIO event
 	void EnableInterrupt (TGPIOInterrupt Interrupt);
 	void DisableInterrupt (void);
 
-	// for a 2nd interrupt source use this
+	/// \brief Enable interrupt on GPIO event (for a 2nd interrupt source use this)
 	void EnableInterrupt2 (TGPIOInterrupt Interrupt);
 	void DisableInterrupt2 (void);
+
+	/// \return Level of GPIO0-31 in the respective bits
+	static u32 ReadAll (void);
 
 private:
 	void SetPullUpMode (unsigned nMode);
@@ -99,8 +110,10 @@ private:
 	static void DisableAllInterrupts (unsigned nPin);
 	friend class CGPIOManager;
 
-private:
+protected:
 	unsigned  m_nPin;
+	unsigned  m_nRegOffset;
+	u32       m_nRegMask;
 	TGPIOMode m_Mode;
 	unsigned  m_nValue;
 

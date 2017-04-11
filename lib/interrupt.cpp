@@ -67,6 +67,9 @@ boolean CInterruptSystem::Initialize (void)
 {
 	TExceptionTable *pTable = (TExceptionTable *) ARM_EXCEPTION_TABLE_BASE;
 	pTable->IRQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->IRQ, IRQStub));
+#ifndef USE_RPI_STUB_AT
+	pTable->FIQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->FIQ, FIQStub));
+#endif
 
 	SyncDataAndInstructionCache ();
 
@@ -82,7 +85,7 @@ boolean CInterruptSystem::Initialize (void)
 	PeripheralExit ();
 #endif
 
-	EnableInterrupts ();
+	EnableIRQs ();
 
 	return TRUE;
 }
@@ -109,6 +112,31 @@ void CInterruptSystem::DisconnectIRQ (unsigned nIRQ)
 	m_pParam[nIRQ] = 0;
 }
 
+void CInterruptSystem::ConnectFIQ (unsigned nFIQ, TFIQHandler *pHandler, void *pParam)
+{
+#ifdef USE_RPI_STUB_AT
+	assert (0);
+#endif
+	assert (nFIQ <= ARM_MAX_FIQ);
+	assert (pHandler != 0);
+	assert (FIQData.pHandler == 0);
+
+	FIQData.pHandler = pHandler;
+	FIQData.pParam = pParam;
+
+	EnableFIQ (nFIQ);
+}
+
+void CInterruptSystem::DisconnectFIQ (void)
+{
+	assert (FIQData.pHandler != 0);
+
+	DisableFIQ ();
+
+	FIQData.pHandler = 0;
+	FIQData.pParam = 0;
+}
+
 void CInterruptSystem::EnableIRQ (unsigned nIRQ)
 {
 	PeripheralEntry ();
@@ -127,6 +155,26 @@ void CInterruptSystem::DisableIRQ (unsigned nIRQ)
 	assert (nIRQ < IRQ_LINES);
 
 	write32 (ARM_IC_IRQS_DISABLE (nIRQ), ARM_IRQ_MASK (nIRQ));
+
+	PeripheralExit ();
+}
+
+void CInterruptSystem::EnableFIQ (unsigned nFIQ)
+{
+	PeripheralEntry ();
+
+	assert (nFIQ <= ARM_MAX_FIQ);
+
+	write32 (ARM_IC_FIQ_CONTROL, nFIQ | 0x80);
+
+	PeripheralExit ();
+}
+
+void CInterruptSystem::DisableFIQ (void)
+{
+	PeripheralEntry ();
+
+	write32 (ARM_IC_FIQ_CONTROL, 0);
 
 	PeripheralExit ();
 }

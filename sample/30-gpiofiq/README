@@ -1,0 +1,35 @@
+README 
+
+This sample demonstrates fast GPIO event capture using the class CGPIOPinFIQ and
+the class CTracer, which allows to collect tracing data at high speed without
+heavily changing the timing behaviour of the system. You need a 2-channel
+digital oscilloscope or logic analyzer to be able to check the GPIO signals. If
+you have a second Raspberry Pi you can also use the "TinyScope Pi" sample in
+addon/ugui/sample/ instead.
+
+The sample program generates a 500 KHz square wave clock signal on GPIO4
+(Broadcom numbering). If you connect GPIO4 to GPIO17 (GPIO_INPUT_PIN), each
+rising and falling edge of the clock signal will trigger a fast interrupt (FIQ).
+Because of this the FIQHandler() routine is called, which inverts the level of
+GPIO18 (GPIO_OUTPUT_PIN). If you connect GPIO4 and GPIO18 to two channels of the
+digital oscilloscope, you can see the delay from an edge of the clock signal to
+the output signal triggered by the FIQ:
+
+Raspberry Pi		Oscilloscope
+
+GPIO4	-----+----->	Channel 1
+	     |
+GPIO17  <----+
+
+GPIO18  ----------->	Channel 2
+
+GND	<---------->	GND
+
+Furthermore the FIQHandler() generates an event for the tracing object m_Tracer
+and writes the current level on the GPIO_INPUT_PIN as parameter into the tracing
+log. This tracing log is a ring buffer with 20 entries (can be changed). When
+the buffer is full, the oldest entry is overwritten. After 10 seconds runtime
+the FIQ is disabled and the tracing log is dumped to the screen. You should see
+the first parameter of each "1" event continuously changing from 00000000 to
+00000001 and back, because the input level changes on each event. Event "0" is
+the last (stop) event.

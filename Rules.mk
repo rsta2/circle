@@ -34,7 +34,7 @@ LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
 
 ifeq ($(strip $(RASPPI)),1)
-ARCH	?= -march=armv6j -mtune=arm1176jzf-s -mfloat-abi=hard 
+ARCH	?= -march=armv6k -mtune=arm1176jzf-s -mfloat-abi=hard
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
 ARCH	?= -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard
@@ -49,7 +49,7 @@ OPTIMIZE ?= -O2
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
 
 AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) $(INCLUDE)
-CFLAGS	+= $(ARCH) -Wall -Wno-psabi -fsigned-char -fno-builtin -nostdinc -nostdlib \
+CFLAGS	+= $(ARCH) -Wall -fsigned-char -fno-builtin -nostdinc -nostdlib \
 	   -D__circle__ -DRASPPI=$(RASPPI) $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
 CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++14
 

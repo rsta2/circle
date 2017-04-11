@@ -1,5 +1,5 @@
 //
-// netdevice.h
+// gpiopinfiq.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
@@ -17,35 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_netdevice_h
-#define _circle_usb_netdevice_h
+#ifndef _circle_gpiopinfiq_h
+#define _circle_gpiopinfiq_h
 
-#include <circle/usb/usbfunction.h>
-#include <circle/usb/macaddress.h>
-#include <circle/types.h>
+#include <circle/gpiopin.h>
+#include <circle/interrupt.h>
 
-#define FRAME_BUFFER_SIZE	1600
-
-class CNetDevice : public CUSBFunction
+class CGPIOPinFIQ : public CGPIOPin	/// GPIO fast interrupt pin (only one allowed in the system)
 {
 public:
-	CNetDevice (CUSBFunction *pFunction);
-	virtual ~CNetDevice (void);
+	/// \param nPin GPIO pin number
+	/// \param Mode GPIO pin mode (see: gpiopin.h)
+	/// \param pInterrupt Pointer to the interrupt system object
+	CGPIOPinFIQ (unsigned nPin, TGPIOMode Mode, CInterruptSystem *pInterrupt);
+	~CGPIOPinFIQ (void);
 
-	virtual boolean Configure (void) = 0;
-	
-	virtual const CMACAddress *GetMACAddress (void) const = 0;
-
-	virtual boolean SendFrame (const void *pBuffer, unsigned nLength) = 0;
-
-	// pBuffer must have size FRAME_BUFFER_SIZE
-	virtual boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength) = 0;
-
-protected:
-	void AddNetDevice (void);
+	/// \param pHandler Pointer to the GPIO interrupt (FIQ) handler
+	/// \param pParam Any parameter, will be handed over to the interrupt handler
+	void ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam);
+	void DisconnectInterrupt (void);
 
 private:
-	static unsigned s_nDeviceNumber;
+	static void FIQHandler (void *pParam);
+
+private:
+	CInterruptSystem *m_pInterrupt;
 };
 
 #endif

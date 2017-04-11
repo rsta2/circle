@@ -19,7 +19,8 @@ Base		Size		Contents		Remarks
 00208000	128 KByte	Kernel stack
 00228000	32 KByte	Abort exception stack
 00230000	32 KByte	IRQ exception stack
-00238000	16 KByte	Page table 1
+00238000	32 KByte	FIQ exception stack
+00240000	16 KByte	Page table 1
 ...
 00400000	1 MByte		Coherent region		for property mailbox
 00500000	variable	Heap allocator		malloc()
@@ -64,7 +65,13 @@ Base		Size		Contents		Remarks
 002B8000	32 KByte	 for Core 2		may be unused
 002C0000	32 KByte	 for Core 3		may be unused
 
-002C8000	16 KByte	Page table 1
+				FIQ exception stacks
+002C8000	32 KByte	 for Core 0
+002D0000	32 KByte	 for Core 1		may be unused
+002D8000	32 KByte	 for Core 2		may be unused
+002E0000	32 KByte	 for Core 3		may be unused
+
+002E8000	16 KByte	Page table 1
 ...
 00400000	1 MByte		Coherent region		for property mailbox
 00500000	variable	Heap allocator		malloc()

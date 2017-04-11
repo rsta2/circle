@@ -2,7 +2,7 @@
 // dmachannel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -299,7 +299,9 @@ void CDMAChannel::InterruptHandler (void)
 
 	assert (m_nChannel < DMA_CHANNELS);
 
+#ifndef NDEBUG
 	u32 nIntStatus = read32 (ARM_DMA_INT_STATUS);
+#endif
 	u32 nIntMask = 1 << m_nChannel;
 	assert (nIntStatus & nIntMask);
 	write32 (ARM_DMA_INT_STATUS, nIntMask);

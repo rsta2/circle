@@ -30,6 +30,7 @@
 #include <circle/usb/smsc951x.h>
 #include <circle/usb/usbbluetooth.h>
 #include <circle/usb/usbmidi.h>
+#include <circle/usb/usbcdcethernet.h>
 
 CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
 {
@@ -73,9 +74,14 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBBluetoothDevice (pParent);
 	}
-	else if (pName->Compare ("int1-3-0") == 0)
+	else if (   pName->Compare ("int1-3-0") == 0
+		 || pName->Compare ("ven582-12a") == 0)		// Roland UM-ONE MIDI interface
 	{
 		pResult = new CUSBMIDIDevice (pParent);
+	}
+	else if (pName->Compare ("int2-6-0") == 0)
+	{
+		pResult = new CUSBCDCEthernetDevice (pParent);
 	}
 	// new devices follow
 

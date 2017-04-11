@@ -2,7 +2,7 @@
 // cputhrottle.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,7 +37,8 @@ CCPUThrottle::CCPUThrottle (TCPUSpeed InitialSpeed)
 	m_nMaxTemperature (85000),
 	m_nEnforcedTemperature (60000),
 	m_SpeedSet (CPUSpeedUnknown),
-	m_nTicksLastSet (0)
+	m_nTicksLastSet (0),
+	m_nTicksLastUpdate (0)
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -185,6 +186,21 @@ boolean CCPUThrottle::SetOnTemperature (void)
 	}
 
 	return TRUE;
+}
+
+boolean CCPUThrottle::Update (void)
+{
+	boolean bOK = TRUE;
+
+	unsigned nTicks = CTimer::GetClockTicks ();
+	if (nTicks - m_nTicksLastUpdate >= 4*CLOCKHZ)			// call this every 4 seconds
+	{
+		bOK = SetOnTemperature ();
+
+		m_nTicksLastUpdate = nTicks;
+	}
+
+	return bOK;
 }
 
 void CCPUThrottle::DumpStatus (boolean bAll)

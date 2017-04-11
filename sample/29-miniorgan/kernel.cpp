@@ -46,18 +46,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_Serial.Initialize (115200);
-	}
-
-	if (bOK)
-	{
-		CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
-		if (pTarget == 0)
-		{
-			pTarget = &m_Screen;
-		}
-
-		bOK = m_Logger.Initialize (pTarget);
+		bOK = m_Logger.Initialize (&m_Screen);
 	}
 
 	if (bOK)
@@ -93,6 +82,8 @@ TShutdownMode CKernel::Run (void)
 
 	for (unsigned nCount = 0; m_MiniOrgan.IsActive (); nCount++)
 	{
+		m_MiniOrgan.Process ();
+
 		m_Screen.Rotor (0, nCount);
 	}
 
