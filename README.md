@@ -24,9 +24,9 @@ Nevertheless real-time applications based on Circle are possible. Have a look at
 The 30th Step
 -------------
 
-In this step FIQ (fast interrupt) support has been added to Circle. It is used in the class CSerialDevice, which allows an interrupt-driven access to the UART0 device. This is demonstrated in *sample/30-terminal*, a simple terminal program. See the *README* file in this directory for details. *sample/29-miniorgan* has been updated to use the UART0 device (at option) as a serial MIDI interface too.
+In this step FIQ (fast interrupt) support has been added to Circle. This is used to implement the class CGPIOPinFIQ, which allows fast interrupt-driven event capture from a GPIO pin and is demonstrated in *sample/30-gpiofiq*. See the *README* file in this directory for details.
 
-FIQ support is also used to implement the CGPIOPinFIQ class, which allows fast interrupt-driven event capture from a GPIO pin.
+FIQ support is also used in the class CSerialDevice, which allows an interrupt-driven access to the UART0 device. *sample/29-miniorgan* has been updated to use the UART0 device (at option) as a serial MIDI interface.
 
 Finally in this step QEMU support has been added. See the file *doc/qemu.txt* for details!
 

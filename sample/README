@@ -29,4 +29,4 @@ SAMPLES
 27-usbgamepad		Displaying information about an attached USB HID class gamepad and its current status.
 28-touchscreen		Displaying touch events from the official Raspberry Pi touch screen.
 29-miniorgan		Mini organ instrument using PWM sound, (USB or serial) MIDI or USB keyboard.
-30-terminal		Simple terminal program for the UART0 interface at GPIO14/15
+30-gpiofiq		Demonstrating FIQ-driven fast GPIO event capture and a tracing class.

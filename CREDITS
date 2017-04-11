@@ -37,6 +37,7 @@ USB Audio Class MIDI device support
 
 Stephan Muehlstrasser
 Correcting problems for building with clang
+Idea for sample/30-gpiofiq
 
 Marco Maccaferri
 USB HID class gamepad driver

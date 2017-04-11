@@ -22,8 +22,13 @@ been patched in a third repository.
 * https://github.com/0xabu/qemu		Fork of Andrew Baumann for Raspberry Pi 2
 * https://github.com/rsta2/qemu		Fork with patches for Circle
 
-The Circle tests have been done with the version from the third repository on a
-64-bit Linux host. Other host systems have not been tested with Circle so far.
+Most of my Circle tests have been done with the version from the third
+repository on a 64-bit Linux host. Other host systems have not been tested with
+Circle by myself so far. There is another QEMU repository which has better
+support for Windows host systems, which is synchronized with the official QEMU
+repository and which has the Circle patches too:
+
+* https://github.com/flypie/flypie-pi-qemu	by flypie@GitHub
 
 To get and build the QEMU source code for Circle enter the following commands:
 

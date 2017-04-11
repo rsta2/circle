@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,13 +25,16 @@
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
 #include <circle/screen.h>
+#include <circle/serial.h>
 #include <circle/exceptionhandler.h>
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include <circle/serial.h>
-#include <circle/usb/dwhcidevice.h>
 #include <circle/types.h>
+#include <circle/gpioclock.h>
+#include <circle/gpiopin.h>
+#include <circle/gpiopinfiq.h>
+#include <circle/tracer.h>
 
 enum TShutdownMode
 {
@@ -51,8 +54,7 @@ public:
 	TShutdownMode Run (void);
 
 private:
-	static void KeyPressedHandler (const char *pString);
-	static void ShutdownHandler (void);
+	static void FIQHandler (void *pParam);
 
 private:
 	// do not change this order
@@ -61,16 +63,17 @@ private:
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
 	CScreenDevice		m_Screen;
+	CSerialDevice		m_Serial;
 	CExceptionHandler	m_ExceptionHandler;
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
-	CSerialDevice		m_Serial;
-	CDWHCIDevice		m_DWHCI;
 
-	volatile TShutdownMode m_ShutdownMode;
-
-	static CKernel *s_pThis;
+	CGPIOClock		m_Clock0;
+	CGPIOPin		m_ClockPin;
+	CGPIOPinFIQ		m_InputPin;
+	CGPIOPin		m_OutputPin;
+	CTracer			m_Tracer;
 };
 
 #endif
