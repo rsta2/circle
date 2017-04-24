@@ -19,6 +19,7 @@ Base library
 * CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
 * CI2CMaster: Driver for I2C master device.
 * CI2CSlave: Driver for I2C slave device.
+* CI2SSoundBaseDevice: Low level access to the I2S sound device.
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CKernelOptions: Providing kernel options from file cmdline.txt (see doc/cmdline.txt).
 * CLogger: Writing logging messages to a target device

@@ -1,12 +1,17 @@
 //
-// pwmsoundbasedevice.cpp
+// i2ssoundbasedevice.cpp
+//
+// Supports:
+//	BCM283x I2S output
+//	two 24-bit audio channels
+//	sample rate up to 192 KHz
+//	tested with PCM5102A DAC only
+//
+// References:
+//	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
-//
-// Information to implement PWM sound is from:
-//	"Bare metal sound" by Joeboy (RPi forum)
-//	"Raspberry Pi Bare Metal Code" by krom (Peter Lemon)
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +26,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/pwmsoundbasedevice.h>
+#include <circle/i2ssoundbasedevice.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2835int.h>
 #include <circle/memio.h>
@@ -30,51 +35,39 @@
 #include <circle/util.h>
 #include <assert.h>
 
-#define CLOCK_FREQ		500000000		// PLLD
-#define CLOCK_DIVIDER		2
+#define CHANS			2			// 2 I2S stereo channels
+#define CHANLEN			32			// width of a channel slot in bits
 
 //
-// PWM control register
+// PCM / I2S registers
 //
-#define ARM_PWM_CTL_PWEN1	(1 << 0)
-#define ARM_PWM_CTL_MODE1	(1 << 1)
-#define ARM_PWM_CTL_RPTL1	(1 << 2)
-#define ARM_PWM_CTL_SBIT1	(1 << 3)
-#define ARM_PWM_CTL_POLA1	(1 << 4)
-#define ARM_PWM_CTL_USEF1	(1 << 5)
-#define ARM_PWM_CTL_CLRF1	(1 << 6)
-#define ARM_PWM_CTL_MSEN1	(1 << 7)
-#define ARM_PWM_CTL_PWEN2	(1 << 8)
-#define ARM_PWM_CTL_MODE2	(1 << 9)
-#define ARM_PWM_CTL_RPTL2	(1 << 10)
-#define ARM_PWM_CTL_SBIT2	(1 << 11)
-#define ARM_PWM_CTL_POLA2	(1 << 12)
-#define ARM_PWM_CTL_USEF2	(1 << 13)
-#define ARM_PWM_CTL_MSEN2	(1 << 14)
+#define CS_A_STBY		(1 << 25)
+#define CS_A_SYNC		(1 << 24)
+#define CS_A_TXE		(1 << 21)
+#define CS_A_TXD		(1 << 19)
+#define CS_A_TXW		(1 << 17)
+#define CS_A_TXERR		(1 << 15)
+#define CS_A_TXSYNC		(1 << 13)
+#define CS_A_DMAEN		(1 << 9)
+#define CS_A_TXTHR__SHIFT	5
+#define CS_A_RXCLR		(1 << 4)
+#define CS_A_TXCLR		(1 << 3)
+#define CS_A_TXON		(1 << 2)
+#define CS_A_EN			(1 << 0)
 
-//
-// PWM status register
-//
-#define ARM_PWM_STA_FULL1	(1 << 0)
-#define ARM_PWM_STA_EMPT1	(1 << 1)
-#define ARM_PWM_STA_WERR1	(1 << 2)
-#define ARM_PWM_STA_RERR1	(1 << 3)
-#define ARM_PWM_STA_GAPO1	(1 << 4)
-#define ARM_PWM_STA_GAPO2	(1 << 5)
-#define ARM_PWM_STA_GAPO3	(1 << 6)
-#define ARM_PWM_STA_GAPO4	(1 << 7)
-#define ARM_PWM_STA_BERR	(1 << 8)
-#define ARM_PWM_STA_STA1	(1 << 9)
-#define ARM_PWM_STA_STA2	(1 << 10)
-#define ARM_PWM_STA_STA3	(1 << 11)
-#define ARM_PWM_STA_STA4	(1 << 12)
+#define MODE_A_CLKI		(1 << 22)
+#define MODE_A_FSI		(1 << 20)
+#define MODE_A_FLEN__SHIFT	10
+#define MODE_A_FSLEN__SHIFT	0
 
-//
-// PWM DMA configuration register
-//
-#define ARM_PWM_DMAC_DREQ__SHIFT	0
-#define ARM_PWM_DMAC_PANIC__SHIFT	8
-#define ARM_PWM_DMAC_ENAB		(1 << 31)
+#define TXC_A_CH1WEX		(1 << 31)
+#define TXC_A_CH1EN		(1 << 30)
+#define TXC_A_CH1POS__SHIFT	20
+#define TXC_A_CH1WID__SHIFT	16
+#define TXC_A_CH2WEX		(1 << 15)
+#define TXC_A_CH2EN		(1 << 14)
+#define TXC_A_CH2POS__SHIFT	4
+#define TXC_A_CH2WID__SHIFT	0
 
 //
 // DMA controller
@@ -121,17 +114,18 @@
 #define ARM_DMA_INT_STATUS		(ARM_DMA_BASE + 0xFE0)
 #define ARM_DMA_ENABLE			(ARM_DMA_BASE + 0xFF0)
 
-CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
+CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
 					  unsigned	    nChunkSize)
 :	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
-	m_nRange ((CLOCK_FREQ / CLOCK_DIVIDER + nSampleRate/2) / nSampleRate),
-	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction0),
-	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction0),
-	m_Clock (GPIOClockPWM, GPIOClockSourcePLLD),
+	m_PCMCLKPin (18, GPIOModeAlternateFunction0),
+	m_PCMFSPin (19, GPIOModeAlternateFunction0),
+	m_PCMDOUTPin (21, GPIOModeAlternateFunction0),
+	m_Clock (GPIOClockPCM, GPIOClockSourcePLLD),
+#define CLOCK_FREQ	500000000
 	m_bIRQConnected (FALSE),
-	m_State (PWMSoundIdle)
+	m_State (I2SSoundIdle)
 {
 	assert (m_pInterruptSystem != 0);
 	assert (m_nChunkSize > 0);
@@ -143,19 +137,33 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_pControlBlock[0]->nNextControlBlockAddress = (u32) m_pControlBlock[1] + GPU_MEM_BASE;
 	m_pControlBlock[1]->nNextControlBlockAddress = (u32) m_pControlBlock[0] + GPU_MEM_BASE;
 
-	// start clock and PWM device
-	RunPWM ();
+	// start clock and I2S device
+	assert (8000 <= nSampleRate && nSampleRate <= 192000);
+	assert (CLOCK_FREQ % (CHANLEN*CHANS) == 0);
+	unsigned nDivI = CLOCK_FREQ / (CHANLEN*CHANS) / nSampleRate;
+	unsigned nTemp = CLOCK_FREQ / (CHANLEN*CHANS) % nSampleRate;
+	unsigned nDivF = (nTemp * 4096 + nSampleRate/2) / nSampleRate;
+	assert (nDivF <= 4096);
+	if (nDivF > 4095)
+	{
+		nDivI++;
+		nDivF = 0;
+	}
+
+	m_Clock.Start (nDivI, nDivF, nDivF > 0 ? 1 : 0);
+
+	RunI2S ();
 
 	// enable and reset DMA channel
 	PeripheralEntry ();
 
-	assert (!(read32 (ARM_DMACHAN_DEBUG (DMA_CHANNEL_PWM)) & DEBUG_LITE));
+	assert (!(read32 (ARM_DMACHAN_DEBUG (DMA_CHANNEL_PCM)) & DEBUG_LITE));
 
-	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << DMA_CHANNEL_PWM));
+	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << DMA_CHANNEL_PCM));
 	CTimer::Get ()->usDelay (1000);
 
-	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM), CS_RESET);
-	while (read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM)) & CS_RESET)
+	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM), CS_RESET);
+	while (read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM)) & CS_RESET)
 	{
 		// do nothing
 	}
@@ -163,18 +171,18 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 	PeripheralExit ();
 }
 
-CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
+CI2SSoundBaseDevice::~CI2SSoundBaseDevice (void)
 {
-	assert (m_State == PWMSoundIdle);
+	assert (m_State == I2SSoundIdle);
 
-	// stop PWM device and clock
-	StopPWM ();
+	// stop I2S device and clock
+	StopI2S ();
 
 	// disconnect IRQ
 	assert (m_pInterruptSystem != 0);
 	if (m_bIRQConnected)
 	{
-		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_DMA0+DMA_CHANNEL_PWM);
+		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_DMA0+DMA_CHANNEL_PCM);
 	}
 
 	m_pInterruptSystem = 0;
@@ -193,19 +201,19 @@ CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
 	m_pDMABuffer[1] = 0;
 }
 
-int CPWMSoundBaseDevice::GetRangeMin (void) const
+int CI2SSoundBaseDevice::GetRangeMin (void) const
 {
-	return 0;
+	return -(1 << 23)+1;
 }
 
-int CPWMSoundBaseDevice::GetRangeMax (void) const
+int CI2SSoundBaseDevice::GetRangeMax (void) const
 {
-	return (int) (m_nRange-1);
+	return (1 << 23)-1;
 }
 
-void CPWMSoundBaseDevice::Start (void)
+void CI2SSoundBaseDevice::Start (void)
 {
-	assert (m_State == PWMSoundIdle);
+	assert (m_State == I2SSoundIdle);
 
 	// fill buffer 0
 	m_nNextBuffer = 0;
@@ -215,40 +223,32 @@ void CPWMSoundBaseDevice::Start (void)
 		return;
 	}
 
-	m_State = PWMSoundRunning;
+	m_State = I2SSoundRunning;
 
 	// connect IRQ
 	if (!m_bIRQConnected)
 	{
 		assert (m_pInterruptSystem != 0);
-		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+DMA_CHANNEL_PWM, InterruptStub, this);
+		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+DMA_CHANNEL_PCM, InterruptStub, this);
 
 		m_bIRQConnected = TRUE;
 	}
 
-	// enable PWM DMA operation
+	// enable I2S DMA operation
 	PeripheralEntry ();
-
-	write32 (ARM_PWM_DMAC,   ARM_PWM_DMAC_ENAB
-			       | (7 << ARM_PWM_DMAC_PANIC__SHIFT)
-			       | (7 << ARM_PWM_DMAC_DREQ__SHIFT));
-
-	// switched this on when playback stops to avoid clicks, switch it off here
-	write32 (ARM_PWM_CTL, read32 (ARM_PWM_CTL) & ~(ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2));
-
+	write32 (ARM_PCM_CS_A, read32 (ARM_PCM_CS_A) | CS_A_DMAEN);
 	PeripheralExit ();
 
 	// start DMA
 	PeripheralEntry ();
 
-	assert (!(read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM)) & CS_INT));
-	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << DMA_CHANNEL_PWM)));
+	assert (!(read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM)) & CS_INT));
+	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << DMA_CHANNEL_PCM)));
 
 	assert (m_pControlBlock[0] != 0);
-	write32 (ARM_DMACHAN_CONBLK_AD (DMA_CHANNEL_PWM), (u32) m_pControlBlock[0] + GPU_MEM_BASE);
+	write32 (ARM_DMACHAN_CONBLK_AD (DMA_CHANNEL_PCM), (u32) m_pControlBlock[0] + GPU_MEM_BASE);
 
-
-	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM),   CS_WAIT_FOR_OUTSTANDING_WRITES
+	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM),   CS_WAIT_FOR_OUTSTANDING_WRITES
 					           | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
 					           | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
 					           | CS_ACTIVE);
@@ -260,37 +260,37 @@ void CPWMSoundBaseDevice::Start (void)
 	{
 		m_SpinLock.Acquire ();
 
-		if (m_State == PWMSoundRunning)
+		if (m_State == I2SSoundRunning)
 		{
 			PeripheralEntry ();
-			write32 (ARM_DMACHAN_NEXTCONBK (DMA_CHANNEL_PWM), 0);
+			write32 (ARM_DMACHAN_NEXTCONBK (DMA_CHANNEL_PCM), 0);
 			PeripheralExit ();
 
-			m_State = PWMSoundTerminating;
+			m_State = I2SSoundTerminating;
 		}
 
 		m_SpinLock.Release ();
 	}
 }
 
-void CPWMSoundBaseDevice::Cancel (void)
+void CI2SSoundBaseDevice::Cancel (void)
 {
 	m_SpinLock.Acquire ();
 
-	if (m_State == PWMSoundRunning)
+	if (m_State == I2SSoundRunning)
 	{
-		m_State = PWMSoundCancelled;
+		m_State = I2SSoundCancelled;
 	}
 
 	m_SpinLock.Release ();
 }
 
-boolean CPWMSoundBaseDevice::IsActive (void) const
+boolean CI2SSoundBaseDevice::IsActive (void) const
 {
-	return m_State != PWMSoundIdle ? TRUE : FALSE;
+	return m_State != I2SSoundIdle ? TRUE : FALSE;
 }
 
-boolean CPWMSoundBaseDevice::GetNextChunk (void)
+boolean CI2SSoundBaseDevice::GetNextChunk (void)
 {
 	assert (m_pDMABuffer[m_nNextBuffer] != 0);
 	unsigned nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
@@ -313,61 +313,81 @@ boolean CPWMSoundBaseDevice::GetNextChunk (void)
 	return TRUE;
 }
 
-void CPWMSoundBaseDevice::RunPWM (void)
+void CI2SSoundBaseDevice::RunI2S (void)
 {
 	PeripheralEntry ();
 
-	m_Clock.Start (CLOCK_DIVIDER);
-	CTimer::SimpleusDelay (2000);
+	// disable I2S
+	write32 (ARM_PCM_CS_A, 0);
+	CTimer::Get ()->usDelay (10);
 
-	assert ((1 << 8) <= m_nRange && m_nRange < (1 << 16));
-	write32 (ARM_PWM_RNG1, m_nRange);
-	write32 (ARM_PWM_RNG2, m_nRange);
+	// clearing FIFOs
+	write32 (ARM_PCM_CS_A, read32 (ARM_PCM_CS_A) | CS_A_TXCLR | CS_A_RXCLR);
+	CTimer::Get ()->usDelay (10);
 
-	write32 (ARM_PWM_CTL,   ARM_PWM_CTL_PWEN1 | ARM_PWM_CTL_USEF1
-			      | ARM_PWM_CTL_PWEN2 | ARM_PWM_CTL_USEF2
-			      | ARM_PWM_CTL_CLRF1);
-	CTimer::SimpleusDelay (2000);
+	// enable channel 1 and 2
+	write32 (ARM_PCM_TXC_A,   TXC_A_CH1WEX
+				| TXC_A_CH1EN
+				| (1 << TXC_A_CH1POS__SHIFT)
+				| (0 << TXC_A_CH1WID__SHIFT)
+				| TXC_A_CH2WEX
+				| TXC_A_CH2EN
+				| ((CHANLEN+1) << TXC_A_CH2POS__SHIFT)
+				| (0 << TXC_A_CH2WID__SHIFT));
+	write32 (ARM_PCM_MODE_A,   MODE_A_CLKI
+				 | MODE_A_FSI
+				 | ((CHANS*CHANLEN-1) << MODE_A_FLEN__SHIFT)
+				 | (CHANLEN << MODE_A_FSLEN__SHIFT));
+
+	// disable standby
+	write32 (ARM_PCM_CS_A, read32 (ARM_PCM_CS_A) | CS_A_STBY);
+	CTimer::Get ()->usDelay (50);
+
+	// enable I2S
+	write32 (ARM_PCM_CS_A, read32 (ARM_PCM_CS_A) | CS_A_EN);
+	CTimer::Get ()->usDelay (10);
+
+	// enable TX
+	write32 (ARM_PCM_CS_A, read32 (ARM_PCM_CS_A) | CS_A_TXON);
+	CTimer::Get ()->usDelay (10);
 
 	PeripheralExit ();
 }
 
-void CPWMSoundBaseDevice::StopPWM (void)
+void CI2SSoundBaseDevice::StopI2S (void)
 {
 	PeripheralEntry ();
 
-	write32 (ARM_PWM_DMAC, 0);
-	write32 (ARM_PWM_CTL, 0);			// disable PWM channel 0 and 1
-	CTimer::SimpleusDelay (2000);
+	write32 (ARM_PCM_CS_A, 0);
+	CTimer::Get ()->usDelay (50);
+
+	PeripheralExit ();
 
 	m_Clock.Stop ();
-	CTimer::SimpleusDelay (2000);
-
-	PeripheralExit ();
 }
 
-void CPWMSoundBaseDevice::InterruptHandler (void)
+void CI2SSoundBaseDevice::InterruptHandler (void)
 {
-	assert (m_State != PWMSoundIdle);
+	assert (m_State != I2SSoundIdle);
 
 	PeripheralEntry ();
 
 #ifndef NDEBUG
 	u32 nIntStatus = read32 (ARM_DMA_INT_STATUS);
 #endif
-	u32 nIntMask = 1 << DMA_CHANNEL_PWM;
+	u32 nIntMask = 1 << DMA_CHANNEL_PCM;
 	assert (nIntStatus & nIntMask);
 	write32 (ARM_DMA_INT_STATUS, nIntMask);
 
-	u32 nCS = read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM));
+	u32 nCS = read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM));
 	assert (nCS & CS_INT);
-	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM), nCS);	// reset CS_INT
+	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM), nCS);	// reset CS_INT
 
 	PeripheralExit ();
 
 	if (nCS & CS_ERROR)
 	{
-		m_State = PWMSoundError;
+		m_State = I2SSoundError;
 
 		return;
 	}
@@ -376,28 +396,23 @@ void CPWMSoundBaseDevice::InterruptHandler (void)
 
 	switch (m_State)
 	{
-	case PWMSoundRunning:
+	case I2SSoundRunning:
 		if (GetNextChunk ())
 		{
 			break;
 		}
 		// fall through
 
-	case PWMSoundCancelled:
+	case I2SSoundCancelled:
 		PeripheralEntry ();
-		write32 (ARM_DMACHAN_NEXTCONBK (DMA_CHANNEL_PWM), 0);
+		write32 (ARM_DMACHAN_NEXTCONBK (DMA_CHANNEL_PCM), 0);
 		PeripheralExit ();
 
-		// avoid clicks
-		PeripheralEntry ();
-		write32 (ARM_PWM_CTL, read32 (ARM_PWM_CTL) | ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2);
-		PeripheralExit ();
-
-		m_State = PWMSoundTerminating;
+		m_State = I2SSoundTerminating;
 		break;
 
-	case PWMSoundTerminating:
-		m_State = PWMSoundIdle;
+	case I2SSoundTerminating:
+		m_State = I2SSoundIdle;
 		break;
 
 	default:
@@ -408,15 +423,15 @@ void CPWMSoundBaseDevice::InterruptHandler (void)
 	m_SpinLock.Release ();
 }
 
-void CPWMSoundBaseDevice::InterruptStub (void *pParam)
+void CI2SSoundBaseDevice::InterruptStub (void *pParam)
 {
-	CPWMSoundBaseDevice *pThis = (CPWMSoundBaseDevice *) pParam;
+	CI2SSoundBaseDevice *pThis = (CI2SSoundBaseDevice *) pParam;
 	assert (pThis != 0);
 
 	pThis->InterruptHandler ();
 }
 
-void CPWMSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
+void CI2SSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 {
 	assert (nID <= 1);
 
@@ -427,7 +442,7 @@ void CPWMSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 	assert (m_pControlBlockBuffer[nID] != 0);
 	m_pControlBlock[nID] = (TDMAControlBlock *) (((u32) m_pControlBlockBuffer[nID] + 31) & ~31);
 
-	m_pControlBlock[nID]->nTransferInformation     =   (DREQSourcePWM << TI_PERMAP_SHIFT)
+	m_pControlBlock[nID]->nTransferInformation     =   (DREQSourcePCMTX << TI_PERMAP_SHIFT)
 						         | (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
 						         | TI_SRC_WIDTH
 						         | TI_SRC_INC
@@ -435,7 +450,7 @@ void CPWMSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 						         | TI_WAIT_RESP
 						         | TI_INTEN;
 	m_pControlBlock[nID]->nSourceAddress           = (u32) m_pDMABuffer[nID] + GPU_MEM_BASE;
-	m_pControlBlock[nID]->nDestinationAddress      = (ARM_PWM_FIF1 & 0xFFFFFF) + GPU_IO_BASE;
+	m_pControlBlock[nID]->nDestinationAddress      = (ARM_PCM_FIFO_A & 0xFFFFFF) + GPU_IO_BASE;
 	m_pControlBlock[nID]->n2DModeStride            = 0;
 	m_pControlBlock[nID]->nReserved[0]	       = 0;
 	m_pControlBlock[nID]->nReserved[1]	       = 0;
