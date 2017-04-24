@@ -28,5 +28,5 @@ SAMPLES
 26-cpustress		Calculates fractal images to stress the CPU. Displays a SoC temperature chart.
 27-usbgamepad		Displaying information about an attached USB HID class gamepad and its current status.
 28-touchscreen		Displaying touch events from the official Raspberry Pi touch screen.
-29-miniorgan		Mini organ instrument using PWM sound, (USB or serial) MIDI or USB keyboard.
+29-miniorgan		Mini organ instrument using PWM or I2S sound, (USB or serial) MIDI or USB keyboard.
 30-gpiofiq		Demonstrating FIQ-driven fast GPIO event capture and a tracing class.

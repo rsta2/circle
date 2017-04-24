@@ -1,5 +1,5 @@
 //
-// pwmsoundbasedevice.h
+// i2ssoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_pwmsoundbasedevice_h
-#define _circle_pwmsoundbasedevice_h
+#ifndef _circle_i2ssoundbasedevice_h
+#define _circle_i2ssoundbasedevice_h
 
 #include <circle/interrupt.h>
 #include <circle/gpiopin.h>
@@ -27,44 +27,42 @@
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
-enum TPWMSoundState
+enum TI2SSoundState
 {
-	PWMSoundIdle,
-	PWMSoundRunning,
-	PWMSoundCancelled,
-	PWMSoundTerminating,
-	PWMSoundError,
-	PWMSoundUnknown
+	I2SSoundIdle,
+	I2SSoundRunning,
+	I2SSoundCancelled,
+	I2SSoundTerminating,
+	I2SSoundError,
+	I2SSoundUnknown
 };
 
-class CPWMSoundBaseDevice	/// Low level access to the PWM sound device (on 3.5mm headphone jack)
+class CI2SSoundBaseDevice	/// Low level access to the I2S sound device
 {
 public:
 	/// \param pInterrupt	pointer to the interrupt system object
 	/// \param nSampleRate	sample rate in Hz
 	/// \param nChunkSize	twice the number of samples (words) to be handled\n
 	///			with one call to GetChunk() (one word per stereo channel)
-	CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
-			     unsigned	       nSampleRate = 44100,
-			     unsigned	       nChunkSize  = 2048);
+	CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
+			     unsigned	       nSampleRate = 192000,
+			     unsigned	       nChunkSize  = 8192);
 
-	virtual ~CPWMSoundBaseDevice (void);
+	virtual ~CI2SSoundBaseDevice (void);
 
 	/// \return Minium value of one sample
 	int GetRangeMin (void) const;
 	/// \return Maximum value of one sample
 	int GetRangeMax (void) const;
-	/// \brief Same as GetRangeMax()
-	unsigned GetRange (void) const { return (unsigned) GetRangeMax (); }
 
-	/// \brief Starts the PWM and DMA operation
+	/// \brief Starts the I2S and DMA operation
 	void Start (void);
 
-	/// \brief Cancels the PWM and DMA operation
+	/// \brief Cancels the I2S and DMA operation
 	/// \note Cancel takes effect after a short delay
 	void Cancel (void);
 
-	/// \return Is PWM and DMA operation running?
+	/// \return Is I2S and DMA operation running?
 	boolean IsActive (void) const;
 
 	/// \brief Overload this to provide the sound samples!
@@ -79,8 +77,8 @@ public:
 private:
 	boolean GetNextChunk (void);
 
-	void RunPWM (void);
-	void StopPWM (void);
+	void RunI2S (void);
+	void StopI2S (void);
 
 	void InterruptHandler (void);
 	static void InterruptStub (void *pParam);
@@ -90,14 +88,14 @@ private:
 private:
 	CInterruptSystem *m_pInterruptSystem;
 	unsigned m_nChunkSize;
-	unsigned m_nRange;
 
-	CGPIOPin   m_Audio1;
-	CGPIOPin   m_Audio2;
+	CGPIOPin   m_PCMCLKPin;
+	CGPIOPin   m_PCMFSPin;
+	CGPIOPin   m_PCMDOUTPin;
 	CGPIOClock m_Clock;
 
 	boolean m_bIRQConnected;
-	volatile TPWMSoundState m_State;
+	volatile TI2SSoundState m_State;
 
 	u32 *m_pDMABuffer[2];
 	u8 *m_pControlBlockBuffer[2];

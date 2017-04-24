@@ -145,12 +145,7 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system)
-
-USB library
-
-* CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU
-* CUSBString: Encapsulates a string descriptor, available on an USB device
+* CI2SSoundBaseDevice: Low level access to the I2S sound device
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
