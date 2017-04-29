@@ -2,7 +2,7 @@
 // alloc.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -106,7 +106,7 @@ unsigned long mem_get_size (void)
 	return (unsigned long) (s_pBlockLimit - s_pNextBlock) + (s_pPageLimit - s_pNextPage);
 }
 
-void *malloc (unsigned long ulSize)
+void *malloc (size_t nSize)
 {
 	assert (s_pNextBlock != 0);
 	
@@ -115,9 +115,9 @@ void *malloc (unsigned long ulSize)
 	TBlockBucket *pBucket;
 	for (pBucket = s_BlockBucket; pBucket->nSize > 0; pBucket++)
 	{
-		if (ulSize <= pBucket->nSize)
+		if (nSize <= pBucket->nSize)
 		{
-			ulSize = pBucket->nSize;
+			nSize = pBucket->nSize;
 
 #ifdef MEM_DEBUG
 			if (++pBucket->nCount > pBucket->nMaxCount)
@@ -141,7 +141,7 @@ void *malloc (unsigned long ulSize)
 	{
 		pBlockHeader = (TBlockHeader *) s_pNextBlock;
 
-		s_pNextBlock += (sizeof (TBlockHeader) + ulSize + BLOCK_ALIGN-1) & ~ALIGN_MASK;
+		s_pNextBlock += (sizeof (TBlockHeader) + nSize + BLOCK_ALIGN-1) & ~ALIGN_MASK;
 		if (s_pNextBlock > s_pBlockLimit)
 		{
 			s_BlockSpinLock.Release ();
@@ -150,7 +150,7 @@ void *malloc (unsigned long ulSize)
 		}
 	
 		pBlockHeader->nMagic = BLOCK_MAGIC;
-		pBlockHeader->nSize = (unsigned) ulSize;
+		pBlockHeader->nSize = (unsigned) nSize;
 	}
 	
 	s_BlockSpinLock.Release ();
@@ -191,6 +191,52 @@ void free (void *pBlock)
 			break;
 		}
 	}
+}
+
+void *calloc (size_t nBlocks, size_t nSize)
+{
+	nSize *= nBlocks;
+	assert (nSize >= nBlocks);
+	if (nSize == 0)
+	{
+		return 0;
+	}
+
+	return malloc (nSize);
+}
+
+void *realloc (void *pBlock, size_t nSize)
+{
+	if (pBlock == 0)
+	{
+		return malloc (nSize);
+	}
+
+	if (nSize == 0)
+	{
+		free (pBlock);
+
+		return 0;
+	}
+
+	TBlockHeader *pBlockHeader = (TBlockHeader *) ((unsigned long) pBlock - sizeof (TBlockHeader));
+	assert (pBlockHeader->nMagic == BLOCK_MAGIC);
+	if (pBlockHeader->nSize >= nSize)
+	{
+		return pBlock;
+	}
+
+	void *pNewBlock = malloc (nSize);
+	if (pNewBlock == 0)
+	{
+		return 0;
+	}
+
+	memcpy (pNewBlock, pBlock, pBlockHeader->nSize);
+
+	free (pBlock);
+
+	return pNewBlock;
 }
 
 void *palloc (void)

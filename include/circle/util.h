@@ -2,7 +2,7 @@
 // util.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,16 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define memcmp		circle_memcmp
+#define strlen		circle_strlen
+#define strcmp		circle_strcmp
+#define strcpy		circle_strcpy
+#define strncpy		circle_strncpy
+#define strcat		circle_strcat
+#define strchr		circle_strchr
+#define strtok_r	circle_strtok_r
+#define strtoul		circle_strtoul
 
 void *memset (void *pBuffer, int nValue, size_t nLength);
 
