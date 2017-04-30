@@ -202,7 +202,13 @@ void *calloc (size_t nBlocks, size_t nSize)
 		return 0;
 	}
 
-	return malloc (nSize);
+	void *pNewBlock = malloc (nSize);
+	if (pNewBlock != 0)
+	{
+		memset (pNewBlock, 0, nSize);
+	}
+
+	return pNewBlock;
 }
 
 void *realloc (void *pBlock, size_t nSize)
