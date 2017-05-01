@@ -10,6 +10,7 @@ make
 DIRECTORIES
 
 dio		Library providing access to the spi_dio board by BitWizard.nl
+fatfs		FatFs - Generic FAT file system module with LFN support (by ChaN)
 OneWire		Support library for 1-wire devices (by Paul Stoffregen)
 Properties	Library providing access to configuration properties saved in a file
 rtc		Library providing drivers for real-time clocks (RTC)
