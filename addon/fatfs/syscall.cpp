@@ -1,15 +1,20 @@
 /*------------------------------------------------------------------------*/
 /* Sample code of OS dependent controls for FatFs                         */
 /* (C)ChaN, 2014                                                          */
+/* Implementation for Circle by R. Stange <rsta2@o2online.de>             */
 /*------------------------------------------------------------------------*/
 
 
-#include "../ff.h"
+#include "ff.h"
+#include <circle/spinlock.h>
+#include <circle/alloc.h>
+#include <circle/timer.h>
+#include <assert.h>
 
 
 #if _FS_REENTRANT
 /*------------------------------------------------------------------------*/
-/* Create a Synchronization Object
+/* Create a Synchronization Object                                        */
 /*------------------------------------------------------------------------*/
 /* This function is called in f_mount() function to create a new
 /  synchronization object, such as semaphore and mutex. When a 0 is returned,
@@ -24,8 +29,12 @@ int ff_cre_syncobj (	/* 1:Function succeeded, 0:Could not create the sync object
 	int ret;
 
 
-	*sobj = CreateMutex(NULL, FALSE, NULL);		/* Win32 */
-	ret = (int)(*sobj != INVALID_HANDLE_VALUE);
+	*sobj = new CSpinLock (TASK_LEVEL);		/* Circle */
+	assert (*sobj != 0);
+	ret = 1;
+
+//	*sobj = CreateMutex(NULL, FALSE, NULL);		/* Win32 */
+//	ret = (int)(*sobj != INVALID_HANDLE_VALUE);
 
 //	*sobj = SyncObjects[vol];			/* uITRON (give a static sync object) */
 //	ret = 1;							/* The initial value of the semaphore must be 1. */
@@ -56,7 +65,11 @@ int ff_del_syncobj (	/* 1:Function succeeded, 0:Could not delete due to any erro
 	int ret;
 
 
-	ret = CloseHandle(sobj);	/* Win32 */
+	CSpinLock *pSpinLock = (CSpinLock *) sobj;		/* Circle */
+	delete pSpinLock;
+	ret = 1;
+
+//	ret = CloseHandle(sobj);	/* Win32 */
 
 //	ret = 1;					/* uITRON (nothing to do) */
 
@@ -84,7 +97,12 @@ int ff_req_grant (	/* 1:Got a grant to access the volume, 0:Could not get a gran
 {
 	int ret;
 
-	ret = (int)(WaitForSingleObject(sobj, _FS_TIMEOUT) == WAIT_OBJECT_0);	/* Win32 */
+	CSpinLock *pSpinLock = (CSpinLock *) sobj;		/* Circle */
+	assert (pSpinLock != 0);
+	pSpinLock->Acquire ();
+	ret = 1;
+
+//	ret = (int)(WaitForSingleObject(sobj, _FS_TIMEOUT) == WAIT_OBJECT_0);	/* Win32 */
 
 //	ret = (int)(wai_sem(sobj) == E_OK);			/* uITRON */
 
@@ -108,7 +126,11 @@ void ff_rel_grant (
 	_SYNC_t sobj	/* Sync object to be signaled */
 )
 {
-	ReleaseMutex(sobj);		/* Win32 */
+	CSpinLock *pSpinLock = (CSpinLock *) sobj;	/* Circle */
+	assert (pSpinLock != 0);
+	pSpinLock->Release ();
+
+//	ReleaseMutex(sobj);		/* Win32 */
 
 //	sig_sem(sobj);			/* uITRON */
 
@@ -146,6 +168,75 @@ void ff_memfree (
 )
 {
 	free(mblock);	/* Discard the memory block with POSIX API */
+}
+
+#endif
+
+
+
+
+#if !_FS_READONLY && !_FS_NORTC
+/*------------------------------------------------------------------------*/
+/* RTC function                                                           */
+/*------------------------------------------------------------------------*/
+
+DWORD get_fattime (void)
+{
+	unsigned nTime = CTimer::Get ()->GetLocalTime ();
+	if (nTime == 0)
+	{
+		return 0;
+	}
+
+	unsigned nSecond = nTime % 60;
+	nTime /= 60;
+	unsigned nMinute = nTime % 60;
+	nTime /= 60;
+	unsigned nHour = nTime % 24;
+	nTime /= 24;
+
+	unsigned nYear = 1970;
+	while (1)
+	{
+		unsigned nDaysOfYear = CTimer::IsLeapYear (nYear) ? 366 : 365;
+		if (nTime < nDaysOfYear)
+		{
+			break;
+		}
+
+		nTime -= nDaysOfYear;
+		nYear++;
+	}
+
+	if (nYear < 1980)
+	{
+		return 0;
+	}
+
+	unsigned nMonth = 0;
+	while (1)
+	{
+		unsigned nDaysOfMonth = CTimer::GetDaysOfMonth (nMonth, nYear);
+		if (nTime < nDaysOfMonth)
+		{
+			break;
+		}
+
+		nTime -= nDaysOfMonth;
+		nMonth++;
+	}
+
+	unsigned nMonthDay = nTime + 1;
+
+	unsigned nFATDate = (nYear-1980) << 9;
+	nFATDate |= (nMonth+1) << 5;
+	nFATDate |= nMonthDay;
+
+	unsigned nFATTime = nHour << 11;
+	nFATTime |= nMinute << 5;
+	nFATTime |= nSecond / 2;
+
+	return nFATDate << 16 | nFATTime;
 }
 
 #endif

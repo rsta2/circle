@@ -1,0 +1,28 @@
+README
+
+This sample program creates a listing of the files in the root directory of the
+inserted SD card (WHICH DOES NOT CONTAIN ANY IMPORTANT DATA). The first primary
+partition of the SD card must be a FAT partition. Extended partitions or other
+file systems are not supported.
+
+After creating the directory listing a file "circle.txt" is created in the root
+directory and some text is written to it. After closing the file it is re-opened
+and its contents is read and written to the screen.
+
+If you change the #define DRIVE to "USB:" in kernel.cpp you can access an USB
+drive instead of the SD card.
+
+This sample uses the FatFs generic FAT file system module (R0.12c), which is
+Copyright (C) 2017, ChaN, all right reserved. FatFs supports long file names
+(LFN), subdirectories, the full set of features of the FAT file system and has a
+better performance than the Circle FAT file system library. That's why FatFs has
+been ported to Circle. Please see the project page for detailed information and
+documentation of the user API of FatFs:
+
+	http://elm-chan.org/fsw/ff/00index_e.html
+
+FatFs has been configured to use code page 850 (Latin 1) in ffconf.h, which is
+the character code used throughout Circle. FatFs provides support for code pages
+932 (Japanese Shift_JIS), 936 (Simplified Chinese GBK), 949 (Korean) and 950
+(Traditional Chinese Big5) too. Because Circle itself does not support these and
+to save space this is not included here.

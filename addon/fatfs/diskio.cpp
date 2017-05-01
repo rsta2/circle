@@ -1,5 +1,6 @@
 /*-----------------------------------------------------------------------*/
 /* Low level disk I/O module skeleton for FatFs     (C)ChaN, 2016        */
+/* Implementation for Circle by R. Stange <rsta2@o2online.de>            */
 /*-----------------------------------------------------------------------*/
 /* If a working storage control module is available, it should be        */
 /* attached to the FatFs via a glue function rather than modifying it.   */
@@ -8,11 +9,30 @@
 /*-----------------------------------------------------------------------*/
 
 #include "diskio.h"		/* FatFs lower layer API */
+#include "ffconf.h"		/* FatFs configuration options */
+#include <circle/device.h>
+#include <circle/devicenameservice.h>
+#include <assert.h>
 
-/* Definitions of physical drive number for each drive */
-#define DEV_RAM		0	/* Example: Map Ramdisk to physical drive 0 */
-#define DEV_MMC		1	/* Example: Map MMC/SD card to physical drive 1 */
-#define DEV_USB		2	/* Example: Map USB MSD to physical drive 2 */
+#if _MIN_SS != _MAX_SS
+	#error _MIN_SS != _MAX_SS is not supported!
+#endif
+#define SECTOR_SIZE		_MIN_SS
+
+/*-----------------------------------------------------------------------*/
+/* Static Data                                                           */
+/*-----------------------------------------------------------------------*/
+
+static const char *s_pVolumeName[_VOLUMES] =
+{
+	"emmc1",
+	"umsd1",
+	"umsd2",
+	"umsd3",
+};
+
+static CDevice *s_pVolume[_VOLUMES] = {0};
+
 
 
 /*-----------------------------------------------------------------------*/
@@ -23,31 +43,12 @@ DSTATUS disk_status (
 	BYTE pdrv		/* Physical drive nmuber to identify the drive */
 )
 {
-	DSTATUS stat;
-	int result;
-
-	switch (pdrv) {
-	case DEV_RAM :
-		result = RAM_disk_status();
-
-		// translate the reslut code here
-
-		return stat;
-
-	case DEV_MMC :
-		result = MMC_disk_status();
-
-		// translate the reslut code here
-
-		return stat;
-
-	case DEV_USB :
-		result = USB_disk_status();
-
-		// translate the reslut code here
-
-		return stat;
+	if (   pdrv < _VOLUMES
+	    && s_pVolume[pdrv] != 0)
+	{
+		return 0;
 	}
+
 	return STA_NOINIT;
 }
 
@@ -61,31 +62,17 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-	DSTATUS stat;
-	int result;
-
-	switch (pdrv) {
-	case DEV_RAM :
-		result = RAM_disk_initialize();
-
-		// translate the reslut code here
-
-		return stat;
-
-	case DEV_MMC :
-		result = MMC_disk_initialize();
-
-		// translate the reslut code here
-
-		return stat;
-
-	case DEV_USB :
-		result = USB_disk_initialize();
-
-		// translate the reslut code here
-
-		return stat;
+	if (pdrv >= _VOLUMES)
+	{
+		return STA_NOINIT;
 	}
+
+	s_pVolume[pdrv] = CDeviceNameService::Get ()->GetDevice (s_pVolumeName[pdrv], TRUE);
+	if (s_pVolume[pdrv] != 0)
+	{
+		return 0;
+	}
+
 	return STA_NOINIT;
 }
 
@@ -102,39 +89,27 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-	DRESULT res;
-	int result;
-
-	switch (pdrv) {
-	case DEV_RAM :
-		// translate the arguments here
-
-		result = RAM_disk_read(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case DEV_MMC :
-		// translate the arguments here
-
-		result = MMC_disk_read(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case DEV_USB :
-		// translate the arguments here
-
-		result = USB_disk_read(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
+	if (pdrv >= _VOLUMES)
+	{
+		return RES_PARERR;
 	}
 
-	return RES_PARERR;
+	CDevice *pDevice = s_pVolume[pdrv];
+	if (pDevice == 0)
+	{
+		return RES_NOTRDY;
+	}
+
+	QWORD offset = sector;
+	offset *= SECTOR_SIZE;
+	pDevice->Seek (offset);
+
+	if (pDevice->Read (buff, count * SECTOR_SIZE) < 0)
+	{
+		return RES_ERROR;
+	}
+
+	return RES_OK;
 }
 
 
@@ -150,39 +125,27 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-	DRESULT res;
-	int result;
-
-	switch (pdrv) {
-	case DEV_RAM :
-		// translate the arguments here
-
-		result = RAM_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case DEV_MMC :
-		// translate the arguments here
-
-		result = MMC_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case DEV_USB :
-		// translate the arguments here
-
-		result = USB_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
+	if (pdrv >= _VOLUMES)
+	{
+		return RES_PARERR;
 	}
 
-	return RES_PARERR;
+	CDevice *pDevice = s_pVolume[pdrv];
+	if (pDevice == 0)
+	{
+		return RES_NOTRDY;
+	}
+
+	QWORD offset = sector;
+	offset *= SECTOR_SIZE;
+	pDevice->Seek (offset);
+
+	if (pDevice->Write (buff, count * SECTOR_SIZE) < 0)
+	{
+		return RES_ERROR;
+	}
+
+	return RES_OK;
 }
 
 
@@ -197,27 +160,15 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-	DRESULT res;
-	int result;
+	switch (cmd)
+	{
+	case CTRL_SYNC:
+		return RES_OK;
 
-	switch (pdrv) {
-	case DEV_RAM :
-
-		// Process of the command for the RAM drive
-
-		return res;
-
-	case DEV_MMC :
-
-		// Process of the command for the MMC/SD card
-
-		return res;
-
-	case DEV_USB :
-
-		// Process of the command the USB drive
-
-		return res;
+	case GET_SECTOR_SIZE:
+		assert (buff != 0);
+		*(WORD *) buff = SECTOR_SIZE;
+		return RES_OK;
 	}
 
 	return RES_PARERR;

@@ -1,4 +1,4 @@
-#include "../ff.h"
+#include "ff.h"
 
 #if _USE_LFN != 0
 

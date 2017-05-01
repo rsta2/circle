@@ -34,7 +34,7 @@
 /  2: Enable with LF-CRLF conversion. */
 
 
-#define _USE_FIND		0
+#define _USE_FIND		2
 /* This option switches filtered directory read functions, f_findfirst() and
 /  f_findnext(). (0:Disable, 1:Enable 2:Enable with matching altname[] too) */
 
@@ -51,7 +51,7 @@
 /* This option switches f_expand function. (0:Disable or 1:Enable) */
 
 
-#define _USE_CHMOD		0
+#define _USE_CHMOD		1
 /* This option switches attribute manipulation functions, f_chmod() and f_utime().
 /  (0:Disable or 1:Enable) Also _FS_READONLY needs to be 0 to enable this option. */
 
@@ -69,7 +69,7 @@
 / Locale and Namespace Configurations
 /---------------------------------------------------------------------------*/
 
-#define _CODE_PAGE	932
+#define _CODE_PAGE	850
 /* This option specifies the OEM code page to be used on the target system.
 /  Incorrect setting of the code page can cause a file open failure.
 /
@@ -98,7 +98,7 @@
 */
 
 
-#define	_USE_LFN	0
+#define	_USE_LFN	3
 #define	_MAX_LFN	255
 /* The _USE_LFN switches the support of long file name (LFN).
 /
@@ -122,7 +122,7 @@
 /  This option also affects behavior of string I/O functions. */
 
 
-#define _STRF_ENCODE	3
+#define _STRF_ENCODE	0
 /* When _LFN_UNICODE == 1, this option selects the character encoding ON THE FILE to
 /  be read/written via string I/O functions, f_gets(), f_putc(), f_puts and f_printf().
 /
@@ -147,12 +147,12 @@
 / Drive/Volume Configurations
 /---------------------------------------------------------------------------*/
 
-#define _VOLUMES	1
+#define _VOLUMES	4
 /* Number of volumes (logical drives) to be used. (1-10) */
 
 
-#define _STR_VOLUME_ID	0
-#define _VOLUME_STRS	"RAM","NAND","CF","SD","SD2","USB","USB2","USB3"
+#define _STR_VOLUME_ID	1
+#define _VOLUME_STRS	"SD","USB","USB2","USB3"
 /* _STR_VOLUME_ID switches string support of volume ID.
 /  When _STR_VOLUME_ID is set to 1, also pre-defined strings can be used as drive
 /  number in the path name. _VOLUME_STRS defines the drive ID strings for each
@@ -241,9 +241,9 @@
 /      lock control is independent of re-entrancy. */
 
 
-#define _FS_REENTRANT	0
+#define _FS_REENTRANT	1
 #define _FS_TIMEOUT		1000
-#define	_SYNC_t			HANDLE
+#define	_SYNC_t			void*
 /* The option _FS_REENTRANT switches the re-entrancy (thread safe) of the FatFs
 /  module itself. Note that regardless of this option, file access to different
 /  volume is always re-entrant and volume control functions, f_mount(), f_mkfs()
