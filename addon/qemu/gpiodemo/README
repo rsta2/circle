@@ -1,0 +1,15 @@
+README
+
+This demo is intended to be used with QEMU and the new GPIO panel. You should
+not use it on a real Raspberry Pi, because certain GPIO pins can be connected to
+external circuits.
+
+The demo continuously changes the output level of GPIO2 to GPIO12, which can be
+watched on the GPIO panel. If you change the input level of GPIO13 to GPIO26 on
+the panel, this will be recognised by the demo and a message will be displayed.
+
+GPIO panel support is currently developed in QEMU. Have a look at these
+repositories to get info about it:
+
+	https://github.com/flypie/flypie-pi-qemu
+	https://github.com/flypie/GDummyPanel

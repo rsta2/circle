@@ -13,6 +13,7 @@ dio		Library providing access to the spi_dio board by BitWizard.nl
 fatfs		FatFs - Generic FAT file system module with LFN support (by ChaN)
 OneWire		Support library for 1-wire devices (by Paul Stoffregen)
 Properties	Library providing access to configuration properties saved in a file
+qemu		Demos for using Circle with QEMU
 rtc		Library providing drivers for real-time clocks (RTC)
 SDCard		Driver for SD card access using the internal EMMC controller (by John Cronin)
 Spectrum	ZX Spectrum screen emulator class (by Jose Luis Sanchez)
