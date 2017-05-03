@@ -19,6 +19,8 @@
 #endif
 #define SECTOR_SIZE		_MIN_SS
 
+#define PHY_DRIVE_EMMC		0
+
 /*-----------------------------------------------------------------------*/
 /* Static Data                                                           */
 /*-----------------------------------------------------------------------*/
@@ -102,11 +104,31 @@ DRESULT disk_read (
 
 	QWORD offset = sector;
 	offset *= SECTOR_SIZE;
-	pDevice->Seek (offset);
 
-	if (pDevice->Read (buff, count * SECTOR_SIZE) < 0)
+	if (pdrv != PHY_DRIVE_EMMC)
 	{
-		return RES_ERROR;
+		pDevice->Seek (offset);
+
+		if (pDevice->Read (buff, count * SECTOR_SIZE) < 0)
+		{
+			return RES_ERROR;
+		}
+	}
+	else
+	{
+		// TODO: EMMC driver does not support multi-sector transfers at the moment.
+		while (count-- > 0)
+		{
+			pDevice->Seek (offset);
+
+			if (pDevice->Read (buff, SECTOR_SIZE) < 0)
+			{
+				return RES_ERROR;
+			}
+
+			offset += SECTOR_SIZE;
+			buff += SECTOR_SIZE;
+		}
 	}
 
 	return RES_OK;
@@ -138,11 +160,31 @@ DRESULT disk_write (
 
 	QWORD offset = sector;
 	offset *= SECTOR_SIZE;
-	pDevice->Seek (offset);
 
-	if (pDevice->Write (buff, count * SECTOR_SIZE) < 0)
+	if (pdrv != PHY_DRIVE_EMMC)
 	{
-		return RES_ERROR;
+		pDevice->Seek (offset);
+
+		if (pDevice->Write (buff, count * SECTOR_SIZE) < 0)
+		{
+			return RES_ERROR;
+		}
+	}
+	else
+	{
+		// TODO: EMMC driver does not support multi-sector transfers at the moment.
+		while (count-- > 0)
+		{
+			pDevice->Seek (offset);
+
+			if (pDevice->Write (buff, SECTOR_SIZE) < 0)
+			{
+				return RES_ERROR;
+			}
+
+			offset += SECTOR_SIZE;
+			buff += SECTOR_SIZE;
+		}
 	}
 
 	return RES_OK;
