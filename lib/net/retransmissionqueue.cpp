@@ -2,7 +2,7 @@
 // retransmissionqueue.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,7 +52,12 @@ unsigned CRetransmissionQueue::GetFreeSpace (void) const
 	assert (m_nInPtr < m_nSize);
 	assert (m_nOutPtr < m_nSize);
 
-	return (m_nOutPtr-m_nInPtr-1) % m_nSize;
+	if (m_nOutPtr <= m_nInPtr)
+	{
+		return m_nSize+m_nOutPtr-m_nInPtr-1;
+	}
+
+	return m_nOutPtr-m_nInPtr-1;
 }
 
 void CRetransmissionQueue::Write (const void *pBuffer, unsigned nLength)
@@ -77,7 +82,12 @@ unsigned CRetransmissionQueue::GetBytesAvailable (void) const
 	assert (m_nInPtr < m_nSize);
 	assert (m_nPreOutPtr < m_nSize);
 
-	return (m_nInPtr-m_nPreOutPtr) % m_nSize;
+	if (m_nInPtr < m_nPreOutPtr)
+	{
+		return m_nSize+m_nInPtr-m_nPreOutPtr;
+	}
+
+	return m_nInPtr-m_nPreOutPtr;
 }
 
 void CRetransmissionQueue::Read (void *pBuffer, unsigned nLength)
@@ -101,7 +111,6 @@ void CRetransmissionQueue::Advance (unsigned nBytes)
 	assert (m_nSize > 1);
 	assert (m_nOutPtr < m_nSize);
 	assert (m_nPreOutPtr < m_nSize);
-	assert ((m_nPreOutPtr-m_nOutPtr) % m_nSize >= nBytes);
 	
 	m_nOutPtr += nBytes;
 	m_nOutPtr %= m_nSize;

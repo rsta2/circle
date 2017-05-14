@@ -2,7 +2,7 @@
 // usbmouse.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,14 +21,11 @@
 #define _circle_usb_usbmouse_h
 
 #include <circle/usb/usbhiddevice.h>
+#include <circle/input/mousebehaviour.h>
 #include <circle/types.h>
 
 #define MOUSE_DISPLACEMENT_MIN	-127
 #define MOUSE_DISPLACEMENT_MAX	127
-
-#define MOUSE_BUTTON_LEFT	(1 << 0)
-#define MOUSE_BUTTON_RIGHT	(1 << 1)
-#define MOUSE_BUTTON_MIDDLE	(1 << 2)
 
 typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY);
 
@@ -40,12 +37,23 @@ public:
 
 	boolean Configure (void);
 
+	// cooked mode
+	boolean Setup (unsigned nScreenWidth, unsigned nScreenHeight);	// returns FALSE on failure
+
+	void RegisterEventHandler (TMouseEventHandler *pEventHandler);
+
+	boolean SetCursor (unsigned nPosX, unsigned nPosY);		// returns FALSE on failure
+	boolean ShowCursor (boolean bShow);				// returns previous state
+
+	// raw mode
 	void RegisterStatusHandler (TMouseStatusHandler *pStatusHandler);
 
 private:
 	void ReportHandler (const u8 *pReport);
 
 private:
+	CMouseBehaviour m_Behaviour;
+
 	TMouseStatusHandler *m_pStatusHandler;
 
 	static unsigned s_nDeviceNumber;

@@ -2,7 +2,7 @@
 // usb.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,10 +17,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usb_h
-#define _usb_h
+#ifndef _circle_usb_usb_h
+#define _circle_usb_usb_h
 
 #include <circle/macros.h>
+#include <circle/usb/usbaudio.h>
 
 // PID
 enum TUSBPID
@@ -84,6 +85,10 @@ PACKED;
 #define DESCRIPTOR_STRING		3
 #define DESCRIPTOR_INTERFACE		4
 #define DESCRIPTOR_ENDPOINT		5
+
+// Class-specific descriptors
+#define DESCRIPTOR_CS_INTERFACE		36
+#define DESCRIPTOR_CS_ENDPOINT		37
 
 #define DESCRIPTOR_INDEX_DEFAULT	0
 
@@ -162,6 +167,18 @@ union TUSBDescriptor
 	TUSBConfigurationDescriptor	Configuration;
 	TUSBInterfaceDescriptor		Interface;
 	TUSBEndpointDescriptor		Endpoint;
+
+	TUSBAudioEndpointDescriptor	AudioEndpoint;
+	TUSBMIDIStreamingEndpointDescriptor MIDIStreamingEndpoint;
+}
+PACKED;
+
+// String Descriptor
+struct TUSBStringDescriptor
+{
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned short	bString[0];
 }
 PACKED;
 

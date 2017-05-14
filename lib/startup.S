@@ -2,7 +2,7 @@
  * startup.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
  *
  * This file contains code taken from Linux:
  *	safe_svcmode_maskall macro
@@ -55,15 +55,20 @@
 _start:
 #ifndef USE_RPI_STUB_AT
 	safe_svcmode_maskall r0
+
+	mov	r0, #0
+	mcr	p15, 0, r0, c12, c0, 0		/* reset VBAR (if changed by u-boot) */
 #endif
+	cps	#0x11				/* set fiq mode */
+	ldr	sp, =MEM_FIQ_STACK
 	cps	#0x12				/* set irq mode */
-	mov	sp, #MEM_IRQ_STACK
+	ldr	sp, =MEM_IRQ_STACK
 	cps	#0x17				/* set abort mode */
-	mov	sp, #MEM_ABORT_STACK
+	ldr	sp, =MEM_ABORT_STACK
 	cps	#0x1B				/* set "undefined" mode */
-	mov	sp, #MEM_ABORT_STACK
+	ldr	sp, =MEM_ABORT_STACK
 	cps	#0x1F				/* set system mode */
-	mov	sp, #MEM_KERNEL_STACK
+	ldr	sp, =MEM_KERNEL_STACK
 	b	sysinit
 
 #if RASPPI != 1
@@ -78,11 +83,14 @@ _start_secondary:
 
 	mov	r1, #EXCEPTION_STACK_SIZE	/* calculate exception stack offset for core */
 	mul	r1, r0, r1
+	cps	#0x11				/* set fiq mode */
+	ldr	r2, =MEM_FIQ_STACK
+	add	sp, r1, r2
 	cps	#0x12				/* set irq mode */
-	mov	r2, #MEM_IRQ_STACK
+	ldr	r2, =MEM_IRQ_STACK
 	add	sp, r1, r2
 	cps	#0x17				/* set abort mode */
-	mov	r2, #MEM_ABORT_STACK
+	ldr	r2, =MEM_ABORT_STACK
 	add	sp, r1, r2
 	cps	#0x1B				/* set "undefined" mode */
 	add	sp, r1, r2
@@ -90,7 +98,7 @@ _start_secondary:
 	mov	r1, #KERNEL_STACK_SIZE		/* calculate kernel stack offset for core */
 	mul	r1, r0, r1
 	cps	#0x1F				/* set system mode */
-	mov	r2, #MEM_KERNEL_STACK
+	ldr	r2, =MEM_KERNEL_STACK
 	add	sp, r1, r2
 	b	sysinit_secondary
 #else

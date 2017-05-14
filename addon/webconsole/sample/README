@@ -1,0 +1,3 @@
+README
+
+This sample demonstrates the remote access to the system log using a web browser. Before building you can change the network configuration to meet your local settings in the file kernel.cpp. After booting the Raspberry Pi you can access the log by opening the address shown on the screen in your web browser.

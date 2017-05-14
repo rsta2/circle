@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,15 +18,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o libhelper.o libstub.o \
-	  memio.o memory.o new.o purecall.o synchronize.o sysinit.o timer.o util.o util_fast.o \
-	  bcmframebuffer.o device.o koptions.o pagetable.o screen.o \
+OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o gpiopinfiq.o libhelper.o libstub.o \
+	  memory.o new.o purecall.o synchronize.o sysinit.o timer.o util.o util_fast.o \
+	  bcmframebuffer.o device.o koptions.o pagetable.o screen.o nulldevice.o \
 	  assert.o chargenerator.o debug.o devicenameservice.o logger.o serial.o string.o \
 	  delayloop.o exceptionhandler.o exceptionstub.o interrupt.o \
-	  gpiomanager.o gpioclock.o dmachannel.o pwmsounddevice.o pwmoutput.o tracer.o \
-	  i2cmaster.o i2cslave.o \
-	  multicore.o spinlock.o \
-	  ptrarray.o ptrlist.o
+	  gpiomanager.o gpioclock.o dmachannel.o pwmsounddevice.o pwmsoundbasedevice.o pwmoutput.o tracer.o \
+	  i2cmaster.o i2cslave.o spimaster.o spimasterdma.o virtualgpiopin.o machineinfo.o \
+	  multicore.o spinlock.o bcmrandom.o cache-v7.o cputhrottle.o \
+	  ptrarray.o ptrlist.o time.o
 
 all: startup.o libcircle.a
 

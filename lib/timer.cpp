@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 	m_nTicks (0),
 	m_nUptime (0),
 	m_nTime (0),
+	m_nMinutesDiff (0),
 	m_nMsDelay (350000),
 	m_nusDelay (m_nMsDelay / 1000)
 {
@@ -84,7 +85,7 @@ boolean CTimer::Initialize (void)
 	assert (m_pInterruptSystem != 0);
 	m_pInterruptSystem->ConnectIRQ (ARM_IRQ_TIMER3, InterruptHandler, this);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_SYSTIMER_CLO, -(30 * CLOCKHZ));	// timer wraps soon, to check for problems
 
@@ -92,27 +93,58 @@ boolean CTimer::Initialize (void)
 	
 	TuneMsDelay ();
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return TRUE;
 }
 
-void CTimer::SetTime (unsigned nTime)
+boolean CTimer::SetTimeZone (int nMinutesDiff)
 {
+	if (-24*60 < nMinutesDiff && nMinutesDiff < 24*60)
+	{
+		m_nMinutesDiff = nMinutesDiff;
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+int CTimer::GetTimeZone (void) const
+{
+	return m_nMinutesDiff;
+}
+
+boolean CTimer::SetTime (unsigned nTime, boolean bLocal)
+{
+	if (!bLocal)
+	{
+		int nSecondsDiff = m_nMinutesDiff * 60;
+		if (    nSecondsDiff < 0
+		    && -nSecondsDiff > (int) nTime)
+		{
+			return FALSE;
+		}
+
+		nTime += nSecondsDiff;
+	}
+
 	m_TimeSpinLock.Acquire ();
 
 	m_nTime = nTime;
 
 	m_TimeSpinLock.Release ();
+
+	return TRUE;
 }
 
-unsigned CTimer::GetClockTicks (void) const
+unsigned CTimer::GetClockTicks (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	unsigned nResult = read32 (ARM_SYSTIMER_CLO);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return nResult;
 }
@@ -130,6 +162,19 @@ unsigned CTimer::GetUptime (void) const
 unsigned CTimer::GetTime (void) const
 {
 	return m_nTime;
+}
+
+unsigned CTimer::GetUniversalTime (void) const
+{
+	unsigned nResult = m_nTime;
+
+	int nSecondsDiff = m_nMinutesDiff * 60;
+	if (nSecondsDiff > (int) nResult)
+	{
+		return 0;
+	}
+
+	return nResult - nSecondsDiff;
 }
 
 CString *CTimer::GetTimeString (void)
@@ -317,7 +362,7 @@ void CTimer::PollKernelTimers (void)
 
 void CTimer::InterruptHandler (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (read32 (ARM_SYSTIMER_CS) & (1 << 3));
 	
@@ -331,7 +376,7 @@ void CTimer::InterruptHandler (void)
 
 	write32 (ARM_SYSTIMER_CS, 1 << 3);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 #ifndef NDEBUG
 	//debug_click ();
@@ -358,30 +403,10 @@ void CTimer::InterruptHandler (void *pParam)
 	pThis->InterruptHandler ();
 }
 
-void CTimer::MsDelay (unsigned nMilliSeconds)
-{
-	if (nMilliSeconds > 0)
-	{
-		unsigned nCycles =  m_nMsDelay * nMilliSeconds;
-
-		DelayLoop (nCycles);
-	}
-}
-
-void CTimer::usDelay (unsigned nMicroSeconds)
-{
-	if (nMicroSeconds > 0)
-	{
-		unsigned nCycles =  m_nusDelay * nMicroSeconds;
-
-		DelayLoop (nCycles);
-	}
-}
-
 void CTimer::TuneMsDelay (void)
 {
 	unsigned nTicks = GetTicks ();
-	MsDelay (1000);
+	DelayLoop (m_nMsDelay * 1000);
 	nTicks = GetTicks () - nTicks;
 
 	unsigned nFactor = 100 * HZ / nTicks;
@@ -405,9 +430,9 @@ void CTimer::SimpleusDelay (unsigned nMicroSeconds)
 {
 	if (nMicroSeconds > 0)
 	{
-		unsigned nTicks = nMicroSeconds * (CLOCKHZ / 1000000);
+		unsigned nTicks = nMicroSeconds * (CLOCKHZ / 1000000) + 1;
 
-		DataMemBarrier ();
+		PeripheralEntry ();
 
 		unsigned nStartTicks = read32 (ARM_SYSTIMER_CLO);
 		while (read32 (ARM_SYSTIMER_CLO) - nStartTicks < nTicks)
@@ -415,7 +440,7 @@ void CTimer::SimpleusDelay (unsigned nMicroSeconds)
 			// do nothing
 		}
 
-		DataMemBarrier ();
+		PeripheralExit ();
 	}
 }
 

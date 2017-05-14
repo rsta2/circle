@@ -2,7 +2,7 @@
 // spinlock.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,10 +28,11 @@
 
 boolean CSpinLock::s_bEnabled = FALSE;
 
-CSpinLock::CSpinLock (boolean bDisableIRQ)
-:	m_bDisableIRQ (bDisableIRQ),
+CSpinLock::CSpinLock (unsigned nTargetLevel)
+:	m_nTargetLevel (nTargetLevel),
 	m_bLocked (FALSE)
 {
+	assert (nTargetLevel <= FIQ_LEVEL);
 }
 
 CSpinLock::~CSpinLock (void)
@@ -41,7 +42,7 @@ CSpinLock::~CSpinLock (void)
 
 void CSpinLock::Acquire (void)
 {
-	if (m_bDisableIRQ)
+	if (m_nTargetLevel >= IRQ_LEVEL)
 	{
 		asm volatile
 		(
@@ -50,6 +51,11 @@ void CSpinLock::Acquire (void)
 
 			: "=r" (m_nCPSR[CMultiCoreSupport::ThisCore ()])
 		);
+
+		if (m_nTargetLevel == FIQ_LEVEL)
+		{
+			DisableFIQs ();
+		}
 	}
 
 	if (s_bEnabled)
@@ -94,14 +100,11 @@ void CSpinLock::Release (void)
 		);
 	}
 
-	if (m_bDisableIRQ)
+	if (m_nTargetLevel >= IRQ_LEVEL)
 	{
 		asm volatile
 		(
-			"tst %0, #0x80\n"	// test IRQ disable bit
-			"bne 1f\n"
-			"cpsie i\n"
-			"1:\n"
+			"msr cpsr_c, %0\n"
 
 			: : "r" (m_nCPSR[CMultiCoreSupport::ThisCore ()])
 		);

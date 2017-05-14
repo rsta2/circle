@@ -2,7 +2,7 @@
 // usbrequest.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@ CUSBRequest::CUSBRequest (CUSBEndpoint *pEndpoint, void *pBuffer, u32 nBufLen, T
 	m_nResultLen (0),
 	m_pCompletionRoutine (0),
 	m_pCompletionParam (0),
-	m_pCompletionContext (0)
+	m_pCompletionContext (0),
+	m_bCompleteOnNAK (FALSE)
 {
 	assert (m_pEndpoint != 0);
 	assert (m_pBuffer != 0 || m_nBufLen == 0);
@@ -106,4 +107,14 @@ void CUSBRequest::CallCompletionRoutine (void)
 	assert (m_pCompletionRoutine != 0);
 	
 	(*m_pCompletionRoutine) (this, m_pCompletionParam, m_pCompletionContext);
+}
+
+void CUSBRequest::SetCompleteOnNAK (void)
+{
+	m_bCompleteOnNAK = TRUE;
+}
+
+boolean CUSBRequest::IsCompleteOnNAK (void) const
+{
+	return m_bCompleteOnNAK;
 }

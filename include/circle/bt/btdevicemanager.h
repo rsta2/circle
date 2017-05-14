@@ -2,7 +2,7 @@
 // btdevicemanager.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@
 enum TBTDeviceState
 {
 	BTDeviceStateResetPending,
+	BTDeviceStateWriteRAMPending,
+	BTDeviceStateLaunchRAMPending,
 	BTDeviceStateReadBDAddrPending,
 	BTDeviceStateWriteClassOfDevicePending,
 	BTDeviceStateWriteLocalNamePending,
@@ -62,6 +64,8 @@ private:
 	u8 m_LocalBDAddr[BT_BD_ADDR_SIZE];
 
 	u8 *m_pBuffer;
+
+	unsigned m_nFirmwareOffset;
 };
 
 #endif

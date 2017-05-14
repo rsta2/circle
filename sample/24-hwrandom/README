@@ -1,0 +1,5 @@
+README
+
+This sample demonstrates the build-in hardware random number generator of the Raspberry Pi. It continuously gets random numbers from the hardware generator and sets a pixel on the screen depending on the value of the random number.
+
+Because the generator returns equally distributed values the pixels set should be distributed equally on all over the screen. There should not be visible clusters of pixels. This is normally the case.

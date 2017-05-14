@@ -60,14 +60,14 @@ void CGPIOClock::Start (unsigned nDivI, unsigned nDivF, unsigned nMASH)
 
 	write32 (nCtlReg, read32 (nCtlReg) | ARM_CM_PASSWD | CLK_CTL_ENAB);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CGPIOClock::Stop (void)
 {
 	unsigned nCtlReg = ARM_CM_GP0CTL + (m_Clock * 8);
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (nCtlReg, ARM_CM_PASSWD | CLK_CTL_KILL);
 	while (read32 (nCtlReg) & CLK_CTL_BUSY)
@@ -75,5 +75,5 @@ void CGPIOClock::Stop (void)
 		// wait for clock to stop
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }

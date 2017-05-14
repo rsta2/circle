@@ -2,7 +2,7 @@
 // ntpdaemon.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,9 +28,8 @@
 
 static const char FromNTPDaemon[] = "ntpd";
 
-CNTPDaemon::CNTPDaemon (const char *pNTPServer, int nTimeZone, CNetSubSystem *pNetSubSystem)
+CNTPDaemon::CNTPDaemon (const char *pNTPServer, CNetSubSystem *pNetSubSystem)
 :	m_pNTPServer (pNTPServer),
-	m_nTimeZone (nTimeZone),
 	m_pNetSubSystem (pNetSubSystem)
 {
 	assert (m_pNTPServer != 0);
@@ -68,7 +67,6 @@ unsigned CNTPDaemon::UpdateTime (void)
 	}
 	
 	CNTPClient NTPClient (m_pNetSubSystem);
-	NTPClient.SetTimeZone (m_nTimeZone);
 	unsigned nTime = NTPClient.GetTime (NTPServerIP);
 	if (nTime == 0)
 	{
@@ -77,9 +75,14 @@ unsigned CNTPDaemon::UpdateTime (void)
 		return 300;
 	}
 
-	CTimer::Get ()->SetTime (nTime);
-
-	CLogger::Get ()->Write (FromNTPDaemon, LogNotice, "System time updated");
+	if (CTimer::Get ()->SetTime (nTime, FALSE))
+	{
+		CLogger::Get ()->Write (FromNTPDaemon, LogNotice, "System time updated");
+	}
+	else
+	{
+		CLogger::Get ()->Write (FromNTPDaemon, LogWarning, "Cannot update system time");
+	}
 
 	return 900;
 }

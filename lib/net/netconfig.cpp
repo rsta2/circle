@@ -2,7 +2,7 @@
 // netconfig.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <circle/net/netconfig.h>
 
 CNetConfig::CNetConfig (void)
+:	m_bUseDHCP (TRUE)
 {
 	Reset ();
 }
@@ -36,16 +37,27 @@ void CNetConfig::Reset (void)
 	m_NetMask.Set (NullAddress);
 	m_DefaultGateway.Set (NullAddress);
 	m_DNSServer.Set (NullAddress);
+
+	UpdateBroadcastAddress ();
+}
+
+void CNetConfig::SetDHCP (boolean bUsed)
+{
+	m_bUseDHCP = bUsed;
 }
 
 void CNetConfig::SetIPAddress (u32 nAddress)
 {
 	m_IPAddress.Set (nAddress);
+
+	UpdateBroadcastAddress ();
 }
 
 void CNetConfig::SetNetMask (u32 nNetMask)
 {
 	m_NetMask.Set (nNetMask);
+
+	UpdateBroadcastAddress ();
 }
 
 void CNetConfig::SetDefaultGateway (u32 nAddress)
@@ -61,11 +73,15 @@ void CNetConfig::SetDNSServer (u32 nAddress)
 void CNetConfig::SetIPAddress (const u8 *pAddress)
 {
 	m_IPAddress.Set (pAddress);
+
+	UpdateBroadcastAddress ();
 }
 
 void CNetConfig::SetNetMask (const u8 *pNetMask)
 {
 	m_NetMask.Set (pNetMask);
+
+	UpdateBroadcastAddress ();
 }
 
 void CNetConfig::SetDefaultGateway (const u8 *pAddress)
@@ -83,6 +99,11 @@ const CIPAddress *CNetConfig::GetIPAddress (void) const
 	return &m_IPAddress;
 }
 
+boolean CNetConfig::IsDHCPUsed (void) const
+{
+	return m_bUseDHCP;
+}
+
 const u8 *CNetConfig::GetNetMask (void) const
 {
 	return m_NetMask.Get ();
@@ -96,4 +117,20 @@ const CIPAddress *CNetConfig::GetDefaultGateway (void) const
 const CIPAddress *CNetConfig::GetDNSServer (void) const
 {
 	return &m_DNSServer;
+}
+
+const CIPAddress *CNetConfig::GetBroadcastAddress (void) const
+{
+	return &m_BroadcastAddress;
+}
+
+void CNetConfig::UpdateBroadcastAddress (void)
+{
+	u32 nIPAddress;
+	m_IPAddress.CopyTo ((u8 *) &nIPAddress);
+
+	u32 nNetMask;
+	m_NetMask.CopyTo ((u8 *) &nNetMask);
+
+	m_BroadcastAddress.Set (nIPAddress | ~nNetMask);
 }

@@ -2,7 +2,7 @@
 // keymap.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 //
 #include <circle/input/keymap.h>
 #include <circle/input/keyboardbehaviour.h>
+#include <circle/koptions.h>
 #include <circle/sysconfig.h>
 #include <circle/util.h>
 #include <assert.h>
@@ -84,17 +85,32 @@ const char *CKeyMap::s_KeyStrings[KeyMaxCode-KeySpace] =
 
 #define C(chr)		((u16) (u8) (chr))
 
-const u16 CKeyMap::s_DefaultMap[PHY_MAX_CODE+1][K_ALTTAB+1] =
+const u16 CKeyMap::s_DefaultMap[][PHY_MAX_CODE+1][K_ALTSHIFTTAB+1] =
 {
-#if defined (DEFAULT_KEYMAP_UK)
-	#include "keymap_uk.h"
-#elif defined (DEFAULT_KEYMAP_DE)
-	#include "keymap_de.h"
-#elif defined (DEFAULT_KEYMAP_ES)
-	#include "keymap_es.h"
-#else
-	{KeyNone}		// ...
-#endif
+	{
+		#include "keymap_de.h"
+	}, {
+		#include "keymap_es.h"
+	}, {
+		#include "keymap_fr.h"
+	}, {
+		#include "keymap_it.h"
+	}, {
+		#include "keymap_uk.h"
+	}, {
+		#include "keymap_us.h"
+	}
+};
+
+const char *CKeyMap::s_MapDirectory[] =		// same (alphabetical) order as in s_DefaultMap[]
+{
+	"DE",
+	"ES",
+	"FR",
+	"IT",
+	"UK",
+	"US",
+	0
 };
 
 CKeyMap::CKeyMap (void)
@@ -102,8 +118,22 @@ CKeyMap::CKeyMap (void)
 	m_bNumLock (TRUE),
 	m_bScrollLock (FALSE)
 {
-	assert (sizeof m_KeyMap == sizeof s_DefaultMap);
-	memcpy (m_KeyMap, s_DefaultMap, sizeof m_KeyMap);
+	const char *pLocale = CKernelOptions::Get ()->GetKeyMap ();
+	assert (pLocale != 0);
+
+	const void *pDefaultMap = LookupDefaultMap (pLocale);
+	if (pDefaultMap == 0)
+	{
+		pDefaultMap = LookupDefaultMap (DEFAULT_KEYMAP);
+		assert (pDefaultMap != 0);
+		if (pDefaultMap == 0)
+		{
+			pDefaultMap = s_DefaultMap[0];
+		}
+	}
+
+	assert (sizeof m_KeyMap == sizeof s_DefaultMap[0]);
+	memcpy (m_KeyMap, pDefaultMap, sizeof m_KeyMap);
 }
 
 CKeyMap::~CKeyMap (void)
@@ -112,7 +142,7 @@ CKeyMap::~CKeyMap (void)
 
 boolean CKeyMap::ClearTable (u8 nTable)
 {
-	if (nTable > K_ALTTAB)
+	if (nTable > K_ALTSHIFTTAB)
 	{
 		return FALSE;
 	}
@@ -127,7 +157,7 @@ boolean CKeyMap::ClearTable (u8 nTable)
 
 boolean CKeyMap::SetEntry (u8 nTable, u8 nPhyCode, u16 nValue)
 {
-	if (   nTable   > K_ALTTAB
+	if (   nTable   > K_ALTSHIFTTAB
 	    || nPhyCode == 0
 	    || nPhyCode > PHY_MAX_CODE
 	    || nValue   >= KeyMaxCode)
@@ -179,7 +209,14 @@ u16 CKeyMap::Translate (u8 nPhyCode, u8 nModifiers)
 	}
 	else if (nModifiers & KEY_ALTGR_MASK)
 	{
-		nTable = K_ALTTAB;
+		if (nModifiers & (KEY_LSHIFT_MASK | KEY_RSHIFT_MASK))
+		{
+			nTable = K_ALTSHIFTTAB;
+		}
+		else
+		{
+			nTable = K_ALTTAB;
+		}
 	}
 	else if (nModifiers & (KEY_LSHIFT_MASK | KEY_RSHIFT_MASK))
 	{
@@ -273,4 +310,18 @@ u8 CKeyMap::GetLEDStatus (void) const
 	}
 
 	return nResult;
+}
+
+const void *CKeyMap::LookupDefaultMap (const char *pLocale)
+{
+	for (unsigned nMap = 0; s_MapDirectory[nMap] != 0; nMap++)
+	{
+		assert (pLocale != 0);
+		if (strcmp (s_MapDirectory[nMap], pLocale) == 0)
+		{
+			return s_DefaultMap[nMap];
+		}
+	}
+
+	return 0;
 }

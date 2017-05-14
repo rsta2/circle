@@ -59,10 +59,10 @@ CSoftSerialDevice::~CSoftSerialDevice (void)
 boolean CSoftSerialDevice::Initialize (void)
 {
 	assert (!m_bInterruptOn);
+	m_bInterruptOn = TRUE;
 
 	m_RxDPin.ConnectInterrupt (InterruptStub, this);
 	m_RxDPin.EnableInterrupt (GPIOInterruptOnFallingEdge);
-	m_bInterruptOn = TRUE;
 	
 	return TRUE;
 }

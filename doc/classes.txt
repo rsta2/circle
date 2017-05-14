@@ -6,7 +6,9 @@ Base library
 * CBcmFrameBuffer: Frame buffer initialization, setting color palette for 8 bit depth.
 * CBcmMailBox: Simple GPU mailbox interface, currently used for the property interface.
 * CBcmPropertyTags: Get several information from the GPU side or control something on this side.
+* CBcmRandomNumberGenerator: Driver for the built-in hardware random number generator.
 * CCharGenerator: Gives pixel information for console font
+* CCPUThrottle: Manages CPU clock rate depending on user requirements and SoC temperature.
 * CDevice: Base class for all devices
 * CDeviceNameService: Devices can be registered by name and retrieved later by this name
 * CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
@@ -14,24 +16,32 @@ Base library
 * CGPIOClock: Using GPIO clocks, initialize, start and stop it.
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
 * CGPIOPin: Encapsulates a GPIO pin, can be read, write or inverted. Supports interrupts. Simple initialization.
+* CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
 * CI2CMaster: Driver for I2C master device.
 * CI2CSlave: Driver for I2C slave device.
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CKernelOptions: Providing kernel options from file cmdline.txt (see doc/cmdline.txt).
 * CLogger: Writing logging messages to a target device
+* CMachineInfo: Helper class to get different information about the running computer.
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
+* CNullDevice: Character device which ignores sent data and returns 0 bytes on read.
 * CPageTable: Encapsulates a page table to be used by MMU.
 * CPtrArray: Container class. Dynamic array of pointers.
 * CPtrList: Container class. List of pointers.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
 * CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
+* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
-* CSerialDevice: Writing characters to UART
+* CSerialDevice: Driver for PL011 UART0 at GPIO14/15, interrupt or polling mode
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
+* CSPIMaster: Driver for SPI0 master device. Synchronous polling operation.
+* CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.
 * CString: Simple string manipulation class, Format() method works like printf() (but has less formating options)
-* CTimer: Supports an uptime clock, kernel timers and a calibrated delay loop.
+* CTime: Holds, makes and breaks the time.
+* CTimer: Manages the system clock, supports kernel timers and a calibrated delay loop.
 * CTracer: Collects tracing events in a ring buffer for debugging and dumps them to the logger later.
+* CVirtualGPIOPin: Encapsulates a "virtual" GPIO pin controlled by the VideoCore (Output only).
 
 USB library
 
@@ -48,23 +58,29 @@ USB library
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
 * CUSBBluetoothDevice: Bluetooth HCI transport driver for USB Bluetooth BR/EDR dongles.
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
+* CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU.
 * CUSBConfigurationParser: Parses and validates an USB configuration descriptor.
 * CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
 * CUSBDeviceFactory: Creates the function objects of the different supported USB functions.
 * CUSBEndpoint: Encapsulates an endpoint of an USB device (supports control, bulk and interrupt EPs).
 * CUSBFunction: Encapsulates a function (represented by an interface descriptor) of an USB device.
-* CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse), boot protocol only
+* CUSBGamePadDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
+* CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse, gamepad)
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards
+* CUSBMIDIDevice: Driver for USB Audio Class MIDI devices (input only)
 * CUSBMouseDevice: Driver for USB mice
 * CUSBPrinterDevice: Simple communications driver for USB printers (back-channel is not used).
 * CUSBRequest: A request to an USB device (URB).
 * CUSBStandardHub: USB hub driver for LAN9512/9514 and external hubs (max. 8 ports)
+* CUSBString: Encapsulates a string descriptor, available on an USB device.
 
 Input library
 
 * CKeyboardBehaviour: Generic keyboard function
-* CKeyMap: Keyboard translation map (three selectable default maps at the moment)
+* CKeyMap: Keyboard translation map (six selectable default maps at the moment)
+* CMouseBehaviour: Generic mouse function, handles the mouse cursor
+* CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
 
 FS library
 
@@ -92,7 +108,7 @@ Net library
 * CDHCPClient: DHCP client task. Gets and maintains an IP address lease for the network device.
 * CDNSClient: Resolves hostnames to IP addresses.
 * CHTTPDaemon: Simple HTTP server class.
-* CICMPHandler: ICMP echo (ping) responder.
+* CICMPHandler: ICMP error message handler and echo (ping) responder.
 * CIPAddress: Encapsulates an IP address.
 * CLinkLayer: Encapsulates the Ethernet MAC layer.
 * CNetConfig: Encapsulates the network configuration.
@@ -106,9 +122,11 @@ Net library
 * CNTPDaemon: Background task which uses CNTPClient to update the system time every 15 minutes.
 * CRetransmissionQueue: The TCP retransmission queue.
 * CRetransmissionTimeoutCalculator: Calculates the TCP retransmission timeout according to RFC 6298.
+* CRouteCache: Caches special routes, received via ICMP redirect requests.
 * CSocket: Network application interface (socket) class.
 * CTCPConnection: Encapsulates a TCP connection. Derived from CNetConnection.
 * CTCPRejector: Rejects TCP segments which do not address an open connection. Derived from CNetConnection.
+* CTFTPDaemon: TFTP server task.
 * CTransportLayer: Encapsulates the TCP/UDP transport layer.
 * CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.
 
@@ -121,3 +139,4 @@ Bluetooth library
 * CBTQueue: Encapsulates a queue used for incoming and outgoing command, event and data packets.
 * CBTSubSystem: The main Bluetooth subsystem class. Create an instance of it in the CKernel class.
 * CBTTask: Bluetooth background task. Processes the different Bluetooth layers.
+* CBTUARTTransport: Bluetooth UART HCI transport driver for the internal BT device of the Raspberry Pi 3.

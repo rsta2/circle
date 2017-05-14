@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,9 +36,8 @@ boolean CKernel::Initialize (void)
 
 TShutdownMode CKernel::Run (void)
 {
-	// channels are swapped on model B+ 
-	CGPIOPin AudioLeft (40, GPIOModeOutput);
-	CGPIOPin AudioRight (45, GPIOModeOutput);
+	CGPIOPin AudioLeft (GPIOPinAudioLeft, GPIOModeOutput);
+	CGPIOPin AudioRight (GPIOPinAudioRight, GPIOModeOutput);
 	
 	// flash the Act LED 10 times and click on audio (3.5mm headphone jack)
 	for (unsigned i = 1; i <= 10; i++)

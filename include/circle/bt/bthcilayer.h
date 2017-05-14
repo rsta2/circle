@@ -2,8 +2,8 @@
 // bthcilayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -20,7 +20,9 @@
 #ifndef _circle_bt_bthcilayer_h
 #define _circle_bt_bthcilayer_h
 
+#include <circle/bt/bttransportlayer.h>
 #include <circle/usb/usbbluetooth.h>
+#include <circle/bt/btuarttransport.h>
 #include <circle/bt/bluetooth.h>
 #include <circle/bt/btdevicemanager.h>
 #include <circle/bt/btqueue.h>
@@ -33,6 +35,8 @@ public:
 	~CBTHCILayer (void);
 
 	boolean Initialize (void);
+
+	TBTTransportType GetTransportType (void) const;
 
 	void Process (void);
 
@@ -50,7 +54,9 @@ private:
 	static void EventStub (const void *pBuffer, unsigned nLength);
 
 private:
-	CUSBBluetoothDevice *m_pHCITransport;
+	CUSBBluetoothDevice *m_pHCITransportUSB;
+	CBTUARTTransport *m_pHCITransportUART;
+
 	CBTDeviceManager m_DeviceManager;
 
 	CBTQueue m_CommandQueue;

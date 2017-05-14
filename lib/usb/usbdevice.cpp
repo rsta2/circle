@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,9 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbdevicefactory.h>
+#include <circle/usb/usbstring.h>
 #include <circle/util.h>
+#include <circle/sysconfig.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -83,6 +85,15 @@ CUSBDevice::~CUSBDevice (void)
 
 boolean CUSBDevice::Initialize (void)
 {
+#ifdef REALTIME
+	if (m_Speed != USBSpeedHigh)
+	{
+		LogWrite (LogWarning, "Device speed is not allowed with REALTIME");
+
+		return FALSE;
+	}
+#endif
+
 	assert (m_pDeviceDesc == 0);
 	m_pDeviceDesc = new TUSBDeviceDescriptor;
 	assert (m_pDeviceDesc != 0);
@@ -155,8 +166,17 @@ boolean CUSBDevice::Initialize (void)
 	m_pConfigDesc = new TUSBConfigurationDescriptor;
 	assert (m_pConfigDesc != 0);
 
+	u8 ucConfigIndex = DESCRIPTOR_INDEX_DEFAULT;
+
+	// special support for QEMU Ethernet device
+	if (   m_pDeviceDesc->idVendor  == 0x0525	// NetChip
+	    && m_pDeviceDesc->idProduct == 0xA4A2)	// Ethernet/RNDIS Gadget
+	{
+		ucConfigIndex++;
+	}
+
 	if (m_pHost->GetDescriptor (m_pEndpoint0,
-				    DESCRIPTOR_CONFIGURATION, DESCRIPTOR_INDEX_DEFAULT,
+				    DESCRIPTOR_CONFIGURATION, ucConfigIndex,
 				    m_pConfigDesc, sizeof *m_pConfigDesc)
 	    != (int) sizeof *m_pConfigDesc)
 	{
@@ -188,7 +208,7 @@ boolean CUSBDevice::Initialize (void)
 	assert (m_pConfigDesc != 0);
 
 	if (m_pHost->GetDescriptor (m_pEndpoint0,
-				    DESCRIPTOR_CONFIGURATION, DESCRIPTOR_INDEX_DEFAULT,
+				    DESCRIPTOR_CONFIGURATION, ucConfigIndex,
 				    m_pConfigDesc, nTotalLength)
 	    != (int) nTotalLength)
 	{
@@ -219,6 +239,18 @@ boolean CUSBDevice::Initialize (void)
 	assert (pNames != 0);
 	LogWrite (LogNotice, "Device %s found", (const char *) *pNames);
 	delete pNames;
+
+#if 0
+	if (   m_pDeviceDesc->iProduct != 0
+	    && m_pDeviceDesc->iProduct != 0xFF)
+	{
+		CUSBString Product (this);
+		if (Product.GetFromDescriptor (m_pDeviceDesc->iProduct, Product.GetLanguageID ()))
+		{
+			LogWrite (LogNotice, "Product: %s", Product.Get ());
+		}
+	}
+#endif
 
 	unsigned nFunction = 0;
 	u8 ucInterfaceNumber = 0;
@@ -339,7 +371,7 @@ boolean CUSBDevice::Configure (void)
 		{
 			if (!m_pFunction[nFunction]->Configure ())
 			{
-				LogWrite (LogError, "Cannot configure device");
+				//LogWrite (LogError, "Cannot configure device");
 
 				delete m_pFunction[nFunction];
 				m_pFunction[nFunction] = 0;

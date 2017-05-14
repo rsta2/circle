@@ -81,3 +81,9 @@ $RECYCLE.BIN/
 *.lst
 *.map
 Config.mk
+
+# Directories
+# ----------------------------------------------
+doc/html/
+test/
+tmp/

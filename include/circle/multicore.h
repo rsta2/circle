@@ -2,7 +2,7 @@
 // multicore.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ class CMultiCoreSupport
 {
 public:
 	CMultiCoreSupport (CMemorySystem *pMemorySystem);
-	~CMultiCoreSupport (void);
+	virtual ~CMultiCoreSupport (void);
 
 	boolean Initialize (void);
 
@@ -50,7 +50,13 @@ public:
 
 	static boolean LocalInterruptHandler (void);	// returns TRUE if local interrupt was handled
 
-	static unsigned ThisCore (void);		// returns number of current core (0..CORES-1)
+	static unsigned ThisCore (void)			// returns number of current core (0..CORES-1)
+	{
+		u32 nMPIDR;
+		asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (nMPIDR));
+
+		return nMPIDR & (CORES-1);
+	}
 
 	static void EntrySecondary (void);
 

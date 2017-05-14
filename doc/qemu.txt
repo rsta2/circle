@@ -1,0 +1,113 @@
+QEMU
+
+A number of Circle samples can run inside the QEMU processor emulator. This
+includes MMU, USB and TCP/IP network support. The following features are
+currently not supported or are not stable with Circle:
+
+* Multi-core emulation (-smp)
+* GPIO low level peripherals (e.g. Act LED, I2C, SPI, PWM)
+* PWM sound
+* Kernel options
+* Mouse cursor
+* HW random number generator
+
+There is a special fork of QEMU by Andrew Baumann which supports the Raspberry
+Pi 2 and which should be used at the moment. The official QEMU version has
+currently (in 03/2017) no support of the BCM2835 system timer peripheral and
+does not work with Circle because of this. Please note that there is another
+problem in the USB CDC Ethernet/RNDIS driver of Andrew Baumann's fork. This has
+been patched in a third repository.
+
+* http://git.qemu-project.org		Official QEMU repository
+* https://github.com/0xabu/qemu		Fork of Andrew Baumann for Raspberry Pi 2
+* https://github.com/rsta2/qemu		Fork with patches for Circle
+
+Most of my Circle tests have been done with the version from the third
+repository on a 64-bit Linux host. Other host systems have not been tested with
+Circle by myself so far. There is another QEMU repository which has better
+support for Windows host systems, which is synchronized with the official QEMU
+repository and which has the Circle patches too:
+
+* https://github.com/flypie/flypie-pi-qemu	by flypie@GitHub
+
+To get and build the QEMU source code for Circle enter the following commands:
+
+	git clone https://github.com/rsta2/qemu.git qemu
+	cd qemu
+	git submodule update --init dtc pixman
+
+	mkdir build
+	cd build
+	../configure --target-list=arm-softmmu
+	make
+
+When you have build a Circle sample (e.g. sample/17-fractal) for the Raspberry
+Pi 2, you can run it in QEMU as follows:
+
+	cd arm-softmmu
+	./qemu-system-arm -M raspi2 -bios /path_to_circle/sample/17-fractal/kernel7.img
+
+These options enable specific features of QEMU:
+
+-global bcm2835-fb.xres=1024 -global bcm2835-fb.yres=768 (set screen resolution)
+-serial stdio		(write serial output to stdout)
+-d guest_errors,unimp	(write unimplemented feature calls to stdout)
+-sd filename		(enable SD card access to the disk image filename)
+-usbdevice keyboard	(enable USB keyboard support)
+-usbdevice mouse	(enable USB mouse support, but mouse cursor not working)
+-usbdevice disk:filename (enable USB mass storage device access to disk image)
+
+
+USB
+
+If you use the -usbdevice option, you may notice a USB freeze inside a Circle
+application after some time. This may hang the whole application. This is caused
+by an issue in the BCM2835 USB driver in QEMU. As a workaround you can define
+USE_QEMU_USB_FIX in include/circle/sysconfig.h before building Circle. Do not
+use this, if you build Circle images, which will run on a real Raspberry Pi.
+
+
+NETWORKING
+
+Setting up QEMU for networking may be not that easy. The following
+configurations have been tested:
+
+With sample/21-webserver:
+
+	qemu-system-arm -M raspi2 -bios kernel7.img -usbdevice net \
+			-net user,hostfwd=tcp::8080-:80
+
+Open http://localhost:8080 in your web browser on your host system! Port 8080 on
+the host will be forwarded to port 80 on the guest system. Please note that the
+very first response may be delayed by up to 20 seconds because of an ARP
+problem.
+
+With sample/18-ntptime:
+
+	qemu-system-arm -M raspi2 -bios kernel7.img -usbdevice net \
+			-net tap,ifname=tap0,script=no,downscript=no
+
+This command has to be run as root (sudo). QEMU creates an additional networking
+device "tap0" which can be used as described in:
+
+	http://opensourceforu.com/2011/05/quick-quide-to-qemu-setup/
+
+
+DEBUG
+
+Circle applications running in QEMU can be debugged using the GNU debugger (GDB)
+with ARM support. You have to add the options -s (enable GDB support) and -S
+(wait for GDB connect) to the QEMU command line to do this. Inside GDB use the
+following commands:
+
+	file kernel7.elf
+	target remote localhost:1234
+	cont
+
+
+LINKS
+
+Have a look at these URLs for further information:
+
+* http://www.qemu-project.org/documentation/
+* https://github.com/0xabu/qemu/wiki/

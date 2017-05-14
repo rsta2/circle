@@ -31,4 +31,5 @@ The listed special keys return the following sequences in cooked mode:
 \E = Escape (\x1b)
 \nnn = Octal code
 
-The default keyboard map can be selected in include/circle/sysconfig.h before build.
+The keyboard map can be selected in include/circle/sysconfig.h before build or
+using the cmdline.txt option "keymap=".

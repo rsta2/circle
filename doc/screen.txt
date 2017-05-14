@@ -17,6 +17,7 @@ ESCAPE SEQUENCES
 ^I		Move to next hardware tab
 \E[?25h		Normal cursor visible
 \E[?25l		Cursor invisible
+\E[%d;%dr	Set scroll region from row %1 to row %2 (starting at 1)
 
 
 ^X = Control character

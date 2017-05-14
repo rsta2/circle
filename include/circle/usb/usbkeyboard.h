@@ -2,7 +2,7 @@
 // usbkeyboard.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,11 +17,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbkeyboard_h
-#define _usbkeyboard_h
+#ifndef _circle_usb_usbkeyboard_h
+#define _circle_usb_usbkeyboard_h
 
 #include <circle/usb/usbhiddevice.h>
 #include <circle/input/keyboardbehaviour.h>
+#include <circle/usb/usbhid.h>
 #include <circle/types.h>
 
 #define USBKEYB_REPORT_SIZE	8
@@ -43,8 +44,16 @@ public:
 	void RegisterSelectConsoleHandler (TSelectConsoleHandler *pSelectConsoleHandler);
 	void RegisterShutdownHandler (TShutdownHandler *pShutdownHandler);
 
+	// easy method to update LEDs in cooked mode instead of calling GetLEDStatus() and SetLEDs()
+	void UpdateLEDs (void);
+
+	u8 GetLEDStatus (void) const;	// returns USB LED status to be handed-over to SetLEDs()
+
 	// raw mode (if this handler is registered the others are ignored)
 	void RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw);
+
+	// works in cooked and raw mode
+	boolean SetLEDs (u8 ucStatus);		// must not be called in interrupt context
 
 private:
 	void ReportHandler (const u8 *pReport);
@@ -57,6 +66,8 @@ private:
 	TKeyStatusHandlerRaw *m_pKeyStatusHandlerRaw;
 
 	u8 m_LastReport[USBKEYB_REPORT_SIZE];
+
+	u8 m_ucLastLEDStatus;
 
 	static unsigned s_nDeviceNumber;
 };

@@ -2,8 +2,10 @@
 // string.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+//
+// ftoa() inspired by Arjan van Vught <info@raspberrypi-dmx.nl>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -22,6 +24,9 @@
 
 #define FORMAT_RESERVE		64	// additional bytes to allocate
 #define MAX_NUMBER_LEN		11	// 32 bit octal number
+
+#define MAX_PRECISION		9	// floor (log10 (ULONG_MAX))
+#define MAX_FLOAT_LEN		(1+MAX_NUMBER_LEN+1+MAX_PRECISION)
 
 CString::CString (void)
 :	m_pBuffer (0),
@@ -180,6 +185,20 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				pFormat++;
 			}
 
+			unsigned nPrecision = 6;
+			if (*pFormat == '.')
+			{
+				pFormat++;
+
+				nPrecision = 0;
+				while ('0' <= *pFormat && *pFormat <= '9')
+				{
+					nPrecision = nPrecision * 10 + (*pFormat - '0');
+
+					pFormat++;
+				}
+			}
+
 			boolean bLong = FALSE;
 			if (*pFormat == 'l')
 			{
@@ -193,9 +212,10 @@ void CString::FormatV (const char *pFormat, va_list Args)
 			unsigned long ulArg;
 			size_t nLen;
 			unsigned nBase;
-			char NumBuf[MAX_NUMBER_LEN+1];
+			char NumBuf[MAX_FLOAT_LEN+1];
 			boolean bMinus = FALSE;
 			long lArg;
+			double fArg;
 
 			switch (*pFormat)
 			{
@@ -256,6 +276,28 @@ void CString::FormatV (const char *pFormat, va_list Args)
 					if (bMinus)
 					{
 						PutChar ('-');
+					}
+					PutString (NumBuf);
+				}
+				break;
+
+			case 'f':
+				fArg = va_arg (Args, double);
+				ftoa (NumBuf, fArg, nPrecision);
+				nLen = strlen (NumBuf);
+				if (bLeft)
+				{
+					PutString (NumBuf);
+					if (nWidth > nLen)
+					{
+						PutChar (' ', nWidth-nLen);
+					}
+				}
+				else
+				{
+					if (nWidth > nLen)
+					{
+						PutChar (' ', nWidth-nLen);
 					}
 					PutString (NumBuf);
 				}
@@ -424,5 +466,62 @@ char *CString::ntoa (char *pDest, unsigned long ulNumber, unsigned nBase, boolea
 
 	*p = '\0';
 
+	return pDest;
+}
+
+char *CString::ftoa (char *pDest, double fNumber, unsigned nPrecision)
+{
+	char *p = pDest;
+
+	if (fNumber < 0)
+	{
+		*p++ = '-';
+
+		fNumber = -fNumber;
+	}
+
+	if (fNumber > (unsigned long) -1)
+	{
+		strcpy (p, "overflow");
+
+		return pDest;
+	}
+
+	unsigned long iPart = (unsigned long) fNumber;
+	ntoa (p, iPart, 10, FALSE);
+
+	if (nPrecision == 0)
+	{
+		return pDest;
+	}
+
+	p += strlen (p);
+	*p++ = '.';
+
+	if (nPrecision > MAX_PRECISION)
+	{
+		nPrecision = MAX_PRECISION;
+	}
+
+	unsigned long nPrecPow10 = 10;
+	for (unsigned i = 2; i <= nPrecision; i++)
+	{
+		nPrecPow10 *= 10;
+	}
+
+	fNumber -= (double) iPart;
+	fNumber *= (double) nPrecPow10;
+	
+	char Buffer[MAX_PRECISION+1];
+	ntoa (Buffer, (unsigned long) fNumber, 10, FALSE);
+
+	nPrecision -= strlen (Buffer);
+	while (nPrecision--)
+	{
+		*p++ = '0';
+	}
+
+	strcpy (p, Buffer);
+	
 	return pDest;
 }

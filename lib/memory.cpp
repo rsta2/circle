@@ -2,7 +2,7 @@
 // memory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -224,6 +224,12 @@ void CMemorySystem::EnableMMU (void)
 #else
 	InvalidateDataCacheL1Only ();
 #endif
+
+	// required if MMU was previously enabled and not properly reset
+	InvalidateInstructionCache ();
+	FlushBranchTargetCache ();
+	asm volatile ("mcr p15, 0, %0, c8, c7,  0" : : "r" (0));	// invalidate unified TLB
+	DataSyncBarrier ();
 	FlushPrefetchBuffer ();
 
 	// enable MMU

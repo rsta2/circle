@@ -1,0 +1,23 @@
+README
+
+This sample calculates a fractal image on each CPU core from a Mandelbrot set
+and displays it to put some load onto the CPU. It may be build for single- or
+multi-core operation.
+
+A CPU temperature chart will be displayed at the bottom of the screen. The chart
+is updated every two seconds. A horizontal white line is drawn every 20 degrees
+Celsius and a red line for the maximum allowed temperature of 85 degrees
+Celsius.
+
+Before building you should set the DEPTH define in include/circle/screen.h to 16
+to increase the number of available colors. If you want to run this sample with
+multiple cores on the Raspberry Pi 2/3 you have to define ARM_ALLOW_MULTI_CORE
+in include/circle/sysconfig.h.
+
+The behaviour of the sample can be influenced by two options which may be
+defined in the file cmdline.txt:
+
+fast=true	Set maximum CPU speed (default is low speed on Raspberry Pi 2/3)
+
+socmaxtemp=60	Set maximum temperature of the SoC (the main chip) to be enforced
+		in degrees Celsius (range 40 to 78, default 60)

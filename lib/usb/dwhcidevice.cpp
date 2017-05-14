@@ -7,7 +7,7 @@
 //	no dynamic attachments
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <circle/bcm2835.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
+#include <circle/sysconfig.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -62,7 +63,7 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_nChannels (0),
 	m_nChannelAllocated (0),
 	m_nWaitBlockAllocated (0),
-	m_WaitBlockSpinLock (FALSE),
+	m_WaitBlockSpinLock (TASK_LEVEL),
 	m_RootPort (this)
 {
 	assert (m_pInterruptSystem != 0);
@@ -87,7 +88,7 @@ CDWHCIDevice::~CDWHCIDevice (void)
 
 boolean CDWHCIDevice::Initialize (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (m_pInterruptSystem != 0);
 	assert (m_pTimer != 0);
@@ -143,14 +144,14 @@ boolean CDWHCIDevice::Initialize (void)
 		return TRUE;
 	}
 	
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return TRUE;
 }
 
 boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (pURB != 0);
 
@@ -205,14 +206,14 @@ boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB)
 		}
 	}
 	
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return TRUE;
 }
 
 boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (pURB != 0);
 	assert (   pURB->GetEndpoint ()->GetType () == EndpointTypeBulk
@@ -223,7 +224,7 @@ boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB)
 	
 	boolean bOK = TransferStageAsync (pURB, pURB->GetEndpoint ()->IsDirectionIn (), FALSE);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	return bOK;
 }
@@ -702,7 +703,6 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 	DMAAddress.Write ();
 
 	CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
-	DataMemBarrier ();
 
 	// set split control
 	CDWHCIRegister SplitControl (DWHCI_HOST_CHAN_SPLIT_CTRL (nChannel), 0);
@@ -757,6 +757,7 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 	Character.And (~DWHCI_HOST_CHAN_CHARACTER_EP_NUMBER__MASK);
 	Character.Or (pStageData->GetEndpointNumber () << DWHCI_HOST_CHAN_CHARACTER_EP_NUMBER__SHIFT);
 
+#ifndef USE_QEMU_USB_FIX
 	CDWHCIFrameScheduler *pFrameScheduler = pStageData->GetFrameScheduler ();
 	if (pFrameScheduler != 0)
 	{
@@ -771,6 +772,7 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 			Character.And (~DWHCI_HOST_CHAN_CHARACTER_PER_ODD_FRAME);
 		}
 	}
+#endif
 
 	CDWHCIRegister ChanInterruptMask (DWHCI_HOST_CHAN_INT_MASK(nChannel));
 	ChanInterruptMask.Set (pStageData->GetStatusMask ());
@@ -796,7 +798,6 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 	case StageSubStateWaitForTransactionComplete: {
 		CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
-		DataMemBarrier ();
 
 		CDWHCIRegister TransferSize (DWHCI_HOST_CHAN_XFER_SIZ (nChannel));
 		TransferSize.Read ();
@@ -997,7 +998,7 @@ void CDWHCIDevice::InterruptHandler (void)
 	//debug_click ();
 #endif
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT);
 	IntStatus.Read ();
@@ -1041,7 +1042,7 @@ void CDWHCIDevice::InterruptHandler (void)
 #endif
 	IntStatus.Write ();
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CDWHCIDevice::InterruptStub (void *pParam)
@@ -1054,7 +1055,7 @@ void CDWHCIDevice::InterruptStub (void *pParam)
 
 void CDWHCIDevice::TimerHandler (CDWHCITransferStageData *pStageData)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	assert (pStageData != 0);
 	assert (pStageData->GetState () == StageStatePeriodicDelay);
@@ -1073,7 +1074,7 @@ void CDWHCIDevice::TimerHandler (CDWHCITransferStageData *pStageData)
 
 	StartTransaction (pStageData);
 
-	DataMemBarrier ();
+	PeripheralExit ();
 }
 
 void CDWHCIDevice::TimerStub (unsigned /* hTimer */, void *pParam, void *pContext)

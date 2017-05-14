@@ -2,7 +2,7 @@
 // task.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,21 +52,6 @@ CTask::~CTask (void)
 void CTask::Run (void)		// dummy method which is never called
 {
 	assert (0);
-}
-
-TTaskState CTask::GetState (void) const
-{
-	return m_State;
-}
-
-void CTask::SetState (TTaskState State)
-{
-	m_State = State;
-}
-
-TTaskRegisters *CTask::GetRegs (void)
-{
-	return &m_Regs;
 }
 
 void CTask::InitializeRegs (void)

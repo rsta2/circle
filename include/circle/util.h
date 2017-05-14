@@ -2,7 +2,7 @@
 // util.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ extern "C" {
 void *memset (void *pBuffer, int nValue, size_t nLength);
 
 void *memcpy (void *pDest, const void *pSrc, size_t nLength);
+#define memcpyblk memcpy
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength);
 
@@ -45,6 +46,8 @@ char *strcat (char *pDest, const char *pSrc);
 char *strchr (const char *pString, int chChar);
 
 char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr);
+
+unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase);
 
 int char2int (char chValue);			// with sign extension
 
@@ -65,9 +68,6 @@ u32 bswap32 (u32 ulValue);
 
 #define be2le16		bswap16
 #define be2le32		bswap32
-
-// util_fast
-void *memcpyblk (void *pDest, const void *pSrc, size_t nLength);	// nLength must be multiple of 16
 
 #ifdef __cplusplus
 }

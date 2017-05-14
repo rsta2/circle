@@ -2,7 +2,7 @@
 // dwhcixferstagedata.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -160,6 +160,15 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 	       | DWHCI_HOST_CHAN_INT_NAK
 	       | DWHCI_HOST_CHAN_INT_NYET))
 	{
+		if (   (nStatus & DWHCI_HOST_CHAN_INT_NAK)
+		    && m_pURB->IsCompleteOnNAK ())
+		{
+			assert (m_pEndpoint->GetType () == EndpointTypeBulk);
+			assert (m_bIn);
+
+			m_nPackets = 0;		// no data is available, complete transfer
+		}
+
 		return;
 	}
 

@@ -2,7 +2,7 @@
 // devicenameservice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ CDeviceNameService *CDeviceNameService::s_This = 0;
 
 CDeviceNameService::CDeviceNameService (void)
 :	m_pList (0),
-	m_SpinLock (FALSE)
+	m_SpinLock (TASK_LEVEL)
 {
 	assert (s_This == 0);
 	s_This = this;
