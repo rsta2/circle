@@ -2,7 +2,7 @@
 // httpdaemon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 #include <circle/net/netsubsystem.h>
 #include <circle/net/socket.h>
 #include <circle/types.h>
+
+#define HTTP_PORT		80
 
 #define HTTP_MAX_REQUEST_LINE	2048
 #define HTTP_MAX_URI		HTTP_MAX_REQUEST_LINE
@@ -57,7 +59,8 @@ class CHTTPDaemon : public CTask
 public:
 	CHTTPDaemon (CNetSubSystem *pNetSubSystem,
 		     CSocket	   *pSocket	    = 0,	// is 0 for 1st created instance (listener)
-		     unsigned	    nMaxContentSize = 0);	// buffer size for worker
+		     unsigned	    nMaxContentSize = 0,	// buffer size for worker
+		     u16	    nPort	    = HTTP_PORT);
 	~CHTTPDaemon (void);
 
 	void Run (void);
@@ -85,6 +88,7 @@ private:
 	CNetSubSystem *m_pNetSubSystem;
 	CSocket	      *m_pSocket;
 	unsigned       m_nMaxContentSize;
+	u16	       m_nPort;
 	
 	u8 *m_pContentBuffer;
 

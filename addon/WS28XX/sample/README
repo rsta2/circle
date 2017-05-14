@@ -1,0 +1,7 @@
+README
+
+This sample program realizes some light effects on a WS2801, WS2812 or WS2812B controlled LED stripe connected to the SPI0 master. You have to configure the program in the kernel.cpp file to meet your configuration before build.
+
+On the Raspberry Pi 2/3 you should disable the #define ARM_ALLOW_MULTI_CORE in include/circle/sysconfig.h if you do not use multiple CPU cores. This is done by default now.
+
+The WS28XX library and sample was initially developed by Arjan van Vught.

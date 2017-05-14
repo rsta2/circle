@@ -2,7 +2,7 @@
 // debug.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@ static const char FromDebug[] = "debug";
 
 #ifdef DEBUG_CLICK
 
-static CGPIOPin AudioLeft (40, GPIOModeOutput);
-static CGPIOPin AudioRight (45, GPIOModeOutput);
+static CGPIOPin AudioLeft (GPIOPinAudioLeft, GPIOModeOutput);
+static CGPIOPin AudioRight (GPIOPinAudioRight, GPIOModeOutput);
 
 #endif
 
@@ -89,10 +89,17 @@ void debug_stacktrace (const u32 *pStackPtr, const char *pSource)
 
 #ifdef DEBUG_CLICK
 
-void debug_click (void)
+void debug_click (unsigned nMask)
 {
-	AudioLeft.Invert ();
-	AudioRight.Invert ();
+	if (nMask & DEBUG_CLICK_LEFT)
+	{
+		AudioLeft.Invert ();
+	}
+
+	if (nMask & DEBUG_CLICK_RIGHT)
+	{
+		AudioRight.Invert ();
+	}
 }
 
 #endif

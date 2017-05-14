@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,9 +24,14 @@ endif
 
 -include $(CIRCLEHOME)/Config.mk
 
+<<<<<<< HEAD
 RASPPI	?= 2
 PREFIX	?= arm-none-eabi-
 ARMGCC = /mingw32/armgcc
+=======
+RASPPI	?= 1
+PREFIX	?= arm-none-eabi-
+>>>>>>> d55b1713911fffee7d7b8bccda987cd8a7aaf917
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
@@ -38,15 +43,31 @@ AR	= $(PREFIX)ar
 
 
 ifeq ($(strip $(RASPPI)),1)
-ARCH	?= -march=armv6j -mtune=arm1176jzf-s -mfloat-abi=hard 
+ARCH	?= -march=armv6k -mtune=arm1176jzf-s -mfloat-abi=hard
+TARGET	?= kernel
+else ifeq ($(strip $(RASPPI)),2)
+ARCH	?= -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard
+TARGET	?= kernel7
 else
-ARCH	?= -march=armv7-a -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+ARCH	?= -march=armv8-a -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard
+TARGET	?= kernel8-32
 endif
 
+<<<<<<< HEAD
 AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include
 CFLAGS	+= $(ARCH) -Wall -Wno-psabi -fsigned-char -fno-builtin -nostdinc -nostdlib \
 	   -D__circle__ -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(ARMGCC)/arm-none-eabi/include -I $(ARMGCC)/lib/gcc/arm-none-eabi/$(GCCVER)/include  -O -g #-DNDEBUG
 CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
+=======
+OPTIMIZE ?= -O2
+
+INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
+
+AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) $(INCLUDE)
+CFLAGS	+= $(ARCH) -Wall -fsigned-char -fno-builtin -nostdinc -nostdlib \
+	   -D__circle__ -DRASPPI=$(RASPPI) $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
+CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++14
+>>>>>>> d55b1713911fffee7d7b8bccda987cd8a7aaf917
 
 %.o: %.S
 	$(AS) $(AFLAGS) -c -o $@ $<
@@ -56,6 +77,12 @@ CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
 
 %.o: %.cpp
 	$(CPP) $(CPPFLAGS) -c -o $@ $<
+
+$(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.ld
+	$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(LIBS)
+	$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
+	$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
+	wc -c $(TARGET).img
 
 clean:
 	rm -f $(OBJS) *.o *.a *.elf *.lst *.img *.cir *.map *~ $(EXTRACLEAN) 

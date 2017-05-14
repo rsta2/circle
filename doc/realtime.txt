@@ -1,0 +1,22 @@
+REALTIME
+
+Circle is not a real-time OS. That means different simultaneous operations may
+interfere in respect of its timing behaviour.
+
+Nevertheless Circle can be used to implement applications which have specific
+requirements regarding the interrupt (IRQ) latency. So it is known that Circle
+has been used to implement a solution to control light equipment using DMX512.
+This application requires an interrupt latency of some microseconds which is
+met by Circle.
+
+If you want to implement real-time applications using Circle you should pay
+attention to the following things:
+
+* You must not use USB low- or full-speed devices (e.g. USB keyboard, mouse).
+Because of the way their support is implemented, the interrupt latency is raised
+very much when such a device is used. To ensure that those devices will be
+ignored if they are occasionally attached you should enable the #define REALTIME
+in include/circle/sysconfig.h.
+
+* Writes to the screen or serial device may noticeable raise the interrupt
+latency too. If REALTIME is defined this influence is relatively small.

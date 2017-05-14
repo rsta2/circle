@@ -2,7 +2,7 @@
 // smsc951x.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _smsc951x_h
-#define _smsc951x_h
+#ifndef _circle_usb_smsc951x_h
+#define _circle_usb_smsc951x_h
 
 #include <circle/usb/netdevice.h>
 #include <circle/usb/usbendpoint.h>
@@ -57,8 +57,6 @@ private:
 	CMACAddress m_MACAddress;
 
 	u8 *m_pTxBuffer;
-
-	static unsigned s_nDeviceNumber;
 };
 
 #endif

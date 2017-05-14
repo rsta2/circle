@@ -2,7 +2,7 @@
 // usbhiddevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,9 +32,11 @@ CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize)
 	m_pURB (0),
 	m_pReportBuffer (0)
 {
-	assert (m_nReportSize > 0);
-	m_pReportBuffer = new u8[m_nReportSize];
-	assert (m_pReportBuffer != 0);
+	if (m_nReportSize > 0)
+	{
+		m_pReportBuffer = new u8[m_nReportSize];
+		assert (m_pReportBuffer != 0);
+	}
 }
 
 CUSBHIDDevice::~CUSBHIDDevice (void)
@@ -46,7 +48,7 @@ CUSBHIDDevice::~CUSBHIDDevice (void)
 	m_pReportEndpoint = 0;
 }
 
-boolean CUSBHIDDevice::Configure (void)
+boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 {
 	if (GetNumEndpoints () < 1)
 	{
@@ -54,12 +56,18 @@ boolean CUSBHIDDevice::Configure (void)
 
 		return FALSE;
 	}
-	
-	TUSBEndpointDescriptor *pEndpointDesc =
-		(TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT);
-	if (   pEndpointDesc == 0
-	    || (pEndpointDesc->bEndpointAddress & 0x80) != 0x80		// Input EP
-	    || (pEndpointDesc->bmAttributes     & 0x3F)	!= 0x03)	// Interrupt EP
+
+	const TUSBEndpointDescriptor *pEndpointDesc;
+	while ((pEndpointDesc = (TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT)) != 0)
+	{
+		if (   (pEndpointDesc->bEndpointAddress & 0x80) == 0x80		// Input EP
+		    && (pEndpointDesc->bmAttributes     & 0x3F)	== 0x03)	// Interrupt EP
+		{
+			break;
+		}
+	}
+
+	if (pEndpointDesc == 0)
 	{
 		ConfigurationError (FromUSBHID);
 
@@ -77,15 +85,28 @@ boolean CUSBHIDDevice::Configure (void)
 		return FALSE;
 	}
 
-	if (GetHost ()->ControlMessage (GetEndpoint0 (),
-					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-					SET_PROTOCOL, BOOT_PROTOCOL,
-					GetInterfaceNumber (), 0, 0) < 0)
+	if (GetInterfaceSubClass () == 1)	// boot class
 	{
-		CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set boot protocol");
+		if (GetHost ()->ControlMessage (GetEndpoint0 (),
+						REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+						SET_PROTOCOL, BOOT_PROTOCOL,
+						GetInterfaceNumber (), 0, 0) < 0)
+		{
+			CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set boot protocol");
 
-		return FALSE;
+			return FALSE;
+		}
 	}
+
+	if (m_nReportSize == 0)
+	{
+		m_nReportSize = nReportSize;
+		assert (m_nReportSize > 0);
+
+		assert (m_pReportBuffer == 0);
+		m_pReportBuffer = new u8[m_nReportSize];
+	}
+	assert (m_pReportBuffer != 0);
 
 	return StartRequest ();
 }

@@ -13,7 +13,7 @@
 //	user timeout
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -260,6 +260,11 @@ int CTCPConnection::Connect (void)
 
 int CTCPConnection::Accept (CIPAddress *pForeignIP, u16 *pForeignPort)
 {
+	if (m_nErrno < 0)
+	{
+		return m_nErrno;
+	}
+
 	switch (m_State)
 	{
 	case TCPStateSynSent:
@@ -291,7 +296,7 @@ int CTCPConnection::Accept (CIPAddress *pForeignIP, u16 *pForeignPort)
 	assert (pForeignPort != 0);
 	*pForeignPort = m_nForeignPort;
 
-	return 0;
+	return m_nErrno;
 }
 
 int CTCPConnection::Close (void)
@@ -461,6 +466,36 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 	return nLength;
 }
 
+int CTCPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
+			    CIPAddress	&rForeignIP, u16 nForeignPort)
+{
+	// ignore rForeignIP and nForeignPort
+	return Send (pData, nLength, nFlags);
+}
+
+int CTCPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort)
+{
+	int nResult = Receive (pBuffer, nFlags);
+	if (nResult <= 0)
+	{
+		return nResult;
+	}
+
+	if (   pForeignIP != 0
+	    && pForeignPort != 0)
+	{
+		pForeignIP->Set (m_ForeignIP);
+		*pForeignPort = m_nForeignPort;
+	}
+
+	return 0;
+}
+
+int CTCPConnection::SetOptionBroadcast (boolean bAllowed)
+{
+	return 0;
+}
+
 boolean CTCPConnection::IsTerminated (void) const
 {
 	return m_State == TCPStateClosed;
@@ -575,6 +610,7 @@ void CTCPConnection::Process (void)
 int CTCPConnection::PacketReceived (const void	*pPacket,
 				    unsigned	 nLength,
 				    CIPAddress	&rSenderIP,
+				    CIPAddress	&rReceiverIP,
 				    int		 nProtocol)
 {
 	if (nProtocol != IPPROTO_TCP)
@@ -1248,6 +1284,43 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		}
 		break;
 	}
+
+	return 1;
+}
+
+int CTCPConnection::NotificationReceived (TICMPNotificationType  Type,
+					  CIPAddress		&rSenderIP,
+					  CIPAddress		&rReceiverIP,
+					  u16			 nSendPort,
+					  u16			 nReceivePort,
+					  int			 nProtocol)
+{
+	if (nProtocol != IPPROTO_TCP)
+	{
+		return 0;
+	}
+
+	if (m_State < TCPStateSynSent)
+	{
+		return 0;
+	}
+
+	if (   m_ForeignIP != rSenderIP
+	    || m_nForeignPort != nSendPort)
+	{
+		return 0;
+	}
+
+	assert (m_pNetConfig != 0);
+	if (   rReceiverIP != *m_pNetConfig->GetIPAddress ()
+	    || m_nOwnPort != nReceivePort)
+	{
+		return 0;
+	}
+
+	m_nErrno = -1;
+
+	m_Event.Set ();
 
 	return 1;
 }

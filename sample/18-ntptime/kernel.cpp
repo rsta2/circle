@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -110,7 +110,9 @@ TShutdownMode CKernel::Run (void)
 	m_Logger.Write (FromKernel, LogNotice, "Try \"ping %s\" from another computer!",
 			(const char *) IPString);
 
-	new CNTPDaemon (NTPServer, nTimeZone, &m_Net);
+	m_Timer.SetTimeZone (nTimeZone);
+
+	new CNTPDaemon (NTPServer, &m_Net);
 
 	for (unsigned nCount = 0; 1; nCount++)
 	{

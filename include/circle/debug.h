@@ -2,7 +2,7 @@
 // debug.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _debug_h
-#define _debug_h
+#ifndef _circle_debug_h
+#define _circle_debug_h
 
 #include <circle/types.h>
 
@@ -34,7 +34,11 @@ void debug_stacktrace (const u32 *pStackPtr, const char *pSource = 0);
 
 #ifdef DEBUG_CLICK
 
-void debug_click (void);
+// left and right may be swapped
+#define DEBUG_CLICK_LEFT	1
+#define DEBUG_CLICK_RIGHT	2
+#define DEBUG_CLICK_ALL		(DEBUG_CLICK_LEFT | DEBUG_CLICK_RIGHT)
+void debug_click (unsigned nMask = DEBUG_CLICK_ALL);
 
 #endif
 

@@ -2,7 +2,7 @@
 // exceptionhandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -57,14 +57,7 @@ CExceptionHandler::CExceptionHandler (void)
 
 	pTable->DataAbort = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->DataAbort, DataAbortStub));
 
-	CleanDataCache ();
-	DataSyncBarrier ();
-
-	InvalidateInstructionCache ();
-	FlushBranchTargetCache ();
-	DataSyncBarrier ();
-
-	InstructionSyncBarrier ();
+	SyncDataAndInstructionCache ();
 #endif
 }
 
@@ -136,7 +129,7 @@ CExceptionHandler *CExceptionHandler::Get (void)
 
 void ExceptionHandler (u32 nException, TAbortFrame *pFrame)
 {
-	DataMemBarrier ();
+	PeripheralExit ();	// exit from interrupted peripheral
 
 	CExceptionHandler::Get ()->Throw (nException, pFrame);
 }

@@ -2,7 +2,7 @@
 // bcmpropertytags.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <circle/util.h>
 #include <circle/synchronize.h>
 #include <circle/bcm2835.h>
+#include <circle/sysconfig.h>
 #include <assert.h>
 
 struct TPropertyBuffer
@@ -47,26 +48,67 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 {
 	assert (pTag != 0);
 	assert (nTagSize >= sizeof (TPropertyTagSimple));
-	unsigned nBufferSize = sizeof (TPropertyBuffer) + nTagSize + sizeof (u32);
-	assert ((nBufferSize & 3) == 0);
 
-	// cannot use "new" here because this is used before mem_init() is called
-	u8 Buffer[nBufferSize + 15];
-	TPropertyBuffer *pBuffer = (TPropertyBuffer *) (((u32) Buffer + 15) & ~15);
-	
-	pBuffer->nBufferSize = nBufferSize;
-	pBuffer->nCode = CODE_REQUEST;
-	memcpy (pBuffer->Tags, pTag, nTagSize);
-	
-	TPropertyTag *pHeader = (TPropertyTag *) pBuffer->Tags;
+	TPropertyTag *pHeader = (TPropertyTag *) pTag;
 	pHeader->nTagId = nTagId;
 	pHeader->nValueBufSize = nTagSize - sizeof (TPropertyTag);
 	pHeader->nValueLength = nRequestParmSize & ~VALUE_LENGTH_RESPONSE;
 
-	u32 *pEndTag = (u32 *) (pBuffer->Tags + nTagSize);
+	if (!GetTags (pTag, nTagSize))
+	{
+		return FALSE;
+	}
+
+	if (!(pHeader->nValueLength & VALUE_LENGTH_RESPONSE))
+	{
+		return FALSE;
+	}
+
+	pHeader->nValueLength &= ~VALUE_LENGTH_RESPONSE;
+	if (pHeader->nValueLength == 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
+{
+	assert (pTags != 0);
+	assert (nTagsSize >= sizeof (TPropertyTagSimple));
+	unsigned nBufferSize = sizeof (TPropertyBuffer) + nTagsSize + sizeof (u32);
+	assert ((nBufferSize & 3) == 0);
+
+#ifndef USE_RPI_STUB_AT
+	TPropertyBuffer *pBuffer = (TPropertyBuffer *) MEM_COHERENT_REGION;
+#else
+	TPropertyBuffer *pBuffer;
+	u32 nSize;
+
+	asm volatile
+	(
+		"push {r0-r1}\n"
+		"mov r0, #1\n"
+		"bkpt #0x7FFA\n"	// get coherent region from rpi_stub
+		"mov %0, r0\n"
+		"mov %1, r1\n"
+		"pop {r0-r1}\n"
+
+		: "=r" (pBuffer), "=r" (nSize)
+	);
+
+	assert (pBuffer != 0);
+	assert (nSize >= nBufferSize);
+#endif
+
+	pBuffer->nBufferSize = nBufferSize;
+	pBuffer->nCode = CODE_REQUEST;
+	memcpy (pBuffer->Tags, pTags, nTagsSize);
+
+	u32 *pEndTag = (u32 *) (pBuffer->Tags + nTagsSize);
 	*pEndTag = PROPTAG_END;
 
-	CleanDataCache ();
 	DataSyncBarrier ();
 
 	u32 nBufferAddress = GPU_MEM_BASE + (u32) pBuffer;
@@ -74,27 +116,15 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	{
 		return FALSE;
 	}
-	
-	InvalidateDataCache ();
-	DataSyncBarrier ();
+
+	DataMemBarrier ();
 
 	if (pBuffer->nCode != CODE_RESPONSE_SUCCESS)
 	{
 		return FALSE;
 	}
-	
-	if (!(pHeader->nValueLength & VALUE_LENGTH_RESPONSE))
-	{
-		return FALSE;
-	}
-	
-	pHeader->nValueLength &= ~VALUE_LENGTH_RESPONSE;
-	if (pHeader->nValueLength == 0)
-	{
-		return FALSE;
-	}
 
-	memcpy (pTag, pBuffer->Tags, nTagSize);
+	memcpy (pTags, pBuffer->Tags, nTagsSize);
 
 	return TRUE;
 }

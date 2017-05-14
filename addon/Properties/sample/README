@@ -1,0 +1,7 @@
+README
+
+The Properties library allows the access to configuration values saved in a properties file. The format of this file is equal to that of the config.txt file read by the firmware. It contains "name=value" pairs and comments starting with a '#'. Values can be get as strings or numbers in an application and be set in the same manner. An updated configuration can be saved then. Comments will be overwritten if this is used.
+
+The sample demonstrates the usage of the Properties library. Copy the file params.txt to the same partition on the SD card where kernel.img is located. The program dumps the contents of the properties file first and then accesses specific properties. It modifies the configuration then and writes it back to the file.
+
+Before building the sample itself the SDCard library in addon/SDCard/ has to be build.

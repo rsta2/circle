@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <circle/memio.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2836.h>
+#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
@@ -70,7 +71,10 @@ void halt (void)
 	DataMemBarrier ();
 #endif
 
-	DisableInterrupts ();
+	DisableIRQs ();
+#ifndef USE_RPI_STUB_AT
+	DisableFIQs ();
+#endif
 	
 	for (;;)
 	{
@@ -83,7 +87,7 @@ void halt (void)
 
 void reboot (void)					// by PlutoniumBob@raspi-forum
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	write32 (ARM_PM_WDOG, ARM_PM_PASSWD | 1);	// set some timeout
 
@@ -111,6 +115,8 @@ static void vfpinit (void)
 
 void sysinit (void)
 {
+	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
+
 #if RASPPI != 1
 #ifndef USE_RPI_STUB_AT
 	// L1 data cache may contain random entries after reset, delete them
@@ -125,6 +131,8 @@ void sysinit (void)
 #endif
 #endif
 
+	vfpinit ();
+
 	// clear BSS
 	extern unsigned char __bss_start;
 	extern unsigned char _end;
@@ -133,7 +141,7 @@ void sysinit (void)
 		*pBSS = 0;
 	}
 
-	vfpinit ();
+	CMachineInfo MachineInfo;
 
 	// call construtors of static objects
 	extern void (*__init_start) (void);
@@ -156,6 +164,8 @@ void sysinit (void)
 
 void sysinit_secondary (void)
 {
+	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
+
 	// L1 data cache may contain random entries after reset, delete them
 	InvalidateDataCacheL1Only ();
 

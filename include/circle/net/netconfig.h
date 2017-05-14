@@ -2,7 +2,7 @@
 // netconfig.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@ public:
 
 	void Reset (void);
 
+	void SetDHCP (boolean bUsed);
+
 	void SetIPAddress (u32 nAddress);
 	void SetNetMask (u32 nNetMask);
 	void SetDefaultGateway (u32 nAddress);
@@ -41,16 +43,25 @@ public:
 	void SetDefaultGateway (const u8 *pAddress);
 	void SetDNSServer (const u8 *pAddress);
 
+	boolean IsDHCPUsed (void) const;
+
 	const CIPAddress *GetIPAddress (void) const;
 	const u8 *GetNetMask (void) const;
 	const CIPAddress *GetDefaultGateway (void) const;
 	const CIPAddress *GetDNSServer (void) const;
+	const CIPAddress *GetBroadcastAddress (void) const;		// directed broadcast
 
 private:
+	void UpdateBroadcastAddress (void);
+
+private:
+	boolean m_bUseDHCP;
+
 	CIPAddress m_IPAddress;
 	CIPAddress m_NetMask;
 	CIPAddress m_DefaultGateway;
 	CIPAddress m_DNSServer;
+	CIPAddress m_BroadcastAddress;
 };
 
 #endif

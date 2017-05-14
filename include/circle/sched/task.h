@@ -2,7 +2,7 @@
 // task.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ enum TTaskState
 {
 	TaskStateReady,
 	TaskStateBlocked,
+	TaskStateSleeping,
 	TaskStateTerminated,
 	TaskStateUnknown
 };
@@ -43,10 +44,13 @@ public:
 	virtual void Run (void);
 
 private:
-	TTaskState GetState (void) const;
-	void SetState (TTaskState State);
+	TTaskState GetState (void) const	{ return m_State; }
+	void SetState (TTaskState State)	{ m_State = State; }
 
-	TTaskRegisters *GetRegs (void);
+	unsigned GetWakeTicks (void) const	{ return m_nWakeTicks; }
+	void SetWakeTicks (unsigned nTicks)	{ m_nWakeTicks = nTicks; }
+
+	TTaskRegisters *GetRegs (void)		{ return &m_Regs; }
 
 	friend class CScheduler;
 
@@ -57,6 +61,7 @@ private:
 
 private:
 	volatile TTaskState m_State;
+	unsigned	    m_nWakeTicks;
 	TTaskRegisters	    m_Regs;
 	unsigned	    m_nStackSize;
 	u8		   *m_pStack;

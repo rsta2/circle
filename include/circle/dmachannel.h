@@ -2,7 +2,7 @@
 // dmachannel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _dmachannel_h
-#define _dmachannel_h
+#ifndef _circle_dmachannel_h
+#define _circle_dmachannel_h
 
 #include <circle/interrupt.h>
 #include <circle/macros.h>
@@ -29,6 +29,9 @@
 
 // channel assignment
 #define DMA_CHANNEL_PWM		0
+
+#define DMA_CHANNEL_SPI_TX	0
+#define DMA_CHANNEL_SPI_RX	2
 
 struct TDMAControlBlock
 {
@@ -90,6 +93,9 @@ private:
 	void *m_pCompletionParam;
 
 	boolean m_bStatus;
+
+	u32 m_nDestinationAddress;
+	u32 m_nBufferLength;
 };
 
 #endif

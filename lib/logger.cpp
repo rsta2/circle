@@ -2,7 +2,7 @@
 // logger.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 #include <circle/multicore.h>
 #include <circle/util.h>
 #include <circle/sysconfig.h>
+#include <circle/machineinfo.h>
+#include <circle/version.h>
 #include <circle/debug.h>
 
 #define LOGGER_BUFSIZE	0x4000
@@ -47,7 +49,7 @@ CLogger::~CLogger ()
 {
 	s_pThis = 0;
 
-	delete m_pBuffer;
+	delete [] m_pBuffer;
 	m_pBuffer = 0;
 
 	m_pTarget = 0;
@@ -57,8 +59,9 @@ CLogger::~CLogger ()
 boolean CLogger::Initialize (CDevice *pTarget)
 {
 	m_pTarget = pTarget;
-	
-	Write ("logger", LogNotice, "Logging started");
+
+	Write ("logger", LogNotice, CIRCLE_NAME " " CIRCLE_VERSION_STRING " started on %s",
+	       CMachineInfo::Get ()->GetMachineName ());
 
 	return TRUE;
 }

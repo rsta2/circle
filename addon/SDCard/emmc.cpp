@@ -59,7 +59,7 @@
 //#define EMMC_POLL_STATUS_REG
 
 // Enable 1.8V support
-#define SD_1_8V_SUPPORT
+//#define SD_1_8V_SUPPORT
 
 // Enable 4-bit support
 #define SD_4BIT_DATA
@@ -73,10 +73,14 @@
 
 // Enable SDXC maximum performance mode
 // Requires 150 mA power so disabled on the RPi for now
-//#define SDXC_MAXIMUM_PERFORMANCE
+#define SDXC_MAXIMUM_PERFORMANCE
 
 // Enable card interrupts
 //#define SD_CARD_INTERRUPTS
+
+// Allow old sdhci versions (may cause errors)
+// Required for QEMU
+#define EMMC_ALLOW_OLD_SDHCI
 
 #define	EMMC_ARG2		(ARM_EMMC_BASE + 0x00)
 #define EMMC_BLKSIZECNT		(ARM_EMMC_BASE + 0x04)
@@ -451,16 +455,16 @@ CEMMCDevice::~CEMMCDevice (void)
 
 boolean CEMMCDevice::Initialize (void)
 {
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	if (CardInit () != 0)
 	{
-		DataMemBarrier ();
+		PeripheralExit ();
 
 		return FALSE;
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	const char DeviceName[] = "emmc1";
 
@@ -490,11 +494,11 @@ int CEMMCDevice::Read (void *pBuffer, unsigned nCount)
 		m_pActLED->On ();
 	}
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	if (DoRead ((u8 *) pBuffer, nCount, nBlock) != (int) nCount)
 	{
-		DataMemBarrier ();
+		PeripheralExit ();
 
 		if (m_pActLED != 0)
 		{
@@ -504,7 +508,7 @@ int CEMMCDevice::Read (void *pBuffer, unsigned nCount)
 		return -1;
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	if (m_pActLED != 0)
 	{
@@ -527,11 +531,11 @@ int CEMMCDevice::Write (const void *pBuffer, unsigned nCount)
 		m_pActLED->On ();
 	}
 
-	DataMemBarrier ();
+	PeripheralEntry ();
 
 	if (DoWrite ((u8 *) pBuffer, nCount, nBlock) != (int) nCount)
 	{
-		DataMemBarrier ();
+		PeripheralExit ();
 
 		if (m_pActLED != 0)
 		{
@@ -541,7 +545,7 @@ int CEMMCDevice::Write (const void *pBuffer, unsigned nCount)
 		return -1;
 	}
 
-	DataMemBarrier ();
+	PeripheralExit ();
 
 	if (m_pActLED != 0)
 	{
@@ -622,8 +626,10 @@ u32 CEMMCDevice::GetClockDivider (u32 base_clock, u32 target_rate)
 	// Decide on the clock mode to use
 	// Currently only 10-bit divided clock mode is supported
 
+#ifndef EMMC_ALLOW_OLD_SDHCI
 	if (m_hci_ver >= 2)
 	{
+#endif
 		// HCI version 3 or greater supports 10-bit divided clock mode
 		// This requires a power-of-two divider
 
@@ -680,6 +686,7 @@ u32 CEMMCDevice::GetClockDivider (u32 base_clock, u32 target_rate)
 #endif
 
 		return ret;
+#ifndef EMMC_ALLOW_OLD_SDHCI
 	}
 	else
 	{
@@ -687,6 +694,7 @@ u32 CEMMCDevice::GetClockDivider (u32 base_clock, u32 target_rate)
 
 		return SD_GET_CLOCK_DIVIDER_FAIL;
 	}
+#endif
 }
 
 // Switch the clock rate whilst running
@@ -1777,9 +1785,13 @@ int CEMMCDevice::CardInit (void)
 	m_hci_ver = sdversion;
 	if (m_hci_ver < 2)
 	{
+#ifdef EMMC_ALLOW_OLD_SDHCI
+		LogWrite (LogWarning, "Old SDHCI version detected");
+#else
 		LogWrite (LogError, "Only SDHCI versions >= 3.0 are supported");
 
 		return -1;
+#endif
 	}
 
 	if (CardReset () != 0)

@@ -1,0 +1,17 @@
+README
+
+This sample transfers some data bytes (20000 bytes by default) via the SPI0 master to a SPI slave device and displays the first 128 bytes of the received bytes. You can connect GPIO9 and GPIO10 (Broadcom numbering) together. The sent data will also be received then.
+
+The pinout of the SPI0 master is as follows:
+
+SCLK	GPIO11
+MOSI	GPIO10
+MISO	GPIO9
+CE0	GPIO8
+CE1	GPIO7
+
+Because the SPI transfer is done using DMA the CPU can do other things while the transfer is running. In this sample it is turning a rotor in the upper right corner of the screen. You can do something else here.
+
+The SPI_CLOCK_SPEED is set to 10000 Hz by default so that the transfer takes some time (in fact exactly 20000*8 / 10000 = 16 seconds).
+
+On the Raspberry Pi 2/3 you should disable the #define ARM_ALLOW_MULTI_CORE in include/circle/sysconfig.h if you do not use multiple CPU cores. This is done by default now.

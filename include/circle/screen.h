@@ -2,7 +2,7 @@
 // screen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _screen_h
-#define _screen_h
+#ifndef _circle_screen_h
+#define _circle_screen_h
 
 #include <circle/device.h>
 #include <circle/bcmframebuffer.h>
@@ -27,16 +27,17 @@
 #include <circle/macros.h>
 #include <circle/types.h>
 
-#define DEPTH	8		// can be: 8, 16 or 32
+#define DEPTH	16		// can be: 8, 16 or 32
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define COLOR16(red, green, blue)	  (((red>>3) & 0x1F) << 11 \
 					| ((green>>2) & 0x3F) << 6 \
 					| ((blue>>3) & 0x1F))
 
-#define COLOR32(red, green, blue, alpha)  (((red) & 0xFF)        \
+// BGRA (was RGBA with older firmware)
+#define COLOR32(red, green, blue, alpha)  (((blue) & 0xFF)       \
 					| ((green) & 0xFF) << 8  \
-					| ((blue) & 0xFF) << 16  \
+					| ((red) & 0xFF)   << 16 \
 					| ((alpha) & 0xFF) << 24)
 
 #define BLACK_COLOR	0
@@ -70,7 +71,10 @@
 struct TScreenStatus
 {
 	TScreenColor   *pContent;
+	unsigned	nSize;
 	unsigned	nState;
+	unsigned	nScrollStart;
+	unsigned	nScrollEnd;
 	unsigned	nCursorX;
 	unsigned	nCursorY;
 	boolean		bCursorOn;
@@ -89,9 +93,18 @@ public:
 
 	boolean Initialize (void);
 
+	// size in pixels
 	unsigned GetWidth (void) const;
 	unsigned GetHeight (void) const;
+<<<<<<< HEAD
 	TScreenColor *GetBuffer(void) const;
+=======
+
+	// size in characters
+	unsigned GetColumns (void) const;
+	unsigned GetRows (void) const;
+
+>>>>>>> d55b1713911fffee7d7b8bccda987cd8a7aaf917
 	TScreenStatus GetStatus (void);
 	int GetDepth(void) const;
 	void SetPalette(u8 num, u16 color);
@@ -128,6 +141,7 @@ private:
 	void NewLine (void);
 	void ReverseScroll (void);
 	void SetCursorMode (boolean bVisible);
+	void SetScrollRegion (unsigned nStartRow, unsigned nEndRow);
 	void SetStandoutMode (unsigned nMode);
 	void Tabulator (void);
 
@@ -145,10 +159,13 @@ private:
 	CCharGenerator	 m_CharGen;
 	TScreenColor  	*m_pBuffer;
 	unsigned	 m_nSize;
+	unsigned	 m_nPitch;
 	unsigned	 m_nWidth;
 	unsigned	 m_nHeight;
 	unsigned	 m_nUsedHeight;
 	unsigned	 m_nState;
+	unsigned	 m_nScrollStart;
+	unsigned	 m_nScrollEnd;
 	unsigned	 m_nCursorX;
 	unsigned	 m_nCursorY;
 	boolean		 m_bCursorOn;

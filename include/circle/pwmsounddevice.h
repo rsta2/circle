@@ -2,7 +2,7 @@
 // pwmsounddevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,13 +20,11 @@
 #ifndef _circle_pwmsounddevice_h
 #define _circle_pwmsounddevice_h
 
+#include <circle/pwmsoundbasedevice.h>
 #include <circle/interrupt.h>
-#include <circle/gpiopin.h>
-#include <circle/gpioclock.h>
-#include <circle/dmachannel.h>
 #include <circle/types.h>
 
-class CPWMSoundDevice
+class CPWMSoundDevice : private CPWMSoundBaseDevice
 {
 public:
 	CPWMSoundDevice (CInterruptSystem *pInterrupt);
@@ -41,30 +39,13 @@ public:
 
 	void CancelPlayback (void);			// will be canceled with a short delay
 
-private:
-	void Run (void);
-	void Stop (void);
-
-	// transfer next chunk into DMA buffer
-	unsigned ConvertSample (void);		// returns DMA transfer size in bytes
-
-	void DMACompletionRoutine (boolean bStatus);
-	static void DMACompletionStub (unsigned nChannel, boolean bStatus, void *pParam);
+	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
-	CGPIOPin    m_Audio1;
-	CGPIOPin    m_Audio2;
-	CGPIOClock  m_Clock;
-	CDMAChannel m_DMAChannel;
-
-	u32 *m_pDMABuffer;
-
 	u8	 *m_pSoundData;
 	unsigned  m_nSamples;
 	unsigned  m_nChannels;
 	unsigned  m_nBitsPerSample;
-
-	volatile boolean m_bActive;
 };
 
 #endif

@@ -2,7 +2,7 @@
 // pagetable.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -71,7 +71,6 @@ CPageTable::CPageTable (void)
 	}
 
 	CleanDataCache ();
-	DataSyncBarrier ();
 }
 
 CPageTable::CPageTable (u32 nMemSize)
@@ -120,11 +119,18 @@ CPageTable::CPageTable (u32 nMemSize)
 				pEntry->TEX   = 0;
 				pEntry->SBit  = 1;
 			}
+			else if (nBaseAddress == MEM_COHERENT_REGION)
+			{
+				// strongly ordered
+				pEntry->BBit  = 0;
+				pEntry->CBit  = 0;
+				pEntry->TEX   = 0;
+				pEntry->SBit  = 1;
+			}
 		}
 	}
 
 	CleanDataCache ();
-	DataSyncBarrier ();
 }
 
 CPageTable::~CPageTable (void)

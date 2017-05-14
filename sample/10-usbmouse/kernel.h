@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/dwhcidevice.h>
+#include <circle/usb/usbmouse.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -51,11 +52,11 @@ public:
 	TShutdownMode Run (void);
 
 private:
-	void MouseStatusHandler (unsigned nButtons, int  nDisplacementX, int nDisplacementY);
-	static void MouseStatusStub (unsigned nButtons, int  nDisplacementX, int nDisplacementY);
+	void MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY);
+	static void MouseEventStub (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY);
 
 	void DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenColor Color);
-	
+
 private:
 	// do not change this order
 	CMemorySystem		m_Memory;
@@ -70,8 +71,8 @@ private:
 	CLogger			m_Logger;
 	CDWHCIDevice		m_DWHCI;
 
-	int m_nPosX;
-	int m_nPosY;
+	unsigned m_nPosX;
+	unsigned m_nPosY;
 
 	volatile TShutdownMode m_ShutdownMode;
 

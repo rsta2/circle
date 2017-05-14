@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -108,9 +108,12 @@ TShutdownMode CKernel::Run (void)
 
 	m_Logger.Write (FromKernel, LogNotice, "Just type something!");
 
-	// just wait and turn the rotor
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
 	{
+		// CUSBKeyboardDevice::UpdateLEDs() must not be called in interrupt context,
+		// that's why this must be done here. This does nothing in raw mode.
+		pKeyboard->UpdateLEDs ();
+
 		m_Screen.Rotor (0, nCount);
 		m_Timer.MsDelay (100);
 	}

@@ -2,7 +2,7 @@
 // fat.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 CFAT::CFAT (CFATCache *pCache, CFATInfo *pFATInfo)
 :	m_pCache (pCache),
 	m_pFATInfo (pFATInfo),
-	m_Lock (FALSE)
+	m_Lock (TASK_LEVEL)
 {
 }
 
@@ -199,12 +199,16 @@ unsigned CFAT::GetEntry (TFATBuffer *pBuffer, unsigned nSectorOffset)
 	if (m_pFATInfo->GetFATType () == FAT16)
 	{
 		assert (nSectorOffset <= FAT_SECTOR_SIZE-2);
-		nEntry = *(u16 *) &pBuffer->Data[nSectorOffset];
+		nEntry =   (u16) pBuffer->Data[nSectorOffset]
+			 | (u16) pBuffer->Data[nSectorOffset+1] << 8;
 	}
 	else
 	{
 		assert (nSectorOffset <= FAT_SECTOR_SIZE-4);
-		nEntry = (*(u32 *) &pBuffer->Data[nSectorOffset]) & 0x0FFFFFFF;
+		nEntry = (  (u32) pBuffer->Data[nSectorOffset]
+			  | (u32) pBuffer->Data[nSectorOffset+1] << 8
+			  | (u32) pBuffer->Data[nSectorOffset+2] << 16
+			  | (u32) pBuffer->Data[nSectorOffset+3] << 24) & 0x0FFFFFFF;
 	}
 
 	return nEntry;
@@ -218,13 +222,17 @@ void CFAT::SetEntry (TFATBuffer *pBuffer, unsigned nSectorOffset, unsigned nEntr
 	{
 		assert (nSectorOffset <= FAT_SECTOR_SIZE-2);
 		assert (nEntry <= 0xFFFF);
-		*(u16 *) &pBuffer->Data[nSectorOffset] = nEntry;
+		pBuffer->Data[nSectorOffset]   = (u8) (nEntry & 0xFF);
+		pBuffer->Data[nSectorOffset+1] = (u8) (nEntry >> 8);
 	}
 	else
 	{
 		assert (nSectorOffset <= FAT_SECTOR_SIZE-4);
 		assert (nEntry <= 0x0FFFFFFF);
-		*(u32 *) &pBuffer->Data[nSectorOffset] &= 0xF0000000;
-		*(u32 *) &pBuffer->Data[nSectorOffset] |= nEntry;
+		pBuffer->Data[nSectorOffset]   = (u8) (nEntry & 0xFF);
+		pBuffer->Data[nSectorOffset+1] = (u8) (nEntry >> 8  & 0xFF);
+		pBuffer->Data[nSectorOffset+2] = (u8) (nEntry >> 16 & 0xFF);
+		pBuffer->Data[nSectorOffset+3] &= 0xF0;
+		pBuffer->Data[nSectorOffset+3] |= (u8) (nEntry >> 24 & 0x0F);
 	}
 }

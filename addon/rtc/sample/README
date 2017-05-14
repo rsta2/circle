@@ -1,0 +1,7 @@
+README
+
+To use this sample you need a a MCP7941x real-time clock (RTC) attached to the I2C master of your Raspberry Pi. By default it is reading the date and time from the RTC and sets the system time from it. The time is displayed afterwards. This sample uses UTC because the RTC should run using it.
+
+Before building the sample you may have to configure it if you use a Raspberry Pi 1 Rev. 1 board. You have to set the #define I2C_MASTER_DEVICE to 0 in kernel.cpp then. Furthermore you should set your time zone (in minutes difference to UTC).
+
+If you change the "#if 1" in CKernel::Run() to "#if 0" you can set the RTC date and time from a NTP server. This only works with Raspberry Pi models with on-board Ethernet controller. Don't forget to connect it to the network before starting the sample.

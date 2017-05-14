@@ -2,7 +2,7 @@
 // keymap.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _keymap_h
-#define _keymap_h
+#ifndef _circle_input_keymap_h
+#define _circle_input_keymap_h
 
 #include <circle/types.h>
 
@@ -27,6 +27,7 @@
 #define K_NORMTAB	0
 #define K_SHIFTTAB	1
 #define K_ALTTAB	2
+#define K_ALTSHIFTTAB	3
 
 enum TSpecialKey
 {
@@ -119,16 +120,20 @@ public:
 	const char *GetString (u16 nKeyCode, u8 nModifiers, char Buffer[2]) const;
 
 	u8 GetLEDStatus (void) const;
-	
+
 private:
-	u16 m_KeyMap[PHY_MAX_CODE+1][K_ALTTAB+1];
+	static const void *LookupDefaultMap (const char *pLocale);
+
+private:
+	u16 m_KeyMap[PHY_MAX_CODE+1][K_ALTSHIFTTAB+1];
 
 	boolean m_bCapsLock;
 	boolean m_bNumLock;
 	boolean m_bScrollLock;
 	
 	static const char *s_KeyStrings[KeyMaxCode-KeySpace];
-	static const u16 s_DefaultMap[PHY_MAX_CODE+1][K_ALTTAB+1];
+	static const u16 s_DefaultMap[][PHY_MAX_CODE+1][K_ALTSHIFTTAB+1];
+	static const char *s_MapDirectory[];
 };
 
 #endif

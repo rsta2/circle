@@ -8,31 +8,31 @@ SECTIONS
 	
 	.text : {
 		*(.text*)
-	}
 
-	_etext = .;
+		_etext = .;
+	}
 
 	.rodata : {
 		*(.rodata*)
 	}
 
-	__init_start = .;
-
 	.init_array : {
-		*(.init_array*)
-	}
+		__init_start = .;
 
-	__init_end = .;
+		*(.init_array*)
+
+		__init_end = .;
+	}
 
 	.data : {
 		*(.data*)
 	}
 
-	__bss_start = .;
-
 	.bss : {
-		*(.bss*)
-	}
+		__bss_start = .;
 
-	_end = .;
+		*(.bss*)
+
+		_end = .;
+	}
 }

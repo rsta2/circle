@@ -2,7 +2,7 @@
 // netconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
 #include <circle/net/ipaddress.h>
+#include <circle/net/icmphandler.h>
 #include <circle/net/checksumcalculator.h>
 #include <circle/types.h>
 
@@ -52,12 +53,24 @@ public:
 	virtual int Send (const void *pData, unsigned nLength, int nFlags) = 0;
 	virtual int Receive (void *pBuffer, int nFlags) = 0;
 
+	virtual int SendTo (const void *pData, unsigned nLength, int nFlags, CIPAddress	&rForeignIP, u16 nForeignPort) = 0;
+	virtual int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
+
+	virtual int SetOptionBroadcast (boolean bAllowed) = 0;
+
 	virtual boolean IsTerminated (void) const = 0;
 	
 	virtual void Process (void) = 0;
 
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	virtual int PacketReceived (const void *pPacket, unsigned nLength, CIPAddress &rSenderIP, int nProtocol) = 0;
+	virtual int PacketReceived (const void *pPacket, unsigned nLength,
+				    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol) = 0;
+
+	// returns: 0: not to me, 1: notification consumed
+	virtual int NotificationReceived (TICMPNotificationType Type,
+					  CIPAddress &rSenderIP, CIPAddress &rReceiverIP,
+					  u16 nSendPort, u16 nReceivePort,
+					  int nProtocol) = 0;
 
 protected:
 	CNetConfig    *m_pNetConfig;

@@ -2,7 +2,7 @@
 // util.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,19 +29,6 @@ void *memset (void *pBuffer, int nValue, size_t nLength)
 	}
 
 	return pBuffer;
-}
-
-void *memcpy (void *pDest, const void *pSrc, size_t nLength)
-{
-	char *pd = (char *) pDest;
-	char *ps = (char *) pSrc;
-
-	while (nLength--)
-	{
-		*pd++ = *ps++;
-	}
-
-	return pDest;
 }
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength)
@@ -229,6 +216,138 @@ char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr)
 	*ppSavePtr = pString;
 
 	return pToken;
+}
+
+unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase)
+{
+	unsigned long ulResult = 0;
+	unsigned long ulPrevResult;
+	int bMinus = 0;
+	int bFirst = 1;
+
+	if (ppEndPtr != 0)
+	{
+		*ppEndPtr = (char *) pString;
+	}
+
+	if (   nBase != 0
+	    && (   nBase < 2
+	        || nBase > 36))
+	{
+		return ulResult;
+	}
+
+	int c;
+	while ((c = *pString) == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v')
+	{
+		pString++;
+	}
+
+	if (   *pString == '+'
+	    || *pString == '-')
+	{
+		if (*pString++ == '-')
+		{
+			bMinus = 1;
+		}
+	}
+
+	if (*pString == '0')
+	{
+		pString++;
+
+		if (   *pString == 'x'
+		    || *pString == 'X')
+		{
+			if (   nBase != 0
+			    && nBase != 16)
+			{
+				return ulResult;
+			}
+
+			nBase = 16;
+
+			pString++;
+		}
+		else
+		{
+			if (nBase == 0)
+			{
+				nBase =  8;
+			}
+		}
+	}
+	else
+	{
+		if (nBase == 0)
+		{
+			nBase = 10;
+		}
+	}
+
+	while (1)
+	{
+		int c = *pString;
+
+		if (c < '0')
+		{
+			break;
+		}
+
+		if ('a' <= c && c <= 'z')
+		{
+			c -= 'a' - 'A';
+		}
+
+		if (c >= 'A')
+		{
+			c -= 'A' - '9' - 1;
+		}
+
+		c -= '0';
+
+		if (c >= nBase)
+		{
+			break;
+		}
+
+		ulPrevResult = ulResult;
+
+		ulResult *= nBase;
+		ulResult += c;
+
+		if (ulResult < ulPrevResult)
+		{
+			ulResult = (unsigned long) -1;
+
+			if (ppEndPtr != 0)
+			{
+				*ppEndPtr = (char *) pString;
+			}
+
+			return ulResult;
+		}
+
+		pString++;
+		bFirst = 0;
+	}	
+
+	if (ppEndPtr != 0)
+	{
+		*ppEndPtr = (char *) pString;
+	}
+
+	if (bFirst)
+	{
+		return ulResult;
+	}
+
+	if (bMinus)
+	{
+		ulResult = -ulResult;
+	}
+
+	return ulResult;
 }
 
 int char2int (char chValue)
