@@ -24,14 +24,8 @@ endif
 
 -include $(CIRCLEHOME)/Config.mk
 
-<<<<<<< HEAD
 RASPPI	?= 2
 PREFIX	?= arm-none-eabi-
-ARMGCC = /mingw32/armgcc
-=======
-RASPPI	?= 1
-PREFIX	?= arm-none-eabi-
->>>>>>> d55b1713911fffee7d7b8bccda987cd8a7aaf917
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
@@ -53,12 +47,6 @@ ARCH	?= -march=armv8-a -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard
 TARGET	?= kernel8-32
 endif
 
-<<<<<<< HEAD
-AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include
-CFLAGS	+= $(ARCH) -Wall -Wno-psabi -fsigned-char -fno-builtin -nostdinc -nostdlib \
-	   -D__circle__ -DRASPPI=$(RASPPI) -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(ARMGCC)/arm-none-eabi/include -I $(ARMGCC)/lib/gcc/arm-none-eabi/$(GCCVER)/include  -O -g #-DNDEBUG
-CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++0x
-=======
 OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
@@ -67,7 +55,6 @@ AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) $(INCLUDE)
 CFLAGS	+= $(ARCH) -Wall -fsigned-char -fno-builtin -nostdinc -nostdlib \
 	   -D__circle__ -DRASPPI=$(RASPPI) $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
 CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++14
->>>>>>> d55b1713911fffee7d7b8bccda987cd8a7aaf917
 
 %.o: %.S
 	$(AS) $(AFLAGS) -c -o $@ $<
@@ -85,5 +72,4 @@ $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.
 	wc -c $(TARGET).img
 
 clean:
-	rm -f $(OBJS) *.o *.a *.elf *.lst *.img *.cir *.map *~ $(EXTRACLEAN) 
-	rmdir $(OBJDIR)
+	rm -f *.o *.a *.elf *.lst *.img *.cir *.map *~ $(EXTRACLEAN)

@@ -46,7 +46,7 @@ extern "C" {
 #define	DisableFIQs()		asm volatile ("cpsid f")
 
 // EnterCritical() can be nested with same or increasing nTargetLevel
-void EnterCritical (unsigned nTargetLevel = IRQ_LEVEL);
+void EnterCritical (unsigned nTargetLevel);
 void LeaveCritical (void);
 
 #if RASPPI == 1

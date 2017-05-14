@@ -30,9 +30,9 @@
 #define DEPTH	16		// can be: 8, 16 or 32
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
-#define COLOR16(red, green, blue)	  (((red>>3) & 0x1F) << 11 \
-					| ((green>>2) & 0x3F) << 6 \
-					| ((blue>>3) & 0x1F))
+#define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \
+					| ((green) & 0x1F) << 6 \
+					| ((blue) & 0x1F))
 
 // BGRA (was RGBA with older firmware)
 #define COLOR32(red, green, blue, alpha)  (((blue) & 0xFF)       \
@@ -96,15 +96,12 @@ public:
 	// size in pixels
 	unsigned GetWidth (void) const;
 	unsigned GetHeight (void) const;
-<<<<<<< HEAD
 	TScreenColor *GetBuffer(void) const;
-=======
 
 	// size in characters
 	unsigned GetColumns (void) const;
 	unsigned GetRows (void) const;
 
->>>>>>> d55b1713911fffee7d7b8bccda987cd8a7aaf917
 	TScreenStatus GetStatus (void);
 	int GetDepth(void) const;
 	void SetPalette(u8 num, u16 color);
