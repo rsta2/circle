@@ -27,7 +27,7 @@
 #include <circle/macros.h>
 #include <circle/types.h>
 
-#define DEPTH	16		// can be: 8, 16 or 32
+#define DEPTH	8		// can be: 8, 16 or 32
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \
