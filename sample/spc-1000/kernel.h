@@ -31,6 +31,7 @@
 #include <circle/util.h> 
 #include <circle/logger.h>
 #include <circle/types.h>
+#include "pwmsound.h"
 
 enum TShutdownMode
 {
@@ -60,6 +61,7 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CSerialDevice		m_Serial;
 	CDWHCIDevice		m_DWHCI;
+	CPWMSound			m_PwmSound; 
 
 	volatile TShutdownMode m_ShutdownMode;	
 public:

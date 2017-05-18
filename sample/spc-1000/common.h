@@ -160,7 +160,7 @@ typedef struct
 	byte GMODE;				// GMODE (for video)
 	byte psgRegNum;			// Keep PSG (AY-3-8910) register number for next turn of I/O
 	Z80 Z80R;		// Z-80 register
-	//AY8910 ay8910;
+	AY8910 ay8910;
 	byte ROM[0x8000];	// ROM area
 	Uint32 tick;
 	Uint32 cycles;

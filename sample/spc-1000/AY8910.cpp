@@ -17,11 +17,30 @@
 /*************************************************************/
 
 #include "AY8910.h"
-#include "common.h"
+#include <circle/bcmrandom.h>
+#include <circle/interrupt.h>
+#include <circle/timer.h>
+
+//#include "common.h"
 //#include "Sound.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+//#include <string.h>
+//#include <stdlib.h>
+//#include <stdio.h>
+#ifndef NULL
+#define NULL 0
+#endif
+
+#define RNG_WARMUP_COUNT	0x40000
+
+CBcmRandomNumberGenerator m_Random;
+CInterruptSystem	m_Interrupt;
+CTimer				m_Timer(&m_Interrupt);
+
+extern "C" {
+	void memcpy(void *s1, const void *s2, size_t t);
+	void _lock_mutex_mmu(void *);
+	void _unlock_mutex_mmu(void *);
+}
 
 static const unsigned char Envelopes[16][32] =
 {
@@ -269,6 +288,7 @@ void Loop8910(register AY8910 *D,int mS)
 
   /* Count steps */
   J = D->ECount/D->EPeriod;
+
   D->ECount -= J*D->EPeriod;
 
   /* Count phases */
@@ -354,7 +374,7 @@ typedef struct {
 
 TSndQ SndQ;
 int LastBufTime = 0;
-SDL_mutex *sound_mutex;
+int *sound_mutex;
 
 TSndQEntry *SndDequeue(void);
 
@@ -362,10 +382,10 @@ void SndQueueInit(void)
 {
 	int i;
 
-	SDL_mutexP(sound_mutex);
-	LastBufTime = SDL_GetTicks();
+	_lock_mutex_mmu(sound_mutex);
+	LastBufTime = m_Timer.GetClockTicks();
 	SndQ.front = SndQ.rear = 0;
-	SDL_mutexV(sound_mutex);
+	_unlock_mutex_mmu(sound_mutex);
 
 	for (i = 0; i < 6; i++)
 		Sound(i, 0, 0);
@@ -375,28 +395,28 @@ int SndEnqueue(int Chn, int Freq, int Vol)
 {
 	int tfront;
 
-	SDL_mutexP(sound_mutex);
+	_lock_mutex_mmu(sound_mutex);
 	tfront = (SndQ.front + 1) % MAX_SNDQ;
 	if (tfront == SndQ.rear)
 	{
 //#define QUEUEFULL_PROCESS
 #ifdef QUEUEFULL_PROCESS // not working yet
 		TSndQEntry *qentry;
-		printf("Queue Full!!\n");
+		//printf("Queue Full!!\n");
 		qentry = SndDequeue();
 		Sound(qentry->chn, qentry->freq, qentry->vol);
 #else
-		printf("Queue Full!!\n");
+		//printf("Queue Full!!\n");
 #endif
-		SDL_mutexV(sound_mutex);
+		_unlock_mutex_mmu(sound_mutex);
 		return 0;
 	}
 	SndQ.qentry[SndQ.front].chn = Chn;
 	SndQ.qentry[SndQ.front].freq = Freq;
 	SndQ.qentry[SndQ.front].vol = Vol;
-	SndQ.qentry[SndQ.front].time = SDL_GetTicks() - LastBufTime;
+	SndQ.qentry[SndQ.front].time = m_Timer.GetClockTicks() - LastBufTime;
 	SndQ.front = tfront;
-	SDL_mutexV(sound_mutex);
+	_unlock_mutex_mmu(sound_mutex);
 	return 1;
 }
 
@@ -404,15 +424,15 @@ TSndQEntry *SndDequeue(void)
 {
 	int trear;
 
-	SDL_mutexP(sound_mutex);
+	_lock_mutex_mmu(sound_mutex);
 	trear = SndQ.rear;
 	if (SndQ.front == SndQ.rear)
 	{
-		SDL_mutexV(sound_mutex);
+		_unlock_mutex_mmu(sound_mutex);
 		return NULL; // queue empty
 	}
 	SndQ.rear = (SndQ.rear + 1) % MAX_SNDQ;
-	SDL_mutexV(sound_mutex);
+	_unlock_mutex_mmu(sound_mutex);
 
 	return &(SndQ.qentry[trear]);
 }
@@ -447,10 +467,10 @@ void Sound(int Chn,int Freq,int Volume)
 	if (Interval[Chn] == 0)
 		Vol[Chn] = 0;
 	else
-		Vol[Chn] = Volume * spconf.snd_vol; // do not exceed 32767
+		Vol[Chn] = Volume * 16384;//spconf.snd_vol; // do not exceed 32767
 }
 
-static void DSPCallBack(void* unused, unsigned char *stream, int len)
+void DSPCallBack(void* unused, unsigned char *stream, int len)
 {
 	register int   J;
 	static int R1 = 0,R2 = 0;
@@ -500,7 +520,7 @@ static void DSPCallBack(void* unused, unsigned char *stream, int len)
 			if (Interval[i] && Vol[i])
 			{
 				if (Phase[i] == 0)
-					NoiseInterval[i] = Interval[i] + (((150 * rand()) / RAND_MAX) - 75);
+					NoiseInterval[i] = Interval[i] + (((150 * m_Random.GetNumber ()) / RNG_WARMUP_COUNT) - 75);
 				if (Phase[i] < (NoiseInterval[i]/2))
 				{
 					R1 += Vol[i];
@@ -527,7 +547,7 @@ static void DSPCallBack(void* unused, unsigned char *stream, int len)
 		stream[J+3]=R1>>8;
 	}
 
-	LastBufTime = SDL_GetTicks();
+	LastBufTime = m_Timer.GetClockTicks();
 	while (qentry = SndDequeue())
 		Sound(qentry->chn, qentry->freq, qentry->vol);
 
@@ -540,6 +560,7 @@ void SetSound(int Channel,int NewType)
 
 
 // adapted from sdl patch for fmsx
+#if 0
 void OpenSoundDevice(void)
 {
   /* Open the audio device */
@@ -568,10 +589,10 @@ void OpenSoundDevice(void)
   /* Open the audio device */
   if(SDL_OpenAudio(desired, obtained)<0)
   {
-      printf("Audio Open failed\n");
+      //printf("Audio Open failed\n");
       return;
   }
-  printf("Audio Open successed\n");
+  //printf("Audio Open successed\n");
 
   Rate=obtained->freq;
 
@@ -588,4 +609,4 @@ void OpenSoundDevice(void)
   DevFreq = Rate;
   SndQueueInit();
 }
-
+#endif

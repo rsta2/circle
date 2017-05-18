@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #ifdef __cplusplus
+#include "ay8910.h"
 extern "C" {
 #endif
 #include "Z80.h"
@@ -31,6 +32,7 @@ int printf(const char *format, ...);
  }
 #endif
 #include "kernel.h"
+#include "pwmsound.h"
 #include <circle/string.h>
 #include <circle/screen.h>
 #include <circle/debug.h>
@@ -56,7 +58,8 @@ CKernel::CKernel (void)
 	m_Timer(&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_ShutdownMode (ShutdownNone)	
+	m_ShutdownMode (ShutdownNone),
+	m_PwmSound (&m_Interrupt)
 {
 	m_ActLED.Blink (5);	// show we are alive
 	s_pThis = this;
@@ -113,6 +116,8 @@ boolean CKernel::Initialize (void)
 	InitMC6847(m_Screen.GetBuffer(), &spcsys.VRAM[0], 256,192);	
 	spcsys.IPLK = 1;
 	spcsys.GMODE = 0;
+	Reset8910(&(spcsys.ay8910), 0);
+	
 //	strcpy((char *)&spcsys.VRAM, "SAMSUNG ELECTRONICS");
 	return bOK;
 }
@@ -301,12 +306,12 @@ void OutZ80(register word Port,register byte Value)
 //                    printf("%s(%d)\n", spcsys.prt.bufs, spcsys.prt.length);
                }
            }
-			//Write8910(&spcsys.ay8910, (byte) spcsys.psgRegNum, Value);
+			Write8910(&spcsys.ay8910, (byte) spcsys.psgRegNum, Value);
 		}
 		else // Reg Num
 		{
 			spcsys.psgRegNum = Value;
-			//WrCtrl8910(&spcsys.ay8910, Value);
+			WrCtrl8910(&spcsys.ay8910, Value);
 		}
 	}	
 }
@@ -360,7 +365,7 @@ byte InZ80(register word Port)
 			}
 			else 
 			{
-				int data = 0;// = RdData8910(&spcsys.ay8910);
+				int data = RdData8910(&spcsys.ay8910);
 				//printf("r(%d,%d)\n", spcsys.psgRegNum, data);
 				return data;
 			}
