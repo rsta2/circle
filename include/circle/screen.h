@@ -31,7 +31,7 @@
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \
-					| ((green) & 0x1F) << 6 \
+					| ((green) & 0x3F) << 6 \
 					| ((blue) & 0x1F))
 
 // BGRA (was RGBA with older firmware)
@@ -50,8 +50,8 @@
 	#define HALF_COLOR16			COLOR16 (0, 0, 31)
 
 	#define NORMAL_COLOR			1
-	#define HIGH_COLOR			2
-	#define HALF_COLOR			3
+	#define HIGH_COLOR				2
+	#define HALF_COLOR				3
 #elif DEPTH == 16
 	typedef u16 TScreenColor;
 

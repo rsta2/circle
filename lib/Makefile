@@ -33,7 +33,7 @@ all: startup.o libcircle.a
 startup.o: startup.S
 
 libcircle.a: $(OBJS)
-	rm -f libcircle.a
-	$(AR) cr libcircle.a $(OBJS)
+	rm -f $@
+	$(AR) cr $@ $(OBJS)
 
 include ../Rules.mk

@@ -27,7 +27,6 @@ extern "C" {
 #include "spckey.h"
 int printf(const char *format, ...);
 
-SPCSystem spcsys;
 #ifdef __cplusplus
  }
 #endif
@@ -36,6 +35,8 @@ SPCSystem spcsys;
 #include <circle/screen.h>
 #include <circle/debug.h>
 #include <assert.h>
+
+SPCSystem spcsys;
 
 int CasRead(CassetteTape *cas);
 enum colorNum {
@@ -84,8 +85,7 @@ boolean CKernel::Initialize (void)
 		{
 			pTarget = &m_Screen;
 		}
-		//bOK = m_Logger.Initialize (pTarget);
-		//m_Logger.Off();
+		bOK = m_Logger.Initialize (pTarget);
 	}
 	if (bOK)
 	{
@@ -105,6 +105,7 @@ boolean CKernel::Initialize (void)
 	do {
 		spcKeyHash[spcKeyMap[num].sym] = spcKeyMap[num];
 	} while(spcKeyMap[num++].sym != 0);
+	memcpy(spcsys.ROM, ROM, 32768);
 	memset(spcsys.RAM, 65536, 0x0);
 	memset(spcsys.VRAM, 0x2000, 0x0);
 	memset(keyMatrix, 10, 0xff);
@@ -119,9 +120,11 @@ boolean CKernel::Initialize (void)
 TShutdownMode CKernel::Run (void)
 {
 	int frame = 0, ticks = 0, pticks = 0, d = 0;
+	unsigned int t = 0;
 	int count = 0;	
-//	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
-	//m_Logger.On();
+	CString Message;
+	
+	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 	CUSBKeyboardDevice *pKeyboard = (CUSBKeyboardDevice *) m_DeviceNameService.GetDevice ("ukbd1", FALSE);
 	if (pKeyboard == 0)
 	{
@@ -136,6 +139,7 @@ TShutdownMode CKernel::Run (void)
 	R->ICount = I_PERIOD;
 	pticks = ticks = m_Timer.GetClockTicks();
 	spcsys.cycles = 0;	
+	printf ("Address: %04x)", R->PC);
 	while(1)
 	{
 		if (R->ICount <= 0)
@@ -152,7 +156,11 @@ TShutdownMode CKernel::Run (void)
 			}
 			if (frame%33 == 0)
 			{
-				Update6847(m_Screen.GetBuffer());
+				Update6847(spcsys.GMODE);
+			}
+			if (frame%1000  == 0)
+			{
+				//printf ("Address: %04x)", R->PC);
 			}
 			ticks = m_Timer.GetClockTicks() - ticks;
 			m_Timer.usDelay(900 - (ticks < 900 ? ticks : 900));
@@ -160,7 +168,7 @@ TShutdownMode CKernel::Run (void)
 		}
 		count = R->ICount;
 		ExecZ80(R); // Z-80 emulation
-		spcsys.cycles += (count - R->ICount);		
+		spcsys.cycles += (count - R->ICount);
 	}
 	return ShutdownHalt;
 }
@@ -168,7 +176,7 @@ TShutdownMode CKernel::Run (void)
 void CKernel::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6])
 {
 	CString Message;
-	Message.Format ("Key status (modifiers %02X)", (unsigned) ucModifiers);
+	Message.Format ("Key status (modifiers %02X, %s)", (unsigned) ucModifiers, RawKeys);
 	TKeyMap *map;
 	memset(keyMatrix, 10, 0xff);
 	if (ucModifiers != 0)
@@ -191,7 +199,18 @@ void CKernel::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned cha
 				keyMatrix[map->keyMatIdx] &= ~ map->keyMask;
 		}
 	}
-//	s_pThis->m_Logger.Write (FromKernel, LogNotice, Message);
+//	printf(Message);
+}
+
+int CKernel::printf(const char *format, ...)
+{
+	CString Message;
+	va_list args;
+    va_start(args, format);
+	Message.Format(format, args);
+	s_pThis->m_Logger.Write (FromKernel, LogNotice, Message);
+    va_end(args);	
+	return 0;
 }
 
 int ReadVal(void) 
@@ -201,12 +220,11 @@ int ReadVal(void)
 
 void OutZ80(register word Port,register byte Value)
 {
-    //printf("0h%04x < 0h%02x\n", Port, Value);
+	printf("VRAM[%x]=%x\n", Port, Value);
 
-	if ((Port & 0xE000) == 0x0000) // VRAM area
+	if (Port < 0x2000) // VRAM area
 	{
 		spcsys.VRAM[Port] = Value;
-		//printf("VRAM[%x]=%x\n", Port, Value);
 	}
 	else if ((Port & 0xE000) == 0xA000) // IPLK area
 	{

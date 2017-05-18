@@ -24,7 +24,7 @@ endif
 
 -include $(CIRCLEHOME)/Config.mk
 
-RASPPI	?= 2
+RASPPI	?= 1
 PREFIX	?= arm-none-eabi-
 
 CC	= $(PREFIX)gcc

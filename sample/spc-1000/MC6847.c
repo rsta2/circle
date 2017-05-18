@@ -37,15 +37,16 @@ unsigned char semiGrFont0[16*12];	// semigraphic pattern for mode 0
 unsigned char semiGrFont1[64*12];	// semigraphic pattern for mode 1
 
 typedef unsigned char PIXEL;
+unsigned char *VRAM;
 #define BIT(a, b) ((a & (1 << b)) ? 1 : 0)
 #define SCREEN_TEXT_START 0
 #define SCREEN_ATTR_START 0x800
 #define FILL(a,d,c) pos=d;while(pos-->0)*a++=c
-void Update6847(PIXEL *data)
+void Update6847(Uint8 gmode)
 {
 	int pos = 0;
-	Uint8 gmode = spcsys.GMODE;
-	unsigned char *VRAM = &spcsys.VRAM[0];
+//	Uint8 gmode = spcsys.GMODE;
+	Uint8 *data = frameBuf;
 	Uint8 _gm0, _gm1, _ag, _css;
 	Uint16 _page, y, h, x, mask;
 	Uint8 attr, ch, b, cix, c;
@@ -188,7 +189,7 @@ void Update6847(PIXEL *data)
 void InitMC6847(unsigned char *fb, unsigned char* in_VRAM, int width, int height)
 {
 	int i, j;
-	//VRAM = in_VRAM;
+	VRAM = in_VRAM;
 	frameBuf = fb;
 	int mtop = (240 - height) / 2;
 	int mbottom = 240 - mtop;

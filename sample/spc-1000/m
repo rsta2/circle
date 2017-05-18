@@ -1,0 +1,3 @@
+#!/bin/bash
+make RASPPI=2
+cp kernel7.img /d/

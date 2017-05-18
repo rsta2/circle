@@ -67,6 +67,7 @@ public:
 	static void ShutdownHandler (void);
 	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
 	static CKernel *s_pThis;
+	static int printf(const char *format, ...);
 };
 
 #endif
