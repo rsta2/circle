@@ -18,7 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #ifdef __cplusplus
-#include "ay8910.h"
 extern "C" {
 #endif
 #include "Z80.h"
@@ -32,7 +31,7 @@ int printf(const char *format, ...);
  }
 #endif
 #include "kernel.h"
-#include "pwmsound.h"
+#include "ay8910.h"
 #include <circle/string.h>
 #include <circle/screen.h>
 #include <circle/debug.h>
@@ -52,14 +51,14 @@ int bpp;
 static const char FromKernel[] = "kernel";
 TKeyMap spcKeyHash[0x200];
 unsigned char keyMatrix[10];
-CKernel *CKernel::s_pThis = 0;   
+static CKernel *s_pThis = 0;   
 CKernel::CKernel (void)
 :	m_Memory (TRUE),
 	m_Timer(&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_ShutdownMode (ShutdownNone),
-	m_PwmSound (&m_Interrupt)
+	m_ShutdownMode (ShutdownNone)
+   ,m_PwmSound (&m_Interrupt)
 {
 	m_ActLED.Blink (5);	// show we are alive
 	s_pThis = this;
@@ -116,7 +115,7 @@ boolean CKernel::Initialize (void)
 	InitMC6847(m_Screen.GetBuffer(), &spcsys.VRAM[0], 256,192);	
 	spcsys.IPLK = 1;
 	spcsys.GMODE = 0;
-	Reset8910(&(spcsys.ay8910), 0);
+	//ay8910.Reset8910(&(spcsys.ay8910), 0);
 	
 //	strcpy((char *)&spcsys.VRAM, "SAMSUNG ELECTRONICS");
 	return bOK;
@@ -213,7 +212,7 @@ int CKernel::printf(const char *format, ...)
 	va_list args;
     va_start(args, format);
 	Message.Format(format, args);
-	s_pThis->m_Logger.Write (FromKernel, LogNotice, Message);
+	//s_pThis->m_Logger.Write (FromKernel, LogNotice, Message);
     va_end(args);	
 	return 0;
 }
@@ -306,12 +305,12 @@ void OutZ80(register word Port,register byte Value)
 //                    printf("%s(%d)\n", spcsys.prt.bufs, spcsys.prt.length);
                }
            }
-			Write8910(&spcsys.ay8910, (byte) spcsys.psgRegNum, Value);
+			//s_pThis->ay8910.Write8910(&spcsys.ay8910, (byte) spcsys.psgRegNum, Value);
 		}
 		else // Reg Num
 		{
 			spcsys.psgRegNum = Value;
-			WrCtrl8910(&spcsys.ay8910, Value);
+			//s_pThis->ay8910.WrCtrl8910(&spcsys.ay8910, Value);
 		}
 	}	
 }
@@ -365,7 +364,7 @@ byte InZ80(register word Port)
 			}
 			else 
 			{
-				int data = RdData8910(&spcsys.ay8910);
+				int data = 0;//s_pThis->ay8910.RdData8910(&spcsys.ay8910);
 				//printf("r(%d,%d)\n", spcsys.psgRegNum, data);
 				return data;
 			}

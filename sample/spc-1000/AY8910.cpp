@@ -16,10 +16,10 @@
 /**     by Kue-Hwan Sihn (ionique), (2006)                  **/
 /*************************************************************/
 
-#include "AY8910.h"
 #include <circle/bcmrandom.h>
 #include <circle/interrupt.h>
 #include <circle/timer.h>
+#include "AY8910.h"
 
 //#include "common.h"
 //#include "Sound.h"
@@ -32,14 +32,9 @@
 
 #define RNG_WARMUP_COUNT	0x40000
 
-CBcmRandomNumberGenerator m_Random;
-CInterruptSystem	m_Interrupt;
-CTimer				m_Timer(&m_Interrupt);
 
 extern "C" {
 	void memcpy(void *s1, const void *s2, size_t t);
-	void _lock_mutex_mmu(void *);
-	void _unlock_mutex_mmu(void *);
 }
 
 static const unsigned char Envelopes[16][32] =
@@ -70,7 +65,7 @@ static const int Volumes[16] =
 /** Reset the sound chip and use sound channels from the    **/
 /** one given in First.                                     **/
 /*************************************************************/
-void Reset8910(register AY8910 *D,int First)
+void CAY8910::Reset8910(register AY8910 *D,int First)
 {
   static byte RegInit[16] =
   {
@@ -109,7 +104,7 @@ void Reset8910(register AY8910 *D,int First)
 /** WrCtrl8910() *********************************************/
 /** Write a value V to the PSG Control Port.                **/
 /*************************************************************/
-void WrCtrl8910(AY8910 *D,byte V)
+void CAY8910::WrCtrl8910(AY8910 *D,byte V)
 {
   D->Latch=V&0x0F;
 }
@@ -117,7 +112,7 @@ void WrCtrl8910(AY8910 *D,byte V)
 /** WrData8910() *********************************************/
 /** Write a value V to the PSG Data Port.                   **/
 /*************************************************************/
-void WrData8910(AY8910 *D,byte V)
+void CAY8910::WrData8910(AY8910 *D,byte V)
 {
   Write8910(D,D->Latch,V);
 }
@@ -125,7 +120,7 @@ void WrData8910(AY8910 *D,byte V)
 /** RdData8910() *********************************************/
 /** Read a value from the PSG Data Port.                    **/
 /*************************************************************/
-byte RdData8910(AY8910 *D)
+byte CAY8910::RdData8910(AY8910 *D)
 {
   return(D->R[D->Latch]);
 }
@@ -134,7 +129,7 @@ byte RdData8910(AY8910 *D)
 /** Call this function to output a value V into the sound   **/
 /** chip.                                                   **/
 /*************************************************************/
-void Write8910(register AY8910 *D,register byte R,register byte V)
+void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
 {
   register int J,I;
 
@@ -276,7 +271,7 @@ void Write8910(register AY8910 *D,register byte R,register byte V)
 /** of Loop8910() in milliseconds.                          **/
 /*************************************************************/
 // Modified by ionique
-void Loop8910(register AY8910 *D,int mS)
+void CAY8910::Loop8910(register AY8910 *D,int mS)
 {
   register int J,I;
   /* Exit if no envelope running */
@@ -318,7 +313,7 @@ void Loop8910(register AY8910 *D,int mS)
 /** noise channels with MIDI drums, OR second argument with **/
 /** AY8910_DRUMS.                                           **/
 /*************************************************************/
-void Sync8910(register AY8910 *D,register byte Sync)
+void CAY8910::Sync8910(register AY8910 *D,register byte Sync)
 {
   register int J,I;
 
@@ -347,55 +342,28 @@ void Sync8910(register AY8910 *D,register byte Sync)
 /**                             ionique, 2006               **/
 /*************************************************************/
 
-/*************************************************************/
-/** Sound queue processing                                  **/
-/*************************************************************/
-
-/**
- * Sound Queue entry
- */
-typedef struct {
-	int chn;
-	int freq;
-	int vol;
-	int time; // in ms
-} TSndQEntry;
-
-#define MAX_SNDQ 1000	// 1000 is enough for most cases
-
-/**
- * Sound Queue structure
- */
-typedef struct {
-	int front;
-	int rear;
-	TSndQEntry qentry[MAX_SNDQ];
-} TSndQ;
-
 TSndQ SndQ;
 int LastBufTime = 0;
 int *sound_mutex;
 
-TSndQEntry *SndDequeue(void);
-
-void SndQueueInit(void)
+void CAY8910::SndQueueInit(void)
 {
 	int i;
 
-	_lock_mutex_mmu(sound_mutex);
-	LastBufTime = m_Timer.GetClockTicks();
+	lock_mutex_simple(sound_mutex);
+	//LastBufTime = m_Timer.GetClockTicks();
 	SndQ.front = SndQ.rear = 0;
-	_unlock_mutex_mmu(sound_mutex);
+	unlock_mutex_simple(sound_mutex);
 
 	for (i = 0; i < 6; i++)
 		Sound(i, 0, 0);
 }
 
-int SndEnqueue(int Chn, int Freq, int Vol)
+int CAY8910::SndEnqueue(int Chn, int Freq, int Vol)
 {
 	int tfront;
 
-	_lock_mutex_mmu(sound_mutex);
+	lock_mutex_simple(sound_mutex);
 	tfront = (SndQ.front + 1) % MAX_SNDQ;
 	if (tfront == SndQ.rear)
 	{
@@ -408,31 +376,31 @@ int SndEnqueue(int Chn, int Freq, int Vol)
 #else
 		//printf("Queue Full!!\n");
 #endif
-		_unlock_mutex_mmu(sound_mutex);
+		unlock_mutex_simple(sound_mutex);
 		return 0;
 	}
 	SndQ.qentry[SndQ.front].chn = Chn;
 	SndQ.qentry[SndQ.front].freq = Freq;
 	SndQ.qentry[SndQ.front].vol = Vol;
-	SndQ.qentry[SndQ.front].time = m_Timer.GetClockTicks() - LastBufTime;
+	SndQ.qentry[SndQ.front].time = 0;//m_Timer.GetClockTicks() - LastBufTime;
 	SndQ.front = tfront;
-	_unlock_mutex_mmu(sound_mutex);
+	unlock_mutex_simple(sound_mutex);
 	return 1;
 }
 
-TSndQEntry *SndDequeue(void)
+TSndQEntry *CAY8910::SndDequeue(void)
 {
 	int trear;
 
-	_lock_mutex_mmu(sound_mutex);
+	lock_mutex_simple(sound_mutex);
 	trear = SndQ.rear;
 	if (SndQ.front == SndQ.rear)
 	{
-		_unlock_mutex_mmu(sound_mutex);
+		unlock_mutex_simple(sound_mutex);
 		return NULL; // queue empty
 	}
 	SndQ.rear = (SndQ.rear + 1) % MAX_SNDQ;
-	_unlock_mutex_mmu(sound_mutex);
+	unlock_mutex_simple(sound_mutex);
 
 	return &(SndQ.qentry[trear]);
 }
@@ -443,7 +411,7 @@ TSndQEntry *SndDequeue(void)
 /** Dispatch sound queue entry and make real sound for SDL  **/
 /*************************************************************/
 
-static int Freq[6];
+//static int Freq[6];
 static int Vol[6];
 static int Interval[6];
 static int NoiseInterval[6];
@@ -454,7 +422,7 @@ static volatile int JF = 0;
 //#define DEVFREQ 22050
 #define DEVFREQ 44100
 
-void Sound(int Chn,int Freq,int Volume)
+void CAY8910::Sound(int Chn,int Freq,int Volume)
 {
 	int interval;
 
@@ -470,7 +438,7 @@ void Sound(int Chn,int Freq,int Volume)
 		Vol[Chn] = Volume * 16384;//spconf.snd_vol; // do not exceed 32767
 }
 
-void DSPCallBack(void* unused, unsigned char *stream, int len)
+void CAY8910::DSPCallBack(void* unused, unsigned char *stream, int len)
 {
 	register int   J;
 	static int R1 = 0,R2 = 0;
@@ -521,6 +489,7 @@ void DSPCallBack(void* unused, unsigned char *stream, int len)
 			{
 				if (Phase[i] == 0)
 					NoiseInterval[i] = Interval[i] + (((150 * m_Random.GetNumber ()) / RNG_WARMUP_COUNT) - 75);
+//					NoiseInterval[i] = Interval[i];// + (((150 * m_Random.GetNumber ()) / RNG_WARMUP_COUNT) - 75);
 				if (Phase[i] < (NoiseInterval[i]/2))
 				{
 					R1 += Vol[i];
@@ -547,13 +516,13 @@ void DSPCallBack(void* unused, unsigned char *stream, int len)
 		stream[J+3]=R1>>8;
 	}
 
-	LastBufTime = m_Timer.GetClockTicks();
+	//LastBufTime = m_Timer.GetClockTicks();
 	while (qentry = SndDequeue())
 		Sound(qentry->chn, qentry->freq, qentry->vol);
 
 }
 
-void SetSound(int Channel,int NewType)
+void CAY8910::SetSound(int Channel,int NewType)
 {
 //	printf("SetSound: Chn=%d, NewType=%d\n", Channel, NewType);
 }

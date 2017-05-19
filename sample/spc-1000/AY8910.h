@@ -25,28 +25,13 @@
 #ifndef BYTE_TYPE_DEFINED
 #define BYTE_TYPE_DEFINED
 typedef unsigned char byte;
+#endif
 
                                /* SetSound() arguments:      */
 #define SND_MELODIC     0      /* Melodic sound (default)    */
 #define SND_RECTANGLE   0      /* Rectangular wave           */
 #define SND_TRIANGLE    1      /* Triangular wave (1/2 rect.)*/
 #define SND_NOISE       2      /* White noise                */
-
-/** Sound() **************************************************/
-/** Generate sound of given frequency (Hz) and volume       **/
-/** (0..255) via given channel. Setting Freq=0 or Volume=0  **/
-/** turns sound off.                                        **/
-/*************************************************************/
-void Sound(int Channel,int Freq,int Volume);
-int SndEnqueue(int Channel,int Freq,int Volume);
-
-/** SetSound() ***********************************************/
-/** Set sound type at a given channel. MIDI instruments can **/
-/** be set directly by ORing their numbers with SND_MIDI.   **/
-/*************************************************************/
-void SetSound(int Channel,int NewType);
-#endif
-
 /** AY8910 ***************************************************/
 /** This data structure stores AY8910 state.                **/
 /*************************************************************/
@@ -64,55 +49,118 @@ typedef struct
   int ECount;                  /* Envelope step counter      */
   int EPhase;                  /* Envelope phase             */
 } AY8910;
-
-/** Reset8910() **********************************************/
-/** Reset the sound chip and use sound channels from the    **/
-/** one given in First.                                     **/
 /*************************************************************/
-void Reset8910(register AY8910 *D,int First);
-
-/** Write8910() **********************************************/
-/** Call this function to output a value V into the sound   **/
-/** chip.                                                   **/
+/** Sound queue processing                                  **/
 /*************************************************************/
-void Write8910(register AY8910 *D,register byte R,register byte V);
 
-/** WrCtrl8910() *********************************************/
-/** Write a value V to the PSG Control Port.                **/
-/*************************************************************/
-void WrCtrl8910(AY8910 *D,byte V);
+/**
+ * Sound Queue entry
+ */
+typedef struct {
+	int chn;
+	int freq;
+	int vol;
+	int time; // in ms
+} TSndQEntry;
 
-/** WrData8910() *********************************************/
-/** Write a value V to the PSG Data Port.                   **/
-/*************************************************************/
-void WrData8910(AY8910 *D,byte V);
+#define MAX_SNDQ 1000	// 1000 is enough for most cases
 
-/** RdData8910() *********************************************/
-/** Read a value from the PSG Data Port.                    **/
-/*************************************************************/
-byte RdData8910(AY8910 *D);
+/**
+ * Sound Queue structure
+ */
+typedef struct {
+	int front;
+	int rear;
+	TSndQEntry qentry[MAX_SNDQ];
+} TSndQ;
 
-/** Sync8910() ***********************************************/
-/** Flush all accumulated changes by issuing Sound() calls  **/
-/** and set the synchronization on/off. The second argument **/
-/** should be AY8910_SYNC/AY8910_ASYNC to set/reset sync,   **/
-/** or AY8910_FLUSH to leave sync mode as it is. To emulate **/
-/** noise channels with MIDI drums, OR second argument with **/
-/** AY8910_DRUMS.                                           **/
-/*************************************************************/
-void Sync8910(register AY8910 *D,register byte Sync);
 
-/** Loop8910() ***********************************************/
-/** Call this function periodically to update volume        **/
-/** envelopes. Use mS to pass the time since the last call  **/
-/** of Loop8910() in milliseconds.                          **/
-/*************************************************************/
-void Loop8910(register AY8910 *D,int mS);
+#include <circle/spinlock.h>
+#include <circle/bcmrandom.h>
+#include <circle/interrupt.h>
+#include <circle/timer.h>
 
 /*************************************************************/
-/** SPC-1000 specific - ionique                             **/
-/*************************************************************/
-void SndQueueInit(void);
-void OpenSoundDevice(void);
+class CAY8910 {
+	private:
+		/** Sound() **************************************************/
+		/** Generate sound of given frequency (Hz) and volume       **/
+		/** (0..255) via given channel. Setting Freq=0 or Volume=0  **/
+		/** turns sound off.                                        **/
+		void Sound(int Channel,int Freq,int Volume);
+		int SndEnqueue(int Channel,int Freq,int Volume);
+		/** SetSound() ***********************************************/
+		/** Set sound type at a given channel. MIDI instruments can **/
+		/** be set directly by ORing their numbers with SND_MIDI.   **/
+		/*************************************************************/
+		void SetSound(int Channel,int NewType);
+		/*************************************************************/
+		/** SPC-1000 specific - ionique                             **/
+		/*************************************************************/
+		void SndQueueInit(void);
+		TSndQEntry *SndDequeue(void);
+//		void OpenSoundDevice(void);
+		void lock_mutex_simple(void *) {
+				m_SpinLock.Acquire();
+		};
+		void unlock_mutex_simple(void *) {
+				m_SpinLock.Release();
+		};
+
+		CBcmRandomNumberGenerator m_Random;
+		CInterruptSystem	m_Interrupt;
+		CTimer				m_Timer;
+		CSpinLock			m_SpinLock;	
+	public: 
+		CAY8910(): m_Timer(&m_Interrupt)
+		{
+			m_Interrupt.Initialize();
+		}
+		/** Reset8910() **********************************************/
+		/** Reset the sound chip and use sound channels from the    **/
+		/** one given in First.                                     **/
+		/*************************************************************/
+		void Reset8910(register AY8910 *D,int First);
+
+		/** Write8910() **********************************************/
+		/** Call this function to output a value V into the sound   **/
+		/** chip.                                                   **/
+		/*************************************************************/
+		void Write8910(register AY8910 *D,register byte R,register byte V);
+
+		/** WrCtrl8910() *********************************************/
+		/** Write a value V to the PSG Control Port.                **/
+		/*************************************************************/
+		void WrCtrl8910(AY8910 *D,byte V);
+
+		/** WrData8910() *********************************************/
+		/** Write a value V to the PSG Data Port.                   **/
+		/*************************************************************/
+		void WrData8910(AY8910 *D,byte V);
+
+		/** RdData8910() *********************************************/
+		/** Read a value from the PSG Data Port.                    **/
+		/*************************************************************/
+		byte RdData8910(AY8910 *D);
+
+		/** Sync8910() ***********************************************/
+		/** Flush all accumulated changes by issuing Sound() calls  **/
+		/** and set the synchronization on/off. The second argument **/
+		/** should be AY8910_SYNC/AY8910_ASYNC to set/reset sync,   **/
+		/** or AY8910_FLUSH to leave sync mode as it is. To emulate **/
+		/** noise channels with MIDI drums, OR second argument with **/
+		/** AY8910_DRUMS.                                           **/
+		/*************************************************************/
+		void Sync8910(register AY8910 *D,register byte Sync);
+
+		/** Loop8910() ***********************************************/
+		/** Call this function periodically to update volume        **/
+		/** envelopes. Use mS to pass the time since the last call  **/
+		/** of Loop8910() in milliseconds.                          **/
+		/*************************************************************/
+		void Loop8910(register AY8910 *D,int mS);	
+		void DSPCallBack(void* unused, unsigned char *stream, int len);
+};
+
 
 #endif /* AY8910_H */

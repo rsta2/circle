@@ -6,7 +6,8 @@
 CIRCLEHOME = ../..
 
 	
-OBJS = main.o kernel.o Z80SPC.o spcall.o MC6847.o AY8910.o pwmsound.o
+OBJS = main.o kernel.o Z80SPC.o spcall.o MC6847.o pwmsound.o AY8910.o
+#AY8910.o 
 
 LIBS =$(CIRCLEHOME)/lib/usb/libusb.a \
 	  $(CIRCLEHOME)/lib/input/libinput.a \

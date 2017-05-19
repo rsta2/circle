@@ -73,7 +73,7 @@ unsigned CPWMSound::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 
 	unsigned nResult = nChunkSize;
 	
-	DSPCallBack((void *)0, (unsigned char *)pBuffer, nChunkSize);
+	//DSPCallBack((void *)0, (unsigned char *)pBuffer, nChunkSize);
 
 	return nResult;
 }

@@ -63,12 +63,15 @@ private:
 	CDWHCIDevice		m_DWHCI;
 	CPWMSound			m_PwmSound; 
 
+	//void OutZ80(register word Port,register byte Value);
+	//byte InZ80(register word Port);	
 	volatile TShutdownMode m_ShutdownMode;	
 public:
 	CLogger			m_Logger;
+	CAY8910				ay8910;
 	static void ShutdownHandler (void);
 	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
-	static CKernel *s_pThis;
+//	static CKernel *s_pThis;
 	static int printf(const char *format, ...);
 };
 

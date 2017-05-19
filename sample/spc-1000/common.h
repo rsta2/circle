@@ -8,6 +8,8 @@
 #ifndef __SPC_COMMON_H__
 #define __SPC_COMMON_H__
 
+#include "AY8910.h"
+
 #define MAX_PATH_LENGTH 2048
 
 typedef unsigned int UINT32;
