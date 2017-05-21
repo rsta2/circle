@@ -74,7 +74,7 @@ typedef struct {
 	TSndQEntry qentry[MAX_SNDQ];
 } TSndQ;
 
-
+#if defined(__cplusplus)
 #include <circle/spinlock.h>
 #include <circle/bcmrandom.h>
 #include <circle/interrupt.h>
@@ -108,14 +108,11 @@ class CAY8910 {
 		};
 
 		CBcmRandomNumberGenerator m_Random;
-		CInterruptSystem	m_Interrupt;
-		CTimer				m_Timer;
+		CTimer				*m_Timer;
 		CSpinLock			m_SpinLock;	
+		int DevFreq;
 	public: 
-		CAY8910(): m_Timer(&m_Interrupt)
-		{
-			m_Interrupt.Initialize();
-		}
+		CAY8910(CTimer *m_Timer);
 		/** Reset8910() **********************************************/
 		/** Reset the sound chip and use sound channels from the    **/
 		/** one given in First.                                     **/
@@ -159,8 +156,8 @@ class CAY8910 {
 		/** of Loop8910() in milliseconds.                          **/
 		/*************************************************************/
 		void Loop8910(register AY8910 *D,int mS);	
-		void DSPCallBack(void* unused, unsigned char *stream, int len);
+		void DSPCallBack(unsigned char *stream, int len);
 };
 
-
+#endif /* C++ */
 #endif /* AY8910_H */

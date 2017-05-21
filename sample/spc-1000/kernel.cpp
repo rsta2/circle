@@ -35,7 +35,11 @@ int printf(const char *format, ...);
 #include <circle/string.h>
 #include <circle/screen.h>
 #include <circle/debug.h>
+#include <circle/util.h>
 #include <assert.h>
+#include "sound.h"
+
+#define SOUND_SAMPLES		(sizeof Sound / sizeof Sound[0] / SOUND_CHANNELS)
 
 SPCSystem spcsys;
 
@@ -44,22 +48,25 @@ enum colorNum {
 	COLOR_BLACK, COLOR_GREEN, COLOR_YELLOW, COLOR_BLUE,
 	COLOR_RED, COLOR_BUFF, COLOR_CYAN, COLOR_MAGENTA,
 	COLOR_ORANGE, COLOR_CYANBLUE, COLOR_LGREEN, COLOR_DGREEN };
-CScreenDevice m_Screen(320,240);
 
 void memset(byte *p, int length, int b);
 int bpp;
 static const char FromKernel[] = "kernel";
-TKeyMap spcKeyHash[0x200];
+TKeyMap spcKeyHash[0x200]; 
 unsigned char keyMatrix[10];
-static CKernel *s_pThis = 0;   
+static CKernel *s_pThis;   
 CKernel::CKernel (void)
-:	m_Memory (TRUE),
+:	m_Screen(320,240),
+	m_Memory (TRUE),
 	m_Timer(&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer),
 	m_ShutdownMode (ShutdownNone)
-   ,m_PwmSound (&m_Interrupt)
+   ,ay8910(&m_Timer)
+   ,m_PWMSound (&m_Interrupt)
+  // ,m_PWMSoundDevice (&m_Interrupt)
 {
+	//m_PWMSoundDevice.CancelPlayback();
 	m_ActLED.Blink (5);	// show we are alive
 	s_pThis = this;
 }
@@ -76,10 +83,12 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_Screen.Initialize ();
 	}
-	// if (bOK)
-	// {
-		// bOK = m_Serial.Initialize (115200);
-	// }
+
+	if (bOK)
+	{
+		bOK = m_Serial.Initialize (115200);
+	}
+
 	if (bOK)
 	{
 		CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
@@ -103,22 +112,40 @@ boolean CKernel::Initialize (void)
 		bOK = m_DWHCI.Initialize ();
 	}                       	
 	int num = 0;
-	memset(spcKeyHash, sizeof(spcKeyHash)*0xff, 0);
+
+	//memset(spcKeyHash, sizeof(spcKeyHash)*0xff, 0);
 	do {
 		spcKeyHash[spcKeyMap[num].sym] = spcKeyMap[num];
 	} while(spcKeyMap[num++].sym != 0);
-	memcpy(spcsys.ROM, ROM, 32768);
-	memset(spcsys.RAM, 65536, 0x0);
+//	memcpy(spcsys.ROM, ROM, 32768);
+//	memset(spcsys.RAM, 65536, 0x0);
 	memset(spcsys.VRAM, 0x2000, 0x0);
 	memset(keyMatrix, 10, 0xff);
 	bpp = m_Screen.GetDepth();
 	InitMC6847(m_Screen.GetBuffer(), &spcsys.VRAM[0], 256,192);	
 	spcsys.IPLK = 1;
 	spcsys.GMODE = 0;
-	//ay8910.Reset8910(&(spcsys.ay8910), 0);
-	
+	ay8910.Reset8910(&(spcsys.ay8910), 0);
+//	m_PWMsound.Play(this, SOUND_CHANNELS, SOUND_BITS);
 //	strcpy((char *)&spcsys.VRAM, "SAMSUNG ELECTRONICS");
 	return bOK;
+}
+
+int CKernel::dspcallback(unsigned char *stream, int len) 
+{
+	static unsigned int nCount = 0;
+	ay8910.DSPCallBack(stream, len);
+	
+//	memcpy(stream, (void *)(&Sound[0]+nCount), len);
+	nCount += len;
+	if (nCount > sizeof(Sound))
+	{
+		m_Screen.Rotor (0, nCount);
+		nCount = 0;
+		
+	}
+//	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
+	return len;
 }
 
 TShutdownMode CKernel::Run (void)
@@ -127,7 +154,8 @@ TShutdownMode CKernel::Run (void)
 	unsigned int t = 0;
 	int count = 0;	
 	CString Message;
-	
+	m_PWMSound.Play(this, SOUND_CHANNELS, SOUND_BITS,Sound, SOUND_SAMPLES );
+	//m_PWMSound.Playback (Sound, SOUND_SAMPLES, SOUND_CHANNELS, SOUND_BITS);
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 	CUSBKeyboardDevice *pKeyboard = (CUSBKeyboardDevice *) m_DeviceNameService.GetDevice ("ukbd1", FALSE);
 	if (pKeyboard == 0)
@@ -162,6 +190,7 @@ TShutdownMode CKernel::Run (void)
 			{
 				Update6847(spcsys.GMODE);
 			}
+			//ay8910.Loop8910(&spcsys.ay8910, 1);
 			if (frame%1000  == 0)
 			{
 				//printf ("Address: %04x)", R->PC);
@@ -305,12 +334,12 @@ void OutZ80(register word Port,register byte Value)
 //                    printf("%s(%d)\n", spcsys.prt.bufs, spcsys.prt.length);
                }
            }
-			//s_pThis->ay8910.Write8910(&spcsys.ay8910, (byte) spcsys.psgRegNum, Value);
+			s_pThis->ay8910.Write8910(&spcsys.ay8910, (byte) spcsys.psgRegNum, Value);
 		}
 		else // Reg Num
 		{
 			spcsys.psgRegNum = Value;
-			//s_pThis->ay8910.WrCtrl8910(&spcsys.ay8910, Value);
+			s_pThis->ay8910.WrCtrl8910(&spcsys.ay8910, Value);
 		}
 	}	
 }
@@ -364,7 +393,7 @@ byte InZ80(register word Port)
 			}
 			else 
 			{
-				int data = 0;//s_pThis->ay8910.RdData8910(&spcsys.ay8910);
+				int data = s_pThis->ay8910.RdData8910(&spcsys.ay8910);
 				//printf("r(%d,%d)\n", spcsys.psgRegNum, data);
 				return data;
 			}

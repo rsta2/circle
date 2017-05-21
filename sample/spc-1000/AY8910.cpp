@@ -20,7 +20,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include "AY8910.h"
-
+#define DEVFREQ 44100
 //#include "common.h"
 //#include "Sound.h"
 //#include <string.h>
@@ -60,6 +60,14 @@ static const unsigned char Envelopes[16][32] =
 static const int Volumes[16] =
 { 0,1,2,4,6,8,11,16,23,32,45,64,90,128,180,255 };
 //{ 0,16,33,50,67,84,101,118,135,152,169,186,203,220,237,254 };
+
+CAY8910::CAY8910(CTimer *m_Timer)
+{
+	this->m_Timer = m_Timer;
+	DevFreq = DEVFREQ;
+	SndQueueInit();
+}
+ 
 
 /** Reset8910() **********************************************/
 /** Reset the sound chip and use sound channels from the    **/
@@ -351,7 +359,7 @@ void CAY8910::SndQueueInit(void)
 	int i;
 
 	lock_mutex_simple(sound_mutex);
-	//LastBufTime = m_Timer.GetClockTicks();
+	LastBufTime = m_Timer->GetClockTicks();
 	SndQ.front = SndQ.rear = 0;
 	unlock_mutex_simple(sound_mutex);
 
@@ -382,7 +390,7 @@ int CAY8910::SndEnqueue(int Chn, int Freq, int Vol)
 	SndQ.qentry[SndQ.front].chn = Chn;
 	SndQ.qentry[SndQ.front].freq = Freq;
 	SndQ.qentry[SndQ.front].vol = Vol;
-	SndQ.qentry[SndQ.front].time = 0;//m_Timer.GetClockTicks() - LastBufTime;
+	SndQ.qentry[SndQ.front].time = m_Timer->GetClockTicks() - LastBufTime;
 	SndQ.front = tfront;
 	unlock_mutex_simple(sound_mutex);
 	return 1;
@@ -392,15 +400,15 @@ TSndQEntry *CAY8910::SndDequeue(void)
 {
 	int trear;
 
-	lock_mutex_simple(sound_mutex);
+	//lock_mutex_simple(sound_mutex);
 	trear = SndQ.rear;
 	if (SndQ.front == SndQ.rear)
 	{
-		unlock_mutex_simple(sound_mutex);
+		//unlock_mutex_simple(sound_mutex);
 		return NULL; // queue empty
 	}
 	SndQ.rear = (SndQ.rear + 1) % MAX_SNDQ;
-	unlock_mutex_simple(sound_mutex);
+	//unlock_mutex_simple(sound_mutex);
 
 	return &(SndQ.qentry[trear]);
 }
@@ -420,7 +428,7 @@ static int DevFreq;
 static volatile int JF = 0;
 
 //#define DEVFREQ 22050
-#define DEVFREQ 44100
+
 
 void CAY8910::Sound(int Chn,int Freq,int Volume)
 {
@@ -438,7 +446,7 @@ void CAY8910::Sound(int Chn,int Freq,int Volume)
 		Vol[Chn] = Volume * 16384;//spconf.snd_vol; // do not exceed 32767
 }
 
-void CAY8910::DSPCallBack(void* unused, unsigned char *stream, int len)
+void CAY8910::DSPCallBack(unsigned char *stream, int len)
 {
 	register int   J;
 	static int R1 = 0,R2 = 0;
@@ -448,6 +456,7 @@ void CAY8910::DSPCallBack(void* unused, unsigned char *stream, int len)
 
 	for(J=0;J<len;J+=4) // for the requested amount of buffer
 	{
+#if 1		
 		vTime = (250*J)/DevFreq;
 		qTime = SndPeekQueue();
 
@@ -458,7 +467,7 @@ void CAY8910::DSPCallBack(void* unused, unsigned char *stream, int len)
 			Sound(qentry->chn, qentry->freq, qentry->vol);
 			qTime = SndPeekQueue();
 		}
-
+#endif
 		R1 = 0;
 		for (i = 0; i < 3; i++) // Tone Generation
 		{
@@ -516,9 +525,11 @@ void CAY8910::DSPCallBack(void* unused, unsigned char *stream, int len)
 		stream[J+3]=R1>>8;
 	}
 
-	//LastBufTime = m_Timer.GetClockTicks();
+	LastBufTime = m_Timer->GetClockTicks();
+#if 1	
 	while (qentry = SndDequeue())
 		Sound(qentry->chn, qentry->freq, qentry->vol);
+#endif
 
 }
 

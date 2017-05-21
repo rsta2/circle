@@ -25,12 +25,27 @@
 #include <circle/interrupt.h>
 #include <circle/types.h>
 
+typedef int (*dspcallback)(void* unused, unsigned char *stream, int len);
+
 class CPWMSound : private CPWMSoundBaseDevice
 {
 public:
 	CPWMSound (CInterruptSystem *pInterrupt);
 	~CPWMSound (void);
-	void Play(void) {
+	void Play(CKernel *kernel, 
+//		       unsigned  nChunkSize,		// for Stereo the L/R samples are count as one
+		       unsigned  nChannels,		// 1 (Mono) or 2 (Stereo)
+		       unsigned  nBitsPerSample,
+			    void	*pSoundData,		// sample rate 44100 Hz
+		       unsigned  nSamples			   
+			   )	// 8 (unsigned sound data) or 16 (signed sound data)	
+	{
+		m_kernel = kernel;
+//		m_nChunkSize = nChunkSize;
+		m_nChannels = nChannels;
+		m_nBitsPerSample = nBitsPerSample;
+		m_p = m_pSoundData	 = (u8 *) pSoundData;
+		m_s = m_nSamples	 = nSamples;
 		Start();
 	}
 
@@ -46,10 +61,13 @@ public:
 	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
+	CKernel *m_kernel;
 	u8	 *m_pSoundData;
 	unsigned  m_nSamples;
 	unsigned  m_nChannels;
 	unsigned  m_nBitsPerSample;
+	unsigned  m_s;
+	u8   *m_p;
 	CBcmRandomNumberGenerator m_Random;
 };
 

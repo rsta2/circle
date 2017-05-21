@@ -17,6 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+#include "kernel.h"
 #include "pwmsound.h"
 #include <assert.h>
 
@@ -26,7 +27,6 @@
 #define SAMPLE_RATE		44100
 
 void DSPCallBack(void* unused, unsigned char *stream, int len);
-
 
 CPWMSound::CPWMSound(CInterruptSystem *pInterrupt)
 :	CPWMSoundBaseDevice (pInterrupt, SAMPLE_RATE),
@@ -38,7 +38,7 @@ CPWMSound::CPWMSound(CInterruptSystem *pInterrupt)
 CPWMSound::~CPWMSound(void)
 {
 }
-
+ 
 void CPWMSound::Playback (void *pSoundData, unsigned nSamples, unsigned nChannels, unsigned nBitsPerSample)
 {
 	assert (!IsActive ());
@@ -47,8 +47,8 @@ void CPWMSound::Playback (void *pSoundData, unsigned nSamples, unsigned nChannel
 	assert (nChannels == 1 || nChannels == 2);
 	assert (nBitsPerSample == 8 || nBitsPerSample == 16);
 
-	m_pSoundData	 = (u8 *) pSoundData;
-	m_nSamples	 = nSamples;
+	m_p = m_pSoundData	 = (u8 *) pSoundData;
+	m_s = m_nSamples	 = nSamples;
 	m_nChannels	 = nChannels;
 	m_nBitsPerSample = nBitsPerSample;
 
@@ -71,9 +71,68 @@ unsigned CPWMSound::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 	assert (nChunkSize > 0);
 	assert ((nChunkSize & 1) == 0);
 
-	unsigned nResult = nChunkSize;
-	
-	//DSPCallBack((void *)0, (unsigned char *)pBuffer, nChunkSize);
+	unsigned nResult = 0;
 
+	if (m_nSamples == 0)
+	{
+		m_kernel->dspcallback((unsigned char *)pBuffer, nChunkSize);
+		return nChunkSize*2;
+		//m_pSoundData	 = (u8 *) m_p;
+		//m_nSamples	 = m_s;
+	}
+
+	assert (m_pSoundData != 0);
+	assert (m_nChannels == 1 || m_nChannels == 2);
+	assert (m_nBitsPerSample == 8 || m_nBitsPerSample == 16);
+
+	for (unsigned nSample = 0; nSample < nChunkSize / 2;)		// 2 channels on output
+	{
+		unsigned nValue = *m_pSoundData++;
+		if (m_nBitsPerSample > 8)
+		{
+			nValue |= (unsigned) *m_pSoundData++ << 8;
+			nValue = (nValue + 0x8000) & 0xFFFF;		// signed -> unsigned (16 bit)
+		}
+		
+		if (m_nBitsPerSample >= 12)
+		{
+			nValue >>= m_nBitsPerSample - 12;
+		}
+		else
+		{
+			nValue <<= 12 - m_nBitsPerSample;
+		}
+
+		pBuffer[nSample++] = nValue;
+	
+		if (m_nChannels == 2)
+		{
+			nValue = *m_pSoundData++;
+			if (m_nBitsPerSample > 8)
+			{
+				nValue |= (unsigned) *m_pSoundData++ << 8;
+				nValue = (nValue + 0x8000) & 0xFFFF;	// signed -> unsigned (16 bit)
+			}
+
+			if (m_nBitsPerSample >= 12)
+			{
+				nValue >>= m_nBitsPerSample - 12;
+			}
+			else
+			{
+				nValue <<= 12 - m_nBitsPerSample;
+			}
+		}
+
+		pBuffer[nSample++] = nValue;
+
+		nResult += 2;
+
+		if (--m_nSamples == 0)
+		{
+			break;
+		}
+	}
+	
 	return nResult;
 }

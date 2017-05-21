@@ -20,18 +20,24 @@
 #ifndef _kernel_h
 #define _kernel_h
 
+class CKernel;
+
 #include <circle/memory.h>
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
 #include <circle/screen.h>
 #include <circle/serial.h>
-#include <circle/usb/usbkeyboard.h>   
-#include <circle/usb/dwhcidevice.h>
-#include <circle/util.h> 
+#include <circle/exceptionhandler.h>
+#include <circle/interrupt.h>
+#include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/types.h>
+#include <circle/pwmsounddevice.h>
+#include <circle/usb/usbkeyboard.h>   
+#include <circle/usb/dwhcidevice.h>
 #include "pwmsound.h"
+#include "ay8910.h"
 
 enum TShutdownMode
 {
@@ -53,25 +59,29 @@ public:
 private:
 	// do not change this order
 	CMemorySystem		m_Memory;
-	CActLED			m_ActLED;
+	CActLED				m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
-	//CScreenDevice		m_Screen;
-	CTimer				m_Timer;
-	CInterruptSystem	m_Interrupt;
+	CScreenDevice		m_Screen;
 	CSerialDevice		m_Serial;
-	CDWHCIDevice		m_DWHCI;
-	CPWMSound			m_PwmSound; 
+	CExceptionHandler	m_ExceptionHandler;
+	CInterruptSystem	m_Interrupt;
+	CTimer				m_Timer;
+	CLogger				m_Logger;
 
+	CDWHCIDevice		m_DWHCI;
+	CPWMSound			m_PWMSound; 
+//	CPWMSoundDevice		m_PWMSoundDevice;
+	
 	//void OutZ80(register word Port,register byte Value);
 	//byte InZ80(register word Port);	
 	volatile TShutdownMode m_ShutdownMode;	
 public:
-	CLogger			m_Logger;
 	CAY8910				ay8910;
+	int dspcallback(unsigned char *stream, int len);
 	static void ShutdownHandler (void);
 	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
-//	static CKernel *s_pThis;
+	//static CKernel *s_pThis;
 	static int printf(const char *format, ...);
 };
 
