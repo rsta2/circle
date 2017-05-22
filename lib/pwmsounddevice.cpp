@@ -38,7 +38,7 @@ CPWMSoundDevice::~CPWMSoundDevice (void)
 
 void CPWMSoundDevice::Playback (void *pSoundData, unsigned nSamples, unsigned nChannels, unsigned nBitsPerSample)
 {
-	assert (!IsActive ());
+//	assert (!IsActive ());
 
 	assert (pSoundData != 0);
 	assert (nChannels == 1 || nChannels == 2);

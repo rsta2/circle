@@ -291,7 +291,7 @@ boolean CPWMSoundBaseDevice::GetNextChunk (void)
 	unsigned nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
 	if (nChunkSize == 0)
 	{
-		return FALSE;
+		return FALSE; 
 	}
 
 	unsigned nTransferLength = nChunkSize * sizeof (u32);

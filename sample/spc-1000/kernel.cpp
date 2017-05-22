@@ -190,7 +190,6 @@ TShutdownMode CKernel::Run (void)
 			{
 				Update6847(spcsys.GMODE);
 			}
-			//ay8910.Loop8910(&spcsys.ay8910, 1);
 			if (frame%1000  == 0)
 			{
 				//printf ("Address: %04x)", R->PC);
@@ -201,6 +200,7 @@ TShutdownMode CKernel::Run (void)
 		}
 		count = R->ICount;
 		ExecZ80(R); // Z-80 emulation
+		ay8910.Loop8910(&spcsys.ay8910, count - R->ICount);
 		spcsys.cycles += (count - R->ICount);
 	}
 	return ShutdownHalt;

@@ -30,6 +30,15 @@
 #define NULL 0
 #endif
 
+#define LOCK_MUTEX _lock_mutex_mmu
+#define UNLOCK_MUTEX _unlock_mutex_mmu
+
+extern "C" {
+extern void LOCK_MUTEX(void *);
+extern void UNLOCK_MUTEX(void *);
+}
+
+
 #define RNG_WARMUP_COUNT	0x40000
 
 
@@ -358,10 +367,10 @@ void CAY8910::SndQueueInit(void)
 {
 	int i;
 
-	lock_mutex_simple(sound_mutex);
+	LOCK_MUTEX(sound_mutex);
 	LastBufTime = m_Timer->GetClockTicks();
 	SndQ.front = SndQ.rear = 0;
-	unlock_mutex_simple(sound_mutex);
+	UNLOCK_MUTEX(sound_mutex);
 
 	for (i = 0; i < 6; i++)
 		Sound(i, 0, 0);
@@ -371,7 +380,7 @@ int CAY8910::SndEnqueue(int Chn, int Freq, int Vol)
 {
 	int tfront;
 
-	lock_mutex_simple(sound_mutex);
+	LOCK_MUTEX(sound_mutex);
 	tfront = (SndQ.front + 1) % MAX_SNDQ;
 	if (tfront == SndQ.rear)
 	{
@@ -384,7 +393,7 @@ int CAY8910::SndEnqueue(int Chn, int Freq, int Vol)
 #else
 		//printf("Queue Full!!\n");
 #endif
-		unlock_mutex_simple(sound_mutex);
+		UNLOCK_MUTEX(sound_mutex);
 		return 0;
 	}
 	SndQ.qentry[SndQ.front].chn = Chn;
@@ -392,7 +401,7 @@ int CAY8910::SndEnqueue(int Chn, int Freq, int Vol)
 	SndQ.qentry[SndQ.front].vol = Vol;
 	SndQ.qentry[SndQ.front].time = m_Timer->GetClockTicks() - LastBufTime;
 	SndQ.front = tfront;
-	unlock_mutex_simple(sound_mutex);
+	UNLOCK_MUTEX(sound_mutex);
 	return 1;
 }
 
@@ -400,15 +409,15 @@ TSndQEntry *CAY8910::SndDequeue(void)
 {
 	int trear;
 
-	//lock_mutex_simple(sound_mutex);
+	LOCK_MUTEX(sound_mutex);
 	trear = SndQ.rear;
 	if (SndQ.front == SndQ.rear)
 	{
-		//unlock_mutex_simple(sound_mutex);
+		UNLOCK_MUTEX(sound_mutex);
 		return NULL; // queue empty
 	}
 	SndQ.rear = (SndQ.rear + 1) % MAX_SNDQ;
-	//unlock_mutex_simple(sound_mutex);
+	UNLOCK_MUTEX(sound_mutex);
 
 	return &(SndQ.qentry[trear]);
 }

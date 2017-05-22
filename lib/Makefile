@@ -26,13 +26,20 @@ OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o gpiopinfiq.o li
 	  gpiomanager.o gpioclock.o dmachannel.o pwmsounddevice.o pwmsoundbasedevice.o pwmoutput.o tracer.o \
 	  i2cmaster.o i2cslave.o spimaster.o spimasterdma.o virtualgpiopin.o machineinfo.o \
 	  multicore.o spinlock.o bcmrandom.o cache-v7.o cputhrottle.o \
-	  ptrarray.o ptrlist.o time.o
+	  ptrarray.o ptrlist.o time.o libstub.o
 
-all: startup.o libcircle.a
+ifeq ($(strip $(DEPTH)), 8)
+LIBCIRCLE = libcircle8
+else
+LIBCIRCLE = libcircle
+endif
+
+all: startup.o $(LIBCIRCLE).a
 
 startup.o: startup.S
+libstub.o: libstub.S
 
-libcircle.a: $(OBJS)
+$(LIBCIRCLE).a: $(OBJS)
 	rm -f $@
 	$(AR) cr $@ $(OBJS)
 
