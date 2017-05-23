@@ -75,8 +75,8 @@ unsigned CPWMSound::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 
 	if (m_nSamples == 0)
 	{
-		m_kernel->dspcallback((unsigned char *)pBuffer, nChunkSize);
-		return nChunkSize*2;
+		m_kernel->dspcallback(pBuffer, nChunkSize);
+		return nChunkSize;
 		//m_pSoundData	 = (u8 *) m_p;
 		//m_nSamples	 = m_s;
 	}

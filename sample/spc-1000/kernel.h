@@ -78,7 +78,7 @@ private:
 	volatile TShutdownMode m_ShutdownMode;	
 public:
 	CAY8910				ay8910;
-	int dspcallback(unsigned char *stream, int len);
+	int dspcallback(unsigned *stream, int len);
 	static void ShutdownHandler (void);
 	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
 	//static CKernel *s_pThis;

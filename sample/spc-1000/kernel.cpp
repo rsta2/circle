@@ -131,7 +131,7 @@ boolean CKernel::Initialize (void)
 	return bOK;
 }
 
-int CKernel::dspcallback(unsigned char *stream, int len) 
+int CKernel::dspcallback(u32 *stream, int len) 
 {
 	static unsigned int nCount = 0;
 	ay8910.DSPCallBack(stream, len);
@@ -194,13 +194,13 @@ TShutdownMode CKernel::Run (void)
 			{
 				//printf ("Address: %04x)", R->PC);
 			}
+			ay8910.Loop8910(&spcsys.ay8910, 1);
 			ticks = m_Timer.GetClockTicks() - ticks;
 			m_Timer.usDelay(900 - (ticks < 900 ? ticks : 900));
 			ticks = m_Timer.GetClockTicks();
 		}
 		count = R->ICount;
 		ExecZ80(R); // Z-80 emulation
-		ay8910.Loop8910(&spcsys.ay8910, count - R->ICount);
 		spcsys.cycles += (count - R->ICount);
 	}
 	return ShutdownHalt;

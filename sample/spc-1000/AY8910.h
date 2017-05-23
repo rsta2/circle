@@ -156,7 +156,7 @@ class CAY8910 {
 		/** of Loop8910() in milliseconds.                          **/
 		/*************************************************************/
 		void Loop8910(register AY8910 *D,int mS);	
-		void DSPCallBack(unsigned char *stream, int len);
+		void DSPCallBack(unsigned *stream, int len);
 };
 
 #endif /* C++ */

@@ -70,7 +70,8 @@ static const int Volumes[16] =
 { 0,1,2,4,6,8,11,16,23,32,45,64,90,128,180,255 };
 //{ 0,16,33,50,67,84,101,118,135,152,169,186,203,220,237,254 };
 
-CAY8910::CAY8910(CTimer *m_Timer)
+CAY8910::CAY8910(CTimer *m_Timer) :
+	m_SpinLock (FALSE)
 {
 	this->m_Timer = m_Timer;
 	DevFreq = DEVFREQ;
@@ -455,7 +456,7 @@ void CAY8910::Sound(int Chn,int Freq,int Volume)
 		Vol[Chn] = Volume * 16384;//spconf.snd_vol; // do not exceed 32767
 }
 
-void CAY8910::DSPCallBack(unsigned char *stream, int len)
+void CAY8910::DSPCallBack(u32 *stream, int len)
 {
 	register int   J;
 	static int R1 = 0,R2 = 0;
@@ -463,7 +464,7 @@ void CAY8910::DSPCallBack(unsigned char *stream, int len)
 	int vTime, qTime; // virtual Time, queue Time
 	TSndQEntry *qentry = NULL;
 
-	for(J=0;J<len;J+=4) // for the requested amount of buffer
+	for(J=0;J<len;J+=2) // for the requested amount of buffer
 	{
 #if 1		
 		vTime = (250*J)/DevFreq;
@@ -528,10 +529,10 @@ void CAY8910::DSPCallBack(unsigned char *stream, int len)
 		}
 
 		R2 = R1;
-		stream[J+0]=R2&0x00FF;
-		stream[J+1]=R2>>8;
-		stream[J+2]=R1&0x00FF;
-		stream[J+3]=R1>>8;
+		stream[J+0]=(R2 + 0x8000) & 0xFFFF;//&0x00FF;
+		//stream[J+1]=R2>>8;
+		stream[J+1]=(R2 + 0x8000) & 0xFFFF;//&0x00FF;
+		//stream[J+3]=R1>>8;
 	}
 
 	LastBufTime = m_Timer->GetClockTicks();
