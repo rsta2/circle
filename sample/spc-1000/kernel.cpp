@@ -137,13 +137,6 @@ int CKernel::dspcallback(u32 *stream, int len)
 	ay8910.DSPCallBack(stream, len);
 	
 //	memcpy(stream, (void *)(&Sound[0]+nCount), len);
-	nCount += len;
-	if (nCount > sizeof(Sound))
-	{
-		m_Screen.Rotor (0, nCount);
-		nCount = 0;
-		
-	}
 //	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 	return len;
 }
@@ -189,6 +182,7 @@ TShutdownMode CKernel::Run (void)
 			if (frame%33 == 0)
 			{
 				Update6847(spcsys.GMODE);
+				R->ICount -= 20;
 			}
 			if (frame%1000  == 0)
 			{

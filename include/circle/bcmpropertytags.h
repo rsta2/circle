@@ -55,6 +55,10 @@
 #define PROPTAG_SET_VIRTUAL_OFFSET	0x00048009
 #define PROPTAG_SET_PALETTE		0x0004800B
 #define PROPTAG_GET_COMMAND_LINE	0x00050001
+#define PROPTAG_GET_OVERSCAN		0x0004000a
+#define PROPTAG_TST_OVERSCAN		0x0004400a
+#define PROPTAG_SET_OVERSCAN		0x0004800a
+
 
 struct TPropertyTag
 {
@@ -228,6 +232,12 @@ struct TPropertyTagCommandLine
 {
 	TPropertyTag	Tag;
 	u8		String[2048];
+};
+
+struct TPropertyTagOverscan
+{
+	TPropertyTag	Tag;
+
 };
 
 class CBcmPropertyTags
