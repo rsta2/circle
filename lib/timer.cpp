@@ -409,7 +409,7 @@ void CTimer::TuneMsDelay (void)
 	DelayLoop (m_nMsDelay * 1000);
 	nTicks = GetTicks () - nTicks;
 
-	nFactor = 100 * HZ / nTicks;
+	int nFactor = 100 * HZ / nTicks;
 
 	m_nMsDelay = m_nMsDelay * nFactor / 100;
 	m_nusDelay = (m_nMsDelay + 500) / 1000;

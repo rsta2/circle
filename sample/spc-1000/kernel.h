@@ -72,13 +72,13 @@ private:
 	CDWHCIDevice		m_DWHCI;
 	CPWMSound			m_PWMSound; 
 //	CPWMSoundDevice		m_PWMSoundDevice;
-	
 	//void OutZ80(register word Port,register byte Value);
 	//byte InZ80(register word Port);	
 	volatile TShutdownMode m_ShutdownMode;	
 public:
 	CAY8910				ay8910;
 	int dspcallback(unsigned *stream, int len);
+	void rotate(int i, int idx);
 	static void ShutdownHandler (void);
 	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
 	//static CKernel *s_pThis;

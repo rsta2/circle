@@ -41,7 +41,11 @@ int printf(const char *format, ...);
 
 #define SOUND_SAMPLES		(sizeof Sound / sizeof Sound[0] / SOUND_CHANNELS)
 
+extern char tap0[];
+
 SPCSystem spcsys;
+
+static int idx;
 
 int CasRead(CassetteTape *cas);
 enum colorNum {
@@ -125,10 +129,18 @@ boolean CKernel::Initialize (void)
 	InitMC6847(m_Screen.GetBuffer(), &spcsys.VRAM[0], 256,192);	
 	spcsys.IPLK = 1;
 	spcsys.GMODE = 0;
+	spcsys.cas.motor = 1;
+	spcsys.cas.button = CAS_PLAY;
 	ay8910.Reset8910(&(spcsys.ay8910), 0);
+	idx = 0;
 //	m_PWMsound.Play(this, SOUND_CHANNELS, SOUND_BITS);
 //	strcpy((char *)&spcsys.VRAM, "SAMSUNG ELECTRONICS");
 	return bOK;
+}
+
+void CKernel::rotate(int i, int idx)
+{
+	m_Screen.Rotor(i, idx);
 }
 
 int CKernel::dspcallback(u32 *stream, int len) 
@@ -234,15 +246,21 @@ int CKernel::printf(const char *format, ...)
 	CString Message;
 	va_list args;
     va_start(args, format);
-	Message.Format(format, args);
-	//s_pThis->m_Logger.Write (FromKernel, LogNotice, Message);
+	Message.FormatV(format, args);
+	s_pThis->m_Logger.Write (Message);
     va_end(args);	
 	return 0;
 }
 
-int ReadVal(void) 
+
+int ReadVal(int idx) 
 {
-	return 0;
+	char c = 0;
+	if (idx % 100 == 0)
+		s_pThis->rotate (0, idx);
+	c = tap0[idx];
+	//s_pThis->printf("%d %c\r", idx, c);
+	return c-'0';
 }
 
 void OutZ80(register word Port,register byte Value)
@@ -393,7 +411,7 @@ byte InZ80(register word Port)
 			}
 		} else if (Port & 0x02)
 		{
-            retval = (ReadVal() == 1 ? retval | 0x80 : retval & 0x7f);
+            retval = (ReadVal(0) == 1 ? retval | 0x80 : retval & 0x7f);
 		}
 		return retval;
 	}
@@ -412,7 +430,8 @@ int CasRead(CassetteTape *cas)
 	t = (spcsys.cycles - cas->lastTime) >> 5;
 	if (t > (cas->rdVal ? LTONE : STONE))
 	{
-		cas->rdVal = ReadVal();
+		cas->rdVal = ReadVal(idx++);
+		s_pThis->printf("%d\r", spcsys.cycles - cas->lastTime);
 		//printf("%d",cas->rdVal);
 		cas->lastTime = spcsys.cycles;
 		t = (spcsys.cycles - cas->lastTime) >> 5;		
@@ -485,3 +504,4 @@ void memset(byte *p, int length, int b)
 	for (int i=0; i<length; i++)
 		*p++ = b;
 }
+
