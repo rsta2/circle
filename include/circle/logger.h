@@ -49,8 +49,6 @@ public:
 	int Read (void *pBuffer, unsigned nCount);
 
 	static CLogger *Get (void);
-
-private:
 	void Write (const char *pString);
 
 private:

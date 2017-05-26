@@ -98,9 +98,9 @@ boolean CKernel::Initialize (void)
 		CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
 		if (pTarget == 0)
 		{
-			pTarget = &m_Screen;
+			pTarget = &m_Serial;
 		}
-		bOK = m_Logger.Initialize (pTarget);
+		bOK = m_Logger.Initialize (&m_Serial);
 	}
 	if (bOK)
 	{
@@ -153,11 +153,14 @@ int CKernel::dspcallback(u32 *stream, int len)
 	return len;
 }
 
+int count = 0;
+#define WAITTIME 983
 TShutdownMode CKernel::Run (void)
 {
 	int frame = 0, ticks = 0, pticks = 0, d = 0;
 	unsigned int t = 0;
-	int count = 0;	
+	int cycles = 0;	
+	int time = 0;
 	CString Message;
 	m_PWMSound.Play(this, SOUND_CHANNELS, SOUND_BITS,Sound, SOUND_SAMPLES );
 	//m_PWMSound.Playback (Sound, SOUND_SAMPLES, SOUND_CHANNELS, SOUND_BITS);
@@ -179,6 +182,9 @@ TShutdownMode CKernel::Run (void)
 	printf ("Address: %04x)", R->PC);
 	while(1)
 	{
+		count = R->ICount;
+		ExecZ80(R); // Z-80 emulation
+		spcsys.cycles += (count - R->ICount);
 		if (R->ICount <= 0)
 		{
 			frame++;
@@ -194,20 +200,21 @@ TShutdownMode CKernel::Run (void)
 			if (frame%33 == 0)
 			{
 				Update6847(spcsys.GMODE);
-				R->ICount -= 20;
-			}
-			if (frame%1000  == 0)
-			{
-				//printf ("Address: %04x)", R->PC);
+				//R->ICount -= 20;
 			}
 			ay8910.Loop8910(&spcsys.ay8910, 1);
 			ticks = m_Timer.GetClockTicks() - ticks;
-			m_Timer.usDelay(900 - (ticks < 900 ? ticks : 900));
+			//m_Timer.usDelay(WAITTIME - (ticks < WAITTIME ? ticks : WAITTIME));
+			//m_Timer.usDelay(ticks);
 			ticks = m_Timer.GetClockTicks();
+			if (frame%1000  == 0)
+			{
+				//printf ("Address: %04x)", R->PC);
+				s_pThis->printf("%d, %d\n", spcsys.cycles-cycles, m_Timer.GetClockTicks() - time);
+				cycles = spcsys.cycles;
+				time = m_Timer.GetClockTicks();
+			}
 		}
-		count = R->ICount;
-		ExecZ80(R); // Z-80 emulation
-		spcsys.cycles += (count - R->ICount);
 	}
 	return ShutdownHalt;
 }
@@ -426,14 +433,15 @@ int CasRead(CassetteTape *cas)
 	int bitTime;
 	int ret = 0;
 	int t;
+	int cycles = spcsys.cycles + (count - spcsys.Z80R.ICount);
 
-	t = (spcsys.cycles - cas->lastTime) >> 5;
+	t = (cycles - cas->lastTime) >> 5;
 	if (t > (cas->rdVal ? LTONE : STONE))
 	{
 		cas->rdVal = ReadVal(idx++);
-		s_pThis->printf("%d\r", spcsys.cycles - cas->lastTime);
+		s_pThis->printf("%d-%d\n", cycles - cas->lastTime, cas->rdVal);
 		//printf("%d",cas->rdVal);
-		cas->lastTime = spcsys.cycles;
+		cas->lastTime = cycles;
 		t = (spcsys.cycles - cas->lastTime) >> 5;		
 	}
 	switch (cas->rdVal)

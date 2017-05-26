@@ -51,7 +51,7 @@ _lock_mutex_mmu:
   CMPNE   r2, #1        // Check if Store-Exclusive failed
   BEQ     1b           // Failed - retry from 1
   // Lock acquired
-  DMB                   // Required before accessing protected resource
+//  DMB                   // Required before accessing protected resource
   BX      lr
 2:
 // Take appropriate action while waiting for mutex to become unlocked
@@ -65,7 +65,7 @@ _lock_mutex_mmu:
 .global _unlock_mutex_mmu
 _unlock_mutex_mmu:
     LDR     r1, =unlocked
-    DMB                   // Required before releasing protected resource
+//    DMB                   // Required before releasing protected resource
     STR     r1, [r0]      // Unlock mutex
     // SIGNAL_UPDATE: none
     BX      lr
