@@ -75,6 +75,8 @@ private:
 	//void OutZ80(register word Port,register byte Value);
 	//byte InZ80(register word Port);	
 	volatile TShutdownMode m_ShutdownMode;	
+	int 				reset_flag;
+	void reset();
 public:
 	CAY8910				ay8910;
 	int dspcallback(unsigned *stream, int len);

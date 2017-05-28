@@ -14,6 +14,8 @@
 					| ((blue) & 0x1F))
 
 #define V_STRIDE 1
+
+extern char samsung_bmp_c[];
 int currentPage = 0;		// current text page
 int XWidth = 0;				// stride for Y+1
 Uint8* frameBuf;
@@ -42,6 +44,7 @@ unsigned char *VRAM;
 #define SCREEN_TEXT_START 0
 #define SCREEN_ATTR_START 0x800
 #define FILL(a,d,c) pos=d;while(pos-->0)*a++=c
+char framebuffer[320*240];
 void Update6847(Uint8 gmode)
 {
 	int pos = 0;
@@ -80,8 +83,8 @@ void Update6847(Uint8 gmode)
                 bg = cMap[0];
                 if ((attr & ATTR_EXT) != 0)
                 {
-					fg = cMap[((attr & ATTR_CSS) << 1 | ((ch & 0xc0) >> 6)) + 1];
-					b = semiGrFont1[(ch & 0x3f) * 12 + h];
+					fg = cMap[((attr & ATTR_CSS) << 1) | ((ch & 0xc0) >> 6) + 1];
+					b = semiGrFont1[(ch & 0x3f) * 12 + h];	
                 } 
 				else 
                 {
@@ -180,6 +183,7 @@ void Update6847(Uint8 gmode)
       }
       FILL(data, repb, border);
     }
+	//memset(frameBuf, 0x46, 320*240);
 }
 
 /**

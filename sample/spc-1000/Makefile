@@ -12,8 +12,12 @@
 CIRCLEHOME = ../..
 
 #OBJS	= main.o kernel.o
+
+%.bmp.c: %.bmp
+	bmp2bin $<
+
 	
-OBJS = main.o kernel.o Z80SPC.o spcall.o MC6847.o AY8910.o pwmsound.o tap.o
+OBJS = main.o kernel.o Z80SPC.o spcall.o MC6847.o AY8910.o pwmsound.o tap.o samsung.bmp.o
 
 LIBS =$(CIRCLEHOME)/lib/usb/libusb.a \
 	  $(CIRCLEHOME)/lib/input/libinput.a \
@@ -35,3 +39,6 @@ sound.h: sound.h.gz
 spcall.c: spc-1000_all.bin spc-1000_ipl.bin
 	cat spc-1000_all.bin spc-1000_ipl.bin > spcall.rom
 	bin2c.py spcall.rom ROM
+
+bootcode: bootcode.bin start.elf fixup.dat
+	wget https://github.com/raspberrypi/firmware/blob/master/boot/$<?raw=true -O $<	

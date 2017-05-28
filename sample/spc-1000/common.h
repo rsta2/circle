@@ -99,7 +99,10 @@ typedef struct
 	int button;
 	int rdVal;
 	Uint32 lastTime;
+	Uint32 startTime;
+	int bitTime;
 	Uint32 cnt0, cnt1;
+	int read;
 
 	int wrVal;
 	unsigned int wrRisingT;	// rising time

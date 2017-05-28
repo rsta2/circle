@@ -80,24 +80,6 @@ boolean CScreenDevice::Initialize (void)
 		m_pFrameBuffer->SetPalette (NORMAL_COLOR, NORMAL_COLOR16);
 		m_pFrameBuffer->SetPalette (HIGH_COLOR,   HIGH_COLOR16);
 		m_pFrameBuffer->SetPalette (HALF_COLOR,   HALF_COLOR16);
-		int c = 0; 	
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0x00, 0x00, 0x00, 0xff)); /* BLACK */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0x07, 0xff, 0x00, 0xff)); /* GREEN */ 
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0xff, 0xff, 0x00, 0xff)); /* YELLOW */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0x3b, 0x08, 0xff, 0xff)); /* BLUE */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0xcc, 0x00, 0x3b, 0xff)); /* RED */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0xff, 0xff, 0xff, 0xff)); /* BUFF */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0x07, 0xe3, 0x99, 0xff)); /* CYAN */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0xff, 0x1c, 0xff, 0xff)); /* MAGENTA */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0xff, 0x81, 0x00, 0xff)); /* ORANGE */
-		
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0x07, 0xff, 0x00, 0xff)); /* GREEN */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0xff, 0xff, 0xff, 0xff)); /* BUFF */
-		
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0x00, 0x3f, 0x00, 0xff)); /* ALPHANUMERIC DARK GREEN */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0x07, 0xff, 0x00, 0xff)); /* ALPHANUMERIC BRIGHT GREEN */ 
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0x91, 0x00, 0x00, 0xff)); /* ALPHANUMERIC DARK ORANGE */
-		m_pFrameBuffer->SetPalette32(c++, COLOR32(0xff, 0x81, 0x00, 0xff)); /* ALPHANUMERIC BRIGHT ORANGE */		
 #endif
 		if (!m_pFrameBuffer->Initialize ())
 		{
@@ -166,6 +148,17 @@ void CScreenDevice::SetPalette(u8 num, u16 color)
 {
 	m_pFrameBuffer->SetPalette(num, color);
 }
+
+void CScreenDevice::SetPalette(u8 num, u32 color)
+{
+	m_pFrameBuffer->SetPalette32(num, color);
+}
+
+void CScreenDevice::UpdatePalette (void)
+{
+	m_pFrameBuffer->UpdatePalette();
+}
+
 
 unsigned CScreenDevice::GetColumns (void) const
 {
