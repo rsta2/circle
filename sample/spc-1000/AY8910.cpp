@@ -95,7 +95,7 @@ void CAY8910::Reset8910(register AY8910 *D,int First)
   /* Reset state */
   memcpy(D->R,RegInit,sizeof(D->R));
   D->EPhase  = 0;
-  D->Clock   = ClockHz>>4;
+  D->Clock   = ClockHz;
   D->First   = First;
   D->Sync    = AY8910_ASYNC;
   D->Changed = 0x00;
@@ -153,16 +153,15 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
 
   /* Exit if no change */
   if((R>15)||((V==D->R[R])&&(R<8)&&(R>10))) return;
+
   switch(R)
   {
-    case 1:
-    case 3:
-    case 5:
-      V&=0x0F;
-      /* Fall through */
     case 0:
+    case 1:
     case 2:
+    case 3:
     case 4:
+    case 5:
       /* Write value */
       D->R[R]=V;
       /* Exit if the channel is silenced */
@@ -174,19 +173,19 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
       /* Compute channel number */
       R>>=1;
       /* Assign frequency */
-      D->Freq[R]=D->Clock/(J? J:0x1000);
+      // D->Freq[R]=AY8910_BASE/(J+1);
+	  D->Freq[R]=J? (AY8910_BASE/J): 0;
       /* Compute changed channels mask */
       D->Changed|=1<<R;
       break;
 
     case 6:
       /* Write value */
-      D->R[6]=V&=0x1F;
+      D->R[6]=V;
       /* Exit if noise channels are silenced */
       if(!(~D->R[7]&0x38)) return;
       /* Compute and assign noise frequency */
-      /* Shouldn't do <<2, but need to keep frequency down */
-      J=D->Clock/((V&0x1F? (V&0x1F):0x20)<<2);
+      J=AY8910_BASE/((V&0x1F)+1);
       if(!(D->R[7]&0x08)) D->Freq[3]=J;
       if(!(D->R[7]&0x10)) D->Freq[4]=J;
       if(!(D->R[7]&0x20)) D->Freq[5]=J;
@@ -208,17 +207,17 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
       for(J=0;R&&(J<AY8910_CHANNELS);J++,R>>=1,V>>=1)
         if(R&1)
         {
-          if(V&1) D->Freq[J]=0;
-          else if(J<3)
-          {
-            I=((int)(D->R[J*2+1]&0x0F)<<8)+D->R[J*2];
-            D->Freq[J]=D->Clock/(I? I:0x1000);
-          }
+          if(V&1)
+		  {
+			  D->Freq[J]=0;
+			  //D->R[J*2+1] = 0; // ionique, ?
+			  //D->R[J*2] = 0; // ionique, ?
+		  }
           else
           {
-            /* Shouldn't do <<2, but need to keep frequency down */
-            I=D->R[6]&0x1F;
-            D->Freq[J]=D->Clock/((I? I:0x20)<<2);
+            I=J<3? (((int)(D->R[J*2+1]&0x0F)<<8)+D->R[J*2]):(D->R[6]&0x1F);
+            //D->Freq[J]=AY8910_BASE/(I+1); // ionique
+			D->Freq[J]=I? (AY8910_BASE/I):0;
           }
         }
       break;
@@ -227,13 +226,15 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
     case 9:
     case 10:
       /* Write value */
-      D->R[R]=V&=0x1F;
+      D->R[R]=V;
       /* Compute channel number */
       R-=8;
       /* Compute and assign new volume */
-      J=Volumes[V&0x10? Envelopes[D->R[13]&0x0F][D->EPhase]:(V&0x0F)];
-      D->Volume[R]=J;
-      D->Volume[R+3]=(J+1)>>1;
+      D->Volume[R+3]=D->Volume[R]=
+        V&0x10? (V&0x04? 0:255):255*(V&0x0F)/15;
+		//V&0x10? ((D->R[13]&0x04)? 0:255):255*(V&0x0F)/15; // ionique, for inc envelope
+      /* Start/stop envelope */
+      //D->Phase[R]=V&0x10? 1:0;
       /* Compute changed channels mask */
       D->Changed|=(0x09<<R)&~D->R[7];
       break;
@@ -242,27 +243,19 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
     case 12:
       /* Write value */
       D->R[R]=V;
-      /* Compute envelope period (why not <<4?) */
-      J=((int)D->R[12]<<8)+D->R[11];
-      D->EPeriod=1000*(J? J:0x10000)/D->Clock;
+      /* Compute frequency */
+      J=((int)D->R[12]<<8)+D->R[11]+1;
+      D->EPeriod=1000*(J<<4)/AY8910_BASE;
+      D->ECount=0;
       /* No channels changed */
       return;
 
 	case 13: // envelope shape/cycle control (ionique. originally the same as 14,15)
       /* Write value */
-      D->R[R]=V&=0x0F;
-      /* Reset envelope */
-      D->ECount = 0;
-      D->EPhase = 0;
-      for(J=0;J<AY8910_CHANNELS/2;++J)
-        if(D->R[J+8]&0x10)
-        {
-          I = Volumes[Envelopes[V][0]];
-          D->Volume[J]   = I;
-          D->Volume[J+3] = (I+1)>>1;
-          D->Changed    |= (0x09<<J)&~D->R[7];
-        }
-      break;
+      D->R[R]=V;
+//      for (I = 8; I <= 10; I++)
+//		  if (D->R[I] & 0x10) D->Phase[I-8] = 1;
+      return;
 
 	//case 13:
     case 14:
