@@ -32,20 +32,10 @@ class CPWMSound : private CPWMSoundBaseDevice
 public:
 	CPWMSound (CInterruptSystem *pInterrupt);
 	~CPWMSound (void);
-	void Play(CKernel *kernel, 
-//		       unsigned  nChunkSize,		// for Stereo the L/R samples are count as one
-		       unsigned  nChannels,		// 1 (Mono) or 2 (Stereo)
-		       unsigned  nBitsPerSample,
-			    void	*pSoundData,		// sample rate 44100 Hz
-		       unsigned  nSamples			   
+	void Play(CKernel *kernel
 			   )	// 8 (unsigned sound data) or 16 (signed sound data)	
 	{
 		m_kernel = kernel;
-//		m_nChunkSize = nChunkSize;
-		m_nChannels = nChannels;
-		m_nBitsPerSample = nBitsPerSample;
-		m_p = m_pSoundData	 = (u8 *) pSoundData;
-		m_s = m_nSamples	 = nSamples;
 		Start();
 	}
 

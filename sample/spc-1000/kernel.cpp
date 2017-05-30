@@ -37,9 +37,8 @@ int printf(const char *format, ...);
 #include <circle/debug.h>
 #include <circle/util.h>
 #include <assert.h>
-#include "sound.h"
 
-#define SOUND_SAMPLES		(sizeof Sound / sizeof Sound[0] / SOUND_CHANNELS)
+//#define SOUND_SAMPLES		(sizeof Sound / sizeof Sound[0] / SOUND_CHANNELS)
 
 extern char tap0[];
 extern char samsung_bmp_c[];
@@ -189,7 +188,7 @@ TShutdownMode CKernel::Run (void)
 	int time = 0;
 	tapsize = strlen(tap0);
 	CString Message;
-	m_PWMSound.Play(this, SOUND_CHANNELS, SOUND_BITS,Sound, SOUND_SAMPLES );
+	m_PWMSound.Play(this);//, SOUND_CHANNELS, SOUND_BITS,Sound, SOUND_SAMPLES );
 	InitMC6847(m_Screen.GetBuffer(), &spcsys.VRAM[0], 256,192);	
 	//m_PWMSound.Playback (Sound, SOUND_SAMPLES, SOUND_CHANNELS, SOUND_BITS);
 	//m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
@@ -326,13 +325,6 @@ void OutZ80(register word Port,register byte Value)
 	}
 	else if ((Port & 0xE000) == 0x2000)	// GMODE setting
 	{
-		//if (spcsys.GMODE != Value)
-		//{
-		//	if (Value & 0x08) // XXX Graphic screen refresh
-		//		SetMC6847Mode(SET_GRAPHIC, Value);
-		//	else
-		//		SetMC6847Mode(SET_TEXTMODE, Value);
-		//}
 		spcsys.GMODE = Value;
 #ifdef DEBUG_MODE
 		printf("GMode:%02X\n", Value);
@@ -359,22 +351,10 @@ void OutZ80(register word Port,register byte Value)
 					if (spcsys.cas.motor)
 					{
 						spcsys.cas.motor = 0;
-//#ifdef DEBUG_MODE
-//						printf("Motor Off\n");
-//#endif
 					}
 					else
 					{
 						spcsys.cas.motor = 1;
-//#ifdef DEBUG_MODE
-//						printf("Motor On\n");
-//#endif
-						spcsys.cas.startTime = spcsys.cycles + (count - spcsys.Z80R.ICount) ;
-						spcsys.cas.cnt0 = 0;
-						spcsys.cas.cnt1 = 0;
-						
-						//ResetCassette(&spcsys.cas);
-						//idx = 0;
 					}
 				}
 			}
@@ -391,14 +371,14 @@ void OutZ80(register word Port,register byte Value)
 		if (Port & 0x01) // Data
 		{
 		    if (spcsys.psgRegNum == 15) // Line Printer
-           {
-               if (Value != 0)
-               {
-                   //spcsys.prt.bufs[spcsys.prt.length++] = Value;
-//                    printf("PRT <- %c (%d)\n", Value, Value);
-//                    printf("%s(%d)\n", spcsys.prt.bufs, spcsys.prt.length);
-               }
-           }
+			{
+				if (Value != 0)
+				{
+			    //spcsys.prt.bufs[spcsys.prt.length++] = Value;
+				//                    printf("PRT <- %c (%d)\n", Value, Value);
+				//                    printf("%s(%d)\n", spcsys.prt.bufs, spcsys.prt.length);
+				}
+			}
 			s_pThis->ay8910.Write8910(&spcsys.ay8910, (byte) spcsys.psgRegNum, Value);
 		}
 		else // Reg Num
@@ -443,7 +423,7 @@ byte InZ80(register word Port)
 //                {
 //                    retval |= 0x20;
 //                }
-				if (spcsys.cas.button == CAS_PLAY && spcsys.cas.motor)
+				if (1) //(spcsys.cas.button == CAS_PLAY && spcsys.cas.motor)
 				{
 					if (CasRead(&spcsys.cas) == 1)
 							retval |= 0x80; // high
@@ -487,7 +467,7 @@ int CasRead(CassetteTape *cas)
 	{
 		cas->rdVal = ReadVal();
 		cas->lastTime = cycles;
-		cas->bitTime = cas->rdVal ? LTONE : STONE;
+		cas->bitTime = cas->rdVal ? (LTONE * 0.6) : (STONE * 0.9);
 		s_pThis->printf("%d%\r", idx * 100 / tapsize);		
 	}
 

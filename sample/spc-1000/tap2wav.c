@@ -4,6 +4,8 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct {
 	char sig[4];
@@ -24,23 +26,23 @@ struct {
 int sync_ok=0;
 int offset,pos;
 FILE *in, *out;
-unsigned short zero[21];
-unsigned short one[21];
-unsigned short none[21];
+short zero[21];
+short one[21];
+short none[21];
 
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {	
 	char wavfile[256];
 	unsigned start,end,byte;
 	int i = 0, size = 0;
 	for(i = 0; i < 21; i++)
 	{
-		zero[i] = 16384;
+		zero[i] = -27000;
 	}
 	for(i = 0; i < 21; i++)
 	{
-		one[i] = 65536-16384;
+		one[i] =  27000;
 	}
 	for(i = 0; i < 21; i++)
 	{
@@ -108,4 +110,5 @@ main(int argc,char **argv)
 	fseek(out, 0, SEEK_SET);
 	fwrite(&wavhead, sizeof(wavhead), 1, out);
 	fclose(out);
+	return 0;
 }
