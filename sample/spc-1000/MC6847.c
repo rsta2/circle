@@ -64,7 +64,7 @@ void Update6847(Uint8 gmode)
 	repl = (320 - 256)/2;
 	repr = (320 - 256)/2;
 	repb = (240 - 192)/2 * 320;
-	border = cMap[11];
+	border = cMap[0];
 	b = 0;
 	if (_ag == 0)
     {
@@ -130,7 +130,7 @@ void Update6847(Uint8 gmode)
     else
     {
       bg = cMap[0];
-      border = fg = (_css ? cMap[9] : cMap[10]);
+      border = fg = (_css ? cMap[10] : cMap[9]);
       //border = (_css ? cMap[10] : cMap[9]);
 	  FILL(data, rept, border);
       for(y = 0; y < 192; y++)
