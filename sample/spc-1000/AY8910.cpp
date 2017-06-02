@@ -419,15 +419,6 @@ TSndQEntry *CAY8910::SndDequeue(void)
 /** Dispatch sound queue entry and make real sound for SDL  **/
 /*************************************************************/
 
-//static int Freq[6];
-static int Vol[6];
-static int Interval[6];
-static int NoiseInterval[6];
-static int Phase[6];
-static int DevFreq;
-static volatile int JF = 0;
-
-//#define DEVFREQ 22050
 
 
 void CAY8910::Sound(int Chn,int Freq,int Volume)
@@ -477,12 +468,12 @@ void CAY8910::DSPCallBack(u32 *stream, int len)
 				if (Phase[i] < (Interval[i]/2))
 				{
 					R1 += Vol[i];
-					R1 = (R1 > 30000) ? 30000: R1;
+					R1 = (R1 > 32767) ? 32767: R1;
 				}
 				else if (Phase[i] >= (Interval[i]/2) && Phase[i] < Interval[i])
 				{
 					R1 -= Vol[i];
-					R1 = (R1 < -30000) ? -30000: R1;
+					R1 = (R1 < -32768) ? -32768: R1;
 				}
 				Phase[i] ++;
 				if (Phase[i] >= Interval[i])
@@ -520,7 +511,7 @@ void CAY8910::DSPCallBack(u32 *stream, int len)
 		}
 
 		R2 = R1;
-		stream[J+0]=0xFFFF & (R2 + 32768);//&0x00FF;
+		stream[J+0]=0xFFFFF & (R2 + 0x80000);//&0x00FF;
 		stream[J+1]=stream[J+0];
 	}
 

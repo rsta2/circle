@@ -111,6 +111,11 @@ class CAY8910 {
 		CTimer				*m_Timer;
 		CSpinLock			m_SpinLock;	
 		int DevFreq;
+		int Vol[6];
+		int Interval[6];
+		int NoiseInterval[6];
+		int Phase[6];
+		volatile int JF = 0;		
 	public: 
 		CAY8910(CTimer *m_Timer);
 		/** Reset8910() **********************************************/

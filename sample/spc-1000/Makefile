@@ -12,11 +12,6 @@
 CIRCLEHOME = ../..
 
 #OBJS	= main.o kernel.o
-
-%.bmp.c: %.bmp
-	bmp2bin $<
-
-	
 OBJS = main.o kernel.o Z80SPC.o spcall.o MC6847.o AY8910.o pwmsound.o tap.o samsung.bmp.o
 
 LIBS =$(CIRCLEHOME)/lib/usb/libusb.a \
@@ -25,11 +20,15 @@ LIBS =$(CIRCLEHOME)/lib/usb/libusb.a \
 	  $(CIRCLEHOME)/lib/fs/libfs.a \
 	  $(CIRCLEHOME)/lib/$(LIBCIRCLE).a 
 
-EXTRACLEAN = sound.h
+EXTRACLEAN = sound.h samsung.bmp.c tap.c
+
+BMP = samsung
 
 include ../Rules.mk
 
-kernel.o: sound.h
+$(BMP).bmp.o: $(BMP).bmp
+	bmp2bin $(BMP).bmp
+	$(CC) $(CFLAGS) -c -o $(BMP).bmp.o $(BMP).bmp.c
 
 sound.h: sound.h.gz
 	gunzip -c sound.h.gz > sound.h

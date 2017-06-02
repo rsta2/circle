@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
 	if ((bmpinfo.width != 32) || (bmpinfo.height != 32))
 	{
-	fprintf(stderr, "bmp2bin: Picture width is not 32 x 32. %ld x %ld\n", bmpinfo.width, bmpinfo.height);
+	fprintf(stderr, "bmp2bin: Picture width x height is %ld x %ld\n", bmpinfo.width, bmpinfo.height);
 //	fclose(inf);
 //	exit(-1);
 	}

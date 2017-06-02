@@ -83,7 +83,7 @@ void Update6847(Uint8 gmode)
                 bg = cMap[0];
                 if ((attr & ATTR_EXT) != 0)
                 {
-					fg = cMap[((attr & ATTR_CSS) << 1) | ((ch & 0xc0) >> 6) + 1];
+					fg = cMap[(((attr & ATTR_CSS) << 1) | ((ch & 0xc0) >> 6)) + 1];
 					b = semiGrFont1[(ch & 0x3f) * 12 + h];	
                 } 
 				else 

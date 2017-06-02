@@ -26,8 +26,10 @@ struct {
 int sync_ok=0;
 int offset,pos;
 FILE *in, *out;
-short zero[21];
-short one[21];
+#define S0 5898
+#define S1 2949
+short zero[21] = {1,2,3,4,5,5,4,3,2,1,0,-1,-2,-3,-4,-5,-4,-3,-2,-1,0};
+short one[42] =  {1,2,3,4,5,6,7,8,9,10,10,9, 8, 7, 6, 5, 4, 3, 2, 1,0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0};
 short none[21];
 
 
@@ -38,15 +40,16 @@ int main(int argc,char **argv)
 	int i = 0, size = 0;
 	for(i = 0; i < 21; i++)
 	{
-		zero[i] = -27000;
+		zero[i] = -32767*0.75;//zero[i] * S0;
+	}
+	for(i = 0; i < 42; i++)
+	{
+		one[i] = 32768*0.75;//e[i] * S1;
+		//printf("%d,",one[i]);
 	}
 	for(i = 0; i < 21; i++)
 	{
-		one[i] =  27000;
-	}
-	for(i = 0; i < 21; i++)
-	{
-		none[i] = 32768;
+		none[i] = 0;
 	}
 	unsigned short ZERO[1];
 	ZERO[1] = 8192;
@@ -87,19 +90,19 @@ int main(int argc,char **argv)
 		//printf("%c", byte);
 		if (byte == '0')
 		{
-			fwrite(one, 2, 10, out);
-			fwrite(zero, 2, 10, out);
-			size+=40;
+			//fwrite(zero, 21*2, 1, out);
+			fwrite(one, 10*2, 1, out);
+			fwrite(zero, 11*2, 1, out);
+			size+=42;
 		} else if (byte == '1')
 		{
-			fwrite(one, 2, 20, out);
-			fwrite(zero, 2, 20, out);
-			size+=80;
+			fwrite(one, 21*2, 1, out);
+			fwrite(zero, 21*2, 1, out);
+			size+=84;
 		} else
 		{
-			fwrite(none, 2, 20, out);
-			fwrite(none, 2, 20, out);
-			size+=80;
+			fwrite(none, 21*2, 1, out);
+			size+=21;
 		}
 //		fclose(out);
 //		exit(0);

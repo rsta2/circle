@@ -1,10 +1,14 @@
 #!/bin/bash
-make RASPPI=2 DEPTH=8
+make RASPPI=2 DEPTH=8 TAP_FILE=protector.tap
 #wget https://github.com/raspberrypi/firmware/blob/master/boot/bootcode.bin?raw=true -O bootcode.bin
 #wget https://github.com/raspberrypi/firmware/blob/master/boot/fixup.dat?raw=true -O fixup.dat
 #wget https://github.com/raspberrypi/firmware/blob/master/boot/start.elf?raw=true -O start.elf
 
-cp kernel7.img /e/
+if [ -f /$DRIVE/ ]; then
+cp kernel7.img /$DRIVE/
+else
+echo $DRIVE drive does not exist.
+fi
 #cp start.elf /e
 #cp fixup.dat /e
 #cp bootcode.bin /e
