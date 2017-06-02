@@ -34,6 +34,10 @@ kernel.o: sound.h
 sound.h: sound.h.gz
 	gunzip -c sound.h.gz > sound.h
 
+tap.o: $(TAP_FILE)
+	tap2c $(TAP_FILE) > tap.c
+	$(CC) $(CFLAGS) -c -o $@ tap.c
+
 %.bin: %.asm
 	z80asm -fb -l -sa $< 
 spcall.c: spc-1000_all.bin spc-1000_ipl.bin

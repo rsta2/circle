@@ -39,7 +39,7 @@ extern void UNLOCK_MUTEX(void *);
 }
 
 
-#define RNG_WARMUP_COUNT	0x40000
+#define RNG_WARMUP_COUNT	(1<<31)
 
 
 extern "C" {
@@ -66,6 +66,7 @@ static const unsigned char Envelopes[16][32] =
   { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 };
 
+#define VOL 1
 static const int Volumes[16] =
 { 0,1,2,4,6,8,11,16,23,32,45,64,90,128,180,255 };
 //{ 0,16,33,50,67,84,101,118,135,152,169,186,203,220,237,254 };
@@ -95,7 +96,7 @@ void CAY8910::Reset8910(register AY8910 *D,int First)
   /* Reset state */
   memcpy(D->R,RegInit,sizeof(D->R));
   D->EPhase  = 0;
-  D->Clock   = ClockHz;
+  D->Clock   = ClockHz>>4;
   D->First   = First;
   D->Sync    = AY8910_ASYNC;
   D->Changed = 0x00;
@@ -151,17 +152,16 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
 {
   register int J,I;
 
-  /* Exit if no change */
-  if((R>15)||((V==D->R[R])&&(R<8)&&(R>10))) return;
-
   switch(R)
   {
-    case 0:
     case 1:
-    case 2:
     case 3:
-    case 4:
     case 5:
+      V&=0x0F;
+      /* Fall through */
+    case 0:
+    case 2:
+    case 4:
       /* Write value */
       D->R[R]=V;
       /* Exit if the channel is silenced */
@@ -173,19 +173,19 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
       /* Compute channel number */
       R>>=1;
       /* Assign frequency */
-      // D->Freq[R]=AY8910_BASE/(J+1);
-	  D->Freq[R]=J? (AY8910_BASE/J): 0;
+      D->Freq[R]=D->Clock/(J? J:0x1000);
       /* Compute changed channels mask */
       D->Changed|=1<<R;
       break;
 
     case 6:
       /* Write value */
-      D->R[6]=V;
+      D->R[6]=V&=0x1F;
       /* Exit if noise channels are silenced */
       if(!(~D->R[7]&0x38)) return;
       /* Compute and assign noise frequency */
-      J=AY8910_BASE/((V&0x1F)+1);
+      /* Shouldn't do <<2, but need to keep frequency down */
+      J=D->Clock/((V&0x1F? (V&0x1F):0x20)<<2);
       if(!(D->R[7]&0x08)) D->Freq[3]=J;
       if(!(D->R[7]&0x10)) D->Freq[4]=J;
       if(!(D->R[7]&0x20)) D->Freq[5]=J;
@@ -194,10 +194,6 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
       break;
 
     case 7:
-      if (V & 0x80)
-      {
-          //printf("Print Strobe Req.\n");
-      }
       /* Find changed channels */
       R=(V^D->R[7])&0x3F;
       D->Changed|=R;
@@ -207,62 +203,65 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
       for(J=0;R&&(J<AY8910_CHANNELS);J++,R>>=1,V>>=1)
         if(R&1)
         {
-          if(V&1)
-		  {
-			  D->Freq[J]=0;
-			  //D->R[J*2+1] = 0; // ionique, ?
-			  //D->R[J*2] = 0; // ionique, ?
-		  }
+          if(V&1) D->Freq[J]=0;
+          else if(J<3)
+          {
+            I=((int)(D->R[J*2+1]&0x0F)<<8)+D->R[J*2];
+            D->Freq[J]=D->Clock/(I? I:0x1000);
+          }
           else
           {
-            I=J<3? (((int)(D->R[J*2+1]&0x0F)<<8)+D->R[J*2]):(D->R[6]&0x1F);
-            //D->Freq[J]=AY8910_BASE/(I+1); // ionique
-			D->Freq[J]=I? (AY8910_BASE/I):0;
+            /* Shouldn't do <<2, but need to keep frequency down */
+            I=D->R[6]&0x1F;
+            D->Freq[J]=D->Clock/((I? I:0x20)<<2);
           }
         }
       break;
-
-    case 8: // amplitude control
+      
+    case 8:
     case 9:
     case 10:
       /* Write value */
-      D->R[R]=V;
+      D->R[R]=V&=0x1F;
       /* Compute channel number */
       R-=8;
       /* Compute and assign new volume */
-      D->Volume[R+3]=D->Volume[R]=
-        V&0x10? (V&0x04? 0:255):255*(V&0x0F)/15;
-		//V&0x10? ((D->R[13]&0x04)? 0:255):255*(V&0x0F)/15; // ionique, for inc envelope
-      /* Start/stop envelope */
-      //D->Phase[R]=V&0x10? 1:0;
+      J=Volumes[V&0x10? Envelopes[D->R[13]&0x0F][D->EPhase]:(V&0x0F)]*VOL;
+      D->Volume[R]=J;
+      D->Volume[R+3]=(J+1)>>1;
       /* Compute changed channels mask */
       D->Changed|=(0x09<<R)&~D->R[7];
       break;
 
-    case 11: // envelope period control
+    case 11:
     case 12:
       /* Write value */
       D->R[R]=V;
-      /* Compute frequency */
-      J=((int)D->R[12]<<8)+D->R[11]+1;
-      D->EPeriod=1000*(J<<4)/AY8910_BASE;
-      D->ECount=0;
+      /* Compute envelope period (why not <<4?) */
+      J=((int)D->R[12]<<8)+D->R[11];
+      D->EPeriod=1000*(J? J:0x10000)/D->Clock;
       /* No channels changed */
       return;
 
-	case 13: // envelope shape/cycle control (ionique. originally the same as 14,15)
+    case 13:
       /* Write value */
-      D->R[R]=V;
-//      for (I = 8; I <= 10; I++)
-//		  if (D->R[I] & 0x10) D->Phase[I-8] = 1;
-      return;
+      D->R[R]=V&=0x0F;
+      /* Reset envelope */
+      D->ECount = 0;
+      D->EPhase = 0;
+      for(J=0;J<AY8910_CHANNELS/2;++J)
+        if(D->R[J+8]&0x10)
+        {
+          I = Volumes[Envelopes[V][0]]*VOL;
+          D->Volume[J]   = I;
+          D->Volume[J+3] = (I+1)>>1;
+          D->Changed    |= (0x09<<J)&~D->R[7];
+        }
+      break;
 
-	//case 13:
     case 14:
-      return;
     case 15:
-      /* Write Printer value */
-      //printf("PRT<-%c (%d)\n", V, V);
+      /* Write value */
       D->R[R]=V;
       /* No channels changed */
       return;
@@ -281,10 +280,10 @@ void CAY8910::Write8910(register AY8910 *D,register byte R,register byte V)
 /** envelopes. Use mS to pass the time since the last call  **/
 /** of Loop8910() in milliseconds.                          **/
 /*************************************************************/
-// Modified by ionique
 void CAY8910::Loop8910(register AY8910 *D,int mS)
 {
   register int J,I;
+
   /* Exit if no envelope running */
   if(!D->EPeriod) return;
 
@@ -294,7 +293,6 @@ void CAY8910::Loop8910(register AY8910 *D,int mS)
 
   /* Count steps */
   J = D->ECount/D->EPeriod;
-
   D->ECount -= J*D->EPeriod;
 
   /* Count phases */
@@ -306,7 +304,7 @@ void CAY8910::Loop8910(register AY8910 *D,int mS)
   for(I=0;I<3;++I)
     if(D->R[I+8]&0x10)
     {
-      J = Volumes[Envelopes[D->R[13]&0x0F][D->EPhase]];
+      J = Volumes[Envelopes[D->R[13]&0x0F][D->EPhase]]*VOL;
       D->Volume[I]   = J;
       D->Volume[I+3] = (J+1)>>1;
       D->Changed    |= (0x09<<I)&~D->R[7];
@@ -329,22 +327,21 @@ void CAY8910::Sync8910(register AY8910 *D,register byte Sync)
   register int J,I;
 
   /* Hit MIDI drums for noise channels, if requested */
-#define DRM_MIDI        0x100  /* MIDI drum (ORable)         */
   if(Sync&AY8910_DRUMS)
   {
     Sync&=~AY8910_DRUMS;
     J = (D->Freq[3]? D->Volume[3]:0)
       + (D->Freq[4]? D->Volume[4]:0)
       + (D->Freq[5]? D->Volume[5]:0);
-    //if(J) Drum(DRM_MIDI|28,(J+2)/3);
+//    if(J) Drum(DRM_MIDI|28,(J+2)/3);
   }
 
   if(Sync!=AY8910_FLUSH) D->Sync=Sync;
 
   for(J=0,I=D->Changed;I&&(J<AY8910_CHANNELS);J++,I>>=1)
     if(I&1) Sound(J+D->First,D->Freq[J],D->Volume[J]);
-	//if(I&1) SndEnqueue(J+D->First,D->Freq[J],D->Volume[J]); // ionique
-  	D->Changed=0x00;
+
+  D->Changed=0x00;
 }
 
 /*************************************************************/
@@ -437,6 +434,7 @@ void CAY8910::Sound(int Chn,int Freq,int Volume)
 {
 	int interval;
 
+	//Freq   = Freq<0? 0:Freq>20000? 0:Freq;
 	interval = Freq? (DevFreq/Freq):0;
 	if (interval != Interval[Chn])
 	{
@@ -446,7 +444,7 @@ void CAY8910::Sound(int Chn,int Freq,int Volume)
 	if (Interval[Chn] == 0)
 		Vol[Chn] = 0;
 	else
-		Vol[Chn] = Volume * 16384;//spconf.snd_vol; // do not exceed 32767
+		Vol[Chn] = Volume * 200;//spconf.snd_vol; // do not exceed 32767
 }
 
 void CAY8910::DSPCallBack(u32 *stream, int len)
@@ -472,19 +470,19 @@ void CAY8910::DSPCallBack(u32 *stream, int len)
 		}
 #endif
 		R1 = 0;
-		for (i = 0; i < 3; i++) // Tone Generation
+		for (i = 0; i < 6; i++) // Tone Generation
 		{
 			if (Interval[i] && Vol[i])
 			{
 				if (Phase[i] < (Interval[i]/2))
 				{
 					R1 += Vol[i];
-					R1 = (R1 > 32767)? 32767: R1;
+					R1 = (R1 > 30000) ? 30000: R1;
 				}
 				else if (Phase[i] >= (Interval[i]/2) && Phase[i] < Interval[i])
 				{
 					R1 -= Vol[i];
-					R1 = (R1 < -32768)? -32768: R1;
+					R1 = (R1 < -30000) ? -30000: R1;
 				}
 				Phase[i] ++;
 				if (Phase[i] >= Interval[i])
@@ -522,10 +520,8 @@ void CAY8910::DSPCallBack(u32 *stream, int len)
 		}
 
 		R2 = R1;
-		stream[J+0]=(R2 + 0x8000) & 0xFFFF;//&0x00FF;
-		//stream[J+1]=R2>>8;
-		stream[J+1]=(R2 + 0x8000) & 0xFFFF;//&0x00FF;
-		//stream[J+3]=R1>>8;
+		stream[J+0]=0xFFFF & (R2 + 32768);//&0x00FF;
+		stream[J+1]=stream[J+0];
 	}
 
 	LastBufTime = m_Timer->GetClockTicks();
