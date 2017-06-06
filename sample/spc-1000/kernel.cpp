@@ -32,6 +32,7 @@ int printf(const char *format, ...);
 #endif
 #include "kernel.h"
 #include "ay8910.h"
+#include "casswindow.h"
 #include <circle/string.h>
 #include <circle/screen.h>
 #include <circle/debug.h>
@@ -68,6 +69,7 @@ CKernel::CKernel (void)
 	m_ShutdownMode (ShutdownNone)
    ,ay8910(&m_Timer)
    ,m_PWMSound (&m_Interrupt)
+   ,m_GUI(&m_Screen)
   // ,m_PWMSoundDevice (&m_Interrupt)
 {
 	//m_PWMSoundDevice.CancelPlayback();
@@ -192,6 +194,7 @@ TShutdownMode CKernel::Run (void)
 	InitMC6847(m_Screen.GetBuffer(), &spcsys.VRAM[0], 256,192);	
 	//m_PWMSound.Playback (Sound, SOUND_SAMPLES, SOUND_CHANNELS, SOUND_BITS);
 	//m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
+//	CCassWindow CassWindow (0, 0);	
 	CUSBKeyboardDevice *pKeyboard = (CUSBKeyboardDevice *) m_DeviceNameService.GetDevice ("ukbd1", FALSE);
 	if (pKeyboard == 0)
 	{
@@ -231,6 +234,7 @@ TShutdownMode CKernel::Run (void)
 			if (frame%33 == 0)
 			{
 				Update6847(spcsys.GMODE);
+				m_GUI.Update();
 				//R->ICount -= 20;
 			}
 			ay8910.Loop8910(&spcsys.ay8910, 1);

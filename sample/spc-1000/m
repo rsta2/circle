@@ -4,7 +4,7 @@ make RASPPI=2 DEPTH=8 TAP_FILE=protector.tap
 #wget https://github.com/raspberrypi/firmware/blob/master/boot/fixup.dat?raw=true -O fixup.dat
 #wget https://github.com/raspberrypi/firmware/blob/master/boot/start.elf?raw=true -O start.elf
 
-if [ -f /$DRIVE/ ]; then
+if [ -d /$DRIVE ]; then
 cp kernel7.img /$DRIVE/
 else
 echo $DRIVE drive does not exist.

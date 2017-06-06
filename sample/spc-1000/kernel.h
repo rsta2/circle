@@ -36,6 +36,7 @@ class CKernel;
 #include <circle/pwmsounddevice.h>
 #include <circle/usb/usbkeyboard.h>   
 #include <circle/usb/dwhcidevice.h>
+#include <ugui/uguicpp.h>
 #include "pwmsound.h"
 #include "ay8910.h"
 
@@ -74,6 +75,7 @@ private:
 //	CPWMSoundDevice		m_PWMSoundDevice;
 	//void OutZ80(register word Port,register byte Value);
 	//byte InZ80(register word Port);	
+	CUGUI				m_GUI;
 	volatile TShutdownMode m_ShutdownMode;	
 	int 				reset_flag;
 	void reset();

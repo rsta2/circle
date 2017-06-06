@@ -106,6 +106,9 @@ typedef UG_U32                                        UG_COLOR;
 #ifdef USE_COLOR_RGB565
 typedef UG_U16                                        UG_COLOR;
 #endif
+#ifdef USE_COLOR_INDEX
+typedef UG_U8                                         UG_COLOR;
+#endif
 /* -------------------------------------------------------------------------------- */
 /* -- DEFINES                                                                    -- */
 /* -------------------------------------------------------------------------------- */
@@ -875,6 +878,14 @@ typedef struct
 #define  C_GAINSBORO                  0xDCDCDC
 #define  C_WHITE_SMOKE                0xF5F5F5
 #define  C_WHITE                      0xFFFFFF
+#endif
+
+#ifdef USE_COLOR_INDEX
+#define  C_BLACK					0x0
+#define  C_WHITE					0xff
+#define  C_BLUE						0x3
+#define  C_GRAY						0x5
+
 #endif
 
 /* -------------------------------------------------------------------------------- */

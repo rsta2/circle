@@ -18,7 +18,7 @@ extern "C" {
 #include <circle/usb/usbmouse.h>
 #include <circle/input/touchscreen.h>
 
-#if DEPTH != 16
+#if DEPTH > 16 
 	#error DEPTH must be set to 16 in include/circle/screen.h!
 #endif
 

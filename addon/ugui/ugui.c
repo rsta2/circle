@@ -4581,6 +4581,9 @@ UG_S16 UG_Init( UG_GUI* g, void (*p)(UG_S16,UG_S16,UG_COLOR), UG_S16 x, UG_S16 y
    #ifdef USE_COLOR_RGB565
    g->desktop_color = 0x5C5D;
    #endif
+   #ifdef USB_COLOR_INDEX
+   g->desktop_color = 0x5C5D;
+   #endif
    g->fore_color = C_WHITE;
    g->back_color = C_BLACK;
    g->next_window = NULL;
@@ -5248,7 +5251,97 @@ const UG_COLOR pal_checkbox_released[] =
 };
 #endif
 
+#ifdef USE_COLOR_INDEX
+const UG_COLOR pal_window[] =
+{
+   0x632C,
+   0x632C,
+   0x632C,
+   0x632C,
 
+   0xFFFF,
+   0xFFFF,
+   0x6B4D,
+   0x6B4D,
+
+   0xE71C,
+   0xE71C,
+   0x9D13,
+   0x9D13,
+};
+
+const UG_COLOR pal_button_pressed[] =
+{
+    0x632C,
+    0x632C,
+    0x632C,
+    0x632C,
+
+    0x9D13,
+    0x9D13,
+    0x9D13,
+    0x9D13,
+
+    0xEF7D,
+    0xEF7D,
+    0xEF7D,
+    0xEF7D,
+};
+
+const UG_COLOR pal_button_released[] =
+{
+    0x632C,
+    0x632C,
+    0x632C,
+    0x632C,
+
+    0xFFFF,
+    0xFFFF,
+    0x6B4D,
+    0x6B4D,
+
+    0xE71C,
+    0xE71C,
+    0x9D13,
+    0x9D13,
+};
+
+const UG_COLOR pal_checkbox_pressed[] =
+{
+    0x632C,
+    0x632C,
+    0x632C,
+    0x632C,
+
+    0x9D13,
+    0x9D13,
+    0x9D13,
+    0x9D13,
+
+    0xEF7D,
+    0xEF7D,
+    0xEF7D,
+    0xEF7D,
+};
+
+const UG_COLOR pal_checkbox_released[] =
+{
+    0x632C,
+    0x632C,
+    0x632C,
+    0x632C,
+
+    0xFFFF,
+    0xFFFF,
+    0x6B4D,
+    0x6B4D,
+
+    0xE71C,
+    0xE71C,
+    0x9D13,
+    0x9D13,
+};
+#endif
 
 /* -------------------------------------------------------------------------------- */
 /* -- INTERNAL FUNCTIONS                                                         -- */
