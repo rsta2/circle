@@ -80,6 +80,7 @@ boolean CMultiCoreSupport::Initialize (void)
 		}
 
 		write32 (ARM_LOCAL_MAILBOX3_SET0 + 0x10 * nCore, (u32) &_start_secondary);
+		asm volatile ("sev");
 
 		nTimeout = 100;
 		while (read32 (nMailBoxClear) != 0)
