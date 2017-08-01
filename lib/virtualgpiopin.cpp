@@ -25,6 +25,8 @@
 #include <circle/virtualgpiopin.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/memio.h>
+#include <circle/memory.h>
+#include <circle/bcm2835.h>
 
 u32 CVirtualGPIOPin::s_nGPIOBaseAddress = 0;
 
@@ -44,11 +46,21 @@ CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
 
 	if (s_nGPIOBaseAddress == 0)
 	{
+		s_nGPIOBaseAddress = CMemorySystem::GetCoherentPage (COHERENT_SLOT_GPIO_VIRTBUF);
+
 		CBcmPropertyTags Tags;
 		TPropertyTagSimple TagSimple;
-		if (Tags.GetTag (PROPTAG_GET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))
+		TagSimple.nValue = s_nGPIOBaseAddress + GPU_MEM_BASE;
+		if (!Tags.GetTag (PROPTAG_SET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))
 		{
-			s_nGPIOBaseAddress = TagSimple.nValue & ~0xC0000000;
+			if (Tags.GetTag (PROPTAG_GET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))
+			{
+				s_nGPIOBaseAddress = TagSimple.nValue & ~0xC0000000;
+			}
+			else
+			{
+				s_nGPIOBaseAddress = 0;
+			}
 		}
 	}
 
