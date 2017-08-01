@@ -16,6 +16,8 @@
 #include <circle/input/touchscreen.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/devicenameservice.h>
+#include <circle/memory.h>
+#include <circle/bcm2835.h>
 #include <circle/logger.h>
 #include <circle/util.h>
 #include <assert.h>
@@ -56,24 +58,31 @@ boolean CTouchScreenDevice::Initialize (void)
 {
 	assert (m_pFT5406Buffer == 0);
 
+	u32 nTouchBuffer = CMemorySystem::GetCoherentPage (COHERENT_SLOT_TOUCHBUF);
+
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple TagSimple;
-	if (!Tags.GetTag (PROPTAG_GET_TOUCHBUF, &TagSimple, sizeof TagSimple))
+	TagSimple.nValue = nTouchBuffer + GPU_MEM_BASE;
+	if (!Tags.GetTag (PROPTAG_SET_TOUCHBUF, &TagSimple, sizeof TagSimple))
 	{
-		CLogger::Get ()->Write (FromFT5406, LogError, "Cannot get touch buffer");
+		if (!Tags.GetTag (PROPTAG_GET_TOUCHBUF, &TagSimple, sizeof TagSimple))
+		{
+			CLogger::Get ()->Write (FromFT5406, LogError, "Cannot get touch buffer");
 
-		return FALSE;
+			return FALSE;
+		}
+
+		if (TagSimple.nValue == 0)
+		{
+			CLogger::Get ()->Write (FromFT5406, LogError, "Touchscreen not detected");
+
+			return FALSE;
+		}
+
+		nTouchBuffer = TagSimple.nValue & ~0xC0000000;
 	}
 
-	if (TagSimple.nValue == 0)
-	{
-		CLogger::Get ()->Write (FromFT5406, LogError, "Touchscreen not detected");
-
-		return FALSE;
-	}
-
-	TagSimple.nValue &= ~0xC0000000;
-	m_pFT5406Buffer = (TFT5406Buffer *) TagSimple.nValue;
+	m_pFT5406Buffer = (TFT5406Buffer *) nTouchBuffer;
 	assert (m_pFT5406Buffer != 0);
 	*(volatile u8 *) &m_pFT5406Buffer->NumPoints = 99;
 

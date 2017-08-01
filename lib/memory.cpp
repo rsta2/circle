@@ -2,7 +2,7 @@
 // memory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -246,4 +246,30 @@ void CMemorySystem::EnableMMU (void)
 #endif
 	nControl |= MMU_MODE;
 	asm volatile ("mcr p15, 0, %0, c1, c0,  0" : : "r" (nControl) : "memory");
+}
+
+u32 CMemorySystem::GetCoherentPage (unsigned nSlot)
+{
+#ifndef USE_RPI_STUB_AT
+	u32 nPageAddress = MEM_COHERENT_REGION;
+#else
+	u32 nPageAddress;
+	u32 nSize;
+
+	asm volatile
+	(
+		"push {r0-r1}\n"
+		"mov r0, #1\n"
+		"bkpt #0x7FFA\n"	// get coherent region from rpi_stub
+		"mov %0, r0\n"
+		"mov %1, r1\n"
+		"pop {r0-r1}\n"
+
+		: "=r" (nPageAddress), "=r" (nSize)
+	);
+#endif
+
+	nPageAddress += nSlot * PAGE_SIZE;
+
+	return nPageAddress;
 }
