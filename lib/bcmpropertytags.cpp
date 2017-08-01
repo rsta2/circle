@@ -2,7 +2,7 @@
 // bcmpropertytags.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <circle/util.h>
 #include <circle/synchronize.h>
 #include <circle/bcm2835.h>
+#include <circle/memory.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
 
@@ -80,27 +81,8 @@ boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
 	unsigned nBufferSize = sizeof (TPropertyBuffer) + nTagsSize + sizeof (u32);
 	assert ((nBufferSize & 3) == 0);
 
-#ifndef USE_RPI_STUB_AT
-	TPropertyBuffer *pBuffer = (TPropertyBuffer *) MEM_COHERENT_REGION;
-#else
-	TPropertyBuffer *pBuffer;
-	u32 nSize;
-
-	asm volatile
-	(
-		"push {r0-r1}\n"
-		"mov r0, #1\n"
-		"bkpt #0x7FFA\n"	// get coherent region from rpi_stub
-		"mov %0, r0\n"
-		"mov %1, r1\n"
-		"pop {r0-r1}\n"
-
-		: "=r" (pBuffer), "=r" (nSize)
-	);
-
-	assert (pBuffer != 0);
-	assert (nSize >= nBufferSize);
-#endif
+	TPropertyBuffer *pBuffer =
+		(TPropertyBuffer *) CMemorySystem::GetCoherentPage (COHERENT_SLOT_PROP_MAILBOX);
 
 	pBuffer->nBufferSize = nBufferSize;
 	pBuffer->nCode = CODE_REQUEST;
