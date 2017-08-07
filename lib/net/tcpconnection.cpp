@@ -13,7 +13,7 @@
 //	user timeout
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,6 +37,8 @@
 
 //#define TCP_DEBUG
 
+#define TCP_MAX_CONNECTIONS		1000	// maximum number of active TCP connections
+
 #define MSS_R				1480	// maximum segment size to be received from network layer
 #define MSS_S				1480	// maximum segment size to be send to network layer
 
@@ -49,6 +51,7 @@
 #define TCP_QUIET_TIME			30	// seconds after crash before another connection starts
 
 #define HZ_TIMEWAIT			(60 * HZ)
+#define HZ_FIN_TIMEOUT			(60 * HZ)	// timeout in FIN-WAIT-2 state
 
 #define MAX_RETRANSMISSIONS		5
 
@@ -119,6 +122,8 @@ PACKED;
 	#define UNEXPECTED_STATE()	((void) 0)
 #endif
 
+unsigned CTCPConnection::s_nConnections = 0;
+
 static const char FromTCP[] = "tcp";
 
 CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
@@ -144,6 +149,8 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nIRS (0),
 	m_nSND_MSS (536)	// RFC 1122 section 4.2.2.6
 {
+	s_nConnections++;
+
 	m_pTxBuffer = new u8[FRAME_BUFFER_SIZE];
 	assert (m_pTxBuffer != 0);
 	
@@ -191,6 +198,8 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nIRS (0),
 	m_nSND_MSS (536)	// RFC 1122 section 4.2.2.6
 {
+	s_nConnections++;
+
 	m_pTxBuffer = new u8[FRAME_BUFFER_SIZE];
 	assert (m_pTxBuffer != 0);
 	
@@ -221,6 +230,9 @@ CTCPConnection::~CTCPConnection (void)
 
 	delete m_pTxBuffer;
 	m_pTxBuffer = 0;
+
+	assert (s_nConnections > 0);
+	s_nConnections--;
 }
 
 int CTCPConnection::Connect (void)
@@ -738,6 +750,17 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		}
 		else if (nFlags & TCP_FLAG_SYN)
 		{
+			if (s_nConnections >= TCP_MAX_CONNECTIONS)
+			{
+				m_ForeignIP.Set (rSenderIP);
+				m_nForeignPort = be2le16 (pHeader->nSourcePort);
+				m_Checksum.SetDestinationAddress (rSenderIP);
+
+				SendSegment (TCP_FLAG_RESET | TCP_FLAG_ACK, 0, nSEG_SEQ+nSEG_LEN);
+
+				break;
+			}
+
 			m_nRCV_NXT = nSEG_SEQ+1;
 			m_nIRS = nSEG_SEQ;
 
@@ -1116,6 +1139,7 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 					m_bFINQueued = FALSE;
 					StopTimer (TCPTimerRetransmission);
 					NEW_STATE (TCPStateFinWait2);
+					StartTimer (TCPTimerTimeWait, HZ_FIN_TIMEOUT);
 				}
 				else
 				{

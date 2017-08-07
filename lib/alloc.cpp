@@ -2,7 +2,7 @@
 // alloc.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,12 +21,9 @@
 #include <circle/spinlock.h>
 #include <circle/sysconfig.h>
 #include <circle/util.h>
+#include <circle/logger.h>
 #include <circle/macros.h>
 #include <assert.h>
-
-#ifdef MEM_DEBUG
-	#include <circle/logger.h>
-#endif
 
 #define BLOCK_ALIGN	16
 #define ALIGN_MASK	(BLOCK_ALIGN-1)
@@ -71,11 +68,12 @@ struct TPageBucket
 
 static unsigned char *s_pNextBlock;
 static unsigned char *s_pBlockLimit;
+static unsigned       s_nBlockReserve = 0x40000;
 
 static unsigned char *s_pNextPage;
 static unsigned char *s_pPageLimit;
 
-static TBlockBucket s_BlockBucket[] = {{0x40}, {0x400}, {0x1000}, {0x4000}, {0x40000}, {0x80000}, {0}};
+static TBlockBucket s_BlockBucket[] = {{0x40}, {0x400}, {0x1000}, {0x4000}, {0x10000}, {0x40000}, {0x80000}, {0}};
 
 static TPageBucket s_PageBucket;
 
@@ -142,11 +140,18 @@ void *malloc (unsigned long ulSize)
 		pBlockHeader = (TBlockHeader *) s_pNextBlock;
 
 		s_pNextBlock += (sizeof (TBlockHeader) + ulSize + BLOCK_ALIGN-1) & ~ALIGN_MASK;
-		if (s_pNextBlock > s_pBlockLimit)
+		if (s_pNextBlock > s_pBlockLimit-s_nBlockReserve)
 		{
+			s_nBlockReserve = 0;
+
 			s_BlockSpinLock.Release ();
 
-			return 0;		// TODO: system should panic here
+#ifdef MEM_DEBUG
+			mem_info ();
+#endif
+			CLogger::Get ()->Write ("alloc", LogPanic, "Out of memory");
+
+			return 0;
 		}
 	
 		pBlockHeader->nMagic = BLOCK_MAGIC;
