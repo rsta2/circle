@@ -30,3 +30,4 @@ SAMPLES
 28-touchscreen		Displaying touch events from the official Raspberry Pi touch screen.
 29-miniorgan		Mini organ instrument using PWM or I2S sound, (USB or serial) MIDI or USB keyboard.
 30-gpiofiq		Demonstrating FIQ-driven fast GPIO event capture and a tracing class.
+31-webclient		Fetching a RPi hardware revision list from a HTTP webserver and parsing it.

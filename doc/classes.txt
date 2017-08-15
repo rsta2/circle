@@ -108,6 +108,7 @@ Net library
 * CChecksumCalculator: Calculates checksums in several TCP/IP packets.
 * CDHCPClient: DHCP client task. Gets and maintains an IP address lease for the network device.
 * CDNSClient: Resolves hostnames to IP addresses.
+* CHTTPClient: Requests documents from HTTP webservers.
 * CHTTPDaemon: Simple HTTP server class.
 * CICMPHandler: ICMP error message handler and echo (ping) responder.
 * CIPAddress: Encapsulates an IP address.
