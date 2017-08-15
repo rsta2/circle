@@ -1232,6 +1232,7 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			else
 			{
 				SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
+				return 1;
 			}
 			break;
 

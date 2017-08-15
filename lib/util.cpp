@@ -2,7 +2,7 @@
 // util.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -82,6 +82,87 @@ int strcmp (const char *pString1, const char *pString2)
 
 		pString1++;
 		pString2++;
+	}
+
+	if (*pString1 > *pString2)
+	{
+		return 1;
+	}
+	else if (*pString1 < *pString2)
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+static int toupper (int c)
+{
+	if ('a' <= c && c <= 'z')
+	{
+		c -= 'a' - 'A';
+	}
+
+	return c;
+}
+
+int strcasecmp (const char *pString1, const char *pString2)
+{
+	int nChar1, nChar2;
+
+	while (   (nChar1 = toupper (*pString1)) != '\0'
+	       && (nChar2 = toupper (*pString2)) != '\0')
+	{
+		if (nChar1 > nChar2)
+		{
+			return 1;
+		}
+		else if (nChar1 < nChar2)
+		{
+			return -1;
+		}
+
+		pString1++;
+		pString2++;
+	}
+
+	nChar2 = toupper (*pString2);
+
+	if (nChar1 > nChar2)
+	{
+		return 1;
+	}
+	else if (nChar1 < nChar2)
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int strncmp (const char *pString1, const char *pString2, size_t nMaxLen)
+{
+	while (   nMaxLen > 0
+	       && *pString1 != '\0'
+	       && *pString2 != '\0')
+	{
+		if (*pString1 > *pString2)
+		{
+			return 1;
+		}
+		else if (*pString1 < *pString2)
+		{
+			return -1;
+		}
+
+		nMaxLen--;
+		pString1++;
+		pString2++;
+	}
+
+	if (nMaxLen == 0)
+	{
+		return 0;
 	}
 
 	if (*pString1 > *pString2)
