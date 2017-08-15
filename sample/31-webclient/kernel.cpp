@@ -177,7 +177,7 @@ boolean CKernel::ParseDocument (const char *pDocument)
 {
 	CMachineInfo MachineInfo;
 	u32 nBoardRevision = MachineInfo.GetRevisionRaw () & 0xFFFFFF;		// mask out warranty bits
-	m_Logger.Write (FromKernel, LogNotice, "Revision of this board is %x", nBoardRevision);
+	m_Logger.Write (FromKernel, LogNotice, "Revision of this board is %04x", nBoardRevision);
 
 	assert (pDocument != 0);
 	CHtmlScanner Scanner (pDocument);
