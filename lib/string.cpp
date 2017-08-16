@@ -322,13 +322,27 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				}
 				else
 				{
-					if (nWidth > nLen)
+					if (!bNull)
 					{
-						PutChar (' ', nWidth-nLen);
+						if (nWidth > nLen)
+						{
+							PutChar (' ', nWidth-nLen);
+						}
+						if (bMinus)
+						{
+							PutChar ('-');
+						}
 					}
-					if (bMinus)
+					else
 					{
-						PutChar ('-');
+						if (bMinus)
+						{
+							PutChar ('-');
+						}
+						if (nWidth > nLen)
+						{
+							PutChar ('0', nWidth-nLen);
+						}
 					}
 					PutString (NumBuf);
 				}
