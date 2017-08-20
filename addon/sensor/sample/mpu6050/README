@@ -1,0 +1,14 @@
+README
+
+This sample program does consecutive acceleration and gyroscope measurements
+using the MPU-6050 device and displays the results on the screen.
+
+The MPU-6050 device/module has to be attached properly to the I2C interface of
+your Raspberry Pi. Don't forget to connect GND and power (3.3V) to the
+respective pins of your Raspberry Pi. The AD0 pin should be connected to GND to
+set I2C slave address 0x68.
+
+Please note that the sample program and driver currently does not support
+calibration of the MPU-6050. That's why the reported values for acceleration and
+gyroscope are normally not zero, if the MPU-6050 device lays on flat ground.
+Furthermore the Z-acceleration in this position is 1g (reported value = 16384).
