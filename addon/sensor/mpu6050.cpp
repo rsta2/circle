@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <sensor/mpu6050.h>
+#include <circle/timer.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -73,6 +74,8 @@ boolean CMPU6050::Initialize (void)
 
 		return FALSE;
 	}
+
+	CTimer::Get ()->MsDelay (50);		// first measurement may be wrong otherwise
 
 	return TRUE;
 }
