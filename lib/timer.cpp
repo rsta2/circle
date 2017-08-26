@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -364,7 +364,7 @@ void CTimer::InterruptHandler (void)
 {
 	PeripheralEntry ();
 
-	assert (read32 (ARM_SYSTIMER_CS) & (1 << 3));
+	//assert (read32 (ARM_SYSTIMER_CS) & (1 << 3));
 	
 	u32 nCompare = read32 (ARM_SYSTIMER_C3) + CLOCKHZ / HZ;
 	write32 (ARM_SYSTIMER_C3, nCompare);

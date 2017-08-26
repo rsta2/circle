@@ -2,7 +2,7 @@
 // string.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 //
 // ftoa() inspired by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
@@ -128,6 +128,59 @@ int CString::Find (char chChar) const
 	}
 
 	return -1;
+}
+
+int CString::Replace (const char *pOld, const char *pNew)
+{
+	int nResult = 0;
+
+	if (*pOld == '\0')
+	{
+		return nResult;
+	}
+
+	CString OldString (m_pBuffer);
+
+	delete [] m_pBuffer;
+	m_nSize = FORMAT_RESERVE;
+	m_pBuffer = new char[m_nSize];
+	m_pInPtr = m_pBuffer;
+
+	const char *pReader = OldString.m_pBuffer;
+	const char *pFound;
+	while ((pFound = strchr (pReader, pOld[0])) != 0)
+	{
+		while (pReader < pFound)
+		{
+			PutChar (*pReader++);
+		}
+
+		const char *pPattern = pOld+1;
+		const char *pCompare = pFound+1;
+		while (   *pPattern != '\0'
+		       && *pCompare == *pPattern)
+		{
+			pCompare++;
+			pPattern++;
+		}
+
+		if (*pPattern == '\0')
+		{
+			PutString (pNew);
+			pReader = pCompare;
+			nResult++;
+		}
+		else
+		{
+			PutChar (*pReader++);
+		}
+	}
+
+	PutString (pReader);
+
+	*m_pInPtr = '\0';
+
+	return nResult;
 }
 
 void CString::Format (const char *pFormat, ...)
@@ -269,13 +322,27 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				}
 				else
 				{
-					if (nWidth > nLen)
+					if (!bNull)
 					{
-						PutChar (' ', nWidth-nLen);
+						if (nWidth > nLen)
+						{
+							PutChar (' ', nWidth-nLen);
+						}
+						if (bMinus)
+						{
+							PutChar ('-');
+						}
 					}
-					if (bMinus)
+					else
 					{
-						PutChar ('-');
+						if (bMinus)
+						{
+							PutChar ('-');
+						}
+						if (nWidth > nLen)
+						{
+							PutChar ('0', nWidth-nLen);
+						}
 					}
 					PutString (NumBuf);
 				}

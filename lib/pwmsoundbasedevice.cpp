@@ -193,9 +193,14 @@ CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
 	m_pDMABuffer[1] = 0;
 }
 
-unsigned CPWMSoundBaseDevice::GetRange (void) const
+int CPWMSoundBaseDevice::GetRangeMin (void) const
 {
-	return m_nRange;
+	return 0;
+}
+
+int CPWMSoundBaseDevice::GetRangeMax (void) const
+{
+	return (int) (m_nRange-1);
 }
 
 void CPWMSoundBaseDevice::Start (void)

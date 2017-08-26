@@ -3,8 +3,6 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 30 of Circle. To get access to Step 1-29 use the git tag "Step1" to "Step29".
-
 > If you read this file in an editor you should switch line wrapping on.
 
 Overview
@@ -14,6 +12,8 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
+Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
+
 A Real-Time OS?
 ---------------
 
@@ -21,18 +21,20 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 30th Step
+The 31st Step
 -------------
 
-In this step FIQ (fast interrupt) support has been added to Circle. This is used to implement the class CGPIOPinFIQ, which allows fast interrupt-driven event capture from a GPIO pin and is demonstrated in *sample/30-gpiofiq*. See the *README* file in this directory for details.
+In this step HTTP client support has been added to Circle and is demonstrated in *sample/31-webclient*. See the *README* file in this directory for details.
 
-FIQ support is also used in the class CSerialDevice, which allows an interrupt-driven access to the UART0 device. *sample/29-miniorgan* has been updated to use the UART0 device (at option) as a serial MIDI interface.
+Furthermore the I2S sound device is supported now with up to 192 KHz sample rate (24-bit I2S audio, tested with PCM5102A DAC). *sample/29-miniorgan* has been updated to be able to use this feature.
 
-Finally in this step QEMU support has been added. See the file *doc/qemu.txt* for details!
+The addon/ subdirectory contains a port of the FatFs file system driver (by ChaN), drivers for the HC-SR04 and MPU-6050 sensor devices and special samples to be used with QEMU now.
+
+Finally there are some fixes in the TCP protocol handler included in this step.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-29 the following features were introduced:
+In Step 1-30 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -88,6 +90,8 @@ In Step 1-29 the following features were introduced:
 * Official Raspberry Pi touch screen support
 * Supporting GUI creation using uGUI (by Achim Doebler)
 * USB Audio Class MIDI input support
+* FIQ (fast interrupt) support
+* QEMU support
 
 Building
 --------
@@ -145,12 +149,11 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system)
+* CI2SSoundBaseDevice: Low level access to the I2S sound device
 
-USB library
+Net library
 
-* CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU
-* CUSBString: Encapsulates a string descriptor, available on an USB device
+* CHTTPClient: Requests documents from HTTP webservers
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

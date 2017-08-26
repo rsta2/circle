@@ -50,8 +50,12 @@ public:
 
 	virtual ~CPWMSoundBaseDevice (void);
 
-	/// \return PWM range available for one sample
-	unsigned GetRange (void) const;
+	/// \return Minium value of one sample
+	int GetRangeMin (void) const;
+	/// \return Maximum value of one sample
+	int GetRangeMax (void) const;
+	/// \brief Same as GetRangeMax()
+	unsigned GetRange (void) const { return (unsigned) GetRangeMax (); }
 
 	/// \brief Starts the PWM and DMA operation
 	void Start (void);
@@ -69,7 +73,7 @@ public:
 	/// \return Number of words written to the buffer (normally nChunkSize),\n
 	///	    Transfer will stop if 0 is returned
 	/// \note Each sample consists of two words (Left channel, right channel)\n
-	///	  Each word must be between 0 and the value returned by GetRange()
+	///	  Each word must be between GetRangeMin() and GetRangeMax()
 	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize) = 0;
 
 private:
