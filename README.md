@@ -147,13 +147,9 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Base library
+USB library
 
-* CI2SSoundBaseDevice: Low level access to the I2S sound device
-
-Net library
-
-* CHTTPClient: Requests documents from HTTP webservers
+* CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled)
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

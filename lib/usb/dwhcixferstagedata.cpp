@@ -142,6 +142,11 @@ CDWHCITransferStageData::~CDWHCITransferStageData (void)
 	m_pURB = 0;
 }
 
+void CDWHCITransferStageData::SetChannelNumber (unsigned nChannel)
+{
+	m_nChannel = nChannel;
+}
+
 void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft, u32 nBytesLeft)
 {
 #if 0

@@ -2,7 +2,7 @@
 // dwhcixferstagedata.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _dwhcixferstagedata_h
-#define _dwhcixferstagedata_h
+#ifndef _circle_usb_dwhcixferstagedata_h
+#define _circle_usb_dwhcixferstagedata_h
 
 #include <circle/usb/usb.h>
 #include <circle/usb/usbrequest.h>
@@ -32,6 +32,9 @@ class CDWHCITransferStageData
 public:
 	CDWHCITransferStageData (unsigned nChannel, CUSBRequest *pURB, boolean bIn, boolean bStatusStage);
 	~CDWHCITransferStageData (void);
+
+	// reassign channel number
+	void SetChannelNumber (unsigned nChannel);
 
 	// change status
 	void TransactionComplete (u32 nStatus, u32 nPacketsLeft, u32 nBytesLeft);

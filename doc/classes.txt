@@ -53,6 +53,7 @@ USB library
 * CDWHCIFrameSchedulerPeriodic: Schedules the transmission of interrupt split frames to non-high-speed devices
 * CDWHCIRegister: Supporting class for CDWHCIDevice, encapsulates a register of the HCI.
 * CDWHCIRootPort: Supporting class for CDWHCIDevice, initializes the root port.
+* CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled).
 * CDWHCITransferStageData: Holds all the data needed for a transfer stage on one HCI channel.
 * CMACAddress: Encapsulates an Ethernet MAC address.
 * CNetDevice: Base class of CSMSC951xDevice.

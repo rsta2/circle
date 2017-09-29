@@ -76,6 +76,11 @@
 // Optimizes IRQ latency, disables some features
 //#define REALTIME
 
+#ifndef REALTIME
+//#define USE_USB_SOF_INTR	// improved compatibility for low/full-speed USB devices
+				// causes heavily changed timing (8000 IRQs per second)
+#endif
+
 #define MAX_TASKS		20
 #define TASK_STACK_SIZE		0x4000
 

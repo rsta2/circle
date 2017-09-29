@@ -2,7 +2,7 @@
 // dwhciframeschedper.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 
 #define uFRAME			125		// micro seconds
 
-#define FRAME_UNSET		8
+#define FRAME_UNSET		(DWHCI_MAX_FRAME_NUMBER+1)
 
 enum TFrameSchedulerState
 {
@@ -41,7 +41,10 @@ enum TFrameSchedulerState
 CDWHCIFrameSchedulerPeriodic::CDWHCIFrameSchedulerPeriodic (void)
 :	m_pTimer (CTimer::Get ()),
 	m_nState (StateUnknown),
-	m_nNextFrame (FRAME_UNSET)
+#ifdef USE_USB_SOF_INTR
+	m_usFrameOffset (FRAME_UNSET),
+#endif
+	m_usNextFrame (FRAME_UNSET)
 {
 	assert (m_pTimer != 0);
 }
@@ -55,8 +58,14 @@ CDWHCIFrameSchedulerPeriodic::~CDWHCIFrameSchedulerPeriodic (void)
 
 void CDWHCIFrameSchedulerPeriodic::StartSplit (void)
 {
+#ifdef USE_USB_SOF_INTR
+	if (m_nState != StateCompleteSplitFailed)
+	{
+		m_usFrameOffset = 1;
+	}
+#endif
 	m_nState = StateStartSplit;
-	m_nNextFrame = FRAME_UNSET;
+	m_usNextFrame = FRAME_UNSET;
 }
 
 boolean CDWHCIFrameSchedulerPeriodic::CompleteSplit (void)
@@ -67,14 +76,25 @@ boolean CDWHCIFrameSchedulerPeriodic::CompleteSplit (void)
 	{
 	case StateStartSplitComplete:
 		m_nState = StateCompleteSplit;
-		m_nTries = m_nNextFrame != 5 ? 3 : 2;
-		m_nNextFrame = (m_nNextFrame  + 2) & 7;
+		assert (m_usNextFrame != FRAME_UNSET);
+#ifndef USE_USB_SOF_INTR
+		m_nTries = m_usNextFrame != 5 ? 3 : 2;
+		m_usNextFrame = (m_usNextFrame  + 2) & 7;
+#else
+		m_nTries = (m_usNextFrame & 7) != 5 ? 3 : 2;
+		m_usFrameOffset = 2;
+#endif
 		bResult = TRUE;
 		break;
 
 	case StateCompleteRetry:
 		bResult = TRUE;
-		m_nNextFrame = (m_nNextFrame + 1) & 7;
+#ifndef USE_USB_SOF_INTR
+		assert (m_usNextFrame != FRAME_UNSET);
+		m_usNextFrame = (m_usNextFrame + 1) & 7;
+#else
+		m_usFrameOffset = 1;
+#endif
 		break;
 
 	case StateCompleteSplitComplete:
@@ -110,7 +130,11 @@ void CDWHCIFrameSchedulerPeriodic::TransactionComplete (u32 nStatus)
 			{
 				m_nState = StateCompleteSplitFailed;
 
+#ifndef USE_USB_SOF_INTR
 				m_pTimer->usDelay (8 * uFRAME);
+#else
+				m_usFrameOffset = 3;
+#endif
 			}
 			else
 			{
@@ -119,7 +143,11 @@ void CDWHCIFrameSchedulerPeriodic::TransactionComplete (u32 nStatus)
 		}
 		else if (nStatus & DWHCI_HOST_CHAN_INT_NAK)
 		{
+#ifndef USE_USB_SOF_INTR
 			m_pTimer->usDelay (5 * uFRAME);
+#else
+			m_usFrameOffset = 5;
+#endif
 			m_nState = StateCompleteSplitFailed;
 		}
 		else
@@ -135,26 +163,43 @@ void CDWHCIFrameSchedulerPeriodic::TransactionComplete (u32 nStatus)
 	}
 }
 
+#ifndef USE_USB_SOF_INTR
+
 void CDWHCIFrameSchedulerPeriodic::WaitForFrame (void)
 {
 	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
 
-	if (m_nNextFrame == FRAME_UNSET)
+	if (m_usNextFrame == FRAME_UNSET)
 	{
-		m_nNextFrame = (DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ()) + 1) & 7;
-		if (m_nNextFrame == 6)
+		m_usNextFrame = (DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ()) + 1) & 7;
+		if (m_usNextFrame == 6)
 		{
-			m_nNextFrame++;
+			m_usNextFrame++;
 		}
 	}
 
-	while ((DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ()) & 7) != m_nNextFrame)
+	while ((DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ()) & 7) != m_usNextFrame)
 	{
 		// do nothing
 	}
 }
 
+#else
+
+u16 CDWHCIFrameSchedulerPeriodic::GetFrameNumber (void)
+{
+	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
+	u16 usFrameNumber = DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ());
+
+	assert (m_usFrameOffset != FRAME_UNSET);
+	m_usNextFrame = (usFrameNumber+m_usFrameOffset) & DWHCI_MAX_FRAME_NUMBER;
+
+	return m_usNextFrame;
+}
+
+#endif
+
 boolean CDWHCIFrameSchedulerPeriodic::IsOddFrame (void) const
 {
-	return m_nNextFrame & 1 ? TRUE : FALSE;
+	return m_usNextFrame & 1 ? TRUE : FALSE;
 }
