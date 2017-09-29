@@ -2,7 +2,7 @@
 // dwhciframeschednsplit.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_usb_dwhciframeschednsplit_h
 
 #include <circle/usb/dwhciframescheduler.h>
+#include <circle/sysconfig.h>
 #include <circle/types.h>
 
 class CDWHCIFrameSchedulerNoSplit : public CDWHCIFrameScheduler
@@ -33,14 +34,18 @@ public:
 	boolean CompleteSplit (void);
 	void TransactionComplete (u32 nStatus);
 	
+#ifndef USE_USB_SOF_INTR
 	void WaitForFrame (void);
-	
+#else
+	u16 GetFrameNumber (void);
+#endif
+
 	boolean IsOddFrame (void) const;
 
 private:
 	boolean m_bIsPeriodic;
 
-	unsigned m_nNextFrame;
+	u16 m_usNextFrame;
 };
 
 #endif

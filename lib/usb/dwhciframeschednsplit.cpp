@@ -2,7 +2,7 @@
 // dwhciframeschednsplit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 
 CDWHCIFrameSchedulerNoSplit::CDWHCIFrameSchedulerNoSplit (boolean bIsPeriodic)
 :	m_bIsPeriodic (bIsPeriodic),
-	m_nNextFrame (FRAME_UNSET)
+	m_usNextFrame (FRAME_UNSET)
 {
 }
 
@@ -49,21 +49,35 @@ void CDWHCIFrameSchedulerNoSplit::TransactionComplete (u32 nStatus)
 	assert (0);
 }
 
+#ifndef USE_USB_SOF_INTR
+
 void CDWHCIFrameSchedulerNoSplit::WaitForFrame (void)
 {
 	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
-	m_nNextFrame = (DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ())+1) & DWHCI_MAX_FRAME_NUMBER;
+	m_usNextFrame = (DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ())+1) & DWHCI_MAX_FRAME_NUMBER;
 
 	if (!m_bIsPeriodic)
 	{
-		while ((DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ()) & DWHCI_MAX_FRAME_NUMBER) != m_nNextFrame)
+		while ((DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ()) & DWHCI_MAX_FRAME_NUMBER) != m_usNextFrame)
 		{
 			// do nothing
 		}
 	}
 }
 
+#else
+
+u16 CDWHCIFrameSchedulerNoSplit::GetFrameNumber (void)
+{
+	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
+	m_usNextFrame = (DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ())+1) & DWHCI_MAX_FRAME_NUMBER;
+
+	return m_usNextFrame;
+}
+
+#endif
+
 boolean CDWHCIFrameSchedulerNoSplit::IsOddFrame (void) const
 {
-	return m_nNextFrame & 1 ? TRUE : FALSE;
+	return m_usNextFrame & 1 ? TRUE : FALSE;
 }
