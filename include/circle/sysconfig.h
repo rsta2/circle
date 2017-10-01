@@ -81,6 +81,10 @@
 				// causes heavily changed timing (8000 IRQs per second)
 #endif
 
+//#define USE_PWM_AUDIO_ON_ZERO	// use GPIO12/13 for PWM audio output on RPi Zero (W)
+				// some external circuit is needed to use this output
+				// do not feed voltage into these pins with this option
+
 #define MAX_TASKS		20
 #define TASK_STACK_SIZE		0x4000
 
