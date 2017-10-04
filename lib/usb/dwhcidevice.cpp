@@ -689,6 +689,45 @@ void CDWHCIDevice::QueueTransaction (CDWHCITransferStageData *pStageData)
 	m_TransactionQueue.Enqueue (pStageData, usFrameNumber);
 }
 
+void CDWHCIDevice::QueueDelayedTransaction (CDWHCITransferStageData *pStageData)
+{
+	assert (pStageData != 0);
+	CUSBRequest *pURB = pStageData->GetURB ();
+	assert (pURB != 0);
+
+	u16 usFrameOffset = (u16) pURB->GetEndpoint ()->GetInterval ();
+	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
+	if (DWHCI_HOST_PORT_SPEED (HostPort.Read ()) == DWHCI_HOST_PORT_SPEED_HIGH)
+	{
+		usFrameOffset *= 8;
+	}
+	assert (usFrameOffset < DWHCI_MAX_FRAME_NUMBER/2);
+
+	u16 usFrameNumber;
+
+	if (pStageData->IsSplit ())
+	{
+		CDWHCIFrameScheduler *pFrameScheduler = pStageData->GetFrameScheduler ();
+		assert (pFrameScheduler != 0);
+		pFrameScheduler->PeriodicDelay (usFrameOffset);
+		usFrameNumber = pFrameScheduler->GetFrameNumber ();
+
+		pStageData->SetState (StageStateStartSplit);
+		pStageData->SetSplitComplete (FALSE);
+		pFrameScheduler->StartSplit ();
+	}
+	else
+	{
+		CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
+		usFrameNumber = DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ());
+		usFrameNumber = (usFrameNumber+usFrameOffset) & DWHCI_MAX_FRAME_NUMBER;
+
+		pStageData->SetState (StageStateNoSplitTransfer);
+	}
+
+	m_TransactionQueue.Enqueue (pStageData, usFrameNumber);
+}
+
 #endif
 
 void CDWHCIDevice::StartTransaction (CDWHCITransferStageData *pStageData)
@@ -895,13 +934,15 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 #ifdef USE_USB_SOF_INTR
 			m_pStageData[nChannel] = 0;
 			FreeChannel (nChannel);
-#endif
 
+			QueueDelayedTransaction (pStageData);
+#else
 			pStageData->SetState (StageStatePeriodicDelay);
 
 			unsigned nInterval = pURB->GetEndpoint ()->GetInterval ();
 
 			m_pTimer->StartKernelTimer (MSEC2HZ (nInterval), TimerStub, pStageData, this);
+#endif
 
 			break;
 		}
@@ -1040,14 +1081,16 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 #ifdef USE_USB_SOF_INTR
 				m_pStageData[nChannel] = 0;
 				FreeChannel (nChannel);
-#endif
 
+				QueueDelayedTransaction (pStageData);
+#else
 				pStageData->SetState (StageStatePeriodicDelay);
 
 				unsigned nInterval = pURB->GetEndpoint ()->GetInterval ();
 
 				m_pTimer->StartKernelTimer (MSEC2HZ (nInterval),
 							    TimerStub, pStageData, this);
+#endif
 			}
 			break;
 		}
@@ -1171,6 +1214,8 @@ void CDWHCIDevice::InterruptStub (void *pParam)
 	pThis->InterruptHandler ();
 }
 
+#ifndef USE_USB_SOF_INTR
+
 void CDWHCIDevice::TimerHandler (CDWHCITransferStageData *pStageData)
 {
 	PeripheralEntry ();
@@ -1190,11 +1235,7 @@ void CDWHCIDevice::TimerHandler (CDWHCITransferStageData *pStageData)
 		pStageData->SetState (StageStateNoSplitTransfer);
 	}
 
-#ifndef USE_USB_SOF_INTR
 	StartTransaction (pStageData);
-#else
-	QueueTransaction (pStageData);
-#endif
 
 	PeripheralExit ();
 }
@@ -1209,6 +1250,8 @@ void CDWHCIDevice::TimerStub (unsigned /* hTimer */, void *pParam, void *pContex
 	
 	pThis->TimerHandler (pStageData);
 }
+
+#endif
 
 unsigned CDWHCIDevice::AllocateChannel (void)
 {

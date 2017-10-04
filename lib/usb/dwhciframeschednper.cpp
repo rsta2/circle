@@ -174,6 +174,11 @@ u16 CDWHCIFrameSchedulerNonPeriodic::GetFrameNumber (void)
 	return (usFrameNumber+m_usFrameOffset) & DWHCI_MAX_FRAME_NUMBER;
 }
 
+void CDWHCIFrameSchedulerNonPeriodic::PeriodicDelay (u16 usFrameOffset)
+{
+	assert (0);
+}
+
 #endif
 
 boolean CDWHCIFrameSchedulerNonPeriodic::IsOddFrame (void) const

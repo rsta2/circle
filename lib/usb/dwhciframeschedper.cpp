@@ -35,6 +35,9 @@ enum TFrameSchedulerState
 	StateCompleteRetry,
 	StateCompleteSplitComplete,
 	StateCompleteSplitFailed,
+#ifdef USE_USB_SOF_INTR
+	StatePeriodicDelay,
+#endif
 	StateUnknown
 };
 
@@ -59,13 +62,15 @@ CDWHCIFrameSchedulerPeriodic::~CDWHCIFrameSchedulerPeriodic (void)
 void CDWHCIFrameSchedulerPeriodic::StartSplit (void)
 {
 #ifdef USE_USB_SOF_INTR
-	if (m_nState != StateCompleteSplitFailed)
+	if (   m_nState != StateCompleteSplitFailed
+	    && m_nState != StatePeriodicDelay)
 	{
 		m_usFrameOffset = 1;
 	}
+#else
+	m_usNextFrame = FRAME_UNSET;
 #endif
 	m_nState = StateStartSplit;
-	m_usNextFrame = FRAME_UNSET;
 }
 
 boolean CDWHCIFrameSchedulerPeriodic::CompleteSplit (void)
@@ -194,7 +199,21 @@ u16 CDWHCIFrameSchedulerPeriodic::GetFrameNumber (void)
 	assert (m_usFrameOffset != FRAME_UNSET);
 	m_usNextFrame = (usFrameNumber+m_usFrameOffset) & DWHCI_MAX_FRAME_NUMBER;
 
+	if (   m_nState == StateStartSplit
+	    && (m_usNextFrame & 7) == 6)
+	{
+		m_usNextFrame++;
+	}
+
 	return m_usNextFrame;
+}
+
+void CDWHCIFrameSchedulerPeriodic::PeriodicDelay (u16 usFrameOffset)
+{
+	m_nState = StatePeriodicDelay;
+
+	m_usFrameOffset = usFrameOffset;
+	m_usNextFrame = FRAME_UNSET;
 }
 
 #endif

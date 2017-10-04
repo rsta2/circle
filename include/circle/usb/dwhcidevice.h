@@ -78,6 +78,8 @@ private:
 
 #ifdef USE_USB_SOF_INTR
 	void QueueTransaction (CDWHCITransferStageData *pStageData);
+
+	void QueueDelayedTransaction (CDWHCITransferStageData *pStageData);
 #endif
 
 	void StartTransaction (CDWHCITransferStageData *pStageData);
@@ -90,8 +92,10 @@ private:
 	void InterruptHandler (void);
 	static void InterruptStub (void *pParam);
 
+#ifndef USE_USB_SOF_INTR
 	void TimerHandler (CDWHCITransferStageData *pStageData);
 	static void TimerStub (unsigned hTimer, void *pParam, void *pContext);
+#endif
 
 	unsigned AllocateChannel (void);
 	void FreeChannel (unsigned nChannel);

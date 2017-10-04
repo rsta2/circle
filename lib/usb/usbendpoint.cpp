@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/usbendpoint.h>
+#include <circle/sysconfig.h>
 #include <assert.h>
 
 CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice)
@@ -93,11 +94,13 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 			}
 		}
 
+#ifndef USE_USB_SOF_INTR
 		// interval 20ms is minimum to reduce interrupt rate
 		if (m_nInterval < 20)
 		{
 			m_nInterval = 20;
 		}
+#endif
 	}
 }
 

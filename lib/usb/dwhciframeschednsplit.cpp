@@ -75,6 +75,11 @@ u16 CDWHCIFrameSchedulerNoSplit::GetFrameNumber (void)
 	return m_usNextFrame;
 }
 
+void CDWHCIFrameSchedulerNoSplit::PeriodicDelay (u16 usFrameOffset)
+{
+	assert (0);
+}
+
 #endif
 
 boolean CDWHCIFrameSchedulerNoSplit::IsOddFrame (void) const

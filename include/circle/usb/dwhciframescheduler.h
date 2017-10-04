@@ -36,6 +36,8 @@ public:
 	virtual void WaitForFrame (void) = 0;
 #else
 	virtual u16 GetFrameNumber (void) = 0;
+
+	virtual void PeriodicDelay (u16 usFrameOffset) = 0;
 #endif
 
 	virtual boolean IsOddFrame (void) const = 0;

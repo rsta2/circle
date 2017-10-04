@@ -38,6 +38,8 @@ public:
 	void WaitForFrame (void);
 #else
 	u16 GetFrameNumber (void);
+
+	void PeriodicDelay (u16 usFrameOffset);
 #endif
 
 	boolean IsOddFrame (void) const;
