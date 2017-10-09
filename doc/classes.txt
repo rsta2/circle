@@ -79,8 +79,11 @@ USB library
 
 Input library
 
+* CConsole: Console device using screen/USB keyboard or alternate device (e.g. CSerialDevice)
 * CKeyboardBehaviour: Generic keyboard function
+* CKeyboardBuffer: Buffers characters entered on the USB keyboard
 * CKeyMap: Keyboard translation map (six selectable default maps at the moment)
+* CLineDiscipline: Implements line editor function
 * CMouseBehaviour: Generic mouse function, handles the mouse cursor
 * CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
 
