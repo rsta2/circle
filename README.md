@@ -151,6 +151,12 @@ USB library
 
 * CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled)
 
+Input library
+
+* CConsole: Console device using screen/USB keyboard or alternate device (e.g. CSerialDevice)
+* CKeyboardBuffer: Buffers characters entered on the USB keyboard
+* CLineDiscipline: Implements line editor function
+
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
 `./makedoc`
