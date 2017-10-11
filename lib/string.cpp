@@ -72,6 +72,19 @@ const char *CString::operator = (const char *pString)
 	return m_pBuffer;
 }
 
+const CString &CString::operator = (const CString &rString)
+{
+	delete [] m_pBuffer;
+
+	m_nSize = strlen (rString)+1;
+
+	m_pBuffer = new char[m_nSize];
+
+	strcpy (m_pBuffer, rString);
+
+	return *this;
+}
+
 size_t CString::GetLength (void) const
 {
 	if (m_pBuffer == 0)
