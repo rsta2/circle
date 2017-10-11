@@ -32,7 +32,8 @@ public:
 
 	operator const char *(void) const;
 	const char *operator = (const char *pString);
-	
+	const CString &operator = (const CString &rString);
+
 	size_t GetLength (void) const;
 
 	void Append (const char *pString);
