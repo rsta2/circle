@@ -96,6 +96,11 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
+	if (m_Console.IsAlternateDeviceUsed ())
+	{
+		m_Logger.Write (FromKernel, LogNotice, "Using serial interface");
+	}
+
 	m_I2CShell.Run ();
 
 	return ShutdownReboot;

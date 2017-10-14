@@ -40,6 +40,9 @@ public:
 	/// \return Operation successful?
 	boolean Initialize (void);
 
+	/// \return Is alternate device used instead of screen/USB keyboard?
+	boolean IsAlternateDeviceUsed (void) const;
+
 	/// \param pBuffer Pointer to buffer for read data
 	/// \param nCount Maximum number of bytes to be read
 	/// \return Number of bytes read (0 no data available, < 0 on error)
@@ -59,6 +62,7 @@ private:
 	CDevice *m_pAlternateDevice;
 	CDevice *m_pInputDevice;
 	CDevice *m_pOutputDevice;
+	boolean  m_bAlternateDeviceUsed;
 
 	CKeyboardBuffer *m_pKeyboardBuffer;
 	CLineDiscipline *m_pLineDiscipline;

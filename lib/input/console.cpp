@@ -27,6 +27,7 @@ CConsole::CConsole (CDevice *pAlternateDevice)
 :	m_pAlternateDevice (pAlternateDevice),
 	m_pInputDevice (0),
 	m_pOutputDevice (0),
+	m_bAlternateDeviceUsed (FALSE),
 	m_pKeyboardBuffer (0),
 	m_pLineDiscipline (0),
 	m_nOptions (CONSOLE_OPTION_ICANON | CONSOLE_OPTION_ECHO)
@@ -67,13 +68,14 @@ boolean CConsole::Initialize (void)
 		if (m_pAlternateDevice == 0)
 		{
 			CLogger::Get ()->Write ("console", LogError,
-						"Input and/or output device is not available");
+						"Keyboard or screen is not available");
 
 			return FALSE;
 		}
 
 		m_pInputDevice = m_pAlternateDevice;
 		m_pOutputDevice = m_pAlternateDevice;
+		m_bAlternateDeviceUsed = TRUE;
 	}
 
 	assert (m_pLineDiscipline == 0);
@@ -83,6 +85,11 @@ boolean CConsole::Initialize (void)
 	SetOptions (m_nOptions);
 
 	return TRUE;
+}
+
+boolean CConsole::IsAlternateDeviceUsed (void) const
+{
+	return m_bAlternateDeviceUsed;
 }
 
 int CConsole::Read (void *pBuffer, unsigned nCount)
