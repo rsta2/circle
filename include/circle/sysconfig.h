@@ -1,6 +1,8 @@
 //
 // sysconfig.h
 //
+// Configurable system options
+//
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
@@ -20,80 +22,143 @@
 #ifndef _circle_sysconfig_h
 #define _circle_sysconfig_h
 
-// memory addresses and sizes
-#define MEGABYTE		0x100000
+///////////////////////////////////////////////////////////////////////
+//
+// Memory
+//
+///////////////////////////////////////////////////////////////////////
 
-#define MEM_SIZE		(256 * MEGABYTE)		// default size
-#define GPU_MEM_SIZE		(64 * MEGABYTE)			// set in config.txt
-#define ARM_MEM_SIZE		(MEM_SIZE - GPU_MEM_SIZE)	// normally overwritten
+#define MEGABYTE		0x100000	// do not change
 
-#define PAGE_SIZE		4096				// page size used by us
+// KERNEL_MAX_SIZE is the maximum allowed size of a built kernel image.
+// If your kernel image contains big data areas it may be required to
+// increase this value. The value must be a multiple of 16 KByte.
 
-#define KERNEL_MAX_SIZE		(2 * MEGABYTE)			// all sizes must be a multiple of 16K
-#define KERNEL_STACK_SIZE	0x20000
-#define EXCEPTION_STACK_SIZE	0x8000
-#define PAGE_TABLE1_SIZE	0x4000
-#define PAGE_RESERVE		(4 * MEGABYTE)
+#define KERNEL_MAX_SIZE		(2 * MEGABYTE)
 
-#define MEM_KERNEL_START	0x8000
-#define MEM_KERNEL_END		(MEM_KERNEL_START + KERNEL_MAX_SIZE)
-#define MEM_KERNEL_STACK	(MEM_KERNEL_END + KERNEL_STACK_SIZE)		// expands down
+///////////////////////////////////////////////////////////////////////
+//
+// Raspberry Pi 1 and Zero
+//
+///////////////////////////////////////////////////////////////////////
+
 #if RASPPI == 1
-#define MEM_ABORT_STACK		(MEM_KERNEL_STACK + EXCEPTION_STACK_SIZE)	// expands down
-#define MEM_IRQ_STACK		(MEM_ABORT_STACK + EXCEPTION_STACK_SIZE)	// expands down
-#define MEM_FIQ_STACK		(MEM_IRQ_STACK + EXCEPTION_STACK_SIZE)		// expands down
-#define MEM_PAGE_TABLE1		MEM_FIQ_STACK				// must be 16K aligned
-#else
-#define CORES			4					// must be a power of 2
-#define MEM_ABORT_STACK		(MEM_KERNEL_STACK + KERNEL_STACK_SIZE * (CORES-1) + EXCEPTION_STACK_SIZE)
-#define MEM_IRQ_STACK		(MEM_ABORT_STACK + EXCEPTION_STACK_SIZE * (CORES-1) + EXCEPTION_STACK_SIZE)
-#define MEM_FIQ_STACK		(MEM_IRQ_STACK + EXCEPTION_STACK_SIZE * (CORES-1) + EXCEPTION_STACK_SIZE)
-#define MEM_PAGE_TABLE1		(MEM_FIQ_STACK + EXCEPTION_STACK_SIZE * (CORES-1))
-#endif
-#define MEM_PAGE_TABLE1_END	(MEM_PAGE_TABLE1 + PAGE_TABLE1_SIZE)
 
-// coherent memory region (1 section) for the property mailbox
-#define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 2*MEGABYTE) & ~(MEGABYTE-1))
+// ARM_STRICT_ALIGNMENT activates the memory alignment check. If an
+// unaligned memory access occurs an exception is raised with this
+// option defined. This should normally not be activated, because
+// newer Circle images are not tested with it.
 
-#define MEM_HEAP_START		(MEM_COHERENT_REGION + MEGABYTE)
-
-// system options
-#if RASPPI == 1			// valid on Raspberry Pi 1 only
 //#define ARM_STRICT_ALIGNMENT
+
+// GPU_L2_CACHE_ENABLED has to be defined, if the L2 cache of the GPU
+// is enabled, which is normally the case. Only if you have disabled
+// the L2 cache of the GPU in config.txt this option must be undefined.
+
 #define GPU_L2_CACHE_ENABLED
+
+// USE_PWM_AUDIO_ON_ZERO can be defined to use GPIO12/13 for PWM audio
+// output on RPi Zero (W). Some external circuit is needed to use this.
+// WARNING: Do not feed voltage into these GPIO pins with this option
+//          defined on a RPi Zero, because this may destroy the pins.
+
+//#define USE_PWM_AUDIO_ON_ZERO
+
 #endif
 
-#if RASPPI >= 2			// valid on Raspberry Pi 2/3 only
-//#define USE_RPI_STUB_AT 	0x1F000000	// debug with rpi_stub
+///////////////////////////////////////////////////////////////////////
+//
+// Raspberry Pi 2 and 3
+//
+///////////////////////////////////////////////////////////////////////
+
+#if RASPPI >= 2
+
+// USE_RPI_STUB_AT enables the debugging support for rpi_stub and
+// defines the address where rpi_stub is loaded. See doc/debug.txt
+// for details! Kernel images built with this option defined do
+// normally not run without rpi_stub loaded.
+
+//#define USE_RPI_STUB_AT 	0x1F000000
 
 #ifndef USE_RPI_STUB_AT
-//#define ARM_ALLOW_MULTI_CORE	// slower on single core if defined
 
-//#define USE_QEMU_USB_FIX	// for QEMU use only
-#endif
+// ARM_ALLOW_MULTI_CORE has to be defined to use multi-core support
+// with the class CMultiCoreSupport. It should not be defined for
+// single core applications, because this may slow down the system
+// because multiple cores may compete for bus time without use.
+
+//#define ARM_ALLOW_MULTI_CORE
+
+// USE_QEMU_USB_FIX fixes an issue when using Circle images inside
+// QEMU. If you encounter Circle freezing when using USB in QEMU
+// you should activate this option. It must not be defined for
+// Circle images which will run on real Raspberry Pi boards.
+
+//#define USE_QEMU_USB_FIX
+
 #endif
 
-// Optimizes IRQ latency, disables some features
+#endif
+
+///////////////////////////////////////////////////////////////////////
+//
+// Timing
+//
+///////////////////////////////////////////////////////////////////////
+
+// REALTIME optimizes the IRQ latency of the system, which could be
+// useful for time-critical applications. This will be accomplished
+// by disabling some features (e.g. USB low-/full-speed device support).
+// See doc/realtime.txt for details!
+
 //#define REALTIME
 
 #ifndef REALTIME
-//#define USE_USB_SOF_INTR	// improved compatibility for low/full-speed USB devices
-				// causes heavily changed timing (8000 IRQs per second)
+
+// USE_USB_SOF_INTR improves the compatibility with low-/full-speed
+// USB devices. If your application uses such devices, this option
+// should normally be set. Unfortunately this causes a heavily changed
+// system timing, because it triggers up to 8000 IRQs per second. For
+// compatibility with existing applications it is not set by default.
+
+//#define USE_USB_SOF_INTR
+
 #endif
 
-//#define USE_PWM_AUDIO_ON_ZERO	// use GPIO12/13 for PWM audio output on RPi Zero (W)
-				// some external circuit is needed to use this output
-				// do not feed voltage into these pins with this option
+///////////////////////////////////////////////////////////////////////
+//
+// Scheduler
+//
+///////////////////////////////////////////////////////////////////////
+
+// MAX_TASKS is the maximum number of tasks in the system.
 
 #define MAX_TASKS		20
+
+// TASK_STACK_SIZE is the stack size for each task.
+
 #define TASK_STACK_SIZE		0x4000
 
-// default keyboard map (enable only one)
+///////////////////////////////////////////////////////////////////////
+//
+// USB keyboard
+//
+///////////////////////////////////////////////////////////////////////
+
+// DEFAULT_KEYMAP selects the default keyboard map (enable only one).
+// The default keyboard map can be overwritten in with the keymap=
+// option in cmdline.txt.
+
 #define DEFAULT_KEYMAP		"DE"
 //#define DEFAULT_KEYMAP		"ES"
 //#define DEFAULT_KEYMAP		"FR"
 //#define DEFAULT_KEYMAP		"IT"
 //#define DEFAULT_KEYMAP		"UK"
 //#define DEFAULT_KEYMAP		"US"
+
+///////////////////////////////////////////////////////////////////////
+
+#include <circle/memorymap.h>
 
 #endif
