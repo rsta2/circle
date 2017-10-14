@@ -91,7 +91,9 @@ boolean CTimer::Initialize (void)
 
 	write32 (ARM_SYSTIMER_C3, read32 (ARM_SYSTIMER_CLO) + CLOCKHZ / HZ);
 	
+#ifdef CALIBRATE_DELAY
 	TuneMsDelay ();
+#endif
 
 	PeripheralExit ();
 

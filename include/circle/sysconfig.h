@@ -126,6 +126,13 @@
 
 #endif
 
+// CALIBRATE_DELAY activates the calibration of the delay loop. Because
+// this loop is normally not used any more in Circle, the only use of
+// this option is that the "SpeedFactor" of your system is displayed.
+// You can reduce the time needed for booting, if you disable this.
+
+#define CALIBRATE_DELAY
+
 ///////////////////////////////////////////////////////////////////////
 //
 // Scheduler
