@@ -24,7 +24,7 @@
 #include <circle/multicore.h>
 #include <assert.h>
 
-//#define SPINLOCK_SAVE_POWER
+#define SPINLOCK_SAVE_POWER
 
 boolean CSpinLock::s_bEnabled = FALSE;
 
