@@ -48,6 +48,7 @@ public:
 #define COHERENT_SLOT_PROP_MAILBOX	0
 #define COHERENT_SLOT_GPIO_VIRTBUF	1
 #define COHERENT_SLOT_TOUCHBUF		2
+#define COHERENT_SLOT_PROP_MAILBOX_IRQ	3
 
 private:
 	void EnableMMU (void);

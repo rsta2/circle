@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,8 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= keyboardbehaviour.o keymap.o mousebehaviour.o touchscreen.o
+OBJS	= keyboardbehaviour.o keymap.o mousebehaviour.o touchscreen.o \
+	  console.o keyboardbuffer.o linediscipline.o
 
 libinput.a: $(OBJS)
 	rm -f libinput.a

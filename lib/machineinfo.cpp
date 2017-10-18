@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/machineinfo.h>
+#include <circle/sysconfig.h>
 #include <assert.h>
 
 static struct
@@ -283,6 +284,13 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 	switch (Pin)
 	{
 	case GPIOPinAudioLeft:
+#ifdef USE_PWM_AUDIO_ON_ZERO
+		if (   m_MachineModel == MachineModelZero
+		    || m_MachineModel == MachineModelZeroW)
+		{
+			return 12;
+		}
+#endif
 		if (m_MachineModel <= MachineModelBRelease2MB512)
 		{
 			nResult = 40;
@@ -301,6 +309,13 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 		break;
 
 	case GPIOPinAudioRight:
+#ifdef USE_PWM_AUDIO_ON_ZERO
+		if (   m_MachineModel == MachineModelZero
+		    || m_MachineModel == MachineModelZeroW)
+		{
+			return 13;
+		}
+#endif
 		if (m_MachineModel <= MachineModelBRelease2MB512)
 		{
 			nResult = 45;

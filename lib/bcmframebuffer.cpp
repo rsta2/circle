@@ -2,7 +2,7 @@
 // bcmframebuffer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -231,4 +231,11 @@ boolean CBcmFrameBuffer::SetVirtualOffset (u32 nOffsetX, u32 nOffsetY)
 	}
 
 	return TRUE;
+}
+
+boolean CBcmFrameBuffer::WaitForVerticalSync (void)
+{
+	CBcmPropertyTags Tags;
+	TPropertyTagSimple Dummy;
+	return Tags.GetTag (PROPTAG_WAIT_FOR_VSYNC, &Dummy, sizeof Dummy);
 }

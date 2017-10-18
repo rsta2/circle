@@ -34,6 +34,8 @@ extern "C" {
 #define IRQ_LEVEL		1		// IRQs disabled, FIQs enabled
 #define FIQ_LEVEL		2		// IRQs and FIQs disabled
 
+unsigned CurrentExecutionLevel (void);
+
 //
 // Interrupt control
 //

@@ -53,6 +53,7 @@ USB library
 * CDWHCIFrameSchedulerPeriodic: Schedules the transmission of interrupt split frames to non-high-speed devices
 * CDWHCIRegister: Supporting class for CDWHCIDevice, encapsulates a register of the HCI.
 * CDWHCIRootPort: Supporting class for CDWHCIDevice, initializes the root port.
+* CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled).
 * CDWHCITransferStageData: Holds all the data needed for a transfer stage on one HCI channel.
 * CMACAddress: Encapsulates an Ethernet MAC address.
 * CNetDevice: Base class of CSMSC951xDevice.
@@ -78,8 +79,11 @@ USB library
 
 Input library
 
+* CConsole: Console device using screen/USB keyboard or alternate device (e.g. CSerialDevice)
 * CKeyboardBehaviour: Generic keyboard function
+* CKeyboardBuffer: Buffers characters entered on the USB keyboard
 * CKeyMap: Keyboard translation map (six selectable default maps at the moment)
+* CLineDiscipline: Implements line editor function
 * CMouseBehaviour: Generic mouse function, handles the mouse cursor
 * CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
 

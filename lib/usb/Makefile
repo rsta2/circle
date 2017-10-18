@@ -20,7 +20,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o \
+OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o dwhcixactqueue.o \
 	  usbconfigparser.o usbdevice.o usbendpoint.o usbhostcontroller.o usbrequest.o usbstring.o \
 	  smsc951x.o macaddress.o netdevice.o usbdevicefactory.o usbstandardhub.o \
 	  usbmassdevice.o \

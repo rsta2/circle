@@ -21,20 +21,20 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 31st Step
+The 32nd Step
 -------------
 
-In this step HTTP client support has been added to Circle and is demonstrated in *sample/31-webclient*. See the *README* file in this directory for details.
+In this step a console class has been added to Circle, which allows the easy use of an USB keyboard and a screen together as one device. The console class provides a line editor mode and a raw mode and is demonstrated in *sample/32-i2cshell*, a command line tool for interactive communication with I2C devices. If you are often experimenting with I2C devices, this may be a tool for you. See the *README* file in this directory for details.
 
-Furthermore the I2S sound device is supported now with up to 192 KHz sample rate (24-bit I2S audio, tested with PCM5102A DAC). *sample/29-miniorgan* has been updated to be able to use this feature.
+Furthermore the Circle USB HCI driver provides an improved compatibility for low-/full-speed USB devices (e.g. keyboards, some did not work properly). Because this update changes the overall system timing, it is not enabled by default to be compatible with existing applications. You should enable the system option *USE_USB_SOF_INTR*, if the improved compatibility is important for your application.
 
-The addon/ subdirectory contains a port of the FatFs file system driver (by ChaN), drivers for the HC-SR04 and MPU-6050 sensor devices and special samples to be used with QEMU now.
+The system options can be found in the file *include/circle/sysconfig.h*. This file has been completely revised and each option is documented now.
 
-Finally there are some fixes in the TCP protocol handler included in this step.
+Finally there are some improvements in the SPI0 master drivers (polling and DMA) included in this step.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-30 the following features were introduced:
+In Step 1-31 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -92,6 +92,8 @@ In Step 1-30 the following features were introduced:
 * USB Audio Class MIDI input support
 * FIQ (fast interrupt) support
 * QEMU support
+* HTTP client support
+* I2S support (output only)
 
 Building
 --------
@@ -129,8 +131,6 @@ Installation
 
 Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the kernel.img (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
 
-Note that the file *kernel.img* has been renamed to *kernel7.img* for the Raspberry Pi 2/3.
-
 Directories
 -----------
 
@@ -147,13 +147,15 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Base library
+USB library
 
-* CI2SSoundBaseDevice: Low level access to the I2S sound device
+* CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled)
 
-Net library
+Input library
 
-* CHTTPClient: Requests documents from HTTP webservers
+* CConsole: Console device using screen/USB keyboard or alternate device (e.g. CSerialDevice)
+* CKeyboardBuffer: Buffers characters entered on the USB keyboard
+* CLineDiscipline: Implements line editor function
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

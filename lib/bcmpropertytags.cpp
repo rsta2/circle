@@ -81,8 +81,16 @@ boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
 	unsigned nBufferSize = sizeof (TPropertyBuffer) + nTagsSize + sizeof (u32);
 	assert ((nBufferSize & 3) == 0);
 
+	unsigned nExecutionLevel = CurrentExecutionLevel ();
+	unsigned nCoherentSlot = COHERENT_SLOT_PROP_MAILBOX;
+	assert (nExecutionLevel <= IRQ_LEVEL);
+	if (nExecutionLevel == IRQ_LEVEL)
+	{
+		nCoherentSlot = COHERENT_SLOT_PROP_MAILBOX_IRQ;
+	}
+
 	TPropertyBuffer *pBuffer =
-		(TPropertyBuffer *) CMemorySystem::GetCoherentPage (COHERENT_SLOT_PROP_MAILBOX);
+		(TPropertyBuffer *) CMemorySystem::GetCoherentPage (nCoherentSlot);
 
 	pBuffer->nBufferSize = nBufferSize;
 	pBuffer->nCode = CODE_REQUEST;

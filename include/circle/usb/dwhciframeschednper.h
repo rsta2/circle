@@ -2,7 +2,7 @@
 // dwhciframeschednper.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,11 +17,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _dwhciframeschednper_h
-#define _dwhciframeschednper_h
+#ifndef _circle_usb_dwhciframeschednper_h
+#define _circle_usb_dwhciframeschednper_h
 
 #include <circle/usb/dwhciframescheduler.h>
 #include <circle/timer.h>
+#include <circle/sysconfig.h>
 #include <circle/types.h>
 
 class CDWHCIFrameSchedulerNonPeriodic : public CDWHCIFrameScheduler
@@ -34,8 +35,14 @@ public:
 	boolean CompleteSplit (void);
 	void TransactionComplete (u32 nStatus);
 	
+#ifndef USE_USB_SOF_INTR
 	void WaitForFrame (void);
-	
+#else
+	u16 GetFrameNumber (void);
+
+	void PeriodicDelay (u16 usFrameOffset);
+#endif
+
 	boolean IsOddFrame (void) const;
 
 private:
@@ -43,6 +50,10 @@ private:
 	
 	unsigned m_nState;
 	unsigned m_nTries;
+
+#ifdef USE_USB_SOF_INTR
+	u16 m_usFrameOffset;
+#endif
 };
 
 #endif

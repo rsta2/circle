@@ -139,6 +139,10 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 
 	PeripheralEntry ();
 
+	// SCLK stays low for one clock cycle after each byte without this
+	assert (nCount <= 0xFFFF);
+	write32 (ARM_SPI0_DLEN, nCount);
+
 	assert (nChipSelect <= 1);
 	write32 (ARM_SPI0_CS,   (read32 (ARM_SPI0_CS) & ~CS_CS)
 			      | (nChipSelect << CS_CS__SHIFT)
