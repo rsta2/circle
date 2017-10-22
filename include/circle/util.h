@@ -26,6 +26,8 @@
 extern "C" {
 #endif
 
+#ifdef STDLIB_SUPPORT
+
 #define memcmp		circle_memcmp
 #define strlen		circle_strlen
 #define strcmp		circle_strcmp
@@ -35,6 +37,8 @@ extern "C" {
 #define strchr		circle_strchr
 #define strtok_r	circle_strtok_r
 #define strtoul		circle_strtoul
+
+#endif
 
 void *memset (void *pBuffer, int nValue, size_t nLength);
 

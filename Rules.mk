@@ -44,14 +44,30 @@ ARCH	?= -march=armv8-a -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard
 TARGET	?= kernel8-32
 endif
 
+LIBGCC	  != $(CPP) -mfloat-abi=hard -print-file-name=libgcc.a
+LIBGCC_EH != $(CPP) -mfloat-abi=hard -print-file-name=libgcc_eh.a
+LIBSTDCPP != $(CPP) -mfloat-abi=hard -print-file-name=libstdc++.a
+
+ifeq ($(strip $(STDLIB_SUPPORT)),1)
+AFLAGS	+= -DSTDLIB_SUPPORT
+CFLAGS	+= -DSTDLIB_SUPPORT
+EXTRALIBS += $(LIBSTDCPP)
+ifneq ($(strip $(LIBGCC_EH)),libgcc_eh.a)
+EXTRALIBS += $(LIBGCC_EH)
+endif
+else
+CPPFLAGS+= -fno-exceptions -fno-rtti
+endif
+
 OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
+EXTRALIBS += $(LIBGCC)
 
 AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) $(INCLUDE)
 CFLAGS	+= $(ARCH) -Wall -fsigned-char -fno-builtin -nostdinc -nostdlib \
 	   -D__circle__ -DRASPPI=$(RASPPI) $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
-CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++14
+CPPFLAGS+= $(CFLAGS) -std=c++14
 
 %.o: %.S
 	$(AS) $(AFLAGS) -c -o $@ $<
@@ -63,7 +79,7 @@ CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++14
 	$(CPP) $(CPPFLAGS) -c -o $@ $<
 
 $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.ld
-	$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(LIBS) $(EXTRALIBS)
+	$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
 	$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
 	$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
 	wc -c $(TARGET).img

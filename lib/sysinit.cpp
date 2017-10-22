@@ -22,6 +22,7 @@
 #include <circle/bcm2835.h>
 #include <circle/bcm2836.h>
 #include <circle/machineinfo.h>
+#include <circle/memory.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
@@ -142,6 +143,10 @@ void sysinit (void)
 	}
 
 	CMachineInfo MachineInfo;
+
+#ifdef STDLIB_SUPPORT
+	CMemorySystem Memory;
+#endif
 
 	// call construtors of static objects
 	extern void (*__init_start) (void);

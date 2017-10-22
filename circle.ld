@@ -24,6 +24,14 @@ SECTIONS
 		__init_end = .;
 	}
 
+	.ARM.exidx : {
+		__exidx_start = .;
+
+		*(.ARM.exidx*)
+
+		__exidx_end = .;
+	}
+
 	.data : {
 		*(.data*)
 	}
