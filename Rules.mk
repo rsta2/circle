@@ -65,7 +65,7 @@ INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/
 EXTRALIBS += $(LIBGCC)
 
 AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) $(INCLUDE)
-CFLAGS	+= $(ARCH) -Wall -fsigned-char -fno-builtin -nostdinc -nostdlib \
+CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding \
 	   -D__circle__ -DRASPPI=$(RASPPI) $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
 CPPFLAGS+= $(CFLAGS) -std=c++14
 
