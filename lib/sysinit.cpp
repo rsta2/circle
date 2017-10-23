@@ -33,10 +33,21 @@ extern "C" {
 
 void *__dso_handle;
 
+#ifndef STDLIB_SUPPORT
+
 void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 {
 	// TODO
 }
+
+#else
+
+void __sync_synchronize (void)
+{
+	DataSyncBarrier ();
+}
+
+#endif
 
 void halt (void)
 {
