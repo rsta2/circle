@@ -34,7 +34,7 @@ startup.o: startup.S
 
 include ../Rules.mk
 
-ifneq ($(strip $(STDLIB_SUPPORT)),1)
+ifneq ($(strip $(STDLIB_SUPPORT)),2)
 OBJS	+= new.o purecall.o
 endif
 

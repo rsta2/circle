@@ -2,7 +2,7 @@
 // exceptionhandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,7 +36,8 @@ const char *CExceptionHandler::s_pExceptionName[] =
 	"Division by zero",
 	"Undefined instruction",
 	"Prefetch abort",
-	"Data abort"
+	"Data abort",
+	"Unknown"
 };
 
 CExceptionHandler *CExceptionHandler::s_pThis = 0;
@@ -133,3 +134,14 @@ void ExceptionHandler (u32 nException, TAbortFrame *pFrame)
 
 	CExceptionHandler::Get ()->Throw (nException, pFrame);
 }
+
+#if !defined(STDLIB_SUPPORT) || STDLIB_SUPPORT == 1
+
+extern "C" int raise (int nSignal)
+{
+	CExceptionHandler::Get ()->Throw (EXCEPTION_UNKNOWN);
+
+	return 0;
+}
+
+#endif

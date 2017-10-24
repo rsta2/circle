@@ -27,6 +27,8 @@ endif
 RASPPI	?= 1
 PREFIX	?= arm-none-eabi-
 
+STDLIB_SUPPORT ?= 0
+
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
 AS	= $(CC)
@@ -48,15 +50,19 @@ LIBGCC	  != $(CPP) -mfloat-abi=hard -print-file-name=libgcc.a
 LIBGCC_EH != $(CPP) -mfloat-abi=hard -print-file-name=libgcc_eh.a
 LIBSTDCPP != $(CPP) -mfloat-abi=hard -print-file-name=libstdc++.a
 
-ifeq ($(strip $(STDLIB_SUPPORT)),1)
-AFLAGS	+= -DSTDLIB_SUPPORT
-CFLAGS	+= -DSTDLIB_SUPPORT
+ifeq ($(strip $(STDLIB_SUPPORT)),0)
+CPPFLAGS+= -fno-exceptions -fno-rtti
+else ifeq ($(strip $(STDLIB_SUPPORT)),1)
+AFLAGS	+= -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT)
+CFLAGS	+= -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT)
+CPPFLAGS+= -fno-exceptions -fno-rtti
+else
+AFLAGS	+= -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT)
+CFLAGS	+= -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT)
 EXTRALIBS += $(LIBSTDCPP)
 ifneq ($(strip $(LIBGCC_EH)),libgcc_eh.a)
 EXTRALIBS += $(LIBGCC_EH)
 endif
-else
-CPPFLAGS+= -fno-exceptions -fno-rtti
 endif
 
 OPTIMIZE ?= -O2
