@@ -27,7 +27,11 @@ endif
 RASPPI	?= 1
 PREFIX	?= arm-none-eabi-
 
-STDLIB_SUPPORT ?= 0
+# 0 to build without external libs
+# 1 to build with libgcc.a
+# 2 to build with C stdlib (external newlib) too
+# 3 to build with C++ stdlib too
+STDLIB_SUPPORT ?= 1
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
@@ -46,33 +50,32 @@ ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=h
 TARGET	?= kernel8-32
 endif
 
-LIBGCC	  != $(CPP) -mfloat-abi=hard -print-file-name=libgcc.a
-LIBGCC_EH != $(CPP) -mfloat-abi=hard -print-file-name=libgcc_eh.a
+ifeq ($(strip $(STDLIB_SUPPORT)),3)
 LIBSTDCPP != $(CPP) -mfloat-abi=hard -print-file-name=libstdc++.a
-
-ifeq ($(strip $(STDLIB_SUPPORT)),0)
-CPPFLAGS+= -fno-exceptions -fno-rtti
-else ifeq ($(strip $(STDLIB_SUPPORT)),1)
-AFLAGS	+= -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT)
-CFLAGS	+= -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT)
-CPPFLAGS+= -fno-exceptions -fno-rtti
-else
-AFLAGS	+= -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT)
-CFLAGS	+= -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT)
 EXTRALIBS += $(LIBSTDCPP)
+LIBGCC_EH != $(CPP) -mfloat-abi=hard -print-file-name=libgcc_eh.a
 ifneq ($(strip $(LIBGCC_EH)),libgcc_eh.a)
 EXTRALIBS += $(LIBGCC_EH)
 endif
+else
+CPPFLAGS  += -fno-exceptions -fno-rtti -nostdinc++
+endif
+
+ifeq ($(strip $(STDLIB_SUPPORT)),0)
+CFLAGS	  += -nostdinc
+else
+LIBGCC	  != $(CPP) -mfloat-abi=hard -print-file-name=libgcc.a
+EXTRALIBS += $(LIBGCC)
 endif
 
 OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
-EXTRALIBS += $(LIBGCC)
 
-AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) $(INCLUDE)
+AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) $(INCLUDE)
 CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding \
-	   -D__circle__ -DRASPPI=$(RASPPI) $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
+	   -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
+	   $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
 CPPFLAGS+= $(CFLAGS) -std=c++14
 
 %.o: %.S

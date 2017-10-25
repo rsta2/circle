@@ -34,7 +34,11 @@ startup.o: startup.S
 
 include ../Rules.mk
 
-ifneq ($(strip $(STDLIB_SUPPORT)),2)
+ifeq ($(strip $(STDLIB_SUPPORT)),0)
+OBJS	+= libhelper.o libstub.o
+endif
+
+ifneq ($(strip $(STDLIB_SUPPORT)),3)
 OBJS	+= new.o purecall.o
 endif
 

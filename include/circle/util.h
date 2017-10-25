@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-#ifdef STDLIB_SUPPORT
+#if STDLIB_SUPPORT >= 2
 
 #define memcmp		circle_memcmp
 #define strlen		circle_strlen

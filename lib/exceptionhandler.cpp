@@ -135,7 +135,7 @@ void ExceptionHandler (u32 nException, TAbortFrame *pFrame)
 	CExceptionHandler::Get ()->Throw (nException, pFrame);
 }
 
-#if !defined(STDLIB_SUPPORT) || STDLIB_SUPPORT == 1
+#if STDLIB_SUPPORT == 1 || STDLIB_SUPPORT == 2
 
 extern "C" int raise (int nSignal)
 {

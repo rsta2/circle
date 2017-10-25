@@ -33,7 +33,7 @@ extern "C" {
 
 void *__dso_handle;
 
-#ifndef STDLIB_SUPPORT
+#if STDLIB_SUPPORT < 2
 
 void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 {
@@ -155,7 +155,7 @@ void sysinit (void)
 
 	CMachineInfo MachineInfo;
 
-#ifdef STDLIB_SUPPORT
+#if STDLIB_SUPPORT >= 2
 	CMemorySystem Memory;
 #endif
 
