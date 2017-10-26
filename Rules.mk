@@ -27,7 +27,8 @@ endif
 RASPPI	?= 1
 PREFIX	?= arm-none-eabi-
 
-STDLIB_SUPPORT ?= 1		# see: doc/stdlib-support.txt
+# see: doc/stdlib-support.txt
+STDLIB_SUPPORT ?= 1
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
