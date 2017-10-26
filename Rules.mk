@@ -27,11 +27,7 @@ endif
 RASPPI	?= 1
 PREFIX	?= arm-none-eabi-
 
-# 0 to build without external libs
-# 1 to build with libgcc.a
-# 2 to build with C stdlib (external newlib) too
-# 3 to build with C++ stdlib too
-STDLIB_SUPPORT ?= 1
+STDLIB_SUPPORT ?= 1		# see: doc/stdlib-support.txt
 
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
@@ -51,9 +47,9 @@ TARGET	?= kernel8-32
 endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),3)
-LIBSTDCPP != $(CPP) -mfloat-abi=hard -print-file-name=libstdc++.a
+LIBSTDCPP != $(CPP) $(ARCH) -print-file-name=libstdc++.a
 EXTRALIBS += $(LIBSTDCPP)
-LIBGCC_EH != $(CPP) -mfloat-abi=hard -print-file-name=libgcc_eh.a
+LIBGCC_EH != $(CPP) $(ARCH) -print-file-name=libgcc_eh.a
 ifneq ($(strip $(LIBGCC_EH)),libgcc_eh.a)
 EXTRALIBS += $(LIBGCC_EH)
 endif
@@ -64,7 +60,7 @@ endif
 ifeq ($(strip $(STDLIB_SUPPORT)),0)
 CFLAGS	  += -nostdinc
 else
-LIBGCC	  != $(CPP) -mfloat-abi=hard -print-file-name=libgcc.a
+LIBGCC	  != $(CPP) $(ARCH) -print-file-name=libgcc.a
 EXTRALIBS += $(LIBGCC)
 endif
 
