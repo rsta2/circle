@@ -2,7 +2,7 @@
 // memory.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _memory_h
-#define _memory_h
+#ifndef _circle_memory_h
+#define _circle_memory_h
 
 #include <circle/pagetable.h>
 #include <circle/sysconfig.h>
@@ -44,6 +44,8 @@ public:
 	u32 GetTTBR0 (void) const;
 	u32 GetContextID (void) const;
 
+	static CMemorySystem *Get (void);
+
 private:
 	void EnableMMU (void);
 
@@ -53,6 +55,8 @@ private:
 
 	CPageTable *m_pPageTable0Default;
 	CPageTable *m_pPageTable1;
+
+	static CMemorySystem *s_pThis;
 };
 
 #endif
