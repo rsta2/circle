@@ -30,14 +30,14 @@ boolean CSpinLock::s_bEnabled = FALSE;
 
 CSpinLock::CSpinLock (unsigned nTargetLevel)
 :	m_nTargetLevel (nTargetLevel),
-	m_bLocked (FALSE)
+	m_nLocked (0)
 {
 	assert (nTargetLevel <= FIQ_LEVEL);
 }
 
 CSpinLock::~CSpinLock (void)
 {
-	assert (!m_bLocked);
+	assert (m_nLocked == 0);
 }
 
 void CSpinLock::Acquire (void)
@@ -75,7 +75,7 @@ void CSpinLock::Acquire (void)
 			"bne 1b\n"
 			"dmb\n"
 
-			: : "r" ((u32) &m_bLocked)
+			: : "r" ((uintptr) &m_nLocked)
 		);
 	}
 }
@@ -96,7 +96,7 @@ void CSpinLock::Release (void)
 			"sev\n"
 #endif
 
-			: : "r" ((u32) &m_bLocked)
+			: : "r" ((uintptr) &m_nLocked)
 		);
 	}
 
