@@ -76,7 +76,8 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 	m_pInterruptSystem (pInterruptSystem),
 	m_bIRQConnected (FALSE),
 	m_pCompletionRoutine (0),
-	m_pCompletionParam (0)
+	m_pCompletionParam (0),
+	m_bStatus (FALSE)
 {
 	PeripheralEntry ();
 
