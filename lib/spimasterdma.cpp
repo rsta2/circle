@@ -154,8 +154,10 @@ void CSPIMasterDMA::StartWriteRead (unsigned	nChipSelect,
 	m_TxDMA.Start ();
 }
 
-void CSPIMasterDMA::DMACompletionRoutine (boolean bStatus)
+void CSPIMasterDMA::DMACompletionRoutine (boolean bRxStatus)
 {
+	boolean bTxStatus = m_TxDMA.Wait ();
+
 	PeripheralEntry ();
 	write32 (ARM_SPI0_CS, read32 (ARM_SPI0_CS) & ~(CS_TA | CS_DMAEN | CS_ADCS));
 	PeripheralExit ();
@@ -165,7 +167,7 @@ void CSPIMasterDMA::DMACompletionRoutine (boolean bStatus)
 
 	if (pCompletionRoutine != 0)
 	{
-		(*pCompletionRoutine) (bStatus && m_TxDMA.GetStatus (), m_pCompletionParam);
+		(*pCompletionRoutine) (bRxStatus && bTxStatus, m_pCompletionParam);
 	}
 }
 
