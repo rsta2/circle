@@ -84,6 +84,8 @@ boolean CConsole::Initialize (void)
 
 	SetOptions (m_nOptions);
 
+	CDeviceNameService::Get ()->AddDevice ("console", this, FALSE);
+
 	return TRUE;
 }
 
