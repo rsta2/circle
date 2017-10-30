@@ -48,6 +48,8 @@ private:
 
 	UG_GUI m_GUI;
 
+	CUSBMouseDevice *m_pMouseDevice;
+
 	CTouchScreenDevice *m_pTouchScreen;
 	unsigned m_nLastUpdate;
 

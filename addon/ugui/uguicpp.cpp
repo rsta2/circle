@@ -10,6 +10,7 @@ CUGUI *CUGUI::s_pThis = 0;
 
 CUGUI::CUGUI (CScreenDevice *pScreen)
 :	m_pScreen (pScreen),
+	m_pMouseDevice (0),
 	m_pTouchScreen (0),
 	m_nLastUpdate (0)
 {
@@ -20,6 +21,7 @@ CUGUI::CUGUI (CScreenDevice *pScreen)
 CUGUI::~CUGUI (void)
 {
 	m_pTouchScreen = 0;
+	m_pMouseDevice = 0;
 	m_pScreen =  0;
 
 	s_pThis = 0;
@@ -40,15 +42,14 @@ boolean CUGUI::Initialize (void)
 		return FALSE;
 	}
 
-	CUSBMouseDevice *pMouse =
-		(CUSBMouseDevice *) CDeviceNameService::Get ()->GetDevice ("umouse1", FALSE);
-	if (pMouse != 0)
+	m_pMouseDevice = (CUSBMouseDevice *) CDeviceNameService::Get ()->GetDevice ("umouse1", FALSE);
+	if (m_pMouseDevice != 0)
 	{
-		if (pMouse->Setup (m_pScreen->GetWidth (), m_pScreen->GetHeight ()))
+		if (m_pMouseDevice->Setup (m_pScreen->GetWidth (), m_pScreen->GetHeight ()))
 		{
-			pMouse->ShowCursor (TRUE);
+			m_pMouseDevice->ShowCursor (TRUE);
 
-			pMouse->RegisterEventHandler (MouseEventStub);
+			m_pMouseDevice->RegisterEventHandler (MouseEventStub);
 		}
 	}
 
@@ -66,6 +67,11 @@ boolean CUGUI::Initialize (void)
 void CUGUI::Update (void)
 {
 	UG_Update ();
+
+	if (m_pMouseDevice != 0)
+	{
+		m_pMouseDevice->UpdateCursor ();
+	}
 
 	if (m_pTouchScreen != 0)
 	{

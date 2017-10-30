@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -113,11 +113,11 @@ TShutdownMode CKernel::Run (void)
 
 	pMouse->RegisterEventHandler (MouseEventStub);
 
-	// just wait and turn the rotor
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
 	{
+		pMouse->UpdateCursor ();
+
 		m_Screen.Rotor (0, nCount);
-		m_Timer.MsDelay (100);
 	}
 
 	return m_ShutdownMode;
