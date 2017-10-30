@@ -46,6 +46,7 @@ public:
 	/// \param pBuffer Pointer to buffer for read data
 	/// \param nCount Maximum number of bytes to be read
 	/// \return Number of bytes read (0 no data available, < 0 on error)
+	/// \note This method does not block! It has to be called until != 0 is returned.
 	int Read (void *pBuffer, unsigned nCount);
 
 	/// \param pBuffer Pointer to data to be written
