@@ -2,7 +2,7 @@
 // logger.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -116,6 +116,50 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 	}
 
 	Buffer.Append ("\n");
+
+	Write (Buffer);
+
+	if (Severity == LogPanic)
+	{
+#ifndef USE_RPI_STUB_AT
+#ifndef ARM_ALLOW_MULTI_CORE
+		halt ();
+#else
+		CMultiCoreSupport::HaltAll ();
+#endif
+#else
+		Breakpoint (0);
+#endif
+	}
+}
+
+void CLogger::WriteNoAlloc (const char *pSource, TLogSeverity Severity, const char *pMessage)
+{
+	if (Severity > m_nLogLevel)
+	{
+		return;
+	}
+
+	char Buffer[200];
+	Buffer[0] = '\0';
+
+	// TODO: assert (4+strlen (pSource)+2+strlen (pMessage)+4+1 < sizeof Buffer);
+
+	if (Severity == LogPanic)
+	{
+		strcpy (Buffer, "\x1b[1m");
+	}
+
+	strcat (Buffer, pSource);
+	strcat (Buffer, ": ");
+	strcat (Buffer, pMessage);
+
+	if (Severity == LogPanic)
+	{
+		strcat (Buffer, "\x1b[0m");
+	}
+
+	strcat (Buffer, "\n");
 
 	Write (Buffer);
 

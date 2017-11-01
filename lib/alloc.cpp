@@ -151,9 +151,9 @@ void *malloc (size_t nSize)
 #endif
 #if STDLIB_SUPPORT == 3
 			// C++ exception should be thrown after returning 0
-			CLogger::Get ()->Write ("alloc", LogWarning, "Out of memory");
+			CLogger::Get ()->WriteNoAlloc ("alloc", LogWarning, "Out of memory");
 #else
-			CLogger::Get ()->Write ("alloc", LogPanic, "Out of memory");
+			CLogger::Get ()->WriteNoAlloc ("alloc", LogPanic, "Out of memory");
 #endif
 
 			return 0;
