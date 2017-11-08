@@ -27,7 +27,7 @@ OBJS	= netsubsystem.o nettask.o socket.o \
 	  tcpconnection.o retransmissionqueue.o retranstimeoutcalc.o tcprejector.o \
 	  netconfig.o ipaddress.o netqueue.o checksumcalculator.o \
 	  dnsclient.o ntpclient.o \
-	  dhcpclient.o ntpdaemon.o httpdaemon.o httpclient.o tftpdaemon.o
+	  dhcpclient.o ntpdaemon.o httpdaemon.o httpclient.o tftpdaemon.o syslogdaemon.o
 
 libnet.a: $(OBJS)
 	rm -f libnet.a

@@ -156,7 +156,7 @@ void *malloc (size_t nSize)
 			// C++ exception should be thrown after returning 0
 			CLogger::Get ()->WriteNoAlloc ("alloc", LogWarning, "Out of memory");
 #else
-			CLogger::Get ()->WriteNoAlloc ("alloc", LogPanic, "Out of memory");
+			CLogger::Get ()->Write ("alloc", LogPanic, "Out of memory");
 #endif
 
 			return 0;
