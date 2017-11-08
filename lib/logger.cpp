@@ -324,8 +324,11 @@ void CLogger::WriteEvent (const char *pSource, TLogSeverity Severity, const char
 	}
 
 	// drop oldest entry, if event queue is full
+	TLogEvent *pDropEvent = 0;
 	if (m_nEventInPtr == m_nEventOutPtr)
 	{
+		pDropEvent = m_pEventQueue[m_nEventOutPtr];
+
 		if (++m_nEventOutPtr == LOG_QUEUE_SIZE)
 		{
 			m_nEventOutPtr = 0;
@@ -333,6 +336,11 @@ void CLogger::WriteEvent (const char *pSource, TLogSeverity Severity, const char
 	}
 
 	m_EventSpinLock.Release ();
+
+	if (pDropEvent != 0)
+	{
+		delete pDropEvent;
+	}
 
 	if (m_pEventNotificationHandler != 0)
 	{
