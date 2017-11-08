@@ -157,6 +157,10 @@ Input library
 * CKeyboardBuffer: Buffers characters entered on the USB keyboard
 * CLineDiscipline: Implements line editor function
 
+Net library
+
+* CSysLogDaemon: Syslog sender task according to RFC5424 and RFC5426 (UDP transport only)
+
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
 `./makedoc`

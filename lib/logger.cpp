@@ -30,6 +30,16 @@
 
 #define LOGGER_BUFSIZE	0x4000
 
+struct TLogEvent
+{
+	TLogSeverity	Severity;
+	char		Source[LOG_MAX_SOURCE];
+	char		Message[LOG_MAX_MESSAGE];
+	time_t		Time;
+	unsigned	nHundredthTime;
+	int		nTimeZone;			// minutes diff to UTC
+};
+
 CLogger *CLogger::s_pThis = 0;
 
 CLogger::CLogger (unsigned nLogLevel, CTimer *pTimer)
@@ -38,16 +48,30 @@ CLogger::CLogger (unsigned nLogLevel, CTimer *pTimer)
 	m_pTarget (0),
 	m_pBuffer (0),
 	m_nInPtr (0),
-	m_nOutPtr (0)
+	m_nOutPtr (0),
+	m_nEventInPtr (0),
+	m_nEventOutPtr (0),
+	m_pEventNotificationHandler (0),
+	m_pPanicHandler (0)
 {
 	m_pBuffer = new char[LOGGER_BUFSIZE];
 
 	s_pThis = this;
 }
 
-CLogger::~CLogger ()
+CLogger::~CLogger (void)
 {
 	s_pThis = 0;
+
+	while (m_nEventInPtr != m_nEventOutPtr)
+	{
+		delete m_pEventQueue[m_nEventOutPtr];
+
+		if (++m_nEventOutPtr == LOG_QUEUE_SIZE)
+		{
+			m_nEventOutPtr = 0;
+		}
+	}
 
 	delete [] m_pBuffer;
 	m_pBuffer = 0;
@@ -78,6 +102,11 @@ void CLogger::Write (const char *pSource, TLogSeverity Severity, const char *pMe
 
 void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pMessage, va_list Args)
 {
+	CString Message;
+	Message.FormatV (pMessage, Args);
+
+	WriteEvent (pSource, Severity, Message);
+
 	if (Severity > m_nLogLevel)
 	{
 		return;
@@ -105,9 +134,6 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 	Buffer.Append (pSource);
 	Buffer.Append (": ");
 
-	CString Message;
-	Message.FormatV (pMessage, Args);
-
 	Buffer.Append (Message);
 
 	if (Severity == LogPanic)
@@ -121,6 +147,11 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 
 	if (Severity == LogPanic)
 	{
+		if (m_pPanicHandler != 0)
+		{
+			(*m_pPanicHandler) ();
+		}
+
 #ifndef USE_RPI_STUB_AT
 #ifndef ARM_ALLOW_MULTI_CORE
 		halt ();
@@ -244,4 +275,110 @@ int CLogger::Read (void *pBuffer, unsigned nCount)
 	m_SpinLock.Release ();
 
 	return nResult;
+}
+
+void CLogger::WriteEvent (const char *pSource, TLogSeverity Severity, const char *pMessage)
+{
+	TLogEvent *pEvent = new TLogEvent;
+	if (pEvent == 0)
+	{
+		return;
+	}
+
+	pEvent->Severity = Severity;
+
+	strncpy (pEvent->Source, pSource, LOG_MAX_SOURCE);
+	pEvent->Source[LOG_MAX_SOURCE-1] = '\0';
+
+	strncpy (pEvent->Message, pMessage, LOG_MAX_MESSAGE);
+	pEvent->Message[LOG_MAX_MESSAGE-1] = '\0';
+
+	if (m_pTimer != 0)
+	{
+		// TODO: getting Time and nTicks is not atomic here
+		pEvent->Time = m_pTimer->GetLocalTime ();
+
+		unsigned nTicks = m_pTimer->GetTicks ();
+		nTicks %= HZ;
+#if (HZ != 100)
+		nTicks = nTicks * 100 / HZ;
+#endif
+		pEvent->nHundredthTime = nTicks;
+
+		pEvent->nTimeZone = m_pTimer->GetTimeZone ();
+	}
+	else
+	{
+		pEvent->Time = 0;
+		pEvent->nHundredthTime = 0;
+		pEvent->nTimeZone = 0;
+	}
+
+	m_EventSpinLock.Acquire ();
+
+	m_pEventQueue[m_nEventInPtr] = pEvent;
+
+	if (++m_nEventInPtr == LOG_QUEUE_SIZE)
+	{
+		m_nEventInPtr = 0;
+	}
+
+	// drop oldest entry, if event queue is full
+	if (m_nEventInPtr == m_nEventOutPtr)
+	{
+		if (++m_nEventOutPtr == LOG_QUEUE_SIZE)
+		{
+			m_nEventOutPtr = 0;
+		}
+	}
+
+	m_EventSpinLock.Release ();
+
+	if (m_pEventNotificationHandler != 0)
+	{
+		(*m_pEventNotificationHandler) ();
+	}
+}
+
+boolean CLogger::ReadEvent (TLogSeverity *pSeverity, char *pSource, char *pMessage,
+			    time_t *pTime, unsigned *pHundredthTime, int *pTimeZone)
+{
+	m_EventSpinLock.Acquire ();
+
+	if (m_nEventInPtr == m_nEventOutPtr)
+	{
+		m_EventSpinLock.Release ();
+
+		return FALSE;
+	}
+
+	TLogEvent *pEvent = m_pEventQueue[m_nEventOutPtr];
+
+	if (++m_nEventOutPtr == LOG_QUEUE_SIZE)
+	{
+		m_nEventOutPtr = 0;
+	}
+
+	m_EventSpinLock.Release ();
+
+	*pSeverity = pEvent->Severity;
+	strcpy (pSource, pEvent->Source);
+	strcpy (pMessage, pEvent->Message);
+	*pTime = pEvent->Time;
+	*pHundredthTime = pEvent->nHundredthTime;
+	*pTimeZone = pEvent->nTimeZone;
+
+	delete pEvent;
+
+	return TRUE;
+}
+
+void CLogger::RegisterEventNotificationHandler (TLogEventNotificationHandler *pHandler)
+{
+	m_pEventNotificationHandler = pHandler;
+}
+
+void CLogger::RegisterPanicHandler (TLogPanicHandler *pHandler)
+{
+	m_pPanicHandler = pHandler;
 }
