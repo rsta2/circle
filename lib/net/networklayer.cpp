@@ -2,7 +2,7 @@
 // networklayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,8 +26,7 @@
 CNetworkLayer::CNetworkLayer (CNetConfig *pNetConfig, CLinkLayer *pLinkLayer)
 :	m_pNetConfig (pNetConfig),
 	m_pLinkLayer (pLinkLayer),
-	m_pICMPHandler (0),
-	m_pBuffer (0)
+	m_pICMPHandler (0)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pLinkLayer != 0);
@@ -35,9 +34,6 @@ CNetworkLayer::CNetworkLayer (CNetConfig *pNetConfig, CLinkLayer *pLinkLayer)
 
 CNetworkLayer::~CNetworkLayer (void)
 {
-	delete m_pBuffer;
-	m_pBuffer = 0;
-
 	delete m_pICMPHandler;
 	m_pICMPHandler = 0;
 
@@ -51,10 +47,6 @@ boolean CNetworkLayer::Initialize (void)
 	m_pICMPHandler = new CICMPHandler (m_pNetConfig, this, &m_ICMPRxQueue, &m_ICMPNotificationQueue);
 	assert (m_pICMPHandler != 0);
 
-	assert (m_pBuffer == 0);
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
-
 	return TRUE;
 }
 
@@ -64,16 +56,16 @@ void CNetworkLayer::Process (void)
 	const CIPAddress *pOwnIPAddress = m_pNetConfig->GetIPAddress ();
 	assert (pOwnIPAddress != 0);
 
+	u8 Buffer[FRAME_BUFFER_SIZE];
 	unsigned nResultLength;
-	assert (m_pBuffer != 0);
 	assert (m_pLinkLayer != 0);
-	while (m_pLinkLayer->Receive (m_pBuffer, &nResultLength))
+	while (m_pLinkLayer->Receive (Buffer, &nResultLength))
 	{
 		if (nResultLength <= sizeof (TIPHeader))
 		{
 			continue;
 		}
-		TIPHeader *pHeader = (TIPHeader *) m_pBuffer;
+		TIPHeader *pHeader = (TIPHeader *) Buffer;
 
 		unsigned nHeaderLength = pHeader->nVersionIHL & 0xF;
 		if (   nHeaderLength < IP_HEADER_LENGTH_DWORD_MIN
@@ -135,11 +127,11 @@ void CNetworkLayer::Process (void)
 
 		if (pHeader->nProtocol == IPPROTO_ICMP)
 		{
-			m_ICMPRxQueue.Enqueue ((u8 *) m_pBuffer + nHeaderLength, nResultLength, pParam);
+			m_ICMPRxQueue.Enqueue (Buffer+nHeaderLength, nResultLength, pParam);
 		}
 		else
 		{
-			m_RxQueue.Enqueue ((u8 *) m_pBuffer + nHeaderLength, nResultLength, pParam);
+			m_RxQueue.Enqueue (Buffer+nHeaderLength, nResultLength, pParam);
 		}
 	}
 
@@ -156,9 +148,8 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 		return FALSE;
 	}
 
-	u8 *pPacketBuffer = new u8[nPacketLength];
-	assert (pPacketBuffer != 0);
-	TIPHeader *pHeader = (TIPHeader *) pPacketBuffer;
+	u8 PacketBuffer[nPacketLength];
+	TIPHeader *pHeader = (TIPHeader *) PacketBuffer;
 
 	pHeader->nVersionIHL          = IP_VERSION << 4 | IP_HEADER_LENGTH_DWORD_MIN;
 	pHeader->nTypeOfService       = IP_TOS_ROUTINE;
@@ -175,9 +166,6 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	if (   pOwnIPAddress->IsNull ()
 	    && !rReceiver.IsBroadcast ())
 	{
-		delete [] pPacketBuffer;
-		pPacketBuffer = 0;
-
 		return FALSE;
 	}
 
@@ -190,7 +178,7 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 
 	assert (pPacket != 0);
 	assert (nLength > 0);
-	memcpy (pPacketBuffer+sizeof (TIPHeader), pPacket, nLength);
+	memcpy (PacketBuffer+sizeof (TIPHeader), pPacket, nLength);
 
 	CIPAddress GatewayIP;
 	const CIPAddress *pNextHop = &rReceiver;
@@ -208,9 +196,6 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 			pNextHop = m_pNetConfig->GetDefaultGateway ();
 			if (pNextHop->IsNull ())
 			{
-				delete [] pPacketBuffer;
-				pPacketBuffer = 0;
-
 				return FALSE;
 			}
 		}
@@ -218,12 +203,7 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	
 	assert (m_pLinkLayer != 0);
 	assert (pNextHop != 0);
-	boolean bOK = m_pLinkLayer->Send (*pNextHop, pPacketBuffer, nPacketLength);
-	
-	delete [] pPacketBuffer;
-	pPacketBuffer = 0;
-
-	return bOK;
+	return m_pLinkLayer->Send (*pNextHop, PacketBuffer, nPacketLength);
 }
 
 boolean CNetworkLayer::Receive (void *pBuffer, unsigned *pResultLength,

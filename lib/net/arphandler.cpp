@@ -2,7 +2,7 @@
 // arphandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,8 +56,7 @@ PACKED;
 CARPHandler::CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer, CNetQueue *pRxQueue)
 :	m_pNetConfig (pNetConfig),
 	m_pNetDevLayer (pNetDevLayer),
-	m_pRxQueue (pRxQueue),
-	m_pBuffer (0)
+	m_pRxQueue (pRxQueue)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pNetDevLayer != 0);
@@ -67,16 +66,10 @@ CARPHandler::CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer,
 	{
 		m_Entry[nEntry].State = ARPStateFreeSlot;
 	}
-
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
 }
 
 CARPHandler::~CARPHandler (void)
 {
-	delete [] m_pBuffer;
-	m_pBuffer =  0;
-
 	m_pRxQueue = 0;
 	m_pNetDevLayer = 0;
 	m_pNetConfig = 0;
@@ -88,9 +81,9 @@ void CARPHandler::Process (void)
 	const CIPAddress *pOwnIPAddress = m_pNetConfig->GetIPAddress ();
 	assert (pOwnIPAddress != 0);
 
-	TARPPacket *pPacket = (TARPPacket *) m_pBuffer;
-	assert (pPacket != 0);
-	
+	u8 Buffer[FRAME_BUFFER_SIZE];
+	TARPPacket *pPacket = (TARPPacket *) Buffer;
+
 	u32 nResultLength;
 	assert (m_pRxQueue != 0);
 	while ((nResultLength = m_pRxQueue->Dequeue (pPacket)) != 0)

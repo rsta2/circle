@@ -2,7 +2,7 @@
 // netdevlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,22 +20,19 @@
 #include <circle/net/netdevlayer.h>
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
+#include <circle/macros.h>
 #include <assert.h>
 
 const char FromNetDev[] = "netdev";
 
 CNetDeviceLayer::CNetDeviceLayer (CNetConfig *pNetConfig)
 :	m_pNetConfig (pNetConfig),
-	m_pDevice (0),
-	m_pBuffer (0)
+	m_pDevice (0)
 {
 }
 
 CNetDeviceLayer::~CNetDeviceLayer (void)
 {
-	delete [] m_pBuffer;
-	m_pBuffer = 0;
-
 	m_pDevice = 0;
 	m_pNetConfig = 0;
 }
@@ -51,22 +48,18 @@ boolean CNetDeviceLayer::Initialize (void)
 		return FALSE;
 	}
 
-	assert (m_pBuffer == 0);
-	m_pBuffer = new unsigned char[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
-
 	return TRUE;
 }
 
 void CNetDeviceLayer::Process (void)
 {
 	assert (m_pDevice != 0);
-	assert (m_pBuffer != 0);
 
+	u8 Buffer[FRAME_BUFFER_SIZE] ALIGN(4);		// DMA buffer
 	unsigned nLength;
-	while ((nLength = m_TxQueue.Dequeue (m_pBuffer)) > 0)
+	while ((nLength = m_TxQueue.Dequeue (Buffer)) > 0)
 	{
-		if (!m_pDevice->SendFrame (m_pBuffer, nLength))
+		if (!m_pDevice->SendFrame (Buffer, nLength))
 		{
 			CLogger::Get ()->Write (FromNetDev, LogWarning, "Frame dropped");
 
@@ -74,10 +67,10 @@ void CNetDeviceLayer::Process (void)
 		}
 	}
 
-	while (m_pDevice->ReceiveFrame (m_pBuffer, &nLength))
+	while (m_pDevice->ReceiveFrame (Buffer, &nLength))
 	{
 		assert (nLength > 0);
-		m_RxQueue.Enqueue (m_pBuffer, nLength);
+		m_RxQueue.Enqueue (Buffer, nLength);
 	}
 }
 

@@ -55,8 +55,6 @@ private:
 	CUSBEndpoint *m_pEndpointBulkOut;
 
 	CMACAddress m_MACAddress;
-
-	u8 *m_pTxBuffer;
 };
 
 #endif

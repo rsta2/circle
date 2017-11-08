@@ -9,7 +9,7 @@
 // See the file lib/usb/README for details!
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <circle/bcmpropertytags.h>
 #include <circle/logger.h>
 #include <circle/util.h>
+#include <circle/macros.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -126,18 +127,12 @@ static const char FromSMSC951x[] = "smsc951x";
 CSMSC951xDevice::CSMSC951xDevice (CUSBFunction *pFunction)
 :	CNetDevice (pFunction),
 	m_pEndpointBulkIn (0),
-	m_pEndpointBulkOut (0),
-	m_pTxBuffer (0)
+	m_pEndpointBulkOut (0)
 {
-	m_pTxBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pTxBuffer != 0);
 }
 
 CSMSC951xDevice::~CSMSC951xDevice (void)
 {
-	delete m_pTxBuffer;
-	m_pTxBuffer = 0;
-
 	delete m_pEndpointBulkOut;
 	m_pEndpointBulkOut = 0;
 
@@ -259,20 +254,21 @@ const CMACAddress *CSMSC951xDevice::GetMACAddress (void) const
 
 boolean CSMSC951xDevice::SendFrame (const void *pBuffer, unsigned nLength)
 {
-	if (nLength >= FRAME_BUFFER_SIZE-8)
+	if (nLength > FRAME_BUFFER_SIZE)
 	{
 		return FALSE;
 	}
 
-	assert (m_pTxBuffer != 0);
+	u8 TxBuffer[FRAME_BUFFER_SIZE+8] ALIGN(4);	// DMA buffer
 	assert (pBuffer != 0);
-	memcpy (m_pTxBuffer+8, pBuffer, nLength);
-	
-	*(u32 *) &m_pTxBuffer[0] = TX_CMD_A_FIRST_SEG | TX_CMD_A_LAST_SEG | nLength;
-	*(u32 *) &m_pTxBuffer[4] = nLength;
+	memcpy (TxBuffer+8, pBuffer, nLength);
+
+	u32 *pTxHeader = (u32 *) TxBuffer;
+	pTxHeader[0] = TX_CMD_A_FIRST_SEG | TX_CMD_A_LAST_SEG | nLength;
+	pTxHeader[1] = nLength;
 	
 	assert (m_pEndpointBulkOut != 0);
-	return GetHost ()->Transfer (m_pEndpointBulkOut, m_pTxBuffer, nLength+8) >= 0;
+	return GetHost ()->Transfer (m_pEndpointBulkOut, TxBuffer, nLength+8) >= 0;
 }
 
 boolean CSMSC951xDevice::ReceiveFrame (void *pBuffer, unsigned *pResultLength)

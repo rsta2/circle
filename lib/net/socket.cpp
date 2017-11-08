@@ -2,7 +2,7 @@
 // socket.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,14 +31,10 @@ CSocket::CSocket (CNetSubSystem *pNetSubSystem, int nProtocol)
 	m_pTransportLayer (pNetSubSystem->GetTransportLayer ()),
 	m_nProtocol (nProtocol),
 	m_nOwnPort (0),
-	m_hConnection (-1),
-	m_pBuffer (0)
+	m_hConnection (-1)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pTransportLayer != 0);
-
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
 }
 
 CSocket::CSocket (CSocket &rSocket)
@@ -46,14 +42,10 @@ CSocket::CSocket (CSocket &rSocket)
 	m_pTransportLayer (rSocket.m_pTransportLayer),
 	m_nProtocol (rSocket.m_nProtocol),
 	m_nOwnPort (rSocket.m_nOwnPort),
-	m_hConnection (rSocket.m_hConnection),
-	m_pBuffer (0)
+	m_hConnection (rSocket.m_hConnection)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pTransportLayer != 0);
-
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
 }
 
 CSocket::~CSocket (void)
@@ -64,9 +56,6 @@ CSocket::~CSocket (void)
 		m_pTransportLayer->Disconnect (m_hConnection);
 		m_hConnection = -1;
 	}
-
-	delete m_pBuffer;
-	m_pBuffer = 0;
 
 	m_pTransportLayer = 0;
 	m_pNetConfig = 0;
@@ -214,8 +203,8 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 	}
 	
 	assert (m_pTransportLayer != 0);
-	assert (m_pBuffer != 0);
-	int nResult = m_pTransportLayer->Receive (m_pBuffer, nFlags, m_hConnection);
+	u8 TempBuffer[FRAME_BUFFER_SIZE];
+	int nResult = m_pTransportLayer->Receive (TempBuffer, nFlags, m_hConnection);
 	if (nResult < 0)
 	{
 		return nResult;
@@ -227,7 +216,7 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 	}
 
 	assert (pBuffer != 0);
-	memcpy (pBuffer, m_pBuffer, nResult);
+	memcpy (pBuffer, TempBuffer, nResult);
 
 	return nResult;
 }
@@ -275,8 +264,8 @@ int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
 	}
 	
 	assert (m_pTransportLayer != 0);
-	assert (m_pBuffer != 0);
-	int nResult = m_pTransportLayer->ReceiveFrom (m_pBuffer, nFlags,
+	u8 TempBuffer[FRAME_BUFFER_SIZE];
+	int nResult = m_pTransportLayer->ReceiveFrom (TempBuffer, nFlags,
 						      pForeignIP, pForeignPort, m_hConnection);
 	if (nResult < 0)
 	{
@@ -289,7 +278,7 @@ int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
 	}
 
 	assert (pBuffer != 0);
-	memcpy (pBuffer, m_pBuffer, nResult);
+	memcpy (pBuffer, TempBuffer, nResult);
 
 	return nResult;
 }
