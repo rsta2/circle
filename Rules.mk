@@ -37,13 +37,13 @@ LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
 
 ifeq ($(strip $(RASPPI)),1)
-ARCH	?= -march=armv6k -mtune=arm1176jzf-s -marm -mfloat-abi=hard
+ARCH	?= -march=armv6k -mtune=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=softfp
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
-ARCH	?= -march=armv7-a -marm -mfpu=neon-vfpv4 -mfloat-abi=hard
+ARCH	?= -march=armv7-a -marm -mfpu=vfp -mfloat-abi=softfp
 TARGET	?= kernel7
 else
-ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=hard
+ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=vfp -mfloat-abi=softfp
 TARGET	?= kernel8-32
 endif
 
