@@ -147,6 +147,10 @@ Classes
 
 The following C++ classes were added to Circle:
 
+Base library
+
+* CClassAllocator: Support class for the class-specific allocation of objects
+
 USB library
 
 * CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled)

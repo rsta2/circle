@@ -23,6 +23,7 @@
 #include <circle/usb/dwhciframescheduler.h>
 #include <circle/timer.h>
 #include <circle/sysconfig.h>
+#include <circle/classallocator.h>
 #include <circle/types.h>
 
 class CDWHCIFrameSchedulerNonPeriodic : public CDWHCIFrameScheduler
@@ -54,6 +55,8 @@ private:
 #ifdef USE_USB_SOF_INTR
 	u16 m_usFrameOffset;
 #endif
+
+	DECLARE_CLASS_ALLOCATOR
 };
 
 #endif
