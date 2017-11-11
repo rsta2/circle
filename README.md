@@ -39,7 +39,8 @@ Features
 
 Circle supports the following features:
 
-|-----------------------+-----------------------------------------------------|
+| Group                 | Features                                            |
+|-----------------------|-----------------------------------------------------|
 | C++ build environment | Basic library functions (e.g. new and delete)       |
 |                       | Enables all CPU caches using the MMU                |
 |                       | Interrupt support (IRQ and FIQ)                     |
@@ -88,7 +89,6 @@ Circle supports the following features:
 | Bluetooth             | Device inquiry support only                         |
 |                       | USB BR/EDR dongle driver                            |
 |                       | Internal controller of Raspberry Pi 3               |
-|-----------------------+-----------------------------------------------------|
 
 Building
 --------
