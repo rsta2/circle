@@ -34,66 +34,61 @@ Finally there are some improvements in the SPI0 master drivers (polling and DMA)
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-31 the following features were introduced:
+Features
+--------
 
-* C++ build environment
-* Simple delay functionality
-* Get properties (model, memory size) from VideoCore
-* new and delete
-* Using GPIO pins
-* Manipulating Act LED
-* Set pixel on screen
-* Use kernel options
-* Switch on MMU
-* Formatting strings
-* Using devices
-* Writing characters to screen
-* Writing characters to UART
-* Logging output to screen or UART
-* Using assertions and debug hexdump
-* Using interrupts
-* Timer class with clock, timers and calibrated delay loop
-* Exception handler
-* USB host controller interface (HCI) driver
-* USB device class (basic device initialization)
-* USB hub driver (dectects and enables the supported devices)
-* Driver for the on-board Ethernet device (receiving and transmitting frames)
-* Driver for USB mass storage devices (bulk only, read and write)
-* Detects low- and full-speed devices
-* Driver for USB keyboards
-* Using GPIO interrupts
-* Driver for USB mice
-* Using GPIO clock
-* Simple 12 MHz GPIO sampling routine
-* PWM sound device
-* DMA controller support
-* PWM output (2 channels)
-* Simple USB printer support
-* FAT file system support (reduced)
-* I2C (master and slave) support
-* Multi-core support on Raspberry Pi 2
-* Experimental (UDP only) TCP/IP network stack
-* Setting system time from an Internet time (NTP) server
-* Cooperative non-preemtive scheduler
-* TCP support
-* DHCP support
-* Simple HTTP webserver class
-* GDB debug support on Raspberry Pi 2 using rpi_stub
-* Bluetooth device inquiry support
-* SPI0 master support
-* Driver for hardware random number generator
-* SPI0 master support using DMA
-* CPU clock rate management support
-* Basic support for standard USB HID class gamepads
-* TFTP file server support
-* Basic support for the internal Bluetooth host controller of the Raspberry Pi 3
-* Official Raspberry Pi touch screen support
-* Supporting GUI creation using uGUI (by Achim Doebler)
-* USB Audio Class MIDI input support
-* FIQ (fast interrupt) support
-* QEMU support
-* HTTP client support
-* I2S support (output only)
+Circle supports the following features:
+
+|-----------------------+-----------------------------------------------------|
+| C++ build environment | Basic library functions (e.g. new and delete)       |
+|                       | Enables all CPU caches using the MMU                |
+|                       | Interrupt support (IRQ and FIQ)                     |
+|                       | Multi-core support (Raspberry Pi 2 and 3)           |
+|                       | Cooperative non-preemtive scheduler                 |
+|                       | CPU clock rate management                           |
+|-----------------------+-----------------------------------------------------|
+| Debug support         | Kernel logging to screen, UART and/or syslog server |
+|                       | C-assertions with stack trace                       |
+|                       | Hardware exception handler with stack trace         |
+|                       | GDB support using rpi_stub (Raspberry Pi 2 and 3)   |
+|                       | QEMU support                                        |
+|-----------------------+-----------------------------------------------------|
+| Legacy devices        | GPIO pins (with interrupt, Act LED) and clocks      |
+|                       | Frame buffer (screen driver with escape sequences)  |
+|                       | UART (Polling and interrupt driver)                 |
+|                       | System timer (with kernel timers)                   |
+|                       | Platform DMA controller                             |
+|                       | EMMC SD card interface driver                       |
+|                       | PWM output (2 channels)                             |
+|                       | PWM sound output (on headphone jack)                |
+|                       | I2C master and slave                                |
+|                       | SPI0 master (Polling and DMA driver)                |
+|                       | I2S sound output                                    |
+|                       | Hardware random number generator                    |
+|                       | Official Raspberry Pi touch screen                  |
+|-----------------------+-----------------------------------------------------|
+| USB                   | Host controller interface (HCI) driver              |
+|                       | Standard hub driver                                 |
+|                       | HID class device drivers (keyboard, mouse, gamepad) |
+|                       | Driver for on-board Ethernet device (SMSC951x)      |
+|                       | Driver for USB mass storage devices (bulk only)     |
+|                       | Audio class MIDI input support                      |
+|                       | Printer driver                                      |
+|-----------------------+-----------------------------------------------------|
+| File systems          | Internal FAT driver (reduced function)              |
+|                       | FatFs driver (full function, by ChaN)               |
+|-----------------------+-----------------------------------------------------|
+| TCP/IP networking     | Protocols: ARP, IP, ICMP, UDP, TCP                  |
+|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog               |
+|                       | Servers: HTTP, TFTP                                 |
+|                       | BSD-like C++ socket API                             |
+|-----------------------+-----------------------------------------------------|
+| GUI                   | uGUI (by Achim Doebler)                             |
+|-----------------------+-----------------------------------------------------|
+| Bluetooth             | Device inquiry support only                         |
+|                       | USB BR/EDR dongle driver                            |
+|                       | Internal controller of Raspberry Pi 3               |
+|-----------------------+-----------------------------------------------------|
 
 Building
 --------
@@ -146,16 +141,6 @@ Classes
 -------
 
 The following C++ classes were added to Circle:
-
-USB library
-
-* CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled)
-
-Input library
-
-* CConsole: Console device using screen/USB keyboard or alternate device (e.g. CSerialDevice)
-* CKeyboardBuffer: Buffers characters entered on the USB keyboard
-* CLineDiscipline: Implements line editor function
 
 Net library
 
