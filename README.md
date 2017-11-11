@@ -47,13 +47,13 @@ Circle supports the following features:
 |                       | Multi-core support (Raspberry Pi 2 and 3)           |
 |                       | Cooperative non-preemtive scheduler                 |
 |                       | CPU clock rate management                           |
-|-----------------------+-----------------------------------------------------|
+|                       |                                                     |
 | Debug support         | Kernel logging to screen, UART and/or syslog server |
 |                       | C-assertions with stack trace                       |
 |                       | Hardware exception handler with stack trace         |
 |                       | GDB support using rpi_stub (Raspberry Pi 2 and 3)   |
 |                       | QEMU support                                        |
-|-----------------------+-----------------------------------------------------|
+|                       |                                                     |
 | Legacy devices        | GPIO pins (with interrupt, Act LED) and clocks      |
 |                       | Frame buffer (screen driver with escape sequences)  |
 |                       | UART (Polling and interrupt driver)                 |
@@ -67,7 +67,7 @@ Circle supports the following features:
 |                       | I2S sound output                                    |
 |                       | Hardware random number generator                    |
 |                       | Official Raspberry Pi touch screen                  |
-|-----------------------+-----------------------------------------------------|
+|                       |                                                     |
 | USB                   | Host controller interface (HCI) driver              |
 |                       | Standard hub driver                                 |
 |                       | HID class device drivers (keyboard, mouse, gamepad) |
@@ -75,17 +75,17 @@ Circle supports the following features:
 |                       | Driver for USB mass storage devices (bulk only)     |
 |                       | Audio class MIDI input support                      |
 |                       | Printer driver                                      |
-|-----------------------+-----------------------------------------------------|
+|                       |                                                     |
 | File systems          | Internal FAT driver (reduced function)              |
 |                       | FatFs driver (full function, by ChaN)               |
-|-----------------------+-----------------------------------------------------|
+|                       |                                                     |
 | TCP/IP networking     | Protocols: ARP, IP, ICMP, UDP, TCP                  |
 |                       | Clients: DHCP, DNS, NTP, HTTP, Syslog               |
 |                       | Servers: HTTP, TFTP                                 |
 |                       | BSD-like C++ socket API                             |
-|-----------------------+-----------------------------------------------------|
+|                       |                                                     |
 | GUI                   | uGUI (by Achim Doebler)                             |
-|-----------------------+-----------------------------------------------------|
+|                       |                                                     |
 | Bluetooth             | Device inquiry support only                         |
 |                       | USB BR/EDR dongle driver                            |
 |                       | Internal controller of Raspberry Pi 3               |
