@@ -2,7 +2,7 @@
 // devicenameservice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _devicenameservice_h
-#define _devicenameservice_h
+#ifndef _circle_devicenameservice_h
+#define _circle_devicenameservice_h
 
 #include <circle/device.h>
 #include <circle/spinlock.h>
@@ -41,7 +41,9 @@ public:
 	void AddDevice (const char *pName, CDevice *pDevice, boolean bBlockDevice);
 
 	CDevice *GetDevice (const char *pName, boolean bBlockDevice);
-	
+
+	void ListDevices (CDevice *pTarget);
+
 	static CDeviceNameService *Get (void);
 
 private:

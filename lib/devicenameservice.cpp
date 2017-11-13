@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/devicenameservice.h>
+#include <circle/string.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -98,6 +99,34 @@ CDevice *CDeviceNameService::GetDevice (const char *pName, boolean bBlockDevice)
 	m_SpinLock.Release ();
 
 	return 0;
+}
+
+void CDeviceNameService::ListDevices (CDevice *pTarget)
+{
+	assert (pTarget != 0);
+
+	unsigned i = 0;
+
+	TDeviceInfo *pInfo = m_pList;
+	while (pInfo != 0)
+	{
+		CString String;
+
+		assert (pInfo->pName != 0);
+		String.Format ("%c %-12s%c",
+			       pInfo->bBlockDevice ? 'b' : 'c',
+			       (const char *) pInfo->pName,
+			       ++i % 4 == 0 ? '\n' : ' ');
+
+		pTarget->Write ((const char *) String, String.GetLength ());
+
+		pInfo = pInfo->pNext;
+	}
+
+	if (i % 4 != 0)
+	{
+		pTarget->Write ("\n", 1);
+	}
 }
 
 CDeviceNameService *CDeviceNameService::Get (void)
