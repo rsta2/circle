@@ -30,6 +30,9 @@ PREFIX	?= arm-none-eabi-
 # see: doc/stdlib-support.txt
 STDLIB_SUPPORT ?= 1
 
+# set this to "softfp" if you want to link specific libraries
+FLOAT_ABI ?= hard
+
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
 AS	= $(CC)
@@ -37,13 +40,13 @@ LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
 
 ifeq ($(strip $(RASPPI)),1)
-ARCH	?= -march=armv6k -mtune=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=softfp
+ARCH	?= -march=armv6k -mtune=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
-ARCH	?= -march=armv7-a -marm -mfpu=vfp -mfloat-abi=softfp
+ARCH	?= -march=armv7-a -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7
 else
-ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=vfp -mfloat-abi=softfp
+ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel8-32
 endif
 
