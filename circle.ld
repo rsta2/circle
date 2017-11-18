@@ -40,6 +40,7 @@ SECTIONS
 		__bss_start = .;
 
 		*(.bss*)
+		*(COMMON)
 
 		_end = .;
 	}
