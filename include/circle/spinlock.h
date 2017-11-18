@@ -45,7 +45,7 @@ private:
 	unsigned m_nTargetLevel;
 	u32 m_nCPSR[CORES];
 
-	boolean m_bLocked;
+	u32 m_nLocked;
 
 	static boolean s_bEnabled;
 };

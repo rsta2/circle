@@ -104,7 +104,7 @@ unsigned long mem_get_size (void)
 	return (unsigned long) (s_pBlockLimit - s_pNextBlock) + (s_pPageLimit - s_pNextPage);
 }
 
-void *malloc (unsigned long ulSize)
+void *malloc (size_t nSize)
 {
 	assert (s_pNextBlock != 0);
 	
@@ -113,9 +113,9 @@ void *malloc (unsigned long ulSize)
 	TBlockBucket *pBucket;
 	for (pBucket = s_BlockBucket; pBucket->nSize > 0; pBucket++)
 	{
-		if (ulSize <= pBucket->nSize)
+		if (nSize <= pBucket->nSize)
 		{
-			ulSize = pBucket->nSize;
+			nSize = pBucket->nSize;
 
 #ifdef MEM_DEBUG
 			if (++pBucket->nCount > pBucket->nMaxCount)
@@ -139,8 +139,11 @@ void *malloc (unsigned long ulSize)
 	{
 		pBlockHeader = (TBlockHeader *) s_pNextBlock;
 
-		s_pNextBlock += (sizeof (TBlockHeader) + ulSize + BLOCK_ALIGN-1) & ~ALIGN_MASK;
-		if (s_pNextBlock > s_pBlockLimit-s_nBlockReserve)
+		unsigned char *pNextBlock = s_pNextBlock;
+		pNextBlock += (sizeof (TBlockHeader) + nSize + BLOCK_ALIGN-1) & ~ALIGN_MASK;
+
+		if (   pNextBlock <= s_pNextBlock			// may have wrapped
+		    || pNextBlock > s_pBlockLimit-s_nBlockReserve)
 		{
 			s_nBlockReserve = 0;
 
@@ -149,13 +152,20 @@ void *malloc (unsigned long ulSize)
 #ifdef MEM_DEBUG
 			mem_info ();
 #endif
+#if STDLIB_SUPPORT == 3
+			// C++ exception should be thrown after returning 0
+			CLogger::Get ()->WriteNoAlloc ("alloc", LogWarning, "Out of memory");
+#else
 			CLogger::Get ()->Write ("alloc", LogPanic, "Out of memory");
+#endif
 
 			return 0;
 		}
+
+		s_pNextBlock = pNextBlock;
 	
 		pBlockHeader->nMagic = BLOCK_MAGIC;
-		pBlockHeader->nSize = (unsigned) ulSize;
+		pBlockHeader->nSize = (unsigned) nSize;
 	}
 	
 	s_BlockSpinLock.Release ();
@@ -193,9 +203,66 @@ void free (void *pBlock)
 
 			s_BlockSpinLock.Release ();
 
-			break;
+			return;
 		}
 	}
+
+#ifdef MEM_DEBUG
+	CLogger::Get ()->Write ("alloc", LogDebug, "Trying to free large block (size %u)",
+				pBlockHeader->nSize);
+#endif
+}
+
+void *calloc (size_t nBlocks, size_t nSize)
+{
+	nSize *= nBlocks;
+	assert (nSize >= nBlocks);
+	if (nSize == 0)
+	{
+		return 0;
+	}
+
+	void *pNewBlock = malloc (nSize);
+	if (pNewBlock != 0)
+	{
+		memset (pNewBlock, 0, nSize);
+	}
+
+	return pNewBlock;
+}
+
+void *realloc (void *pBlock, size_t nSize)
+{
+	if (pBlock == 0)
+	{
+		return malloc (nSize);
+	}
+
+	if (nSize == 0)
+	{
+		free (pBlock);
+
+		return 0;
+	}
+
+	TBlockHeader *pBlockHeader = (TBlockHeader *) ((unsigned long) pBlock - sizeof (TBlockHeader));
+	assert (pBlockHeader->nMagic == BLOCK_MAGIC);
+	if (pBlockHeader->nSize >= nSize)
+	{
+		return pBlock;
+	}
+
+	void *pNewBlock = malloc (nSize);
+	if (pNewBlock == 0)
+	{
+		return 0;
+	}
+
+	memcpy (pNewBlock, pBlock, pBlockHeader->nSize);
+
+	free (pBlock);
+
+	return pNewBlock;
 }
 
 void *palloc (void)

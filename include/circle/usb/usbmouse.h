@@ -2,7 +2,7 @@
 // usbmouse.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,6 +44,8 @@ public:
 
 	boolean SetCursor (unsigned nPosX, unsigned nPosY);		// returns FALSE on failure
 	boolean ShowCursor (boolean bShow);				// returns previous state
+
+	void UpdateCursor (void);	// call this frequently from TASK_LEVEL (cooked mode only)
 
 	// raw mode
 	void RegisterStatusHandler (TMouseStatusHandler *pStatusHandler);

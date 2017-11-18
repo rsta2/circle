@@ -2,7 +2,7 @@
 // taskswitch.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #ifndef _circle_sched_taskswitch_h
 #define _circle_sched_taskswitch_h
 
+#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
@@ -29,9 +30,8 @@ extern "C" {
 struct TTaskRegisters
 {
 	u32	r0;
-	u32	r1;
-	u32	r2;
-	u32	r3;
+	u32	fpexc;
+	u32	fpscr;
 	u32	r4;
 	u32	r5;
 	u32	r6;
@@ -43,7 +43,9 @@ struct TTaskRegisters
 	u32	r12;
 	u32	sp;
 	u32	lr;
-};
+	u64	d[16];
+}
+PACKED;
 
 void TaskSwitch (TTaskRegisters *pOldRegs, TTaskRegisters *pNewRegs);
 

@@ -151,12 +151,6 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 {
 	s_nConnections++;
 
-	m_pTxBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pTxBuffer != 0);
-	
-	m_pTempBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pTempBuffer != 0);
-	
 	for (unsigned nTimer = TCPTimerUser; nTimer < TCPTimerUnknown; nTimer++)
 	{
 		m_hTimer[nTimer] = 0;
@@ -200,12 +194,6 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 {
 	s_nConnections++;
 
-	m_pTxBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pTxBuffer != 0);
-	
-	m_pTempBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pTempBuffer != 0);
-	
 	for (unsigned nTimer = TCPTimerUser; nTimer < TCPTimerUnknown; nTimer++)
 	{
 		m_hTimer[nTimer] = 0;
@@ -224,12 +212,6 @@ CTCPConnection::~CTCPConnection (void)
 	{
 		StopTimer (nTimer);
 	}
-
-	delete m_pTempBuffer;
-	m_pTempBuffer = 0;
-
-	delete m_pTxBuffer;
-	m_pTxBuffer = 0;
 
 	assert (s_nConnections > 0);
 	s_nConnections--;
@@ -568,16 +550,16 @@ void CTCPConnection::Process (void)
 		break;
 	}
 
-	assert (m_pTempBuffer != 0);
+	u8 TempBuffer[FRAME_BUFFER_SIZE];
 	unsigned nLength;
 	while (    m_RetransmissionQueue.GetFreeSpace () >= FRAME_BUFFER_SIZE
-		&& (nLength = m_TxQueue.Dequeue (m_pTempBuffer)) > 0)
+		&& (nLength = m_TxQueue.Dequeue (TempBuffer)) > 0)
 	{
 #ifdef TCP_DEBUG
 		CLogger::Get ()->Write (FromTCP, LogDebug, "Transfering %u bytes into RT buffer", nLength);
 #endif
 
-		m_RetransmissionQueue.Write (m_pTempBuffer, nLength);
+		m_RetransmissionQueue.Write (TempBuffer, nLength);
 	}
 
 	if (m_bRetransmit)
@@ -603,7 +585,7 @@ void CTCPConnection::Process (void)
 #endif
 
 		assert (nLength <= FRAME_BUFFER_SIZE);
-		m_RetransmissionQueue.Read (m_pTempBuffer, nLength);
+		m_RetransmissionQueue.Read (TempBuffer, nLength);
 
 		unsigned nFlags = TCP_FLAG_ACK;
 		if (   m_RetransmissionQueue.IsEmpty ()
@@ -612,7 +594,7 @@ void CTCPConnection::Process (void)
 			nFlags |= TCP_FLAG_PUSH;
 		}
 
-		SendSegment (nFlags, m_nSND_NXT, m_nRCV_NXT, m_pTempBuffer, nLength);
+		SendSegment (nFlags, m_nSND_NXT, m_nRCV_NXT, TempBuffer, nLength);
 		m_RTOCalculator.SegmentSent (m_nSND_NXT, nLength);
 		m_nSND_NXT += nLength;
 		StartTimer (TCPTimerRetransmission, m_RTOCalculator.GetRTO ());
@@ -1365,8 +1347,8 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 	assert (nPacketLength >= nHeaderLength);
 	assert (nHeaderLength <= FRAME_BUFFER_SIZE);
 
-	assert (m_pTxBuffer != 0);
-	TTCPHeader *pHeader = (TTCPHeader *) m_pTxBuffer;
+	u8 TxBuffer[FRAME_BUFFER_SIZE];
+	TTCPHeader *pHeader = (TTCPHeader *) TxBuffer;
 
 	pHeader->nSourcePort	 	= le2be16 (m_nOwnPort);
 	pHeader->nDestPort	 	= le2be16 (m_nForeignPort);
@@ -1389,11 +1371,11 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 	if (nDataLength > 0)
 	{
 		assert (pData != 0);
-		memcpy (m_pTxBuffer+nHeaderLength, pData, nDataLength);
+		memcpy (TxBuffer+nHeaderLength, pData, nDataLength);
 	}
 
 	pHeader->nChecksum = 0;		// must be 0 for calculation
-	pHeader->nChecksum = m_Checksum.Calculate (m_pTxBuffer, nPacketLength);
+	pHeader->nChecksum = m_Checksum.Calculate (TxBuffer, nPacketLength);
 
 #ifdef TCP_DEBUG
 	CLogger::Get ()->Write (FromTCP, LogDebug,
@@ -1411,7 +1393,7 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 #endif
 
 	assert (m_pNetworkLayer != 0);
-	return m_pNetworkLayer->Send (m_ForeignIP, m_pTxBuffer, nPacketLength, IPPROTO_TCP);
+	return m_pNetworkLayer->Send (m_ForeignIP, TxBuffer, nPacketLength, IPPROTO_TCP);
 }
 
 void CTCPConnection::ScanOptions (TTCPHeader *pHeader)

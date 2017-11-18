@@ -53,8 +53,12 @@
 #define ONEWIRE_CRC16 1
 #endif
 
+#ifndef FALSE
 #define FALSE 0
+#endif
+#ifndef TRUE
 #define TRUE  1
+#endif
 
 // Platform specific I/O definitions
 

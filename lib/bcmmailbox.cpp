@@ -23,9 +23,10 @@
 #include <circle/timer.h>
 #include <assert.h>
 
+CSpinLock CBcmMailBox::s_SpinLock (TASK_LEVEL);
+
 CBcmMailBox::CBcmMailBox (unsigned nChannel)
-:	m_nChannel (nChannel),
-	m_SpinLock (TASK_LEVEL)
+:	m_nChannel (nChannel)
 {
 }
 
@@ -37,7 +38,7 @@ unsigned CBcmMailBox::WriteRead (unsigned nData)
 {
 	PeripheralEntry ();
 
-	m_SpinLock.Acquire ();
+	s_SpinLock.Acquire ();
 
 	Flush ();
 
@@ -45,7 +46,7 @@ unsigned CBcmMailBox::WriteRead (unsigned nData)
 
 	unsigned nResult = Read ();
 
-	m_SpinLock.Release ();
+	s_SpinLock.Release ();
 
 	PeripheralExit ();
 

@@ -26,6 +26,22 @@
 extern "C" {
 #endif
 
+#if STDLIB_SUPPORT >= 2
+
+#define memcmp		circle_memcmp
+#define strlen		circle_strlen
+#define strcmp		circle_strcmp
+#define strcasecmp	circle_strcasecmp
+#define strncmp		circle_strncmp
+#define strcpy		circle_strcpy
+#define strncpy		circle_strncpy
+#define strcat		circle_strcat
+#define strchr		circle_strchr
+#define strtok_r	circle_strtok_r
+#define strtoul		circle_strtoul
+
+#endif
+
 void *memset (void *pBuffer, int nValue, size_t nLength);
 
 void *memcpy (void *pDest, const void *pSrc, size_t nLength);

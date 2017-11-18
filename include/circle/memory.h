@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _memory_h
-#define _memory_h
+#ifndef _circle_memory_h
+#define _circle_memory_h
 
 #include <circle/pagetable.h>
 #include <circle/sysconfig.h>
@@ -48,7 +48,8 @@ public:
 #define COHERENT_SLOT_PROP_MAILBOX	0
 #define COHERENT_SLOT_GPIO_VIRTBUF	1
 #define COHERENT_SLOT_TOUCHBUF		2
-#define COHERENT_SLOT_PROP_MAILBOX_IRQ	3
+
+	static CMemorySystem *Get (void);
 
 private:
 	void EnableMMU (void);
@@ -59,6 +60,8 @@ private:
 
 	CPageTable *m_pPageTable0Default;
 	CPageTable *m_pPageTable1;
+
+	static CMemorySystem *s_pThis;
 };
 
 #endif

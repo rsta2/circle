@@ -32,7 +32,6 @@ CTransportLayer::CTransportLayer (CNetConfig *pNetConfig, CNetworkLayer *pNetwor
 	m_pNetworkLayer (pNetworkLayer),
 	m_nOwnPort (OWN_PORT_MIN),
 	m_SpinLock (TASK_LEVEL),
-	m_pBuffer (0),
 	m_TCPRejector (pNetConfig, pNetworkLayer)
 {
 	assert (m_pNetConfig != 0);
@@ -48,19 +47,12 @@ CTransportLayer::~CTransportLayer (void)
 	}
 #endif
 
-	delete [] m_pBuffer;
-	m_pBuffer = 0;
-
 	m_pNetworkLayer = 0;
 	m_pNetConfig = 0;
 }
 
 boolean CTransportLayer::Initialize (void)
 {
-	assert (m_pBuffer == 0);
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
-
 	return TRUE;
 }
 
@@ -71,8 +63,8 @@ void CTransportLayer::Process (void)
 	CIPAddress Receiver;
 	int nProtocol;
 	assert (m_pNetworkLayer != 0);
-	assert (m_pBuffer != 0);
-	while (m_pNetworkLayer->Receive (m_pBuffer, &nResultLength, &Sender, &Receiver, &nProtocol))
+	u8 Buffer[FRAME_BUFFER_SIZE];
+	while (m_pNetworkLayer->Receive (Buffer, &nResultLength, &Sender, &Receiver, &nProtocol))
 	{
 		unsigned i;
 		for (i = 0; i < m_pConnection.GetCount (); i++)
@@ -83,7 +75,7 @@ void CTransportLayer::Process (void)
 			}
 
 			if (((CNetConnection *) m_pConnection[i])->PacketReceived (
-				m_pBuffer, nResultLength, Sender, Receiver, nProtocol) != 0)
+				Buffer, nResultLength, Sender, Receiver, nProtocol) != 0)
 			{
 				break;
 			}
@@ -92,7 +84,7 @@ void CTransportLayer::Process (void)
 		if (i >= m_pConnection.GetCount ())
 		{
 			// send RESET on not consumed TCP segment
-			m_TCPRejector.PacketReceived (m_pBuffer, nResultLength,
+			m_TCPRejector.PacketReceived (Buffer, nResultLength,
 						      Sender, Receiver, nProtocol);
 		}
 	}

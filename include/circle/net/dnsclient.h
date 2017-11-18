@@ -2,7 +2,7 @@
 // dnsclient.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@ public:
 	~CDNSClient (void);
 
 	boolean Resolve (const char *pHostname, CIPAddress *pIPAddress);
+
+private:
+	boolean ConvertIPString (const char *pIPString, CIPAddress *pIPAddress);
 
 private:
 	CNetSubSystem *m_pNetSubSystem;

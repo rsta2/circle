@@ -145,7 +145,7 @@
 
 // TASK_STACK_SIZE is the stack size for each task.
 
-#define TASK_STACK_SIZE		0x4000
+#define TASK_STACK_SIZE		0x8000
 
 ///////////////////////////////////////////////////////////////////////
 //

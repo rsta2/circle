@@ -27,6 +27,12 @@ endif
 RASPPI	?= 1
 PREFIX	?= arm-none-eabi-
 
+# see: doc/stdlib-support.txt
+STDLIB_SUPPORT ?= 1
+
+# set this to "softfp" if you want to link specific libraries
+FLOAT_ABI ?= hard
+
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
 AS	= $(CC)
@@ -34,24 +40,43 @@ LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
 
 ifeq ($(strip $(RASPPI)),1)
-ARCH	?= -march=armv6k -mtune=arm1176jzf-s -mfloat-abi=hard
+ARCH	?= -march=armv6k -mtune=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
-ARCH	?= -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard
+ARCH	?= -march=armv7-a -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7
 else
-ARCH	?= -march=armv8-a -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard
+ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel8-32
+endif
+
+ifeq ($(strip $(STDLIB_SUPPORT)),3)
+LIBSTDCPP != $(CPP) $(ARCH) -print-file-name=libstdc++.a
+EXTRALIBS += $(LIBSTDCPP)
+LIBGCC_EH != $(CPP) $(ARCH) -print-file-name=libgcc_eh.a
+ifneq ($(strip $(LIBGCC_EH)),libgcc_eh.a)
+EXTRALIBS += $(LIBGCC_EH)
+endif
+else
+CPPFLAGS  += -fno-exceptions -fno-rtti -nostdinc++
+endif
+
+ifeq ($(strip $(STDLIB_SUPPORT)),0)
+CFLAGS	  += -nostdinc
+else
+LIBGCC	  != $(CPP) $(ARCH) -print-file-name=libgcc.a
+EXTRALIBS += $(LIBGCC)
 endif
 
 OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
 
-AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) $(INCLUDE)
-CFLAGS	+= $(ARCH) -Wall -fsigned-char -fno-builtin -nostdinc -nostdlib \
-	   -D__circle__ -DRASPPI=$(RASPPI) $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
-CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++14
+AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) $(INCLUDE)
+CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding \
+	   -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
+	   $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
+CPPFLAGS+= $(CFLAGS) -std=c++14
 
 %.o: %.S
 	$(AS) $(AFLAGS) -c -o $@ $<
@@ -63,7 +88,7 @@ CPPFLAGS+= $(CFLAGS) -fno-exceptions -fno-rtti -std=c++14
 	$(CPP) $(CPPFLAGS) -c -o $@ $<
 
 $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.ld
-	$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(LIBS)
+	$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
 	$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
 	$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
 	wc -c $(TARGET).img

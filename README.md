@@ -21,79 +21,76 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 32nd Step
+The 33rd Step
 -------------
 
-In this step a console class has been added to Circle, which allows the easy use of an USB keyboard and a screen together as one device. The console class provides a line editor mode and a raw mode and is demonstrated in *sample/32-i2cshell*, a command line tool for interactive communication with I2C devices. If you are often experimenting with I2C devices, this may be a tool for you. See the *README* file in this directory for details.
+The main expenditure in this step was spent to prepare Circle for external projects which allow to develop applications which are using C and C++ standard library features. Please see the file *doc/stdlib-support.txt* for details.
 
-Furthermore the Circle USB HCI driver provides an improved compatibility for low-/full-speed USB devices (e.g. keyboards, some did not work properly). Because this update changes the overall system timing, it is not enabled by default to be compatible with existing applications. You should enable the system option *USE_USB_SOF_INTR*, if the improved compatibility is important for your application.
+Furthermore a syslog client has been added, which allows to send log messages to a syslog server. This is demonstrated in *sample/33-syslog*. See the *README* file in this directory for details.
 
-The system options can be found in the file *include/circle/sysconfig.h*. This file has been completely revised and each option is documented now.
+Circle applications will be linked using the standard library libgcc.a by default now. This library should come with your toolchain. Only if you have problems with that, you can fall back to the previous handling using the setting *STDLIB_SUPPORT=0* in the files *Config.mk* or *Rules.mk*.
 
-Finally there are some improvements in the SPI0 master drivers (polling and DMA) included in this step.
+If you are using an USB mouse with the mouse cursor in your application, you have to add a call to *CUSBMouseDevice::UpdateCursor()* in your application's main loop so that that cursor can be updated. Please see *sample/10-usbmouse* for an example.
+
+In a few cases it may be important, that the Circle type *boolean* is now equivalent to the C++ type *bool*, which only takes one byte. *boolean* was previously four bytes long.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-31 the following features were introduced:
+Features
+--------
 
-* C++ build environment
-* Simple delay functionality
-* Get properties (model, memory size) from VideoCore
-* new and delete
-* Using GPIO pins
-* Manipulating Act LED
-* Set pixel on screen
-* Use kernel options
-* Switch on MMU
-* Formatting strings
-* Using devices
-* Writing characters to screen
-* Writing characters to UART
-* Logging output to screen or UART
-* Using assertions and debug hexdump
-* Using interrupts
-* Timer class with clock, timers and calibrated delay loop
-* Exception handler
-* USB host controller interface (HCI) driver
-* USB device class (basic device initialization)
-* USB hub driver (dectects and enables the supported devices)
-* Driver for the on-board Ethernet device (receiving and transmitting frames)
-* Driver for USB mass storage devices (bulk only, read and write)
-* Detects low- and full-speed devices
-* Driver for USB keyboards
-* Using GPIO interrupts
-* Driver for USB mice
-* Using GPIO clock
-* Simple 12 MHz GPIO sampling routine
-* PWM sound device
-* DMA controller support
-* PWM output (2 channels)
-* Simple USB printer support
-* FAT file system support (reduced)
-* I2C (master and slave) support
-* Multi-core support on Raspberry Pi 2
-* Experimental (UDP only) TCP/IP network stack
-* Setting system time from an Internet time (NTP) server
-* Cooperative non-preemtive scheduler
-* TCP support
-* DHCP support
-* Simple HTTP webserver class
-* GDB debug support on Raspberry Pi 2 using rpi_stub
-* Bluetooth device inquiry support
-* SPI0 master support
-* Driver for hardware random number generator
-* SPI0 master support using DMA
-* CPU clock rate management support
-* Basic support for standard USB HID class gamepads
-* TFTP file server support
-* Basic support for the internal Bluetooth host controller of the Raspberry Pi 3
-* Official Raspberry Pi touch screen support
-* Supporting GUI creation using uGUI (by Achim Doebler)
-* USB Audio Class MIDI input support
-* FIQ (fast interrupt) support
-* QEMU support
-* HTTP client support
-* I2S support (output only)
+Circle supports the following features:
+
+| Group                 | Features                                            |
+|-----------------------|-----------------------------------------------------|
+| C++ build environment | Basic library functions (e.g. new and delete)       |
+|                       | Enables all CPU caches using the MMU                |
+|                       | Interrupt support (IRQ and FIQ)                     |
+|                       | Multi-core support (Raspberry Pi 2 and 3)           |
+|                       | Cooperative non-preemtive scheduler                 |
+|                       | CPU clock rate management                           |
+|                       |                                                     |
+| Debug support         | Kernel logging to screen, UART and/or syslog server |
+|                       | C-assertions with stack trace                       |
+|                       | Hardware exception handler with stack trace         |
+|                       | GDB support using rpi_stub (Raspberry Pi 2 and 3)   |
+|                       | QEMU support                                        |
+|                       |                                                     |
+| Legacy devices        | GPIO pins (with interrupt, Act LED) and clocks      |
+|                       | Frame buffer (screen driver with escape sequences)  |
+|                       | UART (Polling and interrupt driver)                 |
+|                       | System timer (with kernel timers)                   |
+|                       | Platform DMA controller                             |
+|                       | EMMC SD card interface driver                       |
+|                       | PWM output (2 channels)                             |
+|                       | PWM sound output (on headphone jack)                |
+|                       | I2C master and slave                                |
+|                       | SPI0 master (Polling and DMA driver)                |
+|                       | I2S sound output                                    |
+|                       | Hardware random number generator                    |
+|                       | Official Raspberry Pi touch screen                  |
+|                       |                                                     |
+| USB                   | Host controller interface (HCI) driver              |
+|                       | Standard hub driver                                 |
+|                       | HID class device drivers (keyboard, mouse, gamepad) |
+|                       | Driver for on-board Ethernet device (SMSC951x)      |
+|                       | Driver for USB mass storage devices (bulk only)     |
+|                       | Audio class MIDI input support                      |
+|                       | Printer driver                                      |
+|                       |                                                     |
+| File systems          | Internal FAT driver (reduced function)              |
+|                       | FatFs driver (full function, by ChaN)               |
+|                       |                                                     |
+| TCP/IP networking     | Protocols: ARP, IP, ICMP, UDP, TCP                  |
+|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog               |
+|                       | Servers: HTTP, TFTP                                 |
+|                       | BSD-like C++ socket API                             |
+|                       |                                                     |
+| GUI                   | uGUI (by Achim Doebler)                             |
+|                       |                                                     |
+| Bluetooth             | Device inquiry support only                         |
+|                       | USB BR/EDR dongle driver                            |
+|                       | Internal controller of Raspberry Pi 3               |
 
 Building
 --------
@@ -147,15 +144,9 @@ Classes
 
 The following C++ classes were added to Circle:
 
-USB library
+Net library
 
-* CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled)
-
-Input library
-
-* CConsole: Console device using screen/USB keyboard or alternate device (e.g. CSerialDevice)
-* CKeyboardBuffer: Buffers characters entered on the USB keyboard
-* CLineDiscipline: Implements line editor function
+* CSysLogDaemon: Syslog sender task according to RFC5424 and RFC5426 (UDP transport only)
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

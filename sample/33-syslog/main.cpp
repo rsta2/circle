@@ -1,8 +1,8 @@
 //
-// stdint.h
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,22 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _stdint_h
-#define _stdint_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-// POSIX types
+int main (void)
+{
+	// cannot return here because some destructors used in CKernel are not implemented
 
-typedef unsigned char		uint8_t;
-typedef unsigned short		uint16_t;
-typedef unsigned int		uint32_t;
-typedef unsigned long long	uint64_t;
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
+	
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-typedef signed char		int8_t;
-typedef signed short		int16_t;
-typedef signed int		int32_t;
-typedef signed long long	int64_t;
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
 
-typedef int			intptr_t;
-typedef unsigned int		uintptr_t;
-
-#endif
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

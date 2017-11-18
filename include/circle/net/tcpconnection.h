@@ -133,9 +133,6 @@ private:
 	volatile unsigned m_nRetransmissionCount;
 	volatile boolean m_bTimedOut;		// abort connection and close
 	
-	u8 *m_pTxBuffer;
-	u8 *m_pTempBuffer;
-
 	CSynchronizationEvent m_Event;
 
 	CTimer *m_pTimer;

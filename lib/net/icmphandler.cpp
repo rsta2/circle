@@ -2,7 +2,7 @@
 // icmphandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -85,23 +85,16 @@ CICMPHandler::CICMPHandler (CNetConfig *pNetConfig, CNetworkLayer *pNetworkLayer
 :	m_pNetConfig (pNetConfig),
 	m_pNetworkLayer (pNetworkLayer),
 	m_pRxQueue (pRxQueue),
-	m_pNotificationQueue (pNotificationQueue),
-	m_pBuffer (0)
+	m_pNotificationQueue (pNotificationQueue)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pNetworkLayer != 0);
 	assert (m_pRxQueue != 0);
 	assert (m_pNotificationQueue != 0);
-
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
 }
 
 CICMPHandler::~CICMPHandler (void)
 {
-	delete [] m_pBuffer;
-	m_pBuffer =  0;
-
 	m_pNotificationQueue = 0;
 	m_pRxQueue = 0;
 	m_pNetworkLayer = 0;
@@ -110,11 +103,11 @@ CICMPHandler::~CICMPHandler (void)
 
 void CICMPHandler::Process (void)
 {
+	u8 Buffer[FRAME_BUFFER_SIZE];
 	unsigned nLength;
 	void *pParam;
 	assert (m_pRxQueue != 0);
-	assert (m_pBuffer != 0);
-	while ((nLength = m_pRxQueue->Dequeue (m_pBuffer, &pParam)) != 0)
+	while ((nLength = m_pRxQueue->Dequeue (Buffer, &pParam)) != 0)
 	{
 		TNetworkPrivateData *pData = (TNetworkPrivateData *) pParam;
 		assert (pData != 0);
@@ -137,9 +130,9 @@ void CICMPHandler::Process (void)
 		{
 			continue;
 		}
-		TICMPHeader *pICMPHeader = (TICMPHeader *) m_pBuffer;
+		TICMPHeader *pICMPHeader = (TICMPHeader *) Buffer;
 
-		if (CChecksumCalculator::SimpleCalculate (m_pBuffer, nLength) != CHECKSUM_OK)
+		if (CChecksumCalculator::SimpleCalculate (Buffer, nLength) != CHECKSUM_OK)
 		{
 			continue;
 		}
@@ -153,10 +146,10 @@ void CICMPHandler::Process (void)
 				pICMPHeader->nType     = ICMP_TYPE_ECHO_REPLY;
 				pICMPHeader->nCode     = ICMP_CODE_ECHO;
 				pICMPHeader->nChecksum = 0;
-				pICMPHeader->nChecksum = CChecksumCalculator::SimpleCalculate (m_pBuffer, nLength);
+				pICMPHeader->nChecksum = CChecksumCalculator::SimpleCalculate (Buffer, nLength);
 
 				assert (m_pNetworkLayer != 0);
-				m_pNetworkLayer->Send (SourceIP, m_pBuffer, nLength, IPPROTO_ICMP);
+				m_pNetworkLayer->Send (SourceIP, Buffer, nLength, IPPROTO_ICMP);
 			}
 
 			continue;
@@ -167,7 +160,7 @@ void CICMPHandler::Process (void)
 		{
 			continue;
 		}
-		TIPHeader *pIPHeader = (TIPHeader *) (m_pBuffer + sizeof (TICMPHeader));
+		TIPHeader *pIPHeader = (TIPHeader *) (Buffer + sizeof (TICMPHeader));
 
 		unsigned nIPHeaderLength = pIPHeader->nVersionIHL & 0xF;
 		if (   nIPHeaderLength < IP_HEADER_LENGTH_DWORD_MIN
