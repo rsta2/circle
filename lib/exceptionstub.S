@@ -49,9 +49,25 @@
 /*
  * Abort stubs
  */
-	stub	UndefinedInstructionStub,	EXCEPTION_UNDEFINED_INSTRUCTION,	4
+	stub	UndefinedInstructionInternal,	EXCEPTION_UNDEFINED_INSTRUCTION,	4
 	stub	PrefetchAbortStub,		EXCEPTION_PREFETCH_ABORT,		4
 	stub	DataAbortStub,			EXCEPTION_DATA_ABORT,			8
+
+/*
+ * Undefined Instruction stub
+ *
+ * TODO: VFP support code
+ */
+	.globl UndefinedInstructionStub
+UndefinedInstructionStub:
+	stmfd	sp!, {r0, lr}			/* save r0 and return address */
+	fmrx	r0, fpexc			/* check for floating point exception */
+#define VFP_FPEXC_EX	(1 << 31)
+	tst	r0, #VFP_FPEXC_EX		/* if EX bit is clear in FPEXC */
+	beq	UndefinedInstructionInternal	/* then jump to abort stub */
+	bic	r0, r0, #VFP_FPEXC_EX		/* else clear EX bit */
+	fmxr	fpexc, r0
+	ldmfd	sp!, {r0, pc}^			/* restore registers and return */
 
 /*
  * IRQ stub
