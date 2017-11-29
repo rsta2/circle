@@ -37,22 +37,23 @@
 #include <linux/types.h>
 #include <linux/semaphore.h>
 #include <linux/mutex.h>
-#include <linux/bitops.h>
 #include <linux/kthread.h>
-#include <linux/wait.h>
-#include <linux/vmalloc.h>
 #include <linux/jiffies.h>
 #include <linux/delay.h>
 #include <linux/string.h>
 #include <linux/types.h>
 #include <linux/interrupt.h>
-#include <linux/random.h>
 #include <linux/sched.h>
-#include <linux/ctype.h>
 #include <linux/uaccess.h>
-#include <linux/time.h>  /* for time_t */
 #include <linux/slab.h>
+#ifndef __circle__
+#include <linux/bitops.h>
+#include <linux/wait.h>
 #include <linux/vmalloc.h>
+#include <linux/random.h>
+#include <linux/ctype.h>
+#include <linux/time.h>  /* for time_t */
+#endif
 
 #include "vchiq_if.h"
 

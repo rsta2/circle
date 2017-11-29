@@ -38,9 +38,15 @@
 #include <linux/types.h>
 #include <linux/semaphore.h>
 
+#ifndef __circle__
 #include "interface/vchi/vchi_cfg_internal.h"
 #include "interface/vchi/vchi_common.h"
 #include "interface/vchi/message_drivers/message.h"
+#else
+#include <vc4/vchi/vchi_cfg_internal.h>
+#include <vc4/vchi/vchi_common.h>
+#include <vc4/vchi/message_drivers/message.h>
+#endif
 
 /******************************************************************************
  Global defs

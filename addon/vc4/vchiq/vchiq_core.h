@@ -37,10 +37,18 @@
 #include <linux/mutex.h>
 #include <linux/semaphore.h>
 #include <linux/kthread.h>
+#include <linux/atomic.h>
+#include <linux/spinlock.h>
+#include <linux/printk.h>
+#include <linux/kernel.h>
 
 #include "vchiq_cfg.h"
 
 #include "vchiq.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Run time control of log level, based on KERN_XXX level. */
 #define VCHIQ_LOG_DEFAULT  4
@@ -633,7 +641,7 @@ vchiq_transfer_bulk(VCHIQ_BULK_T *bulk);
 extern void
 vchiq_complete_bulk(VCHIQ_BULK_T *bulk);
 
-extern VCHIQ_STATUS_T
+extern int
 vchiq_copy_from_user(void *dst, const void *src, int size);
 
 extern void
@@ -708,5 +716,9 @@ vchiq_set_conn_state(VCHIQ_STATE_T *state, VCHIQ_CONNSTATE_T newstate);
 extern void
 vchiq_log_dump_mem(const char *label, uint32_t addr, const void *voidMem,
 	size_t numBytes);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

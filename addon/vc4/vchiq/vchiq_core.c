@@ -1495,12 +1495,12 @@ parse_open(VCHIQ_STATE_T *state, VCHIQ_HEADER_T *header)
 {
 	VCHIQ_SERVICE_T *service = NULL;
 	int msgid, size;
-	int type;
+	/* int type; */
 	unsigned int localport, remoteport;
 
 	msgid = header->msgid;
 	size = header->size;
-	type = VCHIQ_MSG_TYPE(msgid);
+	/* type = VCHIQ_MSG_TYPE(msgid); */
 	localport = VCHIQ_MSG_DSTPORT(msgid);
 	remoteport = VCHIQ_MSG_SRCPORT(msgid);
 	if (size >= sizeof(struct vchiq_open_payload)) {
@@ -1816,6 +1816,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 		case VCHIQ_MSG_BULK_RX:
 		case VCHIQ_MSG_BULK_TX: {
 			VCHIQ_BULK_QUEUE_T *queue;
+			int *pdata;
 			WARN_ON(!state->is_master);
 			queue = (type == VCHIQ_MSG_BULK_RX) ?
 				&service->bulk_tx : &service->bulk_rx;
@@ -1836,8 +1837,9 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 					VCHIQ_NUM_SERVICE_BULKS));
 				bulk = &queue->bulks[
 					BULK_INDEX(queue->remote_insert)];
+				pdata = (int *)header->data;
 				bulk->remote_data =
-					(void *)((int *)header->data)[0];
+					(void *)pdata[0];
 				bulk->remote_size = ((int *)header->data)[1];
 				wmb();
 
@@ -1887,6 +1889,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 				VCHIQ_SRVSTATE_FREE)) {
 				VCHIQ_BULK_QUEUE_T *queue;
 				VCHIQ_BULK_T *bulk;
+				int *pdata;
 
 				queue = (type == VCHIQ_MSG_BULK_RX_DONE) ?
 					&service->bulk_rx : &service->bulk_tx;
@@ -1916,7 +1919,8 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 
 				bulk = &queue->bulks[
 					BULK_INDEX(queue->remote_insert)];
-				bulk->actual = *(int *)header->data;
+				pdata = (int *)header->data;
+				bulk->actual = *pdata;
 				queue->remote_insert++;
 
 				vchiq_log_info(vchiq_core_log_level,
@@ -3630,6 +3634,7 @@ vchiq_set_service_option(VCHIQ_SERVICE_HANDLE_T handle,
 	return status;
 }
 
+#ifndef __circle__
 void
 vchiq_dump_shared_state(void *dump_context, VCHIQ_STATE_T *state,
 	VCHIQ_SHARED_STATE_T *shared, const char *label)
@@ -3830,6 +3835,7 @@ vchiq_dump_service_state(void *dump_context, VCHIQ_SERVICE_T *service)
 	if (service->srvstate != VCHIQ_SRVSTATE_FREE)
 		vchiq_dump_platform_service_state(dump_context, service);
 }
+#endif
 
 
 void

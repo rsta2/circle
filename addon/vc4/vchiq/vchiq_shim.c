@@ -33,13 +33,21 @@
 #include <linux/module.h>
 #include <linux/types.h>
 
+#ifndef __circle__
 #include "interface/vchi/vchi.h"
+#else
+#include <vc4/vchi/vchi.h>
+#endif
 #include "vchiq.h"
 #include "vchiq_core.h"
 
 #include "vchiq_util.h"
 
+#ifndef __circle__
 #include <stddef.h>
+#else
+#include <linux/kernel.h>
+#endif
 
 #define vchiq_status_to_vchi(status) ((int32_t)status)
 

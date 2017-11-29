@@ -34,11 +34,19 @@
 #ifndef VCHI_H_
 #define VCHI_H_
 
+#ifndef __circle__
 #include "interface/vchi/vchi_cfg.h"
 #include "interface/vchi/vchi_common.h"
 #include "interface/vchi/connections/connection.h"
 #include "vchi_mh.h"
-
+#else
+#define USE_VCHIQ_ARM
+#include <stdint.h>
+#include <vc4/vchi/vchi_cfg.h>
+#include <vc4/vchi/vchi_common.h>
+#include <vc4/vchi/connections/connection.h>
+#include <vc4/vchi/vchi_mh.h>
+#endif
 
 /******************************************************************************
  Global defs

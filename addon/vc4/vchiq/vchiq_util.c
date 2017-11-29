@@ -31,6 +31,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <linux/barrier.h>
+#include <linux/bug.h>
+
 #include "vchiq_util.h"
 #include "vchiq_killable.h"
 

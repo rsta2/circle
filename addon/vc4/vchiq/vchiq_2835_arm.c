@@ -37,23 +37,31 @@
 #include <linux/interrupt.h>
 #include <linux/pagemap.h>
 #include <linux/dma-mapping.h>
-#include <linux/version.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/uaccess.h>
+#ifndef __circle__
+#include <linux/version.h>
 #include <linux/of.h>
 #include <asm/pgtable.h>
 #include <soc/bcm2835/raspberrypi-firmware.h>
+#else
+#include <linux/raspberrypi-firmware.h>
+#endif
 
+#ifndef __circle__
 #define dmac_map_area			__glue(_CACHE,_dma_map_area)
 #define dmac_unmap_area 		__glue(_CACHE,_dma_unmap_area)
 
 extern void dmac_map_area(const void *, size_t, int);
 extern void dmac_unmap_area(const void *, size_t, int);
+#endif
 
 #define TOTAL_SLOTS (VCHIQ_SLOT_ZERO_SLOTS + 2 * 32)
 
+#ifndef __circle__
 #define VCHIQ_ARM_ADDRESS(x) ((void *)((char *)x + g_virt_to_bus_offset))
+#endif
 
 #include "vchiq_arm.h"
 #include "vchiq_2835.h"
@@ -71,26 +79,32 @@ typedef struct vchiq_2835_state_struct {
 } VCHIQ_2835_ARM_STATE_T;
 
 static void __iomem *g_regs;
+#ifndef __circle__
 static unsigned int g_cache_line_size = sizeof(CACHE_LINE_SIZE);
 static unsigned int g_fragments_size;
 static char *g_fragments_base;
 static char *g_free_fragments;
 static struct semaphore g_free_fragments_sema;
 static unsigned long g_virt_to_bus_offset;
+#endif
 
 extern int vchiq_arm_log_level;
 
+#ifndef __circle__
 static DEFINE_SEMAPHORE(g_free_fragments_mutex);
+#endif
 
 static irqreturn_t
 vchiq_doorbell_irq(int irq, void *dev_id);
 
+#ifndef __circle__
 static int
 create_pagelist(char __user *buf, size_t count, unsigned short type,
                 struct task_struct *task, PAGELIST_T ** ppagelist);
 
 static void
 free_pagelist(PAGELIST_T *pagelist, int actual);
+#endif
 
 int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 {
@@ -102,7 +116,9 @@ int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 	dma_addr_t slot_phys;
 	u32 channelbase;
 	int slot_mem_size, frag_mem_size;
-	int err, irq, i;
+	int err, irq;
+#ifndef __circle__
+	int i;
 
 	g_virt_to_bus_offset = virt_to_dma(dev, (void *)0);
 
@@ -115,10 +131,15 @@ int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 	}
 
 	g_fragments_size = 2 * g_cache_line_size;
+#endif
 
 	/* Allocate space for the channels in coherent memory */
 	slot_mem_size = PAGE_ALIGN(TOTAL_SLOTS * VCHIQ_SLOT_SIZE);
+#ifndef __circle__
 	frag_mem_size = PAGE_ALIGN(g_fragments_size * MAX_FRAGMENTS);
+#else
+	frag_mem_size = 0;
+#endif
 
 	slot_mem = dmam_alloc_coherent(dev, slot_mem_size + frag_mem_size,
 				       &slot_phys, GFP_KERNEL);
@@ -138,6 +159,7 @@ int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 	vchiq_slot_zero->platform_data[VCHIQ_PLATFORM_FRAGMENTS_COUNT_IDX] =
 		MAX_FRAGMENTS;
 
+#ifndef __circle__
 	g_fragments_base = (char *)slot_mem + slot_mem_size;
 	slot_mem_size += frag_mem_size;
 
@@ -148,6 +170,7 @@ int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 	}
 	*(char **)&g_fragments_base[i * g_fragments_size] = NULL;
 	sema_init(&g_free_fragments_sema, MAX_FRAGMENTS);
+#endif
 
 	if (vchiq_init_state(state, vchiq_slot_zero, 0) != VCHIQ_SUCCESS)
 		return -EINVAL;
@@ -228,9 +251,12 @@ remote_event_signal(REMOTE_EVENT_T *event)
 int
 vchiq_copy_from_user(void *dst, const void *src, int size)
 {
+#ifndef __circle__
 	if ((uint32_t)src < TASK_SIZE) {
 		return copy_from_user(dst, src, size);
-	} else {
+	} else
+#endif
+	{
 		memcpy(dst, src, size);
 		return 0;
 	}
@@ -240,6 +266,7 @@ VCHIQ_STATUS_T
 vchiq_prepare_bulk_data(VCHIQ_BULK_T *bulk, VCHI_MEM_HANDLE_T memhandle,
 	void *offset, int size, int dir)
 {
+#ifndef __circle__
 	PAGELIST_T *pagelist;
 	int ret;
 
@@ -262,13 +289,24 @@ vchiq_prepare_bulk_data(VCHIQ_BULK_T *bulk, VCHI_MEM_HANDLE_T memhandle,
 	bulk->remote_data = pagelist;
 
 	return VCHIQ_SUCCESS;
+#else
+	WARN_ON(memhandle != VCHI_MEM_HANDLE_INVALID);
+
+	bulk->handle = memhandle;
+	bulk->data = offset;
+	bulk->remote_data = NULL;
+
+	return VCHIQ_SUCCESS;
+#endif
 }
 
 void
 vchiq_complete_bulk(VCHIQ_BULK_T *bulk)
 {
+#ifndef __circle__
 	if (bulk && bulk->remote_data && bulk->actual)
 		free_pagelist((PAGELIST_T *)bulk->remote_data, bulk->actual);
+#endif
 }
 
 void
@@ -281,6 +319,7 @@ vchiq_transfer_bulk(VCHIQ_BULK_T *bulk)
 	BUG();
 }
 
+#ifndef __circle__
 void
 vchiq_dump_platform_state(void *dump_context)
 {
@@ -290,6 +329,7 @@ vchiq_dump_platform_state(void *dump_context)
 		"  Platform: 2835 (VC master)");
 	vchiq_dump(dump_context, buf, len + 1);
 }
+#endif
 
 VCHIQ_STATUS_T
 vchiq_platform_suspend(VCHIQ_STATE_T *state)
@@ -356,6 +396,7 @@ vchiq_doorbell_irq(int irq, void *dev_id)
 	return ret;
 }
 
+#ifndef __circle__
 /* There is a potential problem with partial cache lines (pages?)
 ** at the ends of the block when reading. If the CPU accessed anything in
 ** the same line (page?) then it may have pulled old data into the cache,
@@ -591,3 +632,4 @@ free_pagelist(PAGELIST_T *pagelist, int actual)
 
 	kfree(pagelist);
 }
+#endif

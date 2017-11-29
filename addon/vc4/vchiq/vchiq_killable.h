@@ -36,11 +36,13 @@
 
 #include <linux/mutex.h>
 #include <linux/semaphore.h>
+#include <linux/compiler.h>
 
 #define SHUTDOWN_SIGS   (sigmask(SIGKILL) | sigmask(SIGINT) | sigmask(SIGQUIT) | sigmask(SIGTRAP) | sigmask(SIGSTOP) | sigmask(SIGCONT))
 
 static inline int __must_check down_interruptible_killable(struct semaphore *sem)
 {
+#ifndef __circle__
 	/* Allow interception of killable signals only. We don't want to be interrupted by harmless signals like SIGALRM */
 	int ret;
 	sigset_t blocked, oldset;
@@ -49,12 +51,17 @@ static inline int __must_check down_interruptible_killable(struct semaphore *sem
 	ret = down_interruptible(sem);
 	sigprocmask(SIG_SETMASK, &oldset, NULL);
 	return ret;
+#else
+	down(sem);
+	return 0;
+#endif
 }
 #define down_interruptible down_interruptible_killable
 
 
 static inline int __must_check mutex_lock_interruptible_killable(struct mutex *lock)
 {
+#ifndef __circle__
 	/* Allow interception of killable signals only. We don't want to be interrupted by harmless signals like SIGALRM */
 	int ret;
 	sigset_t blocked, oldset;
@@ -63,6 +70,10 @@ static inline int __must_check mutex_lock_interruptible_killable(struct mutex *l
 	ret = mutex_lock_interruptible(lock);
 	sigprocmask(SIG_SETMASK, &oldset, NULL);
 	return ret;
+#else
+	mutex_lock (lock);
+	return 0;
+#endif
 }
 #define mutex_lock_interruptible mutex_lock_interruptible_killable
 

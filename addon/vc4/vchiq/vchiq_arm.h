@@ -39,9 +39,17 @@
 #include <linux/platform_device.h>
 #include <linux/semaphore.h>
 #include <linux/atomic.h>
+#include <linux/completion.h>
+#include <linux/timer.h>
 #include "vchiq_core.h"
+#ifndef __circle__
 #include "vchiq_debugfs.h"
+#endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum vc_suspend_status {
 	VC_SUSPEND_FORCE_CANCELED = -3, /* Force suspend canceled, too busy */
@@ -190,8 +198,10 @@ vchiq_use_internal(VCHIQ_STATE_T *state, VCHIQ_SERVICE_T *service,
 extern VCHIQ_STATUS_T
 vchiq_release_internal(VCHIQ_STATE_T *state, VCHIQ_SERVICE_T *service);
 
+#ifndef __circle__
 extern VCHIQ_DEBUGFS_NODE_T *
 vchiq_instance_get_debugfs_node(VCHIQ_INSTANCE_T instance);
+#endif
 
 extern int
 vchiq_instance_get_use_count(VCHIQ_INSTANCE_T instance);
@@ -215,6 +225,10 @@ set_resume_state(VCHIQ_ARM_STATE_T *arm_state,
 
 extern void
 start_suspend_timer(VCHIQ_ARM_STATE_T *arm_state);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* VCHIQ_ARM_H */

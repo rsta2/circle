@@ -49,6 +49,9 @@ public:
 #define COHERENT_SLOT_GPIO_VIRTBUF	1
 #define COHERENT_SLOT_TOUCHBUF		2
 
+#define COHERENT_SLOT_VCHIQ_START	(MEGABYTE / PAGE_SIZE / 2)
+#define COHERENT_SLOT_VCHIQ_END		(MEGABYTE / PAGE_SIZE - 1)
+
 	static CMemorySystem *Get (void);
 
 private:

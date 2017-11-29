@@ -2,7 +2,7 @@
 // timer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 #define MSEC2HZ(msec)	((msec) * HZ / 1000)
 
 typedef void TKernelTimerHandler (unsigned hTimer, void *pParam, void *pContext);
+
+typedef void TPeriodicTimerHandler (void);
 
 class CTimer	/// Manages the system clock, supports kernel timers and a calibrated delay loop
 {
@@ -110,6 +112,10 @@ public:
 	/// \param nMicroSeconds Delay in microseconds
 	static void SimpleusDelay (unsigned nMicroSeconds);
 
+	/// \param pHandler Handler which is called on each timer tick (HZ times per second)
+	/// \warning This is normally reserved for system purposes!
+	void RegisterPeriodicHandler (TPeriodicTimerHandler *pHandler);
+
 private:
 	void PollKernelTimers (void);
 
@@ -137,6 +143,8 @@ private:
 
 	unsigned		 m_nMsDelay;
 	unsigned		 m_nusDelay;
+
+	TPeriodicTimerHandler	*m_pPeriodicHandler;
 
 	static CTimer *s_pThis;
 

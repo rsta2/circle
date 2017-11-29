@@ -36,32 +36,38 @@
 #include <linux/module.h>
 #include <linux/types.h>
 #include <linux/errno.h>
-#include <linux/cdev.h>
-#include <linux/fs.h>
 #include <linux/device.h>
-#include <linux/mm.h>
-#include <linux/highmem.h>
-#include <linux/pagemap.h>
 #include <linux/bug.h>
 #include <linux/semaphore.h>
 #include <linux/list.h>
-#include <linux/of.h>
 #include <linux/platform_device.h>
+#ifndef __circle__
+#include <linux/cdev.h>
+#include <linux/fs.h>
+#include <linux/mm.h>
+#include <linux/highmem.h>
+#include <linux/pagemap.h>
+#include <linux/of.h>
 #include <soc/bcm2835/raspberrypi-firmware.h>
+#endif
 
 #include "vchiq_core.h"
-#include "vchiq_ioctl.h"
 #include "vchiq_arm.h"
-#include "vchiq_debugfs.h"
 #include "vchiq_killable.h"
+#ifndef __circle__
+#include "vchiq_ioctl.h"
+#include "vchiq_debugfs.h"
+#endif
 
 #define DEVICE_NAME "vchiq"
 
+#ifndef __circle__
 /* Override the default prefix, which would be vchiq_arm (from the filename) */
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX DEVICE_NAME "."
 
 #define VCHIQ_MINOR 0
+#endif
 
 /* Some per-instance constants */
 #define MAX_COMPLETIONS 128
@@ -111,6 +117,7 @@ static const char *const resume_state_names[] = {
 static void suspend_timer_callback(unsigned long context);
 
 
+#ifndef __circle__
 typedef struct user_service_struct {
 	VCHIQ_SERVICE_T *service;
 	void *userdata;
@@ -164,7 +171,11 @@ typedef struct dump_context_struct {
 
 static struct cdev    vchiq_cdev;
 static dev_t          vchiq_devid;
+#endif
+
 static VCHIQ_STATE_T g_state;
+
+#ifndef __circle__
 static struct class  *vchiq_class;
 static struct device *vchiq_dev;
 static DEFINE_SPINLOCK(msg_queue_spinlock);
@@ -1557,6 +1568,7 @@ vchiq_read(struct file *file, char __user *buf,
 
 	return context.actual;
 }
+#endif
 
 VCHIQ_STATE_T *
 vchiq_get_state(void)
@@ -1572,6 +1584,7 @@ vchiq_get_state(void)
 		(g_state.remote->initialised == 1)) ? &g_state : NULL;
 }
 
+#ifndef __circle__
 static const struct file_operations
 vchiq_fops = {
 	.owner = THIS_MODULE,
@@ -1580,6 +1593,7 @@ vchiq_fops = {
 	.release = vchiq_release,
 	.read = vchiq_read
 };
+#endif
 
 /*
  * Autosuspend related functionality
@@ -2477,7 +2491,7 @@ vchiq_release_internal(VCHIQ_STATE_T *state, VCHIQ_SERVICE_T *service)
 	VCHIQ_STATUS_T ret = VCHIQ_SUCCESS;
 	char entity[16];
 	int *entity_uc;
-	int local_uc, local_entity_uc;
+	/* int local_uc, local_entity_uc; */
 
 	if (!arm_state)
 		goto out;
@@ -2502,8 +2516,8 @@ vchiq_release_internal(VCHIQ_STATE_T *state, VCHIQ_SERVICE_T *service)
 		ret = VCHIQ_ERROR;
 		goto unlock;
 	}
-	local_uc = --arm_state->videocore_use_count;
-	local_entity_uc = --(*entity_uc);
+	/* local_uc = --arm_state->videocore_use_count;
+	local_entity_uc = --(*entity_uc); */
 
 	if (!vchiq_videocore_wanted(state)) {
 		if (vchiq_platform_use_suspend_timer() &&
@@ -2562,6 +2576,7 @@ vchiq_release_service_internal(VCHIQ_SERVICE_T *service)
 	return vchiq_release_internal(service->state, service);
 }
 
+#ifndef __circle__
 VCHIQ_DEBUGFS_NODE_T *
 vchiq_instance_get_debugfs_node(VCHIQ_INSTANCE_T instance)
 {
@@ -2607,6 +2622,7 @@ vchiq_instance_set_trace(VCHIQ_INSTANCE_T instance, int trace)
 	}
 	instance->trace = (trace != 0);
 }
+#endif
 
 static void suspend_timer_callback(unsigned long context)
 {
@@ -2810,6 +2826,15 @@ void vchiq_platform_conn_state_changed(VCHIQ_STATE_T *state,
 	}
 }
 
+#ifdef __circle__
+
+int vchiq_probe(struct platform_device *pdev)
+{
+	return vchiq_platform_init(pdev, &g_state);
+}
+
+#else
+
 static int vchiq_probe(struct platform_device *pdev)
 {
 	struct device_node *fw_node;
@@ -2918,3 +2943,5 @@ module_platform_driver(vchiq_driver);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Broadcom Corporation");
+
+#endif
