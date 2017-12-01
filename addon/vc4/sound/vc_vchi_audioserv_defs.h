@@ -78,8 +78,10 @@ typedef struct {
 // configure the write audio samples
 typedef struct {
 	uint32_t count;		// in bytes
-	void *callback;
-	void *cookie;
+	uint32_t cookie1;
+#define VC_AUDIO_WRITE_COOKIE1	MAKE_FOURCC("BCMA")
+	uint32_t cookie2;
+#define VC_AUDIO_WRITE_COOKIE2	MAKE_FOURCC("DATA")
 	uint16_t silence;
 	uint16_t max_packet;
 } VC_AUDIO_WRITE_T;
@@ -93,8 +95,8 @@ typedef struct {
 // Generic result for a request (VC->HOST)
 typedef struct {
 	int32_t count;		// Success value
-	void *callback;
-	void *cookie;
+	uint32_t cookie1;
+	uint32_t cookie2;
 } VC_AUDIO_COMPLETE_T;
 
 // Message header for all messages in HOST->VC direction

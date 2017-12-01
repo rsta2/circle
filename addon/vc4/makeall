@@ -1,0 +1,14 @@
+#!/bin/bash
+
+cd vchiq
+make $1 $2 || exit
+cd ..
+
+cd sound
+make $1 $2 || exit
+
+cd sample
+make $1 $2 || exit
+cd ..
+
+cd ..
