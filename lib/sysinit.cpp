@@ -122,7 +122,8 @@ static void vfpinit (void)
 #define VFP_FPEXC_EN	(1 << 30)
 	__asm volatile ("fmxr fpexc, %0" : : "r" (VFP_FPEXC_EN));
 
-	__asm volatile ("fmxr fpscr, %0" : : "r" (0));
+#define VFP_FPSCR_DN	(1 << 25)	// enable Default NaN mode
+	__asm volatile ("fmxr fpscr, %0" : : "r" (VFP_FPSCR_DN));
 }
 
 void sysinit (void)
