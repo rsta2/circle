@@ -1,0 +1,15 @@
+README
+
+This directory contains some kind of Linux kernel device driver emulation code.
+It is not perfect, far from complete and basically intended to make is easier to
+port the Linux VCHIQ driver to Circle. This code implements the Linux kernel
+interfaces used by the VCHIQ driver using Circle services.
+
+Information to implement this, has been taken from the Linux kernel 4.9.59. Some
+source code has been copied from Linux, other has been implemented to meet the
+requirements of Circle.
+
+Linux is licensed under the GNU General Public License Version 2. See the file
+COPYING in this directory for details.
+
+Linux is a trademark of Linus Torvalds.

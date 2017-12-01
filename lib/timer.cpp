@@ -54,7 +54,8 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 	m_nTime (0),
 	m_nMinutesDiff (0),
 	m_nMsDelay (350000),
-	m_nusDelay (m_nMsDelay / 1000)
+	m_nusDelay (m_nMsDelay / 1000),
+	m_pPeriodicHandler (0)
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -395,6 +396,11 @@ void CTimer::InterruptHandler (void)
 	m_TimeSpinLock.Release ();
 
 	PollKernelTimers ();
+
+	if (m_pPeriodicHandler != 0)
+	{
+		(*m_pPeriodicHandler) ();
+	}
 }
 
 void CTimer::InterruptHandler (void *pParam)
@@ -418,6 +424,13 @@ void CTimer::TuneMsDelay (void)
 
 	CLogger::Get ()->Write (FromTimer, LogNotice, "SpeedFactor is %u.%02u",
 				nFactor / 100, nFactor % 100);
+}
+
+void CTimer::RegisterPeriodicHandler (TPeriodicTimerHandler *pHandler)
+{
+	assert (m_pPeriodicHandler == 0);
+	m_pPeriodicHandler = pHandler;
+	assert (m_pPeriodicHandler != 0);
 }
 
 void CTimer::SimpleMsDelay (unsigned nMilliSeconds)

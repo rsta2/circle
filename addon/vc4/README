@@ -1,0 +1,29 @@
+README
+
+This directory contains a driver for the VCHIQ interface device, related header
+files, a VCHIQ audio service driver and a sample program, which plays a sound
+sample using this driver. VCHIQ is a message based interface between the VPU
+(Video Processing Unit) of the Raspberry Pi and the ARM CPU. It is used to
+transfer different kinds of media data. At the moment the only supported media
+in Circle is sound.
+
+To build the VCHIQ sound sample program, you have to build the Circle base
+libraries and the Linux kernel driver emulation library in the directory
+addon/linux/ first. Then enter these commands in the addon/vc4/ directory:
+
+	./makeall clean
+	./makeall
+
+You will find the sample program in addon/vc4/sound/sample/.
+
+The VCHIQ interface driver source code and portions of the VCHIQ audio service
+driver source code are taken from Linux and are:
+
+	Copyright (c) 2010-2014 Broadcom. All rights reserved.
+
+Some portions are:
+
+	Copyright (c) 2014 Raspberry Pi (Trading) Ltd. All rights reserved.
+
+This source code is licensed under GPLv2. Please refer to the header of these
+source files for details.
