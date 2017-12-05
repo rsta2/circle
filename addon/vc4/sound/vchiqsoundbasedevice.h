@@ -20,6 +20,7 @@
 #ifndef _vc4_sound_vchiqsoundbasedevice_h
 #define _vc4_sound_vchiqsoundbasedevice_h
 
+#include <circle/soundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/types.h>
@@ -52,7 +53,7 @@ enum TVCHIQSoundState
 	VCHIQSoundUnknown
 };
 
-class CVCHIQSoundBaseDevice		/// Low level access to the VCHIQ sound service
+class CVCHIQSoundBaseDevice : public CSoundBaseDevice	/// Low level access to the VCHIQ sound service
 {
 public:
 	/// \param pVCHIQDevice	pointer to the VCHIQ interface device
@@ -88,14 +89,15 @@ public:
 	void SetControl (int nVolume,
 			 TVCHIQSoundDestination Destination = VCHIQSoundDestinationUnknown);
 
-	/// \brief Overload this to provide the sound samples!
+protected:
+	/// \brief May overload this to provide the sound samples!
 	/// \param pBuffer	buffer where the samples have to be placed
 	/// \param nChunkSize	size of the buffer in s16 words
 	/// \return Number of s16 words written to the buffer (normally nChunkSize),\n
 	///	    Transfer will stop if 0 is returned
 	/// \note Each sample consists of two words (Left channel, right channel)\n
 	///	  Each word must be between GetRangeMin() and GetRangeMax()
-	virtual unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize) = 0;
+	/// virtual unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize);
 
 private:
 	int CallMessage (VC_AUDIO_MSG_T *pMessage);	// waits for completion

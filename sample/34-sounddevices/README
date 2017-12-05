@@ -1,0 +1,36 @@
+README 
+
+This sample plays a modulated 440 Hz tone via one of the following sound
+devices:
+
+* PWM sound device via the 3.5mm headphone jack
+* I2S sound device using external hardware (tested with PCM5102A DAC only)
+* VCHIQ sound device via sound-capable HDMI monitor or headphone jack (optional)
+
+By default the sample is built without the VCHIQ option, because this requires
+additional libraries, which have to be built manually. If you want this VCHIQ
+sound support, first enable the line "USE_VCHIQ_SOUND = 1" in the Makefile of
+the sample. Then enter the following commands from project root:
+
+	./makeall --nosample
+	cd addon/linux
+	make
+	cd ../vc4
+	./makeall
+	cd ../../sample/34-sounddevices
+	make
+
+The ready built kernel image should be in the current directory then.
+
+To select the sound device to be used, create a file cmdline.txt on your SD card
+and write one of the following lines into it:
+
+	sounddev=sdnpwm			or
+
+	sounddev=sdni2s			or
+
+	sounddev=sdnvchiq soundopt=0
+
+By default the sound output is done via the headphone jack (without VCHIQ
+option) or via a sound-capable HDMI monitor (with VCHIQ option). Please have a
+look into the file doc/cmdline.txt for more details.

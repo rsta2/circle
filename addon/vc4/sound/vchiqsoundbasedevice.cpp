@@ -22,6 +22,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <vc4/sound/vchiqsoundbasedevice.h>
+#include <circle/devicenameservice.h>
 #include <circle/sched/scheduler.h>
 #include <circle/logger.h>
 #include <assert.h>
@@ -33,7 +34,8 @@ static const char FromVCHIQSound[] = "sndvchiq";
 CVCHIQSoundBaseDevice::CVCHIQSoundBaseDevice (CVCHIQDevice *pVCHIQDevice,
 					      unsigned nSampleRate,
 					      TVCHIQSoundDestination Destination)
-:	m_nSampleRate (nSampleRate),
+:	CSoundBaseDevice (SoundFormatSigned16, 0, nSampleRate),
+	m_nSampleRate (nSampleRate),
 	m_Destination (Destination),
 	m_State (VCHIQSoundCreated),
 	m_VCHIInstance (0),
@@ -41,6 +43,8 @@ CVCHIQSoundBaseDevice::CVCHIQSoundBaseDevice (CVCHIQDevice *pVCHIQDevice,
 {
 	assert (44100 <= nSampleRate && nSampleRate <= 48000);
 	assert (Destination < VCHIQSoundDestinationUnknown);
+
+	CDeviceNameService::Get ()->AddDevice ("sndvchiq", this, FALSE);
 }
 
 CVCHIQSoundBaseDevice::~CVCHIQSoundBaseDevice (void)

@@ -144,9 +144,9 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Net library
+Base library
 
-* CSysLogDaemon: Syslog sender task according to RFC5424 and RFC5426 (UDP transport only)
+* CSoundBaseDevice: Base class of sound devices, converts several sound formats
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

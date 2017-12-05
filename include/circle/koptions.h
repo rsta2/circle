@@ -2,7 +2,7 @@
 // koptions.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,6 +39,9 @@ public:
 
 	unsigned GetUSBPowerDelay (void) const;
 
+	const char *GetSoundDevice (void) const;	// defaults to empty string
+	unsigned GetSoundOption (void) const;
+
 	TCPUSpeed GetCPUSpeed (void) const;
 	unsigned GetSoCMaxTemp (void) const;
 
@@ -64,6 +67,9 @@ private:
 	char m_KeyMap[3];
 
 	unsigned m_nUSBPowerDelay;
+
+	char m_SoundDevice[20];
+	unsigned m_nSoundOption;
 
 	TCPUSpeed m_CPUSpeed;
 	unsigned m_nSoCMaxTemp;
