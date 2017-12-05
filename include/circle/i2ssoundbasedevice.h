@@ -20,6 +20,7 @@
 #ifndef _circle_i2ssoundbasedevice_h
 #define _circle_i2ssoundbasedevice_h
 
+#include <circle/soundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/gpiopin.h>
 #include <circle/gpioclock.h>
@@ -37,7 +38,7 @@ enum TI2SSoundState
 	I2SSoundUnknown
 };
 
-class CI2SSoundBaseDevice	/// Low level access to the I2S sound device
+class CI2SSoundBaseDevice : public CSoundBaseDevice	/// Low level access to the I2S sound device
 {
 public:
 	/// \param pInterrupt	pointer to the interrupt system object
@@ -56,7 +57,7 @@ public:
 	int GetRangeMax (void) const;
 
 	/// \brief Starts the I2S and DMA operation
-	void Start (void);
+	boolean Start (void);
 
 	/// \brief Cancels the I2S and DMA operation
 	/// \note Cancel takes effect after a short delay
@@ -65,14 +66,15 @@ public:
 	/// \return Is I2S and DMA operation running?
 	boolean IsActive (void) const;
 
-	/// \brief Overload this to provide the sound samples!
+protected:
+	/// \brief May overload this to provide the sound samples!
 	/// \param pBuffer	buffer where the samples have to be placed
 	/// \param nChunkSize	size of the buffer in words (same as given to constructor)
 	/// \return Number of words written to the buffer (normally nChunkSize),\n
 	///	    Transfer will stop if 0 is returned
 	/// \note Each sample consists of two words (Left channel, right channel)\n
 	///	  Each word must be between GetRangeMin() and GetRangeMax()
-	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize) = 0;
+	/// virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
 	boolean GetNextChunk (void);

@@ -29,7 +29,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_VCHIQ (&m_Memory, &m_Interrupt),
-	m_VCHIQSound (&m_VCHIQ, VCHIQSoundDestinationAuto)
+	m_VCHIQSound (&m_VCHIQ, (TVCHIQSoundDestination) m_Options.GetSoundOption ())
 {
 	m_ActLED.Blink (5);	// show we are alive
 }

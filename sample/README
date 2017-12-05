@@ -33,3 +33,4 @@ SAMPLES
 31-webclient		Fetching a RPi hardware revision list from a HTTP webserver and parsing it.
 32-i2cshell		Command line tool for interactive communication with I2C devices.
 33-syslog		Demonstrating how to send log messages to a syslog server using UDP.
+34-sounddevices		Integrating multiple sound devices in one application
