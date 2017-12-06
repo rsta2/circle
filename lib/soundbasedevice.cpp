@@ -259,7 +259,7 @@ unsigned CSoundBaseDevice::GetChunkInternal (void *pBuffer, unsigned nChunkSize)
 	m_SpinLock.Acquire ();
 
 	assert (nChunkSize > 0);
-	while (  nChunkSize >= m_nHWFrameSize
+	while (  nChunkSize >= SOUND_HW_CHANNELS
 	       && GetQueueBytesAvail () >= m_nHWFrameSize)
 	{
 		Dequeue (pBuffer8, m_nHWFrameSize);
@@ -271,7 +271,7 @@ unsigned CSoundBaseDevice::GetChunkInternal (void *pBuffer, unsigned nChunkSize)
 
 	m_SpinLock.Release ();
 
-	while (nChunkSize >= m_nHWFrameSize)
+	while (nChunkSize >= SOUND_HW_CHANNELS)
 	{
 		memcpy (pBuffer8, m_NullFrame, m_nHWFrameSize);
 
