@@ -28,7 +28,7 @@
 #define SOUND_MAX_SAMPLE_SIZE	(sizeof (u32))
 #define SOUND_MAX_FRAME_SIZE	(SOUND_HW_CHANNELS * SOUND_MAX_SAMPLE_SIZE)
 
-enum TSoundFormat
+enum TSoundFormat			/// All supported formats are interleaved little endian
 {
 	SoundFormatUnsigned8,		/// Not supported as hardware format
 	SoundFormatSigned16,
@@ -82,9 +82,10 @@ public:
 	/// \note Not used, if GetChunk() is overloaded.
 	void SetWriteFormat (TSoundFormat Format, unsigned nChannels = 2);
 
-	/// \param pBuffer Contains the samples, see: GetChunk()
-	/// \param nCount  Size of the buffer in bytes
+	/// \param pBuffer Contains the samples
+	/// \param nCount  Size of the buffer in bytes (multiple of frame size)
 	/// \return Number of bytes consumed
+	/// \note Not used, if GetChunk() is overloaded.
 	/// \note Can be called on any core.
 	int Write (const void *pBuffer, unsigned nCount);
 

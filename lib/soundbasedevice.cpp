@@ -27,6 +27,8 @@ CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigne
 :	m_HWFormat (HWFormat),
 	m_nSampleRate (nSampleRate),
 	m_nQueueSize (0),
+	m_WriteFormat (SoundFormatUnknown),
+	m_nWriteChannels (0),
 	m_pQueue (0),
 	m_nInPtr (0),
 	m_nOutPtr (0),
@@ -69,8 +71,6 @@ CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigne
 	m_nQueueSize = m_nNeedDataThreshold * 2;
 	m_pQueue = new u8[m_nQueueSize];
 	assert (m_pQueue != 0);
-
-	SetWriteFormat (SoundFormatUnknown);
 }
 
 CSoundBaseDevice::~CSoundBaseDevice (void)
@@ -93,7 +93,7 @@ int CSoundBaseDevice::GetRangeMax (void) const
 
 void CSoundBaseDevice::SetWriteFormat (TSoundFormat Format, unsigned nChannels)
 {
-	assert (Format <= SoundFormatUnknown);
+	assert (Format < SoundFormatUnknown);
 	m_WriteFormat = Format;
 
 	assert (1 <= nChannels && nChannels <= 2);
@@ -113,10 +113,6 @@ void CSoundBaseDevice::SetWriteFormat (TSoundFormat Format, unsigned nChannels)
 		m_nWriteSampleSize = sizeof (u8)*3;
 		break;
 
-	case SoundFormatUnknown:
-		m_nWriteSampleSize = m_nHWSampleSize;
-		break;
-
 	default:
 		assert (0);
 		break;
@@ -127,6 +123,8 @@ void CSoundBaseDevice::SetWriteFormat (TSoundFormat Format, unsigned nChannels)
 
 int CSoundBaseDevice::Write (const void *pBuffer, unsigned nCount)
 {
+	assert (m_WriteFormat < SoundFormatUnknown);
+
 	assert (pBuffer != 0);
 	const u8 *pBuffer8 = static_cast<const u8 *> (pBuffer);
 
@@ -134,28 +132,51 @@ int CSoundBaseDevice::Write (const void *pBuffer, unsigned nCount)
 
 	m_SpinLock.Acquire ();
 
-	while (   nCount >= m_nWriteFrameSize
-	       && GetQueueBytesFree () >= m_nHWFrameSize)
+	if (   m_HWFormat == SoundFormatSigned16
+	    && m_WriteFormat == SoundFormatSigned16
+	    && m_nWriteChannels == SOUND_HW_CHANNELS)
 	{
-		u8 Frame[SOUND_MAX_FRAME_SIZE];
+		// fast path for SoundFormatSigned16 Stereo without conversion
 
-		ConvertSoundFormat (Frame, pBuffer8);
-		pBuffer8 += m_nWriteSampleSize;
-
-		if (m_nWriteChannels == 2)
+		unsigned nBytes = GetQueueBytesFree ();
+		if (nBytes > nCount)
 		{
-			ConvertSoundFormat (Frame+m_nHWSampleSize, pBuffer8);
+			nBytes = nCount;
+		}
+		nBytes &= ~(m_nWriteFrameSize-1);	// must be a multiple of frame size
+
+		if (nBytes > 0)
+		{
+			Enqueue (pBuffer, nBytes);
+
+			nResult = nBytes;
+		}
+	}
+	else
+	{
+		while (   nCount >= m_nWriteFrameSize
+		       && GetQueueBytesFree () >= m_nHWFrameSize)
+		{
+			u8 Frame[SOUND_MAX_FRAME_SIZE];
+
+			ConvertSoundFormat (Frame, pBuffer8);
 			pBuffer8 += m_nWriteSampleSize;
-		}
-		else
-		{
-			memcpy (Frame+m_nHWSampleSize, Frame, m_nHWSampleSize);
-		}
 
-		Enqueue (Frame, m_nHWFrameSize);
+			if (m_nWriteChannels == 2)
+			{
+				ConvertSoundFormat (Frame+m_nHWSampleSize, pBuffer8);
+				pBuffer8 += m_nWriteSampleSize;
+			}
+			else
+			{
+				memcpy (Frame+m_nHWSampleSize, Frame, m_nHWSampleSize);
+			}
 
-		nCount -= m_nWriteFrameSize;
-		nResult += m_nWriteFrameSize;
+			Enqueue (Frame, m_nHWFrameSize);
+
+			nCount -= m_nWriteFrameSize;
+			nResult += m_nWriteFrameSize;
+		}
 	}
 
 	m_SpinLock.Release ();
@@ -254,39 +275,44 @@ unsigned CSoundBaseDevice::GetChunkInternal (void *pBuffer, unsigned nChunkSize)
 	u8 *pBuffer8 = static_cast<u8 *> (pBuffer);
 	assert (pBuffer8 != 0);
 
-	unsigned nResult = 0;
+	assert (nChunkSize > 0);
+	assert (nChunkSize % SOUND_HW_CHANNELS == 0);
+	unsigned nChunkSizeBytes = nChunkSize * m_nHWSampleSize;
 
 	m_SpinLock.Acquire ();
 
-	assert (nChunkSize > 0);
-	while (  nChunkSize >= SOUND_HW_CHANNELS
-	       && GetQueueBytesAvail () >= m_nHWFrameSize)
+	unsigned nQueueBytesAvail = GetQueueBytesAvail ();
+	unsigned nBytes = nQueueBytesAvail;
+	if (nBytes > nChunkSizeBytes)
 	{
-		Dequeue (pBuffer8, m_nHWFrameSize);
+		nBytes = nChunkSizeBytes;
+	}
 
-		pBuffer8 += m_nHWFrameSize;
-		nChunkSize -= SOUND_HW_CHANNELS;
-		nResult += SOUND_HW_CHANNELS;
+	if (nBytes > 0)
+	{
+		Dequeue (pBuffer8, nBytes);
+
+		pBuffer8 += nBytes;
+		nQueueBytesAvail -= nBytes;
 	}
 
 	m_SpinLock.Release ();
 
-	while (nChunkSize >= SOUND_HW_CHANNELS)
+	while (nBytes < nChunkSizeBytes)
 	{
 		memcpy (pBuffer8, m_NullFrame, m_nHWFrameSize);
 
 		pBuffer8 += m_nHWFrameSize;
-		nChunkSize -= SOUND_HW_CHANNELS;
-		nResult += SOUND_HW_CHANNELS;
+		nBytes += m_nHWFrameSize;
 	}
 
 	if (   m_pCallback != 0
-	    && GetQueueBytesAvail () < m_nNeedDataThreshold)
+	    && nQueueBytesAvail < m_nNeedDataThreshold)
 	{
 		(*m_pCallback) (m_pCallbackParam);
 	}
 
-	return nResult;
+	return nChunkSize;
 }
 
 unsigned CSoundBaseDevice::GetQueueBytesFree (void)
