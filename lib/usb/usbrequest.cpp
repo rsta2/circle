@@ -118,3 +118,5 @@ boolean CUSBRequest::IsCompleteOnNAK (void) const
 {
 	return m_bCompleteOnNAK;
 }
+
+IMPLEMENT_CLASS_ALLOCATOR (CUSBRequest)

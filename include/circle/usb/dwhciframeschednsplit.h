@@ -22,6 +22,7 @@
 
 #include <circle/usb/dwhciframescheduler.h>
 #include <circle/sysconfig.h>
+#include <circle/classallocator.h>
 #include <circle/types.h>
 
 class CDWHCIFrameSchedulerNoSplit : public CDWHCIFrameScheduler
@@ -48,6 +49,8 @@ private:
 	boolean m_bIsPeriodic;
 
 	u16 m_usNextFrame;
+
+	DECLARE_CLASS_ALLOCATOR
 };
 
 #endif

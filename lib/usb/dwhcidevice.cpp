@@ -23,6 +23,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/dwhcidevice.h>
+#include <circle/usb/dwhciframeschednper.h>
+#include <circle/usb/dwhciframeschednsplit.h>
+#include <circle/usb/dwhciframeschedper.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/bcm2835.h>
 #include <circle/synchronize.h>
@@ -88,6 +91,13 @@ CDWHCIDevice::~CDWHCIDevice (void)
 
 boolean CDWHCIDevice::Initialize (void)
 {
+	// init class-specific allocators in USB library
+	INIT_PROTECTED_CLASS_ALLOCATOR (CUSBRequest, DWHCI_MAX_CHANNELS*2, IRQ_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCITransferStageData, DWHCI_MAX_CHANNELS, IRQ_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNonPeriodic, DWHCI_MAX_CHANNELS, IRQ_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerPeriodic, DWHCI_MAX_CHANNELS, IRQ_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNoSplit, DWHCI_MAX_CHANNELS, IRQ_LEVEL);
+
 	PeripheralEntry ();
 
 	assert (m_pInterruptSystem != 0);

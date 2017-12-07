@@ -22,6 +22,7 @@
 
 #include <circle/usb/usb.h>
 #include <circle/usb/usbendpoint.h>
+#include <circle/classallocator.h>
 #include <circle/types.h>
 
 class CUSBRequest;
@@ -68,6 +69,8 @@ private:
 	void *m_pCompletionContext;
 
 	boolean m_bCompleteOnNAK;
+
+	DECLARE_CLASS_ALLOCATOR
 };
 
 #endif
