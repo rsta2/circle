@@ -99,6 +99,14 @@
 
 #endif
 
+// USE_PHYSICAL_COUNTER enables the use of the CPU internal physical
+// counter, which is only available on the Raspberry Pi 2 and 3. Reading
+// this counter is much faster than reading the BCM2835 system timer
+// counter (which is used without this option). It reduces the I/O load
+// too. This option cannot be used with QEMU.
+
+//#define USE_PHYSICAL_COUNTER
+
 #endif
 
 ///////////////////////////////////////////////////////////////////////

@@ -19,9 +19,11 @@
 //
 #include <circle/timer.h>
 #include <circle/bcm2835.h>
+#include <circle/bcm2836.h>
 #include <circle/memio.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
+#include <circle/types.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -96,6 +98,21 @@ boolean CTimer::Initialize (void)
 	TuneMsDelay ();
 #endif
 
+#ifdef USE_PHYSICAL_COUNTER
+	u32 nCNTFRQ;
+	asm volatile ("mrc p15, 0, %0, c14, c0, 0" : "=r" (nCNTFRQ));
+
+	u32 nPrescaler = read32 (ARM_LOCAL_PRESCALER);
+
+	if (   nCNTFRQ    != 19200000
+	    || nPrescaler != 0x6AAAAAB)
+	{
+		CLogger::Get ()->Write (FromTimer, LogPanic,
+					"USE_PHYSICAL_COUNTER is not supported (freq %u, pre 0x%X)",
+					nCNTFRQ, nPrescaler);
+	}
+#endif
+
 	PeripheralExit ();
 
 	return TRUE;
@@ -143,6 +160,7 @@ boolean CTimer::SetTime (unsigned nTime, boolean bLocal)
 
 unsigned CTimer::GetClockTicks (void)
 {
+#ifndef USE_PHYSICAL_COUNTER
 	PeripheralEntry ();
 
 	unsigned nResult = read32 (ARM_SYSTIMER_CLO);
@@ -150,6 +168,14 @@ unsigned CTimer::GetClockTicks (void)
 	PeripheralExit ();
 
 	return nResult;
+#else
+	InstructionSyncBarrier ();
+
+	u32 nCNTPCTLow, nCNTPCTHigh;
+	asm volatile ("mrrc p15, 0, %0, %1, c14" : "=r" (nCNTPCTLow), "=r" (nCNTPCTHigh));
+
+	return nCNTPCTLow;
+#endif
 }
 
 unsigned CTimer::GetTicks (void) const
@@ -447,6 +473,7 @@ void CTimer::SimpleusDelay (unsigned nMicroSeconds)
 	{
 		unsigned nTicks = nMicroSeconds * (CLOCKHZ / 1000000) + 1;
 
+#ifndef USE_PHYSICAL_COUNTER
 		PeripheralEntry ();
 
 		unsigned nStartTicks = read32 (ARM_SYSTIMER_CLO);
@@ -456,6 +483,13 @@ void CTimer::SimpleusDelay (unsigned nMicroSeconds)
 		}
 
 		PeripheralExit ();
+#else
+		unsigned nStartTicks = GetClockTicks ();
+		while (GetClockTicks () - nStartTicks < nTicks)
+		{
+			// do nothing
+		}
+#endif
 	}
 }
 
