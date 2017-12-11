@@ -27,6 +27,7 @@
 
 #define VOLUME		0.5		// [0.0, 1.0]
 
+#define QUEUE_SIZE_MSECS 100		// size of the sound queue in milliseconds duration
 #define CHUNK_SIZE	2000		// number of samples, written to sound device at once
 
 #endif

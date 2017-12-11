@@ -77,6 +77,11 @@ public:
 	/// \note Can be called on any core.
 	virtual boolean IsActive (void) const = 0;
 
+	/// \brief Allocate the queue used for Write()
+	/// \param nSizeMsecs Size of the queue in milliseconds duration of the stream
+	/// \note Not used, if GetChunk() is overloaded.
+	boolean AllocateQueue (unsigned nSizeMsecs);
+
 	/// \param Format    Format of sound data used for Write()
 	/// \param nChannels 1 or 2 channels
 	/// \note Not used, if GetChunk() is overloaded.
@@ -89,7 +94,18 @@ public:
 	/// \note Can be called on any core.
 	int Write (const void *pBuffer, unsigned nCount);
 
+	/// \return Queue size in number of frames
+	/// \note Not used, if GetChunk() is overloaded.
+	/// \note Can be called on any core.
+	unsigned GetQueueSizeFrames (void);
+
+	/// \return Number of frames available in the queue waiting to be sent
+	/// \note Not used, if GetChunk() is overloaded.
+	/// \note Can be called on any core.
+	unsigned GetQueueFramesAvail (void);
+
 	/// \param pCallback Callback which is called, when more sound data is needed
+	/// \note Is called, when at least half of the queue is empty
 	/// \note Not used, if GetChunk() is overloaded.
 	void RegisterNeedDataCallback (TSoundNeedDataCallback *pCallback, void *pParam);
 

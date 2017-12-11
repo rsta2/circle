@@ -21,12 +21,11 @@
 #include <circle/util.h>
 #include <assert.h>
 
-#define THRESHOLD_MSECS		50	// sound data for this amount of time should be available
-
 CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigned nSampleRate)
 :	m_HWFormat (HWFormat),
 	m_nSampleRate (nSampleRate),
 	m_nQueueSize (0),
+	m_nNeedDataThreshold (0),
 	m_WriteFormat (SoundFormatUnknown),
 	m_nWriteChannels (0),
 	m_pQueue (0),
@@ -66,11 +65,6 @@ CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigne
 	}
 
 	m_nHWFrameSize = SOUND_HW_CHANNELS * m_nHWSampleSize;
-	m_nNeedDataThreshold = m_nHWFrameSize * m_nSampleRate * THRESHOLD_MSECS/1000;
-
-	m_nQueueSize = m_nNeedDataThreshold * 2;
-	m_pQueue = new u8[m_nQueueSize];
-	assert (m_pQueue != 0);
 }
 
 CSoundBaseDevice::~CSoundBaseDevice (void)
@@ -89,6 +83,25 @@ int CSoundBaseDevice::GetRangeMin (void) const
 int CSoundBaseDevice::GetRangeMax (void) const
 {
 	return m_nRangeMax;
+}
+
+boolean CSoundBaseDevice::AllocateQueue (unsigned nSizeMsecs)
+{
+	assert (m_pQueue == 0);
+	assert (1 <= nSizeMsecs && nSizeMsecs <= 1000);
+
+	// 1 byte remains free
+	m_nQueueSize = (m_nHWFrameSize*m_nSampleRate*nSizeMsecs + 999) / 1000 + 1;
+
+	m_pQueue = new u8[m_nQueueSize];
+	if (m_pQueue == 0)
+	{
+		return FALSE;
+	}
+
+	m_nNeedDataThreshold = m_nQueueSize / 2;
+
+	return TRUE;
 }
 
 void CSoundBaseDevice::SetWriteFormat (TSoundFormat Format, unsigned nChannels)
@@ -182,6 +195,25 @@ int CSoundBaseDevice::Write (const void *pBuffer, unsigned nCount)
 	m_SpinLock.Release ();
 
 	return nResult;
+}
+
+unsigned CSoundBaseDevice::GetQueueSizeFrames (void)
+{
+	assert (m_nQueueSize > 0);
+	return m_nQueueSize / m_nHWFrameSize;
+}
+
+unsigned CSoundBaseDevice::GetQueueFramesAvail (void)
+{
+	assert (m_nQueueSize > 0);
+
+	m_SpinLock.Acquire ();
+
+	unsigned nQueueBytesAvail = GetQueueBytesAvail ();
+
+	m_SpinLock.Release ();
+
+	return nQueueBytesAvail / m_nHWFrameSize;
 }
 
 void CSoundBaseDevice::RegisterNeedDataCallback (TSoundNeedDataCallback *pCallback, void *pParam)

@@ -3,7 +3,7 @@
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -30,12 +30,12 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
+#include <circle/sched/scheduler.h>
 #include <circle/soundbasedevice.h>
 #include <circle/types.h>
 #include "oscillator.h"
 
 #ifdef USE_VCHIQ_SOUND
-	#include <circle/sched/scheduler.h>
 	#include <vc4/vchiq/vchiqdevice.h>
 #endif
 
@@ -57,7 +57,9 @@ public:
 	TShutdownMode Run (void);
 
 private:
-	static void NeedDataCallback (void *pParam);
+	void WriteSoundData (unsigned nFrames);
+
+	void GetSoundData (void *pBuffer, unsigned nFrames);
 
 private:
 	// do not change this order
@@ -71,17 +73,15 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
+	CScheduler		m_Scheduler;
 
 #ifdef USE_VCHIQ_SOUND
-	CScheduler		m_Scheduler;
 	CVCHIQDevice		m_VCHIQ;
 #endif
 	CSoundBaseDevice	*m_pSound;
 
 	COscillator m_LFO;
 	COscillator m_VFO;
-
-	boolean m_bNeedData;
 };
 
 #endif

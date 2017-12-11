@@ -3,7 +3,7 @@
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -58,8 +58,7 @@ CKernel::CKernel (void)
 	m_VCHIQ (&m_Memory, &m_Interrupt),
 #endif
 	m_pSound (0),
-	m_VFO (&m_LFO),		// LFO modulates the VFO
-	m_bNeedData (TRUE)
+	m_VFO (&m_LFO)		// LFO modulates the VFO
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -146,10 +145,20 @@ TShutdownMode CKernel::Run (void)
 	m_VFO.SetFrequency (440.0);
 	m_VFO.SetModulationVolume (0.25);
 
-	// initialize and start sound device
-	m_pSound->SetWriteFormat (FORMAT, WRITE_CHANNELS);
-	m_pSound->RegisterNeedDataCallback (NeedDataCallback, this);
+	// configure sound device
+	if (!m_pSound->AllocateQueue (QUEUE_SIZE_MSECS))
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Cannot allocate sound queue");
+	}
 
+	m_pSound->SetWriteFormat (FORMAT, WRITE_CHANNELS);
+
+	// initially fill the whole queue with data
+	unsigned nQueueSizeFrames = m_pSound->GetQueueSizeFrames ();
+
+	WriteSoundData (nQueueSizeFrames);
+
+	// start sound device
 	if (!m_pSound->Start ())
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Cannot start sound device");
@@ -160,46 +169,59 @@ TShutdownMode CKernel::Run (void)
 	// output sound data
 	for (unsigned nCount = 0; m_pSound->IsActive (); nCount++)
 	{
-		if (m_bNeedData)
-		{
-			m_bNeedData = FALSE;
+		m_Scheduler.MsSleep (QUEUE_SIZE_MSECS / 2);
 
-			u8 Buffer[CHUNK_SIZE * TYPE_SIZE];
-			for (unsigned i = 0; i < CHUNK_SIZE;)
-			{
-				m_LFO.NextSample ();
-				m_VFO.NextSample ();
-
-				float fLevel = m_VFO.GetOutputLevel ();
-				TYPE nLevel = (TYPE) (fLevel*VOLUME * FACTOR + NULL_LEVEL);
-
-				memcpy (&Buffer[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
-#if WRITE_CHANNELS == 2
-				memcpy (&Buffer[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
-#endif
-			}
-
-			int nResult = m_pSound->Write (Buffer, sizeof Buffer);
-			if (nResult != sizeof Buffer)
-			{
-				m_Logger.Write (FromKernel, LogWarning, "Sound data dropped");
-			}
-		}
+		// fill the whole queue free space with data
+		WriteSoundData (nQueueSizeFrames - m_pSound->GetQueueFramesAvail ());
 
 		m_Screen.Rotor (0, nCount);
-
-#ifdef USE_VCHIQ_SOUND
-		m_Scheduler.Yield ();
-#endif
 	}
 
 	return ShutdownHalt;
 }
 
-void CKernel::NeedDataCallback (void *pParam)
+void CKernel::WriteSoundData (unsigned nFrames)
 {
-	CKernel *pThis = (CKernel *) pParam;
-	assert (pThis != 0);
+	const unsigned nFramesPerWrite = 1000;
+	u8 Buffer[nFramesPerWrite * WRITE_CHANNELS * TYPE_SIZE];
 
-	pThis->m_bNeedData = TRUE;
+	while (nFrames > 0)
+	{
+		unsigned nWriteFrames = nFrames < nFramesPerWrite ? nFrames : nFramesPerWrite;
+
+		GetSoundData (Buffer, nWriteFrames);
+
+		unsigned nWriteBytes = nWriteFrames * WRITE_CHANNELS * TYPE_SIZE;
+
+		int nResult = m_pSound->Write (Buffer, nWriteBytes);
+		if (nResult != (int) nWriteBytes)
+		{
+			m_Logger.Write (FromKernel, LogError, "Sound data dropped");
+		}
+
+		nFrames -= nWriteFrames;
+
+		m_Scheduler.Yield ();		// ensure the VCHIQ tasks can run
+	}
+}
+
+void CKernel::GetSoundData (void *pBuffer, unsigned nFrames)
+{
+	u8 *pBuffer8 = (u8 *) pBuffer;
+
+	unsigned nSamples = nFrames * WRITE_CHANNELS;
+
+	for (unsigned i = 0; i < nSamples;)
+	{
+		m_LFO.NextSample ();
+		m_VFO.NextSample ();
+
+		float fLevel = m_VFO.GetOutputLevel ();
+		TYPE nLevel = (TYPE) (fLevel*VOLUME * FACTOR + NULL_LEVEL);
+
+		memcpy (&pBuffer8[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
+#if WRITE_CHANNELS == 2
+		memcpy (&pBuffer8[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
+#endif
+	}
 }
