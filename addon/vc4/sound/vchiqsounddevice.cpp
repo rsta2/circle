@@ -25,8 +25,10 @@
 
 #define SAMPLE_RATE		44100
 
+#define CHUNK_SIZE		4000
+
 CVCHIQSoundDevice::CVCHIQSoundDevice (CVCHIQDevice *pVCHIQDevice, TVCHIQSoundDestination Destination)
-:	CVCHIQSoundBaseDevice (pVCHIQDevice, SAMPLE_RATE, Destination),
+:	CVCHIQSoundBaseDevice (pVCHIQDevice, SAMPLE_RATE, CHUNK_SIZE, Destination),
 	m_pSoundData (0)
 {
 }

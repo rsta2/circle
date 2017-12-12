@@ -129,7 +129,7 @@ TShutdownMode CKernel::Run (void)
 	else
 	{
 #ifdef USE_VCHIQ_SOUND
-		m_pSound = new CVCHIQSoundBaseDevice (&m_VCHIQ, SAMPLE_RATE,
+		m_pSound = new CVCHIQSoundBaseDevice (&m_VCHIQ, SAMPLE_RATE, CHUNK_SIZE,
 					(TVCHIQSoundDestination) m_Options.GetSoundOption ());
 #else
 		m_pSound = new CPWMSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);

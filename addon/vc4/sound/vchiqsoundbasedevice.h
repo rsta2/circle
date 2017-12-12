@@ -28,8 +28,6 @@
 #include <vc4/vchi/vchi.h>
 #include "vc_vchi_audioserv_defs.h"
 
-#define VCHIQ_SOUND_CHUNK_SIZE		2000		// do not change
-
 #define VCHIQ_SOUND_VOLUME_MIN		-10000
 #define VCHIQ_SOUND_VOLUME_DEFAULT	0
 #define VCHIQ_SOUND_VOLUME_MAX		400
@@ -58,10 +56,12 @@ class CVCHIQSoundBaseDevice : public CSoundBaseDevice	/// Low level access to th
 public:
 	/// \param pVCHIQDevice	pointer to the VCHIQ interface device
 	/// \param nSampleRate	sample rate in Hz (44100..48000)
+	/// \param nChunkSize	number of samples transfered at once
 	/// \param Destination	the target device, the sound data is sent to\n
 	///			(detected automatically, if equal to VCHIQSoundDestinationAuto)
 	CVCHIQSoundBaseDevice (CVCHIQDevice *pVCHIQDevice,
 			       unsigned nSampleRate = 44100,
+			       unsigned nChunkSize  = 4000,
 			       TVCHIQSoundDestination Destination = VCHIQSoundDestinationAuto);
 
 	virtual ~CVCHIQSoundBaseDevice (void);
@@ -110,6 +110,7 @@ private:
 
 private:
 	unsigned m_nSampleRate;
+	unsigned m_nChunkSize;
 	TVCHIQSoundDestination m_Destination;
 
 	volatile TVCHIQSoundState m_State;

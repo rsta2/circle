@@ -33,15 +33,17 @@ static const char FromVCHIQSound[] = "sndvchiq";
 
 CVCHIQSoundBaseDevice::CVCHIQSoundBaseDevice (CVCHIQDevice *pVCHIQDevice,
 					      unsigned nSampleRate,
+					      unsigned nChunkSize,
 					      TVCHIQSoundDestination Destination)
 :	CSoundBaseDevice (SoundFormatSigned16, 0, nSampleRate),
 	m_nSampleRate (nSampleRate),
+	m_nChunkSize (nChunkSize),
 	m_Destination (Destination),
 	m_State (VCHIQSoundCreated),
 	m_VCHIInstance (0),
 	m_hService (0)
 {
-	assert (44100 <= nSampleRate && nSampleRate <= 48000);
+	//assert (44100 <= nSampleRate && nSampleRate <= 48000);
 	assert (Destination < VCHIQSoundDestinationUnknown);
 
 	CDeviceNameService::Get ()->AddDevice ("sndvchiq", this, FALSE);
@@ -332,8 +334,8 @@ int CVCHIQSoundBaseDevice::QueueMessage (VC_AUDIO_MSG_T *pMessage)
 
 int CVCHIQSoundBaseDevice::WriteChunk (void)
 {
-	s16 Buffer[VCHIQ_SOUND_CHUNK_SIZE];
-	unsigned nWords = GetChunk (Buffer, VCHIQ_SOUND_CHUNK_SIZE);
+	s16 Buffer[m_nChunkSize];
+	unsigned nWords = GetChunk (Buffer, m_nChunkSize);
 	if (nWords == 0)
 	{
 		m_State = VCHIQSoundIdle;
@@ -360,10 +362,22 @@ int CVCHIQSoundBaseDevice::WriteChunk (void)
 
 	m_nWritePos += nBytes;
 
-	nResult = vchi_msg_queue (m_hService, Buffer, nBytes, VCHI_FLAGS_BLOCK_UNTIL_QUEUED, 0);
-	if (nResult != 0)
+	u8 *pBuffer8 = (u8 *) Buffer;
+	while (nBytes > 0)
 	{
-		return nResult;
+		unsigned nBytesToQueue =   nBytes <= Msg.u.write.max_packet
+					 ? nBytes
+					 : Msg.u.write.max_packet;
+
+		nResult = vchi_msg_queue (m_hService, pBuffer8, nBytesToQueue,
+					  VCHI_FLAGS_BLOCK_UNTIL_QUEUED, 0);
+		if (nResult != 0)
+		{
+			return nResult;
+		}
+
+		pBuffer8 += nBytesToQueue;
+		nBytes -= nBytesToQueue;
 	}
 
 	return 0;
@@ -419,7 +433,7 @@ void CVCHIQSoundBaseDevice::Callback (const VCHI_CALLBACK_REASON_T Reason, void 
 		m_nCompletePos += Msg.u.complete.count & 0x3FFFFFFF;
 
 		// if there is no more than one chunk left queued
-		if (m_nWritePos-m_nCompletePos <= VCHIQ_SOUND_CHUNK_SIZE*sizeof (s16))
+		if (m_nWritePos-m_nCompletePos <= m_nChunkSize*sizeof (s16))
 		{
 			if (m_State == VCHIQSoundCancelled)
 			{
