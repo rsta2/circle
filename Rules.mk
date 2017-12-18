@@ -91,7 +91,21 @@ $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.
 	$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
 	$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
 	$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
+	$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
 	wc -c $(TARGET).img
 
 clean:
 	rm -f *.o *.a *.elf *.lst *.img *.cir *.map *~ $(EXTRACLEAN)
+
+	flash:
+
+	make
+	python $(CIRCLEHOME)/tools/flasher.py $(TARGET).hex $(SERIALPORT)
+	
+monitor:
+
+	putty -serial $(SERIALPORT) -sercfg $(DEFAULTBAUD)
+	
+all:
+
+	make
