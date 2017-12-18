@@ -10,6 +10,10 @@ all: clean
 	wget -q -O bootcode.bin https://github.com/raspberrypi/firmware/blob/master/boot/bootcode.bin?raw=true
 	wget -q -O fixup.dat https://github.com/raspberrypi/firmware/blob/master/boot/fixup.dat?raw=true
 	wget -q -O start.elf https://github.com/raspberrypi/firmware/blob/master/boot/start.elf?raw=true
+	make -C "../tools/bootloader"
+	cp ../tools/bootloader/kernel.img .
+	cp ../tools/bootloader/kernel7.img .
+	make clean -C "../tools/bootloader"
 
 clean:
-	rm -f bootcode.bin fixup.dat start.elf LICENCE.broadcom
+	rm -f bootcode.bin fixup.dat start.elf kernel.img kernel7.img LICENCE.broadcom
