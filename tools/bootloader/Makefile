@@ -1,7 +1,11 @@
+-include ../../Config.mk
 
-ARMGNU ?= arm-none-eabi
+PREFIX ?= arm-none-eabi
+DEFAULTBAUD ?= 115200
 
-COPS = -Wall -O2 -nostdlib -nostartfiles -ffreestanding 
+ARMGNU ?= $(PREFIX)
+
+COPS = -Wall -O2 -nostdlib -nostartfiles -ffreestanding -DDEFAULTBAUD=$(DEFAULTBAUD)
 
 gcc : kernel.img kernel7.img blinker.hex blinker7.hex
 
@@ -70,7 +74,7 @@ LOPS = -Wall -m32 -emit-llvm
 LLCOPS0 = -march=arm 
 LLCOPS1 = -march=arm -mcpu=arm1176jzf-s
 LLCOPS = $(LLCOPS1)
-COPS = -Wall  -O2 -nostdlib -nostartfiles -ffreestanding
+#COPS = -Wall  -O2 -nostdlib -nostartfiles -ffreestanding
 #OOPS = -std-compile-opts
 OOPS = -std-link-opts
 

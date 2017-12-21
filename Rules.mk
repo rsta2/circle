@@ -101,13 +101,13 @@ clean:
 #
 
 SERIALPORT  ?= /dev/ttyUSB0
-DEFAULTBAUD ?= 1008065
+DEFAULTBAUD ?= 115200
 
 $(TARGET).hex: $(TARGET).img
 	$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
 
 flash: $(TARGET).hex
-	python $(CIRCLEHOME)/tools/flasher.py $(TARGET).hex $(SERIALPORT)
+	python $(CIRCLEHOME)/tools/flasher.py $(TARGET).hex $(SERIALPORT) $(DEFAULTBAUD)
 
 monitor:
 	putty -serial $(SERIALPORT) -sercfg $(DEFAULTBAUD)

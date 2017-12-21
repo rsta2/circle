@@ -112,7 +112,7 @@ void uart_init ( void )
     PUT32(AUX_MU_MCR_REG,0);
     PUT32(AUX_MU_IER_REG,0);
     PUT32(AUX_MU_IIR_REG,0xC6);
-    PUT32(AUX_MU_BAUD_REG,30); //baud rate of 1M
+    PUT32(AUX_MU_BAUD_REG,(250000000/8 + DEFAULTBAUD/2) / DEFAULTBAUD - 1);
     ra=GET32(GPFSEL1);
     ra&=~(7<<12); //gpio14
     ra|=2<<12;    //alt5
