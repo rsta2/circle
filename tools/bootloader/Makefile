@@ -1,11 +1,11 @@
 -include ../../Config.mk
 
 PREFIX ?= arm-none-eabi
-DEFAULTBAUD ?= 115200
+FLASHBAUD ?= 115200
 
 ARMGNU ?= $(PREFIX)
 
-COPS = -Wall -O2 -nostdlib -nostartfiles -ffreestanding -DDEFAULTBAUD=$(DEFAULTBAUD)
+COPS = -Wall -O2 -nostdlib -nostartfiles -ffreestanding -DDEFAULTBAUD=$(FLASHBAUD)
 
 gcc : kernel.img kernel7.img blinker.hex blinker7.hex
 
