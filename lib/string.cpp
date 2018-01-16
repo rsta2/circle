@@ -306,6 +306,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				break;
 
 			case 'd':
+			case 'i':
 				if (bLong)
 				{
 					lArg = va_arg (Args, long);
@@ -414,6 +415,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 
 			case 'x':
 			case 'X':
+			case 'p':
 				nBase = 16;
 				goto FormatNumber;
 

@@ -21,18 +21,16 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 33rd Step
+The 34th Step
 -------------
 
-The main expenditure in this step was spent to prepare Circle for external projects which allow to develop applications which are using C and C++ standard library features. Please see the file *doc/stdlib-support.txt* for details.
+In this step a VCHIQ audio service driver and a VCHIQ interface driver have been added to Circle in the *addon/vc4/* subdirectory. They have been ported from Linux and allow to output sound via the HDMI connector. You need a HDMI display which is capable of output sound, to use this.
 
-Furthermore a syslog client has been added, which allows to send log messages to a syslog server. This is demonstrated in *sample/33-syslog*. See the *README* file in this directory for details.
+There is a new Linux kernel driver emulation library in *addon/linux/* which allows to use the VCHIQ interface driver from Linux with only a few changes.
 
-Circle applications will be linked using the standard library libgcc.a by default now. This library should come with your toolchain. Only if you have problems with that, you can fall back to the previous handling using the setting *STDLIB_SUPPORT=0* in the files *Config.mk* or *Rules.mk*.
+The new *sample/34-sounddevices* can be used to demonstrate the HDMI sound and integrates different sound devices (PWM, I2S, VCHIQ). See the *README* file in this directory for details.
 
-If you are using an USB mouse with the mouse cursor in your application, you have to add a call to *CUSBMouseDevice::UpdateCursor()* in your application's main loop so that that cursor can be updated. Please see *sample/10-usbmouse* for an example.
-
-In a few cases it may be important, that the Circle type *boolean* is now equivalent to the C++ type *bool*, which only takes one byte. *boolean* was previously four bytes long.
+There is a new system option *USE_PHYSICAL_COUNTER* in *include/circle/sysconfig.h* which enables the use of the CPU internal physical counter on the Raspberry Pi 2 and 3, which should improve the system performance, especially if the scheduler is used. It cannot be used with QEMU and that's why it is not enabled by default.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
@@ -69,6 +67,7 @@ Circle supports the following features:
 |                       | I2S sound output                                    |
 |                       | Hardware random number generator                    |
 |                       | Official Raspberry Pi touch screen                  |
+|                       | VCHIQ interface and audio service drivers           |
 |                       |                                                     |
 | USB                   | Host controller interface (HCI) driver              |
 |                       | Standard hub driver                                 |
@@ -144,9 +143,10 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Net library
+Base library
 
-* CSysLogDaemon: Syslog sender task according to RFC5424 and RFC5426 (UDP transport only)
+* CClassAllocator: Support class for the class-specific allocation of objects
+* CSoundBaseDevice: Base class of sound devices, converts several sound formats
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

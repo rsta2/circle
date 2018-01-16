@@ -305,6 +305,11 @@ void CScreenDevice::Write (char chChar)
 			m_nState = ScreenStateStart;
 			break;
 
+		case 'D':
+			CursorLeft ();
+			m_nState = ScreenStateStart;
+			break;
+
 		case 'H':
 			CursorHome ();
 			m_nState = ScreenStateStart;

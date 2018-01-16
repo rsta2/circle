@@ -27,6 +27,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/i2ssoundbasedevice.h>
+#include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2835int.h>
 #include <circle/memio.h>
@@ -117,7 +118,8 @@
 CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
 					  unsigned	    nChunkSize)
-:	m_pInterruptSystem (pInterrupt),
+:	CSoundBaseDevice (SoundFormatSigned24, 0, nSampleRate),
+	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
 	m_PCMCLKPin (18, GPIOModeAlternateFunction0),
 	m_PCMFSPin (19, GPIOModeAlternateFunction0),
@@ -169,6 +171,8 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	}
 
 	PeripheralExit ();
+
+	CDeviceNameService::Get ()->AddDevice ("sndi2s", this, FALSE);
 }
 
 CI2SSoundBaseDevice::~CI2SSoundBaseDevice (void)
@@ -211,7 +215,7 @@ int CI2SSoundBaseDevice::GetRangeMax (void) const
 	return (1 << 23)-1;
 }
 
-void CI2SSoundBaseDevice::Start (void)
+boolean CI2SSoundBaseDevice::Start (void)
 {
 	assert (m_State == I2SSoundIdle);
 
@@ -220,7 +224,7 @@ void CI2SSoundBaseDevice::Start (void)
 
 	if (!GetNextChunk ())
 	{
-		return;
+		return FALSE;
 	}
 
 	m_State = I2SSoundRunning;
@@ -271,6 +275,8 @@ void CI2SSoundBaseDevice::Start (void)
 
 		m_SpinLock.Release ();
 	}
+
+	return TRUE;
 }
 
 void CI2SSoundBaseDevice::Cancel (void)

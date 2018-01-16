@@ -20,6 +20,8 @@
 #ifndef _circle_types_h
 #define _circle_types_h
 
+#include <assert.h>
+
 typedef unsigned char		u8;
 typedef unsigned short		u16;
 typedef unsigned int		u32;
@@ -33,9 +35,16 @@ typedef signed long long	s64;
 typedef int			intptr;
 typedef unsigned int		uintptr;
 
+#ifdef __cplusplus
 typedef bool		boolean;
 #define FALSE		false
 #define TRUE		true
+#else
+typedef char		boolean;
+#define FALSE		0
+#define TRUE		1
+#endif
+ASSERT_STATIC (sizeof (boolean) == 1);
 
 typedef unsigned int	size_t;
 typedef int		ssize_t;

@@ -1,0 +1,28 @@
+README 
+
+This sample program uses the VCHIQ audio service to playback a short sound
+sample. You can listen to it via a HDMI monitor, which is capable of output
+sound, or via the 3.5mm headphone jack otherwise (not on the Raspberry Pi Zero).
+When the playback is over, it will be re-started again after two seconds.
+
+The provided (compressed) sound sample in sound.h.gz is recorded with 44100 Hz
+sample rate and 8 bit Mono (to keep it small). You can provide 16 bit Stereo
+sound on your own (e.g. by exporting it as 16 bit signed raw data without header
+from Audacity and converting it into ASCII with a little program). The sound.h
+file has to look like that in this case:
+
+#define SOUND_CHANNELS		2
+#define SOUND_BITS		16
+
+signed short Sound[] =
+{
+1,0,-2,0,2,0,-2,0,2,1,-1,-1,0,1,0,-2,0,3,0,-3,1,3,-2,-2,
+...
+};
+
+Please note that you may have to increase KERNEL_MAX_SIZE in the file
+include/circle/sysconfig.h, if your kernel.img is about 2 MBytes big or bigger
+after build. It will not run otherwise.
+
+The VCHIQ audio service always plays 16 bit Stereo sound in Circle but other
+8/16 bit Mono/Stereo formats will be converted while playing back.

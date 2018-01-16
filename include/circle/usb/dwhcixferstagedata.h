@@ -25,6 +25,7 @@
 #include <circle/usb/usbdevice.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/dwhciframescheduler.h>
+#include <circle/classallocator.h>
 #include <circle/types.h>
 
 class CDWHCITransferStageData
@@ -108,6 +109,8 @@ private:
 	void		*m_pBufferPointer;
 
 	CDWHCIFrameScheduler *m_pFrameScheduler;
+
+	DECLARE_CLASS_ALLOCATOR
 };
 
 #endif

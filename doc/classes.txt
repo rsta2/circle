@@ -8,6 +8,7 @@ Base library
 * CBcmPropertyTags: Get several information from the GPU side or control something on this side.
 * CBcmRandomNumberGenerator: Driver for the built-in hardware random number generator.
 * CCharGenerator: Gives pixel information for console font
+* CClassAllocator: Support class for the class-specific allocation of objects
 * CCPUThrottle: Manages CPU clock rate depending on user requirements and SoC temperature.
 * CDevice: Base class for all devices
 * CDeviceNameService: Devices can be registered by name and retrieved later by this name
@@ -35,6 +36,7 @@ Base library
 * CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
 * CSerialDevice: Driver for PL011 UART0 at GPIO14/15, interrupt or polling mode
+* CSoundBaseDevice: Base class of sound devices, converts several sound formats.
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
 * CSPIMaster: Driver for SPI0 master device. Synchronous polling operation.
 * CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.

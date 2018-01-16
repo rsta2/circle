@@ -441,3 +441,5 @@ CDWHCIFrameScheduler *CDWHCITransferStageData::GetFrameScheduler (void) const
 {
 	return m_pFrameScheduler;
 }
+
+IMPLEMENT_CLASS_ALLOCATOR (CDWHCITransferStageData)

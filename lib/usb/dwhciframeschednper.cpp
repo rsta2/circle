@@ -185,3 +185,5 @@ boolean CDWHCIFrameSchedulerNonPeriodic::IsOddFrame (void) const
 {
 	return FALSE;
 }
+
+IMPLEMENT_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNonPeriodic)

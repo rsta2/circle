@@ -20,6 +20,14 @@ usbpowerdelay=510		Delay in milliseconds between powering on an USB device on an
 				USB hub (both internal and external) and accessing the device
 				(default 510, which is sometimes not enough to detect a device)
 
+sounddev=sndpwm			Set device used for sound output
+				("sndpwm" for PWM (via headphone jack), "sndi2s" for I2S (external
+				 hardware required), "sndvchiq" for VCHIQ (HDMI or headphone jack),
+				 default depends on application)
+
+soundopt=0			Select destination for sound output with "sounddev=sndvchiq"
+				(0: detected automatically (default), 1: headphone jack, 2: HDMI)
+
 fast=true			Set maximum CPU speed (if class CCPUThrottle is in the system,
 				default is low speed on Raspberry Pi 2/3)
 

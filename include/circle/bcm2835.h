@@ -262,4 +262,10 @@
 #define ARM_PCM_INTSTC_A	(ARM_PCM_BASE + 0x1C)
 #define ARM_PCM_GRAY		(ARM_PCM_BASE + 0x20)
 
+//
+// VC4 VCHIQ
+//
+#define ARM_VCHIQ_BASE		(ARM_IO_BASE + 0xB840)
+#define ARM_VCHIQ_END		(ARM_VCHIQ_BASE + 0x0F)
+
 #endif
