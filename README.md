@@ -145,8 +145,7 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CClassAllocator: Support class for the class-specific allocation of objects
-* CSoundBaseDevice: Base class of sound devices, converts several sound formats
+* CSPIMasterAUX: Driver for the auxiliary SPI master (SPI1)
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
