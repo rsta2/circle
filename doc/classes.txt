@@ -39,6 +39,7 @@ Base library
 * CSoundBaseDevice: Base class of sound devices, converts several sound formats.
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
 * CSPIMaster: Driver for SPI0 master device. Synchronous polling operation.
+* CSPIMasterAUX: Driver for the auxiliary SPI master (SPI1).
 * CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.
 * CString: Simple string manipulation class, Format() method works like printf() (but has less formating options)
 * CTime: Holds, makes and breaks the time.
