@@ -2,7 +2,7 @@
 // dmachannel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,6 +34,8 @@
 
 #define DMA_CHANNEL_SPI_TX	0
 #define DMA_CHANNEL_SPI_RX	2
+
+#define DMA_CHANNEL_SCREEN	4
 
 struct TDMAControlBlock
 {
@@ -71,6 +73,11 @@ public:
 	void SetupMemCopy (void *pDestination, const void *pSource, size_t nLength);
 	void SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ);
 	void SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ);
+
+	// copy nBlockCount blocks of nBlockLength size and skip nBlockStride bytes after
+	// each block on destination, source is continuous, destination cache is not touched
+	void SetupMemCopy2D (void *pDestination, const void *pSource,
+			     size_t nBlockLength, unsigned nBlockCount, size_t nBlockStride);
 
 	void SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam);
 
