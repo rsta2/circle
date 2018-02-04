@@ -67,13 +67,8 @@ else
 LIBGCC	  != $(CPP) $(ARCH) -print-file-name=libgcc.a
 EXTRALIBS += $(LIBGCC)
 endif 
-ifeq ($(strip $(DEPTH)), 8)
-LIBCIRCLE = libcircle8
-else
-LIBCIRCLE = libcircle
-endif
 
-OPTIMIZE ?= -O2
+OPTIMIZE ?= -O4
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
 
