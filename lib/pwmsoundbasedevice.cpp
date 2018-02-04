@@ -22,6 +22,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/pwmsoundbasedevice.h>
+#include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2835int.h>
 #include <circle/memio.h>
@@ -124,7 +125,9 @@
 CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
 					  unsigned	    nChunkSize)
-:	m_pInterruptSystem (pInterrupt),
+:	CSoundBaseDevice (SoundFormatUnsigned32,
+			  (CLOCK_FREQ / CLOCK_DIVIDER + nSampleRate/2) / nSampleRate, nSampleRate),
+	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
 	m_nRange ((CLOCK_FREQ / CLOCK_DIVIDER + nSampleRate/2) / nSampleRate),
 	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction0),
@@ -161,6 +164,8 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 	}
 
 	PeripheralExit ();
+
+	CDeviceNameService::Get ()->AddDevice ("sndpwm", this, FALSE);
 }
 
 CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
@@ -193,12 +198,17 @@ CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
 	m_pDMABuffer[1] = 0;
 }
 
-unsigned CPWMSoundBaseDevice::GetRange (void) const
+int CPWMSoundBaseDevice::GetRangeMin (void) const
 {
-	return m_nRange;
+	return 0;
 }
 
-void CPWMSoundBaseDevice::Start (void)
+int CPWMSoundBaseDevice::GetRangeMax (void) const
+{
+	return (int) (m_nRange-1);
+}
+
+boolean CPWMSoundBaseDevice::Start (void)
 {
 	assert (m_State == PWMSoundIdle);
 
@@ -207,7 +217,7 @@ void CPWMSoundBaseDevice::Start (void)
 
 	if (!GetNextChunk ())
 	{
-		return;
+		return FALSE;
 	}
 
 	m_State = PWMSoundRunning;
@@ -266,6 +276,8 @@ void CPWMSoundBaseDevice::Start (void)
 
 		m_SpinLock.Release ();
 	}
+
+	return TRUE;
 }
 
 void CPWMSoundBaseDevice::Cancel (void)
@@ -291,7 +303,7 @@ boolean CPWMSoundBaseDevice::GetNextChunk (void)
 	unsigned nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
 	if (nChunkSize == 0)
 	{
-		return FALSE; 
+		return FALSE;
 	}
 
 	unsigned nTransferLength = nChunkSize * sizeof (u32);

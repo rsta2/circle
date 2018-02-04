@@ -20,7 +20,18 @@
 #ifndef _miniorgan_h
 #define _miniorgan_h
 
-#include <circle/pwmsoundbasedevice.h>
+//#define USE_I2S
+
+#ifdef USE_I2S
+	#include <circle/i2ssoundbasedevice.h>
+	#define SOUND_CLASS	CI2SSoundBaseDevice
+	#define SAMPLE_RATE	192000
+#else
+	#include <circle/pwmsoundbasedevice.h>
+	#define SOUND_CLASS	CPWMSoundBaseDevice
+	#define SAMPLE_RATE	48000
+#endif
+
 #include <circle/interrupt.h>
 #include <circle/serial.h>
 #include <circle/types.h>
@@ -31,7 +42,7 @@ struct TNoteInfo
 	u8	KeyNumber;	// MIDI number
 };
 
-class CMiniOrgan : public CPWMSoundBaseDevice
+class CMiniOrgan : public SOUND_CLASS
 {
 public:
 	CMiniOrgan (CInterruptSystem *pInterrupt);
@@ -54,8 +65,10 @@ private:
 	unsigned m_nSerialState;
 	u8 m_SerialMessage[3];
 
-	unsigned m_nHighLevel;
-	unsigned m_nCurrentLevel;
+	int      m_nLowLevel;
+	int      m_nNullLevel;
+	int      m_nHighLevel;
+	int      m_nCurrentLevel;
 	unsigned m_nSampleCount;
 	unsigned m_nFrequency;		// 0 if no key pressed
 	unsigned m_nPrevFrequency;

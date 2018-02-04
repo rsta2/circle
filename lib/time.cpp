@@ -2,7 +2,7 @@
 // time.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ void CTime::Set (time_t Time)
 	unsigned nYear = 1970;
 	while (1)
 	{
-		unsigned nDaysOfYear = IsLeapYear (nYear) ? 366 : 365;
+		int nDaysOfYear = IsLeapYear (nYear) ? 366 : 365;
 		if (Time < nDaysOfYear)
 		{
 			break;
@@ -82,7 +82,7 @@ void CTime::Set (time_t Time)
 	unsigned nMonth = 0;
 	while (1)
 	{
-		unsigned nDaysOfMonth = GetDaysOfMonth (nMonth, nYear);
+		int nDaysOfMonth = GetDaysOfMonth (nMonth, nYear);
 		if (Time < nDaysOfMonth)
 		{
 			break;

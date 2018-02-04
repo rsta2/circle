@@ -3,8 +3,6 @@ Circle
 
 > Raspberry Pi is a trademark of the Raspberry Pi Foundation.
 
-> This is Step 30 of Circle. To get access to Step 1-29 use the git tag "Step1" to "Step29".
-
 > If you read this file in an editor you should switch line wrapping on.
 
 Overview
@@ -14,6 +12,8 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
 
+Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
+
 A Real-Time OS?
 ---------------
 
@@ -21,18 +21,20 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
-The 30th Step
+The 32nd Step
 -------------
 
-In this step FIQ (fast interrupt) support has been added to Circle. This is used to implement the class CGPIOPinFIQ, which allows fast interrupt-driven event capture from a GPIO pin and is demonstrated in *sample/30-gpiofiq*. See the *README* file in this directory for details.
+In this step a console class has been added to Circle, which allows the easy use of an USB keyboard and a screen together as one device. The console class provides a line editor mode and a raw mode and is demonstrated in *sample/32-i2cshell*, a command line tool for interactive communication with I2C devices. If you are often experimenting with I2C devices, this may be a tool for you. See the *README* file in this directory for details.
 
-FIQ support is also used in the class CSerialDevice, which allows an interrupt-driven access to the UART0 device. *sample/29-miniorgan* has been updated to use the UART0 device (at option) as a serial MIDI interface.
+Furthermore the Circle USB HCI driver provides an improved compatibility for low-/full-speed USB devices (e.g. keyboards, some did not work properly). Because this update changes the overall system timing, it is not enabled by default to be compatible with existing applications. You should enable the system option *USE_USB_SOF_INTR*, if the improved compatibility is important for your application.
 
-Finally in this step QEMU support has been added. See the file *doc/qemu.txt* for details!
+The system options can be found in the file *include/circle/sysconfig.h*. This file has been completely revised and each option is documented now.
+
+Finally there are some improvements in the SPI0 master drivers (polling and DMA) included in this step.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
-In Step 1-29 the following features were introduced:
+In Step 1-31 the following features were introduced:
 
 * C++ build environment
 * Simple delay functionality
@@ -88,6 +90,10 @@ In Step 1-29 the following features were introduced:
 * Official Raspberry Pi touch screen support
 * Supporting GUI creation using uGUI (by Achim Doebler)
 * USB Audio Class MIDI input support
+* FIQ (fast interrupt) support
+* QEMU support
+* HTTP client support
+* I2S support (output only)
 
 Building
 --------
@@ -125,8 +131,6 @@ Installation
 
 Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the kernel.img (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
 
-Note that the file *kernel.img* has been renamed to *kernel7.img* for the Raspberry Pi 2/3.
-
 Directories
 -----------
 
@@ -143,14 +147,15 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Base library
-
-* CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system)
-
 USB library
 
-* CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU
-* CUSBString: Encapsulates a string descriptor, available on an USB device
+* CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled)
+
+Input library
+
+* CConsole: Console device using screen/USB keyboard or alternate device (e.g. CSerialDevice)
+* CKeyboardBuffer: Buffers characters entered on the USB keyboard
+* CLineDiscipline: Implements line editor function
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

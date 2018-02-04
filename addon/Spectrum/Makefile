@@ -6,7 +6,7 @@ CIRCLEHOME = ../..
 
 OBJS	= SpectrumScreen.o
 
-libspectrum.a: $(OBJS)
+libspectrum$(RASPPI).a: $(OBJS)
 	rm -f $@
 	$(AR) cr $@ $(OBJS)
 

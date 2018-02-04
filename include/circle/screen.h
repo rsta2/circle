@@ -27,19 +27,17 @@
 #include <circle/macros.h>
 #include <circle/types.h>
 
-#ifndef DEPTH
 #define DEPTH	16		// can be: 8, 16 or 32
-#endif
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \
-					| ((green) & 0x3F) << 6 \
+					| ((green) & 0x1F) << 6 \
 					| ((blue) & 0x1F))
 
 // BGRA (was RGBA with older firmware)
-#define COLOR32(red, green, blue, alpha)  (((red) & 0xFF)       \
+#define COLOR32(red, green, blue, alpha)  (((blue) & 0xFF)       \
 					| ((green) & 0xFF) << 8  \
-					| ((blue) & 0xFF)   << 16 \
+					| ((red) & 0xFF)   << 16 \
 					| ((alpha) & 0xFF) << 24)
 
 #define BLACK_COLOR	0
@@ -52,8 +50,8 @@
 	#define HALF_COLOR16			COLOR16 (0, 0, 31)
 
 	#define NORMAL_COLOR			1
-	#define HIGH_COLOR				2
-	#define HALF_COLOR				3
+	#define HIGH_COLOR			2
+	#define HALF_COLOR			3
 #elif DEPTH == 16
 	typedef u16 TScreenColor;
 
@@ -98,24 +96,17 @@ public:
 	// size in pixels
 	unsigned GetWidth (void) const;
 	unsigned GetHeight (void) const;
-	TScreenColor *GetBuffer(void) const;
 
 	// size in characters
 	unsigned GetColumns (void) const;
 	unsigned GetRows (void) const;
 
 	TScreenStatus GetStatus (void);
-	int GetDepth(void) const;
-	void SetPalette(u8 num, u16 color);
-	void SetPalette(u8 num, u32 color);
-	void UpdatePalette(void);
-	
 	boolean SetStatus (TScreenStatus Status);	// returns FALSE on failure
 
 	int Write (const void *pBuffer, unsigned nCount);
 
 	void SetPixel (unsigned nPosX, unsigned nPosY, TScreenColor Color);
-	void SetXY (int x, int y);
 	TScreenColor GetPixel (unsigned nPosX, unsigned nPosY);
 
 	void Rotor (unsigned nIndex,		// 0..3

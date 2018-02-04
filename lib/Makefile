@@ -18,29 +18,30 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o gpiopinfiq.o libhelper.o libstub.o \
-	  memory.o new.o purecall.o synchronize.o sysinit.o timer.o util.o util_fast.o \
+OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o gpiopinfiq.o \
+	  memory.o synchronize.o sysinit.o timer.o util.o util_fast.o \
 	  bcmframebuffer.o device.o koptions.o pagetable.o screen.o nulldevice.o \
 	  assert.o chargenerator.o debug.o devicenameservice.o logger.o serial.o string.o \
 	  delayloop.o exceptionhandler.o exceptionstub.o interrupt.o \
 	  gpiomanager.o gpioclock.o dmachannel.o pwmsounddevice.o pwmsoundbasedevice.o pwmoutput.o tracer.o \
 	  i2cmaster.o i2cslave.o spimaster.o spimasterdma.o virtualgpiopin.o machineinfo.o \
-	  multicore.o spinlock.o bcmrandom.o cache-v7.o cputhrottle.o \
-	  ptrarray.o ptrlist.o time.o libstub.o
+	  multicore.o spinlock.o bcmrandom.o cache-v7.o cputhrottle.o i2ssoundbasedevice.o \
+	  soundbasedevice.o ptrarray.o ptrlist.o classallocator.o time.o
 
-ifeq ($(strip $(DEPTH)), 8)
-LIBCIRCLE = libcircle8
-else
-LIBCIRCLE = libcircle
-endif
-
-all: startup.o $(LIBCIRCLE).a
+all: startup.o libcircle$(RASPPI).a
 
 startup.o: startup.S
-libstub.o: libstub.S
-
-$(LIBCIRCLE).a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
 
 include ../Rules.mk
+
+ifeq ($(strip $(STDLIB_SUPPORT)),0)
+OBJS	+= libhelper.o libstub.o
+endif
+
+ifneq ($(strip $(STDLIB_SUPPORT)),3)
+OBJS	+= new.o purecall.o
+endif
+
+libcircle$(RASPPI).a: $(OBJS)
+	rm -f libcircle$(RASPPI).a
+	$(AR) cr libcircle$(RASPPI).a $(OBJS)

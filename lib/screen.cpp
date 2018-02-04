@@ -69,8 +69,6 @@ CScreenDevice::~CScreenDevice (void)
 	m_pFrameBuffer = 0;
 }
 
-//#define COLOR32(r, g, b) (0xff<<24 | r<<16 | g<<8 | b)
-
 boolean CScreenDevice::Initialize (void)
 {
 	if (!m_bVirtual)
@@ -131,34 +129,10 @@ unsigned CScreenDevice::GetWidth (void) const
 	return m_nWidth;
 }
 
-int CScreenDevice::GetDepth (void) const 
-{
-	return DEPTH/8;
-}
-
 unsigned CScreenDevice::GetHeight (void) const
 {
 	return m_nHeight;
 }
-TScreenColor * CScreenDevice::GetBuffer (void) const
-{
-	return (TScreenColor *)m_pBuffer;
-}
-void CScreenDevice::SetPalette(u8 num, u16 color)
-{
-	m_pFrameBuffer->SetPalette(num, color);
-}
-
-void CScreenDevice::SetPalette(u8 num, u32 color)
-{
-	m_pFrameBuffer->SetPalette32(num, color);
-}
-
-void CScreenDevice::UpdatePalette (void)
-{
-	m_pFrameBuffer->UpdatePalette();
-}
-
 
 unsigned CScreenDevice::GetColumns (void) const
 {
@@ -189,11 +163,6 @@ TScreenStatus CScreenDevice::GetStatus (void)
 	Status.bUpdated   = m_bUpdated;
 
 	return Status;
-}
-void CScreenDevice::SetXY(int x, int y)
-{
-	m_nCursorX = x;
-	m_nCursorY = y;
 }
 
 boolean CScreenDevice::SetStatus (TScreenStatus Status)
@@ -333,6 +302,11 @@ void CScreenDevice::Write (char chChar)
 
 		case 'C':
 			CursorRight ();
+			m_nState = ScreenStateStart;
+			break;
+
+		case 'D':
+			CursorLeft ();
 			m_nState = ScreenStateStart;
 			break;
 

@@ -22,7 +22,7 @@ CIRCLEHOME = ../..
 
 OBJS	= task.o scheduler.o taskswitch.o synchronizationevent.o
 
-libsched.a: $(OBJS)
+libsched$(RASPPI).a: $(OBJS)
 	rm -f $@
 	$(AR) cr $@ $(OBJS)
 

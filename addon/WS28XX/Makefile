@@ -6,7 +6,7 @@ CIRCLEHOME = ../..
 
 OBJS	= ws28xxstripe.o
 
-libws28xx.a: $(OBJS)
+libws28xx$(RASPPI).a: $(OBJS)
 	rm -f $@
 	$(AR) cr $@ $(OBJS)
 

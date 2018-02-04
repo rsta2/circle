@@ -879,41 +879,45 @@ void CEMMCDevice::IssueCommandInt (u32 cmd_reg, u32 argument, int timeout)
 			LogWrite (LogDebug, "Multi block transfer");
 		}
 #endif
-		TimeoutWait (EMMC_INTERRUPT, wr_irpt | 0x8000, 1, timeout);
-		irpts = read32 (EMMC_INTERRUPT);
-		write32 (EMMC_INTERRUPT, 0xffff0000 | wr_irpt);
-
-		if ((irpts & (0xffff0000 | wr_irpt)) != wr_irpt)
-		{
-#ifdef EMMC_DEBUG
-			LogWrite (LogWarning, "Error occured whilst waiting for data ready interrupt");
-#endif
-			m_last_error = irpts & 0xffff0000;
-			m_last_interrupt = irpts;
-
-			return;
-		}
-
-		// Transfer the block
-		assert (m_block_size <= 1024);		// internal FIFO size of EMMC
-		size_t length = m_block_size * m_blocks_to_transfer;
 
 		assert (((u32) m_buf & 3) == 0);
-		assert ((length & 3) == 0);
-
 		u32 *pData = (u32 *) m_buf;
-		if (is_write)
+
+		for (int nBlock = 0; nBlock < m_blocks_to_transfer; nBlock++)
 		{
-			for (; length > 0; length -= 4)
+			TimeoutWait (EMMC_INTERRUPT, wr_irpt | 0x8000, 1, timeout);
+			irpts = read32 (EMMC_INTERRUPT);
+			write32 (EMMC_INTERRUPT, 0xffff0000 | wr_irpt);
+
+			if ((irpts & (0xffff0000 | wr_irpt)) != wr_irpt)
 			{
-				write32 (EMMC_DATA, *pData++);
+#ifdef EMMC_DEBUG
+				LogWrite (LogWarning, "Error occured whilst waiting for data ready interrupt");
+#endif
+				m_last_error = irpts & 0xffff0000;
+				m_last_interrupt = irpts;
+
+				return;
 			}
-		}
-		else
-		{
-			for (; length > 0; length -= 4)
+
+			// Transfer the block
+			assert (m_block_size <= 1024);		// internal FIFO size of EMMC
+			size_t length = m_block_size;
+			assert ((length & 3) == 0);
+
+			if (is_write)
 			{
-				*pData++ = read32 (EMMC_DATA);
+				for (; length > 0; length -= 4)
+				{
+					write32 (EMMC_DATA, *pData++);
+				}
+			}
+			else
+			{
+				for (; length > 0; length -= 4)
+				{
+					*pData++ = read32 (EMMC_DATA);
+				}
 			}
 		}
 

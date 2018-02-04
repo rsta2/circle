@@ -1,4 +1,0 @@
-disable_splash=1
-#disable_overscan=1
-overscan_left=-10
-overscan_right=-10

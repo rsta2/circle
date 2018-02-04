@@ -2,7 +2,7 @@
 // assert.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@ extern "C" {
 
 	#define assert(expr)	((expr)	? ((void) 0) : assertion_failed (#expr, __FILE__, __LINE__))
 #endif
+
+#define ASSERT_STATIC(expr)	extern int assert_static[(expr) ? 1 : -1]
 
 #ifdef __cplusplus
 }

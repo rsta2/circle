@@ -1,0 +1,17 @@
+README
+
+This sample program does consecutive distance measurements using the HC-SR04
+ultrasonic distance measuring module and displays the results on the screen.
+
+You have to attach the HC-SR04 module properly to your Raspberry Pi. The sample
+program uses GPIO17 (Broadcom numbering) to connect the Trig(ger) pin and GPIO18
+to connect the Echo pin. This configuration can be changed in the kernel.cpp
+file before building. Please note that the HC-SR04 module uses 5V TTL levels,
+while the Raspberry Pi GPIO pins use 3.3V levels. You need some level converter
+at least for the Echo pin. This can be realised using two resistors. Don't
+forget to connect GND and VCC (5V power) of the HC-SR04 module to the respective
+Raspberry Pi pins.
+
+Please note that a distance measurement may fail when the ultrasonic pulse is
+not reflected properly. This is not a serious problem and later measurements
+will return a valid distance.

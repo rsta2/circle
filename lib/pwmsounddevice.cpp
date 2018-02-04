@@ -29,7 +29,8 @@ CPWMSoundDevice::CPWMSoundDevice (CInterruptSystem *pInterrupt)
 :	CPWMSoundBaseDevice (pInterrupt, SAMPLE_RATE),
 	m_pSoundData (0)
 {
-	assert ((1 << 12) <= GetRange () && GetRange () < (1 << 13));	// 12 bit range
+	assert ((1 << 12) <= GetRangeMax () && GetRangeMax () < (1 << 13));	// 12 bit range
+	assert (GetRangeMin () == 0);
 }
 
 CPWMSoundDevice::~CPWMSoundDevice (void)
@@ -38,7 +39,7 @@ CPWMSoundDevice::~CPWMSoundDevice (void)
 
 void CPWMSoundDevice::Playback (void *pSoundData, unsigned nSamples, unsigned nChannels, unsigned nBitsPerSample)
 {
-//	assert (!IsActive ());
+	assert (!IsActive ());
 
 	assert (pSoundData != 0);
 	assert (nChannels == 1 || nChannels == 2);

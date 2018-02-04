@@ -27,12 +27,10 @@
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
-:	m_Screen (380, 240),
+:	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_ShutdownMode (ShutdownNone)
-   ,m_PWMSoundDevice (&m_Interrupt)
+	m_PWMSoundDevice (&m_Interrupt)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -75,10 +73,7 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_Timer.Initialize ();
 	}
-	if (bOK)
-	{
-		bOK = m_DWHCI.Initialize ();
-	}     
+
 	return bOK;
 }
 

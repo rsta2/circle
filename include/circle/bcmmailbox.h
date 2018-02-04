@@ -2,7 +2,7 @@
 // bcmmailbox.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _bcmmailbox_h
-#define _bcmmailbox_h
+#ifndef _circle_bcmmailbox_h
+#define _circle_bcmmailbox_h
 
 #include <circle/bcm2835.h>
 #include <circle/spinlock.h>
@@ -40,7 +40,7 @@ private:
 private:
 	unsigned m_nChannel;
 
-	CSpinLock m_SpinLock;
+	static CSpinLock s_SpinLock;
 };
 
 #endif

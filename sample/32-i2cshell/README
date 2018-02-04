@@ -1,0 +1,76 @@
+README
+
+This sample is a command line tool for interactive communication with I2C
+devices. It can be controlled using an attached USB keyboard and a (HDMI)
+display or via a serial terminal at 115200 Bps connected to GPIO14/15 of the
+GPIO header (Broadcom numbering). The serial interface is automatically used, if
+an USB keyboard is not attached.
+
+If you want to use an USB keyboard, you should select your preferred keyboard
+map using the file cmdline.txt (e.g. keymap=UK). There are six of these
+language-depended maps at the moment (UK English (UK), Spanish (ES), French
+(FR), Italian (IT), US International (US) and German (DE)).
+
+The I2C signals SDA (data) and SCL (clock) of the I2C master device of your
+Raspberry Pi must be connected to SDA and SCL of the I2C slave device(s) to be
+used as follows:
+
+	    Master		Slave
+	 Old	 New
+
+SDA	GPIO0	GPIO2  <----->	SDA
+SCL	GPIO1	GPIO3  <----->	SCL
+GND		       <----->
+
+The old mapping using GPIO0/1 is only valid for very old Raspberry models,
+GPIO2/3 are normally used now. Please see
+https://elinux.org/RPi_Low-level_peripherals to find the signals on the header.
+The I2C slave(s) must use 3.3V signals because the Raspberry Pi master is doing
+so. See https://en.wikipedia.org/wiki/I2C for further information about I2C.
+Please note that the pullup resistors are already on the Raspberry Pi board for
+SDA and SCL. Thus the pins can be directly connected as shown above.
+
+After starting the Raspberry Pi you will get a signon message and a prompt. The
+prompt shows the I2C clock rate (in KHz) and the I2C slave address of the
+controlled slave (if set). You can now choose a supported command and execute it
+by pressing ENTER. Multiple commands can be entered on one line without a
+special delimiter. The command execution will be aborted if an error occurs.
+Please use the "help" command to get info on all commands.
+
+The following example log shows, how a MPU-6050 (gyroscope and acceleration
+sensor) may be controlled:
+
+I2C Shell
+Using master #1
+Default clock rate is 100 KHz
+Enter "help" for help!
+
+I2C 100> help
+
+Command		Description				Alias
+
+slave ADDRESS	Set slave address (0x03-0x77)
+clock KHZ	Select clock rate in KHz
+detect [r|w]	Read (default) or write detection
+read COUNT	Read and display COUNT bytes		rd
+write BYTE...	Write byte(s)				wr
+delay MS	Delay MS milliseconds
+reboot		Reboot the system
+
+WARNING: The write detection test may corrupt some devices (e.g. EEPROMs).
+	 The read detection test may lock some write-only devices.
+	 DO NOT USE THE DETECT COMMAND IF YOU ARE UNSURE!
+
+Numerical parameters can be given decimal or in hex (with "0x" prefix).
+Multiple commands can be entered on one line.
+
+I2C 100> clock 400                    # enter I2C fast mode
+I2C 400> slave 0x68                   # slave address of MPU-6050
+I2C 400 0x68> write 117 read 1        # read WHO_AM_I register
+Data: 0x68
+I2C 400 0x68> write 107 1             # wakeup MPU-6050
+I2C 400 0x68> write 59 read 6         # read ACCEL_?OUT registers
+Data: 0x04 0xEC 0x03 0x98 0x46 0xF0
+I2C 400 0x68> write 67 read 6         # read GYRO_?OUT registers
+Data: 0xFF 0x7D 0xFE 0xEC 0xFF 0xCB
+I2C 400 0x68>

@@ -2,13 +2,13 @@
 // spimasterdma.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
 //
 // Supported features:
 //	SPI0 device only
 //	Standard mode (3-wire) only
 //	Chip select lines (CE0, CE1) are active low
-//	DMA operation
+//	DMA or polled operation
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -50,6 +50,10 @@ public:
 
 	// buffers must be 4-byte aligned
 	void StartWriteRead (unsigned nChipSelect, const void *pWriteBuffer, void *pReadBuffer, unsigned nCount);
+
+	// Synchronous (polled) operation for small amounts of data
+	// returns number of bytes transferred or < 0 on failure
+	int WriteReadSync (unsigned nChipSelect, const void *pWriteBuffer, void *pReadBuffer, unsigned nCount);
 
 private:
 	void DMACompletionRoutine (boolean bStatus);

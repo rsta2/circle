@@ -1,8 +1,0 @@
-#!/bin/bash
-
-echo 'char tap0[] = {'
-echo -n '"'
-if [ -f $TAP_FILE ]; then
-	cat $TAP_FILE
-fi
-echo '"};'

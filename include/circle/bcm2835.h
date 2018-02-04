@@ -2,7 +2,7 @@
 // bcm2835.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -246,5 +246,26 @@
 	#define ARM_HW_RNG_CTRL_EN	0x01
 #define ARM_HW_RNG_STATUS	(ARM_HW_RNG_BASE + 0x04)
 #define ARM_HW_RNG_DATA		(ARM_HW_RNG_BASE + 0x08)
+
+//
+// PCM / I2S Audio Module
+//
+#define ARM_PCM_BASE		(ARM_IO_BASE + 0x203000)
+
+#define ARM_PCM_CS_A		(ARM_PCM_BASE + 0x00)
+#define ARM_PCM_FIFO_A		(ARM_PCM_BASE + 0x04)
+#define ARM_PCM_MODE_A		(ARM_PCM_BASE + 0x08)
+#define ARM_PCM_RXC_A		(ARM_PCM_BASE + 0x0C)
+#define ARM_PCM_TXC_A		(ARM_PCM_BASE + 0x10)
+#define ARM_PCM_DREQ_A		(ARM_PCM_BASE + 0x14)
+#define ARM_PCM_INTEN_A		(ARM_PCM_BASE + 0x18)
+#define ARM_PCM_INTSTC_A	(ARM_PCM_BASE + 0x1C)
+#define ARM_PCM_GRAY		(ARM_PCM_BASE + 0x20)
+
+//
+// VC4 VCHIQ
+//
+#define ARM_VCHIQ_BASE		(ARM_IO_BASE + 0xB840)
+#define ARM_VCHIQ_END		(ARM_VCHIQ_BASE + 0x0F)
 
 #endif

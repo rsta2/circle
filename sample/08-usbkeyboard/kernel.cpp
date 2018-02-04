@@ -99,7 +99,7 @@ TShutdownMode CKernel::Run (void)
 		return ShutdownHalt;
 	}
 
-#if 0	// set to 0 to test raw mode
+#if 1	// set to 0 to test raw mode
 	pKeyboard->RegisterShutdownHandler (ShutdownHandler);
 	pKeyboard->RegisterKeyPressedHandler (KeyPressedHandler);
 #else
@@ -145,7 +145,7 @@ void CKernel::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned cha
 		if (RawKeys[i] != 0)
 		{
 			CString KeyCode;
-			KeyCode.Format ("%d %02X", i, (unsigned) RawKeys[i]);
+			KeyCode.Format (" %02X", (unsigned) RawKeys[i]);
 
 			Message.Append (KeyCode);
 		}

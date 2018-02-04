@@ -18,6 +18,11 @@ The mini organ uses the PWM sound device to generate a square wave of the
 required frequency for about one octave (note C3 to C4). A more complex sound
 synthesis using the CPWMSoundBaseDevice class should be possible.
 
+This sample can be built to be used with an I2S sound device too. It has been
+tested with a PCM5102A DAC. You have to enable the #define USE_I2S in the file
+miniorgan.h before building to use this. The DAC has to be connected to GPIO18
+(BCK), 19 (LRCK) and 21 (DATA, Broadcom numbering)
+
 The PC keyboard mapping is as follows:
 
 +--------+

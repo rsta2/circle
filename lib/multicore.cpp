@@ -53,9 +53,9 @@ CMultiCoreSupport::~CMultiCoreSupport (void)
 
 boolean CMultiCoreSupport::Initialize (void)
 {
+	// Route IRQ and FIQ to core 0
 	u32 nRouting = read32 (ARM_LOCAL_GPU_INT_ROUTING);
-	nRouting &= ~0x0C;
-	nRouting |= 1 << 2;
+	nRouting &= ~0x0F;
 	write32 (ARM_LOCAL_GPU_INT_ROUTING, nRouting);
 
 	write32 (ARM_LOCAL_MAILBOX_INT_CONTROL0, 1);		// enable IPI on core 0
@@ -80,6 +80,7 @@ boolean CMultiCoreSupport::Initialize (void)
 		}
 
 		write32 (ARM_LOCAL_MAILBOX3_SET0 + 0x10 * nCore, (u32) &_start_secondary);
+		asm volatile ("sev");
 
 		nTimeout = 100;
 		while (read32 (nMailBoxClear) != 0)

@@ -22,7 +22,7 @@ CIRCLEHOME = ../../..
 
 OBJS	= fatfs.o fatcache.o fatinfo.o fat.o fatdir.o
 
-libfatfs.a: $(OBJS)
+libfatfs$(RASPPI).a: $(OBJS)
 	rm -f $@
 	$(AR) cr $@ $(OBJS)
 

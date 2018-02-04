@@ -2,7 +2,7 @@
 // koptions.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,11 +31,13 @@ CKernelOptions::CKernelOptions (void)
 	m_nHeight (0),
 	m_nLogLevel (LogDebug),
 	m_nUSBPowerDelay (0),
+	m_nSoundOption (0),
 	m_CPUSpeed (CPUSpeedLow),
 	m_nSoCMaxTemp (60)
 {
 	strcpy (m_LogDevice, "tty1");
 	strcpy (m_KeyMap, DEFAULT_KEYMAP);
+	m_SoundDevice[0] = '\0';
 
 	s_pThis = this;
 
@@ -104,6 +106,20 @@ CKernelOptions::CKernelOptions (void)
 				m_nUSBPowerDelay = nValue;
 			}
 		}
+		else if (strcmp (pOption, "sounddev") == 0)
+		{
+			strncpy (m_SoundDevice, pValue, sizeof m_SoundDevice-1);
+			m_SoundDevice[sizeof m_SoundDevice-1] = '\0';
+		}
+		else if (strcmp (pOption, "soundopt") == 0)
+		{
+			unsigned nValue;
+			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
+			    && nValue <= 2)
+			{
+				m_nSoundOption = nValue;
+			}
+		}
 		else if (strcmp (pOption, "fast") == 0)
 		{
 			if (strcmp (pValue, "true") == 0)
@@ -156,6 +172,16 @@ const char *CKernelOptions::GetKeyMap (void) const
 unsigned CKernelOptions::GetUSBPowerDelay (void) const
 {
 	return m_nUSBPowerDelay;
+}
+
+const char *CKernelOptions::GetSoundDevice (void) const
+{
+	return m_SoundDevice;
+}
+
+unsigned CKernelOptions::GetSoundOption (void) const
+{
+	return m_nSoundOption;
 }
 
 TCPUSpeed CKernelOptions::GetCPUSpeed (void) const

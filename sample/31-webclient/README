@@ -1,0 +1,20 @@
+README
+
+This sample does not work any more, because the eLinux.org server is using HTTPS
+now, which is not supported by Circle. The sample is retained here, because it
+shows how to communicate with HTTP servers.
+
+
+This sample program is only working on Raspberry Pi models with on-board
+Ethernet controller. Before building it you may have to update the network
+configuration (DHCP is used by default) in kernel.cpp to meet your local network
+configuration. Don't forget to connect your local Ethernet to the Ethernet
+connector of the Raspberry Pi.
+
+The program fetches the document http://elinux.org/RPi_HardwareHistory and
+parses it to find and display a Raspberry Pi hardware revision table as a comma
+separated list. The revision entry of the board, on which the program is running
+on, is displayed highlighted, if such entry exists.
+
+Please note that the HTML parser in this program may fail, if the document
+changes heavily.

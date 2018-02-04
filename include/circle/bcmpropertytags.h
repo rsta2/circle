@@ -2,7 +2,7 @@
 // bcmpropertytags.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -54,11 +54,10 @@
 #define PROPTAG_SET_DEPTH		0x00048005
 #define PROPTAG_SET_VIRTUAL_OFFSET	0x00048009
 #define PROPTAG_SET_PALETTE		0x0004800B
+#define PROPTAG_WAIT_FOR_VSYNC		0x0004800E
+#define PROPTAG_SET_TOUCHBUF		0x0004801F
+#define PROPTAG_SET_GPIO_VIRTBUF	0x00048020
 #define PROPTAG_GET_COMMAND_LINE	0x00050001
-#define PROPTAG_GET_OVERSCAN		0x0004000a
-#define PROPTAG_TST_OVERSCAN		0x0004400a
-#define PROPTAG_SET_OVERSCAN		0x0004800a
-
 
 struct TPropertyTag
 {
@@ -232,12 +231,6 @@ struct TPropertyTagCommandLine
 {
 	TPropertyTag	Tag;
 	u8		String[2048];
-};
-
-struct TPropertyTagOverscan
-{
-	TPropertyTag	Tag;
-
 };
 
 class CBcmPropertyTags

@@ -6,7 +6,7 @@ CIRCLEHOME = ../..
 
 OBJS	= spidio.o
 
-libdio.a: $(OBJS)
+libdio$(RASPPI).a: $(OBJS)
 	rm -f $@
 	$(AR) cr $@ $(OBJS)
 

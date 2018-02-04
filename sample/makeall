@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 for sample in [0-9][0-9]-* ;  do
 	echo $sample:

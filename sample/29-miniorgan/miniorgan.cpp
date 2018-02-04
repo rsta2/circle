@@ -24,8 +24,6 @@
 #include <circle/logger.h>
 #include <assert.h>
 
-#define SAMPLE_RATE	48000
-
 #define VOLUME_PERCENT	20
 
 #define MIDI_NOTE_OFF	0b1000
@@ -73,11 +71,10 @@ const TNoteInfo CMiniOrgan::s_Keys[] =
 CMiniOrgan *CMiniOrgan::s_pThis = 0;
 
 CMiniOrgan::CMiniOrgan (CInterruptSystem *pInterrupt)
-:	CPWMSoundBaseDevice (pInterrupt, SAMPLE_RATE),
+:	SOUND_CLASS (pInterrupt, SAMPLE_RATE),
 	m_Serial (pInterrupt, TRUE),
 	m_bUseSerial (FALSE),
 	m_nSerialState (0),
-	m_nCurrentLevel (0),
 	m_nSampleCount (0),
 	m_nFrequency (0),
 	m_nPrevFrequency (0),
@@ -85,7 +82,10 @@ CMiniOrgan::CMiniOrgan (CInterruptSystem *pInterrupt)
 {
 	s_pThis = this;
 
-	m_nHighLevel = (GetRange ()-1) * VOLUME_PERCENT / 100;
+	m_nLowLevel     = GetRangeMin () * VOLUME_PERCENT / 100;
+	m_nHighLevel    = GetRangeMax () * VOLUME_PERCENT / 100;
+	m_nNullLevel    = (m_nHighLevel + m_nLowLevel) / 2;
+	m_nCurrentLevel = m_nNullLevel;
 }
 
 CMiniOrgan::~CMiniOrgan (void)
@@ -212,23 +212,23 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 			{
 				m_nSampleCount = 0;
 
-				if (m_nCurrentLevel == 0)
+				if (m_nCurrentLevel < m_nHighLevel)
 				{
 					m_nCurrentLevel = m_nHighLevel;
 				}
 				else
 				{
-					m_nCurrentLevel = 0;
+					m_nCurrentLevel = m_nLowLevel;
 				}
 			}
 
-			*pBuffer++ = m_nCurrentLevel;		// 2 stereo channels
-			*pBuffer++ = m_nCurrentLevel;
+			*pBuffer++ = (u32) m_nCurrentLevel;		// 2 stereo channels
+			*pBuffer++ = (u32) m_nCurrentLevel;
 		}
 		else
 		{
-			*pBuffer++ = 0;
-			*pBuffer++ = 0;
+			*pBuffer++ = (u32) m_nNullLevel;
+			*pBuffer++ = (u32) m_nNullLevel;
 		}
 	}
 

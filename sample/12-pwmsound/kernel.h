@@ -32,9 +32,6 @@
 #include <circle/logger.h>
 #include <circle/types.h>
 #include <circle/pwmsounddevice.h>
-#include <circle/usb/usbkeyboard.h>   
-#include <circle/usb/dwhcidevice.h>
-
 
 enum TShutdownMode
 {
@@ -56,19 +53,17 @@ public:
 private:
 	// do not change this order
 	CMemorySystem		m_Memory;
-	CActLED				m_ActLED;
+	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
 	CScreenDevice		m_Screen;
 	CSerialDevice		m_Serial;
 	CExceptionHandler	m_ExceptionHandler;
 	CInterruptSystem	m_Interrupt;
-	CTimer				m_Timer;
-	CLogger				m_Logger;
+	CTimer			m_Timer;
+	CLogger			m_Logger;
 
-	CDWHCIDevice		m_DWHCI;
 	CPWMSoundDevice		m_PWMSoundDevice;
-	volatile TShutdownMode m_ShutdownMode;	
 };
 
 #endif

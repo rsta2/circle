@@ -20,6 +20,7 @@
 #ifndef _circle_pwmsoundbasedevice_h
 #define _circle_pwmsoundbasedevice_h
 
+#include <circle/soundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/gpiopin.h>
 #include <circle/gpioclock.h>
@@ -37,7 +38,7 @@ enum TPWMSoundState
 	PWMSoundUnknown
 };
 
-class CPWMSoundBaseDevice	/// Low level access to the PWM sound device (on 3.5mm headphone jack)
+class CPWMSoundBaseDevice : public CSoundBaseDevice	/// Low level access to the PWM sound device
 {
 public:
 	/// \param pInterrupt	pointer to the interrupt system object
@@ -50,11 +51,15 @@ public:
 
 	virtual ~CPWMSoundBaseDevice (void);
 
-	/// \return PWM range available for one sample
-	unsigned GetRange (void) const;
+	/// \return Minium value of one sample
+	int GetRangeMin (void) const;
+	/// \return Maximum value of one sample
+	int GetRangeMax (void) const;
+	/// \brief Same as GetRangeMax()
+	unsigned GetRange (void) const { return (unsigned) GetRangeMax (); }
 
 	/// \brief Starts the PWM and DMA operation
-	void Start (void);
+	boolean Start (void);
 
 	/// \brief Cancels the PWM and DMA operation
 	/// \note Cancel takes effect after a short delay
@@ -63,14 +68,15 @@ public:
 	/// \return Is PWM and DMA operation running?
 	boolean IsActive (void) const;
 
-	/// \brief Overload this to provide the sound samples!
+protected:
+	/// \brief May overload this to provide the sound samples!
 	/// \param pBuffer	buffer where the samples have to be placed
 	/// \param nChunkSize	size of the buffer in words (same as given to constructor)
 	/// \return Number of words written to the buffer (normally nChunkSize),\n
 	///	    Transfer will stop if 0 is returned
 	/// \note Each sample consists of two words (Left channel, right channel)\n
-	///	  Each word must be between 0 and the value returned by GetRange()
-	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize) = 0;
+	///	  Each word must be between GetRangeMin() and GetRangeMax()
+	/// virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
 	boolean GetNextChunk (void);

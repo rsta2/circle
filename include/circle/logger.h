@@ -2,7 +2,7 @@
 // logger.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,9 +46,14 @@ public:
 	void Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...);
 	void WriteV (const char *pSource, TLogSeverity Severity, const char *pMessage, va_list Args);
 
+	// does not allocate memory, for critical (low memory) messages
+	void WriteNoAlloc (const char *pSource, TLogSeverity Severity, const char *pMessage);
+
 	int Read (void *pBuffer, unsigned nCount);
 
 	static CLogger *Get (void);
+
+private:
 	void Write (const char *pString);
 
 private:

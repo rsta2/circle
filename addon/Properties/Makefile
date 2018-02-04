@@ -6,7 +6,7 @@ CIRCLEHOME = ../..
 
 OBJS	= properties.o propertiesfile.o
 
-libproperties.a: $(OBJS)
+libproperties$(RASPPI).a: $(OBJS)
 	rm -f $@
 	$(AR) cr $@ $(OBJS)
 

@@ -6,7 +6,7 @@ CIRCLEHOME = ../..
 
 OBJS	= mcp7941x.o
 
-librtc.a: $(OBJS)
+librtc$(RASPPI).a: $(OBJS)
 	rm -f $@
 	$(AR) cr $@ $(OBJS)
 

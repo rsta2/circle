@@ -34,6 +34,8 @@ extern "C" {
 #define IRQ_LEVEL		1		// IRQs disabled, FIQs enabled
 #define FIQ_LEVEL		2		// IRQs and FIQs disabled
 
+unsigned CurrentExecutionLevel (void);
+
 //
 // Interrupt control
 //
@@ -46,7 +48,7 @@ extern "C" {
 #define	DisableFIQs()		asm volatile ("cpsid f")
 
 // EnterCritical() can be nested with same or increasing nTargetLevel
-void EnterCritical (unsigned nTargetLevel);
+void EnterCritical (unsigned nTargetLevel = IRQ_LEVEL);
 void LeaveCritical (void);
 
 #if RASPPI == 1

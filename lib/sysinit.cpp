@@ -22,6 +22,7 @@
 #include <circle/bcm2835.h>
 #include <circle/bcm2836.h>
 #include <circle/machineinfo.h>
+#include <circle/memory.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
@@ -32,10 +33,21 @@ extern "C" {
 
 void *__dso_handle;
 
+#if STDLIB_SUPPORT < 2
+
 void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 {
 	// TODO
 }
+
+#else
+
+void __sync_synchronize (void)
+{
+	DataSyncBarrier ();
+}
+
+#endif
 
 void halt (void)
 {
@@ -110,7 +122,8 @@ static void vfpinit (void)
 #define VFP_FPEXC_EN	(1 << 30)
 	__asm volatile ("fmxr fpexc, %0" : : "r" (VFP_FPEXC_EN));
 
-	__asm volatile ("fmxr fpscr, %0" : : "r" (0));
+#define VFP_FPSCR_DN	(1 << 25)	// enable Default NaN mode
+	__asm volatile ("fmxr fpscr, %0" : : "r" (VFP_FPSCR_DN));
 }
 
 void sysinit (void)
@@ -142,6 +155,10 @@ void sysinit (void)
 	}
 
 	CMachineInfo MachineInfo;
+
+#if STDLIB_SUPPORT >= 2
+	CMemorySystem Memory;
+#endif
 
 	// call construtors of static objects
 	extern void (*__init_start) (void);

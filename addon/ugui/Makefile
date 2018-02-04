@@ -6,7 +6,7 @@ CIRCLEHOME = ../..
 
 OBJS	= ugui.o uguicpp.o
 
-libugui.a: $(OBJS)
+libugui$(RASPPI).a: $(OBJS)
 	rm -f $@
 	$(AR) cr $@ $(OBJS)
 

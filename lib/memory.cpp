@@ -2,7 +2,7 @@
 // memory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,8 @@
 #define TTBCR_SPLIT	2
 #endif
 
+CMemorySystem *CMemorySystem::s_pThis = 0;
+
 CMemorySystem::CMemorySystem (boolean bEnableMMU)
 #ifndef USE_RPI_STUB_AT
 :	m_bEnableMMU (bEnableMMU),
@@ -54,6 +56,12 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 	m_pPageTable0Default (0),
 	m_pPageTable1 (0)
 {
+	if (s_pThis != 0)	// ignore second instance
+	{
+		return;
+	}
+	s_pThis = this;
+
 #ifndef USE_RPI_STUB_AT
 	CBcmPropertyTags Tags;
 	TPropertyTagMemory TagMemory;
@@ -89,6 +97,12 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 
 CMemorySystem::~CMemorySystem (void)
 {
+	if (s_pThis != this)
+	{
+		return;
+	}
+	s_pThis = 0;
+
 	if (m_bEnableMMU)
 	{
 		// disable MMU
@@ -112,19 +126,21 @@ CMemorySystem::~CMemorySystem (void)
 
 void CMemorySystem::InitializeSecondary (void)
 {
-	assert (m_bEnableMMU);		// required to use spin locks
+	assert (s_pThis != 0);
+	assert (s_pThis->m_bEnableMMU);		// required to use spin locks
 
-	EnableMMU ();
+	s_pThis->EnableMMU ();
 }
 
 #endif
 
 u32 CMemorySystem::GetMemSize (void) const
 {
-	return m_nMemSize;
+	assert (s_pThis != 0);
+	return s_pThis->m_nMemSize;
 }
 
-#if RASPPI == 1		// tested on Raspberry Pi 1 only and currently not used in Circle
+#if 0			// tested on Raspberry Pi 1 only and currently not used in Circle
 
 void CMemorySystem::SetPageTable0 (CPageTable *pPageTable, u32 nContextID)
 {
@@ -187,6 +203,12 @@ u32 CMemorySystem::GetContextID (void) const
 
 #endif
 
+CMemorySystem *CMemorySystem::Get (void)
+{
+	assert (s_pThis != 0);
+	return s_pThis;
+}
+
 void CMemorySystem::EnableMMU (void)
 {
 	assert (m_bEnableMMU);
@@ -246,4 +268,30 @@ void CMemorySystem::EnableMMU (void)
 #endif
 	nControl |= MMU_MODE;
 	asm volatile ("mcr p15, 0, %0, c1, c0,  0" : : "r" (nControl) : "memory");
+}
+
+u32 CMemorySystem::GetCoherentPage (unsigned nSlot)
+{
+#ifndef USE_RPI_STUB_AT
+	u32 nPageAddress = MEM_COHERENT_REGION;
+#else
+	u32 nPageAddress;
+	u32 nSize;
+
+	asm volatile
+	(
+		"push {r0-r1}\n"
+		"mov r0, #1\n"
+		"bkpt #0x7FFA\n"	// get coherent region from rpi_stub
+		"mov %0, r0\n"
+		"mov %1, r1\n"
+		"pop {r0-r1}\n"
+
+		: "=r" (nPageAddress), "=r" (nSize)
+	);
+#endif
+
+	nPageAddress += nSlot * PAGE_SIZE;
+
+	return nPageAddress;
 }

@@ -20,7 +20,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o \
+OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o dwhcixactqueue.o \
 	  usbconfigparser.o usbdevice.o usbendpoint.o usbhostcontroller.o usbrequest.o usbstring.o \
 	  smsc951x.o macaddress.o netdevice.o usbdevicefactory.o usbstandardhub.o \
 	  usbmassdevice.o \
@@ -29,8 +29,8 @@ OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o \
 	  usbfunction.o \
 	  dwhciframeschednsplit.o usbprinter.o usbbluetooth.o usbmidi.o usbcdcethernet.o
 
-libusb.a: $(OBJS)
-	rm -f libusb.a
-	$(AR) cr libusb.a $(OBJS)
+libusb$(RASPPI).a: $(OBJS)
+	rm -f libusb$(RASPPI).a
+	$(AR) cr libusb$(RASPPI).a $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

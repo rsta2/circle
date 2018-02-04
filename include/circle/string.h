@@ -2,7 +2,7 @@
 // string.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,12 +32,15 @@ public:
 
 	operator const char *(void) const;
 	const char *operator = (const char *pString);
-	
+	const CString &operator = (const CString &rString);
+
 	size_t GetLength (void) const;
 
 	void Append (const char *pString);
 	int Compare (const char *pString) const;
 	int Find (char chChar) const;			// returns index or -1 if not found
+
+	int Replace (const char *pOld, const char *pNew); // returns number of occurrences
 
 	void Format (const char *pFormat, ...);		// supports only a small subset of printf(3)
 	void FormatV (const char *pFormat, va_list Args);

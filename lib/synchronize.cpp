@@ -24,6 +24,24 @@
 
 #define MAX_CRITICAL_LEVEL	20		// maximum nested level of EnterCritical()
 
+unsigned CurrentExecutionLevel (void)
+{
+	u32 nCPSR;
+	asm volatile ("mrs %0, cpsr" : "=r" (nCPSR));
+
+	if (nCPSR & 0x40)
+	{
+		return FIQ_LEVEL;
+	}
+
+	if (nCPSR & 0x80)
+	{
+		return IRQ_LEVEL;
+	}
+
+	return TASK_LEVEL;
+}
+
 #ifdef ARM_ALLOW_MULTI_CORE
 
 static volatile unsigned s_nCriticalLevel[CORES] = {0};
