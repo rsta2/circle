@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include <circle/usb/usbgamepad.h>
 #include <circle/usb/usbprinter.h>
 #include <circle/usb/smsc951x.h>
+#include <circle/usb/lan7800.h>
 #include <circle/usb/usbbluetooth.h>
 #include <circle/usb/usbmidi.h>
 #include <circle/usb/usbcdcethernet.h>
@@ -68,6 +69,10 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (pName->Compare ("ven424-ec00") == 0)
 	{
 		pResult = new CSMSC951xDevice (pParent);
+	}
+	else if (pName->Compare ("ven424-7800") == 0)
+	{
+		pResult = new CLAN7800Device (pParent);
 	}
 	else if (   pName->Compare ("inte0-1-1") == 0
 		 || pName->Compare ("ven50d-65a") == 0)		// Belkin F8T065BF Mini Bluetooth 4.0 Adapter

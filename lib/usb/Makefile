@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ CIRCLEHOME = ../..
 
 OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o dwhcixactqueue.o \
 	  usbconfigparser.o usbdevice.o usbendpoint.o usbhostcontroller.o usbrequest.o usbstring.o \
-	  smsc951x.o macaddress.o netdevice.o usbdevicefactory.o usbstandardhub.o \
+	  smsc951x.o lan7800.o macaddress.o netdevice.o usbdevicefactory.o usbstandardhub.o \
 	  usbmassdevice.o \
 	  dwhciframeschednper.o dwhciframeschedper.o usbkeyboard.o \
 	  dwhcirootport.o usbhiddevice.o usbmouse.o usbgamepad.o \
