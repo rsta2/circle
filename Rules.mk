@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,6 +48,11 @@ TARGET	?= kernel7
 else
 ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel8-32
+endif
+
+MAKE_VERSION_MAJOR := $(firstword $(subst ., ,$(MAKE_VERSION)))
+ifneq ($(filter 0 1 2 3,$(MAKE_VERSION_MAJOR)),)
+$(error Requires GNU make 4.0 or newer)
 endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),3)
