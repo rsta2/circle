@@ -2,7 +2,7 @@
 // netdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,17 @@
 
 #define FRAME_BUFFER_SIZE	1600
 
+enum TNetDeviceSpeed
+{
+	NetDeviceSpeed10Half,
+	NetDeviceSpeed10Full,
+	NetDeviceSpeed100Half,
+	NetDeviceSpeed100Full,
+	NetDeviceSpeed1000Half,
+	NetDeviceSpeed1000Full,
+	NetDeviceSpeedUnknown
+};
+
 class CNetDevice : public CUSBFunction
 {
 public:
@@ -41,11 +52,20 @@ public:
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	virtual boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength) = 0;
 
+	// returns TRUE if PHY link is up
+	virtual boolean IsLinkUp (void)			{ return TRUE; }
+
+	virtual TNetDeviceSpeed GetLinkSpeed (void)	{ return NetDeviceSpeedUnknown; }
+
+	static const char *GetSpeedString (TNetDeviceSpeed Speed);
+
 protected:
 	void AddNetDevice (void);
 
 private:
 	static unsigned s_nDeviceNumber;
+
+	static const char *s_SpeedString[NetDeviceSpeedUnknown];
 };
 
 #endif

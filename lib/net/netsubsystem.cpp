@@ -2,7 +2,7 @@
 // netsubsystem.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 #include <circle/net/nettask.h>
 #include <circle/net/dhcpclient.h>
 #include <circle/sched/scheduler.h>
-#include <circle/timer.h>
 #include <assert.h>
 
 CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8 *pDefaultGateway, const u8 *pDNSServer)
@@ -61,9 +60,6 @@ boolean CNetSubSystem::Initialize (void)
 {
 	m_bUseDHCP = m_Config.GetIPAddress ()->IsNull ();
 	m_Config.SetDHCP (m_bUseDHCP);
-
-	// wait for Ethernet PHY to come up
-	CTimer::Get ()->MsDelay (2000);
 
 	if (!m_NetDevLayer.Initialize ())
 	{

@@ -45,6 +45,8 @@ public:
 	// returns TRUE if PHY link is up
 	boolean IsLinkUp (void);
 	
+	TNetDeviceSpeed GetLinkSpeed (void);
+
 private:
 	boolean InitMACAddress (void);
 	boolean InitPHY (void);

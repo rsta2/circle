@@ -2,7 +2,7 @@
 // smsc951x.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,7 +41,16 @@ public:
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength);
 	
+	// returns TRUE if PHY link is up
+	boolean IsLinkUp (void);
+
+	TNetDeviceSpeed GetLinkSpeed (void);
+
 private:
+	boolean PHYWrite (u8 uchIndex, u16 usValue);
+	boolean PHYRead (u8 uchIndex, u16 *pValue);
+	boolean PHYWaitNotBusy (void);
+
 	boolean WriteReg (u32 nIndex, u32 nValue);
 	boolean ReadReg (u32 nIndex, u32 *pValue);
 

@@ -497,6 +497,39 @@ boolean CLAN7800Device::IsLinkUp (void)
 	return usPHYModeStatus & (1 << 2) ? TRUE : FALSE;
 }
 
+TNetDeviceSpeed CLAN7800Device::GetLinkSpeed (void)
+{
+	// select main page registers (0-30)
+	if (!PHYWrite (0x1F, 0))
+	{
+		return NetDeviceSpeedUnknown;
+	}
+
+	u16 usPHYAuxControlStatus;
+	if (!PHYRead (0x1C, &usPHYAuxControlStatus))
+	{
+		return NetDeviceSpeedUnknown;
+	}
+
+	// check for Auto-negotiation done
+	assert (!(usPHYAuxControlStatus & (1 << 14)));		// Auto-negotiation enabled?
+	if (!(usPHYAuxControlStatus & (1 << 15)))
+	{
+		return NetDeviceSpeedUnknown;
+	}
+
+	switch ((usPHYAuxControlStatus >> 3) & 7)
+	{
+	case 0b000:	return NetDeviceSpeed10Half;
+	case 0b001:	return NetDeviceSpeed100Half;
+	case 0b010:	return NetDeviceSpeed1000Half;
+	case 0b100:	return NetDeviceSpeed10Full;
+	case 0b101:	return NetDeviceSpeed100Full;
+	case 0b110:	return NetDeviceSpeed1000Full;
+	default:	return NetDeviceSpeedUnknown;
+	}
+}
+
 boolean CLAN7800Device::InitMACAddress (void)
 {
 	CBcmPropertyTags Tags;
@@ -537,6 +570,12 @@ boolean CLAN7800Device::InitMACAddress (void)
 
 boolean CLAN7800Device::InitPHY (void)
 {
+	// select main page registers (0-30)
+	if (!PHYWrite (0x1F, 0))
+	{
+		return FALSE;
+	}
+
 	// Change LED defaults:
 	//      orange = link1000/activity
 	//      green  = link10/link100/activity
@@ -559,7 +598,7 @@ boolean CLAN7800Device::InitPHY (void)
 
 boolean CLAN7800Device::PHYWrite (u8 uchIndex, u16 usValue)
 {
-	assert (uchIndex <= 30);
+	assert (uchIndex <= 31);
 
 	if (   !WaitReg (MII_ACC, MII_ACC_MII_BUSY, 0, 0)
 	    || !WriteReg (MII_DATA, usValue))
@@ -582,7 +621,7 @@ boolean CLAN7800Device::PHYWrite (u8 uchIndex, u16 usValue)
 
 boolean CLAN7800Device::PHYRead (u8 uchIndex, u16 *pValue)
 {
-	assert (uchIndex <= 30);
+	assert (uchIndex <= 31);
 
 	if (!WaitReg (MII_ACC, MII_ACC_MII_BUSY, 0, 0))
 	{
