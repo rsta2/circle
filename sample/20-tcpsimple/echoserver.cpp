@@ -2,7 +2,7 @@
 // echoserver.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ void CEchoServer::Listener (void)
 		return;
 	}
 
-	if (m_pSocket->Listen () < 0)
+	if (m_pSocket->Listen (MAX_CLIENTS) < 0)
 	{
 		CLogger::Get ()->Write (FromEcho, LogError, "Cannot listen on socket");
 
