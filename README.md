@@ -21,6 +21,13 @@ Circle is not a real-time OS. That means different simultaneous operations may i
 
 Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
 
+Release 34.1
+------------
+
+This intermediate release was necessary, because the new Raspberry Pi 3 Model B+ became available. Circle supports it now.
+
+Beside this a driver for the Auxiliary SPI master (SPI1) has been added. The sample/23-spisimple has been updated to support this too. The class CDMAChannel supports the 2D mode now. Furthermore there are some minor improvements in the network subsystem.
+
 The 34th Step
 -------------
 
@@ -64,6 +71,7 @@ Circle supports the following features:
 |                       | PWM sound output (on headphone jack)                |
 |                       | I2C master and slave                                |
 |                       | SPI0 master (Polling and DMA driver)                |
+|                       | SPI1 auxiliary master (Polling)                     |
 |                       | I2S sound output                                    |
 |                       | Hardware random number generator                    |
 |                       | Official Raspberry Pi touch screen                  |
@@ -73,6 +81,7 @@ Circle supports the following features:
 |                       | Standard hub driver                                 |
 |                       | HID class device drivers (keyboard, mouse, gamepad) |
 |                       | Driver for on-board Ethernet device (SMSC951x)      |
+|                       | Driver for on-board Ethernet device (LAN7800)       |
 |                       | Driver for USB mass storage devices (bulk only)     |
 |                       | Audio class MIDI input support                      |
 |                       | Printer driver                                      |
@@ -89,7 +98,7 @@ Circle supports the following features:
 |                       |                                                     |
 | Bluetooth             | Device inquiry support only                         |
 |                       | USB BR/EDR dongle driver                            |
-|                       | Internal controller of Raspberry Pi 3               |
+|                       | Internal controller of Raspberry Pi 3 B             |
 
 Building
 --------
