@@ -2,7 +2,7 @@
 // dmachannel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -207,6 +207,37 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 	m_nDestinationAddress = 0;
 
 	CleanAndInvalidateDataCacheRange ((u32) pSource, nLength);
+}
+
+void CDMAChannel::SetupMemCopy2D (void *pDestination, const void *pSource,
+				  size_t nBlockLength, unsigned nBlockCount, size_t nBlockStride)
+{
+	assert (pDestination != 0);
+	assert (pSource != 0);
+	assert (nBlockLength > 0);
+	assert (nBlockLength <= 0xFFFF);
+	assert (nBlockCount > 0);
+	assert (nBlockCount <= 0x3FFF);
+	assert (nBlockStride <= 0xFFFF);
+
+	assert (m_pControlBlock != 0);
+
+	m_pControlBlock->nTransferInformation     =   (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
+						    | TI_SRC_WIDTH
+						    | TI_SRC_INC
+						    | TI_DEST_WIDTH
+						    | TI_DEST_INC
+						    | TI_TDMODE;
+	m_pControlBlock->nSourceAddress           = (u32) pSource + GPU_MEM_BASE;
+	m_pControlBlock->nDestinationAddress      = (u32) pDestination + GPU_MEM_BASE;
+	m_pControlBlock->nTransferLength          =   ((nBlockCount-1) << TXFR_LEN_YLENGTH_SHIFT)
+						    | (nBlockLength << TXFR_LEN_XLENGTH_SHIFT);
+	m_pControlBlock->n2DModeStride            = nBlockStride << STRIDE_DEST_SHIFT;
+	m_pControlBlock->nNextControlBlockAddress = 0;
+
+	m_nDestinationAddress = 0;
+
+	CleanAndInvalidateDataCacheRange ((u32) pSource, nBlockLength*nBlockCount);
 }
 
 void CDMAChannel::SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam)

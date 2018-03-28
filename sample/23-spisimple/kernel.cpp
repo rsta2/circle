@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #define SPI_CPOL		0
 #define SPI_CPHA		0
 
-#define SPI_CHIP_SELECT		0		// 0 or 1
+#define SPI_CHIP_SELECT		0		// 0 or 1, or 2 (for SPI1)
 
 #define TEST_DATA_LENGTH	128		// number of data bytes transfered
 
@@ -34,7 +34,11 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+#ifndef USE_SPI_MASTER_AUX
 	m_SPIMaster (SPI_CLOCK_SPEED, SPI_CPOL, SPI_CPHA)
+#else
+	m_SPIMaster (SPI_CLOCK_SPEED)
+#endif
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -90,7 +94,7 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	m_Logger.Write (FromKernel, LogNotice, "Transfering %u bytes over SPI0", TEST_DATA_LENGTH);
+	m_Logger.Write (FromKernel, LogNotice, "Transfering %u bytes over SPI", TEST_DATA_LENGTH);
 
 	u8 TxData[TEST_DATA_LENGTH];
 	u8 RxBuffer[TEST_DATA_LENGTH];

@@ -39,6 +39,7 @@ Base library
 * CSoundBaseDevice: Base class of sound devices, converts several sound formats.
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
 * CSPIMaster: Driver for SPI0 master device. Synchronous polling operation.
+* CSPIMasterAUX: Driver for the auxiliary SPI master (SPI1).
 * CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.
 * CString: Simple string manipulation class, Format() method works like printf() (but has less formating options)
 * CTime: Holds, makes and breaks the time.
@@ -57,6 +58,7 @@ USB library
 * CDWHCIRootPort: Supporting class for CDWHCIDevice, initializes the root port.
 * CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled).
 * CDWHCITransferStageData: Holds all the data needed for a transfer stage on one HCI channel.
+* CLAN7800Device: Driver for the on-board USB Gigabit Ethernet device of the Raspberry Pi 3 B+.
 * CMACAddress: Encapsulates an Ethernet MAC address.
 * CNetDevice: Base class of CSMSC951xDevice.
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
@@ -148,4 +150,4 @@ Bluetooth library
 * CBTQueue: Encapsulates a queue used for incoming and outgoing command, event and data packets.
 * CBTSubSystem: The main Bluetooth subsystem class. Create an instance of it in the CKernel class.
 * CBTTask: Bluetooth background task. Processes the different Bluetooth layers.
-* CBTUARTTransport: Bluetooth UART HCI transport driver for the internal BT device of the Raspberry Pi 3.
+* CBTUARTTransport: Bluetooth UART HCI transport driver for the internal BT device of the Raspberry Pi 3 B.

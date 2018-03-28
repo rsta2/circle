@@ -9,7 +9,7 @@
 // See the file lib/usb/README for details!
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/logger.h>
+#include <circle/timer.h>
 #include <circle/util.h>
 #include <circle/macros.h>
 #include <circle/debug.h>
@@ -240,8 +241,6 @@ boolean CSMSC951xDevice::Configure (void)
 		return FALSE;
 	}
 
-	// TODO: check if PHY is up (wait for it)
-
 	AddNetDevice ();
 
 	return TRUE;
@@ -312,6 +311,109 @@ boolean CSMSC951xDevice::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 	assert (pResultLength != 0);
 	*pResultLength = nFrameLength;
 	
+	return TRUE;
+}
+
+boolean CSMSC951xDevice::IsLinkUp (void)
+{
+	u16 usPHYModeStatus;
+	if (!PHYRead (0x01, &usPHYModeStatus))
+	{
+		return FALSE;
+	}
+
+	return usPHYModeStatus & (1 << 2) ? TRUE : FALSE;
+}
+
+TNetDeviceSpeed CSMSC951xDevice::GetLinkSpeed (void)
+{
+	u16 usPHYSpecialControlStatus;
+	if (!PHYRead (0x1F, &usPHYSpecialControlStatus))
+	{
+		return NetDeviceSpeedUnknown;
+	}
+
+	// check for Auto-negotiation done
+	if (!(usPHYSpecialControlStatus & (1 << 12)))
+	{
+		return NetDeviceSpeedUnknown;
+	}
+
+	switch ((usPHYSpecialControlStatus >> 2) & 7)
+	{
+	case 0b001:	return NetDeviceSpeed10Half;
+	case 0b010:	return NetDeviceSpeed100Half;
+	case 0b101:	return NetDeviceSpeed10Full;
+	case 0b110:	return NetDeviceSpeed100Full;
+	default:	return NetDeviceSpeedUnknown;
+	}
+}
+
+boolean CSMSC951xDevice::PHYWrite (u8 uchIndex, u16 usValue)
+{
+	assert (uchIndex <= 31);
+
+	if (   !PHYWaitNotBusy ()
+	    || !WriteReg (MII_DATA, usValue))
+	{
+		return FALSE;
+	}
+
+	u32 nMIIAddress = (PHY_ID_INTERNAL << 11) | ((u32) uchIndex << 6);
+	if (!WriteReg (MII_ADDR, nMIIAddress | MII_WRITE | MII_BUSY))
+	{
+		return FALSE;
+	}
+
+	return PHYWaitNotBusy ();
+}
+
+boolean CSMSC951xDevice::PHYRead (u8 uchIndex, u16 *pValue)
+{
+	assert (uchIndex <= 31);
+
+	if (!PHYWaitNotBusy ())
+	{
+		return FALSE;
+	}
+
+	u32 nMIIAddress = (PHY_ID_INTERNAL << 11) | ((u32) uchIndex << 6);
+	u32 nValue;
+	if (   !WriteReg (MII_ADDR, nMIIAddress | MII_BUSY)
+	    || !PHYWaitNotBusy ()
+	    || !ReadReg (MII_DATA, &nValue))
+	{
+		return FALSE;
+	}
+
+	assert (pValue != 0);
+	*pValue = nValue & 0xFFFF;
+
+	return TRUE;
+}
+
+boolean CSMSC951xDevice::PHYWaitNotBusy (void)
+{
+	CTimer *pTimer = CTimer::Get ();
+	assert (pTimer != 0);
+
+	unsigned nStartTicks = pTimer->GetTicks ();
+
+	u32 nValue;
+	do
+	{
+		if (pTimer->GetTicks () - nStartTicks >= HZ)
+		{
+			return FALSE;
+		}
+
+		if (!ReadReg (MII_ADDR, &nValue))
+		{
+			return FALSE;
+		}
+	}
+	while (nValue & MII_BUSY);
+
 	return TRUE;
 }
 

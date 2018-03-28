@@ -2,7 +2,7 @@
 // transportlayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -65,6 +65,7 @@ public:
 
 	int SetOptionBroadcast (boolean bAllowed, int hConnection);
 
+	boolean IsConnected (int hConnection) const;
 	const u8 *GetForeignIP (int hConnection) const;		// returns 0 if not connected
 
 private:

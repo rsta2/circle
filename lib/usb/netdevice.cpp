@@ -2,7 +2,7 @@
 // netdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,16 @@
 #include <circle/devicenameservice.h>
 #include <circle/string.h>
 
+const char *CNetDevice::s_SpeedString[NetDeviceSpeedUnknown] =
+{
+	"10BASE-T Half-duplex",
+	"10BASE-T Full-duplex",
+	"100BASE-TX Half-duplex",
+	"100BASE-TX Full-duplex",
+	"1000BASE-T Half-duplex",
+	"1000BASE-T Full-duplex"
+};
+
 unsigned CNetDevice::s_nDeviceNumber = 0;
 
 CNetDevice::CNetDevice (CUSBFunction *pFunction)
@@ -37,4 +47,14 @@ void CNetDevice::AddNetDevice (void)
 	CString DeviceName;
 	DeviceName.Format ("eth%u", s_nDeviceNumber++);
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+}
+
+const char *CNetDevice::GetSpeedString (TNetDeviceSpeed Speed)
+{
+	if (Speed >= NetDeviceSpeedUnknown)
+	{
+		return "Unknown";
+	}
+
+	return s_SpeedString[Speed];
 }

@@ -2,7 +2,7 @@
 // transportlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -396,6 +396,18 @@ int CTransportLayer::SetOptionBroadcast (boolean bAllowed, int hConnection)
 	}
 
 	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionBroadcast (bAllowed);
+}
+
+boolean CTransportLayer::IsConnected (int hConnection) const
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return 0;
+	}
+
+	return ((CNetConnection *) m_pConnection[hConnection])->IsConnected ();
 }
 
 const u8 *CTransportLayer::GetForeignIP (int hConnection) const

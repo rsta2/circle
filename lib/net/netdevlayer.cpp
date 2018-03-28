@@ -2,7 +2,7 @@
 // netdevlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <circle/net/netdevlayer.h>
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
+#include <circle/timer.h>
 #include <circle/macros.h>
 #include <assert.h>
 
@@ -46,6 +47,26 @@ boolean CNetDeviceLayer::Initialize (void)
 		CLogger::Get ()->Write (FromNetDev, LogError, "Net device not available");
 
 		return FALSE;
+	}
+
+	// wait for Ethernet PHY to come up
+	unsigned nStartTicks = CTimer::Get ()->GetTicks ();
+	do
+	{
+		if (CTimer::Get ()->GetTicks () - nStartTicks >= 4*HZ)
+		{
+			CLogger::Get ()->Write (FromNetDev, LogWarning, "Link is down");
+
+			return TRUE;
+		}
+	}
+	while (!m_pDevice->IsLinkUp ());
+
+	TNetDeviceSpeed Speed = m_pDevice->GetLinkSpeed ();
+	if (Speed != NetDeviceSpeedUnknown)
+	{
+		CLogger::Get ()->Write (FromNetDev, LogNotice, "Link is %s",
+					CNetDevice::GetSpeedString (Speed));
 	}
 
 	return TRUE;

@@ -2,7 +2,7 @@
 // actled.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,12 +36,14 @@ CActLED::CActLED (void)
 		boolean bOld;
 		boolean bIsPiZero = FALSE;
 		boolean bIsPi3 = FALSE;
+		boolean bIsPi3BPlus = FALSE;
 		if (BoardRevision.nValue & (1 << 23))	// new revision scheme?
 		{
 			unsigned nType = (BoardRevision.nValue >> 4) & 0xFF;
 
 			bOld = nType <= 0x01;
-			bIsPi3 = nType == 0x08;
+			bIsPi3 = nType == 0x08 || nType == 0x0D;
+			bIsPi3BPlus = nType == 0x0D;
 			bIsPiZero = nType == 0x09 || nType == 0x0C;
 		}
 		else
@@ -66,7 +68,14 @@ CActLED::CActLED (void)
 			}
 			else
 			{
-				m_pVirtualPin = new CVirtualGPIOPin (0);
+				if (!bIsPi3BPlus)
+				{
+					m_pVirtualPin = new CVirtualGPIOPin (0);
+				}
+				else
+				{
+					m_pPin = new CGPIOPin (29, GPIOModeOutput);
+				}
 			}
 
 			m_bActiveHigh = !bIsPiZero;

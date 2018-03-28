@@ -2,7 +2,7 @@
 // socket.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 #include <circle/net/transportlayer.h>
 #include <circle/types.h>
 
+#define SOCKET_MAX_LISTEN_BACKLOG	32
+
 class CNetSubSystem;
 
 class CSocket		/// Application programming interface to the TCP/IP network
@@ -33,9 +35,6 @@ public:
 	/// \param pNetSubSystem Pointer to the network subsystem
 	/// \param nProtocol	 IPPROTO_TCP or IPPROTO_UDP (include circle/net/in.h)
 	CSocket (CNetSubSystem *pNetSubSystem, int nProtocol);
-
-	/// \brief Copy constructor (used internally)
-	CSocket (CSocket &rSocket);
 
 	/// \brief Destructor (terminates an active connection)
 	~CSocket (void);
@@ -52,8 +51,10 @@ public:
 	int Connect (CIPAddress &rForeignIP, u16 nForeignPort);
 
 	/// \brief Listen for incoming connections (TCP only, must call Bind() before)
+	/// \param nBackLog Maximum number of simultaneous connections which may be accepted\n
+	/// in a row before Accept() is called (up to SOCKET_MAX_LISTEN_BACKLOG)
 	/// \return Status (0 success, < 0 on error)
-	int Listen (void);
+	int Listen (unsigned nBackLog = 4);
 	/// \brief Accept an incoming connection (TCP only, must call Listen() before)
 	/// \param pForeignIP	IP address of the remote host will be returned here
 	/// \param pForeignPort	Remote port number will be returned here
@@ -107,12 +108,18 @@ public:
 	const u8 *GetForeignIP (void) const;
 
 private:
+	CSocket (CSocket &rSocket, int hConnection);
+
+private:
 	CNetConfig	*m_pNetConfig;
 	CTransportLayer	*m_pTransportLayer;
 
 	int m_nProtocol;
 	u16 m_nOwnPort;
 	int m_hConnection;
+
+	unsigned m_nBackLog;
+	int m_hListenConnection[SOCKET_MAX_LISTEN_BACKLOG];
 };
 
 #endif
