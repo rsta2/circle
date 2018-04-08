@@ -160,6 +160,12 @@ USB library
 
 * CLAN7800Device: Driver for the on-board USB Gigabit Ethernet device of the Raspberry Pi 3 B+
 
+Net library
+
+* CMQTTClient: Client for the MQTT IoT protocol
+* CMQTTReceivePacket: MQTT helper class
+* CMQTTSendPacket: MQTT helper class
+
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
 `./makedoc`
