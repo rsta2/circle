@@ -2,7 +2,7 @@
 // gpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,22 +28,25 @@
 
 CSpinLock CGPIOPin::s_SpinLock;
 
+CGPIOPin::CGPIOPin (void)
+:	m_nPin (GPIO_PINS),
+	m_Mode (GPIOModeUnknown),
+	m_pManager (0),
+	m_pHandler (0),
+	m_Interrupt (GPIOInterruptUnknown),
+	m_Interrupt2 (GPIOInterruptUnknown)
+{
+}
+
 CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
-:	m_nPin (nPin),
+:	m_nPin (GPIO_PINS),
 	m_Mode (GPIOModeUnknown),
 	m_pManager (pManager),
 	m_pHandler (0),
 	m_Interrupt (GPIOInterruptUnknown),
 	m_Interrupt2 (GPIOInterruptUnknown)
 {
-	if (m_nPin >= GPIO_PINS)
-	{
-		m_nPin = CMachineInfo::Get ()->GetGPIOPin ((TGPIOVirtualPin) nPin);
-	}
-	assert (m_nPin < GPIO_PINS);
-
-	m_nRegOffset = (m_nPin / 32) * 4;
-	m_nRegMask = 1 << (m_nPin % 32);
+	AssignPin (nPin);
 
 	SetMode (Mode, TRUE);
 }
@@ -54,6 +57,21 @@ CGPIOPin::~CGPIOPin (void)
 	m_pManager = 0;
 	
 	m_nPin = GPIO_PINS;
+}
+
+void CGPIOPin::AssignPin (unsigned nPin)
+{
+	assert (m_nPin == GPIO_PINS);
+	m_nPin = nPin;
+
+	if (m_nPin >= GPIO_PINS)
+	{
+		m_nPin = CMachineInfo::Get ()->GetGPIOPin ((TGPIOVirtualPin) nPin);
+	}
+	assert (m_nPin < GPIO_PINS);
+
+	m_nRegOffset = (m_nPin / 32) * 4;
+	m_nRegMask = 1 << (m_nPin % 32);
 }
 
 void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
@@ -124,6 +142,8 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 
 void CGPIOPin::Write (unsigned nValue)
 {
+	assert (m_nPin < GPIO_PINS);
+
 	// Output level can be set in input mode for subsequent switch to output
 	assert (m_Mode < GPIOModeAlternateFunction0);
 
@@ -141,6 +161,8 @@ void CGPIOPin::Write (unsigned nValue)
 
 unsigned CGPIOPin::Read (void) const
 {
+	assert (m_nPin < GPIO_PINS);
+
 	assert (   m_Mode == GPIOModeInput
 		|| m_Mode == GPIOModeInputPullUp
 		|| m_Mode == GPIOModeInputPullDown);

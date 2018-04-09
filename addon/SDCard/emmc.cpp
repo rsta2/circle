@@ -38,6 +38,7 @@
 #include <circle/bcmpropertytags.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
+#include <circle/machineinfo.h>
 #include <circle/memio.h>
 #include <circle/util.h>
 #include <circle/stdarg.h>
@@ -439,6 +440,22 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 
 	m_pSCR = new TSCR;
 	assert (m_pSCR != 0);
+
+#if RASPPI >= 2
+	// workaround if bootloader does not restore GPIO modes
+	if (   CMachineInfo::Get ()->GetMachineModel () == MachineModel3B
+	    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3BPlus)
+	{
+		for (unsigned i = 0; i <= 5; i++)
+		{
+			m_GPIO34_39[i].AssignPin (34+i);
+			m_GPIO34_39[i].SetMode (GPIOModeInput, FALSE);
+
+			m_GPIO48_53[i].AssignPin (48+i);
+			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
+		}
+	}
+#endif
 }
 
 CEMMCDevice::~CEMMCDevice (void)

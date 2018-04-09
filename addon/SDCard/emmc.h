@@ -33,6 +33,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/actled.h>
+#include <circle/gpiopin.h>
 #include <circle/fs/partitionmanager.h>
 #include <circle/logger.h>
 #include <circle/types.h>
@@ -93,6 +94,11 @@ private:
 	CInterruptSystem *m_pInterruptSystem;
 	CTimer		 *m_pTimer;
 	CActLED		 *m_pActLED;
+
+#if RASPPI >= 2
+	CGPIOPin	  m_GPIO34_39[6];	// WiFi
+	CGPIOPin	  m_GPIO48_53[6];	// SD card
+#endif
 
 	u64 m_ullOffset;
 
