@@ -2,7 +2,7 @@
 // serial.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -336,6 +336,77 @@ unsigned CSerialDevice::GetOptions (void) const
 void CSerialDevice::SetOptions (unsigned nOptions)
 {
 	m_nOptions = nOptions;
+}
+
+unsigned CSerialDevice::AvailableForWrite (void)
+{
+	assert (m_pInterruptSystem != 0);
+
+	m_SpinLock.Acquire ();
+
+	unsigned nResult;
+	if (m_nTxOutPtr <= m_nTxInPtr)
+	{
+		nResult = SERIAL_BUF_SIZE+m_nTxOutPtr-m_nTxInPtr-1;
+	}
+	else
+	{
+		nResult = m_nTxOutPtr-m_nTxInPtr-1;
+	}
+
+	m_SpinLock.Release ();
+
+	return nResult;
+}
+
+unsigned CSerialDevice::AvailableForRead (void)
+{
+	assert (m_pInterruptSystem != 0);
+
+	m_SpinLock.Acquire ();
+
+	unsigned nResult;
+	if (m_nRxInPtr < m_nRxOutPtr)
+	{
+		nResult = SERIAL_BUF_SIZE+m_nRxInPtr-m_nRxOutPtr;
+	}
+	else
+	{
+		nResult = m_nRxInPtr-m_nRxOutPtr;
+	}
+
+	m_SpinLock.Release ();
+
+	return nResult;
+}
+
+int CSerialDevice::Peek (void)
+{
+	assert (m_pInterruptSystem != 0);
+
+	m_SpinLock.Acquire ();
+
+	int nResult = -1;
+	if (m_nRxInPtr != m_nRxOutPtr)
+	{
+		nResult = m_RxBuffer[m_nRxOutPtr];
+	}
+
+	m_SpinLock.Release ();
+
+	return nResult;
+}
+
+void CSerialDevice::Flush (void)
+{
+	PeripheralEntry ();
+
+	while (read32 (ARM_UART0_FR) & FR_BUSY_MASK)
+	{
+		// just wait
+	}
+
+	PeripheralExit ();
 }
 
 boolean CSerialDevice::Write (u8 uchChar)

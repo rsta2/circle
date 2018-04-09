@@ -2,7 +2,7 @@
 // serial.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,6 +68,22 @@ public:
 	unsigned GetOptions (void) const;
 	/// \param nOptions Serial options mask (see serial options)
 	void SetOptions (unsigned nOptions);
+
+protected:
+	/// \return Number of bytes buffer space available for Write()
+	/// \note Does only work with interrupt driver.
+	unsigned AvailableForWrite (void);
+
+	/// \return Number of bytes already received available for Read()
+	/// \note Does only work with interrupt driver.
+	unsigned AvailableForRead (void);
+
+	/// \return Next received byte which will be returned by Read() (-1 if no data available)
+	/// \note Does only work with interrupt driver.
+	int Peek (void);
+
+	/// \brief Waits until all written bytes have been sent out
+	void Flush (void);
 
 private:
 	boolean Write (u8 uchChar);
