@@ -101,14 +101,18 @@ clean:
 #
 
 SERIALPORT  ?= /dev/ttyUSB0
-DEFAULTBAUD ?= 115200
+USERBAUD ?= 115200
 FLASHBAUD ?= 115200
+REBOOTMAGIC ?=
 
 $(TARGET).hex: $(TARGET).img
 	$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
 
 flash: $(TARGET).hex
+ifneq ($(strip $(REBOOTMAGIC)),)
+	python $(CIRCLEHOME)/tools/reboottool.py $(REBOOTMAGIC) $(SERIALPORT) $(USERBAUD)
+endif
 	python $(CIRCLEHOME)/tools/flasher.py $(TARGET).hex $(SERIALPORT) $(FLASHBAUD)
 
 monitor:
-	putty -serial $(SERIALPORT) -sercfg $(DEFAULTBAUD)
+	putty -serial $(SERIALPORT) -sercfg $(USERBAUD)
