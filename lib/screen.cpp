@@ -165,7 +165,7 @@ TScreenStatus CScreenDevice::GetStatus (void)
 	return Status;
 }
 
-boolean CScreenDevice::SetStatus (TScreenStatus &Status)
+boolean CScreenDevice::SetStatus (const TScreenStatus &Status)
 {
 	if (   m_nSize  != Status.nSize
 	    || m_nPitch != m_nWidth)

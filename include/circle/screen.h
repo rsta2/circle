@@ -112,7 +112,7 @@ public:
 	TScreenStatus GetStatus (void);
 	/// \param Status Screen status previously returned from GetStatus()
 	/// \return FALSE on failure (screen is currently updated and cannot be written)
-	boolean SetStatus (TScreenStatus &Status);
+	boolean SetStatus (const TScreenStatus &Status);
 
 	/// \brief Write characters to screen
 	/// \note Supports several escape sequences (see: doc/screen.txt).
