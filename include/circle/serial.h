@@ -69,6 +69,13 @@ public:
 	/// \param nOptions Serial options mask (see serial options)
 	void SetOptions (unsigned nOptions);
 
+	typedef void TMagicReceivedHandler (void);
+	/// \param pMagic String for which is searched in the received data\n
+	/// (must remain valid after return from this method)
+	/// \param pHandler Handler which is called, when the magic string is found
+	/// \note Does only work with interrupt driver.
+	void RegisterMagicReceivedHandler (const char *pMagic, TMagicReceivedHandler *pHandler);
+
 protected:
 	/// \return Number of bytes buffer space available for Write()
 	/// \note Does only work with interrupt driver.
@@ -111,6 +118,10 @@ private:
 	volatile unsigned m_nTxOutPtr;
 
 	unsigned m_nOptions;
+
+	const char *m_pMagic;
+	const char *m_pMagicPtr;
+	TMagicReceivedHandler *m_pMagicReceivedHandler;
 
 	CSpinLock m_SpinLock;
 	CSpinLock m_LineSpinLock;

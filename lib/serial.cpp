@@ -101,6 +101,7 @@ CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFI
 	m_nTxInPtr (0),
 	m_nTxOutPtr (0),
 	m_nOptions (SERIAL_OPTION_ONLCR),
+	m_pMagic (0),
 	m_SpinLock (bUseFIQ ? FIQ_LEVEL : IRQ_LEVEL)
 #ifdef REALTIME
 	, m_LineSpinLock (TASK_LEVEL)
@@ -338,6 +339,21 @@ void CSerialDevice::SetOptions (unsigned nOptions)
 	m_nOptions = nOptions;
 }
 
+void CSerialDevice::RegisterMagicReceivedHandler (const char *pMagic, TMagicReceivedHandler *pHandler)
+{
+	assert (m_pInterruptSystem != 0);
+	assert (m_pMagic == 0);
+
+	assert (pMagic != 0);
+	assert (*pMagic != '\0');
+	assert (pHandler != 0);
+
+	m_pMagicReceivedHandler = pHandler;
+
+	m_pMagicPtr = pMagic;
+	m_pMagic = pMagic;		// enables the scanner
+}
+
 unsigned CSerialDevice::AvailableForWrite (void)
 {
 	assert (m_pInterruptSystem != 0);
@@ -448,6 +464,8 @@ boolean CSerialDevice::Write (u8 uchChar)
 
 void CSerialDevice::InterruptHandler (void)
 {
+	boolean bMagicReceived = FALSE;
+
 	m_SpinLock.Acquire ();
 
 	PeripheralEntry ();
@@ -477,6 +495,21 @@ void CSerialDevice::InterruptHandler (void)
 			if (m_nRxStatus == 0)
 			{
 				m_nRxStatus = -SERIAL_ERROR_FRAMING;
+			}
+		}
+
+		if (m_pMagic != 0)
+		{
+			if ((char) (nDR & 0xFF) == *m_pMagicPtr)
+			{
+				if (*++m_pMagicPtr == '\0')
+				{
+					bMagicReceived = TRUE;
+				}
+			}
+			else
+			{
+				m_pMagicPtr = m_pMagic;
 			}
 		}
 
@@ -512,6 +545,11 @@ void CSerialDevice::InterruptHandler (void)
 	PeripheralExit ();
 
 	m_SpinLock.Release ();
+
+	if (bMagicReceived)
+	{
+		(*m_pMagicReceivedHandler) ();
+	}
 }
 
 void CSerialDevice::InterruptStub (void *pParam)
