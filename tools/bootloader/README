@@ -1,7 +1,6 @@
-All credits goes to dwelch67 from github page: https://github.com/dwelch67/raspberrypi
-This is modification of the original bootloader which allow a faster baudrate of 1008065. 
-Nowadays, most usb-serial ttl devices support this speed. 
-Be aware of using terminal programs that do not support standard speeds. Putty has been tested and verified to work very well.
+All credits for this bootloader go to dwelch67 (see: https://github.com/dwelch67/raspberrypi).
+This is a modified version of the original bootloader, which allows a faster and configurable
+baudrate.
 
 ----------------------ORIGINAL README--------------------------------------------
 This is a very simple bootloader.  Instead of the sd dance (see
