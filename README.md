@@ -146,6 +146,7 @@ Directories
 * app: Place your own applications here. If you have own libraries put them into app/lib/.
 * boot: Do *make* in this directory to get the Raspberry Pi firmware files required to boot.
 * doc: Additional documentation files.
+* tools: Some tools for using Circle more comfortable (e.g. a serial bootloader).
 
 Classes
 -------
