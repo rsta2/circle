@@ -34,6 +34,7 @@
 #include <circle/timer.h>
 #include <circle/synchronize.h>
 #include <circle/util.h>
+#include <circle/memory.h>
 #include <assert.h>
 
 #define CHANS			2			// 2 I2S stereo channels
@@ -136,8 +137,8 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	// setup and concatenate DMA buffers and control blocks
 	SetupDMAControlBlock (0);
 	SetupDMAControlBlock (1);
-	m_pControlBlock[0]->nNextControlBlockAddress = (u32) m_pControlBlock[1] + GPU_MEM_BASE;
-	m_pControlBlock[1]->nNextControlBlockAddress = (u32) m_pControlBlock[0] + GPU_MEM_BASE;
+	m_pControlBlock[0]->nNextControlBlockAddress = (u32) CMemorySystem::GetUncachedAlias((void*) m_pControlBlock[1]);
+	m_pControlBlock[1]->nNextControlBlockAddress = (u32) CMemorySystem::GetUncachedAlias(m_pControlBlock[0]);
 
 	// start clock and I2S device
 	assert (8000 <= nSampleRate && nSampleRate <= 192000);
@@ -250,7 +251,7 @@ boolean CI2SSoundBaseDevice::Start (void)
 	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << DMA_CHANNEL_PCM)));
 
 	assert (m_pControlBlock[0] != 0);
-	write32 (ARM_DMACHAN_CONBLK_AD (DMA_CHANNEL_PCM), (u32) m_pControlBlock[0] + GPU_MEM_BASE);
+	write32 (ARM_DMACHAN_CONBLK_AD (DMA_CHANNEL_PCM), (u32) CMemorySystem::GetUncachedAlias(m_pControlBlock[0]));
 
 	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM),   CS_WAIT_FOR_OUTSTANDING_WRITES
 					           | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
@@ -455,7 +456,7 @@ void CI2SSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 						         | TI_DEST_DREQ
 						         | TI_WAIT_RESP
 						         | TI_INTEN;
-	m_pControlBlock[nID]->nSourceAddress           = (u32) m_pDMABuffer[nID] + GPU_MEM_BASE;
+	m_pControlBlock[nID]->nSourceAddress           = (u32) CMemorySystem::GetUncachedAlias(m_pDMABuffer[nID]);
 	m_pControlBlock[nID]->nDestinationAddress      = (ARM_PCM_FIFO_A & 0xFFFFFF) + GPU_IO_BASE;
 	m_pControlBlock[nID]->n2DModeStride            = 0;
 	m_pControlBlock[nID]->nReserved[0]	       = 0;

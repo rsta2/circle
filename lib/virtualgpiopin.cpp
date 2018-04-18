@@ -50,7 +50,7 @@ CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
 
 		CBcmPropertyTags Tags;
 		TPropertyTagSimple TagSimple;
-		TagSimple.nValue = s_nGPIOBaseAddress + GPU_MEM_BASE;
+		TagSimple.nValue = (u32) CMemorySystem::GetUncachedAlias((void*) s_nGPIOBaseAddress);
 		if (!Tags.GetTag (PROPTAG_SET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))
 		{
 			if (Tags.GetTag (PROPTAG_GET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))

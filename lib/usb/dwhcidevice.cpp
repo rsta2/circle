@@ -32,6 +32,7 @@
 #include <circle/logger.h>
 #include <circle/sysconfig.h>
 #include <circle/debug.h>
+#include <circle/memory.h>
 #include <assert.h>
 
 //
@@ -790,7 +791,7 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 
 	// set DMA address
 	CDWHCIRegister DMAAddress (DWHCI_HOST_CHAN_DMA_ADDR (nChannel),
-				   pStageData->GetDMAAddress () + GPU_MEM_BASE);
+	                           (u32) CMemorySystem::GetUncachedAlias((void*) pStageData->GetDMAAddress ()));
 	DMAAddress.Write ();
 
 	CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());

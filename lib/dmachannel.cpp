@@ -23,6 +23,7 @@
 #include <circle/memio.h>
 #include <circle/timer.h>
 #include <circle/synchronize.h>
+#include <circle/memory.h>
 #include <assert.h>
 
 #define DMA_CHANNELS			7	// only channels 0-6 are supported so far
@@ -139,8 +140,8 @@ void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t 
 						    | TI_SRC_INC
 						    | TI_DEST_WIDTH
 						    | TI_DEST_INC;
-	m_pControlBlock->nSourceAddress           = (u32) pSource + GPU_MEM_BASE;
-	m_pControlBlock->nDestinationAddress      = (u32) pDestination + GPU_MEM_BASE;
+	m_pControlBlock->nSourceAddress           = (u32) CMemorySystem::GetUncachedAlias(pSource);
+	m_pControlBlock->nDestinationAddress      = (u32) CMemorySystem::GetUncachedAlias(pDestination);
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
@@ -170,7 +171,7 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 						    | TI_DEST_INC
 						    | TI_WAIT_RESP;
 	m_pControlBlock->nSourceAddress           = nIOAddress;
-	m_pControlBlock->nDestinationAddress      = (u32) pDestination + GPU_MEM_BASE;
+	m_pControlBlock->nDestinationAddress      = (u32) CMemorySystem::GetUncachedAlias(pDestination);
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
@@ -198,7 +199,7 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 						    | TI_SRC_INC
 						    | TI_DEST_DREQ
 						    | TI_WAIT_RESP;
-	m_pControlBlock->nSourceAddress           = (u32) pSource + GPU_MEM_BASE;
+	m_pControlBlock->nSourceAddress           = (u32) CMemorySystem::GetUncachedAlias(pSource);
 	m_pControlBlock->nDestinationAddress      = nIOAddress;
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
@@ -228,8 +229,8 @@ void CDMAChannel::SetupMemCopy2D (void *pDestination, const void *pSource,
 						    | TI_DEST_WIDTH
 						    | TI_DEST_INC
 						    | TI_TDMODE;
-	m_pControlBlock->nSourceAddress           = (u32) pSource + GPU_MEM_BASE;
-	m_pControlBlock->nDestinationAddress      = (u32) pDestination + GPU_MEM_BASE;
+	m_pControlBlock->nSourceAddress           = (u32) CMemorySystem::GetUncachedAlias(pSource);
+	m_pControlBlock->nDestinationAddress      = (u32) CMemorySystem::GetUncachedAlias(pDestination);
 	m_pControlBlock->nTransferLength          =   ((nBlockCount-1) << TXFR_LEN_YLENGTH_SHIFT)
 						    | (nBlockLength << TXFR_LEN_XLENGTH_SHIFT);
 	m_pControlBlock->n2DModeStride            = nBlockStride << STRIDE_DEST_SHIFT;
@@ -275,7 +276,7 @@ void CDMAChannel::Start (void)
 	assert (!(read32 (ARM_DMACHAN_CS (m_nChannel)) & CS_INT));
 	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nChannel)));
 
-	write32 (ARM_DMACHAN_CONBLK_AD (m_nChannel), (u32) m_pControlBlock + GPU_MEM_BASE);
+	write32 (ARM_DMACHAN_CONBLK_AD (m_nChannel), (u32) CMemorySystem::GetUncachedAlias(m_pControlBlock));
 
 	CleanAndInvalidateDataCacheRange ((u32) m_pControlBlock, sizeof *m_pControlBlock);
 

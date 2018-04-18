@@ -93,7 +93,7 @@ boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
 
 	DataSyncBarrier ();
 
-	u32 nBufferAddress = GPU_MEM_BASE + (u32) pBuffer;
+	u32 nBufferAddress = (u32) CMemorySystem::GetUncachedAlias(pBuffer);
 	if (m_MailBox.WriteRead (nBufferAddress) != nBufferAddress)
 	{
 		return FALSE;
