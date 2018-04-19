@@ -125,6 +125,7 @@ Net library
 * CNetConnection: Virtual transport layer connection (UDP or TCP (not yet available)).
 * CNetDeviceLayer: Encapsulates the network device support layer. Queues TX/RX frames before/after transmission.
 * CNetQueue: Encapsulates a network packet queue.
+* CNetSocket: Base class of networking sockets.
 * CNetSubSystem: The main network subsystem class. Create an instance of it in the CKernel class.
 * CNetTask: The main networking task running in the background. Processes the different network layers.
 * CNetworkLayer: Encapsulates the IP network layer. Does not support packet fragmentation so far.

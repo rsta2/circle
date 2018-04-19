@@ -24,7 +24,8 @@
 #include <assert.h>
 
 CSocket::CSocket (CNetSubSystem *pNetSubSystem, int nProtocol)
-:	m_pNetConfig (pNetSubSystem->GetConfig ()),
+:	CNetSocket (pNetSubSystem),
+	m_pNetConfig (pNetSubSystem->GetConfig ()),
 	m_pTransportLayer (pNetSubSystem->GetTransportLayer ()),
 	m_nProtocol (nProtocol),
 	m_nOwnPort (0),
@@ -36,7 +37,8 @@ CSocket::CSocket (CNetSubSystem *pNetSubSystem, int nProtocol)
 }
 
 CSocket::CSocket (CSocket &rSocket, int hConnection)
-:	m_pNetConfig (rSocket.m_pNetConfig),
+:	CNetSocket (rSocket.GetNetSubSystem ()),
+	m_pNetConfig (rSocket.m_pNetConfig),
 	m_pTransportLayer (rSocket.m_pTransportLayer),
 	m_nProtocol (rSocket.m_nProtocol),
 	m_nOwnPort (rSocket.m_nOwnPort),
