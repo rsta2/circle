@@ -59,6 +59,22 @@ target "monitor" like you have done for "flash" before. When you start
 "building" this "monitor" target, putty should open with the right communication
 parameters.
 
+8. Optionally, if you wish to use Eclipse code completion, you should add the
+following paths under "Project Properties > C/C++ General > Paths and Symbols"
+in the "Includes" tab (according to your Circle path):
+
+	~/circle/include
+	~/circle/include/circle
+	~/circle/include/circle/bt
+	~/circle/include/circle/fs
+	~/circle/include/circle/input
+	~/circle/include/circle/net
+	~/circle/include/circle/sched
+	~/circle/include/circle/usb
+
+Make sure to rebuild the C++ index by right clicking on the opened Circle
+project in the project explorer if using included paths.
+
 
 The bootloader starts manually (without Eclipse IDE) when you go to the
 subdirectory of your application (or sample program) in a shell and enter:
