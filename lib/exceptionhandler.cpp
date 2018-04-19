@@ -2,7 +2,7 @@
 // exceptionhandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <circle/multicore.h>
 #include <circle/sysconfig.h>
 #include <circle/string.h>
+#include <circle/macros.h>
 #include <assert.h>
 
 #ifndef ARM_ALLOW_MULTI_CORE
@@ -137,7 +138,9 @@ void ExceptionHandler (u32 nException, TAbortFrame *pFrame)
 
 #if STDLIB_SUPPORT == 1 || STDLIB_SUPPORT == 2
 
-extern "C" int raise (int nSignal)
+extern "C" int raise (int nSignal) WEAK;
+
+int raise (int nSignal)
 {
 	CExceptionHandler::Get ()->Throw (EXCEPTION_UNKNOWN);
 

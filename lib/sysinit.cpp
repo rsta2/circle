@@ -25,6 +25,7 @@
 #include <circle/memory.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
+#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
@@ -33,14 +34,12 @@ extern "C" {
 
 void *__dso_handle;
 
-#if STDLIB_SUPPORT <= 2
+void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle) WEAK;
 
 void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 {
 	// TODO
 }
-
-#endif
 
 #if STDLIB_SUPPORT >= 2
 
