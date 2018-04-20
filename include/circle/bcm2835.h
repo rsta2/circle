@@ -43,6 +43,9 @@
 	#define GPU_MEM_BASE	GPU_UNCACHED_BASE
 #endif
 
+// Convert ARM address to GPU bus address (does also work for aliases)
+#define BUS_ADDRESS(addr)	(((addr) & ~0xC0000000) | GPU_MEM_BASE)
+
 //
 // General Purpose I/O
 //
