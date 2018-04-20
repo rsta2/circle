@@ -2,7 +2,7 @@
 // bcmframebuffer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/bcmframebuffer.h>
+#include <circle/sysconfig.h>
 #include <circle/util.h>
 
 static struct
@@ -185,7 +186,11 @@ u32 CBcmFrameBuffer::GetDepth (void) const
 
 u32 CBcmFrameBuffer::GetBuffer (void) const
 {
+#ifndef USE_ALPHA_STUB_AT
 	return m_nBufferPtr;
+#else
+	return m_nBufferPtr + MEM_ALPHA_COHERENT_ALIAS;
+#endif
 }
 
 u32 CBcmFrameBuffer::GetSize (void) const

@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ boolean CTimer::Initialize (void)
 	TuneMsDelay ();
 #endif
 
-#ifdef USE_PHYSICAL_COUNTER
+#if defined (USE_PHYSICAL_COUNTER) && !defined (USE_ALPHA_STUB_AT)
 	u32 nCNTFRQ;
 	asm volatile ("mrc p15, 0, %0, c14, c0, 0" : "=r" (nCNTFRQ));
 

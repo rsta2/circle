@@ -22,7 +22,7 @@
 
 #include <circle/sysconfig.h>
 
-#if RASPPI == 1
+#if RASPPI == 1 || defined (USE_ALPHA_STUB_AT)
 #define ARM_IO_BASE		0x20000000
 #else
 #define ARM_IO_BASE		0x3F000000
