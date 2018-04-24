@@ -163,6 +163,9 @@ USB library
 
 Net library
 
+* CMQTTClient: Client for the MQTT IoT protocol
+* CMQTTReceivePacket: MQTT helper class
+* CMQTTSendPacket: MQTT helper class
 * CNetSocket: Base class of networking sockets
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
