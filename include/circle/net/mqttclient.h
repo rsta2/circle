@@ -48,7 +48,7 @@ enum TMQTTDisconnectReason
 	// additional errors
 	MQTTDisconnectDNSError,
 	MQTTDisconnectConnectFailed,
-	MQTTDisconnectFromPear,
+	MQTTDisconnectFromPeer,
 	MQTTDisconnectInvalidPacket,
 	MQTTDisconnectPacketIdentifier,
 	MQTTDisconnectSubscribeError,

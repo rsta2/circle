@@ -36,7 +36,7 @@ const char *CMQTTClient::s_pErrorMsg[MQTTDisconnectUnknown+1] =
 	"Not authorized",
 	"DNS error",
 	"Connect failed",
-	"Disconnect from pear",
+	"Disconnect from peer",
 	"Invalid packet received",
 	"Invalid identifier",
 	"Subscribe error",
@@ -396,7 +396,7 @@ void CMQTTClient::Receiver (void)
 			return;
 
 		case MQTTReceiveDisconnect:
-			CloseConnection (MQTTDisconnectFromPear);
+			CloseConnection (MQTTDisconnectFromPeer);
 			return;
 
 		case MQTTReceiveNotEnoughMemory:
