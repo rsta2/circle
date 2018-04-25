@@ -272,20 +272,26 @@ void CMemorySystem::EnableMMU (void)
 
 u32 CMemorySystem::GetCoherentPage (unsigned nSlot)
 {
-	return MEM_COHERENT_REGION + GPU_CACHE_COHERENT_BASE + nSlot * PAGE_SIZE;
-}
+#ifndef USE_RPI_STUB_AT
+	u32 nPageAddress = MEM_COHERENT_REGION;
+#else
+	u32 nPageAddress;
+	u32 nSize;
 
-const void* CMemorySystem::GetUncachedAlias (const void* pData)
-{
-	auto pPtr = static_cast<const char*>(pData);
-	auto nAddr = reinterpret_cast<uintptr>(pData);
+	asm volatile
+	(
+		"push {r0-r1}\n"
+		"mov r0, #1\n"
+		"bkpt #0x7FFA\n"	// get coherent region from rpi_stub
+		"mov %0, r0\n"
+		"mov %1, r1\n"
+		"pop {r0-r1}\n"
 
-	if ((nAddr & GPU_UNCACHED_BASE) == GPU_UNCACHED_BASE)
-		return pPtr;
-	else if ((nAddr & GPU_CACHED_BASE) == GPU_CACHED_BASE)
-		pPtr -= GPU_CACHED_BASE;
-	else if ((nAddr & GPU_CACHE_COHERENT_BASE) == GPU_CACHE_COHERENT_BASE)
-		pPtr -= GPU_CACHE_COHERENT_BASE;
+		: "=r" (nPageAddress), "=r" (nSize)
+	);
+#endif
 
-	return pPtr + GPU_UNCACHED_BASE;
+	nPageAddress += nSlot * PAGE_SIZE;
+
+	return nPageAddress;
 }

@@ -52,9 +52,6 @@ public:
 #define COHERENT_SLOT_VCHIQ_START	(MEGABYTE / PAGE_SIZE / 2)
 #define COHERENT_SLOT_VCHIQ_END		(MEGABYTE / PAGE_SIZE - 1)
 
-	// Return the pointer alias to pData in the uncached memory region.
-	static const void* GetUncachedAlias (const void* pData);
-
 	static CMemorySystem *Get (void);
 
 private:

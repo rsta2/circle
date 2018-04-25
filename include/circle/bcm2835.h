@@ -22,37 +22,16 @@
 
 #include <circle/sysconfig.h>
 
-// The default configuration of the MMU defines four main memory areas in the
-// system bus mapping the SDRAM and IO peripherals, each having distinct caching
-// properties (documented in page 5 of BCM2835 ARM Peripherals Manual):
-//  - "0": from 0x00000000, with L1 and L2 caching.
-//  - "4": from 0x40000000, with L2 cache-coherency.
-//  - "8": from 0x80000000, with L2 caching only.
-//  - "C": from 0xC0000000, with uncached direct access.
-
-#ifndef ARM_IO_BASE
-	#if RASPPI == 1
-		#define ARM_IO_BASE		0x20000000
-	#else
-		#define ARM_IO_BASE		0x3F000000
-	#endif
+#if RASPPI == 1
+#define ARM_IO_BASE		0x20000000
+#else
+#define ARM_IO_BASE		0x3F000000
 #endif
 
-#ifndef GPU_IO_BASE
-	#define GPU_IO_BASE		0x7E000000
-#endif
+#define GPU_IO_BASE		0x7E000000
 
-#ifndef GPU_CACHED_BASE
-	#define GPU_CACHED_BASE		0x40000000
-#endif
-
-#ifndef GPU_UNCACHED_BASE
-	#define GPU_UNCACHED_BASE	0xC0000000
-#endif
-
-#ifndef GPU_CACHE_COHERENT_BASE
-	#define GPU_CACHE_COHERENT_BASE	GPU_CACHED_BASE
-#endif
+#define GPU_CACHED_BASE		0x40000000
+#define GPU_UNCACHED_BASE	0xC0000000
 
 #if RASPPI == 1
 	#ifdef GPU_L2_CACHE_ENABLED

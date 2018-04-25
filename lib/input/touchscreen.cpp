@@ -62,7 +62,7 @@ boolean CTouchScreenDevice::Initialize (void)
 
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple TagSimple;
-	TagSimple.nValue = (u32) CMemorySystem::GetUncachedAlias((void*) nTouchBuffer);
+	TagSimple.nValue = nTouchBuffer + GPU_MEM_BASE;
 	if (!Tags.GetTag (PROPTAG_SET_TOUCHBUF, &TagSimple, sizeof TagSimple))
 	{
 		if (!Tags.GetTag (PROPTAG_GET_TOUCHBUF, &TagSimple, sizeof TagSimple))
