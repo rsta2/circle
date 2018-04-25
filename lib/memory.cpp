@@ -2,7 +2,7 @@
 // memory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -274,6 +274,8 @@ u32 CMemorySystem::GetCoherentPage (unsigned nSlot)
 {
 #ifndef USE_RPI_STUB_AT
 	u32 nPageAddress = MEM_COHERENT_REGION;
+#elif defined (USE_ALPHA_STUB_AT)
+	u32 nPageAddress = MEM_COHERENT_REGION + MEM_ALPHA_COHERENT_ALIAS;
 #else
 	u32 nPageAddress;
 	u32 nSize;

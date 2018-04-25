@@ -2,7 +2,7 @@
 // netsubsystem.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,6 +48,8 @@ public:
 
 	boolean IsRunning (void) const;			// is DHCP bound if used?
 
+	static CNetSubSystem *Get (void);
+
 private:
 	CNetConfig	m_Config;
 	CNetDeviceLayer	m_NetDevLayer;
@@ -57,6 +59,8 @@ private:
 
 	boolean		m_bUseDHCP;
 	CDHCPClient    *m_pDHCPClient;
+
+	static CNetSubSystem *s_pThis;
 };
 
 #endif

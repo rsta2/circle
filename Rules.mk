@@ -99,4 +99,25 @@ $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.
 	wc -c $(TARGET).img
 
 clean:
-	rm -f *.o *.a *.elf *.lst *.img *.cir *.map *~ $(EXTRACLEAN)
+	rm -f *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
+
+#
+# Eclipse support
+#
+
+SERIALPORT  ?= /dev/ttyUSB0
+USERBAUD ?= 115200
+FLASHBAUD ?= 115200
+REBOOTMAGIC ?=
+
+$(TARGET).hex: $(TARGET).img
+	$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
+
+flash: $(TARGET).hex
+ifneq ($(strip $(REBOOTMAGIC)),)
+	python $(CIRCLEHOME)/tools/reboottool.py $(REBOOTMAGIC) $(SERIALPORT) $(USERBAUD)
+endif
+	python $(CIRCLEHOME)/tools/flasher.py $(TARGET).hex $(SERIALPORT) $(FLASHBAUD)
+
+monitor:
+	putty -serial $(SERIALPORT) -sercfg $(USERBAUD)

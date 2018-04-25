@@ -23,6 +23,8 @@
 #include <circle/sched/scheduler.h>
 #include <assert.h>
 
+CNetSubSystem *CNetSubSystem::s_pThis = 0;
+
 CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8 *pDefaultGateway, const u8 *pDNSServer)
 :	m_NetDevLayer (&m_Config),
 	m_LinkLayer (&m_Config, &m_NetDevLayer),
@@ -31,6 +33,9 @@ CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8
 	m_bUseDHCP (pIPAddress == 0 ? TRUE : FALSE),
 	m_pDHCPClient (0)
 {
+	assert (s_pThis == 0);
+	s_pThis = this;
+
 	m_Config.SetDHCP (m_bUseDHCP);
 
 	if (!m_bUseDHCP)
@@ -54,6 +59,8 @@ CNetSubSystem::~CNetSubSystem (void)
 {
 	delete m_pDHCPClient;
 	m_pDHCPClient = 0;
+
+	s_pThis = 0;
 }
 
 boolean CNetSubSystem::Initialize (void)
@@ -133,4 +140,10 @@ boolean CNetSubSystem::IsRunning (void) const
 
 	assert (m_pDHCPClient != 0);
 	return m_pDHCPClient->IsBound ();
+}
+
+CNetSubSystem *CNetSubSystem::Get (void)
+{
+	assert (s_pThis != 0);
+	return s_pThis;
 }

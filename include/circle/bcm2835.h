@@ -22,7 +22,7 @@
 
 #include <circle/sysconfig.h>
 
-#if RASPPI == 1
+#if RASPPI == 1 || defined (USE_ALPHA_STUB_AT)
 #define ARM_IO_BASE		0x20000000
 #else
 #define ARM_IO_BASE		0x3F000000
@@ -42,6 +42,9 @@
 #else
 	#define GPU_MEM_BASE	GPU_UNCACHED_BASE
 #endif
+
+// Convert ARM address to GPU bus address (does also work for aliases)
+#define BUS_ADDRESS(addr)	(((addr) & ~0xC0000000) | GPU_MEM_BASE)
 
 //
 // General Purpose I/O

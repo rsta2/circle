@@ -42,3 +42,6 @@ Idea for sample/30-gpiofiq
 
 Marco Maccaferri
 USB HID class gamepad driver
+
+@Matheus-Garbelini
+Adding bootloader support and tools

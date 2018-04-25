@@ -2,7 +2,7 @@
 // serial.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -69,6 +69,29 @@ public:
 	/// \param nOptions Serial options mask (see serial options)
 	void SetOptions (unsigned nOptions);
 
+	typedef void TMagicReceivedHandler (void);
+	/// \param pMagic String for which is searched in the received data\n
+	/// (must remain valid after return from this method)
+	/// \param pHandler Handler which is called, when the magic string is found
+	/// \note Does only work with interrupt driver.
+	void RegisterMagicReceivedHandler (const char *pMagic, TMagicReceivedHandler *pHandler);
+
+protected:
+	/// \return Number of bytes buffer space available for Write()
+	/// \note Does only work with interrupt driver.
+	unsigned AvailableForWrite (void);
+
+	/// \return Number of bytes already received available for Read()
+	/// \note Does only work with interrupt driver.
+	unsigned AvailableForRead (void);
+
+	/// \return Next received byte which will be returned by Read() (-1 if no data available)
+	/// \note Does only work with interrupt driver.
+	int Peek (void);
+
+	/// \brief Waits until all written bytes have been sent out
+	void Flush (void);
+
 private:
 	boolean Write (u8 uchChar);
 
@@ -95,6 +118,10 @@ private:
 	volatile unsigned m_nTxOutPtr;
 
 	unsigned m_nOptions;
+
+	const char *m_pMagic;
+	const char *m_pMagicPtr;
+	TMagicReceivedHandler *m_pMagicReceivedHandler;
 
 	CSpinLock m_SpinLock;
 	CSpinLock m_LineSpinLock;

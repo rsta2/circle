@@ -146,6 +146,7 @@ Directories
 * app: Place your own applications here. If you have own libraries put them into app/lib/.
 * boot: Do *make* in this directory to get the Raspberry Pi firmware files required to boot.
 * doc: Additional documentation files.
+* tools: Some tools for using Circle more comfortable (e.g. a serial bootloader).
 
 Classes
 -------
@@ -159,6 +160,10 @@ Base library
 USB library
 
 * CLAN7800Device: Driver for the on-board USB Gigabit Ethernet device of the Raspberry Pi 3 B+
+
+Net library
+
+* CNetSocket: Base class of networking sockets
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -165,7 +165,7 @@ TScreenStatus CScreenDevice::GetStatus (void)
 	return Status;
 }
 
-boolean CScreenDevice::SetStatus (TScreenStatus Status)
+boolean CScreenDevice::SetStatus (const TScreenStatus &Status)
 {
 	if (   m_nSize  != Status.nSize
 	    || m_nPitch != m_nWidth)

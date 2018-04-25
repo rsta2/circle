@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <circle/memory.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
+#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
@@ -33,14 +34,14 @@ extern "C" {
 
 void *__dso_handle;
 
-#if STDLIB_SUPPORT < 2
+void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle) WEAK;
 
 void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 {
 	// TODO
 }
 
-#else
+#if STDLIB_SUPPORT >= 2
 
 void __sync_synchronize (void)
 {
@@ -135,7 +136,7 @@ void sysinit (void)
 	// L1 data cache may contain random entries after reset, delete them
 	InvalidateDataCacheL1Only ();
 #endif
-#ifndef ARM_ALLOW_MULTI_CORE
+#if !defined (ARM_ALLOW_MULTI_CORE) && !defined (USE_ALPHA_STUB_AT)
 	// put all secondary cores to sleep
 	for (unsigned nCore = 1; nCore < CORES; nCore++)
 	{

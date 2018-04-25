@@ -2,7 +2,7 @@
 // alloc.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -216,11 +216,11 @@ void free (void *pBlock)
 void *calloc (size_t nBlocks, size_t nSize)
 {
 	nSize *= nBlocks;
-	assert (nSize >= nBlocks);
 	if (nSize == 0)
 	{
-		return 0;
+		nSize = 1;
 	}
+	assert (nSize >= nBlocks);
 
 	void *pNewBlock = malloc (nSize);
 	if (pNewBlock != 0)

@@ -8,7 +8,7 @@ void *dmam_alloc_coherent (struct device *dev, size_t size, dma_addr_t *dma_hand
 		return 0;
 	}
 
-	*dma_handle = dev->dma_mem.start + GPU_MEM_BASE;	// physical to bus address
+	*dma_handle = BUS_ADDRESS (dev->dma_mem.start);		// physical to bus address
 
 	return (void *) dev->dma_mem.start;
 }
