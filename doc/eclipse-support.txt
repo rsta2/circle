@@ -1,0 +1,82 @@
+ECLIPSE SUPPORT
+
+Circle provides some support to promote a more comfortable development process
+using the Eclipse IDE (www.eclipse.org). Currently this covers mainly a speed-up
+of the edit/build/test cycle by adapting a serial bootloader (by David Welch),
+which can be used directly from an Eclipse project space. The bootloader can
+also be used without Eclipse (see notes at the at of this file).
+
+To use the bootloader, you have to do the following:
+
+1. You need a serial USB adapter (3.3V level) connected to GPIO14/15 (Broadcom
+numbering) of your Raspberry Pi computer on one side and to your development
+machine on the other.
+
+2. On your development machine there must be a python interpreter (including the
+python-pyserial module) installed. You may also need the terminal program
+"putty".
+
+3. Add the following lines to the file Config.mk in the Circle root directory:
+
+	SERIALPORT = /dev/ttyUSB0	(device of your serial USB adapter)
+	FLASHBAUD = 115200		(baud rate for loading the application)
+	USERBAUD = 115200		(baud rate used by the application)
+
+By increasing FLASHBAUD you can speed-up to loading process very much. It
+depends on your serial adapter, which baud rates are possible. Common values are
+460800, 921600 or higher.
+
+USERBAUD is the baud rate, used by the application itself, if it communicates
+using the serial interface.
+
+4. The Circle project libraries used in your application have to be build
+manually using "./makeall" as described in the main README.md file.
+
+5. You have to prepare a SD card, which starts your Raspberry Pi in bootloader
+mode. Go to the boot/ subdirectory and enter:
+
+	make all
+
+After completion copy the files from boot/ to the SD card, which must have a FAT
+partition. Please note, that you have to repeat this step, if you change the
+parameter FLASHBAUD in Config.mk. The built bootloader is specific for this baud
+rate. Put the SD card into your Raspberry Pi, which is connected to your
+development machine and power it on.
+
+6. In the Eclipse project space of your application you have to create a build
+target named "flash" for the subdirectory where your application's source code
+files are in. Open the context menu of this subdirectory using the right mouse
+key to do this.
+
+Start building this target by the selecting it with the mouse and choosing the
+build command from its context menu. If the program has been built successfully,
+the bootloader will start automatically afterwards. When the completion message
+appears, the application should already run on your Raspberry Pi.
+
+7. If your application uses the serial interface itself, you can start the
+terminal program "putty" directly from the project space. You have to create a
+target "monitor" like you have done for "flash" before. When you start
+"building" this "monitor" target, putty should open with the right communication
+parameters.
+
+8. Optionally, if you wish to use Eclipse code completion, you should add the
+following paths under "Project Properties > C/C++ General > Paths and Symbols"
+in the "Includes" tab (according to your Circle path):
+
+	~/circle/include
+	~/circle/include/circle
+	~/circle/include/circle/bt
+	~/circle/include/circle/fs
+	~/circle/include/circle/input
+	~/circle/include/circle/net
+	~/circle/include/circle/sched
+	~/circle/include/circle/usb
+
+Make sure to rebuild the C++ index by right clicking on the opened Circle
+project in the project explorer if using included paths.
+
+
+The bootloader starts manually (without Eclipse IDE) when you go to the
+subdirectory of your application (or sample program) in a shell and enter:
+
+	make flash

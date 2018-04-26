@@ -1,8 +1,8 @@
 //
-// version.h
+// mqttsampleclient.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,16 +17,36 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_version_h
-#define _circle_version_h
+#ifndef _mqttsampleclient_h
+#define _mqttsampleclient_h
 
-#define CIRCLE_NAME			"Circle"
+#include <circle/net/mqttclient.h>
+#include <circle/net/netsubsystem.h>
+#include <circle/types.h>
 
-#define CIRCLE_MAJOR_VERSION		35
-#define CIRCLE_MINOR_VERSION		0
-#define CIRCLE_VERSION_STRING		"35"
+class CMQTTSampleClient : public CMQTTClient
+{
+public:
+	CMQTTSampleClient (CNetSubSystem *pNetSubSystem);
+	~CMQTTSampleClient (void);
 
-#define OS_NAME				CIRCLE_NAME
-#define OS_VERSION			CIRCLE_VERSION_STRING
+	void OnConnect (boolean bSessionPresent);
+
+	void OnDisconnect (TMQTTDisconnectReason Reason);
+
+	void OnMessage (const char *pTopic,
+			const u8 *pPayload, size_t nPayloadLength,
+			boolean bRetain);
+
+	void OnLoop (void);
+
+private:
+	float GetTemperature (void);
+
+private:
+	boolean m_bTimerRunning;
+	unsigned m_nConnectTime;
+	unsigned m_nLastPublishTime;
+};
 
 #endif

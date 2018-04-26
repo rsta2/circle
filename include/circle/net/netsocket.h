@@ -1,9 +1,9 @@
 //
-// socket.h
+// netsocket.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2018  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,110 +17,102 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_socket_h
-#define _circle_net_socket_h
+#ifndef _circle_net_netsocket_h
+#define _circle_net_netsocket_h
 
-#include <circle/net/netsocket.h>
 #include <circle/net/ipaddress.h>
-#include <circle/net/netconfig.h>
-#include <circle/net/transportlayer.h>
 #include <circle/types.h>
-
-#define SOCKET_MAX_LISTEN_BACKLOG	32
 
 class CNetSubSystem;
 
-class CSocket : public CNetSocket	/// Application programming interface to the TCP/IP network
+class CNetSocket	/// Base class of networking sockets
 {
 public:
 	/// \param pNetSubSystem Pointer to the network subsystem
-	/// \param nProtocol	 IPPROTO_TCP or IPPROTO_UDP (include circle/net/in.h)
-	CSocket (CNetSubSystem *pNetSubSystem, int nProtocol);
+	CNetSocket (CNetSubSystem *pNetSubSystem);
 
 	/// \brief Destructor (terminates an active connection)
-	~CSocket (void);
+	virtual ~CNetSocket (void);
 
 	/// \brief Bind own port number to this socket
 	/// \param nOwnPort Port number
 	/// \return Status (0 success, < 0 on error)
-	int Bind (u16 nOwnPort);
+	virtual int Bind (u16 nOwnPort) { return -1; }
 
 	/// \brief Connect to foreign host/port (TCP), setup foreign host/port address (UDP)
 	/// \param rForeignIP IP address of host to be connected
-	/// \param nForeignPort Number of port to be connected
+	/// \param nOwnPort   Number of port to be connected
 	/// \return Status (0 success, < 0 on error)
-	int Connect (CIPAddress &rForeignIP, u16 nForeignPort);
+	virtual int Connect (CIPAddress &rForeignIP, u16 nForeignPort) = 0;
+
+	/// \brief Connect to foreign host/port (TCP), setup foreign host/port address (UDP)
+	/// \param pHost Hostname or IP address string of host to be connected
+	/// \param pPort Decimal number string of port to be connected
+	/// \return Status (0 success, < 0 on error)
+	virtual int Connect (const char *pHost, const char *pPort);
 
 	/// \brief Listen for incoming connections (TCP only, must call Bind() before)
 	/// \param nBackLog Maximum number of simultaneous connections which may be accepted\n
-	/// in a row before Accept() is called (up to SOCKET_MAX_LISTEN_BACKLOG)
+	/// in a row before Accept() is called
 	/// \return Status (0 success, < 0 on error)
-	int Listen (unsigned nBackLog = 4);
+	virtual int Listen (unsigned nBackLog)  { return -1; }
 	/// \brief Accept an incoming connection (TCP only, must call Listen() before)
 	/// \param pForeignIP	IP address of the remote host will be returned here
 	/// \param pForeignPort	Remote port number will be returned here
 	/// \return Newly created socket to be used to communicate with the remote host (0 on error)
-	CSocket *Accept (CIPAddress *pForeignIP, u16 *pForeignPort);
+	virtual CNetSocket *Accept (CIPAddress *pForeignIP, u16 *pForeignPort) { return 0; }
 
 	/// \brief Send a message to a remote host
 	/// \param pBuffer Pointer to the message
 	/// \param nLength Length of the message
-	/// \param nFlags  MSG_DONTWAIT or 0 (both doesn't wait for completion of the send operation)
+	/// \param nFlags  MSG_DONTWAIT (non-blocking operation) or 0 (blocking operation)
 	/// \return Length of the sent message (< 0 on error)
-	int Send (const void *pBuffer, unsigned nLength, int nFlags);
+	virtual int Send (const void *pBuffer, unsigned nLength, int nFlags) = 0;
 
 	/// \brief Receive a message from a remote host
 	/// \param pBuffer Pointer to the message buffer
 	/// \param nLength Size of the message buffer in bytes\n
-	/// Should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
+	/// Should be at least FRAME_BUFFER_SIZE, otherwise data may get lost on some sockets
 	/// \param nFlags MSG_DONTWAIT (non-blocking operation) or 0 (blocking operation)
 	/// \return Length of received message (0 with MSG_DONTWAIT if no message available, < 0 on error)
-	int Receive (void *pBuffer, unsigned nLength, int nFlags);
+	virtual int Receive (void *pBuffer, unsigned nLength, int nFlags) = 0;
 
 	/// \brief Send a message to a specific remote host
 	/// \param pBuffer	Pointer to the message
 	/// \param nLength	Length of the message
-	/// \param nFlags	MSG_DONTWAIT or 0 (both doesn't wait for completion of the send operation)
+	/// \param nFlags	MSG_DONTWAIT (non-blocking operation) or 0 (blocking operation)
 	/// \param rForeignIP	IP address of host to be sent to (ignored on TCP socket)
 	/// \param nForeignPort	Number of port to be sent to (ignored on TCP socket)
 	/// \return Length of the sent message (< 0 on error)
-	int SendTo (const void *pBuffer, unsigned nLength, int nFlags,
-		    CIPAddress &rForeignIP, u16 nForeignPort);
+	virtual int SendTo (const void *pBuffer, unsigned nLength, int nFlags,
+			    CIPAddress &rForeignIP, u16 nForeignPort) { return -1; }
 
 	/// \brief Receive a message from a remote host, return host/port of remote host
 	/// \param pBuffer Pointer to the message buffer
 	/// \param nLength Size of the message buffer in bytes\n
-	/// Should be at least FRAME_BUFFER_SIZE, otherwise data may get lost
+	/// Should be at least FRAME_BUFFER_SIZE, otherwise data may get lost on some sockets
 	/// \param nFlags MSG_DONTWAIT (non-blocking operation) or 0 (blocking operation)
 	/// \param pForeignIP	IP address of host which has sent the message will be returned here
 	/// \param pForeignPort	Number of port from which the message has been sent will be returned here
 	/// \return Length of received message (0 with MSG_DONTWAIT if no message available, < 0 on error)
-	int ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
-			 CIPAddress *pForeignIP, u16 *pForeignPort);
+	virtual int ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
+				 CIPAddress *pForeignIP, u16 *pForeignPort) { return -1; }
 
 	/// \brief Call this with bAllowed == TRUE after Bind() or Connect() to be able\n
 	/// to send and receive broadcast messages (ignored on TCP socket)
 	/// \param bAllowed Sending and receiving broadcast messages allowed on this socket? (default FALSE)
 	/// \return Status (0 success, < 0 on error)
-	int SetOptionBroadcast (boolean bAllowed);
+	virtual int SetOptionBroadcast (boolean bAllowed) { return -1; }
 
 	/// \brief Get IP address of connected remote host
 	/// \return Pointer to IP address (four bytes, 0-pointer if not connected)
-	const u8 *GetForeignIP (void) const;
+	virtual const u8 *GetForeignIP (void) const = 0;
+
+protected:
+	CNetSubSystem *GetNetSubSystem (void);
 
 private:
-	CSocket (CSocket &rSocket, int hConnection);
-
-private:
-	CNetConfig	*m_pNetConfig;
-	CTransportLayer	*m_pTransportLayer;
-
-	int m_nProtocol;
-	u16 m_nOwnPort;
-	int m_hConnection;
-
-	unsigned m_nBackLog;
-	int m_hListenConnection[SOCKET_MAX_LISTEN_BACKLOG];
+	CNetSubSystem *m_pNetSubSystem;
 };
 
 #endif

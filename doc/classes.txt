@@ -121,10 +121,14 @@ Net library
 * CICMPHandler: ICMP error message handler and echo (ping) responder.
 * CIPAddress: Encapsulates an IP address.
 * CLinkLayer: Encapsulates the Ethernet MAC layer.
+* CMQTTClient: Client for the MQTT IoT protocol.
+* CMQTTReceivePacket: MQTT helper class.
+* CMQTTSendPacket: MQTT helper class.
 * CNetConfig: Encapsulates the network configuration.
 * CNetConnection: Virtual transport layer connection (UDP or TCP (not yet available)).
 * CNetDeviceLayer: Encapsulates the network device support layer. Queues TX/RX frames before/after transmission.
 * CNetQueue: Encapsulates a network packet queue.
+* CNetSocket: Base class of networking sockets.
 * CNetSubSystem: The main network subsystem class. Create an instance of it in the CKernel class.
 * CNetTask: The main networking task running in the background. Processes the different network layers.
 * CNetworkLayer: Encapsulates the IP network layer. Does not support packet fragmentation so far.

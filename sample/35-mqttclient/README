@@ -1,0 +1,62 @@
+README
+
+This sample program demonstrates, how the Circle MQTT client can be used to
+subscribe topics from a MQTT server/broker and receive messages from it, and to
+publish messages to the MQTT server. It is only working on Raspberry Pi models
+with on-board Ethernet controller.
+
+
+To use this sample you need a MQTT server/broker which supports version 3.1.1 of
+the MQTT protocol (e.g. Mosquitto) installed and running somewhere in your local
+network or on the Internet. One option to make such a server available is
+installing Mosquitto on a second Raspberry Pi with a network interface running
+Raspbian using:
+
+	sudo apt-get install mosquitto mosquitto-clients
+
+After reboot on an up-to-date Raspbian Stretch system the Mosquitto MQTT
+server/broker should work in the background then, waiting for MQTT clients to
+connect. You can test it using
+
+	mosquitto_sub -h localhost -t test/# -v
+
+to subscribe for receiving messages for all topics starting with "test/" and
+using
+
+	mosquitto_pub -h localhost -t test/test -m "Hello MQTT!"
+
+from a second terminal to publish a message to the topic "test/test".
+mosquitto_sub should receive and display this message. It can be terminated
+using Ctrl-C.
+
+Another option for a first test is the public MQTT server/broker
+"test.mosquitto.org" on the Internet. Please note that this server is available
+for anybody without authentication. That means, anybody may read your published
+messages, may overwrite them at any time or may publish viral content. So be
+careful!
+
+
+Before building the sample program, you have to update its configuration in the
+file mqttsampleclient.cpp. Normally you only need to set the host name or IP
+address of the MQTT server/broker to be used. If you are not using DHCP you can
+set your local network configuration in the file kernel.cpp too. Don't forget to
+connect your local Ethernet to the Ethernet connector of the Raspberry Pi.
+
+After initialization the sample program creates a connection to the configured
+MQTT server/broker. It subscribes to a topic (default "circle/temp") and after 5
+seconds it publishes the current CPU temperature of your Raspberry Pi to the
+same topic. Because it has subscribed to this topic before, it will receive a
+message back with this content (payload), which will be display on the screen
+(OnMessage). After another 30 seconds the client publishes the same topic again,
+and so on until it disconnects from the server/broker after 120 seconds. Please
+note that normally a client would not subscribe to the topics it publishes by
+itself. This is used here for demonstration purpose only.
+
+
+Some possible disconnect reasons (error messages) may be:
+
+* "Unacceptable protocol version" (MQTT server does not support MQTT v3.1.1)
+* "Not authorized" (MQTT server/broker requires authentication)
+* "DNS error" (Invalid host name or IP address of the MQTT server configured)
+* "Not supported" (Trying to send or receive multi-byte-character strings)
+* "Insufficient resources" (Increase Maximum packet size and/or queue depth)

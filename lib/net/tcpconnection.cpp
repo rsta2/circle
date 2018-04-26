@@ -425,13 +425,11 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 	{
 		switch (m_State)
 		{
-		case TCPStateCloseWait:
-			return 0;
-
 		case TCPStateClosed:
 		case TCPStateListen:
 		case TCPStateFinWait1:
 		case TCPStateFinWait2:
+		case TCPStateCloseWait:
 		case TCPStateClosing:
 		case TCPStateLastAck:
 		case TCPStateTimeWait:

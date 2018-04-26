@@ -1,6 +1,8 @@
 CMDLINE OPTIONS
 
-Create a file cmdline.txt on the SD(HC) card used for booting. The following options are available:
+Create a file cmdline.txt on the SD(HC) card used for booting. Multiple options
+must be placed on a single line delimited by a space character. The following
+options are available:
 
 width=640 height=480		Changes screen size (default is maximum size)
 

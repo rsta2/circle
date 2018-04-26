@@ -10,34 +10,16 @@ Overview
 
 Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be useable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2 and 3 and on Raspberry Pi Zero). It provides several ready-tested C++ classes which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered some samples which demonstrate the use of its classes.
 
-Please note that the included USB library was developed in a hobby project. There are known issues with it (e.g. no dynamic attachments, no error recovery, limited split support). For me it works well but that need not be the case with any device and in any situation.
-
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-A Real-Time OS?
----------------
-
-Circle is not a real-time OS. That means different simultaneous operations may interfere in respect of its timing behaviour. The provided samples are tested to work but if you try different combinations of hardware support classes this has to be tested by yourself.
-
-Nevertheless real-time applications based on Circle are possible. Have a look at *doc/realtime.txt* for more information!
-
-Release 34.1
-------------
-
-This intermediate release was necessary, because the new Raspberry Pi 3 Model B+ became available. Circle supports it now.
-
-Beside this a driver for the Auxiliary SPI master (SPI1) has been added. The sample/23-spisimple has been updated to support this too. The class CDMAChannel supports the 2D mode now. Furthermore there are some minor improvements in the network subsystem.
-
-The 34th Step
+The 35th Step
 -------------
 
-In this step a VCHIQ audio service driver and a VCHIQ interface driver have been added to Circle in the *addon/vc4/* subdirectory. They have been ported from Linux and allow to output sound via the HDMI connector. You need a HDMI display which is capable of output sound, to use this.
+In this step a client for the MQTT IoT protocol has been added to Circle. It is demonstrated in *sample/35-mqttclient*. See the *README* file in this directory for details.
 
-There is a new Linux kernel driver emulation library in *addon/linux/* which allows to use the VCHIQ interface driver from Linux with only a few changes.
+Furthermore a serial bootloader is available now and can be started directly from the Circle build environment. The well-known bootloader by David Welch is used here. See the file *doc/eclipse-support.txt* for instructions on using the bootloader with or without the Eclipse IDE.
 
-The new *sample/34-sounddevices* can be used to demonstrate the HDMI sound and integrates different sound devices (PWM, I2S, VCHIQ). See the *README* file in this directory for details.
-
-There is a new system option *USE_PHYSICAL_COUNTER* in *include/circle/sysconfig.h* which enables the use of the CPU internal physical counter on the Raspberry Pi 2 and 3, which should improve the system performance, especially if the scheduler is used. It cannot be used with QEMU and that's why it is not enabled by default.
+There is an incompatible change in behaviour of the CSocket API. Previously when a TCP connection received a FIN (disconnect) and the application called CSocket::Receive(), it did not get an error so far. Because of this, the disconnect has not been detectable. Now an error will be returned in this case. This may cause problems with existing user applications using TCP. You may have to check this.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
@@ -59,6 +41,7 @@ Circle supports the following features:
 |                       | C-assertions with stack trace                       |
 |                       | Hardware exception handler with stack trace         |
 |                       | GDB support using rpi_stub (Raspberry Pi 2 and 3)   |
+|                       | Serial bootloader (by David Welch) included         |
 |                       | QEMU support                                        |
 |                       |                                                     |
 | Legacy devices        | GPIO pins (with interrupt, Act LED) and clocks      |
@@ -90,7 +73,7 @@ Circle supports the following features:
 |                       | FatFs driver (full function, by ChaN)               |
 |                       |                                                     |
 | TCP/IP networking     | Protocols: ARP, IP, ICMP, UDP, TCP                  |
-|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog               |
+|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog, MQTT         |
 |                       | Servers: HTTP, TFTP                                 |
 |                       | BSD-like C++ socket API                             |
 |                       |                                                     |
@@ -146,19 +129,19 @@ Directories
 * app: Place your own applications here. If you have own libraries put them into app/lib/.
 * boot: Do *make* in this directory to get the Raspberry Pi firmware files required to boot.
 * doc: Additional documentation files.
+* tools: Some tools for using Circle more comfortable (e.g. a serial bootloader).
 
 Classes
 -------
 
 The following C++ classes were added to Circle:
 
-Base library
+Net library
 
-* CSPIMasterAUX: Driver for the auxiliary SPI master (SPI1)
-
-USB library
-
-* CLAN7800Device: Driver for the on-board USB Gigabit Ethernet device of the Raspberry Pi 3 B+
+* CMQTTClient: Client for the MQTT IoT protocol
+* CMQTTReceivePacket: MQTT helper class
+* CMQTTSendPacket: MQTT helper class
+* CNetSocket: Base class of networking sockets
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
