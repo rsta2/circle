@@ -98,7 +98,7 @@ boolean CTimer::Initialize (void)
 	TuneMsDelay ();
 #endif
 
-#ifdef USE_PHYSICAL_COUNTER
+#if defined (USE_PHYSICAL_COUNTER) && !defined (USE_ALPHA_STUB_AT)
 	u32 nCNTFRQ;
 	asm volatile ("mrc p15, 0, %0, c14, c0, 0" : "=r" (nCNTFRQ));
 

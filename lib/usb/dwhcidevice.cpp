@@ -7,7 +7,7 @@
 //	no dynamic attachments
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -790,7 +790,7 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 
 	// set DMA address
 	CDWHCIRegister DMAAddress (DWHCI_HOST_CHAN_DMA_ADDR (nChannel),
-				   pStageData->GetDMAAddress () + GPU_MEM_BASE);
+				   BUS_ADDRESS (pStageData->GetDMAAddress ()));
 	DMAAddress.Write ();
 
 	CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());

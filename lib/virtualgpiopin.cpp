@@ -2,7 +2,7 @@
 // virtualgpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
 // 
 // This file contains code taken from Linux:
 //	from file drivers/gpio/gpio-bcm-virt.c
@@ -50,7 +50,7 @@ CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
 
 		CBcmPropertyTags Tags;
 		TPropertyTagSimple TagSimple;
-		TagSimple.nValue = s_nGPIOBaseAddress + GPU_MEM_BASE;
+		TagSimple.nValue = BUS_ADDRESS (s_nGPIOBaseAddress);
 		if (!Tags.GetTag (PROPTAG_SET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))
 		{
 			if (Tags.GetTag (PROPTAG_GET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))

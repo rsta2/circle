@@ -4,7 +4,7 @@
 // Memory addresses and sizes
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -58,5 +58,10 @@
 #define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 2*MEGABYTE) & ~(MEGABYTE-1))
 
 #define MEM_HEAP_START		(MEM_COHERENT_REGION + MEGABYTE)
+
+#ifdef USE_ALPHA_STUB_AT
+	// maps the lower 1GB address range with strongly-ordered attributes
+	#define MEM_ALPHA_COHERENT_ALIAS	0x40000000
+#endif
 
 #endif

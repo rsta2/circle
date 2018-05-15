@@ -136,7 +136,7 @@ void sysinit (void)
 	// L1 data cache may contain random entries after reset, delete them
 	InvalidateDataCacheL1Only ();
 #endif
-#ifndef ARM_ALLOW_MULTI_CORE
+#if !defined (ARM_ALLOW_MULTI_CORE) && !defined (USE_ALPHA_STUB_AT)
 	// put all secondary cores to sleep
 	for (unsigned nCore = 1; nCore < CORES; nCore++)
 	{

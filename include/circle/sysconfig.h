@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,6 +35,36 @@
 // increase this value. The value must be a multiple of 16 KByte.
 
 #define KERNEL_MAX_SIZE		(2 * MEGABYTE)
+
+///////////////////////////////////////////////////////////////////////
+//
+// Debugging support
+//
+///////////////////////////////////////////////////////////////////////
+
+#if RASPPI >= 2
+
+// USE_RPI_STUB_AT enables the debugging support for rpi_stub and
+// defines the address where rpi_stub is loaded. See doc/debug.txt
+// for details! Kernel images built with this option defined do
+// normally not run without rpi_stub loaded.
+
+//#define USE_RPI_STUB_AT 	0x1F000000
+
+#endif
+
+// USE_ALPHA_STUB_AT enables the debugging support for Alpha GDB stubs
+// and defines the address where the stub is loaded. Kernel images built
+// with this option defined do not run without Alpha GDB stubs loaded.
+
+//#define USE_ALPHA_STUB_AT	0x7F00000
+
+// USE_QEMU_USB_FIX fixes an issue when using Circle images inside
+// QEMU. If you encounter Circle freezing when using USB in QEMU
+// you should activate this option. It must not be defined for
+// Circle images which will run on real Raspberry Pi boards.
+
+//#define USE_QEMU_USB_FIX
 
 ///////////////////////////////////////////////////////////////////////
 //
@@ -74,13 +104,6 @@
 
 #if RASPPI >= 2
 
-// USE_RPI_STUB_AT enables the debugging support for rpi_stub and
-// defines the address where rpi_stub is loaded. See doc/debug.txt
-// for details! Kernel images built with this option defined do
-// normally not run without rpi_stub loaded.
-
-//#define USE_RPI_STUB_AT 	0x1F000000
-
 #ifndef USE_RPI_STUB_AT
 
 // ARM_ALLOW_MULTI_CORE has to be defined to use multi-core support
@@ -89,13 +112,6 @@
 // because multiple cores may compete for bus time without use.
 
 //#define ARM_ALLOW_MULTI_CORE
-
-// USE_QEMU_USB_FIX fixes an issue when using Circle images inside
-// QEMU. If you encounter Circle freezing when using USB in QEMU
-// you should activate this option. It must not be defined for
-// Circle images which will run on real Raspberry Pi boards.
-
-//#define USE_QEMU_USB_FIX
 
 #endif
 
@@ -173,6 +189,11 @@
 //#define DEFAULT_KEYMAP		"US"
 
 ///////////////////////////////////////////////////////////////////////
+
+// USE_ALPHA_STUB_AT needs USE_RPI_STUB_AT
+#ifdef USE_ALPHA_STUB_AT
+	#define USE_RPI_STUB_AT		USE_ALPHA_STUB_AT
+#endif
 
 #include <circle/memorymap.h>
 
