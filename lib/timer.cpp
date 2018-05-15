@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -193,6 +193,24 @@ unsigned CTimer::GetTime (void) const
 	return m_nTime;
 }
 
+boolean CTimer::GetLocalTime (unsigned *pSeconds, unsigned *pMicroSeconds)
+{
+	m_TimeSpinLock.Acquire ();
+
+	unsigned nTime = m_nTime;
+	unsigned nTicks = m_nTicks;
+
+	m_TimeSpinLock.Release ();
+
+	assert (pSeconds != 0);
+	*pSeconds = nTime;
+
+	assert (pMicroSeconds != 0);
+	*pMicroSeconds = nTicks % HZ * (1000000 / HZ);
+
+	return TRUE;
+}
+
 unsigned CTimer::GetUniversalTime (void) const
 {
 	unsigned nResult = m_nTime;
@@ -204,6 +222,30 @@ unsigned CTimer::GetUniversalTime (void) const
 	}
 
 	return nResult - nSecondsDiff;
+}
+
+boolean CTimer::GetUniversalTime (unsigned *pSeconds, unsigned *pMicroSeconds)
+{
+	m_TimeSpinLock.Acquire ();
+
+	unsigned nTime = m_nTime;
+	unsigned nTicks = m_nTicks;
+
+	m_TimeSpinLock.Release ();
+
+	int nSecondsDiff = m_nMinutesDiff * 60;
+	if (nSecondsDiff > (int) nTime)
+	{
+		return FALSE;
+	}
+
+	assert (pSeconds != 0);
+	*pSeconds = nTime - nSecondsDiff;
+
+	assert (pMicroSeconds != 0);
+	*pMicroSeconds = nTicks % HZ * (1000000 / HZ);
+
+	return TRUE;
 }
 
 CString *CTimer::GetTimeString (void)

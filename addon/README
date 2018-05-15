@@ -1,6 +1,7 @@
 README
 
-The libraries and samples in this directory (and its subdirectories) have to be build manually. To build a sample the library has to be build first.
+The libraries and samples in this directory (and its subdirectories) have to be
+build manually. To build a sample the library has to be build first.
 
 Go to the directory of your choice and do:
 
@@ -10,6 +11,7 @@ make
 DIRECTORIES
 
 dio		Library providing access to the spi_dio board by BitWizard.nl
+display		Library providing drivers for displays (e.g. LCD dot-matrix)
 fatfs		FatFs - Generic FAT file system module with LFN support (by ChaN)
 OneWire		Support library for 1-wire devices (by Paul Stoffregen)
 Properties	Library providing access to configuration properties saved in a file

@@ -24,8 +24,9 @@ except Exception:
     
 try:
     F = open(fileaddress,"r")
-    data = F.read()
-    F.close()
+    F.seek(0, 2)
+    size = F.tell()
+    F.seek(0, 0)
 except Exception:
     print("ERROR: Cannot access file " + fileaddress + ". Check permissions!")
     ser.close()
@@ -35,14 +36,30 @@ print("Flashing with baudrate of "+ str(flashbaud) + "...")
 sys.stdout.flush()
 
 try:
-    ser.write(data)
+    blocksize = flashbaud / 5
+    offset = 0
+    while offset < size:
+        if sys.stdout.isatty():
+            percent = offset * 100 / size
+            print("\r" + str(percent) + "%"),
+            sys.stdout.flush()
+        readlen = blocksize
+        if size < readlen:
+            readlen = size
+        data = F.read(readlen)
+        ser.write(data)
+        offset += readlen
+    if sys.stdout.isatty():
+        print("\r"),
     print("Completed!\nRunning app...")
     sys.stdout.flush()
     time.sleep(1)
     ser.write("g")
 except Exception:
     print("ERROR: Serial port disconnected. Check connections!")
+    F.close()
     ser.close()
     exit()
 
+F.close()
 ser.close()

@@ -2,7 +2,7 @@
 // logger.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -293,18 +293,12 @@ void CLogger::WriteEvent (const char *pSource, TLogSeverity Severity, const char
 	strncpy (pEvent->Message, pMessage, LOG_MAX_MESSAGE);
 	pEvent->Message[LOG_MAX_MESSAGE-1] = '\0';
 
-	if (m_pTimer != 0)
+	unsigned nSeconds, nMicroSeconds;
+	if (   m_pTimer != 0
+	    && m_pTimer->GetLocalTime (&nSeconds, &nMicroSeconds))
 	{
-		// TODO: getting Time and nTicks is not atomic here
-		pEvent->Time = m_pTimer->GetLocalTime ();
-
-		unsigned nTicks = m_pTimer->GetTicks ();
-		nTicks %= HZ;
-#if (HZ != 100)
-		nTicks = nTicks * 100 / HZ;
-#endif
-		pEvent->nHundredthTime = nTicks;
-
+		pEvent->Time = nSeconds;
+		pEvent->nHundredthTime = nMicroSeconds / 10000;
 		pEvent->nTimeZone = m_pTimer->GetTimeZone ();
 	}
 	else

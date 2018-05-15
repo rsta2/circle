@@ -2,7 +2,7 @@
 // timer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -69,10 +69,21 @@ public:
 	unsigned GetTime (void) const;
 	/// \brief Same function as GetTime()
 	unsigned GetLocalTime (void) const	{ return GetTime (); }
+	/// \brief Get current local time (see GetTime()) with microseconds part
+	/// \param pSeconds Seconds will be stored here
+	/// \param pMicroSeconds Microseconds will be stored here
+	/// \return TRUE if time is valid
+	boolean GetLocalTime (unsigned *pSeconds, unsigned *pMicroSeconds);
 
 	/// \return Current time (UTC) in seconds since 1970-01-01 00:00:00\n
 	/// may be 0 if time was not set and time zone diff is > 0
 	unsigned GetUniversalTime (void) const;
+	/// \brief Get current time (UTC) with microseconds part
+	/// \param pSeconds Seconds will be stored here
+	/// \param pMicroSeconds Microseconds will be stored here
+	/// \return TRUE if time is valid\n
+	/// may be FALSE if time was not set and time zone diff is > 0
+	boolean GetUniversalTime (unsigned *pSeconds, unsigned *pMicroSeconds);
 
 	/// \return "[MMM dD ]HH:MM:SS.ss" or 0 if Initialize() was not called yet,\n
 	/// resulting CString object must be deleted by caller\n

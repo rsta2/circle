@@ -1,8 +1,14 @@
 README
 
 This sample does not work any more, because the eLinux.org server is using HTTPS
-now, which is not supported by Circle. The sample is retained here, because it
-shows how to communicate with HTTP servers.
+now, which is not supported by Circle itself. But there is SSL/TLS support in
+the circle-stdlib project of Stephan Muehlstrasser soon. If you are interested
+in this, have a look at:
+
+	https://github.com/smuehlst/circle-stdlib
+
+This sample has been ported to SSL/TLS support in the referenced project, but is
+retained here, because it shows how to communicate with HTTP servers.
 
 
 This sample program is only working on Raspberry Pi models with on-board
