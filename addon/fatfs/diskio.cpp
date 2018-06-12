@@ -14,16 +14,16 @@
 #include <circle/devicenameservice.h>
 #include <assert.h>
 
-#if _MIN_SS != _MAX_SS
-	#error _MIN_SS != _MAX_SS is not supported!
+#if FF_MIN_SS != FF_MAX_SS
+	#error FF_MIN_SS != FF_MAX_SS is not supported!
 #endif
-#define SECTOR_SIZE		_MIN_SS
+#define SECTOR_SIZE		FF_MIN_SS
 
 /*-----------------------------------------------------------------------*/
 /* Static Data                                                           */
 /*-----------------------------------------------------------------------*/
 
-static const char *s_pVolumeName[_VOLUMES] =
+static const char *s_pVolumeName[FF_VOLUMES] =
 {
 	"emmc1",
 	"umsd1",
@@ -31,7 +31,7 @@ static const char *s_pVolumeName[_VOLUMES] =
 	"umsd3",
 };
 
-static CDevice *s_pVolume[_VOLUMES] = {0};
+static CDevice *s_pVolume[FF_VOLUMES] = {0};
 
 
 
@@ -43,7 +43,7 @@ DSTATUS disk_status (
 	BYTE pdrv		/* Physical drive nmuber to identify the drive */
 )
 {
-	if (   pdrv < _VOLUMES
+	if (   pdrv < FF_VOLUMES
 	    && s_pVolume[pdrv] != 0)
 	{
 		return 0;
@@ -62,7 +62,7 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-	if (pdrv >= _VOLUMES)
+	if (pdrv >= FF_VOLUMES)
 	{
 		return STA_NOINIT;
 	}
@@ -89,7 +89,7 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-	if (pdrv >= _VOLUMES)
+	if (pdrv >= FF_VOLUMES)
 	{
 		return RES_PARERR;
 	}
@@ -125,7 +125,7 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-	if (pdrv >= _VOLUMES)
+	if (pdrv >= FF_VOLUMES)
 	{
 		return RES_PARERR;
 	}
