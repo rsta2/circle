@@ -115,31 +115,35 @@ void CTouchScreenDevice::Update (void)
 		unsigned y = (((unsigned) Regs.Point[i].yh & 0xF) << 8) | Regs.Point[i].yl;
 
 		unsigned nTouchID = (Regs.Point[i].yh >> 4) & 0xF;
+		unsigned nEventID = (Regs.Point[i].xh >> 6) & 0x3;
 		assert (nTouchID < TOUCH_SCREEN_MAX_POINTS);
 
 		nModifiedIDs |= 1 << nTouchID;
 
-		if (!((1 << nTouchID) & m_nKnownIDs))
+		if (nEventID == TouchScreenEventFingerMove || nEventID == TouchScreenEventFingerDown)
 		{
-			m_nPosX[nTouchID] = x;
-			m_nPosY[nTouchID] = y;
-
-			if (m_pEventHandler != 0)
-			{
-				(*m_pEventHandler) (TouchScreenEventFingerDown, nTouchID, x, y);
-			}
-		}
-		else
-		{
-			if (   x != m_nPosX[nTouchID]
-			    || y != m_nPosY[nTouchID])
+			if (!((1 << nTouchID) & m_nKnownIDs))
 			{
 				m_nPosX[nTouchID] = x;
 				m_nPosY[nTouchID] = y;
 
 				if (m_pEventHandler != 0)
 				{
-					(*m_pEventHandler) (TouchScreenEventFingerMove, nTouchID, x, y);
+					(*m_pEventHandler) (TouchScreenEventFingerDown, nTouchID, x, y);
+				}
+			}
+			else
+			{
+				if (   x != m_nPosX[nTouchID]
+					|| y != m_nPosY[nTouchID])
+				{
+					m_nPosX[nTouchID] = x;
+					m_nPosY[nTouchID] = y;
+
+					if (m_pEventHandler != 0)
+					{
+						(*m_pEventHandler) (TouchScreenEventFingerMove, nTouchID, x, y);
+					}
 				}
 			}
 		}
