@@ -39,6 +39,10 @@ struct TFT5406Buffer
 	Point[TOUCH_SCREEN_MAX_POINTS];
 };
 
+#define FTS_TOUCH_DOWN		0
+#define FTS_TOUCH_UP		1
+#define FTS_TOUCH_CONTACT	2
+
 static const char FromFT5406[] = "ft5406";
 
 CTouchScreenDevice::CTouchScreenDevice (void)
@@ -120,7 +124,7 @@ void CTouchScreenDevice::Update (void)
 
 		nModifiedIDs |= 1 << nTouchID;
 
-		if (nEventID == TouchScreenEventFingerMove || nEventID == TouchScreenEventFingerDown)
+		if (nEventID == FTS_TOUCH_CONTACT || nEventID == FTS_TOUCH_DOWN)
 		{
 			if (!((1 << nTouchID) & m_nKnownIDs))
 			{
@@ -135,7 +139,7 @@ void CTouchScreenDevice::Update (void)
 			else
 			{
 				if (   x != m_nPosX[nTouchID]
-					|| y != m_nPosY[nTouchID])
+				    || y != m_nPosY[nTouchID])
 				{
 					m_nPosX[nTouchID] = x;
 					m_nPosY[nTouchID] = y;
