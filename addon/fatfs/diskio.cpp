@@ -8,8 +8,8 @@
 /* storage control modules to the FatFs module with a defined API.       */
 /*-----------------------------------------------------------------------*/
 
+#include "ff.h"			/* Obtains integer types */
 #include "diskio.h"		/* FatFs lower layer API */
-#include "ffconf.h"		/* FatFs configuration options */
 #include <circle/device.h>
 #include <circle/devicenameservice.h>
 #include <assert.h>
