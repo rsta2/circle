@@ -87,7 +87,7 @@ void CUserTimer::Start (unsigned nDelayMicros)
 
 	PeripheralEntry ();
 
-	assert (nDelayMicros > 0);
+	assert (nDelayMicros > 1);
 	write32 (ARM_SYSTIMER_C1, read32 (ARM_SYSTIMER_CLO) + nDelayMicros);
 
 	PeripheralExit ();

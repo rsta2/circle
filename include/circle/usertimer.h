@@ -47,7 +47,7 @@ public:
 	/// \brief Stops the user timer, has to be re-initialized to be used again
 	void Stop (void);
 
-	/// \param nDelayMicros User timer elapses after this number of microseconds
+	/// \param nDelayMicros User timer elapses after this number of microseconds (> 1)
 	/// \note Must be called from user timer handler to a set new delay!
 	/// \note Can be called on a running user timer with a new delay
 	void Start (unsigned nDelayMicros);
