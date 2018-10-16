@@ -171,6 +171,22 @@
 //
 ///////////////////////////////////////////////////////////////////////
 
+// SAVE_VFP_REGS_ON_IRQ enables saving the floating point registers
+// on entry when an IRQ occurs and will restore these registers on exit
+// from the IRQ handler. This has to be defined, if an IRQ handler
+// modifies floating point registers. IRQ handling will be a little
+// slower then.
+
+//#define SAVE_VFP_REGS_ON_IRQ
+
+// SAVE_VFP_REGS_ON_FIQ enables saving the floating point registers
+// on entry when an FIQ occurs and will restore these registers on exit
+// from the FIQ handler. This has to be defined, if the FIQ handler
+// modifies floating point registers. FIQ handling will be a little
+// slower then.
+
+//#define SAVE_VFP_REGS_ON_FIQ
+
 // USE_QEMU_USB_FIX fixes an issue when using Circle images inside
 // QEMU. If you encounter Circle freezing when using USB in QEMU
 // you should activate this option. It must not be defined for

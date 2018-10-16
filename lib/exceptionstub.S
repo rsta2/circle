@@ -2,7 +2,7 @@
  * exceptionstub.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,9 +75,19 @@ UndefinedInstructionStub:
 	.globl	IRQStub
 IRQStub:
 	sub	lr, lr, #4			/* lr: return address */
-	stmfd	sp!, {r0-r12, lr}		/* save r0-r12 and return address */
+	stmfd	sp!, {r0-r3, r12, lr}		/* save r0-r3, r12 and return address */
+#ifdef SAVE_VFP_REGS_ON_IRQ
+	vmrs	r0, fpscr			/* save VFP registers */
+	stmfd	sp!, {r0}
+	vstmdb	sp!, {d0-d7}
+#endif
 	bl	InterruptHandler
-	ldmfd	sp!, {r0-r12, pc}^		/* restore registers and return */
+#ifdef SAVE_VFP_REGS_ON_IRQ
+	vldmia	sp!, {d0-d7}			/* restore VFP registers */
+	ldmfd	sp!, {r0}
+	vmsr	fpscr, r0
+#endif
+	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
 
 /*
  * FIQ stub
@@ -85,7 +95,12 @@ IRQStub:
 	.globl	FIQStub
 FIQStub:
 	sub	lr, lr, #4			/* lr: return address */
-	stmfd	sp!, {r0-r3, lr}		/* save r0-r3 and return address */
+	stmfd	sp!, {r0-r3, r12, lr}		/* save r0-r3, r12 and return address */
+#ifdef SAVE_VFP_REGS_ON_FIQ
+	vmrs	r0, fpscr			/* save VFP registers */
+	stmfd	sp!, {r0}
+	vstmdb	sp!, {d0-d7}
+#endif
 #if RASPPI == 1
 	mov	r3, #0
 	mcr	p15, 0, r3, c7, c10, 5		/* PeripheralExit() */
@@ -100,7 +115,12 @@ FIQStub:
 	mov	r3, #0
 	mcr	p15, 0, r3, c7, c10, 4		/* PeripheralEntry() */
 #endif
-	ldmfd	sp!, {r0-r3, pc}^		/* restore registers and return */
+#ifdef SAVE_VFP_REGS_ON_FIQ
+	vldmia	sp!, {d0-d7}			/* restore VFP registers */
+	ldmfd	sp!, {r0}
+	vmsr	fpscr, r0
+#endif
+	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
 
 1:
 #if RASPPI == 1
@@ -115,7 +135,12 @@ FIQStub:
 	mcr	p15, 0, r3, c7, c10, 5		/* PeripheralExit() */
 	mcr	p15, 0, r3, c7, c10, 4		/* PeripheralEntry() */
 #endif
-	ldmfd	sp!, {r0-r3, pc}^		/* restore registers and return */
+#ifdef SAVE_VFP_REGS_ON_FIQ
+	vldmia	sp!, {d0-d7}			/* restore VFP registers */
+	ldmfd	sp!, {r0}
+	vmsr	fpscr, r0
+#endif
+	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
 
 	.data
 
