@@ -79,11 +79,17 @@ IRQStub:
 #ifdef SAVE_VFP_REGS_ON_IRQ
 	vmrs	r0, fpscr			/* save VFP registers */
 	stmfd	sp!, {r0}
-	vstmdb	sp!, {d0-d7}
+	vstmdb	sp!, {d0-d15}
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vstmdb	sp!, {d16-d31}
+#endif
 #endif
 	bl	InterruptHandler
 #ifdef SAVE_VFP_REGS_ON_IRQ
-	vldmia	sp!, {d0-d7}			/* restore VFP registers */
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vldmia	sp!, {d16-d31}
+#endif
+	vldmia	sp!, {d0-d15}			/* restore VFP registers */
 	ldmfd	sp!, {r0}
 	vmsr	fpscr, r0
 #endif
@@ -99,7 +105,10 @@ FIQStub:
 #ifdef SAVE_VFP_REGS_ON_FIQ
 	vmrs	r0, fpscr			/* save VFP registers */
 	stmfd	sp!, {r0}
-	vstmdb	sp!, {d0-d7}
+	vstmdb	sp!, {d0-d15}
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vstmdb	sp!, {d16-d31}
+#endif
 #endif
 #if RASPPI == 1
 	mov	r3, #0
@@ -116,7 +125,10 @@ FIQStub:
 	mcr	p15, 0, r3, c7, c10, 4		/* PeripheralEntry() */
 #endif
 #ifdef SAVE_VFP_REGS_ON_FIQ
-	vldmia	sp!, {d0-d7}			/* restore VFP registers */
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vldmia	sp!, {d16-d31}
+#endif
+	vldmia	sp!, {d0-d15}			/* restore VFP registers */
 	ldmfd	sp!, {r0}
 	vmsr	fpscr, r0
 #endif
@@ -136,7 +148,10 @@ FIQStub:
 	mcr	p15, 0, r3, c7, c10, 4		/* PeripheralEntry() */
 #endif
 #ifdef SAVE_VFP_REGS_ON_FIQ
-	vldmia	sp!, {d0-d7}			/* restore VFP registers */
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vldmia	sp!, {d16-d31}
+#endif
+	vldmia	sp!, {d0-d15}			/* restore VFP registers */
 	ldmfd	sp!, {r0}
 	vmsr	fpscr, r0
 #endif
