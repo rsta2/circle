@@ -12,21 +12,16 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-Release 35.1
-------------
-
-This intermediate release is done to allow a new release of the [circle-stdlib project](https://github.com/smuehlst/circle-stdlib), which provides C and C++ standard library support for Circle and which has been extended with SSL/TLS support by porting [mbed TLS](https://tls.mbed.org/).
-
-Another new feature in this release is a driver for LCD dot-matrix displays with HD44780 controller in the *addon/display/* subdirectory.
-
-The 35th Step
+The 36th Step
 -------------
 
-In this step a client for the MQTT IoT protocol has been added to Circle. It is demonstrated in *sample/35-mqttclient*. See the *README* file in this directory for details.
+In this step the class *CUserTimer* has been added to Circle, which implements a fine grained user programmable interrupt timer. It can generate up to 500000 interrupts per second (if used with FIQ).
 
-Furthermore a serial bootloader is available now and can be started directly from the Circle build environment. The well-known bootloader by David Welch is used here. See the file *doc/eclipse-support.txt* for instructions on using the bootloader with or without the Eclipse IDE.
+*CUserTimer* is used in the new *sample/36-softpwm* to implement Software PWM (Pulse Width Modulation), which can be used to control the brightness of a LED or a servo. See the *README* file in this directory for details.
 
-There is an incompatible change in behaviour of the CSocket API. Previously when a TCP connection received a FIN (disconnect) and the application called CSocket::Receive(), it did not get an error so far. Because of this, the disconnect has not been detectable. Now an error will be returned in this case. This may cause problems with existing user applications using TCP. You may have to check this.
+This release of Circle comes with an updated version of the FatFs module (in *addon/fatfs*). Furthermore there have been fixes to the touchscreen driver and the bootloader tools. Finally there are the new system options *SAVE_VFP_REGS_ON_IRQ* and *SAVE_VFP_REGS_ON_FIQ* in *include/circle/sysconfig.h*, which can be enabled if your application uses floating point registers in interrupt handlers.
+
+You may be interested in the [Alpha GDB server](https://github.com/farjump/Alpha_Raspberry_Pi_Circle) by Farjump, which can be used to source-level debug single-core Circle applications with the GNU debugger (GDB).
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
