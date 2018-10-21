@@ -21,6 +21,7 @@ Providing fixes for using u-boot
 Fixing issues for u-boot support
 Support while adding CPU clock rate management and sample/26-cpustress
 Testing while adding USB transaction queueing and SOF interrupt support
+Updating addon/fatfs/ module
 
 Arjan van Vught
 Support while adding Raspberry Pi 3 support

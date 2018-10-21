@@ -1,6 +1,7 @@
 import serial
 import sys
 import time
+import math
 
 try:
     fileaddress = ' '.join(sys.argv[1:2])
@@ -23,7 +24,7 @@ except Exception:
     exit()
     
 try:
-    F = open(fileaddress,"r")
+    F = open(fileaddress,"rb")
     F.seek(0, 2)
     size = F.tell()
     F.seek(0, 0)
@@ -36,11 +37,11 @@ print("Flashing with baudrate of "+ str(flashbaud) + "...")
 sys.stdout.flush()
 
 try:
-    blocksize = flashbaud / 5
+    blocksize = math.trunc(flashbaud / 5)
     offset = 0
     while offset < size:
         if sys.stdout.isatty():
-            percent = offset * 100 / size
+            percent = math.trunc(offset * 100 / size)
             print("\r" + str(percent) + "%"),
             sys.stdout.flush()
         readlen = blocksize
@@ -54,7 +55,7 @@ try:
     print("Completed!\nRunning app...")
     sys.stdout.flush()
     time.sleep(1)
-    ser.write("g")
+    ser.write(b"g")
 except Exception:
     print("ERROR: Serial port disconnected. Check connections!")
     F.close()

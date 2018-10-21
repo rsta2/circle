@@ -1,0 +1,20 @@
+README
+
+This sample program uses the class CUserTimer to implement software PWM to
+control the output level of GPIO 22 and 23. If there is a LED connected (via a
+resistor!) to one of these pins its brightness changes continuously. The state
+of GPIO 23 is opposed to that of GPIO 22. When the LED at GPIO 22 is bright, the
+LED on GPIO 23 is dark.
+
+Software PWM can be used, if you need more than the two available hardware PWM
+channels (see sample/13-pwmoutput) and for GPIO pins, which normally do not
+support hardware PWM output. This sample uses two software PWM channels, but
+more channels can be added if needed.
+
+Before building the sample you may change its configuration (used GPIO pins, PWM
+clock, PWM range) in the file kernel.cpp.
+
+The sample has been tested successfully with a PWM clock of up to 500000 Hz
+(with FIQ only) while the PWM signal has been checked with a digital
+oscilloscope. It has not been tested with a servo, but should be usable to
+control servos too.

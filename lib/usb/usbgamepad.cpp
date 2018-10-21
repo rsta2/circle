@@ -2,7 +2,7 @@
 // usbgamepad.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // Ported from the USPi driver which is:
 // 	Copyright (C) 2014  M. Maccaferri <macca@maccasoft.com>
@@ -179,7 +179,6 @@ boolean CUSBGamePadDevice::Configure (void)
 
 const TGamePadState *CUSBGamePadDevice::GetReport (void)
 {
-	assert (0 < m_usReportSize && m_usReportSize < 64);
 	u8 ReportBuffer[m_usReportSize];
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,

@@ -14,7 +14,9 @@ typedef char	bool;
 #define true	1
 #endif
 
+#ifndef NULL
 #define NULL	0
+#endif
 
 struct list_head
 {

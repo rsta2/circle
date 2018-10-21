@@ -12,21 +12,16 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-Release 35.1
-------------
-
-This intermediate release is done to allow a new release of the [circle-stdlib project](https://github.com/smuehlst/circle-stdlib), which provides C and C++ standard library support for Circle and which has been extended with SSL/TLS support by porting [mbed TLS](https://tls.mbed.org/).
-
-Another new feature in this release is a driver for LCD dot-matrix displays with HD44780 controller in the *addon/display/* subdirectory.
-
-The 35th Step
+The 36th Step
 -------------
 
-In this step a client for the MQTT IoT protocol has been added to Circle. It is demonstrated in *sample/35-mqttclient*. See the *README* file in this directory for details.
+In this step the class *CUserTimer* has been added to Circle, which implements a fine grained user programmable interrupt timer. It can generate up to 500000 interrupts per second (if used with FIQ).
 
-Furthermore a serial bootloader is available now and can be started directly from the Circle build environment. The well-known bootloader by David Welch is used here. See the file *doc/eclipse-support.txt* for instructions on using the bootloader with or without the Eclipse IDE.
+*CUserTimer* is used in the new *sample/36-softpwm* to implement Software PWM (Pulse Width Modulation), which can be used to control the brightness of a LED or a servo. See the *README* file in this directory for details.
 
-There is an incompatible change in behaviour of the CSocket API. Previously when a TCP connection received a FIN (disconnect) and the application called CSocket::Receive(), it did not get an error so far. Because of this, the disconnect has not been detectable. Now an error will be returned in this case. This may cause problems with existing user applications using TCP. You may have to check this.
+This release of Circle comes with an updated version of the FatFs module (in *addon/fatfs*). Furthermore there have been fixes to the touchscreen driver and the bootloader tools. Finally there are the new system options *SAVE_VFP_REGS_ON_IRQ* and *SAVE_VFP_REGS_ON_FIQ* in *include/circle/sysconfig.h*, which can be enabled if your application uses floating point registers in interrupt handlers.
+
+You may be interested in the [Alpha GDB server](https://github.com/farjump/Alpha_Raspberry_Pi_Circle) by Farjump, which can be used to source-level debug single-core Circle applications with the GNU debugger (GDB).
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
@@ -93,7 +88,7 @@ Circle supports the following features:
 Building
 --------
 
-Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads). Circle has been tested with the version *6-2017-q1-update* from this website.
+Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads). Circle has been tested with the version *7-2018-q2-update* from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2 or 3) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -143,12 +138,9 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Net library
+Base library
 
-* CMQTTClient: Client for the MQTT IoT protocol
-* CMQTTReceivePacket: MQTT helper class
-* CMQTTSendPacket: MQTT helper class
-* CNetSocket: Base class of networking sockets
+* CUserTimer: Fine grained user programmable interrupt timer (based on ARM_IRQ_TIMER1)
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

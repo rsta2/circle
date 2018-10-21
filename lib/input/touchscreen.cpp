@@ -39,6 +39,10 @@ struct TFT5406Buffer
 	Point[TOUCH_SCREEN_MAX_POINTS];
 };
 
+#define FTS_TOUCH_DOWN		0
+#define FTS_TOUCH_UP		1
+#define FTS_TOUCH_CONTACT	2
+
 static const char FromFT5406[] = "ft5406";
 
 CTouchScreenDevice::CTouchScreenDevice (void)
@@ -62,7 +66,7 @@ boolean CTouchScreenDevice::Initialize (void)
 
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple TagSimple;
-	TagSimple.nValue = nTouchBuffer + GPU_MEM_BASE;
+	TagSimple.nValue = BUS_ADDRESS (nTouchBuffer);
 	if (!Tags.GetTag (PROPTAG_SET_TOUCHBUF, &TagSimple, sizeof TagSimple))
 	{
 		if (!Tags.GetTag (PROPTAG_GET_TOUCHBUF, &TagSimple, sizeof TagSimple))
@@ -115,31 +119,35 @@ void CTouchScreenDevice::Update (void)
 		unsigned y = (((unsigned) Regs.Point[i].yh & 0xF) << 8) | Regs.Point[i].yl;
 
 		unsigned nTouchID = (Regs.Point[i].yh >> 4) & 0xF;
+		unsigned nEventID = (Regs.Point[i].xh >> 6) & 0x3;
 		assert (nTouchID < TOUCH_SCREEN_MAX_POINTS);
 
 		nModifiedIDs |= 1 << nTouchID;
 
-		if (!((1 << nTouchID) & m_nKnownIDs))
+		if (nEventID == FTS_TOUCH_CONTACT || nEventID == FTS_TOUCH_DOWN)
 		{
-			m_nPosX[nTouchID] = x;
-			m_nPosY[nTouchID] = y;
-
-			if (m_pEventHandler != 0)
-			{
-				(*m_pEventHandler) (TouchScreenEventFingerDown, nTouchID, x, y);
-			}
-		}
-		else
-		{
-			if (   x != m_nPosX[nTouchID]
-			    || y != m_nPosY[nTouchID])
+			if (!((1 << nTouchID) & m_nKnownIDs))
 			{
 				m_nPosX[nTouchID] = x;
 				m_nPosY[nTouchID] = y;
 
 				if (m_pEventHandler != 0)
 				{
-					(*m_pEventHandler) (TouchScreenEventFingerMove, nTouchID, x, y);
+					(*m_pEventHandler) (TouchScreenEventFingerDown, nTouchID, x, y);
+				}
+			}
+			else
+			{
+				if (   x != m_nPosX[nTouchID]
+				    || y != m_nPosY[nTouchID])
+				{
+					m_nPosX[nTouchID] = x;
+					m_nPosY[nTouchID] = y;
+
+					if (m_pEventHandler != 0)
+					{
+						(*m_pEventHandler) (TouchScreenEventFingerMove, nTouchID, x, y);
+					}
 				}
 			}
 		}

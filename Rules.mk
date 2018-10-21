@@ -50,9 +50,11 @@ ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$
 TARGET	?= kernel8-32
 endif
 
+ifneq ($(strip $(STDLIB_SUPPORT)),0)
 MAKE_VERSION_MAJOR := $(firstword $(subst ., ,$(MAKE_VERSION)))
 ifneq ($(filter 0 1 2 3,$(MAKE_VERSION_MAJOR)),)
-$(error Requires GNU make 4.0 or newer)
+$(error STDLIB_SUPPORT > 0 requires GNU make 4.0 or newer)
+endif
 endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),3)
@@ -77,7 +79,7 @@ OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
 
-AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) $(INCLUDE)
+AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) $(INCLUDE) $(OPTIMIZE)
 CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding \
 	   -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
 	   $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG

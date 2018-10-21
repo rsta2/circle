@@ -22,7 +22,4 @@ documentation of the user API of FatFs:
 	http://elm-chan.org/fsw/ff/00index_e.html
 
 FatFs has been configured to use code page 850 (Latin 1) in ffconf.h, which is
-the character code used throughout Circle. FatFs provides support for code pages
-932 (Japanese Shift_JIS), 936 (Simplified Chinese GBK), 949 (Korean) and 950
-(Traditional Chinese Big5) too. Because Circle itself does not support these and
-to save space this is not included here.
+the character code used throughout Circle.
