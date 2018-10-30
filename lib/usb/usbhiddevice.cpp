@@ -2,7 +2,7 @@
 // usbhiddevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -85,7 +85,8 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 		return FALSE;
 	}
 
-	if (GetInterfaceSubClass () == 1)	// boot class
+	if (   GetInterfaceClass ()    == 3	// HID class
+	    && GetInterfaceSubClass () == 1)	// boot class
 	{
 		if (GetHost ()->ControlMessage (GetEndpoint0 (),
 						REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
