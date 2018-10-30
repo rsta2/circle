@@ -2,7 +2,7 @@
 // usbgamepad.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // Ported from the USPi driver which is:
 // 	Copyright (C) 2014  M. Maccaferri <macca@maccasoft.com>
@@ -49,33 +49,35 @@ struct TGamePadState
 
 typedef void TGamePadStatusHandler (unsigned nDeviceIndex, const TGamePadState *pGamePadState);
 
-class CUSBGamePadDevice : public CUSBHIDDevice
+class CUSBGamePadDevice : public CUSBHIDDevice		/// Base class for USB gamepad drivers
 {
 public:
 	CUSBGamePadDevice (CUSBFunction *pFunction);
-	~CUSBGamePadDevice (void);
+	virtual ~CUSBGamePadDevice (void);
 
 	boolean Configure (void);
 
-	const TGamePadState *GetReport (void);		// returns 0 on failure
+	/// \return Pointer to gamepad state (or 0 on failure)
+	/// \note May return the gamepad geometry information only (not the values).
+	virtual const TGamePadState *GetReport (void) = 0;
 
-	void RegisterStatusHandler (TGamePadStatusHandler *pStatusHandler);
-
-private:
-	void ReportHandler (const u8 *pReport);
-
-	void DecodeReport (const u8 *pReportBuffer);
-	static u32 BitGetUnsigned (const void *buffer, u32 offset, u32 length);
-	static s32 BitGetSigned (const void *buffer, u32 offset, u32 length);
-
-	void PS3Configure (void);
+	/// \param pStatusHandler Pointer to the function to be called on status changes
+	virtual void RegisterStatusHandler (TGamePadStatusHandler *pStatusHandler);
 
 private:
+	/// \param pReport Pointer to report packet received via the USB status reporting endpoint
+	/// \note Overwrite this if you have to do additional checks on received reports!
+	virtual void ReportHandler (const u8 *pReport);
+
+	/// \param pReport Pointer to report packet received via the USB status reporting endpoint
+	/// \note Updates the m_State member variable
+	/// \note m_usReportSize member has to be set here or in Configure() of the subclass.
+	virtual void DecodeReport (const u8 *pReportBuffer) = 0;
+
+protected:
 	TGamePadState m_State;
 	TGamePadStatusHandler *m_pStatusHandler;
 
-	u8 *m_pHIDReportDescriptor;
-	u16 m_usReportDescriptorLength;
 	u16 m_usReportSize;
 
 	unsigned m_nDeviceNumber;

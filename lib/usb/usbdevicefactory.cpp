@@ -25,7 +25,7 @@
 #include <circle/usb/usbmassdevice.h>
 #include <circle/usb/usbkeyboard.h>
 #include <circle/usb/usbmouse.h>
-#include <circle/usb/usbgamepad.h>
+#include <circle/usb/usbgamepadstandard.h>
 #include <circle/usb/usbprinter.h>
 #include <circle/usb/smsc951x.h>
 #include <circle/usb/lan7800.h>
@@ -59,7 +59,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	}
 	else if (pName->Compare ("int3-0-0") == 0)
 	{
-		pResult = new CUSBGamePadDevice (pParent);
+		pResult = new CUSBGamePadStandardDevice (pParent);
 	}
 	else if (   pName->Compare ("int7-1-1") == 0
 		 || pName->Compare ("int7-1-2") == 0)

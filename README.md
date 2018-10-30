@@ -138,9 +138,9 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Base library
+USB library
 
-* CUserTimer: Fine grained user programmable interrupt timer (based on ARM_IRQ_TIMER1)
+* CUSBGamePadStandardDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
