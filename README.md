@@ -140,6 +140,7 @@ The following C++ classes were added to Circle:
 
 USB library
 
+* CUSBGamePadPS3Device: Driver for PS3 gamepad
 * CUSBGamePadStandardDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
 * CUSBGamePadXbox360Device: Driver for Xbox 360 Wired gamepad
 
