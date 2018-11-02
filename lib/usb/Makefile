@@ -26,7 +26,7 @@ OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o dwhcixactqueue.o \
 	  usbmassdevice.o \
 	  dwhciframeschednper.o dwhciframeschedper.o usbkeyboard.o \
 	  dwhcirootport.o usbhiddevice.o usbmouse.o \
-	  usbgamepad.o usbgamepadstandard.o usbgamepadps3.o usbgamepadxbox360.o \
+	  usbgamepad.o usbgamepadstandard.o usbgamepadps3.o usbgamepadps4.o usbgamepadxbox360.o \
 	  usbfunction.o \
 	  dwhciframeschednsplit.o usbprinter.o usbbluetooth.o usbmidi.o usbcdcethernet.o
 

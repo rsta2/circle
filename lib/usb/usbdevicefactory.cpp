@@ -27,6 +27,7 @@
 #include <circle/usb/usbmouse.h>
 #include <circle/usb/usbgamepadstandard.h>
 #include <circle/usb/usbgamepadps3.h>
+#include <circle/usb/usbgamepadps4.h>
 #include <circle/usb/usbgamepadxbox360.h>
 #include <circle/usb/usbprinter.h>
 #include <circle/usb/smsc951x.h>
@@ -39,7 +40,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 {
 	assert (pParent != 0);
 	assert (pName != 0);
-	
+
 	CUSBFunction *pResult = 0;
 
 	if (   pName->Compare ("int9-0-0") == 0
@@ -66,6 +67,11 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (pName->Compare ("ven54c-268") == 0)
 	{
 		pResult = new CUSBGamePadPS3Device (pParent);
+	}
+	else if (   pName->Compare ("ven54c-5c4") == 0
+		 || pName->Compare ("ven54c-9cc") == 0)
+	{
+		pResult = new CUSBGamePadPS4Device (pParent);
 	}
 	else if (pName->Compare ("ven45e-28e") == 0)
 	{
@@ -104,8 +110,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult->GetDevice ()->LogWrite (LogNotice, "Using device/interface %s", (const char *) *pName);
 	}
-	
+
 	delete pName;
-	
+
 	return pResult;
 }
