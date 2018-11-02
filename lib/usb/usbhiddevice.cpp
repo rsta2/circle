@@ -29,6 +29,7 @@ CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize)
 :	CUSBFunction (pFunction),
 	m_nReportSize (nReportSize),
 	m_pReportEndpoint (0),
+	m_pEndpointOut (0),
 	m_pURB (0),
 	m_pReportBuffer (0)
 {
@@ -43,6 +44,9 @@ CUSBHIDDevice::~CUSBHIDDevice (void)
 {
 	delete [] m_pReportBuffer;
 	m_pReportBuffer = 0;
+
+	delete m_pEndpointOut;
+	m_pEndpointOut = 0;
 
 	delete m_pReportEndpoint;
 	m_pReportEndpoint = 0;
@@ -60,23 +64,39 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 	const TUSBEndpointDescriptor *pEndpointDesc;
 	while ((pEndpointDesc = (TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT)) != 0)
 	{
-		if (   (pEndpointDesc->bEndpointAddress & 0x80) == 0x80		// Input EP
-		    && (pEndpointDesc->bmAttributes     & 0x3F)	== 0x03)	// Interrupt EP
+		if ((pEndpointDesc->bmAttributes & 0x3F) == 0x03)		// Interrupt EP
 		{
-			break;
+			if ((pEndpointDesc->bEndpointAddress & 0x80) == 0x80)	// Input EP
+			{
+				if (m_pReportEndpoint != 0)
+				{
+					ConfigurationError (FromUSBHID);
+
+					return FALSE;
+				}
+
+				m_pReportEndpoint = new CUSBEndpoint (GetDevice (), pEndpointDesc);
+			}
+			else							// Output EP
+			{
+				if (m_pEndpointOut != 0)
+				{
+					ConfigurationError (FromUSBHID);
+
+					return FALSE;
+				}
+
+				m_pEndpointOut = new CUSBEndpoint (GetDevice (), pEndpointDesc);
+			}
 		}
 	}
 
-	if (pEndpointDesc == 0)
+	if (m_pReportEndpoint == 0)
 	{
 		ConfigurationError (FromUSBHID);
 
 		return FALSE;
 	}
-
-	assert (m_pReportEndpoint == 0);
-	m_pReportEndpoint = new CUSBEndpoint (GetDevice (), pEndpointDesc);
-	assert (m_pReportEndpoint != 0);
 
 	if (!CUSBFunction::Configure ())
 	{
@@ -110,6 +130,23 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 	assert (m_pReportBuffer != 0);
 
 	return StartRequest ();
+}
+
+boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize)
+{
+	if (m_pEndpointOut == 0)
+	{
+		return FALSE;
+	}
+
+	assert (pBuffer != 0);
+	assert (nBufSize > 0);
+	if (GetHost ()->Transfer (m_pEndpointOut, (void *) pBuffer, nBufSize) != (int) nBufSize)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 boolean CUSBHIDDevice::StartRequest (void)
