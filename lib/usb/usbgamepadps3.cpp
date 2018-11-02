@@ -43,12 +43,12 @@ struct TPS3Report
 }
 PACKED;
 
-#define REPORT_SIZE	49	// TODO: there may be devices with REPORT_SIZE == 50
+#define REPORT_SIZE_DEFAULT	49
 
 static const char FromUSBPadPS3[] = "usbpadps3";
 
 CUSBGamePadPS3Device::CUSBGamePadPS3Device (CUSBFunction *pFunction)
-:	CUSBGamePadDevice (pFunction),
+:	CUSBGamePadStandardDevice (pFunction),
 	m_bInterfaceOK (SelectInterfaceByClass (3, 0, 0))
 {
 }
@@ -66,11 +66,18 @@ boolean CUSBGamePadPS3Device::Configure (void)
 		return FALSE;
 	}
 
-	m_usReportSize = REPORT_SIZE;
-
-	if (!CUSBGamePadDevice::Configure ())
+	if (!CUSBGamePadStandardDevice::Configure ())
 	{
 		CLogger::Get ()->Write (FromUSBPadPS3, LogError, "Cannot configure gamepad device");
+
+		return FALSE;
+	}
+
+	if (   m_usReportSize != REPORT_SIZE_DEFAULT
+	    && m_usReportSize != REPORT_SIZE_DEFAULT+1)
+	{
+		CLogger::Get ()->Write (FromUSBPadPS3, LogError, "Invalid report size (%u)",
+					(unsigned) m_usReportSize);
 
 		return FALSE;
 	}
@@ -85,25 +92,26 @@ boolean CUSBGamePadPS3Device::Configure (void)
 	return TRUE;
 }
 
-const TGamePadState *CUSBGamePadPS3Device::GetReport (void)
-{
-	u8 ReportBuffer[m_usReportSize];
-	if (GetHost ()->ControlMessage (GetEndpoint0 (),
-					REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-					GET_REPORT, (REPORT_TYPE_INPUT << 8) | 0x00,
-					GetInterfaceNumber (),
-					ReportBuffer, m_usReportSize) <= 0)
-	{
-		return 0;
-	}
-
-	DecodeReport (ReportBuffer);
-
-	return &m_State;
-}
-
 void CUSBGamePadPS3Device::DecodeReport (const u8 *pReportBuffer)
 {
+	switch (m_usReportSize)
+	{
+	case 0:		// m_usReportSize not yet set
+		CUSBGamePadStandardDevice::DecodeReport (pReportBuffer);
+		return;
+
+	case REPORT_SIZE_DEFAULT:
+		break;
+
+	case REPORT_SIZE_DEFAULT+1:
+		pReportBuffer++;
+		break;
+
+	default:
+		assert (0);
+		break;
+	}
+
 	const TPS3Report *pReport = reinterpret_cast<const TPS3Report *> (pReportBuffer);
 	assert (pReport != 0);
 

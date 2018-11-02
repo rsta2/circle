@@ -117,7 +117,7 @@ boolean CUSBGamePadStandardDevice::Configure (void)
 	}
 	//debug_hexdump (m_pHIDReportDescriptor, m_usReportDescriptorLength, FromUSBPadStd);
 
-	u8 ReportBuffer[8] = {0};
+	u8 ReportBuffer[100] = {0};
 	DecodeReport (ReportBuffer);
 
 	// ignoring unsupported HID interface
@@ -134,14 +134,6 @@ boolean CUSBGamePadStandardDevice::Configure (void)
 		CLogger::Get ()->Write (FromUSBPadStd, LogError, "Cannot configure gamepad device");
 
 		return FALSE;
-	}
-
-	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
-	assert (pDeviceDesc != 0);
-	if (   pDeviceDesc->idVendor  == 0x054C
-	    && pDeviceDesc->idProduct == 0x0268)
-	{
-		PS3Configure ();
 	}
 
 	return TRUE;
@@ -368,44 +360,4 @@ s32 CUSBGamePadStandardDevice::BitGetSigned (const void *buffer, u32 offset, u32
 	}
 
 	return result;
-}
-
-void CUSBGamePadStandardDevice::PS3Configure (void)
-{
-	static u8 writeBuf[] =
-	{
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0xFF, 0x27, 0x10, 0x00, 0x32,
-		0xFF, 0x27, 0x10, 0x00, 0x32,
-		0xFF, 0x27, 0x10, 0x00, 0x32,
-		0xFF, 0x27, 0x10, 0x00, 0x32,
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00
-	};
-
-	static const u8 leds[] =
-	{
-		0x00, // OFF
-		0x01, // LED1
-		0x02, // LED2
-		0x04, // LED3
-		0x08  // LED4
-	};
-
-	/* Special PS3 Controller enable commands */
-	static u8 Enable[] = {0x42, 0x0C, 0x00, 0x00};
-	GetHost ()->ControlMessage (GetEndpoint0 (),
-				    REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-				    SET_REPORT, (REPORT_TYPE_FEATURE << 8) | 0xF4,
-				    GetInterfaceNumber (), Enable, sizeof Enable);
-
-	/* Turn on LED */
-	writeBuf[9] = (u8)(leds[m_nDeviceNumber] << 1);
-	GetHost ()->ControlMessage (GetEndpoint0 (),
-				    REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-				    SET_REPORT, (REPORT_TYPE_OUTPUT << 8) | 0x01,
-				    GetInterfaceNumber (), writeBuf, sizeof writeBuf);
 }

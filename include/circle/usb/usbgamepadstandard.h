@@ -36,12 +36,12 @@ public:
 
 	const TGamePadState *GetReport (void);		// returns 0 on failure
 
-private:
+protected:
 	void DecodeReport (const u8 *pReportBuffer);
+
+private:
 	static u32 BitGetUnsigned (const void *buffer, u32 offset, u32 length);
 	static s32 BitGetSigned (const void *buffer, u32 offset, u32 length);
-
-	void PS3Configure (void);
 
 private:
 	u8 *m_pHIDReportDescriptor;

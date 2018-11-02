@@ -20,18 +20,16 @@
 #ifndef _circle_usb_usbgamepadps3_h
 #define _circle_usb_usbgamepadps3_h
 
-#include <circle/usb/usbgamepad.h>
+#include <circle/usb/usbgamepadstandard.h>
 #include <circle/types.h>
 
-class CUSBGamePadPS3Device : public CUSBGamePadDevice
+class CUSBGamePadPS3Device : public CUSBGamePadStandardDevice
 {
 public:
 	CUSBGamePadPS3Device (CUSBFunction *pFunction);
 	~CUSBGamePadPS3Device (void);
 
 	boolean Configure (void);
-
-	const TGamePadState *GetReport (void);		// returns 0 on failure
 
 private:
 	void DecodeReport (const u8 *pReportBuffer);
