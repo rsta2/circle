@@ -73,6 +73,7 @@ USB library
 * CUSBFunction: Encapsulates a function (represented by an interface descriptor) of an USB device.
 * CUSBGamePadDevice: Base class for USB gamepad drivers
 * CUSBGamePadPS3Device: Driver for PS3 gamepad
+* CUSBGamePadPS4Device: Driver for PS4 gamepad
 * CUSBGamePadStandardDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
 * CUSBGamePadXbox360Device: Driver for Xbox 360 Wired gamepad
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse, gamepad)
