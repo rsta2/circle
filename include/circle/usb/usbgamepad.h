@@ -26,7 +26,7 @@
 #include <circle/usb/usbhiddevice.h>
 #include <circle/types.h>
 
-#define MAX_AXIS    6
+#define MAX_AXIS    16
 #define MAX_HATS    6
 
 struct TGamePadState

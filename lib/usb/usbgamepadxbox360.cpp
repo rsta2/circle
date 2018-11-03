@@ -40,6 +40,7 @@ struct TXbox360Report
 #define REPORT_ANALOG_BUTTONS		2
 	u8	AnalogButton[REPORT_ANALOG_BUTTONS];
 #define REPORT_ANALOG_BUTTON_MINIMUM	0
+#define REPORT_ANALOG_BUTTON_THRESHOLD	128
 #define REPORT_ANALOG_BUTTON_MAXIMUM	255
 
 #define REPORT_AXIS			4
@@ -106,7 +107,7 @@ void CUSBGamePadXbox360Device::DecodeReport (const u8 *pReportBuffer)
 	assert (pReport != 0);
 	assert (pReport->Header == REPORT_HEADER);
 
-	m_State.nbuttons = REPORT_BUTTONS;
+	m_State.nbuttons = REPORT_BUTTONS + REPORT_ANALOG_BUTTONS;
 	m_State.buttons = pReport->Buttons;
 
 	m_State.naxes = REPORT_AXIS + REPORT_ANALOG_BUTTONS;
@@ -123,6 +124,11 @@ void CUSBGamePadXbox360Device::DecodeReport (const u8 *pReportBuffer)
 		m_State.axes[REPORT_AXIS+i].value   = pReport->AnalogButton[i];
 		m_State.axes[REPORT_AXIS+i].minimum = REPORT_ANALOG_BUTTON_MINIMUM;
 		m_State.axes[REPORT_AXIS+i].maximum = REPORT_ANALOG_BUTTON_MAXIMUM;
+
+		if (pReport->AnalogButton[i] >= REPORT_ANALOG_BUTTON_THRESHOLD)
+		{
+			m_State.buttons |= 1 << (Xbox360GamePadButtonLT+i);
+		}
 	}
 
 	m_State.nhats = 0;

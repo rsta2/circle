@@ -23,6 +23,51 @@
 #include <circle/usb/usbgamepadstandard.h>
 #include <circle/types.h>
 
+enum TPS3GamePadButton
+{
+	PS3GamePadButtonPS,
+	PS3GamePadButtonReserved1,
+	PS3GamePadButtonReserved2,
+	PS3GamePadButtonL2,
+	PS3GamePadButtonR2,
+	PS3GamePadButtonL1,
+	PS3GamePadButtonR1,
+	PS3GamePadButtonTriangle,
+	PS3GamePadButtonCircle,
+	PS3GamePadButtonCross,
+	PS3GamePadButtonSquare,
+	PS3GamePadButtonSelect,
+	PS3GamePadButtonL3,
+	PS3GamePadButtonR3,
+	PS3GamePadButtonStart,
+	PS3GamePadButtonUp,
+	PS3GamePadButtonRight,
+	PS3GamePadButtonDown,
+	PS3GamePadButtonLeft,
+	PS3GamePadButtonUnknown
+};
+
+enum TPS3GamePadAxes
+{
+	PS3GamePadAxesLeftX,
+	PS3GamePadAxesLeftY,
+	PS3GamePadAxesRightX,
+	PS3GamePadAxesRightY,
+	PS3GamePadAxesButtonUp,
+	PS3GamePadAxesButtonRight,
+	PS3GamePadAxesButtonDown,
+	PS3GamePadAxesButtonLeft,
+	PS3GamePadAxesButtonL2,
+	PS3GamePadAxesButtonR2,
+	PS3GamePadAxesButtonL1,
+	PS3GamePadAxesButtonR1,
+	PS3GamePadAxesButtonTriangle,
+	PS3GamePadAxesButtonCircle,
+	PS3GamePadAxesButtonCross,
+	PS3GamePadAxesButtonSquare,
+	PS3GamePadAxesButtonUnknown
+};
+
 class CUSBGamePadPS3Device : public CUSBGamePadStandardDevice
 {
 public:

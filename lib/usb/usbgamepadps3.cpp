@@ -40,6 +40,11 @@ struct TPS3Report
 	u8	Axes[REPORT_AXIS];
 #define REPORT_AXES_MINIMUM		0
 #define REPORT_AXES_MAXIMUM		255
+
+	u8	Reserved2[4];
+
+#define REPORT_ANALOG_BUTTONS		12
+	u8	AnalogButton[REPORT_ANALOG_BUTTONS];
 }
 PACKED;
 
@@ -82,6 +87,15 @@ boolean CUSBGamePadPS3Device::Configure (void)
 		return FALSE;
 	}
 
+	m_State.nbuttons = REPORT_BUTTONS;
+	m_State.naxes = REPORT_AXIS+REPORT_ANALOG_BUTTONS;
+	for (unsigned i = 0; i < REPORT_AXIS+REPORT_ANALOG_BUTTONS; i++)
+	{
+		m_State.axes[i].minimum = REPORT_AXES_MINIMUM;
+		m_State.axes[i].maximum = REPORT_AXES_MAXIMUM;
+	}
+	m_State.nhats = 0;
+
 	if (!PS3Enable ())
 	{
 		CLogger::Get ()->Write (FromUSBPadPS3, LogError, "Cannot enable gamepad device");
@@ -115,21 +129,20 @@ void CUSBGamePadPS3Device::DecodeReport (const u8 *pReportBuffer)
 	const TPS3Report *pReport = reinterpret_cast<const TPS3Report *> (pReportBuffer);
 	assert (pReport != 0);
 
-	m_State.nbuttons = REPORT_BUTTONS;
 	u32 nButtons = pReport->Buttons;		// remap buttons:
 	m_State.buttons  = (nButtons & 0x70000) >> 16;	// PS
 	m_State.buttons |= (nButtons & 0xFF00)  >> 5;	// Ln/Rn, SYMBOLS
 	m_State.buttons |= (nButtons & 0xFF)    << 11;	// START/SELECT, AXIS, UP/DOWN/LEFT/RIGHT
 
-	m_State.naxes = REPORT_AXIS;
 	for (unsigned i = 0; i < REPORT_AXIS; i++)
 	{
-		m_State.axes[i].value   = pReport->Axes[i];
-		m_State.axes[i].minimum = REPORT_AXES_MINIMUM;
-		m_State.axes[i].maximum = REPORT_AXES_MAXIMUM;
+		m_State.axes[i].value = pReport->Axes[i];
 	}
 
-	m_State.nhats = 0;
+	for (unsigned i = 0; i < REPORT_ANALOG_BUTTONS; i++)
+	{
+		m_State.axes[REPORT_AXIS+i].value = pReport->AnalogButton[i];
+	}
 }
 
 // Copyright (C) 2014  M. Maccaferri <macca@maccasoft.com>
