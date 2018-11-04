@@ -23,40 +23,6 @@
 #include <circle/usb/usbgamepad.h>
 #include <circle/types.h>
 
-enum TXbox360GamePadButton
-{
-	Xbox360GamePadButtonUp,
-	Xbox360GamePadButtonDown,
-	Xbox360GamePadButtonLeft,
-	Xbox360GamePadButtonRight,
-	Xbox360GamePadButtonStart,
-	Xbox360GamePadButtonBack,
-	Xbox360GamePadButtonL3,
-	Xbox360GamePadButtonR3,
-	Xbox360GamePadButtonLB,
-	Xbox360GamePadButtonRB,
-	Xbox360GamePadButtonXbox,
-	Xbox360GamePadButtonReserved,
-	Xbox360GamePadButtonA,
-	Xbox360GamePadButtonB,
-	Xbox360GamePadButtonX,
-	Xbox360GamePadButtonY,
-	Xbox360GamePadButtonLT,
-	Xbox360GamePadButtonRT,
-	Xbox360GamePadButtonUnknown
-};
-
-enum TXbox360GamePadAxes
-{
-	Xbox360GamePadAxesLeftX,
-	Xbox360GamePadAxesLeftY,
-	Xbox360GamePadAxesRightX,
-	Xbox360GamePadAxesRightY,
-	Xbox360GamePadAxesButtonLT,
-	Xbox360GamePadAxesButtonRT,
-	Xbox360GamePadAxesButtonUnknown
-};
-
 class CUSBGamePadXbox360Device : public CUSBGamePadDevice
 {
 public:

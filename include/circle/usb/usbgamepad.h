@@ -26,6 +26,68 @@
 #include <circle/usb/usbhiddevice.h>
 #include <circle/types.h>
 
+// The following enums are valid for branded gamepads only!
+
+enum TGamePadButton		// Digital button (bit numbers)
+{
+	GamePadButtonGuide,
+#define GamePadButtonXbox	GamePadButtonGuide
+#define GamePadButtonPS		GamePadButtonGuide
+	GamePadButtonReserved1,
+	GamePadButtonReserved2,
+	GamePadButtonLT,
+#define GamePadButtonL2		GamePadButtonLT
+	GamePadButtonRT,
+#define GamePadButtonR2		GamePadButtonRT
+	GamePadButtonLB,
+#define GamePadButtonL1		GamePadButtonLB
+	GamePadButtonRB,
+#define GamePadButtonR1		GamePadButtonRB
+	GamePadButtonY,
+#define GamePadButtonTriangle	GamePadButtonY
+	GamePadButtonB,
+#define GamePadButtonCircle	GamePadButtonB
+	GamePadButtonA,
+#define GamePadButtonCross	GamePadButtonA
+	GamePadButtonX,
+#define GamePadButtonSquare	GamePadButtonX
+	GamePadButtonSelect,
+#define GamePadButtonBack	GamePadButtonSelect
+#define GamePadButtonShare	GamePadButtonSelect
+	GamePadButtonL3,				// Left axis button
+	GamePadButtonR3,				// Right axis button
+	GamePadButtonStart,
+#define GamePadButtonOptions	GamePadButtonStart
+	GamePadButtonUp,
+	GamePadButtonRight,
+	GamePadButtonDown,
+	GamePadButtonLeft,
+	GamePadButtonUnknown
+};
+
+enum TGamePadAxis		// Axis or analog button
+{
+	GamePadAxisLeftX,
+	GamePadAxisLeftY,
+	GamePadAxisRightX,
+	GamePadAxisRightY,
+	GamePadAxisButtonLT,
+#define GamePadAxisButtonL2	GamePadAxisButtonLT
+	GamePadAxisButtonRT,
+#define GamePadAxisButtonR2	GamePadAxisButtonRT
+	GamePadAxisButtonUp,
+	GamePadAxisButtonRight,
+	GamePadAxisButtonDown,
+	GamePadAxisButtonLeft,
+	GamePadAxisButtonL1,
+	GamePadAxisButtonR1,
+	GamePadAxisButtonTriangle,
+	GamePadAxisButtonCircle,
+	GamePadAxisButtonCross,
+	GamePadAxisButtonSquare,
+	GamePadAxisUnknown
+};
+
 #define MAX_AXIS    16
 #define MAX_HATS    6
 

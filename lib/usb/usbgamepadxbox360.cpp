@@ -43,8 +43,8 @@ struct TXbox360Report
 #define REPORT_ANALOG_BUTTON_THRESHOLD	128
 #define REPORT_ANALOG_BUTTON_MAXIMUM	255
 
-#define REPORT_AXIS			4
-	s16	Axes[REPORT_AXIS];
+#define REPORT_AXES			4
+	s16	Axes[REPORT_AXES];
 #define REPORT_AXES_MINIMUM		-32768
 #define REPORT_AXES_MAXIMUM		32767
 }
@@ -73,6 +73,20 @@ boolean CUSBGamePadXbox360Device::Configure (void)
 
 		return FALSE;
 	}
+
+	m_State.nbuttons = REPORT_BUTTONS+REPORT_ANALOG_BUTTONS;
+	m_State.naxes = REPORT_AXES+REPORT_ANALOG_BUTTONS;
+	for (unsigned i = 0; i < REPORT_AXES; i++)
+	{
+		m_State.axes[i].minimum = REPORT_AXES_MINIMUM;
+		m_State.axes[i].maximum = REPORT_AXES_MAXIMUM;
+	}
+	for (unsigned i = 0; i < REPORT_ANALOG_BUTTONS; i++)
+	{
+		m_State.axes[REPORT_AXES+i].minimum = REPORT_ANALOG_BUTTON_MINIMUM;
+		m_State.axes[REPORT_AXES+i].maximum = REPORT_ANALOG_BUTTON_MAXIMUM;
+	}
+	m_State.nhats = 0;
 
 	return TRUE;
 }
@@ -107,29 +121,82 @@ void CUSBGamePadXbox360Device::DecodeReport (const u8 *pReportBuffer)
 	assert (pReport != 0);
 	assert (pReport->Header == REPORT_HEADER);
 
-	m_State.nbuttons = REPORT_BUTTONS + REPORT_ANALOG_BUTTONS;
-	m_State.buttons = pReport->Buttons;
-
-	m_State.naxes = REPORT_AXIS + REPORT_ANALOG_BUTTONS;
-	for (unsigned i = 0; i < REPORT_AXIS; i++)
+	static const u32 ButtonMap[] =
 	{
-		m_State.axes[i].value   = pReport->Axes[i];
-		m_State.axes[i].minimum = REPORT_AXES_MINIMUM;
-		m_State.axes[i].maximum = REPORT_AXES_MAXIMUM;
+		1 << GamePadButtonUp,
+		1 << GamePadButtonDown,
+		1 << GamePadButtonLeft,
+		1 << GamePadButtonRight,
+		1 << GamePadButtonStart,
+		1 << GamePadButtonBack,
+		1 << GamePadButtonL3,
+		1 << GamePadButtonR3,
+		1 << GamePadButtonLB,
+		1 << GamePadButtonRB,
+		1 << GamePadButtonXbox,
+		0,
+		1 << GamePadButtonA,
+		1 << GamePadButtonB,
+		1 << GamePadButtonX,
+		1 << GamePadButtonY
+	};
+
+	u32 nButtons = pReport->Buttons;
+	m_State.buttons = 0;
+	for (unsigned i = 0; i < REPORT_BUTTONS; i++)
+	{
+		if (nButtons & 1)
+		{
+			m_State.buttons |= ButtonMap[i];
+		}
+
+		nButtons >>= 1;
 	}
 
-	// analog buttons will be reported as axis
+	static const unsigned AxisMap[] =
+	{
+		GamePadAxisLeftX,
+		GamePadAxisLeftY,
+		GamePadAxisRightX,
+		GamePadAxisRightY,
+		GamePadAxisButtonLT,
+		GamePadAxisButtonRT
+	};
+
+	for (unsigned i = 0; i < REPORT_AXES; i++)
+	{
+		int nValue = pReport->Axes[i];
+
+		unsigned nAxis = AxisMap[i];
+		if (   nAxis == GamePadAxisLeftY
+		    || nAxis == GamePadAxisRightY)	// Y-axes have to be reversed
+		{
+			switch (nValue)			// -REPORT_AXES_MINIMUM is out-of-range
+			{
+				case REPORT_AXES_MINIMUM:
+				nValue = REPORT_AXES_MAXIMUM;
+				break;
+
+			case REPORT_AXES_MAXIMUM:
+				nValue = REPORT_AXES_MINIMUM;
+				break;
+
+			default:
+				nValue = -nValue;
+				break;
+			}
+		}
+
+		m_State.axes[nAxis].value = nValue;
+	}
+
 	for (unsigned i = 0; i < REPORT_ANALOG_BUTTONS; i++)
 	{
-		m_State.axes[REPORT_AXIS+i].value   = pReport->AnalogButton[i];
-		m_State.axes[REPORT_AXIS+i].minimum = REPORT_ANALOG_BUTTON_MINIMUM;
-		m_State.axes[REPORT_AXIS+i].maximum = REPORT_ANALOG_BUTTON_MAXIMUM;
+		m_State.axes[AxisMap[REPORT_AXES+i]].value = pReport->AnalogButton[i];
 
 		if (pReport->AnalogButton[i] >= REPORT_ANALOG_BUTTON_THRESHOLD)
 		{
-			m_State.buttons |= 1 << (Xbox360GamePadButtonLT+i);
+			m_State.buttons |= 1 << (GamePadButtonLT+i);
 		}
 	}
-
-	m_State.nhats = 0;
 }

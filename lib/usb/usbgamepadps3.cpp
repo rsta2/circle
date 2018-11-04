@@ -36,8 +36,8 @@ struct TPS3Report
 #define REPORT_BUTTONS			19
 	u32	Buttons;
 
-#define REPORT_AXIS			4
-	u8	Axes[REPORT_AXIS];
+#define REPORT_AXES			4
+	u8	Axes[REPORT_AXES];
 #define REPORT_AXES_MINIMUM		0
 #define REPORT_AXES_MAXIMUM		255
 
@@ -88,8 +88,8 @@ boolean CUSBGamePadPS3Device::Configure (void)
 	}
 
 	m_State.nbuttons = REPORT_BUTTONS;
-	m_State.naxes = REPORT_AXIS+REPORT_ANALOG_BUTTONS;
-	for (unsigned i = 0; i < REPORT_AXIS+REPORT_ANALOG_BUTTONS; i++)
+	m_State.naxes = REPORT_AXES+REPORT_ANALOG_BUTTONS;
+	for (unsigned i = 0; i < REPORT_AXES+REPORT_ANALOG_BUTTONS; i++)
 	{
 		m_State.axes[i].minimum = REPORT_AXES_MINIMUM;
 		m_State.axes[i].maximum = REPORT_AXES_MAXIMUM;
@@ -134,14 +134,30 @@ void CUSBGamePadPS3Device::DecodeReport (const u8 *pReportBuffer)
 	m_State.buttons |= (nButtons & 0xFF00)  >> 5;	// Ln/Rn, SYMBOLS
 	m_State.buttons |= (nButtons & 0xFF)    << 11;	// START/SELECT, AXIS, UP/DOWN/LEFT/RIGHT
 
-	for (unsigned i = 0; i < REPORT_AXIS; i++)
+	for (unsigned i = 0; i < REPORT_AXES; i++)
 	{
 		m_State.axes[i].value = pReport->Axes[i];
 	}
 
+	static const unsigned AxisButtonMap[] =
+	{
+		GamePadAxisButtonUp,
+		GamePadAxisButtonRight,
+		GamePadAxisButtonDown,
+		GamePadAxisButtonLeft,
+		GamePadAxisButtonL2,
+		GamePadAxisButtonR2,
+		GamePadAxisButtonL1,
+		GamePadAxisButtonR1,
+		GamePadAxisButtonTriangle,
+		GamePadAxisButtonCircle,
+		GamePadAxisButtonCross,
+		GamePadAxisButtonSquare
+	};
+
 	for (unsigned i = 0; i < REPORT_ANALOG_BUTTONS; i++)
 	{
-		m_State.axes[REPORT_AXIS+i].value = pReport->AnalogButton[i];
+		m_State.axes[AxisButtonMap[i]].value = pReport->AnalogButton[i];
 	}
 }
 
