@@ -32,7 +32,8 @@
 
 #define REPORT_SIZE				64
 #define OUTPUT_REPORT_SIZE		32
-#define REPORT_AXIS 			MAX_AXIS
+#define REPORT_AXIS 			4
+#define REPORT_ANALOG_BUTTONS	2
 #define REPORT_AXES_MINIMUM		0
 #define REPORT_AXES_MAXIMUM		255
 #define REPORT_BUTTONS			14
@@ -71,8 +72,8 @@ boolean CUSBGamePadPS4Device::Configure (void)
 
 	m_State.nbuttons = REPORT_BUTTONS;
 	m_State.nhats = REPORT_HATS;
-	m_State.naxes = REPORT_AXIS;
-	for (int axis = 0; axis < REPORT_AXIS; axis++) {
+	m_State.naxes = REPORT_AXIS + REPORT_ANALOG_BUTTONS;
+	for (int axis = 0; axis < REPORT_AXIS + REPORT_ANALOG_BUTTONS; axis++) {
 		m_State.axes[axis].minimum = REPORT_AXES_MINIMUM;
 		m_State.axes[axis].maximum = REPORT_AXES_MAXIMUM;
 	}
@@ -124,19 +125,54 @@ const TGamePadState *CUSBGamePadPS4Device::GetReport (void)
  * http://eleccelerator.com/wiki/index.php?title=DualShock_4#Report_Structure
  */
 void CUSBGamePadPS4Device::DecodeReport (const u8 *pReportBuffer) {
-	m_State.axes[0].value = pReportBuffer[1]; // Left Stick X (0 = left)
-	m_State.axes[1].value = pReportBuffer[2]; // Left Stick Y (0 = up)
-	m_State.axes[2].value = pReportBuffer[3]; // Right Stick X
-	m_State.axes[3].value = pReportBuffer[4]; // Right Stick Y
-	m_State.axes[4].value = pReportBuffer[8]; // Left Trigger [L2] (0 = released, 0xFF = fully pressed)
-	m_State.axes[5].value = pReportBuffer[9]; // Right Trigger [R2]
+	const PS4Report *pReport = reinterpret_cast<const PS4Report *> (pReportBuffer);
 
-	m_State.hats[0] = pReportBuffer[5] & 0x0F; // D-PAD (hat format, 0x08 is released,
-		 									   // 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW)
+	m_State.axes[GamePadAxisLeftX].value = pReport->hatValue[0]; // Left Stick X (0 = left)
+	m_State.axes[GamePadAxisLeftY].value = pReport->hatValue[1]; // Left Stick Y (0 = up)
+	m_State.axes[GamePadAxisRightX].value = pReport->hatValue[2]; // Right Stick X
+	m_State.axes[GamePadAxisRightY].value = pReport->hatValue[3]; // Right Stick Y
+	m_State.axes[GamePadAxisButtonL2].value = pReport->trigger[0]; // Left Trigger [L2] (0 = released, 0xFF = fully pressed)
+	m_State.axes[GamePadAxisButtonR2].value = pReport->trigger[1]; // Right Trigger [R2]
 
-	m_State.buttons = (pReportBuffer[5] & 0xF0) << 6; // TRIANGLE, CIRCLE, X, SQUARE
-	m_State.buttons |= (pReportBuffer[6] << 2);		  // R3, L3, OPTIONS, SHARE, R2, L2, R1, L1
-	m_State.buttons |= (pReportBuffer[7] & 0x03);	  // T-PAD, PS
+	m_State.hats[0] = pReport->btn.dpad; // D-PAD (hat format, 0x08 is released,
+		 								 // 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW
+
+	static u32 hat2buttons[9] = { GamePadButtonUp, (GamePadButtonUp | GamePadButtonRight),
+								GamePadButtonRight, (GamePadButtonRight | GamePadButtonDown),
+								GamePadButtonDown, (GamePadButtonDown | GamePadButtonLeft),
+								GamePadButtonLeft, (GamePadButtonLeft| GamePadButtonUp), 0x00 };
+	m_State.buttons = hat2buttons[pReport->btn.dpad];
+
+	if (pReport->btn.triangle)
+		m_State.buttons |= GamePadButtonTriangle;
+	if (pReport->btn.circle)
+		m_State.buttons |= GamePadButtonCircle;
+	if (pReport->btn.cross)
+		m_State.buttons |= GamePadButtonCross;
+	if (pReport->btn.square)
+		m_State.buttons |= GamePadButtonSquare;
+
+	if (pReport->btn.r3)
+		m_State.buttons |= GamePadButtonR3;
+	if (pReport->btn.l3)
+		m_State.buttons |= GamePadButtonL3;
+	if (pReport->btn.options)
+		m_State.buttons |= GamePadButtonOptions;
+	if (pReport->btn.share)
+		m_State.buttons |= GamePadButtonShare;
+	if (pReport->btn.r2)
+		m_State.buttons |= GamePadButtonR2;
+	if (pReport->btn.l2)
+		m_State.buttons |= GamePadButtonL2;
+	if (pReport->btn.r1)
+		m_State.buttons |= GamePadButtonR1;
+	if (pReport->btn.l1)
+		m_State.buttons |= GamePadButtonL1;
+
+	if (pReport->btn.touchpad)
+		m_State.buttons |= GamePadButtonTouchpad;
+	if (pReport->btn.ps)
+		m_State.buttons |= GamePadButtonPS;
 }
 
 void CUSBGamePadPS4Device::SendLedRumbleCommand(void) {

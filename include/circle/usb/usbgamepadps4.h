@@ -59,7 +59,7 @@ union PS4Buttons {
                 u8 ps : 1;
                 u8 touchpad : 1;
                 u8 reportCounter : 6;
-        } __attribute__((packed));
+        } PACKED;
         u32 val : 24;
 } PACKED;
 
@@ -70,7 +70,7 @@ struct touchpadXY {
                 u8 touching : 1; // The top bit is cleared if the finger is touching the touchpad
                 u16 x : 12;
                 u16 y : 12;
-        } __attribute__((packed)) finger[2]; // 0 = first finger, 1 = second finger
+        } PACKED finger[2]; // 0 = first finger, 1 = second finger
 } PACKED;
 
 struct PS4Status {
@@ -81,7 +81,8 @@ struct PS4Status {
         u8 unknown : 1; // Extension port?
 } PACKED;
 
-struct PS4Data {
+struct PS4Report {
+	u8 reportID;
         /* Button and joystick values */
         u8 hatValue[4];
         PS4Buttons btn;
