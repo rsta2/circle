@@ -123,22 +123,22 @@ void CUSBGamePadXbox360Device::DecodeReport (const u8 *pReportBuffer)
 
 	static const u32 ButtonMap[] =
 	{
-		1 << GamePadButtonUp,
-		1 << GamePadButtonDown,
-		1 << GamePadButtonLeft,
-		1 << GamePadButtonRight,
-		1 << GamePadButtonStart,
-		1 << GamePadButtonBack,
-		1 << GamePadButtonL3,
-		1 << GamePadButtonR3,
-		1 << GamePadButtonLB,
-		1 << GamePadButtonRB,
-		1 << GamePadButtonXbox,
+		GamePadButtonUp,
+		GamePadButtonDown,
+		GamePadButtonLeft,
+		GamePadButtonRight,
+		GamePadButtonStart,
+		GamePadButtonBack,
+		GamePadButtonL3,
+		GamePadButtonR3,
+		GamePadButtonLB,
+		GamePadButtonRB,
+		GamePadButtonXbox,
 		0,
-		1 << GamePadButtonA,
-		1 << GamePadButtonB,
-		1 << GamePadButtonX,
-		1 << GamePadButtonY
+		GamePadButtonA,
+		GamePadButtonB,
+		GamePadButtonX,
+		GamePadButtonY
 	};
 
 	u32 nButtons = pReport->Buttons;
@@ -196,7 +196,7 @@ void CUSBGamePadXbox360Device::DecodeReport (const u8 *pReportBuffer)
 
 		if (pReport->AnalogButton[i] >= REPORT_ANALOG_BUTTON_THRESHOLD)
 		{
-			m_State.buttons |= 1 << (GamePadButtonLT+i);
+			m_State.buttons |= GamePadButtonLT << i;
 		}
 	}
 }

@@ -24,45 +24,44 @@
 #define _circle_usb_usbgamepad_h
 
 #include <circle/usb/usbhiddevice.h>
+#include <circle/macros.h>
 #include <circle/types.h>
 
 // The following enums are valid for branded gamepads only!
 
-enum TGamePadButton		// Digital button (bit numbers)
+enum TGamePadButton		// Digital button (bit masks)
 {
-	GamePadButtonGuide,
+	GamePadButtonGuide	= BIT(0),
 #define GamePadButtonXbox	GamePadButtonGuide
 #define GamePadButtonPS		GamePadButtonGuide
-	GamePadButtonReserved1,
-	GamePadButtonReserved2,
-	GamePadButtonLT,
+	GamePadButtonLT		= BIT(3),
 #define GamePadButtonL2		GamePadButtonLT
-	GamePadButtonRT,
+	GamePadButtonRT		= BIT(4),
 #define GamePadButtonR2		GamePadButtonRT
-	GamePadButtonLB,
+	GamePadButtonLB		= BIT(5),
 #define GamePadButtonL1		GamePadButtonLB
-	GamePadButtonRB,
+	GamePadButtonRB		= BIT(6),
 #define GamePadButtonR1		GamePadButtonRB
-	GamePadButtonY,
+	GamePadButtonY		= BIT(7),
 #define GamePadButtonTriangle	GamePadButtonY
-	GamePadButtonB,
+	GamePadButtonB		= BIT(8),
 #define GamePadButtonCircle	GamePadButtonB
-	GamePadButtonA,
+	GamePadButtonA		= BIT(9),
 #define GamePadButtonCross	GamePadButtonA
-	GamePadButtonX,
+	GamePadButtonX		= BIT(10),
 #define GamePadButtonSquare	GamePadButtonX
-	GamePadButtonSelect,
+	GamePadButtonSelect	= BIT(11),
 #define GamePadButtonBack	GamePadButtonSelect
 #define GamePadButtonShare	GamePadButtonSelect
-	GamePadButtonL3,				// Left axis button
-	GamePadButtonR3,				// Right axis button
-	GamePadButtonStart,
+	GamePadButtonL3		= BIT(12),		// Left axis button
+	GamePadButtonR3		= BIT(13),		// Right axis button
+	GamePadButtonStart	= BIT(14),
 #define GamePadButtonOptions	GamePadButtonStart
-	GamePadButtonUp,
-	GamePadButtonRight,
-	GamePadButtonDown,
-	GamePadButtonLeft,
-	GamePadButtonUnknown
+	GamePadButtonUp		= BIT(15),
+	GamePadButtonRight	= BIT(16),
+	GamePadButtonDown	= BIT(17),
+	GamePadButtonLeft	= BIT(18),
+	GamePadButtonTouchpad	= BIT(19)		// optional
 };
 
 enum TGamePadAxis		// Axis or analog button
