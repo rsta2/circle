@@ -173,6 +173,13 @@ void CUSBGamePadPS4Device::DecodeReport (const u8 *pReportBuffer) {
 		m_State.buttons |= GamePadButtonTouchpad;
 	if (pReport->btn.ps)
 		m_State.buttons |= GamePadButtonPS;
+
+	m_State.acceleration[0] = pReport->accX;
+	m_State.acceleration[1] = pReport->accY;
+	m_State.acceleration[2] = pReport->accZ;
+	m_State.gyroscope[0] = pReport->gyroX;
+	m_State.gyroscope[1] = pReport->gyroY;
+	m_State.gyroscope[2] = pReport->gyroZ;
 }
 
 boolean CUSBGamePadPS4Device::SetLEDMode (u32 nRGB, u8 uchTimeOn, u8 uchTimeOff)
