@@ -132,6 +132,9 @@ struct TGamePadState
 	unsigned buttons;
 };
 
+#define GAMEPAD_AXIS_DEFAULT_MINIMUM	0
+#define GAMEPAD_AXIS_DEFAULT_MAXIMUM	255
+
 typedef void TGamePadStatusHandler (unsigned nDeviceIndex, const TGamePadState *pGamePadState);
 
 class CUSBGamePadDevice : public CUSBHIDDevice		/// Base class for USB gamepad drivers

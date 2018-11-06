@@ -45,7 +45,7 @@ struct TXbox360Report
 
 #define REPORT_AXES			4
 	s16	Axes[REPORT_AXES];
-#define REPORT_AXES_MINIMUM		-32768
+#define REPORT_AXES_MINIMUM		(-32768)
 #define REPORT_AXES_MAXIMUM		32767
 }
 PACKED;
@@ -78,8 +78,8 @@ boolean CUSBGamePadXbox360Device::Configure (void)
 	m_State.naxes = REPORT_AXES+REPORT_ANALOG_BUTTONS;
 	for (unsigned i = 0; i < REPORT_AXES; i++)
 	{
-		m_State.axes[i].minimum = REPORT_AXES_MINIMUM;
-		m_State.axes[i].maximum = REPORT_AXES_MAXIMUM;
+		m_State.axes[i].minimum = GAMEPAD_AXIS_DEFAULT_MINIMUM;
+		m_State.axes[i].maximum = GAMEPAD_AXIS_DEFAULT_MAXIMUM;
 	}
 	for (unsigned i = 0; i < REPORT_ANALOG_BUTTONS; i++)
 	{
@@ -167,24 +167,14 @@ void CUSBGamePadXbox360Device::DecodeReport (const u8 *pReportBuffer)
 	{
 		int nValue = pReport->Axes[i];
 
+		// remap axis value to default range [0, 255]
+		nValue = (unsigned) (nValue - REPORT_AXES_MINIMUM) >> 8;
+
 		unsigned nAxis = AxisMap[i];
 		if (   nAxis == GamePadAxisLeftY
 		    || nAxis == GamePadAxisRightY)	// Y-axes have to be reversed
 		{
-			switch (nValue)			// -REPORT_AXES_MINIMUM is out-of-range
-			{
-				case REPORT_AXES_MINIMUM:
-				nValue = REPORT_AXES_MAXIMUM;
-				break;
-
-			case REPORT_AXES_MAXIMUM:
-				nValue = REPORT_AXES_MINIMUM;
-				break;
-
-			default:
-				nValue = -nValue;
-				break;
-			}
+			nValue = GAMEPAD_AXIS_DEFAULT_MAXIMUM - nValue;
 		}
 
 		m_State.axes[nAxis].value = nValue;
