@@ -87,6 +87,30 @@ enum TGamePadAxis		// Axis or analog button
 	GamePadAxisUnknown
 };
 
+enum TGamePadLEDMode
+{
+	GamePadLEDModeOff,
+	GamePadLEDModeOn1,
+	GamePadLEDModeOn2,
+	GamePadLEDModeOn3,
+	GamePadLEDModeOn4,
+	GamePadLEDModeOn5,
+	GamePadLEDModeOn6,
+	GamePadLEDModeOn7,
+	GamePadLEDModeOn8,
+	GamePadLEDModeOn9,
+	GamePadLEDModeOn10,
+	GamePadLEDModeUnknown
+};
+
+enum TGamePadRumbleMode
+{
+	GamePadRumbleModeOff,
+	GamePadRumbleModeLow,
+	GamePadRumbleModeHigh,
+	GamePadRumbleModeUnknown
+};
+
 #define MAX_AXIS    16
 #define MAX_HATS    6
 
@@ -124,6 +148,23 @@ public:
 
 	/// \param pStatusHandler Pointer to the function to be called on status changes
 	virtual void RegisterStatusHandler (TGamePadStatusHandler *pStatusHandler);
+
+public:
+	/// \brief Set LED(s) on gamepads with multiple uni-color LEDs
+	/// \param Mode LED mode to be set
+	/// \return Operation successful?
+	virtual boolean SetLEDMode (TGamePadLEDMode Mode) { return FALSE; }
+
+	/// \brief Set LED(s) on gamepads with a single flash-able RGB-color LED
+	/// \param nRGB       Color value set be set (0x00rrggbb)
+	/// \param uchTimeOn  Duration while the LED is on (1/100 seconds)
+	/// \param uchTimeOff Duration while the LED is off (1/100 seconds)
+	/// \return Operation successful?
+	virtual boolean SetLEDMode (u32 nRGB, u8 uchTimeOn, u8 uchTimeOff) { return FALSE; }
+
+	/// \param Mode Rumble mode to be set
+	/// \return Operation successful?
+	virtual boolean SetRumbleMode (TGamePadRumbleMode Mode) { return FALSE; }
 
 private:
 	/// \param pReport Pointer to report packet received via the USB status reporting endpoint

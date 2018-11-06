@@ -21,7 +21,10 @@
 #define _circle_usb_usbgamepadps3_h
 
 #include <circle/usb/usbgamepadstandard.h>
+#include <circle/macros.h>
 #include <circle/types.h>
+
+#define USB_GAMEPAD_PS3_COMMAND_LENGTH	48
 
 class CUSBGamePadPS3Device : public CUSBGamePadStandardDevice
 {
@@ -31,6 +34,10 @@ public:
 
 	boolean Configure (void);
 
+	boolean SetLEDMode (TGamePadLEDMode Mode);
+
+	boolean SetRumbleMode (TGamePadRumbleMode Mode);
+
 private:
 	void DecodeReport (const u8 *pReportBuffer);
 
@@ -38,6 +45,10 @@ private:
 
 private:
 	boolean m_bInterfaceOK;
+
+	u8 m_CommandBuffer[USB_GAMEPAD_PS3_COMMAND_LENGTH] ALIGN (4);	// DMA buffer
+
+	static const u8 s_CommandDefault[];
 };
 
 #endif

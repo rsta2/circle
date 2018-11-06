@@ -4,6 +4,11 @@
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
+// Information to implement this was taken from:
+//	https://github.com/felis/USB_Host_Shield_2.0/blob/master/PS3USB.cpp
+//	Copyright (C) 2012 Kristian Lauszus, TKJ Electronics. All rights reserved.
+//	Licensed under GPLv2
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -21,7 +26,7 @@
 #include <circle/usb/usbhid.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/logger.h>
-#include <circle/macros.h>
+#include <circle/util.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -50,12 +55,22 @@ PACKED;
 
 #define REPORT_SIZE_DEFAULT	49
 
+const u8 CUSBGamePadPS3Device::s_CommandDefault[USB_GAMEPAD_PS3_COMMAND_LENGTH] =
+{
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xFF, 0x27, 0x10, 0x00, 0x32, 0xFF, 0x27, 0x10, 0x00, 0x32,
+	0xFF, 0x27, 0x10, 0x00, 0x32, 0xFF, 0x27, 0x10, 0x00, 0x32,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
 static const char FromUSBPadPS3[] = "usbpadps3";
 
 CUSBGamePadPS3Device::CUSBGamePadPS3Device (CUSBFunction *pFunction)
 :	CUSBGamePadStandardDevice (pFunction),
 	m_bInterfaceOK (SelectInterfaceByClass (3, 0, 0))
 {
+	memcpy (m_CommandBuffer, s_CommandDefault, sizeof s_CommandDefault);
 }
 
 CUSBGamePadPS3Device::~CUSBGamePadPS3Device (void)
@@ -164,31 +179,9 @@ void CUSBGamePadPS3Device::DecodeReport (const u8 *pReportBuffer)
 // Copyright (C) 2014  M. Maccaferri <macca@maccasoft.com>
 boolean CUSBGamePadPS3Device::PS3Enable (void)
 {
-	static u8 writeBuf[] =
-	{
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0xFF, 0x27, 0x10, 0x00, 0x32,
-		0xFF, 0x27, 0x10, 0x00, 0x32,
-		0xFF, 0x27, 0x10, 0x00, 0x32,
-		0xFF, 0x27, 0x10, 0x00, 0x32,
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00
-	};
-
-	static const u8 leds[] =
-	{
-		0x00, // OFF
-		0x01, // LED1
-		0x02, // LED2
-		0x04, // LED3
-		0x08  // LED4
-	};
-
 	/* Special PS3 Controller enable commands */
 	static u8 Enable[] = {0x42, 0x0C, 0x00, 0x00};
+
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					SET_REPORT, (REPORT_TYPE_FEATURE << 8) | 0xF4,
@@ -197,15 +190,78 @@ boolean CUSBGamePadPS3Device::PS3Enable (void)
 		return FALSE;
 	}
 
-	/* Turn on LED */
-	writeBuf[9] = (u8)(leds[m_nDeviceNumber] << 1);
-	if (GetHost ()->ControlMessage (GetEndpoint0 (),
-					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-					SET_REPORT, (REPORT_TYPE_OUTPUT << 8) | 0x01,
-					GetInterfaceNumber (), writeBuf, sizeof writeBuf) <= 0)
+	return SetLEDMode ((TGamePadLEDMode) m_nDeviceNumber);
+}
+
+boolean CUSBGamePadPS3Device::SetLEDMode (TGamePadLEDMode Mode)
+{
+	static const u8 leds[] =
+	{
+		0x00, // OFF
+		0x01, // LED1
+		0x02, // LED2
+		0x04, // LED3
+		0x08, // LED4
+		0x09, // LED5
+		0x0A, // LED6
+		0x0C, // LED7
+		0x0D, // LED8
+		0x0E, // LED9
+		0x0F  // LED10
+	};
+
+	if (Mode >= sizeof leds / sizeof leds[0])
 	{
 		return FALSE;
 	}
 
-	return TRUE;
+	m_CommandBuffer[9] = (u8)(leds[Mode] << 1);
+
+	return GetHost ()->ControlMessage (GetEndpoint0 (),
+					   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+					   SET_REPORT, (REPORT_TYPE_OUTPUT << 8) | 0x01,
+					   GetInterfaceNumber (),
+					   m_CommandBuffer, sizeof m_CommandBuffer) > 0
+					   ? TRUE : FALSE;
+}
+
+boolean CUSBGamePadPS3Device::SetRumbleMode (TGamePadRumbleMode Mode)
+{
+	u8 TempBuffer[USB_GAMEPAD_PS3_COMMAND_LENGTH] ALIGN (4);	// DMA buffer
+	memcpy (TempBuffer, m_CommandBuffer, sizeof m_CommandBuffer);
+
+	switch (Mode)
+	{
+	case GamePadRumbleModeOff:
+		TempBuffer[1] = 0;
+		TempBuffer[2] = 0;
+		TempBuffer[3] = 0;
+		TempBuffer[4] = 0;
+		break;
+
+	case GamePadRumbleModeLow:
+		TempBuffer[1] = 0xFE;
+		TempBuffer[2] = 0xFF;
+		TempBuffer[3] = 0xFE;
+		TempBuffer[4] = 0;
+		break;
+
+	case GamePadRumbleModeHigh:
+		TempBuffer[1] = 0xFE;
+		TempBuffer[2] = 0;
+		TempBuffer[3] = 0xFE;
+		TempBuffer[4] = 0xFF;
+		break;
+
+	default:
+		assert (0);
+		return FALSE;
+	}
+
+	return GetHost ()->ControlMessage (GetEndpoint0 (),
+					   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+					   SET_REPORT, (REPORT_TYPE_OUTPUT << 8) | 0x01,
+					   GetInterfaceNumber (),
+					   TempBuffer, sizeof TempBuffer) > 0
+					   ? TRUE : FALSE;
 }
