@@ -130,6 +130,9 @@ struct TGamePadState
 
 	int nbuttons;
 	unsigned buttons;
+
+	int acceleration[3];	// x, y, z
+	int gyroscope[3];	// x, y, z
 };
 
 #define GAMEPAD_AXIS_DEFAULT_MINIMUM	0

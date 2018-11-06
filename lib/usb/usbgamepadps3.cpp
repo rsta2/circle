@@ -50,6 +50,11 @@ struct TPS3Report
 
 #define REPORT_ANALOG_BUTTONS		12
 	u8	AnalogButton[REPORT_ANALOG_BUTTONS];
+
+	u8	Reserved3[15];
+
+	u16	Acceleration[3];	// big endian
+	u16	GyroscopeZ;		// big endian
 }
 PACKED;
 
@@ -174,6 +179,13 @@ void CUSBGamePadPS3Device::DecodeReport (const u8 *pReportBuffer)
 	{
 		m_State.axes[AxisButtonMap[i]].value = pReport->AnalogButton[i];
 	}
+
+	for (unsigned i = 0; i < 3; i++)
+	{
+		m_State.acceleration[i] = 511 - (int) bswap16 (pReport->Acceleration[i]);
+	}
+
+	m_State.gyroscope[2] = (int) bswap16 (pReport->GyroscopeZ) - 6;
 }
 
 // Copyright (C) 2014  M. Maccaferri <macca@maccasoft.com>

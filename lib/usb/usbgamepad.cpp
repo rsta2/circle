@@ -51,6 +51,12 @@ CUSBGamePadDevice::CUSBGamePadDevice (CUSBFunction *pFunction)
 
 	m_State.nbuttons = 0;
 	m_State.buttons = 0;
+
+	for (int i = 0; i < 3; i++)
+	{
+		m_State.acceleration[i] = 0;
+		m_State.gyroscope[i] = 0;
+	}
 }
 
 CUSBGamePadDevice::~CUSBGamePadDevice (void)
