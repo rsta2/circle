@@ -175,7 +175,42 @@ void CUSBGamePadPS4Device::DecodeReport (const u8 *pReportBuffer) {
 		m_State.buttons |= GamePadButtonPS;
 }
 
-void CUSBGamePadPS4Device::SendLedRumbleCommand(void) {
+boolean CUSBGamePadPS4Device::SetLEDMode (u32 nRGB, u8 uchTimeOn, u8 uchTimeOff)
+{
+	ps4Output.red = (u8)(nRGB >> 16);
+	ps4Output.green = (u8)(nRGB >> 8);
+	ps4Output.blue = (u8)nRGB;
+	ps4Output.flashOn = uchTimeOn;
+	ps4Output.flashOff = uchTimeOff;
+	return SendLedRumbleCommand();
+}
+
+boolean CUSBGamePadPS4Device::SetRumbleMode (TGamePadRumbleMode Mode)
+{
+	switch (Mode) {
+		case GamePadRumbleModeOff:
+			ps4Output.rumbleState = 0xf0;
+			ps4Output.smallRumble = 0x00;
+			ps4Output.bigRumble = 0x00;
+			break;
+		case GamePadRumbleModeLow:
+			ps4Output.rumbleState = 0xf3;
+			ps4Output.smallRumble = 0xff;
+			ps4Output.bigRumble = 0;
+			break;
+		case GamePadRumbleModeHigh:
+			ps4Output.rumbleState = 0xf3;
+			ps4Output.smallRumble = 0;
+			ps4Output.bigRumble = 0xff;
+			break;
+		default:
+			return TRUE;
+	}
+	return SendLedRumbleCommand();
+}
+
+boolean CUSBGamePadPS4Device::SendLedRumbleCommand(void)
+{
 	outBuffer[3]  = ps4Output.rumbleState; // 0xf0 disables the rumble motors, 0xf3 enables them
 	outBuffer[4]  = ps4Output.smallRumble; // Rumble (Right/weak)
 	outBuffer[5]  = ps4Output.bigRumble;   // Rumble (Left/strong)
@@ -186,6 +221,8 @@ void CUSBGamePadPS4Device::SendLedRumbleCommand(void) {
 	outBuffer[10] = ps4Output.flashOff;	   // Time to flash dark (255 = 2.5 seconds)
 	if (!SendToEndpointOut(outBuffer, OUTPUT_REPORT_SIZE)) {
 		CLogger::Get ()->Write (FromUSBPadPS4, LogError, "Cannot configure LEDs & Rumble");
+		return FALSE;
 	}
+	return TRUE;
 	//CLogger::Get ()->Write (FromUSBPadPS4, LogNotice, "LEDs & Rumble configured");
 }

@@ -121,10 +121,12 @@ public:
 	boolean Configure (void);
 
 	const TGamePadState *GetReport (void);		// returns 0 on failure
+	boolean SetLEDMode (u32 nRGB, u8 uchTimeOn, u8 uchTimeOff);
+	boolean SetRumbleMode (TGamePadRumbleMode Mode);
 
 private:
 	void DecodeReport (const u8 *pReportBuffer);
-	void SendLedRumbleCommand(void);
+	boolean SendLedRumbleCommand(void);
 
 private:
 	boolean m_bInterfaceOK;
