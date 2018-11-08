@@ -2,7 +2,7 @@
 // spinlock.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,18 +44,7 @@ void CSpinLock::Acquire (void)
 {
 	if (m_nTargetLevel >= IRQ_LEVEL)
 	{
-		asm volatile
-		(
-			"mrs %0, cpsr\n"
-			"cpsid i\n"
-
-			: "=r" (m_nCPSR[CMultiCoreSupport::ThisCore ()])
-		);
-
-		if (m_nTargetLevel == FIQ_LEVEL)
-		{
-			DisableFIQs ();
-		}
+		EnterCritical (m_nTargetLevel);
 	}
 
 	if (s_bEnabled)
@@ -102,13 +91,8 @@ void CSpinLock::Release (void)
 
 	if (m_nTargetLevel >= IRQ_LEVEL)
 	{
-		asm volatile
-		(
-			"msr cpsr_c, %0\n"
-
-			: : "r" (m_nCPSR[CMultiCoreSupport::ThisCore ()])
-		);
-	};
+		LeaveCritical ();
+	}
 }
 
 void CSpinLock::Enable (void)
