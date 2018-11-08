@@ -106,12 +106,19 @@ void CExceptionHandler::Throw (unsigned nException, TAbortFrame *pFrame)
 	u32 lr = pFrame->lr;
 	u32 sp = pFrame->sp;
 
-	if ((pFrame->spsr & 0x1F) == 0x12)	// IRQ mode?
+	switch (pFrame->spsr & 0x1F)
 	{
+	case 0x11:			// FIQ mode?
+		lr = pFrame->lr_fiq;
+		sp = pFrame->sp_fiq;
+		break;
+
+	case 0x12:			// IRQ mode?
 		lr = pFrame->lr_irq;
 		sp = pFrame->sp_irq;
+		break;
 	}
-	
+
 #ifndef NDEBUG
 	debug_stacktrace ((u32 *) sp, FromExcept);
 #endif
@@ -132,6 +139,10 @@ CExceptionHandler *CExceptionHandler::Get (void)
 void ExceptionHandler (u32 nException, TAbortFrame *pFrame)
 {
 	PeripheralExit ();	// exit from interrupted peripheral
+
+	// if an exception occurs on FIQ_LEVEL, the system would otherwise hang in the next spin lock
+	CInterruptSystem::DisableFIQ ();
+	EnableFIQs ();
 
 	CExceptionHandler::Get ()->Throw (nException, pFrame);
 }
