@@ -33,6 +33,9 @@ public:
 
 	const TGamePadState *GetReport (void);
 
+	boolean SetLEDMode (TGamePadLEDMode Mode);
+	boolean SetRumbleMode (TGamePadRumbleMode Mode);
+
 private:
 	void ReportHandler (const u8 *pReport);
 

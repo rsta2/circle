@@ -25,6 +25,7 @@
 #include <circle/usb/usbgamepadxbox360.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/logger.h>
+#include <circle/util.h>
 #include <circle/macros.h>
 #include <circle/debug.h>
 #include <assert.h>
@@ -189,4 +190,48 @@ void CUSBGamePadXbox360Device::DecodeReport (const u8 *pReportBuffer)
 			m_State.buttons |= GamePadButtonLT << i;
 		}
 	}
+}
+
+boolean CUSBGamePadXbox360Device::SetLEDMode (TGamePadLEDMode Mode)
+{
+	static const u8 LEDMode[] = {0x00, 0x06, 0x07, 0x08, 0x09};
+
+	if (Mode >= sizeof LEDMode / sizeof LEDMode[0])
+	{
+		return FALSE;
+	}
+
+	u8 Command[3] ALIGN (4);	// DMA buffer
+	Command[0] = 0x01;
+	Command[1] = 0x03;
+	Command[2] = LEDMode[Mode];
+
+	return SendToEndpointOut (Command, sizeof Command);
+}
+
+boolean CUSBGamePadXbox360Device::SetRumbleMode (TGamePadRumbleMode Mode)
+{
+	u8 Command[8] ALIGN (4);	// DMA buffer
+	memset (Command, 0, sizeof Command);
+	Command[1] = 0x08;
+
+	switch (Mode)
+	{
+	case GamePadRumbleModeOff:
+		break;
+
+	case GamePadRumbleModeLow:
+		Command[4] = 0xFF;
+		break;
+
+	case GamePadRumbleModeHigh:
+		Command[3] = 0xFF;
+		break;
+
+	default:
+		assert (0);
+		return FALSE;
+	}
+
+	return SendToEndpointOut (Command, sizeof Command);
 }
