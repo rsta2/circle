@@ -120,6 +120,15 @@ public:
 
 	boolean Configure (void);
 
+	unsigned GetProperties (void)
+	{
+		return   GamePadPropertyIsKnown
+		       | GamePadPropertyHasLED
+		       | GamePadPropertyHasRGBLED
+		       | GamePadPropertyHasRumble
+		       | GamePadPropertyHasGyroscope;
+	}
+
 	const TGamePadState *GetReport (void);		// returns 0 on failure
 	boolean SetLEDMode (u32 nRGB, u8 uchTimeOn, u8 uchTimeOff);
 	boolean SetRumbleMode (TGamePadRumbleMode Mode);

@@ -33,6 +33,13 @@ public:
 
 	const TGamePadState *GetReport (void);
 
+	unsigned GetProperties (void)
+	{
+		return   GamePadPropertyIsKnown
+		       | GamePadPropertyHasLED
+		       | GamePadPropertyHasRumble;
+	}
+
 	boolean SetLEDMode (TGamePadLEDMode Mode);
 	boolean SetRumbleMode (TGamePadRumbleMode Mode);
 

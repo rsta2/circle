@@ -34,8 +34,15 @@ public:
 
 	boolean Configure (void);
 
-	boolean SetLEDMode (TGamePadLEDMode Mode);
+	unsigned GetProperties (void)
+	{
+		return   GamePadPropertyIsKnown
+		       | GamePadPropertyHasLED
+		       | GamePadPropertyHasRumble
+		       | GamePadPropertyHasGyroscope;
+	}
 
+	boolean SetLEDMode (TGamePadLEDMode Mode);
 	boolean SetRumbleMode (TGamePadRumbleMode Mode);
 
 private:

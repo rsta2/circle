@@ -27,7 +27,16 @@
 #include <circle/macros.h>
 #include <circle/types.h>
 
-// The following enums are valid for branded gamepads only!
+enum TGamePadProperty
+{
+	GamePadPropertyIsKnown		= BIT(0),
+	GamePadPropertyHasLED		= BIT(1),
+	GamePadPropertyHasRGBLED	= BIT(2),	// requires GamePadPropertyHasLED too
+	GamePadPropertyHasRumble	= BIT(3),
+	GamePadPropertyHasGyroscope	= BIT(4)
+};
+
+// The following enums are valid for known gamepads only!
 
 enum TGamePadButton		// Digital button (bit masks)
 {
@@ -114,25 +123,25 @@ enum TGamePadRumbleMode
 #define MAX_AXIS    16
 #define MAX_HATS    6
 
-struct TGamePadState
+struct TGamePadState		/// Current state of a gamepad
 {
-	int naxes;
+	int naxes;		// Number of available axes and analog buttons
 	struct
 	{
-		int value;
-		int minimum;
-		int maximum;
+		int value;	// Current position value
+		int minimum;	// Minimum position value (normally 0)
+		int maximum;	// Maximum position value (normally 255)
 	}
-	axes[MAX_AXIS];
+	axes[MAX_AXIS];		// Array of axes and analog buttons
 
-	int nhats;
-	int hats[MAX_HATS];
+	int nhats;		// Number of available hat controls
+	int hats[MAX_HATS];	// Current position value of hat controls
 
-	int nbuttons;
-	unsigned buttons;
+	int nbuttons;		// Number of available digital buttons
+	unsigned buttons;	// Current status of digital buttons (bit mask)
 
-	int acceleration[3];	// x, y, z
-	int gyroscope[3];	// x, y, z
+	int acceleration[3];	// Current state of acceleration sensor (x, y, z)
+	int gyroscope[3];	// Current state of gyroscope sensor (x, y, z)
 };
 
 #define GAMEPAD_AXIS_DEFAULT_MINIMUM	0
@@ -148,6 +157,9 @@ public:
 
 	boolean Configure (void);
 
+	/// \return Properties of the gamepad (bit mask of TGamePadProperty constants)
+	virtual unsigned GetProperties (void) { return 0; }
+
 	/// \return Pointer to gamepad state (or 0 on failure)
 	/// \note May return the gamepad geometry information only (not the values).
 	virtual const TGamePadState *GetReport (void) = 0;
@@ -158,7 +170,8 @@ public:
 public:
 	/// \brief Set LED(s) on gamepads with multiple uni-color LEDs
 	/// \param Mode LED mode to be set
-	/// \return Operation successful?
+	/// \return LED mode supported and successful set?
+	/// \note A gamepad may support only a subset of the defined TGamePadLEDMode modes.
 	virtual boolean SetLEDMode (TGamePadLEDMode Mode) { return FALSE; }
 
 	/// \brief Set LED(s) on gamepads with a single flash-able RGB-color LED
