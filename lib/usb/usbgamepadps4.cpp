@@ -41,9 +41,89 @@
 
 static const char FromUSBPadPS4[] = "usbpadps4";
 
+// Structs taken from project USB_Host_Shield_2.0
+// https://github.com/felis/USB_Host_Shield_2.0
+// Copyright (C) 2014 Kristian Lauszus, TKJ Electronics.
+// Licensed under GPLv2
+/*
+ Contact information
+ -------------------
+
+ Kristian Lauszus, TKJ Electronics
+ Web      :  http://www.tkjelectronics.com
+ e-mail   :  kristianl@tkjelectronics.com
+*/
+union PS4Buttons {
+    struct {
+        u8 dpad : 4;
+        u8 square : 1;
+        u8 cross : 1;
+        u8 circle : 1;
+        u8 triangle : 1;
+
+        u8 l1 : 1;
+        u8 r1 : 1;
+        u8 l2 : 1;
+        u8 r2 : 1;
+        u8 share : 1;
+        u8 options : 1;
+        u8 l3 : 1;
+        u8 r3 : 1;
+
+        u8 ps : 1;
+        u8 touchpad : 1;
+        u8 reportCounter : 6;
+    } PACKED;
+    u32 val : 24;
+} PACKED;
+
+struct touchpadXY {
+    u8 dummy; // I can not figure out what this data is for, it seems to change randomly, maybe a timestamp?
+    struct {
+        u8 counter : 7; // Increments every time a finger is touching the touchpad
+        u8 touching : 1; // The top bit is cleared if the finger is touching the touchpad
+        u16 x : 12;
+        u16 y : 12;
+    } PACKED finger[2]; // 0 = first finger, 1 = second finger
+} PACKED;
+
+struct PS4Status {
+    u8 battery : 4;
+    u8 usb : 1;
+    u8 audio : 1;
+    u8 mic : 1;
+    u8 unknown : 1; // Extension port?
+} PACKED;
+
+struct PS4Report {
+	u8 reportID;
+    /* Button and joystick values */
+    u8 hatValue[4];
+    PS4Buttons btn;
+    u8 trigger[2];
+
+    /* Gyro and accelerometer values */
+    u8 dummy[3]; // First two looks random, while the third one might be some kind of status - it increments once in a while
+    s16 gyroY, gyroZ, gyroX;
+    s16 accX, accZ, accY;
+
+    u8 dummy2[5];
+    PS4Status status;
+    u8 dummy3[3];
+
+        /* The rest is data for the touchpad */
+    touchpadXY xy[3]; // It looks like it sends out three coordinates each time, this might be because the microcontroller inside the PS4 controller is much faster than the Bluetooth connection.
+                      // The last data is read from the last position in the array while the oldest measurement is from the first position.
+                      // The first position will also keep it's value after the finger is released, while the other two will set them to zero.
+                      // Note that if you read fast enough from the device, then only the first one will contain any data.
+
+        // The last three bytes are always: 0x00, 0x80, 0x00
+} PACKED;
+
 CUSBGamePadPS4Device::CUSBGamePadPS4Device (CUSBFunction *pFunction)
 :	CUSBGamePadDevice (pFunction),
-	m_bInterfaceOK (SelectInterfaceByClass (3, 0, 0))
+	m_bInterfaceOK (SelectInterfaceByClass (3, 0, 0)),
+	outBuffer(nullptr)
 {
 }
 
@@ -84,17 +164,15 @@ boolean CUSBGamePadPS4Device::Configure (void)
 	outBuffer[1]  = 0x07;
 	outBuffer[2]  = 0x04;
 
-	ps4Output.rumbleState = 0xF3; // 0xf0 disables the rumble motors, 0xf3 enables them
-	ps4Output.smallRumble = 0xFF; // Rumble (Right/weak)
+	ps4Output.rumbleState = 0xF0; // 0xf0 disables the rumble motors, 0xf3 enables them
+	ps4Output.smallRumble = 0x00; // Rumble (Right/weak)
 	ps4Output.bigRumble = 0x00;   // Rumble (Left/strong)
 	ps4Output.red = 0xFF; 		  // RGB Color (Red)
 	ps4Output.green = 0xFF;	   	  // RGB Color (Green)
 	ps4Output.blue = 0xFF;		  // RGB Color (Blue)
 	ps4Output.flashOn = 0x7F;	  // Time to flash bright (255 = 2.5 seconds)
-	ps4Output.flashOff = 0xFE;	  // Time to flash dark (255 = 2.5 seconds)
+	ps4Output.flashOff = 0xFF;	  // Time to flash dark (255 = 2.5 seconds)
 	SendLedRumbleCommand();
-	ps4Output.rumbleState = 0xF0;
-	ps4Output.smallRumble = 0x00;
 	ps4Output.red = 0x00;
 	ps4Output.green = 0x00;
 	ps4Output.blue = 0x00;
@@ -180,6 +258,76 @@ void CUSBGamePadPS4Device::DecodeReport (const u8 *pReportBuffer) {
 	m_State.gyroscope[0] = pReport->gyroX;
 	m_State.gyroscope[1] = pReport->gyroY;
 	m_State.gyroscope[2] = pReport->gyroZ;
+}
+
+boolean CUSBGamePadPS4Device::SetLEDMode (TGamePadLEDMode Mode)
+{
+	switch (Mode) {
+    	case GamePadLEDModeOn1:
+        	// Blue
+        	ps4Output.red = 0x00;
+        	ps4Output.green = 0x00;
+        	ps4Output.blue = 0xFF;
+        	ps4Output.flashOn = 0x7F;
+        	ps4Output.flashOff = 0xFF;
+        	break;
+        case GamePadLEDModeOn2:
+        	// Red
+            ps4Output.red = 0xFF;
+            ps4Output.green = 0x00;
+            ps4Output.blue = 0x00;
+            ps4Output.flashOn = 0x7F;
+            ps4Output.flashOff = 0xFF;
+            break;
+        case GamePadLEDModeOn3:
+        	// Magenta
+            ps4Output.red = 0xFF;
+            ps4Output.green = 0x00;
+            ps4Output.blue = 0xFF;
+            ps4Output.flashOn = 0x7F;
+            ps4Output.flashOff = 0xFF;
+            break;
+        case GamePadLEDModeOn4:
+        	// Green
+            ps4Output.red = 0x00;
+            ps4Output.green = 0xFF;
+            ps4Output.blue = 0x00;
+            ps4Output.flashOn = 0x7F;
+            ps4Output.flashOff = 0xFF;
+            break;
+        case GamePadLEDModeOn5:
+        	// Cyan
+            ps4Output.red = 0x00;
+            ps4Output.green = 0xFF;
+            ps4Output.blue = 0xFF;
+            ps4Output.flashOn = 0x7F;
+            ps4Output.flashOff = 0xFF;
+            break;
+        case GamePadLEDModeOn6:
+        	// Yellow
+            ps4Output.red = 0xFF;
+            ps4Output.green = 0xFF;
+            ps4Output.blue = 0x00;
+            ps4Output.flashOn = 0x7F;
+            ps4Output.flashOff = 0xFF;
+            break;
+        case GamePadLEDModeOn7:
+        	// White
+            ps4Output.red = 0xFF;
+            ps4Output.green = 0xFF;
+            ps4Output.blue = 0xFF;
+            ps4Output.flashOn = 0x7F;
+            ps4Output.flashOff = 0xFF;
+            break;
+        default:
+        	ps4Output.red = 0x00;
+            ps4Output.green = 0x00;
+            ps4Output.blue = 0x00;
+            ps4Output.flashOn = 0x00;
+            ps4Output.flashOff = 0x00;
+            break;
+       }
+       return SendLedRumbleCommand();
 }
 
 boolean CUSBGamePadPS4Device::SetLEDMode (u32 nRGB, u8 uchTimeOn, u8 uchTimeOff)
