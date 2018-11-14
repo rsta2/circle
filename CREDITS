@@ -46,3 +46,6 @@ USB HID class gamepad driver
 
 @Matheus-Garbelini
 Adding bootloader support and tools
+
+Stephane Damo
+Helping to fix FIQ synchronization issue

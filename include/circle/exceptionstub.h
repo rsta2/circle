@@ -2,7 +2,7 @@
 // exceptionstub.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,8 @@ struct TAbortFrame
 {
 	u32	sp_irq;
 	u32	lr_irq;
+	u32	sp_fiq;
+	u32	lr_fiq;
 	u32	r0;
 	u32	r1;
 	u32	r2;

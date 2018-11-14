@@ -2,7 +2,7 @@
 // debug.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -80,7 +80,8 @@ void debug_stacktrace (const u32 *pStackPtr, const char *pSource)
 		extern unsigned char _etext;
 
 		if (   *pStackPtr >= MEM_KERNEL_START
-		    && *pStackPtr < (u32) &_etext)
+		    && *pStackPtr < (u32) &_etext
+		    && (*pStackPtr & 3) == 0)
 		{
 			CLogger::Get ()->Write (pSource, LogDebug, "stack[%u] is 0x%X", i, (unsigned) *pStackPtr);
 		}
