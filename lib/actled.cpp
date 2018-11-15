@@ -36,14 +36,14 @@ CActLED::CActLED (void)
 		boolean bOld;
 		boolean bIsPiZero = FALSE;
 		boolean bIsPi3 = FALSE;
-		boolean bIsPi3BPlus = FALSE;
+		boolean bIsPi3Plus = FALSE;
 		if (BoardRevision.nValue & (1 << 23))	// new revision scheme?
 		{
 			unsigned nType = (BoardRevision.nValue >> 4) & 0xFF;
 
 			bOld = nType <= 0x01;
-			bIsPi3 = nType == 0x08 || nType == 0x0D;
-			bIsPi3BPlus = nType == 0x0D;
+			bIsPi3 = nType == 0x08 || nType == 0x0D || nType == 0x0E;
+			bIsPi3Plus = nType == 0x0D || nType == 0x0E;
 			bIsPiZero = nType == 0x09 || nType == 0x0C;
 		}
 		else
@@ -68,7 +68,7 @@ CActLED::CActLED (void)
 			}
 			else
 			{
-				if (!bIsPi3BPlus)
+				if (!bIsPi3Plus)
 				{
 					m_pVirtualPin = new CVirtualGPIOPin (0);
 				}
