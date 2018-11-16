@@ -109,9 +109,10 @@ struct PS4Report {
 
     u8 dummy2[5];
     PS4Status status;
-    u8 dummy3[3];
+    u8 dummy3[2];
 
         /* The rest is data for the touchpad */
+    u8 xyNum; // Number of valid entries in xy[]
     touchpadXY xy[3]; // It looks like it sends out three coordinates each time, this might be because the microcontroller inside the PS4 controller is much faster than the Bluetooth connection.
                       // The last data is read from the last position in the array while the oldest measurement is from the first position.
                       // The first position will also keep it's value after the finger is released, while the other two will set them to zero.
@@ -123,12 +124,16 @@ struct PS4Report {
 CUSBGamePadPS4Device::CUSBGamePadPS4Device (CUSBFunction *pFunction)
 :	CUSBGamePadDevice (pFunction),
 	m_bInterfaceOK (SelectInterfaceByClass (3, 0, 0)),
-	outBuffer(nullptr)
+	outBuffer(nullptr),
+	m_pMouseDevice (nullptr)
 {
+	m_Touchpad.bButtonPressed = FALSE;
+	m_Touchpad.bTouched = FALSE;
 }
 
 CUSBGamePadPS4Device::~CUSBGamePadPS4Device (void)
 {
+	delete m_pMouseDevice;
 	delete[] outBuffer;
 }
 
@@ -149,6 +154,9 @@ boolean CUSBGamePadPS4Device::Configure (void)
 
 		return FALSE;
 	}
+
+	m_pMouseDevice = new CMouseDevice;
+	assert (m_pMouseDevice != 0);
 
 	m_State.nbuttons = REPORT_BUTTONS;
 	m_State.nhats = REPORT_HATS;
@@ -197,6 +205,23 @@ const TGamePadState *CUSBGamePadPS4Device::GetReport (void)
 	DecodeReport (ReportBuffer);
 
 	return &m_State;
+}
+
+void CUSBGamePadPS4Device::ReportHandler (const u8 *pReport)
+{
+	if (pReport != 0)
+	{
+		//debug_hexdump (pReport, m_usReportSize, FromUSBPadPS4);
+
+		DecodeReport (pReport);
+
+		if (m_pStatusHandler != 0)
+		{
+			(*m_pStatusHandler) (m_nDeviceNumber-1, &m_State);
+		}
+
+		HandleTouchpad (pReport);
+	}
 }
 
 /*
@@ -258,6 +283,86 @@ void CUSBGamePadPS4Device::DecodeReport (const u8 *pReportBuffer) {
 	m_State.gyroscope[0] = pReport->gyroX;
 	m_State.gyroscope[1] = pReport->gyroY;
 	m_State.gyroscope[2] = pReport->gyroZ;
+}
+
+void CUSBGamePadPS4Device::HandleTouchpad (const u8 *pReportBuffer)
+{
+	const PS4Report *pReport = reinterpret_cast<const PS4Report *> (pReportBuffer);
+
+	boolean bButtonChanged = FALSE;
+	if (   ( pReport->btn.touchpad && !m_Touchpad.bButtonPressed)
+	    || (!pReport->btn.touchpad &&  m_Touchpad.bButtonPressed))
+	{
+		m_Touchpad.bButtonPressed = pReport->btn.touchpad ? TRUE : FALSE;
+		bButtonChanged = TRUE;
+	}
+
+	// get number of valid touchpad entries and validate it
+	unsigned nEvents = pReport->xyNum;
+	if (nEvents == 0 || nEvents > 3)
+	{
+		nEvents = 1;
+	}
+
+	// run through touchpad events, second finger is ignored
+	int nDisplacementX = 0;
+	int nDisplacementY = 0;
+	for (unsigned i = 0; i < nEvents; i++)
+	{
+		if (pReport->xy[i].finger[0].touching == 0)
+		{
+			// if touchpad is touched and was touched before
+			if (m_Touchpad.bTouched)
+			{
+				// valid move found, calculate displacement
+				nDisplacementX = (int) pReport->xy[i].finger[0].x - m_Touchpad.usPosX;
+				if (nDisplacementX < MOUSE_DISPLACEMENT_MIN)
+				{
+					nDisplacementX = MOUSE_DISPLACEMENT_MIN;
+				}
+				else if (nDisplacementX > MOUSE_DISPLACEMENT_MAX)
+				{
+					nDisplacementX = MOUSE_DISPLACEMENT_MAX;
+				}
+
+				nDisplacementY = (int) pReport->xy[i].finger[0].y - m_Touchpad.usPosY;
+				if (nDisplacementY < MOUSE_DISPLACEMENT_MIN)
+				{
+					nDisplacementY = MOUSE_DISPLACEMENT_MIN;
+				}
+				else if (nDisplacementY > MOUSE_DISPLACEMENT_MAX)
+				{
+					nDisplacementY = MOUSE_DISPLACEMENT_MAX;
+				}
+			}
+
+			// save this touchpad state as the previous one
+			m_Touchpad.bTouched = TRUE;
+			m_Touchpad.usPosX = pReport->xy[i].finger[0].x;
+			m_Touchpad.usPosY = pReport->xy[i].finger[0].y;
+		}
+		else
+		{
+			m_Touchpad.bTouched = FALSE;
+		}
+
+		// if finger has moved or button state changed, report it
+		if (   bButtonChanged
+		    || nDisplacementX != 0
+		    || nDisplacementY != 0)
+		{
+			if (m_pMouseDevice != 0)
+			{
+				m_pMouseDevice->ReportHandler (  m_Touchpad.bButtonPressed
+							       ? MOUSE_BUTTON_LEFT : 0,
+							       nDisplacementX, nDisplacementY);
+			}
+
+			bButtonChanged = FALSE;
+			nDisplacementX = 0;
+			nDisplacementY = 0;
+		}
+	}
 }
 
 boolean CUSBGamePadPS4Device::SetLEDMode (TGamePadLEDMode Mode)

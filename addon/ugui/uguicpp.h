@@ -15,7 +15,7 @@ extern "C" {
 #endif
 
 #include <circle/screen.h>
-#include <circle/usb/usbmouse.h>
+#include <circle/input/mouse.h>
 #include <circle/input/touchscreen.h>
 
 #if DEPTH != 16
@@ -48,7 +48,7 @@ private:
 
 	UG_GUI m_GUI;
 
-	CUSBMouseDevice *m_pMouseDevice;
+	CMouseDevice *m_pMouseDevice;
 
 	CTouchScreenDevice *m_pTouchScreen;
 	unsigned m_nLastUpdate;

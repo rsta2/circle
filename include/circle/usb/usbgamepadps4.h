@@ -24,6 +24,7 @@
 #define _circle_usb_usbgamepadps4_h
 
 #include <circle/usb/usbgamepad.h>
+#include <circle/input/mouse.h>
 #include <circle/types.h>
 
 struct PS4Output {
@@ -55,13 +56,25 @@ public:
 	boolean SetRumbleMode (TGamePadRumbleMode Mode);
 
 private:
+	void ReportHandler (const u8 *pReport);
 	void DecodeReport (const u8 *pReportBuffer);
+	void HandleTouchpad (const u8 *pReportBuffer);
 	boolean SendLedRumbleCommand(void);
 
 private:
 	boolean m_bInterfaceOK;
 	PS4Output ps4Output;
 	u8 *outBuffer;
+
+	CMouseDevice *m_pMouseDevice;
+	struct
+	{
+		boolean bButtonPressed;
+		boolean	bTouched;
+		u16	usPosX;
+		u16	usPosY;
+	}
+	m_Touchpad;		// previous state from touchpad
 };
 
 #endif

@@ -94,6 +94,7 @@ Input library
 * CKeyMap: Keyboard translation map (six selectable default maps at the moment)
 * CLineDiscipline: Implements line editor function
 * CMouseBehaviour: Generic mouse function, handles the mouse cursor
+* CMouseDevice: Generic mouse interface device
 * CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
 
 FS library
