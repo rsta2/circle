@@ -1,8 +1,6 @@
 Circle
 ======
 
-> Raspberry Pi is a trademark of the Raspberry Pi Foundation.
-
 > If you read this file in an editor you should switch line wrapping on.
 
 Overview
@@ -155,3 +153,16 @@ The available Circle classes are listed in the file *doc/classes.txt*. If you ha
 `./makedoc`
 
 At the moment there are only a few classes described in detail for doxygen.
+
+Trademarks
+----------
+
+Raspberry Pi is a trademark of the Raspberry Pi Foundation.
+
+Linux is a trademark of Linus Torvalds.
+
+PS3 and PS4 are registered trademarks of Sony Computer Entertainment Inc.
+
+Xbox 360 is a trademark of the Microsoft group of companies.
+
+(c) 2017 Nintendo. Nintendo Switch is a trademark of Nintendo.
