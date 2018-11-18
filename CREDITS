@@ -22,7 +22,7 @@ Fixing issues for u-boot support
 Support while adding CPU clock rate management and sample/26-cpustress
 Testing while adding USB transaction queueing and SOF interrupt support
 Updating addon/fatfs/ module
-Driver for PS4 gamepad
+Driver for PS4 and Nintendo Switch Pro gamepads
 
 Arjan van Vught
 Support while adding Raspberry Pi 3 support

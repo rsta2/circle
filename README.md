@@ -143,6 +143,7 @@ USB library
 * CUSBGamePadPS3Device: Driver for PS3 gamepad
 * CUSBGamePadPS4Device: Driver for PS4 gamepad
 * CUSBGamePadStandardDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
+* CUSBGamePadSwitchProDevice: Driver for Nintendo Switch Pro gamepad
 * CUSBGamePadXbox360Device: Driver for Xbox 360 Wired gamepad
 
 Input library

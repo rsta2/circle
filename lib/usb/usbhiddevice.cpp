@@ -25,9 +25,11 @@
 
 static const char FromUSBHID[] = "usbhid";
 
-CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize)
+CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize,
+			      boolean bAutoStartRequest)
 :	CUSBFunction (pFunction),
 	m_nReportSize (nReportSize),
+	m_bAutoStartRequest (bAutoStartRequest),
 	m_pReportEndpoint (0),
 	m_pEndpointOut (0),
 	m_pURB (0),
@@ -129,7 +131,15 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 	}
 	assert (m_pReportBuffer != 0);
 
-	return StartRequest ();
+	if (m_bAutoStartRequest)
+	{
+		if (!StartRequest ())
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }
 
 boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize)
@@ -147,6 +157,17 @@ boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize
 	}
 
 	return TRUE;
+}
+
+int CUSBHIDDevice::ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize)
+{
+	assert (!m_bAutoStartRequest);
+	assert (m_pURB == 0);
+
+	assert (m_pReportEndpoint != 0);
+	assert (pBuffer != 0);
+	assert (nBufSize > 0);
+	return GetHost ()->Transfer (m_pReportEndpoint, pBuffer, nBufSize);
 }
 
 boolean CUSBHIDDevice::StartRequest (void)

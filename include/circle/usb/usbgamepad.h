@@ -43,14 +43,19 @@ enum TGamePadButton		// Digital button (bit masks)
 	GamePadButtonGuide	= BIT(0),
 #define GamePadButtonXbox	GamePadButtonGuide
 #define GamePadButtonPS		GamePadButtonGuide
+#define GamePadButtonHome	GamePadButtonGuide
 	GamePadButtonLT		= BIT(3),
 #define GamePadButtonL2		GamePadButtonLT
+#define GamePadButtonLZ		GamePadButtonLT
 	GamePadButtonRT		= BIT(4),
 #define GamePadButtonR2		GamePadButtonRT
+#define GamePadButtonRZ		GamePadButtonRT
 	GamePadButtonLB		= BIT(5),
 #define GamePadButtonL1		GamePadButtonLB
+#define GamePadButtonL		GamePadButtonLB
 	GamePadButtonRB		= BIT(6),
 #define GamePadButtonR1		GamePadButtonRB
+#define GamePadButtonR		GamePadButtonRB
 	GamePadButtonY		= BIT(7),
 #define GamePadButtonTriangle	GamePadButtonY
 	GamePadButtonB		= BIT(8),
@@ -62,15 +67,20 @@ enum TGamePadButton		// Digital button (bit masks)
 	GamePadButtonSelect	= BIT(11),
 #define GamePadButtonBack	GamePadButtonSelect
 #define GamePadButtonShare	GamePadButtonSelect
+#define GamePadButtonCapture	GamePadButtonSelect
 	GamePadButtonL3		= BIT(12),		// Left axis button
+#define GamePadButtonSL		GamePadButtonL3
 	GamePadButtonR3		= BIT(13),		// Right axis button
+#define GamePadButtonSR		GamePadButtonR3
 	GamePadButtonStart	= BIT(14),
 #define GamePadButtonOptions	GamePadButtonStart
 	GamePadButtonUp		= BIT(15),
 	GamePadButtonRight	= BIT(16),
 	GamePadButtonDown	= BIT(17),
 	GamePadButtonLeft	= BIT(18),
-	GamePadButtonTouchpad	= BIT(19)		// optional
+	GamePadButtonPlus	= BIT(19),
+	GamePadButtonLess	= BIT(20),
+	GamePadButtonTouchpad	= BIT(21)		// optional
 };
 
 enum TGamePadAxis		// Axis or analog button
@@ -152,7 +162,7 @@ typedef void TGamePadStatusHandler (unsigned nDeviceIndex, const TGamePadState *
 class CUSBGamePadDevice : public CUSBHIDDevice		/// Base class for USB gamepad drivers
 {
 public:
-	CUSBGamePadDevice (CUSBFunction *pFunction);
+	CUSBGamePadDevice (CUSBFunction *pFunction, boolean bAutoStartRequest = TRUE);
 	virtual ~CUSBGamePadDevice (void);
 
 	boolean Configure (void);

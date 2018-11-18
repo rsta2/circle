@@ -29,6 +29,7 @@
 #include <circle/usb/usbgamepadps3.h>
 #include <circle/usb/usbgamepadps4.h>
 #include <circle/usb/usbgamepadxbox360.h>
+#include <circle/usb/usbgamepadswitchpro.h>
 #include <circle/usb/usbprinter.h>
 #include <circle/usb/smsc951x.h>
 #include <circle/usb/lan7800.h>
@@ -77,6 +78,10 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		 || pName->Compare ("ven45e-28f") == 0)
 	{
 		pResult = new CUSBGamePadXbox360Device (pParent);
+	}
+	else if (pName->Compare ("ven57e-2009") == 0)
+	{
+		pResult = new CUSBGamePadSwitchProDevice (pParent);
 	}
 	else if (   pName->Compare ("int7-1-1") == 0
 		 || pName->Compare ("int7-1-2") == 0)
