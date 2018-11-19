@@ -79,7 +79,7 @@ enum TGamePadButton		// Digital button (bit masks)
 	GamePadButtonDown	= BIT(17),
 	GamePadButtonLeft	= BIT(18),
 	GamePadButtonPlus	= BIT(19),
-	GamePadButtonLess	= BIT(20),
+	GamePadButtonMinus	= BIT(20),
 	GamePadButtonTouchpad	= BIT(21)		// optional
 };
 

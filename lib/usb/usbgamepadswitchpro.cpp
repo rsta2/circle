@@ -122,72 +122,76 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 
     u8 ReportBuffer[m_usReportSize];
 
-	// When Pro Controller starts to work, is report is enqueued to be received
-	// with 10 bytes with some information, can be the Bluetooth MAC,
-	// but who knows...
+	// When Pro Controller starts to work, a first report is enqueued with
+    // 10 bytes with some information, can be the Bluetooth MAC,
+	// but who knows.... Anyway, consume it.
 	if (ReceiveFromEndpointIn(ReportBuffer, m_usReportSize) > 0)
 	{
-        CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "Unqueued pending data");
-		debug_hexdump (ReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
+        //CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "Unqueued pending data");
+		//debug_hexdump (ReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
 	}
 
 	// This command switches "something" in the controller
     static u8 switch_baudrate[2] = { 0x80, 0x03 };
     if (!SendToEndpointOut(switch_baudrate, sizeof(switch_baudrate))) {
         CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "switch_baudrate command failed!");
-    } else {
-        CLogger::Get ()->Write (FromUSBPadSwitchPro, LogNotice, "switch_baudrate command sended!");
+        return FALSE;
     }
 
 	// Is needed to read controller answer, a report with 0x81, 0x03 and zeroes
 	if (ReceiveFromEndpointIn(ReportBuffer, m_usReportSize) <= 0)
 	{
         CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "switch_baudrate answer failed!");
-	}
+        //debug_hexdump (ReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
+        return FALSE;
+    }
 
 	// Check ACK
 	if (ReportBuffer[0] != 0x81 || ReportBuffer[1] != 0x03) {
 		CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "switch_baudrate command failed!");
-		debug_hexdump (ReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
+		//debug_hexdump (ReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
+        return FALSE;
 	}
-	// Without these delay, the handshake command don't answer and all is stallled
-	CTimer::SimpleMsDelay(250);
 
 	// This command switches "another something" in the controller
     static u8 handshake[2] = { 0x80, 0x02 };
     if (!SendToEndpointOut(handshake, sizeof(handshake))) {
         CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "handshake command failed!");
-    } else {
-        CLogger::Get ()->Write (FromUSBPadSwitchPro, LogNotice, "handshake command sended!");
+        return FALSE;
     }
 
+    // Receive ACK
 	if (ReceiveFromEndpointIn(ReportBuffer, m_usReportSize) <= 0)
 	{
         CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "handshake answer failed!");
+        //debug_hexdump (ReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
+        return FALSE;
 	}
 
 	// Check ACK
 	if (ReportBuffer[0] != 0x81 || ReportBuffer[1] != 0x02) {
 		CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "handshake command failed!");
-		debug_hexdump (ReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
+		//debug_hexdump (ReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
+        return FALSE;
 	}
-
-	// This delay is here FITF
-    CTimer::SimpleMsDelay(100);
 
 	// This command switches the controller to a HID mode, from here all works
 	// like a "standard" controller (ehem!). No ACK to this command.
     static u8 hid_only_mode[2] = { 0x80, 0x04 };
     if (!SendToEndpointOut(hid_only_mode, sizeof(hid_only_mode))) {
         CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "hid_only_mode command failed!");
-    } else {
-        CLogger::Get ()->Write (FromUSBPadSwitchPro, LogNotice, "hid_only_mode command sended!");
+        return FALSE;
     }
 
-	// Another delay FITF
-    CTimer::SimpleMsDelay(100);
-
 	SetLEDMode(static_cast<TGamePadLEDMode>(m_nDeviceNumber));
+    // Get the answer to LED commmand, sometimes gets a standard input report (0x30)
+    // instead a LED report (0x81). Anyway, consume the answer.
+    if (ReceiveFromEndpointIn(ReportBuffer, m_usReportSize) <= 0)
+	{
+        CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "SetLEDMode answer failed!");
+        //debug_hexdump (ReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
+        // Isn't a critical error, so continue, awaiting to be lucky...
+    }
 
 	return StartRequest();
 }
@@ -202,11 +206,12 @@ void CUSBGamePadSwitchProDevice::DecodeReport (const u8 *pReportBuffer)
 	const ProConReport *pReport = reinterpret_cast<const ProConReport *> (pReportBuffer);
 
 	// Other reports can be received with reportID == 0x81 after some commands,
-	// (after a LED change, I guess, but can be more commands are affected)
-	// but can be ignored even if they carry valid information.
+	// (following a LED change, by example, can be more commands are affected)
+	// but can be ignored even if they carry valid information (generally they
+    // carry it, at a different offset).
 	if (pReport->reportID != 0x30) {
-		CLogger::Get ()->Write (FromUSBPadSwitchPro, LogNotice, "Unknown reportID = %02X", pReport->reportID);
-		debug_hexdump (pReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
+		CLogger::Get ()->Write (FromUSBPadSwitchPro, LogNotice, "Unhandled reportID = %02X", pReport->reportID);
+		//debug_hexdump (pReportBuffer, m_usReportSize, FromUSBPadSwitchPro);
 		return;
 	}
 
@@ -228,7 +233,7 @@ void CUSBGamePadSwitchProDevice::DecodeReport (const u8 *pReportBuffer)
     if (pReport->btn.plus)
         m_State.buttons |= GamePadButtonPlus;
     if (pReport->btn.less)
-        m_State.buttons |= GamePadButtonLess;
+        m_State.buttons |= GamePadButtonMinus;
     if (pReport->btn.sr)
         m_State.buttons |= GamePadButtonSR;
     if (pReport->btn.sl)
@@ -273,9 +278,7 @@ boolean CUSBGamePadSwitchProDevice::SetLEDMode(TGamePadLEDMode Mode)
 	rumbleCounter &= 0x0f;
 	if (!SendToEndpointOut(led_command_calibrated, sizeof(led_command_calibrated))) {
 		CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "led_command failed!");
-		return FALSE;
-	} else {
-	    CLogger::Get ()->Write (FromUSBPadSwitchPro, LogNotice, "led_command sended!");
+        return FALSE;
 	}
 	return TRUE;
 }
