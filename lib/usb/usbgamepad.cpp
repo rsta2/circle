@@ -29,11 +29,13 @@
 unsigned CUSBGamePadDevice::s_nDeviceNumber = 1;
 
 static const char FromUSBPad[] = "usbpad";
+static const char DevicePrefix[] = "upad";
 
 CUSBGamePadDevice::CUSBGamePadDevice (CUSBFunction *pFunction)
 :	CUSBHIDDevice (pFunction),
 	m_pStatusHandler (0),
-	m_usReportSize (0)
+	m_usReportSize (0),
+	m_nDeviceNumber (0)	// not assigned
 {
 	m_State.naxes = 0;
 	for (int i = 0; i < MAX_AXIS; i++)
@@ -62,6 +64,8 @@ CUSBGamePadDevice::CUSBGamePadDevice (CUSBFunction *pFunction)
 CUSBGamePadDevice::~CUSBGamePadDevice (void)
 {
 	m_pStatusHandler = 0;
+
+	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
 }
 
 boolean CUSBGamePadDevice::Configure (void)
@@ -76,9 +80,7 @@ boolean CUSBGamePadDevice::Configure (void)
 
 	m_nDeviceNumber = s_nDeviceNumber++;
 
-	CString DeviceName;
-	DeviceName.Format ("upad%u", m_nDeviceNumber);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
 	return TRUE;
 }

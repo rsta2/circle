@@ -27,11 +27,13 @@
 unsigned CUSBKeyboardDevice::s_nDeviceNumber = 1;
 
 static const char FromUSBKbd[] = "usbkbd";
+static const char DevicePrefix[] = "ukbd";
 
 CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBFunction *pFunction)
 :	CUSBHIDDevice (pFunction, USBKEYB_REPORT_SIZE),
 	m_pKeyStatusHandlerRaw (0),
-	m_ucLastLEDStatus (0xFF)
+	m_ucLastLEDStatus (0xFF),
+	m_nDeviceNumber (0)		// not assigned
 {
 	memset (m_LastReport, 0, sizeof m_LastReport);
 }
@@ -39,6 +41,8 @@ CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBFunction *pFunction)
 CUSBKeyboardDevice::~CUSBKeyboardDevice (void)
 {
 	m_pKeyStatusHandlerRaw = 0;
+
+	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
 }
 
 boolean CUSBKeyboardDevice::Configure (void)
@@ -50,9 +54,9 @@ boolean CUSBKeyboardDevice::Configure (void)
 		return FALSE;
 	}
 
-	CString DeviceName;
-	DeviceName.Format ("ukbd%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	m_nDeviceNumber = s_nDeviceNumber++;
+
+	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
 	return StartRequest ();
 }

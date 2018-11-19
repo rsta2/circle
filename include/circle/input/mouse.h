@@ -71,6 +71,7 @@ private:
 
 	TMouseStatusHandler *m_pStatusHandler;
 
+	unsigned m_nDeviceNumber;
 	static unsigned s_nDeviceNumber;
 };
 

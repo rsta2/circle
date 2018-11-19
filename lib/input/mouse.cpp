@@ -19,22 +19,24 @@
 //
 #include <circle/input/mouse.h>
 #include <circle/devicenameservice.h>
-#include <circle/string.h>
 #include <assert.h>
 
 unsigned CMouseDevice::s_nDeviceNumber = 1;
 
+static const char DevicePrefix[] = "mouse";
+
 CMouseDevice::CMouseDevice (void)
-:	m_pStatusHandler (0)
+:	m_pStatusHandler (0),
+	m_nDeviceNumber (s_nDeviceNumber++)
 {
-	CString DeviceName;
-	DeviceName.Format ("mouse%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 }
 
 CMouseDevice::~CMouseDevice (void)
 {
 	m_pStatusHandler = 0;
+
+	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
 }
 
 boolean CMouseDevice::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
