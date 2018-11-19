@@ -77,8 +77,10 @@
 
 static const char FromUSBPadStd[] = "usbpadstd";
 
-CUSBGamePadStandardDevice::CUSBGamePadStandardDevice (CUSBFunction *pFunction)
+CUSBGamePadStandardDevice::CUSBGamePadStandardDevice (CUSBFunction *pFunction,
+						      boolean bAutoStartRequest)
 :	CUSBGamePadDevice (pFunction),
+	m_bAutoStartRequest (bAutoStartRequest),
 	m_pHIDReportDescriptor (0),
 	m_usReportDescriptorLength (0)
 {
@@ -136,7 +138,7 @@ boolean CUSBGamePadStandardDevice::Configure (void)
 		return FALSE;
 	}
 
-	return TRUE;
+	return m_bAutoStartRequest ? StartRequest () : TRUE;
 }
 
 const TGamePadState *CUSBGamePadStandardDevice::GetReport (void)

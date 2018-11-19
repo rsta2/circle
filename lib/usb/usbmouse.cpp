@@ -50,7 +50,7 @@ boolean CUSBMouseDevice::Configure (void)
 	m_pMouseDevice = new CMouseDevice;
 	assert (m_pMouseDevice != 0);
 
-	return TRUE;
+	return StartRequest ();
 }
 
 void CUSBMouseDevice::ReportHandler (const u8 *pReport)

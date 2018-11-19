@@ -84,7 +84,7 @@ struct ProConReport {
 } PACKED;
 
 CUSBGamePadSwitchProDevice::CUSBGamePadSwitchProDevice (CUSBFunction *pFunction)
-:	CUSBGamePadDevice (pFunction, FALSE),
+:	CUSBGamePadDevice (pFunction),
 	m_bInterfaceOK (SelectInterfaceByClass (3, 0, 0)),
     rumbleCounter(0)
 {

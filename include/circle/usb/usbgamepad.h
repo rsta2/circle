@@ -162,7 +162,7 @@ typedef void TGamePadStatusHandler (unsigned nDeviceIndex, const TGamePadState *
 class CUSBGamePadDevice : public CUSBHIDDevice		/// Base class for USB gamepad drivers
 {
 public:
-	CUSBGamePadDevice (CUSBFunction *pFunction, boolean bAutoStartRequest = TRUE);
+	CUSBGamePadDevice (CUSBFunction *pFunction);
 	virtual ~CUSBGamePadDevice (void);
 
 	boolean Configure (void);

@@ -29,7 +29,7 @@
 class CUSBGamePadStandardDevice : public CUSBGamePadDevice  /// Driver for HID class USB gamepads
 {
 public:
-	CUSBGamePadStandardDevice (CUSBFunction *pFunction);
+	CUSBGamePadStandardDevice (CUSBFunction *pFunction, boolean bAutoStartRequest = TRUE);
 	~CUSBGamePadStandardDevice (void);
 
 	boolean Configure (void);
@@ -44,6 +44,8 @@ private:
 	static s32 BitGetSigned (const void *buffer, u32 offset, u32 length);
 
 private:
+	boolean m_bAutoStartRequest;
+
 	u8 *m_pHIDReportDescriptor;
 	u16 m_usReportDescriptorLength;
 };

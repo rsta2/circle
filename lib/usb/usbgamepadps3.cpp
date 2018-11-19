@@ -72,7 +72,7 @@ const u8 CUSBGamePadPS3Device::s_CommandDefault[USB_GAMEPAD_PS3_COMMAND_LENGTH] 
 static const char FromUSBPadPS3[] = "usbpadps3";
 
 CUSBGamePadPS3Device::CUSBGamePadPS3Device (CUSBFunction *pFunction)
-:	CUSBGamePadStandardDevice (pFunction),
+:	CUSBGamePadStandardDevice (pFunction, FALSE),
 	m_bInterfaceOK (SelectInterfaceByClass (3, 0, 0))
 {
 	memcpy (m_CommandBuffer, s_CommandDefault, sizeof s_CommandDefault);
@@ -123,7 +123,7 @@ boolean CUSBGamePadPS3Device::Configure (void)
 		return FALSE;
 	}
 
-	return TRUE;
+	return StartRequest ();
 }
 
 void CUSBGamePadPS3Device::DecodeReport (const u8 *pReportBuffer)

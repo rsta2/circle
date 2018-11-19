@@ -89,7 +89,12 @@ boolean CUSBGamePadXbox360Device::Configure (void)
 	}
 	m_State.nhats = 0;
 
-	return SetLEDMode ((TGamePadLEDMode) m_nDeviceNumber);
+	if (!SetLEDMode ((TGamePadLEDMode) m_nDeviceNumber))
+	{
+		return FALSE;
+	}
+
+	return StartRequest ();
 }
 
 const TGamePadState *CUSBGamePadXbox360Device::GetReport (void)

@@ -30,8 +30,8 @@ unsigned CUSBGamePadDevice::s_nDeviceNumber = 1;
 
 static const char FromUSBPad[] = "usbpad";
 
-CUSBGamePadDevice::CUSBGamePadDevice (CUSBFunction *pFunction, boolean bAutoStartRequest)
-:	CUSBHIDDevice (pFunction, 0, bAutoStartRequest),
+CUSBGamePadDevice::CUSBGamePadDevice (CUSBFunction *pFunction)
+:	CUSBHIDDevice (pFunction),
 	m_pStatusHandler (0),
 	m_usReportSize (0)
 {

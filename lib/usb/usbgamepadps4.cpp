@@ -187,7 +187,7 @@ boolean CUSBGamePadPS4Device::Configure (void)
 	CTimer::SimpleMsDelay(250);
 	SendLedRumbleCommand();
 
-	return TRUE;
+	return StartRequest ();
 }
 
 const TGamePadState *CUSBGamePadPS4Device::GetReport (void)
