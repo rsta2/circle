@@ -29,11 +29,13 @@
 
 enum TGamePadProperty
 {
-	GamePadPropertyIsKnown		= BIT(0),
-	GamePadPropertyHasLED		= BIT(1),
-	GamePadPropertyHasRGBLED	= BIT(2),	// requires GamePadPropertyHasLED too
-	GamePadPropertyHasRumble	= BIT(3),
-	GamePadPropertyHasGyroscope	= BIT(4)
+	GamePadPropertyIsKnown		   = BIT(0),	// has known mapping of controls
+	GamePadPropertyHasLED		   = BIT(1),	// supports SetLEDMode()
+	GamePadPropertyHasRGBLED	   = BIT(2),	// if set, GamePadPropertyHasLED is set too
+	GamePadPropertyHasRumble	   = BIT(3),	// supports SetRumbleMode()
+	GamePadPropertyHasGyroscope	   = BIT(4),	// provides sensor info in TGamePadState
+	GamePadPropertyHasPlusMinusButtons = BIT(5),	// has additional "+" and "-" buttons
+	GamePadPropertyHasTouchpad	   = BIT(6)	// has touchpad with button
 };
 
 // The following enums are valid for known gamepads only!
@@ -78,8 +80,8 @@ enum TGamePadButton		// Digital button (bit masks)
 	GamePadButtonRight	= BIT(16),
 	GamePadButtonDown	= BIT(17),
 	GamePadButtonLeft	= BIT(18),
-	GamePadButtonPlus	= BIT(19),
-	GamePadButtonMinus	= BIT(20),
+	GamePadButtonPlus	= BIT(19),		// optional
+	GamePadButtonMinus	= BIT(20),		// optional
 	GamePadButtonTouchpad	= BIT(21)		// optional
 };
 

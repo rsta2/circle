@@ -37,7 +37,8 @@ public:
 	unsigned GetProperties (void)
 	{
 		return   GamePadPropertyIsKnown
-		       | GamePadPropertyHasLED;
+		       | GamePadPropertyHasLED
+		       | GamePadPropertyHasPlusMinusButtons;
 	}
 
 	const TGamePadState *GetReport (void);		// returns 0 on failure

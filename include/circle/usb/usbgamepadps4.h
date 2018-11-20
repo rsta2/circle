@@ -47,7 +47,8 @@ public:
 		       | GamePadPropertyHasLED
 		       | GamePadPropertyHasRGBLED
 		       | GamePadPropertyHasRumble
-		       | GamePadPropertyHasGyroscope;
+		       | GamePadPropertyHasGyroscope
+		       | GamePadPropertyHasTouchpad;
 	}
 
 	const TGamePadState *GetReport (void);		// returns 0 on failure
