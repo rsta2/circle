@@ -1,0 +1,23 @@
+README
+
+This sample shows a stylised gamepad on the screen and displays the current
+state of the controls of an attached USB gamepad. To do this, the sample needs
+to know the control mapping of the gamepad. Supported are some widespread
+branded gamepads with USB interface.
+
+You should enable the system option USE_USB_SOF_INTR in the file
+include/circle/sysconfig.h before building the sample, because this normally
+results in a more sensitive detection.
+
+Just use your gamepad controls to see some reaction on screen! A control should
+be at the same position on screen, like where it is on the gamepad case, with
+one exception: The left axes and hat controls may be swapped for some gamepads.
+
+The state of digital buttons is shown in its color. It is red, if the button is
+pressed. Axes controls show their current state as a number (0-255). The sample
+will also display the current values of the acceleration and gyroscope sensors,
+if the gamepad does support this.
+
+Please note that Circle applications work with the same mapping indexes, masks
+and axes ranges for all gamepads with known mapping. This should simplify the
+development of gamepad applications.
