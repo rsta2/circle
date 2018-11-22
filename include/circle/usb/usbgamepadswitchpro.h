@@ -38,7 +38,7 @@ public:
 	{
 		return   GamePadPropertyIsKnown
 		       | GamePadPropertyHasLED
-		       | GamePadPropertyHasAlternateMapping;
+		       | GamePadPropertyHasAlternativeMapping;
 	}
 
 	const TGamePadState *GetReport (void);		// returns 0 on failure

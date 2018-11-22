@@ -153,7 +153,7 @@ TShutdownMode CKernel::Run (void)
 		ShowAxisButton (170, 160, GamePadButtonRight, GamePadAxisButtonRight);
 		ShowAxisButton (140, 180, GamePadButtonDown, GamePadAxisButtonDown);
 
-		if (m_pGamePad->GetProperties () & GamePadPropertyHasAlternateMapping)
+		if (m_pGamePad->GetProperties () & GamePadPropertyHasAlternativeMapping)
 		{
 			ShowDigitalButton (240, 160, GamePadButtonMinus);
 			ShowDigitalButton (352, 160, GamePadButtonPlus);
