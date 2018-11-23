@@ -51,7 +51,6 @@ public:
 		       | GamePadPropertyHasTouchpad;
 	}
 
-	const TGamePadState *GetReport (void);		// returns 0 on failure
 	boolean SetLEDMode (TGamePadLEDMode Mode);
 	boolean SetLEDMode (u32 nRGB, u8 uchTimeOn, u8 uchTimeOff);
 	boolean SetRumbleMode (TGamePadRumbleMode Mode);

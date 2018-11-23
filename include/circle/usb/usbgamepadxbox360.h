@@ -31,8 +31,6 @@ public:
 
 	boolean Configure (void);
 
-	const TGamePadState *GetReport (void);
-
 	unsigned GetProperties (void)
 	{
 		return   GamePadPropertyIsKnown

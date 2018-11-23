@@ -190,23 +190,6 @@ boolean CUSBGamePadPS4Device::Configure (void)
 	return StartRequest ();
 }
 
-const TGamePadState *CUSBGamePadPS4Device::GetReport (void)
-{
-	u8 ReportBuffer[m_usReportSize];
-	if (GetHost ()->ControlMessage (GetEndpoint0 (),
-					REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-					GET_REPORT, (REPORT_TYPE_INPUT << 8) | 0x11,
-					GetInterfaceNumber (),
-					ReportBuffer, m_usReportSize) <= 0)
-	{
-		return 0;
-	}
-
-	DecodeReport (ReportBuffer);
-
-	return &m_State;
-}
-
 void CUSBGamePadPS4Device::ReportHandler (const u8 *pReport)
 {
 	if (pReport != 0)

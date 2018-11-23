@@ -196,11 +196,6 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 	return StartRequest();
 }
 
-const TGamePadState *CUSBGamePadSwitchProDevice::GetReport (void)
-{
-	return &m_State;
-}
-
 void CUSBGamePadSwitchProDevice::DecodeReport (const u8 *pReportBuffer)
 {
 	const ProConReport *pReport = reinterpret_cast<const ProConReport *> (pReportBuffer);

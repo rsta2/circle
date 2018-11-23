@@ -41,7 +41,6 @@ public:
 		       | GamePadPropertyHasAlternativeMapping;
 	}
 
-	const TGamePadState *GetReport (void);		// returns 0 on failure
 	boolean SetLEDMode (TGamePadLEDMode Mode);
 
 private:

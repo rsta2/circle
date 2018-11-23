@@ -34,8 +34,6 @@ public:
 
 	boolean Configure (void);
 
-	const TGamePadState *GetReport (void);		// returns 0 on failure
-
 protected:
 	void DecodeReport (const u8 *pReportBuffer);
 

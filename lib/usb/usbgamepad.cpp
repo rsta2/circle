@@ -23,6 +23,7 @@
 #include <circle/usb/usbgamepad.h>
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
+#include <circle/util.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -37,28 +38,7 @@ CUSBGamePadDevice::CUSBGamePadDevice (CUSBFunction *pFunction)
 	m_usReportSize (0),
 	m_nDeviceNumber (0)	// not assigned
 {
-	m_State.naxes = 0;
-	for (int i = 0; i < MAX_AXIS; i++)
-	{
-		m_State.axes[i].value = 0;
-		m_State.axes[i].minimum = 0;
-		m_State.axes[i].maximum = 0;
-	}
-
-	m_State.nhats = 0;
-	for (int i = 0; i < MAX_HATS; i++)
-	{
-		m_State.hats[i] = 0;
-	}
-
-	m_State.nbuttons = 0;
-	m_State.buttons = 0;
-
-	for (int i = 0; i < 3; i++)
-	{
-		m_State.acceleration[i] = 0;
-		m_State.gyroscope[i] = 0;
-	}
+	memset (&m_State, 0, sizeof m_State);
 }
 
 CUSBGamePadDevice::~CUSBGamePadDevice (void)
@@ -83,6 +63,11 @@ boolean CUSBGamePadDevice::Configure (void)
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
 	return TRUE;
+}
+
+const TGamePadState *CUSBGamePadDevice::GetInitialState (void)
+{
+	return &m_State;
 }
 
 void CUSBGamePadDevice::RegisterStatusHandler (TGamePadStatusHandler *pStatusHandler)

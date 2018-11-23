@@ -104,12 +104,9 @@ TShutdownMode CKernel::Run (void)
 		m_Logger.Write (FromKernel, LogPanic, "Gamepad mapping is not known");
 	}
 
-	// get initial report from gamepad and register status handler
-	const TGamePadState *pState = m_pGamePad->GetReport ();
-	if (pState == 0)
-	{
-		m_Logger.Write (FromKernel, LogPanic, "Cannot get report from gamepad");
-	}
+	// get initial state from gamepad and register status handler
+	const TGamePadState *pState = m_pGamePad->GetInitialState ();
+	assert (pState != 0);
 	GamePadStatusHandler (DEVICE_INDEX-1, pState);
 
 	m_pGamePad->RegisterStatusHandler (GamePadStatusHandler);

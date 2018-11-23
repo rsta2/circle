@@ -172,9 +172,11 @@ public:
 	/// \return Properties of the gamepad (bit mask of TGamePadProperty constants)
 	virtual unsigned GetProperties (void) { return 0; }
 
-	/// \return Pointer to gamepad state (or 0 on failure)
-	/// \note May return the gamepad geometry information only (not the values).
-	virtual const TGamePadState *GetReport (void) = 0;
+	/// \return Pointer to gamepad state (with the control numbers set)
+	/// \note The controls state fields may have some default value.
+	virtual const TGamePadState *GetInitialState (void);
+	/// \brief Same as GetInitialState() for compatibility (deprecated)
+	const TGamePadState *GetReport (void) { return GetInitialState (); }
 
 	/// \param pStatusHandler Pointer to the function to be called on status changes
 	virtual void RegisterStatusHandler (TGamePadStatusHandler *pStatusHandler);

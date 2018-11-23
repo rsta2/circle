@@ -97,15 +97,6 @@ boolean CUSBGamePadXbox360Device::Configure (void)
 	return StartRequest ();
 }
 
-const TGamePadState *CUSBGamePadXbox360Device::GetReport (void)
-{
-	const static u8 ReportBuffer[REPORT_SIZE] = {0x00, 0x14};
-
-	DecodeReport (ReportBuffer);
-
-	return &m_State;
-}
-
 void CUSBGamePadXbox360Device::ReportHandler (const u8 *pReport)
 {
 	if (   pReport != 0

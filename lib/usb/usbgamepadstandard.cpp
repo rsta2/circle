@@ -141,23 +141,6 @@ boolean CUSBGamePadStandardDevice::Configure (void)
 	return m_bAutoStartRequest ? StartRequest () : TRUE;
 }
 
-const TGamePadState *CUSBGamePadStandardDevice::GetReport (void)
-{
-	u8 ReportBuffer[m_usReportSize];
-	if (GetHost ()->ControlMessage (GetEndpoint0 (),
-					REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-					GET_REPORT, (REPORT_TYPE_INPUT << 8) | 0x00,
-					GetInterfaceNumber (),
-					ReportBuffer, m_usReportSize) <= 0)
-	{
-		return 0;
-	}
-
-	DecodeReport (ReportBuffer);
-
-	return &m_State;
-}
-
 void CUSBGamePadStandardDevice::DecodeReport (const u8 *pReportBuffer)
 {
 	s32 item, arg;
