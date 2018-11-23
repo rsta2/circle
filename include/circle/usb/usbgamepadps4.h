@@ -55,6 +55,8 @@ public:
 	boolean SetLEDMode (u32 nRGB, u8 uchTimeOn, u8 uchTimeOff);
 	boolean SetRumbleMode (TGamePadRumbleMode Mode);
 
+	static void DisableTouchpad (void);
+
 private:
 	void ReportHandler (const u8 *pReport);
 	void DecodeReport (const u8 *pReportBuffer);
@@ -75,6 +77,8 @@ private:
 		u16	usPosY;
 	}
 	m_Touchpad;		// previous state from touchpad
+
+	static boolean s_bTouchpadEnabled;
 };
 
 #endif

@@ -121,6 +121,8 @@ struct PS4Report {
         // The last three bytes are always: 0x00, 0x80, 0x00
 } PACKED;
 
+boolean CUSBGamePadPS4Device::s_bTouchpadEnabled = TRUE;
+
 CUSBGamePadPS4Device::CUSBGamePadPS4Device (CUSBFunction *pFunction)
 :	CUSBGamePadDevice (pFunction),
 	m_bInterfaceOK (SelectInterfaceByClass (3, 0, 0)),
@@ -155,8 +157,11 @@ boolean CUSBGamePadPS4Device::Configure (void)
 		return FALSE;
 	}
 
-	m_pMouseDevice = new CMouseDevice;
-	assert (m_pMouseDevice != 0);
+	if (s_bTouchpadEnabled)
+	{
+		m_pMouseDevice = new CMouseDevice;
+		assert (m_pMouseDevice != 0);
+	}
 
 	m_State.nbuttons = REPORT_BUTTONS;
 	m_State.nhats = REPORT_HATS;
@@ -203,7 +208,10 @@ void CUSBGamePadPS4Device::ReportHandler (const u8 *pReport)
 			(*m_pStatusHandler) (m_nDeviceNumber-1, &m_State);
 		}
 
-		HandleTouchpad (pReport);
+		if (m_pMouseDevice != 0)
+		{
+			HandleTouchpad (pReport);
+		}
 	}
 }
 
@@ -334,12 +342,10 @@ void CUSBGamePadPS4Device::HandleTouchpad (const u8 *pReportBuffer)
 		    || nDisplacementX != 0
 		    || nDisplacementY != 0)
 		{
-			if (m_pMouseDevice != 0)
-			{
-				m_pMouseDevice->ReportHandler (  m_Touchpad.bButtonPressed
-							       ? MOUSE_BUTTON_LEFT : 0,
-							       nDisplacementX, nDisplacementY);
-			}
+			assert (m_pMouseDevice != 0);
+			m_pMouseDevice->ReportHandler (  m_Touchpad.bButtonPressed
+						       ? MOUSE_BUTTON_LEFT : 0,
+						       nDisplacementX, nDisplacementY);
 
 			bButtonChanged = FALSE;
 			nDisplacementX = 0;
@@ -468,4 +474,9 @@ boolean CUSBGamePadPS4Device::SendLedRumbleCommand(void)
 	}
 	return TRUE;
 	//CLogger::Get ()->Write (FromUSBPadPS4, LogNotice, "LEDs & Rumble configured");
+}
+
+void CUSBGamePadPS4Device::DisableTouchpad (void)
+{
+	s_bTouchpadEnabled = FALSE;
 }
