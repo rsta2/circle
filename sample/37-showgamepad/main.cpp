@@ -1,8 +1,8 @@
 //
-// usbmouse.h
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,26 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbmouse_h
-#define _circle_usb_usbmouse_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-#include <circle/usb/usbhiddevice.h>
-#include <circle/input/mouse.h>
-#include <circle/types.h>
-
-class CUSBMouseDevice : public CUSBHIDDevice
+int main (void)
 {
-public:
-	CUSBMouseDevice (CUSBFunction *pFunction);
-	~CUSBMouseDevice (void);
+	// cannot return here because some destructors used in CKernel are not implemented
 
-	boolean Configure (void);
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
+	
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-private:
-	void ReportHandler (const u8 *pReport);
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
 
-private:
-	CMouseDevice *m_pMouseDevice;
-};
-
-#endif
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

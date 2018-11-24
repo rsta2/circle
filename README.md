@@ -1,8 +1,6 @@
 Circle
 ======
 
-> Raspberry Pi is a trademark of the Raspberry Pi Foundation.
-
 > If you read this file in an editor you should switch line wrapping on.
 
 Overview
@@ -138,12 +136,33 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Base library
+USB library
 
-* CUserTimer: Fine grained user programmable interrupt timer (based on ARM_IRQ_TIMER1)
+* CUSBGamePadPS3Device: Driver for PS3 gamepad
+* CUSBGamePadPS4Device: Driver for PS4 gamepad
+* CUSBGamePadStandardDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
+* CUSBGamePadSwitchProDevice: Driver for Nintendo Switch Pro gamepad
+* CUSBGamePadXbox360Device: Driver for Xbox 360 Wired gamepad
+
+Input library
+
+* CMouseDevice: Generic mouse interface device
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
 `./makedoc`
 
 At the moment there are only a few classes described in detail for doxygen.
+
+Trademarks
+----------
+
+Raspberry Pi is a trademark of the Raspberry Pi Foundation.
+
+Linux is a trademark of Linus Torvalds.
+
+PS3 and PS4 are registered trademarks of Sony Computer Entertainment Inc.
+
+Xbox 360 is a trademark of the Microsoft group of companies.
+
+(c) 2017 Nintendo. Nintendo Switch is a trademark of Nintendo.

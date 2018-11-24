@@ -2,7 +2,7 @@
 // devicenameservice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,18 +32,45 @@ struct TDeviceInfo
 	boolean		 bBlockDevice;
 };
 
-class CDeviceNameService
+class CDeviceNameService  /// Devices can be registered by name and retrieved later by this name
 {
 public:
 	CDeviceNameService (void);
 	~CDeviceNameService (void);
 
+	/// \param pName	Device name string
+	/// \param pDevice	Pointer to the device object
+	/// \param bBlockDevice TRUE if this is a block device, otherwise character device
 	void AddDevice (const char *pName, CDevice *pDevice, boolean bBlockDevice);
+	/// \param pPrefix	Device name prefix string
+	/// \param nIndex	Device name index
+	/// \param pDevice	Pointer to the device object
+	/// \param bBlockDevice TRUE if this is a block device, otherwise character device
+	void AddDevice (const char *pPrefix, unsigned nIndex, CDevice *pDevice, boolean bBlockDevice);
 
+	/// \param pName	Device name string
+	/// \param bBlockDevice TRUE if this is a block device, otherwise character device
+	void RemoveDevice (const char *pName, boolean bBlockDevice);
+	/// \param pPrefix	Device name prefix string
+	/// \param nIndex	Device name index
+	/// \param bBlockDevice TRUE if this is a block device, otherwise character device
+	void RemoveDevice (const char *pPrefix, unsigned nIndex, boolean bBlockDevice);
+
+	/// \param pName	Device name string
+	/// \param bBlockDevice TRUE if this is a block device, otherwise character device
+	/// \return Pointer to the device object or 0 if not found
 	CDevice *GetDevice (const char *pName, boolean bBlockDevice);
+	/// \param pPrefix	Device name prefix string
+	/// \param nIndex	Device name index
+	/// \param bBlockDevice TRUE if this is a block device, otherwise character device
+	/// \return Pointer to the device object or 0 if not found
+	CDevice *GetDevice (const char *pPrefix, unsigned nIndex, boolean bBlockDevice);
 
+	/// \brief Generate device listing
+	/// \param pTarget Device to be used for output
 	void ListDevices (CDevice *pTarget);
 
+	/// \return The single CDeviceNameService instance of the system
 	static CDeviceNameService *Get (void);
 
 private:

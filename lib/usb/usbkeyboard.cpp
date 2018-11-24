@@ -2,7 +2,7 @@
 // usbkeyboard.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,11 +27,13 @@
 unsigned CUSBKeyboardDevice::s_nDeviceNumber = 1;
 
 static const char FromUSBKbd[] = "usbkbd";
+static const char DevicePrefix[] = "ukbd";
 
 CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBFunction *pFunction)
 :	CUSBHIDDevice (pFunction, USBKEYB_REPORT_SIZE),
 	m_pKeyStatusHandlerRaw (0),
-	m_ucLastLEDStatus (0xFF)
+	m_ucLastLEDStatus (0xFF),
+	m_nDeviceNumber (0)		// not assigned
 {
 	memset (m_LastReport, 0, sizeof m_LastReport);
 }
@@ -39,6 +41,8 @@ CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBFunction *pFunction)
 CUSBKeyboardDevice::~CUSBKeyboardDevice (void)
 {
 	m_pKeyStatusHandlerRaw = 0;
+
+	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
 }
 
 boolean CUSBKeyboardDevice::Configure (void)
@@ -50,11 +54,11 @@ boolean CUSBKeyboardDevice::Configure (void)
 		return FALSE;
 	}
 
-	CString DeviceName;
-	DeviceName.Format ("ukbd%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	m_nDeviceNumber = s_nDeviceNumber++;
 
-	return TRUE;
+	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
+
+	return StartRequest ();
 }
 
 void CUSBKeyboardDevice::RegisterKeyPressedHandler (TKeyPressedHandler *pKeyPressedHandler)

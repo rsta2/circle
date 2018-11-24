@@ -1,9 +1,9 @@
 //
-// usbmouse.h
+// usbgamepadps3.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,26 +17,45 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbmouse_h
-#define _circle_usb_usbmouse_h
+#ifndef _circle_usb_usbgamepadps3_h
+#define _circle_usb_usbgamepadps3_h
 
-#include <circle/usb/usbhiddevice.h>
-#include <circle/input/mouse.h>
+#include <circle/usb/usbgamepadstandard.h>
+#include <circle/macros.h>
 #include <circle/types.h>
 
-class CUSBMouseDevice : public CUSBHIDDevice
+#define USB_GAMEPAD_PS3_COMMAND_LENGTH	48
+
+class CUSBGamePadPS3Device : public CUSBGamePadStandardDevice
 {
 public:
-	CUSBMouseDevice (CUSBFunction *pFunction);
-	~CUSBMouseDevice (void);
+	CUSBGamePadPS3Device (CUSBFunction *pFunction);
+	~CUSBGamePadPS3Device (void);
 
 	boolean Configure (void);
 
-private:
-	void ReportHandler (const u8 *pReport);
+	unsigned GetProperties (void)
+	{
+		return   GamePadPropertyIsKnown
+		       | GamePadPropertyHasLED
+		       | GamePadPropertyHasRumble
+		       | GamePadPropertyHasGyroscope;
+	}
+
+	boolean SetLEDMode (TGamePadLEDMode Mode);
+	boolean SetRumbleMode (TGamePadRumbleMode Mode);
 
 private:
-	CMouseDevice *m_pMouseDevice;
+	void DecodeReport (const u8 *pReportBuffer);
+
+	boolean PS3Enable (void);
+
+private:
+	boolean m_bInterfaceOK;
+
+	u8 m_CommandBuffer[USB_GAMEPAD_PS3_COMMAND_LENGTH] ALIGN (4);	// DMA buffer
+
+	static const u8 s_CommandDefault[];
 };
 
 #endif

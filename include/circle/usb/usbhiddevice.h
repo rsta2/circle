@@ -2,7 +2,7 @@
 // usbhiddevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,12 +34,19 @@ public:
 
 	boolean Configure (unsigned nReportSize = 0);
 
-private:
-	virtual void ReportHandler (const u8 *pReport) = 0;	// pReport is 0 on failure
-
-private:
+protected:
+	// has to be called from Configure() in derived class, when initialization is done
 	boolean StartRequest (void);
 
+	// is called, when report arrives
+	virtual void ReportHandler (const u8 *pReport) = 0;	// pReport is 0 on failure
+
+	// cannot be called from ReportHandler() context
+	boolean SendToEndpointOut (const void *pBuffer, unsigned nBufSize);
+	// returns resulting length or < 0 on failure, must not be used after StartRequest()
+	int ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize);
+
+private:
 	void CompletionRoutine (CUSBRequest *pURB);
 	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);
 
@@ -47,6 +54,7 @@ private:
 	unsigned m_nReportSize;
 
 	CUSBEndpoint *m_pReportEndpoint;
+	CUSBEndpoint *m_pEndpointOut;		// interrupt out EP (optional)
 
 	CUSBRequest *m_pURB;
 

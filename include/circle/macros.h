@@ -27,6 +27,8 @@
 #define MAXOPT		__attribute__ ((optimize (3)))
 #define WEAK		__attribute__ ((weak))
 
+#define BIT(n)		(1 << (n))
+
 // big endian (to be used for constants only)
 #define BE(value)	((((value) & 0xFF00) >> 8) | (((value) & 0x00FF) << 8))
 

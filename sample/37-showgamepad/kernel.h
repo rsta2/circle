@@ -31,7 +31,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/dwhcidevice.h>
-#include <circle/input/mouse.h>
+#include <circle/usb/usbgamepad.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -52,10 +52,20 @@ public:
 	TShutdownMode Run (void);
 
 private:
-	void MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY);
-	static void MouseEventStub (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY);
+	void ShowDigitalButton (int nPosX, int nPosY, TGamePadButton Button,
+				const char *pName = "BUTTON");
+	void ShowAxisButton (int nPosX, int nPosY, TGamePadButton Button, TGamePadAxis Axis);
+	void ShowAxisControl (int nPosX, int nPosY, TGamePadAxis AxisX,
+			      TGamePadAxis AxisY, TGamePadButton Button);
+	void ShowGyroscopeData (int nPosX, int nPosY, const int Data[3], const char *pName = 0);
 
+	void PrintAt (int nPosX, int nPosY, const char *pString, boolean bBold = FALSE);
+
+	void MoveTo (int nPosX, int nPosY);
+	void LineTo (int nPosX, int nPosY, TScreenColor Color = NORMAL_COLOR);
 	void DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenColor Color);
+
+	static void GamePadStatusHandler (unsigned nDeviceIndex, const TGamePadState *pState);
 
 private:
 	// do not change this order
@@ -71,10 +81,11 @@ private:
 	CLogger			m_Logger;
 	CDWHCIDevice		m_DWHCI;
 
-	unsigned m_nPosX;
-	unsigned m_nPosY;
+	CUSBGamePadDevice *m_pGamePad;
+	TGamePadState	   m_GamePadState;
 
-	volatile TShutdownMode m_ShutdownMode;
+	int m_nPosX;
+	int m_nPosY;
 
 	static CKernel *s_pThis;
 };
