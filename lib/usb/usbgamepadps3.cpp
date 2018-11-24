@@ -197,7 +197,7 @@ boolean CUSBGamePadPS3Device::PS3Enable (void)
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					SET_REPORT, (REPORT_TYPE_FEATURE << 8) | 0xF4,
-					GetInterfaceNumber (), Enable, sizeof Enable) <= 0)
+					GetInterfaceNumber (), Enable, sizeof Enable) < 0)
 	{
 		return FALSE;
 	}
@@ -233,7 +233,7 @@ boolean CUSBGamePadPS3Device::SetLEDMode (TGamePadLEDMode Mode)
 					   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					   SET_REPORT, (REPORT_TYPE_OUTPUT << 8) | 0x01,
 					   GetInterfaceNumber (),
-					   m_CommandBuffer, sizeof m_CommandBuffer) > 0
+					   m_CommandBuffer, sizeof m_CommandBuffer) >= 0
 					   ? TRUE : FALSE;
 }
 
@@ -274,6 +274,6 @@ boolean CUSBGamePadPS3Device::SetRumbleMode (TGamePadRumbleMode Mode)
 					   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					   SET_REPORT, (REPORT_TYPE_OUTPUT << 8) | 0x01,
 					   GetInterfaceNumber (),
-					   TempBuffer, sizeof TempBuffer) > 0
+					   TempBuffer, sizeof TempBuffer) >= 0
 					   ? TRUE : FALSE;
 }

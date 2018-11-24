@@ -141,7 +141,7 @@ boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize
 
 	assert (pBuffer != 0);
 	assert (nBufSize > 0);
-	if (GetHost ()->Transfer (m_pEndpointOut, (void *) pBuffer, nBufSize) != (int) nBufSize)
+	if (GetHost ()->Transfer (m_pEndpointOut, (void *) pBuffer, nBufSize) < 0)
 	{
 		return FALSE;
 	}
