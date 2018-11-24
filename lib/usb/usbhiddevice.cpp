@@ -19,7 +19,6 @@
 //
 #include <circle/usb/usbhiddevice.h>
 #include <circle/usb/usbhid.h>
-#include <circle/usb/usbhostcontroller.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -132,7 +131,7 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 	return TRUE;
 }
 
-boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize)
+boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
 {
 	if (m_pEndpointOut == 0)
 	{
@@ -141,7 +140,7 @@ boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize
 
 	assert (pBuffer != 0);
 	assert (nBufSize > 0);
-	if (GetHost ()->Transfer (m_pEndpointOut, (void *) pBuffer, nBufSize) < 0)
+	if (GetHost ()->Transfer (m_pEndpointOut, (void *) pBuffer, nBufSize, nTimeoutMs) < 0)
 	{
 		return FALSE;
 	}
@@ -149,14 +148,14 @@ boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize
 	return TRUE;
 }
 
-int CUSBHIDDevice::ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize)
+int CUSBHIDDevice::ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
 {
 	assert (m_pURB == 0);
 
 	assert (m_pReportEndpoint != 0);
 	assert (pBuffer != 0);
 	assert (nBufSize > 0);
-	return GetHost ()->Transfer (m_pReportEndpoint, pBuffer, nBufSize);
+	return GetHost ()->Transfer (m_pReportEndpoint, pBuffer, nBufSize, nTimeoutMs);
 }
 
 boolean CUSBHIDDevice::StartRequest (void)

@@ -23,6 +23,7 @@
 #include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
+#include <circle/usb/usbhostcontroller.h>
 #include <circle/types.h>
 
 class CUSBHIDDevice : public CUSBFunction
@@ -42,9 +43,11 @@ protected:
 	virtual void ReportHandler (const u8 *pReport) = 0;	// pReport is 0 on failure
 
 	// cannot be called from ReportHandler() context
-	boolean SendToEndpointOut (const void *pBuffer, unsigned nBufSize);
+	boolean SendToEndpointOut (const void *pBuffer, unsigned nBufSize,
+				   unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	// returns resulting length or < 0 on failure, must not be used after StartRequest()
-	int ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize);
+	int ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize,
+				   unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
 private:
 	void CompletionRoutine (CUSBRequest *pURB);

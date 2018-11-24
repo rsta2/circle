@@ -2,7 +2,7 @@
 // usbhostcontroller.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,13 +17,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbhostcontroller_h
-#define _usbhostcontroller_h
+#ifndef _circle_usb_usbhostcontroller_h
+#define _circle_usb_usbhostcontroller_h
 
 #include <circle/usb/usb.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/types.h>
+
+// Timeouts are supported on interrupt endpoints only!
+
+#define USB_TIMEOUT_NONE	0	// Wait forever
 
 class CUSBHostController
 {
@@ -48,12 +52,15 @@ public:
 			    void *pData, u16 usDataSize);
 
 	// returns resulting length or < 0 on failure
-	int Transfer (CUSBEndpoint *pEndpoint, void *pBuffer, unsigned nBufSize);
+	int Transfer (CUSBEndpoint *pEndpoint, void *pBuffer, unsigned nBufSize,
+		      unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
 public:
-	virtual boolean SubmitBlockingRequest (CUSBRequest *pURB) = 0;
+	virtual boolean SubmitBlockingRequest (CUSBRequest *pURB,
+					       unsigned nTimeoutMs = USB_TIMEOUT_NONE) = 0;
 
-	virtual boolean SubmitAsyncRequest (CUSBRequest *pURB) = 0;
+	virtual boolean SubmitAsyncRequest (CUSBRequest *pURB,
+					    unsigned nTimeoutMs = USB_TIMEOUT_NONE) = 0;
 };
 
 #endif
