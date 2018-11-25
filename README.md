@@ -10,16 +10,18 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-The 36th Step
+The 37th Step
 -------------
 
-In this step the class *CUserTimer* has been added to Circle, which implements a fine grained user programmable interrupt timer. It can generate up to 500000 interrupts per second (if used with FIQ).
+In this step the USB gamepad drivers have been totally revised. The PS3, PS4, Xbox 360 Wired and Nintendo Switch Pro gamepads are supported now, including LEDs, rumble and gyroscope. All these drivers support a unique class interface and mapping for the button and axis controls. This should simplify the development of gamepad applications and is used in the new *sample/37-showgamepad*. See the *README* file in this directory for details.
 
-*CUserTimer* is used in the new *sample/36-softpwm* to implement Software PWM (Pulse Width Modulation), which can be used to control the brightness of a LED or a servo. See the *README* file in this directory for details.
+The touchpad of the PS4 gamepad can be used as a mouse device to control normal mouse applications. To implement this, a new unique mouse interface class has been added, which is used by the USB mouse driver too. Therefore existing mouse applications have to be updated as follows:
 
-This release of Circle comes with an updated version of the FatFs module (in *addon/fatfs*). Furthermore there have been fixes to the touchscreen driver and the bootloader tools. Finally there are the new system options *SAVE_VFP_REGS_ON_IRQ* and *SAVE_VFP_REGS_ON_FIQ* in *include/circle/sysconfig.h*, which can be enabled if your application uses floating point registers in interrupt handlers.
+* Include <circle/input/mouse.h> instead of <circle/usb/usbmouse.h>
+* Class of the mouse device is *CMouseDevice* instead of *CUSBMouseDevice*
+* Name of the first mouse device is "mouse1" instead of "umouse1"
 
-You may be interested in the [Alpha GDB server](https://github.com/farjump/Alpha_Raspberry_Pi_Circle) by Farjump, which can be used to source-level debug single-core Circle applications with the GNU debugger (GDB).
+Finally with this release Circle supports the new Raspberry Pi 3 Model A+.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
@@ -165,4 +167,4 @@ PS3 and PS4 are registered trademarks of Sony Computer Entertainment Inc.
 
 Xbox 360 is a trademark of the Microsoft group of companies.
 
-(c) 2017 Nintendo. Nintendo Switch is a trademark of Nintendo.
+Nintendo Switch is a trademark of Nintendo.
