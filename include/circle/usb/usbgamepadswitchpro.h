@@ -38,10 +38,12 @@ public:
 	{
 		return   GamePadPropertyIsKnown
 		       | GamePadPropertyHasLED
+		       | GamePadPropertyHasRumble
 		       | GamePadPropertyHasAlternativeMapping;
 	}
 
 	boolean SetLEDMode (TGamePadLEDMode Mode);
+	boolean SetRumbleMode (TGamePadRumbleMode);
 
 private:
 	void DecodeReport (const u8 *pReportBuffer);

@@ -122,9 +122,8 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 
     u8 ReportBuffer[m_usReportSize];
 
-	// When Pro Controller starts to work, a first report is enqueued with
-    // 10 bytes with some information, can be the Bluetooth MAC,
-	// but who knows.... Anyway, consume it.
+	// When Pro Controller starts to work, a first report is enqueued carrying
+    // 6 bytes with the Bluetooth MAC, starting at byte 4, in reverse order
 	if (ReceiveFromEndpointIn(ReportBuffer, m_usReportSize) > 0)
 	{
         //CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "Unqueued pending data");
@@ -261,18 +260,48 @@ void CUSBGamePadSwitchProDevice::DecodeReport (const u8 *pReportBuffer)
 
 boolean CUSBGamePadSwitchProDevice::SetLEDMode(TGamePadLEDMode Mode)
 {
-	u8 led_command_calibrated[20] = { 0x80, 0x92, 0x00, 0x31, 0x00, 0x00, 0x00, 0x00,
-									  0x01, 0x00, 0x00, 0x01, 0x40, 0x40, 0x00, 0x01,
-									  0x40, 0x40, 0x30, 0xff };
+    u8 led_command_calibrated[] = { 0x01, 0x00, 0x00, 0x01, 0x40, 0x40, 0x00, 0x01,
+    								0x40, 0x40, 0x30, 0xff };
 
 	// This command changes the leds, with a bit per LED, low nibble from position 19
 	// bit0 == LED1, bit1 == LED2, bit2 == LED3, bit3 = LED4
-	led_command_calibrated[19] = static_cast<u8>(Mode);
-	// That's needed, really?
-	led_command_calibrated[9] = rumbleCounter++;
-	rumbleCounter &= 0x0f;
+	led_command_calibrated[11] = static_cast<u8>(Mode);
+	led_command_calibrated[1] = rumbleCounter++ & 0x0f;
 	if (!SendToEndpointOut(led_command_calibrated, sizeof(led_command_calibrated))) {
 		CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "led_command failed!");
+        return FALSE;
+	}
+	return TRUE;
+}
+
+boolean CUSBGamePadSwitchProDevice::SetRumbleMode (TGamePadRumbleMode Mode)
+{
+    u8 rumble_command[] = { 0x10, 0x00, 0x80, 0x00, 0x00, 0x00,
+                                        0x80, 0x00, 0x00, 0x00 };
+
+    switch (Mode) {
+    	case GamePadRumbleModeOff:
+            // do nothing
+        	break;
+        case GamePadRumbleModeLow:
+            rumble_command[6] = 0x98;
+            rumble_command[7] = 0x20;
+            rumble_command[8] = 0x62;
+            rumble_command[9] = 0xFF;
+        	break;
+        case GamePadRumbleModeHigh:
+            rumble_command[2] = 0x80;
+            rumble_command[3] = 0x20;
+            rumble_command[4] = 0x62;
+            rumble_command[5] = 0xFF;
+            break;
+        default:
+            return TRUE;
+    }
+    rumble_command[1] = rumbleCounter++ & 0x0f;
+
+    if (!SendToEndpointOut(rumble_command, sizeof(rumble_command))) {
+		CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "rumble_command failed!");
         return FALSE;
 	}
 	return TRUE;
