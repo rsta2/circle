@@ -77,6 +77,7 @@ USB library
 * CUSBGamePadStandardDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
 * CUSBGamePadSwitchProDevice: Driver for Nintendo Switch Pro gamepad
 * CUSBGamePadXbox360Device: Driver for Xbox 360 Wired gamepad
+* CUSBGamePadXboxOneDevice: Driver for Xbox One gamepad
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse, gamepad)
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards

@@ -13,7 +13,7 @@ Circle includes bigger (optional) third-party C-libraries for specific purposes 
 The 37th Step
 -------------
 
-In this step the USB gamepad drivers have been totally revised. The PS3, PS4, Xbox 360 Wired and Nintendo Switch Pro gamepads are supported now, including LEDs, rumble and gyroscope. All these drivers support a unique class interface and mapping for the button and axis controls. This should simplify the development of gamepad applications and is used in the new *sample/37-showgamepad*. See the *README* file in this directory for details.
+In this step the USB gamepad drivers have been totally revised. The PS3, PS4, Xbox 360 Wired, Xbox One and Nintendo Switch Pro gamepads are supported now, including LEDs, rumble and gyroscope. All these drivers support a unique class interface and mapping for the button and axis controls. This should simplify the development of gamepad applications and is used in the new *sample/37-showgamepad*. See the *README* file in this directory for details.
 
 The touchpad of the PS4 gamepad can be used as a mouse device to control normal mouse applications. To implement this, a new unique mouse interface class has been added, which is used by the USB mouse driver too. Therefore existing mouse applications have to be updated as follows:
 
@@ -145,6 +145,7 @@ USB library
 * CUSBGamePadStandardDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
 * CUSBGamePadSwitchProDevice: Driver for Nintendo Switch Pro gamepad
 * CUSBGamePadXbox360Device: Driver for Xbox 360 Wired gamepad
+* CUSBGamePadXboxOneDevice: Driver for Xbox One gamepad
 
 Input library
 
@@ -165,6 +166,6 @@ Linux is a trademark of Linus Torvalds.
 
 PS3 and PS4 are registered trademarks of Sony Computer Entertainment Inc.
 
-Xbox 360 is a trademark of the Microsoft group of companies.
+Xbox 360 and Xbox One are trademarks of the Microsoft group of companies.
 
 Nintendo Switch is a trademark of Nintendo.
