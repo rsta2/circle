@@ -77,9 +77,10 @@ void CUSBGamePadDevice::RegisterStatusHandler (TGamePadStatusHandler *pStatusHan
 	assert (m_pStatusHandler != 0);
 }
 
-void CUSBGamePadDevice::ReportHandler (const u8 *pReport)
+void CUSBGamePadDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
 	if (   pReport != 0
+	    && nReportSize == m_usReportSize
 	    && m_pStatusHandler != 0)
 	{
 		//debug_hexdump (pReport, m_usReportSize, FromUSBPad);

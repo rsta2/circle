@@ -33,7 +33,7 @@ public:
 	boolean Configure (void);
 
 private:
-	void ReportHandler (const u8 *pReport);
+	void ReportHandler (const u8 *pReport, unsigned nReportSize);
 
 private:
 	CMouseDevice *m_pMouseDevice;

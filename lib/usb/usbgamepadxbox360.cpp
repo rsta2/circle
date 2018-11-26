@@ -97,9 +97,10 @@ boolean CUSBGamePadXbox360Device::Configure (void)
 	return StartRequest ();
 }
 
-void CUSBGamePadXbox360Device::ReportHandler (const u8 *pReport)
+void CUSBGamePadXbox360Device::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
 	if (   pReport != 0
+	    && nReportSize == REPORT_SIZE
 	    && pReport[0] == (REPORT_HEADER & 0xFF)
 	    && pReport[1] == (REPORT_HEADER >> 8)
 	    && m_pStatusHandler != 0)

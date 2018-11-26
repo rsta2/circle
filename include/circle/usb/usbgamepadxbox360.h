@@ -42,7 +42,7 @@ public:
 	boolean SetRumbleMode (TGamePadRumbleMode Mode);
 
 private:
-	void ReportHandler (const u8 *pReport);
+	void ReportHandler (const u8 *pReport, unsigned nReportSize);
 
 	void DecodeReport (const u8 *pReport);
 };

@@ -201,8 +201,9 @@ public:
 
 private:
 	/// \param pReport Pointer to report packet received via the USB status reporting endpoint
+	/// \param nReportSize Size of the received report in number of bytes
 	/// \note Overwrite this if you have to do additional checks on received reports!
-	virtual void ReportHandler (const u8 *pReport);
+	virtual void ReportHandler (const u8 *pReport, unsigned nReportSize);
 
 	/// \param pReport Pointer to report packet received via the USB status reporting endpoint
 	/// \note Updates the m_State member variable

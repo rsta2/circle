@@ -25,17 +25,17 @@
 
 static const char FromUSBHID[] = "usbhid";
 
-CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize)
+CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize)
 :	CUSBFunction (pFunction),
-	m_nReportSize (nReportSize),
+	m_nMaxReportSize (nMaxReportSize),
 	m_pReportEndpoint (0),
 	m_pEndpointOut (0),
 	m_pURB (0),
 	m_pReportBuffer (0)
 {
-	if (m_nReportSize > 0)
+	if (m_nMaxReportSize > 0)
 	{
-		m_pReportBuffer = new u8[m_nReportSize];
+		m_pReportBuffer = new u8[m_nMaxReportSize];
 		assert (m_pReportBuffer != 0);
 	}
 }
@@ -52,7 +52,7 @@ CUSBHIDDevice::~CUSBHIDDevice (void)
 	m_pReportEndpoint = 0;
 }
 
-boolean CUSBHIDDevice::Configure (unsigned nReportSize)
+boolean CUSBHIDDevice::Configure (unsigned nMaxReportSize)
 {
 	if (GetNumEndpoints () < 1)
 	{
@@ -119,13 +119,13 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 		}
 	}
 
-	if (m_nReportSize == 0)
+	if (m_nMaxReportSize == 0)
 	{
-		m_nReportSize = nReportSize;
-		assert (m_nReportSize > 0);
+		m_nMaxReportSize = nMaxReportSize;
+		assert (m_nMaxReportSize > 0);
 
 		assert (m_pReportBuffer == 0);
-		m_pReportBuffer = new u8[m_nReportSize];
+		m_pReportBuffer = new u8[m_nMaxReportSize];
 	}
 	assert (m_pReportBuffer != 0);
 
@@ -183,8 +183,8 @@ boolean CUSBHIDDevice::StartRequest (void)
 	assert (m_pReportBuffer != 0);
 	
 	assert (m_pURB == 0);
-	assert (m_nReportSize > 0);
-	m_pURB = new CUSBRequest (m_pReportEndpoint, m_pReportBuffer, m_nReportSize);
+	assert (m_nMaxReportSize > 0);
+	m_pURB = new CUSBRequest (m_pReportEndpoint, m_pReportBuffer, m_nMaxReportSize);
 	assert (m_pURB != 0);
 	m_pURB->SetCompletionRoutine (CompletionStub, 0, this);
 	
@@ -196,14 +196,13 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 	assert (pURB != 0);
 	assert (m_pURB == pURB);
 
-	if (   pURB->GetStatus () != 0
-	    && pURB->GetResultLength () == m_nReportSize)
+	if (pURB->GetStatus () != 0)
 	{
-		ReportHandler (m_pReportBuffer);
+		ReportHandler (m_pReportBuffer, pURB->GetResultLength ());
 	}
 	else
 	{
-		ReportHandler (0);
+		ReportHandler (0, 0);
 	}
 
 	delete m_pURB;

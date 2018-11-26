@@ -53,9 +53,10 @@ boolean CUSBMouseDevice::Configure (void)
 	return StartRequest ();
 }
 
-void CUSBMouseDevice::ReportHandler (const u8 *pReport)
+void CUSBMouseDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
-	if (pReport != 0)
+	if (   pReport != 0
+	    && nReportSize == REPORT_SIZE)
 	{
 		u8 ucHIDButtons = pReport[0];
 

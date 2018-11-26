@@ -58,7 +58,7 @@ public:
 	static void DisableTouchpad (void);
 
 private:
-	void ReportHandler (const u8 *pReport);
+	void ReportHandler (const u8 *pReport, unsigned nReportSize);
 	void DecodeReport (const u8 *pReportBuffer);
 	void HandleTouchpad (const u8 *pReportBuffer);
 	boolean SendLedRumbleCommand(void);

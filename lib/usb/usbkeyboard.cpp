@@ -137,9 +137,10 @@ boolean CUSBKeyboardDevice::SetLEDs (u8 ucStatus)
 	return TRUE;
 }
 
-void CUSBKeyboardDevice::ReportHandler (const u8 *pReport)
+void CUSBKeyboardDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
-	if (pReport == 0)
+	if (   pReport == 0
+	    || nReportSize != USBKEYB_REPORT_SIZE)
 	{
 		return;
 	}

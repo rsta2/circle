@@ -29,18 +29,19 @@
 class CUSBHIDDevice : public CUSBFunction
 {
 public:
-	// nReportSize can be handed-over here or to Configure()
-	CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize = 0);
+	// nMaxReportSize can be handed-over here or to Configure()
+	CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize = 0);
 	~CUSBHIDDevice (void);
 
-	boolean Configure (unsigned nReportSize = 0);
+	boolean Configure (unsigned nMaxReportSize = 0);
 
 protected:
 	// has to be called from Configure() in derived class, when initialization is done
 	boolean StartRequest (void);
 
 	// is called, when report arrives
-	virtual void ReportHandler (const u8 *pReport) = 0;	// pReport is 0 on failure
+	virtual void ReportHandler (const u8 *pReport,
+				    unsigned nReportSize) = 0;		// pReport is 0 on failure
 
 	// send is not completed on return (asynchronous operation)
 	boolean SendToEndpointOut (const void *pBuffer, unsigned nBufSize,
@@ -56,7 +57,7 @@ private:
 	static void SendCompletionRoutine (CUSBRequest *pURB, void *pParam, void *pContext);
 
 private:
-	unsigned m_nReportSize;
+	unsigned m_nMaxReportSize;
 
 	CUSBEndpoint *m_pReportEndpoint;
 	CUSBEndpoint *m_pEndpointOut;		// interrupt out EP (optional)

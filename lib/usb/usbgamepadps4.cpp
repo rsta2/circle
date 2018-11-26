@@ -195,9 +195,10 @@ boolean CUSBGamePadPS4Device::Configure (void)
 	return StartRequest ();
 }
 
-void CUSBGamePadPS4Device::ReportHandler (const u8 *pReport)
+void CUSBGamePadPS4Device::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
-	if (pReport != 0)
+	if (   pReport != 0
+	    && nReportSize == REPORT_SIZE)
 	{
 		//debug_hexdump (pReport, m_usReportSize, FromUSBPadPS4);
 

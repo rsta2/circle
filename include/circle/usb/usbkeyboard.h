@@ -56,7 +56,7 @@ public:
 	boolean SetLEDs (u8 ucStatus);		// must not be called in interrupt context
 
 private:
-	void ReportHandler (const u8 *pReport);
+	void ReportHandler (const u8 *pReport, unsigned nReportSize);
 
 	static boolean FindByte (const u8 *pBuffer, u8 ucByte, unsigned nLength);
 
