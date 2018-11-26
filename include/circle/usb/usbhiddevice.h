@@ -42,7 +42,7 @@ protected:
 	// is called, when report arrives
 	virtual void ReportHandler (const u8 *pReport) = 0;	// pReport is 0 on failure
 
-	// cannot be called from ReportHandler() context
+	// send is not completed on return (asynchronous operation)
 	boolean SendToEndpointOut (const void *pBuffer, unsigned nBufSize,
 				   unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	// returns resulting length or < 0 on failure, must not be used after StartRequest()
@@ -52,6 +52,8 @@ protected:
 private:
 	void CompletionRoutine (CUSBRequest *pURB);
 	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);
+
+	static void SendCompletionRoutine (CUSBRequest *pURB, void *pParam, void *pContext);
 
 private:
 	unsigned m_nReportSize;

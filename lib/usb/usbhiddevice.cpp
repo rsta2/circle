@@ -20,6 +20,7 @@
 #include <circle/usb/usbhiddevice.h>
 #include <circle/usb/usbhid.h>
 #include <circle/logger.h>
+#include <circle/util.h>
 #include <assert.h>
 
 static const char FromUSBHID[] = "usbhid";
@@ -140,12 +141,30 @@ boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize
 
 	assert (pBuffer != 0);
 	assert (nBufSize > 0);
-	if (GetHost ()->Transfer (m_pEndpointOut, (void *) pBuffer, nBufSize, nTimeoutMs) < 0)
+	u8 *pTempBuffer = new u8[nBufSize];
+	assert (pTempBuffer != 0);
+	memcpy (pTempBuffer, pBuffer, nBufSize);
+
+	CUSBRequest *pURB = new CUSBRequest (m_pEndpointOut, pTempBuffer, nBufSize);
+	assert (pURB != 0);
+	pURB->SetCompletionRoutine (SendCompletionRoutine, pTempBuffer, this);
+
+	return GetHost ()->SubmitAsyncRequest (pURB, nTimeoutMs);
+}
+
+void CUSBHIDDevice::SendCompletionRoutine (CUSBRequest *pURB, void *pParam, void *pContext)
+{
+	assert (pURB != 0);
+	if (!pURB->GetStatus ())
 	{
-		return FALSE;
+		CLogger::Get ()->Write (FromUSBHID, LogWarning, "SendToEndpointOut failed");
 	}
 
-	return TRUE;
+	delete pURB;
+
+	u8 *pTempBuffer = (u8 *) pParam;
+	assert (pTempBuffer != 0);
+	delete [] pTempBuffer;
 }
 
 int CUSBHIDDevice::ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
