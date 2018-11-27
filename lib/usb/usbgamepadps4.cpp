@@ -78,45 +78,45 @@ union PS4Buttons {
 } PACKED;
 
 struct touchpadXY {
-    u8 dummy; // I can not figure out what this data is for, it seems to change randomly, maybe a timestamp?
-    struct {
-        u8 counter : 7; // Increments every time a finger is touching the touchpad
-        u8 touching : 1; // The top bit is cleared if the finger is touching the touchpad
-        u16 x : 12;
-        u16 y : 12;
-    } PACKED finger[2]; // 0 = first finger, 1 = second finger
+        u8 dummy; // I can not figure out what this data is for, it seems to change randomly, maybe a timestamp?
+        struct {
+                u8 counter : 7; // Increments every time a finger is touching the touchpad
+                u8 touching : 1; // The top bit is cleared if the finger is touching the touchpad
+                u16 x : 12;
+                u16 y : 12;
+        } PACKED finger[2]; // 0 = first finger, 1 = second finger
 } PACKED;
 
 struct PS4Status {
-    u8 battery : 4;
-    u8 usb : 1;
-    u8 audio : 1;
-    u8 mic : 1;
-    u8 unknown : 1; // Extension port?
+        u8 battery : 4;
+        u8 usb : 1;
+        u8 audio : 1;
+        u8 mic : 1;
+        u8 unknown : 1; // Extension port?
 } PACKED;
 
 struct PS4Report {
 	u8 reportID;
-    /* Button and joystick values */
-    u8 hatValue[4];
-    PS4Buttons btn;
-    u8 trigger[2];
+        /* Button and joystick values */
+        u8 hatValue[4];
+        PS4Buttons btn;
+        u8 trigger[2];
 
-    /* Gyro and accelerometer values */
-    u8 dummy[3]; // First two looks random, while the third one might be some kind of status - it increments once in a while
-    s16 gyroY, gyroZ, gyroX;
-    s16 accX, accZ, accY;
+        /* Gyro and accelerometer values */
+        u8 dummy[3]; // First two looks random, while the third one might be some kind of status - it increments once in a while
+        s16 gyroY, gyroZ, gyroX;
+        s16 accX, accZ, accY;
 
-    u8 dummy2[5];
-    PS4Status status;
-    u8 dummy3[2];
+        u8 dummy2[5];
+        PS4Status status;
+        u8 dummy3[2];
 
         /* The rest is data for the touchpad */
-    u8 xyNum; // Number of valid entries in xy[]
-    touchpadXY xy[3]; // It looks like it sends out three coordinates each time, this might be because the microcontroller inside the PS4 controller is much faster than the Bluetooth connection.
-                      // The last data is read from the last position in the array while the oldest measurement is from the first position.
-                      // The first position will also keep it's value after the finger is released, while the other two will set them to zero.
-                      // Note that if you read fast enough from the device, then only the first one will contain any data.
+        u8 xyNum; // Number of valid entries in xy[]
+        touchpadXY xy[3]; // It looks like it sends out three coordinates each time, this might be because the microcontroller inside the PS4 controller is much faster than the Bluetooth connection.
+                        // The last data is read from the last position in the array while the oldest measurement is from the first position.
+                        // The first position will also keep it's value after the finger is released, while the other two will set them to zero.
+                        // Note that if you read fast enough from the device, then only the first one will contain any data.
 
         // The last three bytes are always: 0x00, 0x80, 0x00
 } PACKED;
@@ -129,7 +129,7 @@ CUSBGamePadPS4Device::CUSBGamePadPS4Device (CUSBFunction *pFunction)
 	outBuffer(nullptr),
 	m_pMouseDevice (nullptr)
 {
-	m_Touchpad.bButtonPressed = FALSE;
+        m_Touchpad.bButtonPressed = FALSE;
 	m_Touchpad.bTouched = FALSE;
 }
 
@@ -230,12 +230,12 @@ void CUSBGamePadPS4Device::DecodeReport (const u8 *pReportBuffer) {
 	m_State.axes[GamePadAxisButtonR2].value = pReport->trigger[1]; // Right Trigger [R2]
 
 	m_State.hats[0] = pReport->btn.dpad; // D-PAD (hat format, 0x08 is released,
-		 								 // 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW
+		 			     // 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW
 
 	static u32 hat2buttons[9] = { GamePadButtonUp, (GamePadButtonUp | GamePadButtonRight),
-								GamePadButtonRight, (GamePadButtonRight | GamePadButtonDown),
-								GamePadButtonDown, (GamePadButtonDown | GamePadButtonLeft),
-								GamePadButtonLeft, (GamePadButtonLeft| GamePadButtonUp), 0x00 };
+	                              GamePadButtonRight, (GamePadButtonRight | GamePadButtonDown),
+				      GamePadButtonDown, (GamePadButtonDown | GamePadButtonLeft),
+				      GamePadButtonLeft, (GamePadButtonLeft| GamePadButtonUp), 0x00 };
 	m_State.buttons = hat2buttons[pReport->btn.dpad];
 
 	if (pReport->btn.triangle)
@@ -358,69 +358,69 @@ void CUSBGamePadPS4Device::HandleTouchpad (const u8 *pReportBuffer)
 boolean CUSBGamePadPS4Device::SetLEDMode (TGamePadLEDMode Mode)
 {
 	switch (Mode) {
-    	case GamePadLEDModeOn1:
-        	// Blue
-        	ps4Output.red = 0x00;
-        	ps4Output.green = 0x00;
-        	ps4Output.blue = 0xFF;
-        	ps4Output.flashOn = 0x7F;
-        	ps4Output.flashOff = 0xFF;
-        	break;
-        case GamePadLEDModeOn2:
-        	// Red
-            ps4Output.red = 0xFF;
-            ps4Output.green = 0x00;
-            ps4Output.blue = 0x00;
-            ps4Output.flashOn = 0x7F;
-            ps4Output.flashOff = 0xFF;
-            break;
-        case GamePadLEDModeOn3:
-        	// Magenta
-            ps4Output.red = 0xFF;
-            ps4Output.green = 0x00;
-            ps4Output.blue = 0xFF;
-            ps4Output.flashOn = 0x7F;
-            ps4Output.flashOff = 0xFF;
-            break;
-        case GamePadLEDModeOn4:
-        	// Green
-            ps4Output.red = 0x00;
-            ps4Output.green = 0xFF;
-            ps4Output.blue = 0x00;
-            ps4Output.flashOn = 0x7F;
-            ps4Output.flashOff = 0xFF;
-            break;
-        case GamePadLEDModeOn5:
-        	// Cyan
-            ps4Output.red = 0x00;
-            ps4Output.green = 0xFF;
-            ps4Output.blue = 0xFF;
-            ps4Output.flashOn = 0x7F;
-            ps4Output.flashOff = 0xFF;
-            break;
-        case GamePadLEDModeOn6:
-        	// Yellow
-            ps4Output.red = 0xFF;
-            ps4Output.green = 0xFF;
-            ps4Output.blue = 0x00;
-            ps4Output.flashOn = 0x7F;
-            ps4Output.flashOff = 0xFF;
-            break;
-        case GamePadLEDModeOn7:
-        	// White
-            ps4Output.red = 0xFF;
-            ps4Output.green = 0xFF;
-            ps4Output.blue = 0xFF;
-            ps4Output.flashOn = 0x7F;
-            ps4Output.flashOff = 0xFF;
-            break;
-        default:
-        	ps4Output.red = 0x00;
-            ps4Output.green = 0x00;
-            ps4Output.blue = 0x00;
-            ps4Output.flashOn = 0x00;
-            ps4Output.flashOff = 0x00;
-            break;
+    	        case GamePadLEDModeOn1:
+        	       // Blue
+        	       ps4Output.red = 0x00;
+        	       ps4Output.green = 0x00;
+        	       ps4Output.blue = 0xFF;
+        	       ps4Output.flashOn = 0x7F;
+        	       ps4Output.flashOff = 0xFF;
+        	       break;
+                case GamePadLEDModeOn2:
+        	       // Red
+                       ps4Output.red = 0xFF;
+                       ps4Output.green = 0x00;
+                       ps4Output.blue = 0x00;
+                       ps4Output.flashOn = 0x7F;
+                       ps4Output.flashOff = 0xFF;
+                       break;
+                case GamePadLEDModeOn3:
+        	       // Magenta
+                       ps4Output.red = 0xFF;
+                       ps4Output.green = 0x00;
+                       ps4Output.blue = 0xFF;
+                       ps4Output.flashOn = 0x7F;
+                       ps4Output.flashOff = 0xFF;
+                       break;
+                case GamePadLEDModeOn4:
+        	       // Green
+                       ps4Output.red = 0x00;
+                       ps4Output.green = 0xFF;
+                       ps4Output.blue = 0x00;
+                       ps4Output.flashOn = 0x7F;
+                       ps4Output.flashOff = 0xFF;
+                       break;
+                case GamePadLEDModeOn5:
+        	       // Cyan
+                       ps4Output.red = 0x00;
+                       ps4Output.green = 0xFF;
+                       ps4Output.blue = 0xFF;
+                       ps4Output.flashOn = 0x7F;
+                       ps4Output.flashOff = 0xFF;
+                       break;
+                case GamePadLEDModeOn6:
+        	       // Yellow
+                       ps4Output.red = 0xFF;
+                       ps4Output.green = 0xFF;
+                       ps4Output.blue = 0x00;
+                       ps4Output.flashOn = 0x7F;
+                       ps4Output.flashOff = 0xFF;
+                       break;
+                case GamePadLEDModeOn7:
+        	       // White
+                       ps4Output.red = 0xFF;
+                       ps4Output.green = 0xFF;
+                       ps4Output.blue = 0xFF;
+                       ps4Output.flashOn = 0x7F;
+                       ps4Output.flashOff = 0xFF;
+                       break;
+                default:
+        	       ps4Output.red = 0x00;
+                       ps4Output.green = 0x00;
+                       ps4Output.blue = 0x00;
+                       ps4Output.flashOn = 0x00;
+                       ps4Output.flashOff = 0x00;
+                       break;
        }
        return SendLedRumbleCommand();
 }
