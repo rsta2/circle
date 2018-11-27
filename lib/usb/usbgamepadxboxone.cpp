@@ -78,7 +78,7 @@ struct TXboxOneReport {
 #define REPORT_AXES_MINIMUM		(-32768)
 #define REPORT_AXES_MAXIMUM		32767
 
-#define REPORT_SIZE	64
+#define REPORT_SIZE			64
 
 static const char FromUSBPadXboxOne[] = "usbpadxboxone";
 
@@ -123,15 +123,16 @@ boolean CUSBGamePadXboxOneDevice::Configure (void)
 	return StartRequest ();
 }
 
-void CUSBGamePadXboxOneDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
+void CUSBGamePadXboxOneDevice::ReportHandler (const u8 *pReport, unsigned reportSize)
 {
-	//debug_hexdump (pReport, nReportSize, FromUSBPadXboxOne);
+	//debug_hexdump (pReport, REPORT_SIZE, FromUSBPadXboxOne);
+	//CLogger::Get ()->Write (FromUSBPadXboxOne, LogNotice, "Received report of %u bytes", reportSize);
 	if (pReport == nullptr)
 		return;
 
 	// Controller sends this packet when XBox button is pressed, and needs ACK
 	// or resends the packet forever
-	if (pReport[0] == 0x07 && pReport[1] == 0x30) {
+	if (reportSize == 6 && pReport[0] == 0x07 && pReport[1] == 0x30) {
 		u8 mode_report_ack[] = {
 			0x01, 0x20, 0x00, 0x09, 0x00, 0x07, 0x20, 0x02,
 			0x00, 0x00, 0x00, 0x00, 0x00
@@ -143,8 +144,8 @@ void CUSBGamePadXboxOneDevice::ReportHandler (const u8 *pReport, unsigned nRepor
 	}
 
 	// Controller sends "heartbeat" packets periodically starting with
-	// 0x03, 0x20. We aren't interested in it.
-	if (m_pStatusHandler != nullptr && pReport[0] == 0x20)
+	// 0x03, 0x20. We aren't interested in them.
+	if (m_pStatusHandler != nullptr && reportSize == 18 && pReport[0] == 0x20)
 	{
 		DecodeReport (pReport);
 
