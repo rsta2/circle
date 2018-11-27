@@ -2,7 +2,7 @@
 // btsubsystem.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,11 +40,12 @@ CBTSubSystem::~CBTSubSystem (void)
 
 boolean CBTSubSystem::Initialize (void)
 {
-	// if USB transport not available, UART still free and this is a RPi 3B:
+	// if USB transport not available, UART still free and this is a RPi 3B or Zero W:
 	//	use UART transport
 	if (   CDeviceNameService::Get ()->GetDevice ("ubt1", FALSE) == 0
 	    && CDeviceNameService::Get ()->GetDevice ("ttyS1", FALSE) == 0
-	    && CMachineInfo::Get ()->GetMachineModel () == MachineModel3B)
+	    && (   CMachineInfo::Get ()->GetMachineModel () == MachineModel3B
+		|| CMachineInfo::Get ()->GetMachineModel () == MachineModelZeroW))
 	{
 		assert (m_pUARTTransport == 0);
 		assert (m_pInterruptSystem != 0);
