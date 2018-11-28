@@ -141,6 +141,24 @@ boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize
 
 	assert (pBuffer != 0);
 	assert (nBufSize > 0);
+	if (GetHost ()->Transfer (m_pEndpointOut, (void *) pBuffer, nBufSize, nTimeoutMs) < 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+boolean CUSBHIDDevice::SendToEndpointOutAsync (const void *pBuffer, unsigned nBufSize,
+					       unsigned nTimeoutMs)
+{
+	if (m_pEndpointOut == 0)
+	{
+		return FALSE;
+	}
+
+	assert (pBuffer != 0);
+	assert (nBufSize > 0);
 	u8 *pTempBuffer = new u8[nBufSize];
 	assert (pTempBuffer != 0);
 	memcpy (pTempBuffer, pBuffer, nBufSize);

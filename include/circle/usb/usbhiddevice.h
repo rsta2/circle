@@ -43,9 +43,12 @@ protected:
 	virtual void ReportHandler (const u8 *pReport,
 				    unsigned nReportSize) = 0;		// pReport is 0 on failure
 
-	// send is not completed on return (asynchronous operation)
+	// cannot be called from ReportHandler() context
 	boolean SendToEndpointOut (const void *pBuffer, unsigned nBufSize,
 				   unsigned nTimeoutMs = USB_TIMEOUT_NONE);
+	// send is not completed on return (asynchronous operation)
+	boolean SendToEndpointOutAsync (const void *pBuffer, unsigned nBufSize,
+					unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	// returns resulting length or < 0 on failure, must not be used after StartRequest()
 	int ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize,
 				   unsigned nTimeoutMs = USB_TIMEOUT_NONE);

@@ -138,7 +138,7 @@ void CUSBGamePadXboxOneDevice::ReportHandler (const u8 *pReport, unsigned report
 			0x00, 0x00, 0x00, 0x00, 0x00
 		};
 		mode_report_ack[2] = pReport[2];
-		SendToEndpointOut (mode_report_ack, sizeof mode_report_ack);
+		SendToEndpointOutAsync (mode_report_ack, sizeof mode_report_ack);
 		return;
 		//CLogger::Get ()->Write (FromUSBPadXboxOne, LogError, "ACK packet sended!");
 	}
