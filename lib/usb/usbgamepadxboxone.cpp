@@ -118,7 +118,11 @@ boolean CUSBGamePadXboxOneDevice::Configure (void)
 
 	// Send Start controller (with input) command
 	u8 command_start[] = { 0x05, 0x20, 0x00, 0x01, 0x00 };
-	SendToEndpointOut (command_start, sizeof command_start);
+	if (!SendToEndpointOut (command_start, sizeof command_start)) {
+		CLogger::Get ()->Write (FromUSBPadXboxOne, LogError, "command_start failed!");
+		// That's an unrecoverable error
+		return FALSE;
+	}
 
 	return StartRequest ();
 }
@@ -138,9 +142,11 @@ void CUSBGamePadXboxOneDevice::ReportHandler (const u8 *pReport, unsigned report
 			0x00, 0x00, 0x00, 0x00, 0x00
 		};
 		mode_report_ack[2] = pReport[2];
-		SendToEndpointOutAsync (mode_report_ack, sizeof mode_report_ack);
+		if (!SendToEndpointOutAsync (mode_report_ack, sizeof mode_report_ack))
+		{
+			CLogger::Get ()->Write (FromUSBPadXboxOne, LogError, "ACK send failed!");
+		}
 		return;
-		//CLogger::Get ()->Write (FromUSBPadXboxOne, LogError, "ACK packet sended!");
 	}
 
 	// Controller sends "heartbeat" packets periodically starting with
