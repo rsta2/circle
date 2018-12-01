@@ -71,7 +71,13 @@ USB library
 * CUSBDeviceFactory: Creates the function objects of the different supported USB functions.
 * CUSBEndpoint: Encapsulates an endpoint of an USB device (supports control, bulk and interrupt EPs).
 * CUSBFunction: Encapsulates a function (represented by an interface descriptor) of an USB device.
-* CUSBGamePadDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
+* CUSBGamePadDevice: Base class for USB gamepad drivers
+* CUSBGamePadPS3Device: Driver for PS3 gamepad
+* CUSBGamePadPS4Device: Driver for PS4 gamepad
+* CUSBGamePadStandardDevice: Driver for USB gamepads with USB HID class report interface (3-0-0)
+* CUSBGamePadSwitchProDevice: Driver for Nintendo Switch Pro gamepad
+* CUSBGamePadXbox360Device: Driver for Xbox 360 Wired gamepad
+* CUSBGamePadXboxOneDevice: Driver for Xbox One gamepad
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse, gamepad)
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards
@@ -90,6 +96,7 @@ Input library
 * CKeyMap: Keyboard translation map (six selectable default maps at the moment)
 * CLineDiscipline: Implements line editor function
 * CMouseBehaviour: Generic mouse function, handles the mouse cursor
+* CMouseDevice: Generic mouse interface device
 * CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
 
 FS library

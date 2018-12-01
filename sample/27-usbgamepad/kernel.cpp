@@ -98,14 +98,8 @@ TShutdownMode CKernel::Run (void)
 			break;
 		}
 
-		const TGamePadState *pState = pGamePad->GetReport ();
-		if (pState == 0)
-		{
-			m_Logger.Write (FromKernel, LogError, "Cannot get report from %s",
-					(const char *) DeviceName);
-
-			continue;
-		}
+		const TGamePadState *pState = pGamePad->GetInitialState ();
+		assert (pState != 0);
 
 		m_Logger.Write (FromKernel, LogNotice, "Gamepad %u: %d Button(s) %d Hat(s)",
 				nDevice, pState->nbuttons, pState->nhats);

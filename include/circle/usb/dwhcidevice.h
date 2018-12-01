@@ -2,7 +2,7 @@
 // dwhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,8 +45,8 @@ public:
 
 	boolean Initialize (void);
 
-	boolean SubmitBlockingRequest (CUSBRequest *pURB);
-	boolean SubmitAsyncRequest (CUSBRequest *pURB);
+	boolean SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
+	boolean SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
 private:
 	TUSBSpeed GetPortSpeed (void);
@@ -71,10 +71,12 @@ private:
 	void FlushTxFIFO (unsigned nFIFO);
 	void FlushRxFIFO (void);
 
-	boolean TransferStage (CUSBRequest *pURB, boolean bIn, boolean bStatusStage);
+	boolean TransferStage (CUSBRequest *pURB, boolean bIn, boolean bStatusStage,
+			       unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	static void CompletionRoutine (CUSBRequest *pURB, void *pParam, void *pContext);
 
-	boolean TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolean bStatusStage);
+	boolean TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolean bStatusStage,
+				    unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
 #ifdef USE_USB_SOF_INTR
 	void QueueTransaction (CDWHCITransferStageData *pStageData);

@@ -444,6 +444,7 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 #if RASPPI >= 2
 	// workaround if bootloader does not restore GPIO modes
 	if (   CMachineInfo::Get ()->GetMachineModel () == MachineModel3B
+	    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3APlus
 	    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3BPlus)
 	{
 		for (unsigned i = 0; i <= 5; i++)

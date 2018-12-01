@@ -2,7 +2,7 @@
 // bcmframebuffer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,16 @@
 #include <circle/types.h>
 
 #define PALETTE_ENTRIES		256
+
+struct TBcmFrameBufferInitTags
+{
+	TPropertyTagDisplayDimensions	SetPhysWidthHeight;
+	TPropertyTagDisplayDimensions	SetVirtWidthHeight;
+	TPropertyTagSimple		SetDepth;
+	TPropertyTagVirtualOffset	SetVirtOffset;
+	TPropertyTagAllocateBuffer	AllocateBuffer;
+	TPropertyTagSimple		GetPitch;
+};
 
 class CBcmFrameBuffer
 {
@@ -64,6 +74,9 @@ private:
 	u32 m_nPitch;
 
 	TPropertyTagSetPalette *m_pTagSetPalette;	// with Depth <= 8 only (256 entries)
+
+	TBcmFrameBufferInitTags m_InitTags;
+	static TBcmFrameBufferInitTags s_InitTags;
 };
 
 #endif

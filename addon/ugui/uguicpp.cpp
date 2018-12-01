@@ -42,7 +42,7 @@ boolean CUGUI::Initialize (void)
 		return FALSE;
 	}
 
-	m_pMouseDevice = (CUSBMouseDevice *) CDeviceNameService::Get ()->GetDevice ("umouse1", FALSE);
+	m_pMouseDevice = (CMouseDevice *) CDeviceNameService::Get ()->GetDevice ("mouse1", FALSE);
 	if (m_pMouseDevice != 0)
 	{
 		if (m_pMouseDevice->Setup (m_pScreen->GetWidth (), m_pScreen->GetHeight ()))

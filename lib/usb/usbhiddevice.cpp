@@ -2,7 +2,7 @@
 // usbhiddevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,22 +19,23 @@
 //
 #include <circle/usb/usbhiddevice.h>
 #include <circle/usb/usbhid.h>
-#include <circle/usb/usbhostcontroller.h>
 #include <circle/logger.h>
+#include <circle/util.h>
 #include <assert.h>
 
 static const char FromUSBHID[] = "usbhid";
 
-CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize)
+CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize)
 :	CUSBFunction (pFunction),
-	m_nReportSize (nReportSize),
+	m_nMaxReportSize (nMaxReportSize),
 	m_pReportEndpoint (0),
+	m_pEndpointOut (0),
 	m_pURB (0),
 	m_pReportBuffer (0)
 {
-	if (m_nReportSize > 0)
+	if (m_nMaxReportSize > 0)
 	{
-		m_pReportBuffer = new u8[m_nReportSize];
+		m_pReportBuffer = new u8[m_nMaxReportSize];
 		assert (m_pReportBuffer != 0);
 	}
 }
@@ -44,11 +45,14 @@ CUSBHIDDevice::~CUSBHIDDevice (void)
 	delete [] m_pReportBuffer;
 	m_pReportBuffer = 0;
 
+	delete m_pEndpointOut;
+	m_pEndpointOut = 0;
+
 	delete m_pReportEndpoint;
 	m_pReportEndpoint = 0;
 }
 
-boolean CUSBHIDDevice::Configure (unsigned nReportSize)
+boolean CUSBHIDDevice::Configure (unsigned nMaxReportSize)
 {
 	if (GetNumEndpoints () < 1)
 	{
@@ -60,23 +64,39 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 	const TUSBEndpointDescriptor *pEndpointDesc;
 	while ((pEndpointDesc = (TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT)) != 0)
 	{
-		if (   (pEndpointDesc->bEndpointAddress & 0x80) == 0x80		// Input EP
-		    && (pEndpointDesc->bmAttributes     & 0x3F)	== 0x03)	// Interrupt EP
+		if ((pEndpointDesc->bmAttributes & 0x3F) == 0x03)		// Interrupt EP
 		{
-			break;
+			if ((pEndpointDesc->bEndpointAddress & 0x80) == 0x80)	// Input EP
+			{
+				if (m_pReportEndpoint != 0)
+				{
+					ConfigurationError (FromUSBHID);
+
+					return FALSE;
+				}
+
+				m_pReportEndpoint = new CUSBEndpoint (GetDevice (), pEndpointDesc);
+			}
+			else							// Output EP
+			{
+				if (m_pEndpointOut != 0)
+				{
+					ConfigurationError (FromUSBHID);
+
+					return FALSE;
+				}
+
+				m_pEndpointOut = new CUSBEndpoint (GetDevice (), pEndpointDesc);
+			}
 		}
 	}
 
-	if (pEndpointDesc == 0)
+	if (m_pReportEndpoint == 0)
 	{
 		ConfigurationError (FromUSBHID);
 
 		return FALSE;
 	}
-
-	assert (m_pReportEndpoint == 0);
-	m_pReportEndpoint = new CUSBEndpoint (GetDevice (), pEndpointDesc);
-	assert (m_pReportEndpoint != 0);
 
 	if (!CUSBFunction::Configure ())
 	{
@@ -85,7 +105,8 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 		return FALSE;
 	}
 
-	if (GetInterfaceSubClass () == 1)	// boot class
+	if (   GetInterfaceClass ()    == 3	// HID class
+	    && GetInterfaceSubClass () == 1)	// boot class
 	{
 		if (GetHost ()->ControlMessage (GetEndpoint0 (),
 						REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
@@ -98,17 +119,80 @@ boolean CUSBHIDDevice::Configure (unsigned nReportSize)
 		}
 	}
 
-	if (m_nReportSize == 0)
+	if (m_nMaxReportSize == 0)
 	{
-		m_nReportSize = nReportSize;
-		assert (m_nReportSize > 0);
+		m_nMaxReportSize = nMaxReportSize;
+		assert (m_nMaxReportSize > 0);
 
 		assert (m_pReportBuffer == 0);
-		m_pReportBuffer = new u8[m_nReportSize];
+		m_pReportBuffer = new u8[m_nMaxReportSize];
 	}
 	assert (m_pReportBuffer != 0);
 
-	return StartRequest ();
+	return TRUE;
+}
+
+boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
+{
+	if (m_pEndpointOut == 0)
+	{
+		return FALSE;
+	}
+
+	assert (pBuffer != 0);
+	assert (nBufSize > 0);
+	if (GetHost ()->Transfer (m_pEndpointOut, (void *) pBuffer, nBufSize, nTimeoutMs) < 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+boolean CUSBHIDDevice::SendToEndpointOutAsync (const void *pBuffer, unsigned nBufSize,
+					       unsigned nTimeoutMs)
+{
+	if (m_pEndpointOut == 0)
+	{
+		return FALSE;
+	}
+
+	assert (pBuffer != 0);
+	assert (nBufSize > 0);
+	u8 *pTempBuffer = new u8[nBufSize];
+	assert (pTempBuffer != 0);
+	memcpy (pTempBuffer, pBuffer, nBufSize);
+
+	CUSBRequest *pURB = new CUSBRequest (m_pEndpointOut, pTempBuffer, nBufSize);
+	assert (pURB != 0);
+	pURB->SetCompletionRoutine (SendCompletionRoutine, pTempBuffer, this);
+
+	return GetHost ()->SubmitAsyncRequest (pURB, nTimeoutMs);
+}
+
+void CUSBHIDDevice::SendCompletionRoutine (CUSBRequest *pURB, void *pParam, void *pContext)
+{
+	assert (pURB != 0);
+	if (!pURB->GetStatus ())
+	{
+		CLogger::Get ()->Write (FromUSBHID, LogWarning, "SendToEndpointOut failed");
+	}
+
+	delete pURB;
+
+	u8 *pTempBuffer = (u8 *) pParam;
+	assert (pTempBuffer != 0);
+	delete [] pTempBuffer;
+}
+
+int CUSBHIDDevice::ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
+{
+	assert (m_pURB == 0);
+
+	assert (m_pReportEndpoint != 0);
+	assert (pBuffer != 0);
+	assert (nBufSize > 0);
+	return GetHost ()->Transfer (m_pReportEndpoint, pBuffer, nBufSize, nTimeoutMs);
 }
 
 boolean CUSBHIDDevice::StartRequest (void)
@@ -117,8 +201,8 @@ boolean CUSBHIDDevice::StartRequest (void)
 	assert (m_pReportBuffer != 0);
 	
 	assert (m_pURB == 0);
-	assert (m_nReportSize > 0);
-	m_pURB = new CUSBRequest (m_pReportEndpoint, m_pReportBuffer, m_nReportSize);
+	assert (m_nMaxReportSize > 0);
+	m_pURB = new CUSBRequest (m_pReportEndpoint, m_pReportBuffer, m_nMaxReportSize);
 	assert (m_pURB != 0);
 	m_pURB->SetCompletionRoutine (CompletionStub, 0, this);
 	
@@ -130,14 +214,13 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 	assert (pURB != 0);
 	assert (m_pURB == pURB);
 
-	if (   pURB->GetStatus () != 0
-	    && pURB->GetResultLength () == m_nReportSize)
+	if (pURB->GetStatus () != 0)
 	{
-		ReportHandler (m_pReportBuffer);
+		ReportHandler (m_pReportBuffer, pURB->GetResultLength ());
 	}
 	else
 	{
-		ReportHandler (0);
+		ReportHandler (0, 0);
 	}
 
 	delete m_pURB;

@@ -2,7 +2,7 @@
 // usbhiddevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,30 +23,47 @@
 #include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
+#include <circle/usb/usbhostcontroller.h>
 #include <circle/types.h>
 
 class CUSBHIDDevice : public CUSBFunction
 {
 public:
-	// nReportSize can be handed-over here or to Configure()
-	CUSBHIDDevice (CUSBFunction *pFunction, unsigned nReportSize = 0);
+	// nMaxReportSize can be handed-over here or to Configure()
+	CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize = 0);
 	~CUSBHIDDevice (void);
 
-	boolean Configure (unsigned nReportSize = 0);
+	boolean Configure (unsigned nMaxReportSize = 0);
 
-private:
-	virtual void ReportHandler (const u8 *pReport) = 0;	// pReport is 0 on failure
-
-private:
+protected:
+	// has to be called from Configure() in derived class, when initialization is done
 	boolean StartRequest (void);
 
+	// is called, when report arrives
+	virtual void ReportHandler (const u8 *pReport,
+				    unsigned nReportSize) = 0;		// pReport is 0 on failure
+
+	// cannot be called from ReportHandler() context
+	boolean SendToEndpointOut (const void *pBuffer, unsigned nBufSize,
+				   unsigned nTimeoutMs = USB_TIMEOUT_NONE);
+	// send is not completed on return (asynchronous operation)
+	boolean SendToEndpointOutAsync (const void *pBuffer, unsigned nBufSize,
+					unsigned nTimeoutMs = USB_TIMEOUT_NONE);
+	// returns resulting length or < 0 on failure, must not be used after StartRequest()
+	int ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize,
+				   unsigned nTimeoutMs = USB_TIMEOUT_NONE);
+
+private:
 	void CompletionRoutine (CUSBRequest *pURB);
 	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);
 
+	static void SendCompletionRoutine (CUSBRequest *pURB, void *pParam, void *pContext);
+
 private:
-	unsigned m_nReportSize;
+	unsigned m_nMaxReportSize;
 
 	CUSBEndpoint *m_pReportEndpoint;
+	CUSBEndpoint *m_pEndpointOut;		// interrupt out EP (optional)
 
 	CUSBRequest *m_pURB;
 

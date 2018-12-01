@@ -159,7 +159,7 @@ boolean CDWHCIDevice::Initialize (void)
 	return TRUE;
 }
 
-boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB)
+boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
 {
 	PeripheralEntry ();
 
@@ -169,6 +169,8 @@ boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB)
 	
 	if (pURB->GetEndpoint ()->GetType () == EndpointTypeControl)
 	{
+		assert (nTimeoutMs == USB_TIMEOUT_NONE);
+
 		TSetupData *pSetup = pURB->GetSetupData ();
 		assert (pSetup != 0);
 
@@ -210,7 +212,7 @@ boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB)
 		        || pURB->GetEndpoint ()->GetType () == EndpointTypeInterrupt);
 		assert (pURB->GetBufLen () > 0);
 		
-		if (!TransferStage (pURB, pURB->GetEndpoint ()->IsDirectionIn (), FALSE))
+		if (!TransferStage (pURB, pURB->GetEndpoint ()->IsDirectionIn (), FALSE, nTimeoutMs))
 		{
 			return FALSE;
 		}
@@ -221,7 +223,7 @@ boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB)
 	return TRUE;
 }
 
-boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB)
+boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
 {
 	PeripheralEntry ();
 
@@ -232,7 +234,8 @@ boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB)
 	
 	pURB->SetStatus (0);
 	
-	boolean bOK = TransferStageAsync (pURB, pURB->GetEndpoint ()->IsDirectionIn (), FALSE);
+	boolean bOK = TransferStageAsync (pURB, pURB->GetEndpoint ()->IsDirectionIn (),
+					  FALSE, nTimeoutMs);
 
 	PeripheralExit ();
 
@@ -572,7 +575,8 @@ void CDWHCIDevice::FlushRxFIFO (void)
 	m_pTimer->usDelay (1);		// Wait for 3 PHY clocks
 }
 
-boolean CDWHCIDevice::TransferStage (CUSBRequest *pURB, boolean bIn, boolean bStatusStage)
+boolean CDWHCIDevice::TransferStage (CUSBRequest *pURB, boolean bIn, boolean bStatusStage,
+				     unsigned nTimeoutMs)
 {
 	unsigned nWaitBlock = AllocateWaitBlock ();
 	if (nWaitBlock >= DWHCI_WAIT_BLOCKS)
@@ -586,7 +590,7 @@ boolean CDWHCIDevice::TransferStage (CUSBRequest *pURB, boolean bIn, boolean bSt
 	assert (!m_bWaiting[nWaitBlock]);
 	m_bWaiting[nWaitBlock] = TRUE;
 
-	if (!TransferStageAsync (pURB, bIn, bStatusStage))
+	if (!TransferStageAsync (pURB, bIn, bStatusStage, nTimeoutMs))
 	{
 		m_bWaiting[nWaitBlock] = FALSE;
 		FreeWaitBlock (nWaitBlock);
@@ -615,7 +619,8 @@ void CDWHCIDevice::CompletionRoutine (CUSBRequest *pURB, void *pParam, void *pCo
 	pThis->m_bWaiting[nWaitBlock] = FALSE;
 }
 
-boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolean bStatusStage)
+boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolean bStatusStage,
+					  unsigned nTimeoutMs)
 {
 	assert (pURB != 0);
 	
@@ -630,7 +635,7 @@ boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolea
 #endif
 
 	CDWHCITransferStageData *pStageData =
-		new CDWHCITransferStageData (nChannel, pURB, bIn, bStatusStage);
+		new CDWHCITransferStageData (nChannel, pURB, bIn, bStatusStage, nTimeoutMs);
 	assert (pStageData != 0);
 
 #ifndef USE_USB_SOF_INTR
@@ -941,20 +946,28 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		else if (   (nStatus & (DWHCI_HOST_CHAN_INT_NAK | DWHCI_HOST_CHAN_INT_NYET))
 			 && pStageData->IsPeriodic ())
 		{
+			if (pStageData->IsTimeout ())
+			{
+				pURB->SetStatus (0);
+			}
+			else
+			{
 #ifdef USE_USB_SOF_INTR
-			m_pStageData[nChannel] = 0;
-			FreeChannel (nChannel);
+				m_pStageData[nChannel] = 0;
+				FreeChannel (nChannel);
 
-			QueueDelayedTransaction (pStageData);
+				QueueDelayedTransaction (pStageData);
 #else
-			pStageData->SetState (StageStatePeriodicDelay);
+				pStageData->SetState (StageStatePeriodicDelay);
 
-			unsigned nInterval = pURB->GetEndpoint ()->GetInterval ();
+				unsigned nInterval = pURB->GetEndpoint ()->GetInterval ();
 
-			m_pTimer->StartKernelTimer (MSEC2HZ (nInterval), TimerStub, pStageData, this);
+				m_pTimer->StartKernelTimer (MSEC2HZ (nInterval), TimerStub,
+							    pStageData, this);
 #endif
 
-			break;
+				break;
+			}
 		}
 		else
 		{
@@ -1088,19 +1101,35 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			}
 			else
 			{
+				if (pStageData->IsTimeout ())
+				{
+					DisableChannelInterrupt (nChannel);
+
+					pURB->SetStatus (0);
+
+					delete pStageData;
+					m_pStageData[nChannel] = 0;
+
+					FreeChannel (nChannel);
+
+					pURB->CallCompletionRoutine ();
+				}
+				else
+				{
 #ifdef USE_USB_SOF_INTR
-				m_pStageData[nChannel] = 0;
-				FreeChannel (nChannel);
+					m_pStageData[nChannel] = 0;
+					FreeChannel (nChannel);
 
-				QueueDelayedTransaction (pStageData);
+					QueueDelayedTransaction (pStageData);
 #else
-				pStageData->SetState (StageStatePeriodicDelay);
+					pStageData->SetState (StageStatePeriodicDelay);
 
-				unsigned nInterval = pURB->GetEndpoint ()->GetInterval ();
+					unsigned nInterval = pURB->GetEndpoint ()->GetInterval ();
 
-				m_pTimer->StartKernelTimer (MSEC2HZ (nInterval),
-							    TimerStub, pStageData, this);
+					m_pTimer->StartKernelTimer (MSEC2HZ (nInterval),
+								    TimerStub, pStageData, this);
 #endif
+				}
 			}
 			break;
 		}

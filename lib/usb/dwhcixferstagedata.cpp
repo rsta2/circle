@@ -2,7 +2,7 @@
 // dwhcixferstagedata.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,23 +22,28 @@
 #include <circle/usb/dwhciframeschednper.h>
 #include <circle/usb/dwhciframeschednsplit.h>
 #include <circle/usb/dwhci.h>
+#include <circle/usb/usbhostcontroller.h>
 #include <circle/logger.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 						  CUSBRequest	*pURB,
 						  boolean	 bIn,
-						  boolean	 bStatusStage)
+						  boolean	 bStatusStage,
+						  unsigned	 nTimeoutMs)
 :	m_nChannel (nChannel),
 	m_pURB (pURB),
 	m_bIn (bIn),
 	m_bStatusStage (bStatusStage),
+	m_nTimeoutHZ (USB_TIMEOUT_NONE),
 	m_bSplitComplete (FALSE),
 	m_nTotalBytesTransfered (0),
 	m_nState (0),
 	m_nSubState (0),
 	m_nTransactionStatus (0),
 	m_pTempBuffer (0),
+	m_nStartTicksHZ (0),
 	m_pFrameScheduler (0)
 {
 	assert (m_pURB != 0);
@@ -124,6 +129,15 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 			m_pFrameScheduler = new CDWHCIFrameSchedulerNoSplit (IsPeriodic ());
 			assert (m_pFrameScheduler != 0);
 		}
+	}
+
+	if (nTimeoutMs != USB_TIMEOUT_NONE)
+	{
+		assert (m_pEndpoint->GetType () == EndpointTypeInterrupt);
+
+		m_nTimeoutHZ = MSEC2HZ (nTimeoutMs);
+		assert (m_nTimeoutHZ > 0);
+		m_nStartTicksHZ = CTimer::Get ()->GetTicks ();
 	}
 }
 
@@ -429,6 +443,16 @@ u32 CDWHCITransferStageData::GetResultLen (void) const
 	}
 	
 	return m_nTotalBytesTransfered;
+}
+
+boolean CDWHCITransferStageData::IsTimeout (void) const
+{
+	if (m_nTimeoutHZ == USB_TIMEOUT_NONE)
+	{
+		return FALSE;
+	}
+
+	return CTimer::Get ()->GetTicks ()-m_nStartTicksHZ >= m_nTimeoutHZ ? TRUE : FALSE;
 }
 
 CUSBRequest *CDWHCITransferStageData::GetURB (void) const

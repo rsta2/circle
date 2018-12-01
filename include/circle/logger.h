@@ -2,7 +2,7 @@
 // logger.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,11 +33,11 @@
 
 enum TLogSeverity
 {
-	LogPanic,
-	LogError,
-	LogWarning,
-	LogNotice,
-	LogDebug
+	LogPanic,	// Halt the system after processing this message
+	LogError,	// Severe error in this component, system may continue to work
+	LogWarning,	// Non-severe problem, component continues to work
+	LogNotice,	// Informative message, which is interesting for the system user
+	LogDebug	// Message, which is only interesting for debugging this component
 };
 
 struct TLogEvent;

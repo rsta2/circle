@@ -2,7 +2,7 @@
 // devicenameservice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,6 +72,68 @@ void CDeviceNameService::AddDevice (const char *pName, CDevice *pDevice, boolean
 	m_SpinLock.Release ();
 }
 
+void CDeviceNameService::AddDevice (const char *pPrefix, unsigned nIndex,
+				    CDevice *pDevice, boolean bBlockDevice)
+{
+	CString Name;
+	Name.Format ("%s%u", pPrefix, nIndex);
+
+	AddDevice (Name, pDevice, bBlockDevice);
+}
+
+void CDeviceNameService::RemoveDevice (const char *pName, boolean bBlockDevice)
+{
+	assert (pName != 0);
+
+	m_SpinLock.Acquire ();
+
+	TDeviceInfo *pInfo = m_pList;
+	TDeviceInfo *pPrev = 0;
+	while (pInfo != 0)
+	{
+		assert (pInfo->pName != 0);
+		if (   strcmp (pName, pInfo->pName) == 0
+		    && pInfo->bBlockDevice == bBlockDevice)
+		{
+			break;
+		}
+
+		pPrev = pInfo;
+		pInfo = pInfo->pNext;
+	}
+
+	if (pInfo == 0)
+	{
+		m_SpinLock.Release ();
+
+		return;
+	}
+
+	if (pPrev == 0)
+	{
+		m_pList = pInfo->pNext;
+	}
+	else
+	{
+		pPrev->pNext = pInfo->pNext;
+	}
+
+	m_SpinLock.Release ();
+
+	delete [] pInfo->pName;
+	pInfo->pName = 0;
+	pInfo->pDevice = 0;
+	delete pInfo;
+}
+
+void CDeviceNameService::RemoveDevice (const char *pPrefix, unsigned nIndex, boolean bBlockDevice)
+{
+	CString Name;
+	Name.Format ("%s%u", pPrefix, nIndex);
+
+	RemoveDevice (Name, bBlockDevice);
+}
+
 CDevice *CDeviceNameService::GetDevice (const char *pName, boolean bBlockDevice)
 {
 	assert (pName != 0);
@@ -99,6 +161,14 @@ CDevice *CDeviceNameService::GetDevice (const char *pName, boolean bBlockDevice)
 	m_SpinLock.Release ();
 
 	return 0;
+}
+
+CDevice *CDeviceNameService::GetDevice (const char *pPrefix, unsigned nIndex, boolean bBlockDevice)
+{
+	CString Name;
+	Name.Format ("%s%u", pPrefix, nIndex);
+
+	return GetDevice (Name, bBlockDevice);
 }
 
 void CDeviceNameService::ListDevices (CDevice *pTarget)

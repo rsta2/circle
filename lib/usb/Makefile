@@ -25,8 +25,9 @@ OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o dwhcixactqueue.o \
 	  smsc951x.o lan7800.o macaddress.o netdevice.o usbdevicefactory.o usbstandardhub.o \
 	  usbmassdevice.o \
 	  dwhciframeschednper.o dwhciframeschedper.o usbkeyboard.o \
-	  dwhcirootport.o usbhiddevice.o usbmouse.o usbgamepad.o \
-	  usbfunction.o \
+	  dwhcirootport.o usbhiddevice.o usbmouse.o \
+	  usbgamepad.o usbgamepadstandard.o usbgamepadps3.o usbgamepadps4.o usbgamepadxbox360.o \
+	  usbgamepadxboxone.o usbgamepadswitchpro.o usbfunction.o \
 	  dwhciframeschednsplit.o usbprinter.o usbbluetooth.o usbmidi.o usbcdcethernet.o
 
 libusb.a: $(OBJS)
