@@ -12,6 +12,8 @@
 #include "diskio.h"		/* FatFs lower layer API */
 #include <circle/device.h>
 #include <circle/devicenameservice.h>
+#include <circle/util.h>
+#include <circle/types.h>
 #include <assert.h>
 
 #if FF_MIN_SS != FF_MAX_SS
@@ -32,6 +34,9 @@ static const char *s_pVolumeName[FF_VOLUMES] =
 };
 
 static CDevice *s_pVolume[FF_VOLUMES] = {0};
+
+static u8 *s_pBuffer = 0;
+static unsigned s_nBufferSize = 0;
 
 
 
@@ -100,13 +105,36 @@ DRESULT disk_read (
 		return RES_NOTRDY;
 	}
 
+	/* Ensure that the transfer buffer is word aligned */
+	BYTE *pBuffer = buff;
+	unsigned nSize = count * SECTOR_SIZE;
+	if (((uintptr) pBuffer & 3) != 0)
+	{
+		if (s_nBufferSize < nSize)
+		{
+			delete [] s_pBuffer;
+
+			s_nBufferSize = nSize;
+
+			s_pBuffer = new u8[s_nBufferSize];
+			assert (s_pBuffer != 0);
+		}
+
+		pBuffer = s_pBuffer;
+	}
+
 	QWORD offset = sector;
 	offset *= SECTOR_SIZE;
 	pDevice->Seek (offset);
 
-	if (pDevice->Read (buff, count * SECTOR_SIZE) < 0)
+	if (pDevice->Read (pBuffer, nSize) < 0)
 	{
 		return RES_ERROR;
+	}
+
+	if (pBuffer != buff)
+	{
+		memcpy (buff, pBuffer, nSize);
 	}
 
 	return RES_OK;
@@ -136,11 +164,31 @@ DRESULT disk_write (
 		return RES_NOTRDY;
 	}
 
+	/* Ensure that the transfer buffer is word aligned */
+	const BYTE *pBuffer = buff;
+	unsigned nSize = count * SECTOR_SIZE;
+	if (((uintptr) pBuffer & 3) != 0)
+	{
+		if (s_nBufferSize < nSize)
+		{
+			delete [] s_pBuffer;
+
+			s_nBufferSize = nSize;
+
+			s_pBuffer = new u8[s_nBufferSize];
+			assert (s_pBuffer != 0);
+		}
+
+		memcpy (s_pBuffer, buff, nSize);
+
+		pBuffer = s_pBuffer;
+	}
+
 	QWORD offset = sector;
 	offset *= SECTOR_SIZE;
 	pDevice->Seek (offset);
 
-	if (pDevice->Write (buff, count * SECTOR_SIZE) < 0)
+	if (pDevice->Write (pBuffer, nSize) < 0)
 	{
 		return RES_ERROR;
 	}
