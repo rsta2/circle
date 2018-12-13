@@ -64,6 +64,11 @@ CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
 		}
 	}
 
+	if (s_nGPIOBaseAddress != 0)
+	{
+		write32 (s_nGPIOBaseAddress + m_nPin * 4, 0);
+	}
+
 	s_SpinLock.Release ();
 	
 	Write (LOW);
