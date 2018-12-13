@@ -28,7 +28,8 @@ static const char FromUSBMouse[] = "umouse";
 
 CUSBMouseDevice::CUSBMouseDevice (CUSBFunction *pFunction)
 :	CUSBHIDDevice (pFunction, REPORT_SIZE),
-	m_pMouseDevice (0)
+	m_pMouseDevice (0),
+	m_pHIDReportDescriptor (0)
 {
 }
 
@@ -36,10 +37,37 @@ CUSBMouseDevice::~CUSBMouseDevice (void)
 {
 	delete m_pMouseDevice;
 	m_pMouseDevice = 0;
+
+	delete [] m_pHIDReportDescriptor;
+	m_pHIDReportDescriptor = 0;
 }
 
 boolean CUSBMouseDevice::Configure (void)
 {
+	TUSBHIDDescriptor *pHIDDesc = (TUSBHIDDescriptor *) GetDescriptor (DESCRIPTOR_HID);
+	if (   pHIDDesc == 0
+	    || pHIDDesc->wReportDescriptorLength == 0)
+	{
+		ConfigurationError (FromUSBMouse);
+
+		return FALSE;
+	}
+
+	m_usReportDescriptorLength = pHIDDesc->wReportDescriptorLength;
+	m_pHIDReportDescriptor = new u8[m_usReportDescriptorLength];
+	assert (m_pHIDReportDescriptor != 0);
+
+	if (   GetHost ()->GetDescriptor (GetEndpoint0 (),
+					  pHIDDesc->bReportDescriptorType, DESCRIPTOR_INDEX_DEFAULT,
+					  m_pHIDReportDescriptor, m_usReportDescriptorLength,
+					  REQUEST_IN | REQUEST_TO_INTERFACE, GetInterfaceNumber ())
+	    != m_usReportDescriptorLength)
+	{
+		CLogger::Get ()->Write (FromUSBMouse, LogError, "Cannot get HID report descriptor");
+
+		return FALSE;
+	}
+
 	if (!CUSBHIDDevice::Configure ())
 	{
 		CLogger::Get ()->Write (FromUSBMouse, LogError, "Cannot configure HID device");
