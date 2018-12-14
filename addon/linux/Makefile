@@ -10,7 +10,8 @@ OBJS	= linuxdevice.o linuxemu.o \
 	  semaphore.o spinlock.o sprintf.o timer.o
 
 liblinuxemu.a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

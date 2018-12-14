@@ -86,19 +86,27 @@ CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding \
 CPPFLAGS+= $(CFLAGS) -std=c++14
 
 %.o: %.S
-	$(AS) $(AFLAGS) -c -o $@ $<
+	@echo "  AS    $@"
+	@$(AS) $(AFLAGS) -c -o $@ $<
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	@echo "  CC    $@"
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
 %.o: %.cpp
-	$(CPP) $(CPPFLAGS) -c -o $@ $<
+	@echo "  CPP   $@"
+	@$(CPP) $(CPPFLAGS) -c -o $@ $<
 
 $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.ld
-	$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
-	$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
-	$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
-	wc -c $(TARGET).img
+	@echo "  LD    $(TARGET).elf"
+	@$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld \
+		$(CIRCLEHOME)/lib/startup.o $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
+	@echo "  DUMP  $(TARGET).lst"
+	@$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
+	@echo "  COPY  $(TARGET).img"
+	@$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
+	@echo -n "  WC    $(TARGET).img => "
+	@wc -c < $(TARGET).img
 
 clean:
 	rm -f *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
@@ -113,7 +121,8 @@ FLASHBAUD ?= 115200
 REBOOTMAGIC ?=
 
 $(TARGET).hex: $(TARGET).img
-	$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
+	@echo "  COPY  $(TARGET).hex"
+	@$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
 
 flash: $(TARGET).hex
 ifneq ($(strip $(REBOOTMAGIC)),)

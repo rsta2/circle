@@ -9,7 +9,8 @@ OBJS	= vchiqdevice.o \
 	  vchiq_shim.o vchiq_util.o
 
 libvchiq.a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

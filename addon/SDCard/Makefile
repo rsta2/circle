@@ -7,7 +7,8 @@ CIRCLEHOME = ../..
 OBJS	= emmc.o
 
 libsdcard.a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

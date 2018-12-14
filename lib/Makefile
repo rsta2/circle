@@ -43,5 +43,6 @@ OBJS	+= new.o purecall.o
 endif
 
 libcircle.a: $(OBJS)
-	rm -f libcircle.a
-	$(AR) cr libcircle.a $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)

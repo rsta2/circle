@@ -31,7 +31,8 @@ OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o dwhcixactqueue.o \
 	  dwhciframeschednsplit.o usbprinter.o usbbluetooth.o usbmidi.o usbcdcethernet.o
 
 libusb.a: $(OBJS)
-	rm -f libusb.a
-	$(AR) cr libusb.a $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk
