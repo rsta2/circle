@@ -2,7 +2,7 @@
 // armv6mmu.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,9 +17,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _armv6mmu_h
-#define _armv6mmu_h
+#ifndef _circle_armv6mmu_h
+#define _circle_armv6mmu_h
 
+#include <circle/sysconfig.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -47,6 +48,8 @@
 #define DOMAIN_CLIENT		1
 #define DOMAIN_MANAGER		3
 
+#define ARMV6MMU_FAULT			0x00000		// no access
+
 struct TARMV6MMU_LEVEL1_SECTION_DESCRIPTOR		// subpages disabled
 {
 	u32	Value10		: 2,		// set to 2
@@ -65,6 +68,17 @@ struct TARMV6MMU_LEVEL1_SECTION_DESCRIPTOR		// subpages disabled
 		Base		: 12;		// base address [31:20]
 }
 PACKED;
+
+#ifndef ARM_ALLOW_MULTI_CORE
+#define ARMV6MMUL1SECTION_NORMAL	0x0040E		// outer and inner write back, no write allocate
+#define ARMV6MMUL1SECTION_NORMAL_XN	0x0041E		//	+ execute never
+#else
+							// required for spin locks, TODO: shared pool
+#define ARMV6MMUL1SECTION_NORMAL	0x1040E		//	+ shareable
+#define ARMV6MMUL1SECTION_NORMAL_XN	0x1041E		//	+ shareable and execute never
+#endif
+#define ARMV6MMUL1SECTION_DEVICE	0x10416		// shared device
+#define ARMV6MMUL1SECTION_COHERENT	0x10412		// strongly ordered
 
 #define ARMV6MMUL1SECTIONBASE(addr)	(((addr) >> 20) & 0xFFF)
 #define ARMV6MMUL1SECTIONPTR(base)	((void *) ((base) << 20))

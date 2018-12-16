@@ -2,7 +2,7 @@
 // memory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,16 +32,14 @@
 			 | ARM_CONTROL_L1_INSTRUCTION_CACHE	\
 			 | ARM_CONTROL_BRANCH_PREDICTION	\
 			 | ARM_CONTROL_EXTENDED_PAGE_TABLE)
-
-#define TTBCR_SPLIT	3
 #else
 #define MMU_MODE	(  ARM_CONTROL_MMU			\
 			 | ARM_CONTROL_L1_CACHE			\
 			 | ARM_CONTROL_L1_INSTRUCTION_CACHE	\
 			 | ARM_CONTROL_BRANCH_PREDICTION)
-
-#define TTBCR_SPLIT	2
 #endif
+
+#define TTBCR_SPLIT	0
 
 CMemorySystem *CMemorySystem::s_pThis = 0;
 
@@ -53,8 +51,7 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 :	m_bEnableMMU (FALSE),
 	m_nMemSize (USE_RPI_STUB_AT),
 #endif
-	m_pPageTable0Default (0),
-	m_pPageTable1 (0)
+	m_pPageTable (0)
 {
 	if (s_pThis != 0)	// ignore second instance
 	{
@@ -81,11 +78,8 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 
 	if (m_bEnableMMU)
 	{
-		m_pPageTable0Default = new CPageTable (m_nMemSize);
-		assert (m_pPageTable0Default != 0);
-
-		m_pPageTable1 = new CPageTable;
-		assert (m_pPageTable1 != 0);
+		m_pPageTable = new CPageTable (m_nMemSize);
+		assert (m_pPageTable != 0);
 
 		EnableMMU ();
 
@@ -115,11 +109,8 @@ CMemorySystem::~CMemorySystem (void)
 		asm volatile ("mcr p15, 0, %0, c8, c7,  0" : : "r" (0) : "memory");
 	}
 	
-	delete m_pPageTable1;
-	m_pPageTable1 = 0;
-	
-	delete m_pPageTable0Default;
-	m_pPageTable0Default = 0;
+	delete m_pPageTable;
+	m_pPageTable = 0;
 }
 
 #ifdef ARM_ALLOW_MULTI_CORE
@@ -139,69 +130,6 @@ u32 CMemorySystem::GetMemSize (void) const
 	assert (s_pThis != 0);
 	return s_pThis->m_nMemSize;
 }
-
-#if 0			// tested on Raspberry Pi 1 only and currently not used in Circle
-
-void CMemorySystem::SetPageTable0 (CPageTable *pPageTable, u32 nContextID)
-{
-	assert (m_bEnableMMU);
-	
-	if (pPageTable == 0)
-	{
-		pPageTable = m_pPageTable0Default;
-	}
-	
-	u32 nOldContextID;
-	asm volatile ("mrc p15, 0, %0, c13, c0,  1" : "=r" (nOldContextID));
-
-	asm volatile ("mcr p15, 0, %0, c2, c0,  0" : : "r" (pPageTable->GetBaseAddress ()) : "memory");
-
-	DataSyncBarrier ();
-	asm volatile ("mcr p15, 0, %0, c13, c0,  1" : : "r" (nContextID) : "memory");
-	InstructionMemBarrier ();
-
-	// invalidate on ASID match unified TLB
-	asm volatile ("mcr p15, 0, %0, c8, c7,  2" : : "r" (nOldContextID & 0xFF) : "memory");
-}
-
-void CMemorySystem::SetPageTable0 (u32 nTTBR0, u32 nContextID)
-{
-	assert (m_bEnableMMU);
-	
-	u32 nOldContextID;
-	asm volatile ("mrc p15, 0, %0, c13, c0,  1" : "=r" (nOldContextID));
-
-	asm volatile ("mcr p15, 0, %0, c2, c0,  0" : : "r" (nTTBR0) : "memory");
-
-	DataSyncBarrier ();
-	asm volatile ("mcr p15, 0, %0, c13, c0,  1" : : "r" (nContextID) : "memory");
-	InstructionMemBarrier ();
-
-	// invalidate on ASID match unified TLB
-	asm volatile ("mcr p15, 0, %0, c8, c7,  2" : : "r" (nOldContextID & 0xFF) : "memory");
-}
-
-u32 CMemorySystem::GetTTBR0 (void) const
-{
-	assert (m_bEnableMMU);
-
-	u32 nTTBR0;
-	asm volatile ("mrc p15, 0, %0, c2, c0,  0" : "=r" (nTTBR0));
-	
-	return nTTBR0;
-}
-
-u32 CMemorySystem::GetContextID (void) const
-{
-	assert (m_bEnableMMU);
-
-	u32 nContextID;
-	asm volatile ("mrc p15, 0, %0, c13, c0,  1" : "=r" (nContextID));
-	
-	return nContextID;
-}
-
-#endif
 
 CMemorySystem *CMemorySystem::Get (void)
 {
@@ -230,16 +158,11 @@ void CMemorySystem::EnableMMU (void)
 	asm volatile ("mcr p15, 0, %0, c2, c0,  2" : : "r" (TTBCR_SPLIT));
 
 	// set TTBR0
-	assert (m_pPageTable0Default != 0);
-	asm volatile ("mcr p15, 0, %0, c2, c0,  0" : : "r" (m_pPageTable0Default->GetBaseAddress ()));
+	assert (m_pPageTable != 0);
+	asm volatile ("mcr p15, 0, %0, c2, c0,  0" : : "r" (m_pPageTable->GetBaseAddress ()));
 
-	// set TTBR1
-	assert (m_pPageTable1 != 0);
-	asm volatile ("mcr p15, 0, %0, c2, c0,  1" : : "r" (m_pPageTable1->GetBaseAddress ()));
-	
-	// set Domain Access Control register (Domain 0 and 1 to client)
-	asm volatile ("mcr p15, 0, %0, c3, c0,  0" : : "r" (  DOMAIN_CLIENT << 0
-							    | DOMAIN_CLIENT << 2));
+	// set Domain Access Control register (Domain 0 to client)
+	asm volatile ("mcr p15, 0, %0, c3, c0,  0" : : "r" (DOMAIN_CLIENT << 0));
 
 #ifndef ARM_ALLOW_MULTI_CORE
 	InvalidateDataCache ();
