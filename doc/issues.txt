@@ -17,6 +17,8 @@ Known issues of Circle are:
 
 	https://github.com/smuehlst/circle-stdlib
 
+* Some modules in the addon/ subdirectory will not build with STDLIB_SUPPORT = 0.
+
 
 You can see or report further issues here:
 
