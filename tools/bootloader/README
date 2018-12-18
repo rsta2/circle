@@ -1,6 +1,6 @@
 All credits for this bootloader go to dwelch67 (see: https://github.com/dwelch67/raspberrypi).
 This is a modified version of the original bootloader, which allows a faster and configurable
-baudrate.
+baudrate. It also integrates the AArch32 and AArch64 versions.
 
 ----------------------ORIGINAL README--------------------------------------------
 This is a very simple bootloader.  Instead of the sd dance (see
