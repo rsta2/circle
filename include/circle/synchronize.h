@@ -2,7 +2,7 @@
 // synchronize.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,10 @@
 //
 #ifndef _circle_synchronize_h
 #define _circle_synchronize_h
+
+#if AARCH == 64
+	#include <circle/synchronize64.h>
+#else
 
 #include <circle/macros.h>
 #include <circle/types.h>
@@ -126,6 +130,8 @@ void SyncDataAndInstructionCache (void);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif

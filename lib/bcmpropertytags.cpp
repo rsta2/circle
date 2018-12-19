@@ -22,7 +22,7 @@
 #include <circle/synchronize.h>
 #include <circle/bcm2835.h>
 #include <circle/memory.h>
-#include <circle/sysconfig.h>
+#include <circle/macros.h>
 #include <assert.h>
 
 struct TPropertyBuffer
@@ -34,7 +34,8 @@ struct TPropertyBuffer
 	#define CODE_RESPONSE_FAILURE	0x80000001
 	u8	Tags[0];
 	// end tag follows
-};
+}
+PACKED;
 
 CBcmPropertyTags::CBcmPropertyTags (void)
 :	m_MailBox (BCM_MAILBOX_PROP_OUT)
@@ -93,7 +94,7 @@ boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
 
 	DataSyncBarrier ();
 
-	u32 nBufferAddress = BUS_ADDRESS ((u32) pBuffer);
+	u32 nBufferAddress = BUS_ADDRESS ((uintptr) pBuffer);
 	if (m_MailBox.WriteRead (nBufferAddress) != nBufferAddress)
 	{
 		return FALSE;

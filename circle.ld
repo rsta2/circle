@@ -2,10 +2,14 @@
  * circle.ld
  */
 
+ENTRY(_start)
+
 SECTIONS
 {
-	. = 0x8000;
-	
+	.init : {
+		*(.init)
+	}
+
 	.text : {
 		*(.text*)
 

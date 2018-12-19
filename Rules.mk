@@ -18,14 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-ifeq ($(strip $(CIRCLEHOME)),)
-CIRCLEHOME = ..
-endif
+CIRCLEHOME ?= ..
 
 -include $(CIRCLEHOME)/Config.mk
 
-RASPPI	?= 1
-PREFIX	?= arm-none-eabi-
+AARCH	 ?= 32
+RASPPI	 ?= 1
+PREFIX	 ?= arm-none-eabi-
+PREFIX64 ?= aarch64-linux-gnu-
 
 # see: doc/stdlib-support.txt
 STDLIB_SUPPORT ?= 1
@@ -39,15 +39,28 @@ AS	= $(CC)
 LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
 
+ifeq ($(strip $(AARCH)),32)
 ifeq ($(strip $(RASPPI)),1)
 ARCH	?= -march=armv6k -mtune=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
 ARCH	?= -march=armv7-a -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7
-else
+else ifeq ($(strip $(RASPPI)),3)
 ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel8-32
+else
+$(error RASPPI must be set to 1, 2 or 3)
+endif
+LOADADDR = 0x8000
+else ifeq ($(strip $(AARCH)),64)
+RASPPI	= 3
+PREFIX	= $(PREFIX64)
+ARCH	?= -march=armv8-a -mtune=cortex-a53 -mlittle-endian -mcmodel=small
+TARGET	?= kernel8
+LOADADDR = 0x80000
+else
+$(error AARCH must be set to 32 or 64)
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),0)
@@ -78,11 +91,11 @@ endif
 OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
+DEFINE	+= -D__circle__ -DAARCH=$(AARCH) -DRASPPI=$(RASPPI) \
+	   -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) #-DNDEBUG
 
-AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) $(INCLUDE) $(OPTIMIZE)
-CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding \
-	   -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
-	   $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
+AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
+CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding $(DEFINE) $(INCLUDE) $(OPTIMIZE) -g
 CPPFLAGS+= $(CFLAGS) -std=c++14
 
 %.o: %.S
@@ -97,10 +110,10 @@ CPPFLAGS+= $(CFLAGS) -std=c++14
 	@echo "  CPP   $@"
 	@$(CPP) $(CPPFLAGS) -c -o $@ $<
 
-$(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.ld
+$(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@echo "  LD    $(TARGET).elf"
-	@$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld \
-		$(CIRCLEHOME)/lib/startup.o $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
+	@$(LD) -o $(TARGET).elf -Map $(TARGET).map --section-start=.init=$(LOADADDR) \
+		-T $(CIRCLEHOME)/circle.ld $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
 	@echo "  DUMP  $(TARGET).lst"
 	@$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
 	@echo "  COPY  $(TARGET).img"

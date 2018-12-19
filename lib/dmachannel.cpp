@@ -87,7 +87,7 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 	m_pControlBlockBuffer = new u8[sizeof (TDMAControlBlock) + 31];
 	assert (m_pControlBlockBuffer != 0);
 
-	m_pControlBlock = (TDMAControlBlock *) (((u32) m_pControlBlockBuffer + 31) & ~31);
+	m_pControlBlock = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer + 31) & ~31);
 	m_pControlBlock->nReserved[0] = 0;
 	m_pControlBlock->nReserved[1] = 0;
 
@@ -139,17 +139,17 @@ void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t 
 						    | TI_SRC_INC
 						    | TI_DEST_WIDTH
 						    | TI_DEST_INC;
-	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((u32) pSource);
-	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((u32) pDestination);
+	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pSource);
+	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDestination);
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
 
-	m_nDestinationAddress = (u32) pDestination;
+	m_nDestinationAddress = (uintptr) pDestination;
 	m_nBufferLength = nLength;
 
-	CleanAndInvalidateDataCacheRange ((u32) pSource, nLength);
-	CleanAndInvalidateDataCacheRange ((u32) pDestination, nLength);
+	CleanAndInvalidateDataCacheRange ((uintptr) pSource, nLength);
+	CleanAndInvalidateDataCacheRange ((uintptr) pDestination, nLength);
 }
 
 void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ)
@@ -170,15 +170,15 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 						    | TI_DEST_INC
 						    | TI_WAIT_RESP;
 	m_pControlBlock->nSourceAddress           = nIOAddress;
-	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((u32) pDestination);
+	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDestination);
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
 
-	m_nDestinationAddress = (u32) pDestination;
+	m_nDestinationAddress = (uintptr) pDestination;
 	m_nBufferLength = nLength;
 
-	CleanAndInvalidateDataCacheRange ((u32) pDestination, nLength);
+	CleanAndInvalidateDataCacheRange ((uintptr) pDestination, nLength);
 }
 
 void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
@@ -198,7 +198,7 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 						    | TI_SRC_INC
 						    | TI_DEST_DREQ
 						    | TI_WAIT_RESP;
-	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((u32) pSource);
+	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pSource);
 	m_pControlBlock->nDestinationAddress      = nIOAddress;
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
@@ -206,7 +206,7 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 
 	m_nDestinationAddress = 0;
 
-	CleanAndInvalidateDataCacheRange ((u32) pSource, nLength);
+	CleanAndInvalidateDataCacheRange ((uintptr) pSource, nLength);
 }
 
 void CDMAChannel::SetupMemCopy2D (void *pDestination, const void *pSource,
@@ -228,8 +228,8 @@ void CDMAChannel::SetupMemCopy2D (void *pDestination, const void *pSource,
 						    | TI_DEST_WIDTH
 						    | TI_DEST_INC
 						    | TI_TDMODE;
-	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((u32) pSource);
-	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((u32) pDestination);
+	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pSource);
+	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDestination);
 	m_pControlBlock->nTransferLength          =   ((nBlockCount-1) << TXFR_LEN_YLENGTH_SHIFT)
 						    | (nBlockLength << TXFR_LEN_XLENGTH_SHIFT);
 	m_pControlBlock->n2DModeStride            = nBlockStride << STRIDE_DEST_SHIFT;
@@ -237,7 +237,7 @@ void CDMAChannel::SetupMemCopy2D (void *pDestination, const void *pSource,
 
 	m_nDestinationAddress = 0;
 
-	CleanAndInvalidateDataCacheRange ((u32) pSource, nBlockLength*nBlockCount);
+	CleanAndInvalidateDataCacheRange ((uintptr) pSource, nBlockLength*nBlockCount);
 }
 
 void CDMAChannel::SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam)
@@ -275,9 +275,9 @@ void CDMAChannel::Start (void)
 	assert (!(read32 (ARM_DMACHAN_CS (m_nChannel)) & CS_INT));
 	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nChannel)));
 
-	write32 (ARM_DMACHAN_CONBLK_AD (m_nChannel), BUS_ADDRESS ((u32) m_pControlBlock));
+	write32 (ARM_DMACHAN_CONBLK_AD (m_nChannel), BUS_ADDRESS ((uintptr) m_pControlBlock));
 
-	CleanAndInvalidateDataCacheRange ((u32) m_pControlBlock, sizeof *m_pControlBlock);
+	CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock, sizeof *m_pControlBlock);
 
 	write32 (ARM_DMACHAN_CS (m_nChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
 					      | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)

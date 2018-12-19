@@ -23,7 +23,6 @@
 #include <circle/memio.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
-#include <circle/types.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -99,6 +98,9 @@ boolean CTimer::Initialize (void)
 #endif
 
 #ifdef USE_PHYSICAL_COUNTER
+#if AARCH == 64
+	#error USE_PHYSICAL_COUNTER is not implemented yet!
+#endif
 	u32 nCNTFRQ;
 	asm volatile ("mrc p15, 0, %0, c14, c0, 0" : "=r" (nCNTFRQ));
 
@@ -319,10 +321,10 @@ CString *CTimer::GetTimeString (void)
 	return pString;
 }
 
-unsigned CTimer::StartKernelTimer (unsigned nDelay,
-				   TKernelTimerHandler *pHandler,
-				   void *pParam,
-				   void *pContext)
+TKernelTimerHandle CTimer::StartKernelTimer (unsigned nDelay,
+					     TKernelTimerHandler *pHandler,
+					     void *pParam,
+					     void *pContext)
 {
 	TKernelTimer *pTimer = new TKernelTimer;
 	assert (pTimer != 0);
@@ -368,10 +370,10 @@ unsigned CTimer::StartKernelTimer (unsigned nDelay,
 
 	m_KernelTimerSpinLock.Release ();
 
-	return (unsigned) pTimer;
+	return (TKernelTimerHandle) pTimer;
 }
 
-void CTimer::CancelKernelTimer (unsigned hTimer)
+void CTimer::CancelKernelTimer (TKernelTimerHandle hTimer)
 {
 	TKernelTimer *pTimer = (TKernelTimer *) hTimer;
 	assert (pTimer != 0);
@@ -418,7 +420,7 @@ void CTimer::PollKernelTimers (void)
 
 		TKernelTimerHandler *pHandler = pTimer->m_pHandler;
 		assert (pHandler != 0);
-		(*pHandler) ((unsigned) pTimer, pTimer->m_pParam, pTimer->m_pContext);
+		(*pHandler) ((TKernelTimerHandle) pTimer, pTimer->m_pParam, pTimer->m_pContext);
 
 #ifndef NDEBUG
 		pTimer->m_nMagic = 0;

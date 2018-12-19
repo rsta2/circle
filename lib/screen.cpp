@@ -89,7 +89,7 @@ boolean CScreenDevice::Initialize (void)
 			return FALSE;
 		}
 
-		m_pBuffer = (TScreenColor *) m_pFrameBuffer->GetBuffer ();
+		m_pBuffer = (TScreenColor *) (uintptr) m_pFrameBuffer->GetBuffer ();
 		m_nSize   = m_pFrameBuffer->GetSize ();
 		m_nPitch  = m_pFrameBuffer->GetPitch ();
 		m_nWidth  = m_pFrameBuffer->GetWidth ();
@@ -203,7 +203,7 @@ boolean CScreenDevice::SetStatus (const TScreenStatus &Status)
 	return TRUE;
 }
 
-int CScreenDevice::Write (const void *pBuffer, unsigned nCount)
+int CScreenDevice::Write (const void *pBuffer, size_t nCount)
 {
 	m_SpinLock.Acquire ();
 

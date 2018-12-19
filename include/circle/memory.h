@@ -20,7 +20,12 @@
 #ifndef _circle_memory_h
 #define _circle_memory_h
 
-#include <circle/pagetable.h>
+#if AARCH == 32
+	#include <circle/pagetable.h>
+#else
+	#include <circle/translationtable64.h>
+#endif
+
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
@@ -34,9 +39,9 @@ public:
 	void InitializeSecondary (void);
 #endif
 
-	u32 GetMemSize (void) const;
+	size_t GetMemSize (void) const;
 
-	static u32 GetCoherentPage (unsigned nSlot);
+	static uintptr GetCoherentPage (unsigned nSlot);
 #define COHERENT_SLOT_PROP_MAILBOX	0
 #define COHERENT_SLOT_GPIO_VIRTBUF	1
 #define COHERENT_SLOT_TOUCHBUF		2
@@ -51,9 +56,13 @@ private:
 
 private:
 	boolean m_bEnableMMU;
-	u32 m_nMemSize;
+	size_t m_nMemSize;
 
+#if AARCH == 32
 	CPageTable *m_pPageTable;
+#else
+	CTranslationTable *m_pTranslationTable;
+#endif
 
 	static CMemorySystem *s_pThis;
 };

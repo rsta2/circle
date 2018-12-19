@@ -2,7 +2,7 @@
 // debug.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 
 void debug_hexdump (const void *pStart, unsigned nBytes, const char *pSource = 0);
 
-void debug_stacktrace (const u32 *pStackPtr, const char *pSource = 0);
+void debug_stacktrace (const uintptr *pStackPtr, const char *pSource = 0);
 
 #ifdef DEBUG_CLICK
 

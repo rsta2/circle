@@ -2,7 +2,7 @@
 // classallocator.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,13 +21,17 @@
 #include <circle/alloc.h>
 #include <circle/logger.h>
 
-#define BLOCK_ALIGN	8U
+#define BLOCK_ALIGN	16U
 #define ALIGN_MASK	(~(BLOCK_ALIGN-1))
 
 struct TBlock
 {
 	unsigned       nMagic;
 #define BLOCK_MAGIC	0x4F425350U
+	unsigned       nPadding;
+#if AARCH == 32
+	unsigned       nPadding2;
+#endif
 	TBlock        *pNext;
 	unsigned char  Data[0];
 };

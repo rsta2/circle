@@ -36,9 +36,12 @@ struct TBlockHeader
 #define BLOCK_MAGIC	0x424C4D43
 	unsigned int	nSize		PACKED;
 	TBlockHeader	*pNext		PACKED;
+#if AARCH == 32
 	unsigned int	nPadding	PACKED;
+#endif
 	unsigned char	Data[0];
-};
+}
+PACKED;
 
 struct TBlockBucket
 {

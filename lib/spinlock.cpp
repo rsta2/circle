@@ -49,6 +49,7 @@ void CSpinLock::Acquire (void)
 
 	if (s_bEnabled)
 	{
+#if AARCH == 32
 		// See: ARMv7-A Architecture Reference Manual, Section D7.3
 		asm volatile
 		(
@@ -66,6 +67,21 @@ void CSpinLock::Acquire (void)
 
 			: : "r" ((uintptr) &m_nLocked)
 		);
+#else
+		// See: ARMv8-A Architecture Reference Manual, Section K10.3.1
+		asm volatile
+		(
+			"mov x1, %0\n"
+			"mov w2, #1\n"
+			"prfm pstl1keep, [x1]\n"
+			"1: ldaxr w3, [x1]\n"
+			"cbnz w3, 1b\n"
+			"stxr w3, w2, [x1]\n"
+			"cbnz w3, 1b\n"
+
+			: : "r" ((uintptr) &m_nLocked)
+		);
+#endif
 	}
 }
 
@@ -73,6 +89,7 @@ void CSpinLock::Release (void)
 {
 	if (s_bEnabled)
 	{
+#if AARCH == 32
 		// See: ARMv7-A Architecture Reference Manual, Section D7.3
 		asm volatile
 		(
@@ -87,6 +104,16 @@ void CSpinLock::Release (void)
 
 			: : "r" ((uintptr) &m_nLocked)
 		);
+#else
+		// See: ARMv8-A Architecture Reference Manual, Section K10.3.2
+		asm volatile
+		(
+			"mov x1, %0\n"
+			"stlr wzr, [x1]\n"
+
+			: : "r" ((uintptr) &m_nLocked)
+		);
+#endif
 	}
 
 	if (m_nTargetLevel >= IRQ_LEVEL)
