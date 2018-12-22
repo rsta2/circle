@@ -2,7 +2,7 @@
 // console.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -94,13 +94,13 @@ boolean CConsole::IsAlternateDeviceUsed (void) const
 	return m_bAlternateDeviceUsed;
 }
 
-int CConsole::Read (void *pBuffer, unsigned nCount)
+int CConsole::Read (void *pBuffer, size_t nCount)
 {
 	assert (m_pLineDiscipline != 0);
 	return m_pLineDiscipline->Read (pBuffer, nCount);
 }
 
-int CConsole::Write (const void *pBuffer, unsigned nCount)
+int CConsole::Write (const void *pBuffer, size_t nCount)
 {
 	assert (m_pOutputDevice != 0);
 	return m_pOutputDevice->Write (pBuffer, nCount);

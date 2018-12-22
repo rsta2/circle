@@ -2,7 +2,7 @@
 // keyboardbehaviour.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/input/keyboardbehaviour.h>
-#include <circle/timer.h>
 #include <assert.h>
 
 //#define REPEAT_ENABLE
@@ -172,7 +171,7 @@ void CKeyboardBehaviour::KeyReleased (u8 ucKeyCode)
 	}
 }
 
-void CKeyboardBehaviour::TimerHandler (unsigned hTimer)
+void CKeyboardBehaviour::TimerHandler (TKernelTimerHandle hTimer)
 {
 	assert (hTimer == m_hTimer);
 
@@ -185,7 +184,7 @@ void CKeyboardBehaviour::TimerHandler (unsigned hTimer)
 	}
 }
 
-void CKeyboardBehaviour::TimerStub (unsigned hTimer, void *pParam, void *pContext)
+void CKeyboardBehaviour::TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext)
 {
 	CKeyboardBehaviour *pThis = (CKeyboardBehaviour *) pContext;
 	assert (pThis != 0);

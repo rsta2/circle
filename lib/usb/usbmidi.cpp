@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@
 #include <circle/usb/usb.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
-#include <circle/timer.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -227,7 +226,7 @@ void CUSBMIDIDevice::CompletionStub (CUSBRequest *pURB, void *pParam, void *pCon
 	pThis->CompletionRoutine (pURB);
 }
 
-void CUSBMIDIDevice::TimerHandler (unsigned hTimer)
+void CUSBMIDIDevice::TimerHandler (TKernelTimerHandle hTimer)
 {
 	assert (m_hTimer == hTimer);
 	m_hTimer = 0;
@@ -235,7 +234,7 @@ void CUSBMIDIDevice::TimerHandler (unsigned hTimer)
 	StartRequest ();
 }
 
-void CUSBMIDIDevice::TimerStub (unsigned hTimer, void *pParam, void *pContext)
+void CUSBMIDIDevice::TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext)
 {
 	CUSBMIDIDevice *pThis = (CUSBMIDIDevice *) pContext;
 	assert (pThis != 0);

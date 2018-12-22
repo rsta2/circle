@@ -2,7 +2,7 @@
 // partition.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,14 +36,14 @@ CPartition::~CPartition (void)
 	m_pDevice = 0;
 }
 
-int CPartition::Read (void *pBuffer, unsigned nCount)
+int CPartition::Read (void *pBuffer, size_t nCount)
 {
 	if (m_bSeekError)
 	{
 		return -1;
 	}
 
-	unsigned long long ullTransferEnd = m_ullOffset + nCount + FS_BLOCK_SIZE-1;
+	u64 ullTransferEnd = m_ullOffset + nCount + FS_BLOCK_SIZE-1;
 	ullTransferEnd >>= FS_BLOCK_SHIFT;
 	if (ullTransferEnd > m_nNumberOfSectors)
 	{
@@ -54,14 +54,14 @@ int CPartition::Read (void *pBuffer, unsigned nCount)
 	return m_pDevice->Read (pBuffer, nCount);
 }
 
-int CPartition::Write (const void *pBuffer, unsigned nCount)
+int CPartition::Write (const void *pBuffer, size_t nCount)
 {
 	if (m_bSeekError)
 	{
 		return -1;
 	}
 
-	unsigned long long ullTransferEnd = m_ullOffset + nCount + FS_BLOCK_SIZE-1;
+	u64 ullTransferEnd = m_ullOffset + nCount + FS_BLOCK_SIZE-1;
 	ullTransferEnd >>= FS_BLOCK_SHIFT;
 	if (ullTransferEnd > m_nNumberOfSectors)
 	{
@@ -72,24 +72,24 @@ int CPartition::Write (const void *pBuffer, unsigned nCount)
 	return m_pDevice->Write (pBuffer, nCount);
 }
 
-unsigned long long CPartition::Seek (unsigned long long ullOffset)
+u64 CPartition::Seek (u64 ullOffset)
 {
 	m_bSeekError = TRUE;
 
 	if (   (ullOffset & FS_BLOCK_MASK) != 0
 	    || (ullOffset >> FS_BLOCK_SHIFT) >= m_nNumberOfSectors)
 	{
-		return (unsigned long long) -1;
+		return (u64) -1;
 	}
 
-	unsigned long long ullDeviceOffset = m_nFirstSector;
+	u64 ullDeviceOffset = m_nFirstSector;
 	ullDeviceOffset <<= FS_BLOCK_SHIFT;
 	ullDeviceOffset += ullOffset;
 	
 	assert (m_pDevice != 0);
 	if (m_pDevice->Seek (ullDeviceOffset) != ullDeviceOffset)
 	{
-		return (unsigned long long) -1;
+		return (u64) -1;
 	}
 
 	m_ullOffset = ullOffset;

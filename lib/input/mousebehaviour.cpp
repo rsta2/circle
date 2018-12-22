@@ -89,7 +89,7 @@ boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
 	TagSetCursorInfo.nWidth = CURSOR_WIDTH;
 	TagSetCursorInfo.nHeight = CURSOR_HEIGHT;
 	TagSetCursorInfo.nUnused = 0;
-	TagSetCursorInfo.nPixelPointer = BUS_ADDRESS ((u32) CursorSymbol);
+	TagSetCursorInfo.nPixelPointer = BUS_ADDRESS ((uintptr) CursorSymbol);
 	TagSetCursorInfo.nHotspotX = CURSOR_HOTSPOT_X;
 	TagSetCursorInfo.nHotspotY = CURSOR_HOTSPOT_Y;
 	if (!Tags.GetTag (PROPTAG_SET_CURSOR_INFO, &TagSetCursorInfo, sizeof TagSetCursorInfo, 6*4))

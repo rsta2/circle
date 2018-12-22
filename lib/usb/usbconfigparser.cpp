@@ -2,7 +2,7 @@
 // usbconfigparser.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -207,7 +207,7 @@ void CUSBConfigurationParser::Error (const char *pSource) const
 	assert (pSource != 0);
 	CLogger::Get ()->Write (pSource, LogError,
 				"Invalid configuration descriptor (offset 0x%X)",
-				(unsigned) m_pErrorPosition - (unsigned) m_pBuffer);
+				(unsigned) ((u8 *) m_pErrorPosition - (u8 *) m_pBuffer));
 #ifndef NDEBUG
 	debug_hexdump (m_pBuffer, m_nBufLen, pSource);
 #endif

@@ -96,7 +96,7 @@ private:
 
 #ifndef USE_USB_SOF_INTR
 	void TimerHandler (CDWHCITransferStageData *pStageData);
-	static void TimerStub (unsigned hTimer, void *pParam, void *pContext);
+	static void TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 #endif
 
 	unsigned AllocateChannel (void);
