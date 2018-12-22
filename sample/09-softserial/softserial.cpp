@@ -2,7 +2,7 @@
 // softserial.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "softserial.h"
-#include <circle/timer.h>
 #include <circle/synchronize.h>
 #include <assert.h>
 
@@ -222,7 +221,7 @@ void CSoftSerialDevice::TimerHandler (void)
 	m_bCurrentLevel = TRUE;
 }
 
-void CSoftSerialDevice::TimerStub (unsigned hTimer, void *pParam, void *pContext)
+void CSoftSerialDevice::TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext)
 {
 	CSoftSerialDevice *pThis = (CSoftSerialDevice *) pContext;
 	assert (pThis != 0);

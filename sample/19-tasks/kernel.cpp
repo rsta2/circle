@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -104,7 +104,7 @@ TShutdownMode CKernel::Run (void)
 	return ShutdownHalt;
 }
 
-void CKernel::TimerHandler (unsigned hTimer, void *pParam, void *pContext)
+void CKernel::TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext)
 {
 	CKernel *pThis = (CKernel *) pParam;
 	assert (pThis != 0);
