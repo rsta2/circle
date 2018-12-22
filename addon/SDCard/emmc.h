@@ -55,10 +55,10 @@ public:
 
 	boolean Initialize (void);
 
-	int Read (void *pBuffer, unsigned nCount);
-	int Write (const void *pBuffer, unsigned nCount);
+	int Read (void *pBuffer, size_t nCount);
+	int Write (const void *pBuffer, size_t nCount);
 
-	unsigned long long Seek (unsigned long long ullOffset);
+	u64 Seek (u64 ullOffset);
 
 private:
 	int PowerOn (void);
