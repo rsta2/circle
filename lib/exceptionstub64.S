@@ -94,7 +94,7 @@ VectorTable:
  * IRQ stub
  */
 #ifdef SAVE_VFP_REGS_ON_IRQ
-	SAVE_VFP_REGS_ON_IRQ is not implemented yet!
+	SAVE_VFP_REGS_ON_IRQ is not supported with AARCH = 64!
 #endif
 
 	.globl	IRQStub
@@ -153,7 +153,7 @@ IRQStub:
  * FIQ stub
  */
 #ifdef SAVE_VFP_REGS_ON_FIQ
-	SAVE_VFP_REGS_ON_FIQ is not implemented yet!
+	SAVE_VFP_REGS_ON_FIQ is not supported with AARCH = 64!
 #endif
 
 	.globl	FIQStub
