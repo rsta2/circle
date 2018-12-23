@@ -98,11 +98,13 @@ boolean CTimer::Initialize (void)
 #endif
 
 #ifdef USE_PHYSICAL_COUNTER
-#if AARCH == 64
-	#error USE_PHYSICAL_COUNTER is not implemented yet!
-#endif
+#if AARCH == 32
 	u32 nCNTFRQ;
 	asm volatile ("mrc p15, 0, %0, c14, c0, 0" : "=r" (nCNTFRQ));
+#else
+	u64 nCNTFRQ;
+	asm volatile ("mrs %0, CNTFRQ_EL0" : "=r" (nCNTFRQ));
+#endif
 
 	u32 nPrescaler = read32 (ARM_LOCAL_PRESCALER);
 
@@ -171,12 +173,21 @@ unsigned CTimer::GetClockTicks (void)
 
 	return nResult;
 #else
+#if AARCH == 32
 	InstructionSyncBarrier ();
 
 	u32 nCNTPCTLow, nCNTPCTHigh;
 	asm volatile ("mrrc p15, 0, %0, %1, c14" : "=r" (nCNTPCTLow), "=r" (nCNTPCTHigh));
 
 	return nCNTPCTLow;
+#else
+	InstructionSyncBarrier ();
+
+	u64 nCNTPCT;
+	asm volatile ("mrs %0, CNTPCT_EL0" : "=r" (nCNTPCT));
+
+	return (unsigned) nCNTPCT;
+#endif
 #endif
 }
 
