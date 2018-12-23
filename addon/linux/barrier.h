@@ -5,8 +5,8 @@
 #define dsb()		asm volatile ("mcr p15, 0, %0, c7, c10, 4" : : "r" (0) : "memory")
 #define dmb() 		asm volatile ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory")
 #else
-#define dsb()		asm volatile ("dsb" ::: "memory")
-#define dmb() 		asm volatile ("dmb" ::: "memory")
+#define dsb()		asm volatile ("dsb sy" ::: "memory")
+#define dmb() 		asm volatile ("dmb sy" ::: "memory")
 #endif
 
 #define wmb		dsb
