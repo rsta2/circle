@@ -30,6 +30,8 @@
 	#define MEGABYTE	0x100000
 #endif
 
+#define CORES			4				// must be a power of 2
+
 #define MEM_SIZE		(512 * MEGABYTE)		// default size
 #define GPU_MEM_SIZE		(64 * MEGABYTE)			// set in config.txt
 #define ARM_MEM_SIZE		(MEM_SIZE - GPU_MEM_SIZE)	// normally overwritten
@@ -40,17 +42,11 @@
 #define EXCEPTION_STACK_SIZE	0x8000
 #define PAGE_RESERVE		(16 * MEGABYTE)
 
-#define MEM_KERNEL_START	0x80000						// main code starts here
+#define MEM_KERNEL_START	0x80000					// main code starts here
 #define MEM_KERNEL_END		(MEM_KERNEL_START + KERNEL_MAX_SIZE)
-#define MEM_KERNEL_STACK	(MEM_KERNEL_END + KERNEL_STACK_SIZE)		// expands down
-#ifndef ARM_ALLOW_MULTI_CORE
-#define MEM_EXCEPTION_STACK	(MEM_KERNEL_STACK + EXCEPTION_STACK_SIZE)	// expands down
-#define MEM_EXCEPTION_STACK_END	MEM_EXCEPTION_STACK
-#else
-#define CORES			4						// must be a power of 2
+#define MEM_KERNEL_STACK	(MEM_KERNEL_END + KERNEL_STACK_SIZE)	// expands down
 #define MEM_EXCEPTION_STACK	(MEM_KERNEL_STACK + KERNEL_STACK_SIZE * (CORES-1) + EXCEPTION_STACK_SIZE)
 #define MEM_EXCEPTION_STACK_END	(MEM_EXCEPTION_STACK + EXCEPTION_STACK_SIZE * (CORES-1))
-#endif
 
 // coherent memory region (1 MB)
 #define MEM_COHERENT_REGION	((MEM_EXCEPTION_STACK_END + 2*MEGABYTE) & ~(MEGABYTE-1))
