@@ -585,7 +585,7 @@ boolean CDWHCIDevice::TransferStage (CUSBRequest *pURB, boolean bIn, boolean bSt
 	}
 	
 	assert (pURB != 0);
-	pURB->SetCompletionRoutine (CompletionRoutine, (void *) nWaitBlock, this);
+	pURB->SetCompletionRoutine (CompletionRoutine, (void *) (uintptr) nWaitBlock, this);
 
 	assert (!m_bWaiting[nWaitBlock]);
 	m_bWaiting[nWaitBlock] = TRUE;
@@ -613,7 +613,7 @@ void CDWHCIDevice::CompletionRoutine (CUSBRequest *pURB, void *pParam, void *pCo
 	CDWHCIDevice *pThis = (CDWHCIDevice *) pContext;
 	assert (pThis != 0);
 
-	unsigned nWaitBlock = (unsigned) pParam;
+	unsigned nWaitBlock = (unsigned) (uintptr) pParam;
 	assert (nWaitBlock < DWHCI_WAIT_BLOCKS);
 
 	pThis->m_bWaiting[nWaitBlock] = FALSE;
@@ -1279,7 +1279,7 @@ void CDWHCIDevice::TimerHandler (CDWHCITransferStageData *pStageData)
 	PeripheralExit ();
 }
 
-void CDWHCIDevice::TimerStub (unsigned /* hTimer */, void *pParam, void *pContext)
+void CDWHCIDevice::TimerStub (TKernelTimerHandle /* hTimer */, void *pParam, void *pContext)
 {
 	CDWHCIDevice *pThis = (CDWHCIDevice *) pContext;
 	assert (pThis != 0);

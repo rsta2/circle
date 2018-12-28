@@ -97,7 +97,7 @@ unsigned CHD44780Device::GetRows (void) const
 	return m_nRows;
 }
 
-int CHD44780Device::Write (const void *pBuffer, unsigned nCount)
+int CHD44780Device::Write (const void *pBuffer, size_t nCount)
 {
 	const char *pChar = (const char *) pBuffer;
 	assert (pChar != 0);

@@ -106,7 +106,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	}
 
 	assert (m_pBufferPointer != 0);
-	assert (((u32) m_pBufferPointer & 3) == 0);
+	assert (((uintptr) m_pBufferPointer & 3) == 0);
 
 	if (m_bSplitTransaction)
 	{
@@ -360,7 +360,7 @@ u32 CDWHCITransferStageData::GetDMAAddress (void) const
 {
 	assert (m_pBufferPointer != 0);
 
-	return (u32) m_pBufferPointer;
+	return (u32) (uintptr) m_pBufferPointer;
 }
 
 u32 CDWHCITransferStageData::GetBytesToTransfer (void) const

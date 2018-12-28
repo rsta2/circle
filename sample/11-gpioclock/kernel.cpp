@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -91,10 +91,10 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	unsigned nSamples = m_Screen.GetWidth ();
+	size_t nSamples = m_Screen.GetWidth ();
 	assert (nSamples > 0);
 	
-	unsigned *pBuffer = new unsigned[nSamples];
+	u32 *pBuffer = new u32[nSamples];
 	if (pBuffer == 0)
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Not enough memory");
@@ -103,7 +103,7 @@ TShutdownMode CKernel::Run (void)
 	CleanDataCache ();
 	InvalidateDataCache ();
 
-	unsigned nRunTime = Sampler (pBuffer, nSamples, 0, 0, SAMPLING_DELAY);
+	u32 nRunTime = Sampler (pBuffer, nSamples, 0, 0, SAMPLING_DELAY);
 	if (nRunTime == 0)
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Measurement of run time failed, try again!");

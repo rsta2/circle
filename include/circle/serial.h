@@ -56,13 +56,13 @@ public:
 	/// \param pBuffer Pointer to data to be sent
 	/// \param nCount Number of bytes to be sent
 	/// \return Number of bytes successfully sent (< 0 on error)
-	int Write (const void *pBuffer, unsigned nCount);
+	int Write (const void *pBuffer, size_t nCount);
 
 #ifndef USE_RPI_STUB_AT
 	/// \param pBuffer Pointer to buffer for received data
 	/// \param nCount Maximum number of bytes to be received
 	/// \return Number of bytes received (0 no data available, < 0 on error)
-	int Read (void *pBuffer, unsigned nCount);
+	int Read (void *pBuffer, size_t nCount);
 
 	/// \return Serial options mask (see serial options)
 	unsigned GetOptions (void) const;

@@ -2,7 +2,7 @@
 // string.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // ftoa() inspired by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
@@ -23,9 +23,15 @@
 #include <circle/util.h>
 
 #define FORMAT_RESERVE		64	// additional bytes to allocate
-#define MAX_NUMBER_LEN		11	// 32 bit octal number
 
-#define MAX_PRECISION		9	// floor (log10 (ULONG_MAX))
+#if AARCH == 32
+	#define MAX_NUMBER_LEN		11	// 32 bit octal number
+	#define MAX_PRECISION		9	// floor (log10 (ULONG_MAX))
+#else
+	#define MAX_NUMBER_LEN		22	// 64 bit octal number
+	#define MAX_PRECISION		19	// floor (log10 (ULONG_MAX))
+#endif
+
 #define MAX_FLOAT_LEN		(1+MAX_NUMBER_LEN+1+MAX_PRECISION)
 
 CString::CString (void)

@@ -148,7 +148,7 @@ int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 		return -ENOMEM;
 	}
 
-	WARN_ON(((int)slot_mem & (PAGE_SIZE - 1)) != 0);
+	WARN_ON(((intptr_t)slot_mem & (PAGE_SIZE - 1)) != 0);
 
 	vchiq_slot_zero = vchiq_init_slots(slot_mem, slot_mem_size);
 	if (!vchiq_slot_zero)
@@ -204,7 +204,7 @@ int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 
 	vchiq_log_info(vchiq_arm_log_level,
 		"vchiq_init - done (slots %x, phys %pad)",
-		(unsigned int)vchiq_slot_zero, &slot_phys);
+		(unsigned int)(uintptr_t)vchiq_slot_zero, &slot_phys);
 
 	vchiq_call_connected_callbacks();
 

@@ -81,7 +81,7 @@ public:
 	/// \param pBuffer Pointer to the characters to be written
 	/// \param nCount  Number of characters to be written
 	/// \return Number of written characters
-	int Write (const void *pBuffer, unsigned nCount);
+	int Write (const void *pBuffer, size_t nCount);
 
 	/// \brief Define the 5x7 font for the definable characters
 	/// \param chChar   Character code (0x80..0x87)

@@ -67,7 +67,7 @@ boolean CSpectrumScreen::Initialize (u8 *pVideoMem)
 		return FALSE;
 	}
 
-	m_pBuffer = (u32 *) m_pFrameBuffer->GetBuffer();
+	m_pBuffer = (u32 *) (uintptr) m_pFrameBuffer->GetBuffer();
 	assert (m_pBuffer != 0);
 
 	memset(m_pBuffer, 0xFF, m_pFrameBuffer->GetSize());

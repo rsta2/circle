@@ -18,6 +18,10 @@ bootloader:
 	cp ../tools/bootloader/kernel.img .
 	cp ../tools/bootloader/kernel7.img .
 
+bootloader64:
+	make -C "../tools/bootloader" kernel8.img
+	cp ../tools/bootloader/kernel8.img .
+
 clean:
-	rm -f bootcode.bin fixup.dat start.elf kernel.img kernel7.img LICENCE.broadcom
+	rm -f bootcode.bin fixup.dat start.elf kernel*.img LICENCE.broadcom
 	make clean -C "../tools/bootloader"

@@ -6,7 +6,7 @@
 //	Licensed under GPL2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,12 +62,20 @@ boolean CMultiCoreSupport::Initialize (void)
 
 	for (unsigned nCore = 1; nCore < CORES; nCore++)
 	{
+#if AARCH == 32
 		u32 nMailBoxClear = ARM_LOCAL_MAILBOX3_CLR0 + 0x10 * nCore;
 
 		DataSyncBarrier ();
+#else
+		TSpinTable *pSpinTable = (TSpinTable *) ARM_SPIN_TABLE_BASE;
+#endif
 
 		unsigned nTimeout = 100;
+#if AARCH == 32
 		while (read32 (nMailBoxClear) != 0)
+#else
+		while (pSpinTable->SpinCore[nCore] != 0)
+#endif
 		{
 			if (--nTimeout == 0)
 			{
@@ -79,11 +87,21 @@ boolean CMultiCoreSupport::Initialize (void)
 			CTimer::SimpleMsDelay (1);
 		}
 
+#if AARCH == 32
 		write32 (ARM_LOCAL_MAILBOX3_SET0 + 0x10 * nCore, (u32) &_start_secondary);
+#else
+		pSpinTable->SpinCore[nCore] = (uintptr) &_start_secondary;
+		// TODO: CleanDataCacheRange ((u64) pSpinTable, sizeof *pSpinTable);
+		CleanDataCache ();
+#endif
 		asm volatile ("sev");
 
 		nTimeout = 100;
+#if AARCH == 32
 		while (read32 (nMailBoxClear) != 0)
+#else
+		while (pSpinTable->SpinCore[nCore] != 0)
+#endif
 		{
 			if (--nTimeout == 0)
 			{
@@ -146,7 +164,7 @@ boolean CMultiCoreSupport::LocalInterruptHandler (void)
 		return FALSE;
 	}
 
-	u32 nMailBoxClear = ARM_LOCAL_MAILBOX0_CLR0 + 0x10 * nCore;
+	uintptr nMailBoxClear = ARM_LOCAL_MAILBOX0_CLR0 + 0x10 * nCore;
 	u32 nIPIMask = read32 (nMailBoxClear);
 	if (nIPIMask == 0)
 	{
@@ -175,7 +193,12 @@ void CMultiCoreSupport::EntrySecondary (void)
 	s_pThis->m_pMemorySystem->InitializeSecondary ();
 	
 	unsigned nCore = ThisCore ();
+#if AARCH == 32
 	write32 (ARM_LOCAL_MAILBOX3_CLR0 + 0x10 * nCore, 0);
+#else
+	TSpinTable *pSpinTable = (TSpinTable *) ARM_SPIN_TABLE_BASE;
+	pSpinTable->SpinCore[nCore] = 0;
+#endif
 
 	write32 (ARM_LOCAL_MAILBOX_INT_CONTROL0 + 4 * nCore, 1);
 	EnableIRQs ();

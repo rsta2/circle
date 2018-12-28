@@ -2,7 +2,7 @@
 // new.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,13 +18,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/alloc.h>
+#include <circle/types.h>
 
-void *operator new (unsigned nSize)
+void *operator new (size_t nSize)
 {
 	return malloc (nSize);
 }
 
-void *operator new[] (unsigned nSize)
+void *operator new[] (size_t nSize)
 {
 	return malloc (nSize);
 }
@@ -39,12 +40,12 @@ void operator delete[] (void *pBlock) noexcept
 	free (pBlock);
 }
 
-void operator delete (void *pBlock, unsigned nSize) noexcept
+void operator delete (void *pBlock, size_t nSize) noexcept
 {
 	free (pBlock);
 }
 
-void operator delete[] (void *pBlock, unsigned nSize) noexcept
+void operator delete[] (void *pBlock, size_t nSize) noexcept
 {
 	free (pBlock);
 }

@@ -394,7 +394,7 @@ void CVCHIQSoundBaseDevice::Callback (const VCHI_CALLBACK_REASON_T Reason, void 
 	vchi_service_use (m_hService);
 
 	VC_AUDIO_MSG_T Msg;
-	unsigned long nMsgLen;
+	uint32_t nMsgLen;
 	int nResult = vchi_msg_dequeue (m_hService, &Msg, sizeof Msg, &nMsgLen, VCHI_FLAGS_NONE);
 	if (nResult != 0)
 	{

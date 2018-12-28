@@ -108,7 +108,7 @@ private:
 	void StartTimer (unsigned nTimer, unsigned nHZ);
 	void StopTimer (unsigned nTimer);
 	void TimerHandler (unsigned nTimer);
-	static void TimerStub (unsigned hTimer, void *pParam, void *pContext);
+	static void TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
 #ifndef NDEBUG
 	void DumpStatus (void);
@@ -137,7 +137,7 @@ private:
 	CSynchronizationEvent m_Event;
 
 	CTimer *m_pTimer;
-	unsigned m_hTimer[TCPTimerUnknown];
+	TKernelTimerHandle m_hTimer[TCPTimerUnknown];
 	CSpinLock m_TimerSpinLock;
 
 	// Send Sequence Variables

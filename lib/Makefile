@@ -18,24 +18,34 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-OBJS	= actled.o alloc.o bcmmailbox.o bcmpropertytags.o gpiopin.o gpiopinfiq.o \
-	  memory.o synchronize.o sysinit.o timer.o util.o util_fast.o \
-	  bcmframebuffer.o device.o koptions.o pagetable.o screen.o nulldevice.o \
-	  assert.o chargenerator.o debug.o devicenameservice.o logger.o serial.o string.o \
-	  delayloop.o exceptionhandler.o exceptionstub.o interrupt.o usertimer.o \
-	  gpiomanager.o gpioclock.o dmachannel.o pwmsounddevice.o pwmsoundbasedevice.o pwmoutput.o tracer.o \
-	  i2cmaster.o i2cslave.o spimaster.o spimasterdma.o virtualgpiopin.o machineinfo.o \
-	  multicore.o spinlock.o bcmrandom.o cache-v7.o cputhrottle.o i2ssoundbasedevice.o \
-	  soundbasedevice.o ptrarray.o ptrlist.o classallocator.o time.o spimasteraux.o
+OBJS	= actled.o alloc.o assert.o bcmframebuffer.o bcmmailbox.o \
+	  bcmpropertytags.o bcmrandom.o chargenerator.o classallocator.o \
+	  cputhrottle.o debug.o delayloop.o device.o devicenameservice.o \
+	  dmachannel.o gpioclock.o gpiomanager.o gpiopin.o gpiopinfiq.o \
+	  i2cmaster.o i2cslave.o i2ssoundbasedevice.o interrupt.o koptions.o \
+	  logger.o machineinfo.o multicore.o nulldevice.o ptrarray.o ptrlist.o \
+	  pwmoutput.o pwmsoundbasedevice.o pwmsounddevice.o screen.o serial.o \
+	  soundbasedevice.o spimaster.o spimasteraux.o spimasterdma.o spinlock.o \
+	  string.o sysinit.o time.o timer.o tracer.o usertimer.o util.o \
+	  util_fast.o virtualgpiopin.o
 
-all: startup.o libcircle.a
+OBJS32	= cache-v7.o exceptionhandler.o exceptionstub.o memory.o pagetable.o \
+	  startup.o synchronize.o
 
-startup.o: startup.S
+OBJS64	= exceptionhandler64.o exceptionstub64.o memory64.o startup64.o \
+	  synchronize64.o translationtable64.o
+
+all: libcircle.a
 
 include ../Rules.mk
 
+ifeq ($(strip $(AARCH)),32)
+OBJS	+= $(OBJS32)
 ifeq ($(strip $(STDLIB_SUPPORT)),0)
 OBJS	+= libhelper.o libstub.o
+endif
+else
+OBJS	+= $(OBJS64)
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),3)

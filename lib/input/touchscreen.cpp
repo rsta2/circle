@@ -62,7 +62,7 @@ boolean CTouchScreenDevice::Initialize (void)
 {
 	assert (m_pFT5406Buffer == 0);
 
-	u32 nTouchBuffer = CMemorySystem::GetCoherentPage (COHERENT_SLOT_TOUCHBUF);
+	uintptr nTouchBuffer = CMemorySystem::GetCoherentPage (COHERENT_SLOT_TOUCHBUF);
 
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple TagSimple;

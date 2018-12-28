@@ -120,7 +120,7 @@ TShutdownMode CKernel::Run (void)
 		return ShutdownHalt;
 	}
 
-	unsigned long long ullOffset = 0 * UMSD_BLOCK_SIZE;
+	u64 ullOffset = 0 * UMSD_BLOCK_SIZE;
 	if (pUMSD1->Seek (ullOffset) != ullOffset)
 	{
 		m_Logger.Write (FromKernel, LogError, "Seek error");

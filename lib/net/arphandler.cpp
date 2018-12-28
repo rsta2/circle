@@ -2,7 +2,7 @@
 // arphandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 //
 #include <circle/net/arphandler.h>
 #include <circle/net/linklayer.h>
-#include <circle/timer.h>
 #include <circle/util.h>
 #include <circle/macros.h>
 #include <assert.h>
@@ -126,7 +125,7 @@ void CARPHandler::Process (void)
 		}
 	}
 
-	unsigned long nTicks = CTimer::Get ()->GetTicks ();
+	unsigned nTicks = CTimer::Get ()->GetTicks ();
 	if ((nTicks / HZ) % 60 == 0)
 	{
 		m_SpinLock.Acquire ();
@@ -216,7 +215,7 @@ boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAdd
 
 	pEntry->nTicksLastUsed = CTimer::Get ()->GetTicks ();
 
-	pEntry->hTimer = CTimer::Get ()->StartKernelTimer (ARP_TIMEOUT_HZ, TimerHandler, (void *) nEntry, this);
+	pEntry->hTimer = CTimer::Get ()->StartKernelTimer (ARP_TIMEOUT_HZ, TimerHandler, (void *) (uintptr) nEntry, this);
 
 	m_SpinLock.Release ();
 
@@ -320,12 +319,12 @@ void CARPHandler::SendPacket (boolean		 bRequest,
 	m_pNetDevLayer->Send (&ARPFrame, sizeof ARPFrame);
 }
 
-void CARPHandler::TimerHandler (unsigned hTimer, void *pParam, void *pContext)
+void CARPHandler::TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext)
 {
 	CARPHandler *pThis = (CARPHandler *) pContext;
 	assert (pThis != 0);
 
-	unsigned nEntry = (unsigned) pParam;
+	unsigned nEntry = (unsigned) (uintptr) pParam;
 	assert (nEntry < ARP_MAX_ENTRIES);
 
 	pThis->m_SpinLock.Acquire ();

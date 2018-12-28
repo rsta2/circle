@@ -20,11 +20,14 @@
 #ifndef _circle_exceptionstub_h
 #define _circle_exceptionstub_h
 
+#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#if AARCH == 32
 
 #define ARM_OPCODE_BRANCH(distance)	(0xEA000000 | (distance))
 #define ARM_DISTANCE(from, to)		((u32 *) &(to) - (u32 *) &(from) - 2)
@@ -68,17 +71,6 @@ struct TAbortFrame
 	u32	pc;
 };
 
-// FIQ data
-typedef void TFIQHandler (void *pParam);
-
-struct TFIQData
-{
-	TFIQHandler *pHandler;
-	void *pParam;
-};
-
-extern TFIQData FIQData;
-
 void UndefinedInstructionStub (void);
 void PrefetchAbortStub (void);
 void DataAbortStub (void);
@@ -87,6 +79,38 @@ void FIQStub (void);
 
 void ExceptionHandler (u32 nException, TAbortFrame *pFrame);
 void InterruptHandler (void);
+
+#else	// #if AARCH == 32
+
+struct TAbortFrame
+{
+	u64	esr_el1;
+	u64	spsr_el1;
+	u64	x30;		// lr
+	u64	elr_el1;
+	u64	sp_el0;
+	u64	sp_el1;
+	u64	far_el1;
+	u64	unused;
+}
+PACKED;
+
+void ExceptionHandler (u64 nException, TAbortFrame *pFrame);
+void InterruptHandler (void);
+
+#endif
+
+// FIQ data
+typedef void TFIQHandler (void *pParam);
+
+struct TFIQData
+{
+	TFIQHandler *pHandler;
+	void *pParam;
+}
+PACKED;
+
+extern TFIQData FIQData;
 
 #ifdef __cplusplus
 }
