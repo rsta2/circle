@@ -73,7 +73,8 @@ void CTask::InitializeRegs (void)
 
 #define VFP_FPEXC_EN	(1 << 30)
 	m_Regs.fpexc = VFP_FPEXC_EN;
-	m_Regs.fpscr = 0;
+#define VFP_FPSCR_DN	(1 << 25)	// enable Default NaN mode
+	m_Regs.fpscr = VFP_FPSCR_DN;
 }
 
 #else
