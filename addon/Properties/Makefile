@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= properties.o propertiesfile.o
+OBJS	= properties.o propertiesfile.o propertiesfatfsfile.o propertiesbasefile.o
 
 libproperties.a: $(OBJS)
 	@echo "  AR    $@"

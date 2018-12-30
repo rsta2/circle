@@ -4,6 +4,8 @@
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
 //
+// FatFs support by Steve Maynard
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,67 +19,72 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <Properties/propertiesfile.h>
+#include <Properties/propertiesfatfsfile.h>
 #include <assert.h>
 
-CPropertiesFile::CPropertiesFile (const char *pFileName, CFATFileSystem *pFileSystem)
-:	m_pFileSystem (pFileSystem),
-	m_FileName (pFileName)
+CPropertiesFatFsFile::CPropertiesFatFsFile (const char *pFileName, FATFS *pFileSystem)
+:	m_FileName (pFileName)
 {
 }
 
-CPropertiesFile::~CPropertiesFile (void)
+CPropertiesFatFsFile::~CPropertiesFatFsFile (void)
 {
-	m_pFileSystem = 0;
 }
 
-boolean CPropertiesFile::Load (void)
+boolean CPropertiesFatFsFile::Load (void)
 {
+	FRESULT Result;
+	FIL File;
+	unsigned nBytesRead;
+
 	RemoveAll ();
 
 	ResetErrorLine ();
 
-	assert (m_pFileSystem != 0);
 	assert (m_FileName.GetLength () > 0);
-	unsigned hFile = m_pFileSystem->FileOpen (m_FileName);
-	if (hFile == 0)
+	Result = f_open (&File, m_FileName, FA_READ | FA_OPEN_EXISTING);
+	if (Result != FR_OK)
 	{
 		return FALSE;
 	}
 
 	char Buffer[500];
-	unsigned nResult;
-	while ((nResult = m_pFileSystem->FileRead (hFile, Buffer, sizeof Buffer)) > 0)
+	do
 	{
-		if (nResult == FS_ERROR)
+		Result = f_read (&File, Buffer, sizeof Buffer, &nBytesRead);
+		if (Result != FR_OK)
 		{
-			m_pFileSystem->FileClose (hFile);
-
 			return FALSE;
 		}
 
-		for (unsigned i = 0; i < nResult; i++)
+		if (nBytesRead > 0)
 		{
-			if (!Parse (Buffer[i]))
+			for (unsigned i = 0; i < nBytesRead; i++)
 			{
-				m_pFileSystem->FileClose (hFile);
+				if (!Parse (Buffer[i]))
+				{
+					f_close (&File);
 
-				return FALSE;
+					return FALSE;
+				}
 			}
 		}
-	}
+	} while (nBytesRead > 0);
 
-	m_pFileSystem->FileClose (hFile);
+	f_close (&File);
 
 	return Parse ('\n');		// fake an empty line at file end
 }
 
-boolean CPropertiesFile::Save (void)
+boolean CPropertiesFatFsFile::Save (void)
 {
-	assert (m_pFileSystem != 0);
+	FRESULT Result;
+	FIL File;
+	unsigned nBytesWritten;
+
 	assert (m_FileName.GetLength () > 0);
-	unsigned hFile = m_pFileSystem->FileCreate (m_FileName);
-	if (hFile == 0)
+	Result = f_open (&File, m_FileName, FA_WRITE | FA_CREATE_ALWAYS);
+	if (Result != FR_OK)
 	{
 		return FALSE;
 	}
@@ -88,16 +95,16 @@ boolean CPropertiesFile::Save (void)
 		CString Line;
 		Line.Format ("%s=%s\n", GetName (), GetValue ());
 
-		if (   m_pFileSystem->FileWrite (hFile, (const char *) Line, Line.GetLength ())
-		    != Line.GetLength ())
+		if ( (Result = f_write (&File, (const char *) Line, Line.GetLength (),
+			&nBytesWritten)) != FR_OK || nBytesWritten != Line.GetLength ())
 		{
-			m_pFileSystem->FileClose (hFile);
+			f_close (&File);
 
 			return FALSE;
 		}
 
 		bContinue = GetNext ();
 	}
-	
-	return m_pFileSystem->FileClose (hFile) ? TRUE : FALSE;
+
+	return f_close (&File) == FR_OK;
 }

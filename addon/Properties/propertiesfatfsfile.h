@@ -1,10 +1,12 @@
 //
-// propertiesfile.h
+// propertiesfatfsfile.h
 //
-// Provides access to configuration properties saved in a file
+// Provides access to configuration properties saved in a file (FatFs version)
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+//
+// FatFs support by Steve Maynard
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,25 +21,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _Properties_propertiesfile_h
-#define _Properties_propertiesfile_h
+#ifndef _Properties_propertiesfatfsfile_h
+#define _Properties_propertiesfatfsfile_h
 
 #include <Properties/propertiesbasefile.h>
-#include <circle/fs/fat/fatfs.h>
+#include <fatfs/ff.h>
 #include <circle/string.h>
 #include <circle/types.h>
 
-class CPropertiesFile : public CPropertiesBaseFile
+class CPropertiesFatFsFile : public CPropertiesBaseFile
 {
 public:
-	CPropertiesFile (const char *pFileName, CFATFileSystem *pFileSystem);
-	~CPropertiesFile (void);
+	CPropertiesFatFsFile (const char *pFileName, FATFS *pFileSystem);
+	~CPropertiesFatFsFile (void);
 
 	boolean Load (void);		// may be partially loaded on error
 	boolean Save (void);		// overwrites existing file
 
 private:
-	CFATFileSystem *m_pFileSystem;
 	CString m_FileName;
 };
 
