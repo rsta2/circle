@@ -10,9 +10,11 @@ Base		Size		Contents		Remarks
 00000100	variable	ATAGS			unused
 ...
 00008000	max. 2 MByte	Kernel image
+				 .init			startup code
 				 .text
 				 .rodata
 				 .init_array		static constructors
+				 .ARM.exidx		C++ exception index
 				 .data
 				 .bss
 ...
@@ -41,9 +43,11 @@ Base		Size		Contents		Remarks
 00000100	variable	ATAGS			unused
 ...
 00008000	max. 2 MByte	Kernel image
+				 .init			startup code
 				 .text
 				 .rodata
 				 .init_array		static constructors
+				 .ARM.exidx		C++ exception index
 				 .data
 				 .bss
 ...
@@ -95,9 +99,11 @@ Base		Size		Contents		Remarks
 00000100	variable	ATAGS			unused
 ...
 00080000	max. 2 MByte	Kernel image
+				 .init			startup code
 				 .text
 				 .rodata
 				 .init_array		static constructors
+				 .ARM.exidx		unused
 				 .data
 				 .bss
 ...
