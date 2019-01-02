@@ -10,18 +10,14 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-The 37th Step
+The 38th Step
 -------------
 
-In this step the USB gamepad drivers have been totally revised. The PS3, PS4, Xbox 360 Wired, Xbox One and Nintendo Switch Pro gamepads are supported now, including LEDs, rumble and gyroscope. All these drivers support a unique class interface and mapping for the button and axis controls. This should simplify the development of gamepad applications and is used in the new *sample/37-showgamepad*. See the *README* file in this directory for details.
+The entire Circle project has been ported to the AArch64 architecture. Please see the *AArch64* section below for details! The 32-bit support is still available and will be maintained and developed further.
 
-The touchpad of the PS4 gamepad can be used as a mouse device to control normal mouse applications. To implement this, a new unique mouse interface class has been added, which is used by the USB mouse driver too. Therefore existing mouse applications have to be updated as follows:
+Moreover a driver for the BMP180 digital pressure sensor has been added to *addon/sensor/*.
 
-* Include <circle/input/mouse.h> instead of <circle/usb/usbmouse.h>
-* Class of the mouse device is *CMouseDevice* instead of *CUSBMouseDevice*
-* Name of the first mouse device is "mouse1" instead of "umouse1"
-
-Finally with this release Circle supports the new Raspberry Pi 3 Model A+.
+Circle creates a short beautified build log now.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
