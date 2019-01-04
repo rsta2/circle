@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,10 @@
 #include "kernel.h"
 
 CKernel::CKernel (void)
-:	m_Memory (FALSE),	// set this to TRUE to enable MMU and to boost performance
+:
+#if AARCH != 64			// non-MMU mode currently does not work with AArch64
+	m_Memory (FALSE),	// set this to TRUE to enable MMU and to boost performance
+#endif
 	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ())
 {
 }

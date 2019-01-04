@@ -2,7 +2,7 @@
 // console.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,12 +47,12 @@ public:
 	/// \param nCount Maximum number of bytes to be read
 	/// \return Number of bytes read (0 no data available, < 0 on error)
 	/// \note This method does not block! It has to be called until != 0 is returned.
-	int Read (void *pBuffer, unsigned nCount);
+	int Read (void *pBuffer, size_t nCount);
 
 	/// \param pBuffer Pointer to data to be written
 	/// \param nCount Number of bytes to be written
 	/// \return Number of bytes successfully written (< 0 on error)
-	int Write (const void *pBuffer, unsigned nCount);
+	int Write (const void *pBuffer, size_t nCount);
 
 	/// \return Console options mask (see console options)
 	unsigned GetOptions (void) const;

@@ -20,20 +20,25 @@ EXTRACLEAN = $(CONTENT) converttool
 include ../Rules.mk
 
 %.h: %.html
-	./converttool $< > $@
+	@echo "  GEN   $@"
+	@./converttool $< > $@
 
 %.h: %.css
-	./converttool $< > $@
+	@echo "  GEN   $@"
+	@./converttool $< > $@
 
 %.h: %.png
-	./converttool -b $< > $@
+	@echo "  GEN   $@"
+	@./converttool -b $< > $@
 	
 %.h: %.ico
-	./converttool -b $< > $@
+	@echo "  GEN   $@"
+	@./converttool -b $< > $@
 	
 webserver.o: $(CONTENT)
 
 $(CONTENT): converttool
 
 converttool: converttool.c
-	gcc -o converttool converttool.c
+	@echo "  TOOL  $@"
+	@gcc -o converttool converttool.c

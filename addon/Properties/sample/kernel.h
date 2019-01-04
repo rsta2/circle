@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,8 +31,13 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <SDCard/emmc.h>
-#include <circle/fs/fat/fatfs.h>
 #include <circle/types.h>
+
+#ifdef USE_FATFS
+	#include <fatfs/ff.h>
+#else
+	#include <circle/fs/fat/fatfs.h>
+#endif
 
 enum TShutdownMode
 {
@@ -65,7 +70,11 @@ private:
 	CLogger			m_Logger;
 
 	CEMMCDevice		m_EMMC;
+#ifdef USE_FATFS
+	FATFS			m_FileSystem;
+#else
 	CFATFileSystem		m_FileSystem;
+#endif
 };
 
 #endif

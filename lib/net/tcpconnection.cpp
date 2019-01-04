@@ -1457,7 +1457,7 @@ void CTCPConnection::StartTimer (unsigned nTimer, unsigned nHZ)
 
 	StopTimer (nTimer);
 
-	m_hTimer[nTimer] = m_pTimer->StartKernelTimer (nHZ, TimerStub, (void *) nTimer, this);
+	m_hTimer[nTimer] = m_pTimer->StartKernelTimer (nHZ, TimerStub, (void *) (uintptr) nTimer, this);
 }
 
 void CTCPConnection::StopTimer (unsigned nTimer)
@@ -1545,12 +1545,12 @@ void CTCPConnection::TimerHandler (unsigned nTimer)
 	}
 }
 
-void CTCPConnection::TimerStub (unsigned hTimer, void *pParam, void *pContext)
+void CTCPConnection::TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext)
 {
 	CTCPConnection *pThis = (CTCPConnection *) pContext;
 	assert (pThis != 0);
 
-	unsigned nTimer = (unsigned) pParam;
+	unsigned nTimer = (unsigned) (uintptr) pParam;
 	assert (nTimer < TCPTimerUnknown);
 
 	pThis->TimerHandler (nTimer);

@@ -2,7 +2,7 @@
 // bcmmailbox.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ CBcmMailBox::~CBcmMailBox (void)
 {
 }
 
-unsigned CBcmMailBox::WriteRead (unsigned nData)
+u32 CBcmMailBox::WriteRead (u32 nData)
 {
 	PeripheralEntry ();
 
@@ -44,7 +44,7 @@ unsigned CBcmMailBox::WriteRead (unsigned nData)
 
 	Write (nData);
 
-	unsigned nResult = Read ();
+	u32 nResult = Read ();
 
 	s_SpinLock.Release ();
 
@@ -63,9 +63,9 @@ void CBcmMailBox::Flush (void)
 	}
 }
 
-unsigned CBcmMailBox::Read (void)
+u32 CBcmMailBox::Read (void)
 {
-	unsigned nResult;
+	u32 nResult;
 	
 	do
 	{
@@ -81,7 +81,7 @@ unsigned CBcmMailBox::Read (void)
 	return nResult & ~0xF;
 }
 
-void CBcmMailBox::Write (unsigned nData)
+void CBcmMailBox::Write (u32 nData)
 {
 	while (read32 (MAILBOX1_STATUS) & MAILBOX_STATUS_FULL)
 	{

@@ -2,7 +2,7 @@
 // usbmassdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,29 +31,29 @@
 // Command Block Wrapper
 struct TCBW
 {
-	unsigned int	dCWBSignature,
+	u32		dCWBSignature,
 #define CBWSIGNATURE		0x43425355
 			dCWBTag,
 			dCBWDataTransferLength;		// number of bytes
-	unsigned char	bmCBWFlags,
+	u8		bmCBWFlags,
 #define CBWFLAGS_DATA_IN	0x80
 			bCBWLUN		: 4,
 #define CBWLUN			0
 			Reserved1	: 4,
 			bCBWCBLength	: 5,		// valid length of the CBWCB in bytes
 			Reserved2	: 3;
-	unsigned char	CBWCB[16];
+	u8		CBWCB[16];
 }
 PACKED;
 
 // Command Status Wrapper
 struct TCSW
 {
-	unsigned int	dCSWSignature,
+	u32		dCSWSignature,
 #define CSWSIGNATURE		0x53425355
 			dCSWTag,
 			dCSWDataResidue;		// difference in amount of data processed
-	unsigned char	bCSWStatus;
+	u8		bCSWStatus;
 #define CSWSTATUS_PASSED	0x00
 #define CSWSTATUS_FAILED	0x01
 #define CSWSTATUS_PHASE_ERROR	0x02
@@ -66,7 +66,7 @@ PACKED;
 
 struct TSCSIInquiry
 {
-	unsigned char	OperationCode,
+	u8		OperationCode,
 #define SCSI_OP_INQUIRY		0x12
 			LogicalUnitNumberEVPD,
 			PageCode,
@@ -78,7 +78,7 @@ PACKED;
 
 struct TSCSIInquiryResponse
 {
-	unsigned char	PeripheralDeviceType	: 5,
+	u8		PeripheralDeviceType	: 5,
 #define SCSI_PDT_DIRECT_ACCESS_BLOCK	0x00			// SBC-2 command set (or above)
 #define SCSI_PDT_DIRECT_ACCESS_RBC	0x0E			// RBC command set
 			PeripheralQualifier	: 3,		// 0: device is connected to this LUN
@@ -98,91 +98,91 @@ PACKED;
 
 struct TSCSITestUnitReady
 {
-	unsigned char	OperationCode;
+	u8		OperationCode;
 #define SCSI_OP_TEST_UNIT_READY		0x00
-	unsigned int	Reserved;
-	unsigned char	Control;
+	u32		Reserved;
+	u8		Control;
 }
 PACKED;
 
 struct TSCSIRequestSense
 {
-	unsigned char	OperationCode;
+	u8		OperationCode;
 #define SCSI_REQUEST_SENSE		0x03
-	unsigned char	DescriptorFormat	: 1,		// set to 0
+	u8		DescriptorFormat	: 1,		// set to 0
 			Reserved1		: 7;
-	unsigned short	Reserved2;
-	unsigned char	AllocationLength;
-	unsigned char	Control;
+	u16		Reserved2;
+	u8		AllocationLength;
+	u8		Control;
 }
 PACKED;
 
 struct TSCSIRequestSenseResponse7x
 {
-	unsigned char	ResponseCode		: 7,
+	u8		ResponseCode		: 7,
 			Valid			: 1;
-	unsigned char	Obsolete;
-	unsigned char	SenseKey		: 4,
+	u8		Obsolete;
+	u8		SenseKey		: 4,
 			Reserved		: 1,
 			ILI			: 1,
 			EOM			: 1,
 			FileMark		: 1;
-	unsigned int	Information;				// big endian
-	unsigned char	AdditionalSenseLength;
-	unsigned int	CommandSpecificInformation;		// big endian
-	unsigned char	AdditionalSenseCode;
-	unsigned char	AdditionalSenseCodeQualifier;
-	unsigned char	FieldReplaceableUnitCode;
-	unsigned char	SenseKeySpecificHigh	: 7,
+	u32		Information;				// big endian
+	u8		AdditionalSenseLength;
+	u32		CommandSpecificInformation;		// big endian
+	u8		AdditionalSenseCode;
+	u8		AdditionalSenseCodeQualifier;
+	u8		FieldReplaceableUnitCode;
+	u8		SenseKeySpecificHigh	: 7,
 			SKSV			: 1;
-	unsigned short	SenseKeySpecificLow;
+	u16		SenseKeySpecificLow;
 }
 PACKED;
 
 struct TSCSIReadCapacity10
 {
-	unsigned char	OperationCode;
+	u8		OperationCode;
 #define SCSI_OP_READ_CAPACITY10		0x25
-	unsigned char	Obsolete		: 1,
+	u8		Obsolete		: 1,
 			Reserved1		: 7;
-	unsigned int	LogicalBlockAddress;			// set to 0
-	unsigned short	Reserved2;
-	unsigned char	PartialMediumIndicator	: 1,		// set to 0
+	u32		LogicalBlockAddress;			// set to 0
+	u16		Reserved2;
+	u8		PartialMediumIndicator	: 1,		// set to 0
 			Reserved3		: 7;
-	unsigned char	Control;
+	u8		Control;
 }
 PACKED;
 
 struct TSCSIReadCapacityResponse
 {
-	unsigned int	ReturnedLogicalBlockAddress;		// big endian
-	unsigned int	BlockLengthInBytes;			// big endian
+	u32		ReturnedLogicalBlockAddress;		// big endian
+	u32		BlockLengthInBytes;			// big endian
 }
 PACKED;
 
 struct TSCSIRead10
 {
-	unsigned char	OperationCode,
+	u8		OperationCode,
 #define SCSI_OP_READ		0x28
 			Reserved1;
-	unsigned int	LogicalBlockAddress;			// big endian
-	unsigned char	Reserved2;
-	unsigned short	TransferLength;				// block count, big endian
-	unsigned char	Control;
+	u32		LogicalBlockAddress;			// big endian
+	u8		Reserved2;
+	u16		TransferLength;				// block count, big endian
+	u8		Control;
 #define SCSI_READ_CONTROL	0x00
 }
 PACKED;
 
 struct TSCSIWrite10
 {
-	unsigned char	OperationCode,
+	u8		OperationCode,
 #define SCSI_OP_WRITE		0x2A
 			Flags;
 #define SCSI_WRITE_FUA		0x08
-	unsigned int	LogicalBlockAddress;			// big endian
-	unsigned char	Reserved;
-	unsigned short	TransferLength;				// block count, big endian
-	unsigned char	Control;
+	u32		LogicalBlockAddress;			// big endian
+	u8		Reserved;
+	u16		TransferLength;				// block count, big endian
+	u8		Control;
 #define SCSI_WRITE_CONTROL	0x00
 }
 PACKED;
@@ -391,7 +391,7 @@ boolean CUSBBulkOnlyMassStorageDevice::Configure (void)
 	return TRUE;
 }
 
-int CUSBBulkOnlyMassStorageDevice::Read (void *pBuffer, unsigned nCount)
+int CUSBBulkOnlyMassStorageDevice::Read (void *pBuffer, size_t nCount)
 {
 	unsigned nTries = 4;
 
@@ -416,7 +416,7 @@ int CUSBBulkOnlyMassStorageDevice::Read (void *pBuffer, unsigned nCount)
 	return nResult;
 }
 
-int CUSBBulkOnlyMassStorageDevice::Write (const void *pBuffer, unsigned nCount)
+int CUSBBulkOnlyMassStorageDevice::Write (const void *pBuffer, size_t nCount)
 {
 	unsigned nTries = 4;
 
@@ -441,7 +441,7 @@ int CUSBBulkOnlyMassStorageDevice::Write (const void *pBuffer, unsigned nCount)
 	return nResult;
 }
 
-unsigned long long CUSBBulkOnlyMassStorageDevice::Seek (unsigned long long ullOffset)
+u64 CUSBBulkOnlyMassStorageDevice::Seek (u64 ullOffset)
 {
 	m_ullOffset = ullOffset;
 
@@ -453,7 +453,7 @@ unsigned CUSBBulkOnlyMassStorageDevice::GetCapacity (void) const
 	return m_nBlockCount;
 }
 
-int CUSBBulkOnlyMassStorageDevice::TryRead (void *pBuffer, unsigned nCount)
+int CUSBBulkOnlyMassStorageDevice::TryRead (void *pBuffer, size_t nCount)
 {
 	assert (pBuffer != 0);
 
@@ -462,13 +462,13 @@ int CUSBBulkOnlyMassStorageDevice::TryRead (void *pBuffer, unsigned nCount)
 	{
 		return -1;
 	}
-	unsigned nBlockAddress = (unsigned) (m_ullOffset >> UMSD_BLOCK_SHIFT);
+	u32 nBlockAddress = (u32) (m_ullOffset >> UMSD_BLOCK_SHIFT);
 
 	if ((nCount & UMSD_BLOCK_MASK) != 0)
 	{
 		return -1;
 	}
-	unsigned short usTransferLength = (unsigned short) (nCount >> UMSD_BLOCK_SHIFT);
+	u16 usTransferLength = (u16) (nCount >> UMSD_BLOCK_SHIFT);
 
 	//CLogger::Get ()->Write (FromUmsd, LogDebug, "TryRead %u/0x%X/%u", nBlockAddress, (unsigned) pBuffer, (unsigned) usTransferLength);
 
@@ -490,7 +490,7 @@ int CUSBBulkOnlyMassStorageDevice::TryRead (void *pBuffer, unsigned nCount)
 	return nCount;
 }
 
-int CUSBBulkOnlyMassStorageDevice::TryWrite (const void *pBuffer, unsigned nCount)
+int CUSBBulkOnlyMassStorageDevice::TryWrite (const void *pBuffer, size_t nCount)
 {
 	assert (pBuffer != 0);
 
@@ -499,13 +499,13 @@ int CUSBBulkOnlyMassStorageDevice::TryWrite (const void *pBuffer, unsigned nCoun
 	{
 		return -1;
 	}
-	unsigned nBlockAddress = (unsigned) (m_ullOffset >> UMSD_BLOCK_SHIFT);
+	u32 nBlockAddress = (u32) (m_ullOffset >> UMSD_BLOCK_SHIFT);
 
 	if ((nCount & UMSD_BLOCK_MASK) != 0)
 	{
 		return -1;
 	}
-	unsigned short usTransferLength = (unsigned short) (nCount >> UMSD_BLOCK_SHIFT);
+	u16 usTransferLength = (u16) (nCount >> UMSD_BLOCK_SHIFT);
 
 	//CLogger::Get ()->Write (FromUmsd, LogDebug, "TryWrite %u/0x%X/%u", nBlockAddress, (unsigned) pBuffer, (unsigned) usTransferLength);
 
@@ -527,8 +527,8 @@ int CUSBBulkOnlyMassStorageDevice::TryWrite (const void *pBuffer, unsigned nCoun
 	return nCount;
 }
 
-int CUSBBulkOnlyMassStorageDevice::Command (void *pCmdBlk, unsigned nCmdBlkLen,
-					    void *pBuffer, unsigned nBufLen, boolean bIn)
+int CUSBBulkOnlyMassStorageDevice::Command (void *pCmdBlk, size_t nCmdBlkLen,
+					    void *pBuffer, size_t nBufLen, boolean bIn)
 {
 	assert (pCmdBlk != 0);
 	assert (6 <= nCmdBlkLen && nCmdBlkLen <= 16);

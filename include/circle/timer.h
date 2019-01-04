@@ -25,12 +25,15 @@
 #include <circle/ptrlist.h>
 #include <circle/sysconfig.h>
 #include <circle/spinlock.h>
+#include <circle/types.h>
 
 #define HZ		100			// ticks per second
 
 #define MSEC2HZ(msec)	((msec) * HZ / 1000)
 
-typedef void TKernelTimerHandler (unsigned hTimer, void *pParam, void *pContext);
+typedef uintptr TKernelTimerHandle;
+
+typedef void TKernelTimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
 typedef void TPeriodicTimerHandler (void);
 
@@ -97,14 +100,14 @@ public:
 	/// \param pParam	First user defined parameter to hand over to the handler
 	/// \param pContext	Second user defined parameter to hand over to the handler
 	/// \return Timer handle (cannot be 0)
-	unsigned StartKernelTimer (unsigned nDelay,
-				   TKernelTimerHandler *pHandler,
-				   void *pParam   = 0,
-				   void *pContext = 0);
+	TKernelTimerHandle StartKernelTimer (unsigned nDelay,
+					     TKernelTimerHandler *pHandler,
+					     void *pParam   = 0,
+					     void *pContext = 0);
 	/// \brief Cancel a running kernel timer,\n
 	/// The timer will not elapse any more.
 	/// \param hTimer	Timer handle
-	void CancelKernelTimer (unsigned hTimer);
+	void CancelKernelTimer (TKernelTimerHandle hTimer);
 
 	/// When a CTimer object is available better use this instead of SimpleMsDelay()\n
 	/// \param nMilliSeconds Delay in milliseconds (<= 2000)

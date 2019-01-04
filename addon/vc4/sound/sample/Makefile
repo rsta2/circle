@@ -19,4 +19,5 @@ include $(CIRCLEHOME)/Rules.mk
 kernel.o: sound.h
 
 sound.h: sound.h.gz
-	gunzip -c sound.h.gz > sound.h
+	@echo "  UNZIP $@"
+	@gunzip -c sound.h.gz > sound.h

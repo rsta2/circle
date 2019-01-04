@@ -187,7 +187,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 	return TRUE;
 }
 
-int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
+int CSerialDevice::Write (const void *pBuffer, size_t nCount)
 {
 	m_LineSpinLock.Acquire ();
 
@@ -251,7 +251,7 @@ int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 	return nResult;
 }
 
-int CSerialDevice::Read (void *pBuffer, unsigned nCount)
+int CSerialDevice::Read (void *pBuffer, size_t nCount)
 {
 	u8 *pChar = (u8 *) pBuffer;
 	assert (pChar != 0);

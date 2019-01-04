@@ -24,7 +24,8 @@ OBJS	= keyboardbehaviour.o keymap.o mousebehaviour.o mouse.o touchscreen.o \
 	  console.o keyboardbuffer.o linediscipline.o
 
 libinput.a: $(OBJS)
-	rm -f libinput.a
-	$(AR) cr libinput.a $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

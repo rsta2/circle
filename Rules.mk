@@ -18,14 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-ifeq ($(strip $(CIRCLEHOME)),)
-CIRCLEHOME = ..
-endif
+CIRCLEHOME ?= ..
 
 -include $(CIRCLEHOME)/Config.mk
 
-RASPPI	?= 1
-PREFIX	?= arm-none-eabi-
+AARCH	 ?= 32
+RASPPI	 ?= 1
+PREFIX	 ?= arm-none-eabi-
+PREFIX64 ?= aarch64-elf-
 
 # see: doc/stdlib-support.txt
 STDLIB_SUPPORT ?= 1
@@ -39,15 +39,28 @@ AS	= $(CC)
 LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
 
+ifeq ($(strip $(AARCH)),32)
 ifeq ($(strip $(RASPPI)),1)
-ARCH	?= -march=armv6k -mtune=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -march=armv6k -mtune=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
-ARCH	?= -march=armv7-a -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -march=armv7-a -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7
-else
-ARCH	?= -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+else ifeq ($(strip $(RASPPI)),3)
+ARCH	?= -DAARCH=32 -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel8-32
+else
+$(error RASPPI must be set to 1, 2 or 3)
+endif
+LOADADDR = 0x8000
+else ifeq ($(strip $(AARCH)),64)
+RASPPI	= 3
+PREFIX	= $(PREFIX64)
+ARCH	?= -DAARCH=64 -march=armv8-a -mtune=cortex-a53 -mlittle-endian -mcmodel=small
+TARGET	?= kernel8
+LOADADDR = 0x80000
+else
+$(error AARCH must be set to 32 or 64)
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),0)
@@ -78,27 +91,34 @@ endif
 OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
+DEFINE	+= -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) #-DNDEBUG
 
-AFLAGS	+= $(ARCH) -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) $(INCLUDE) $(OPTIMIZE)
-CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding \
-	   -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
-	   $(INCLUDE) $(OPTIMIZE) -g #-DNDEBUG
+AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
+CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding $(DEFINE) $(INCLUDE) $(OPTIMIZE) -g
 CPPFLAGS+= $(CFLAGS) -std=c++14
 
 %.o: %.S
-	$(AS) $(AFLAGS) -c -o $@ $<
+	@echo "  AS    $@"
+	@$(AS) $(AFLAGS) -c -o $@ $<
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	@echo "  CC    $@"
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
 %.o: %.cpp
-	$(CPP) $(CPPFLAGS) -c -o $@ $<
+	@echo "  CPP   $@"
+	@$(CPP) $(CPPFLAGS) -c -o $@ $<
 
-$(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/lib/startup.o $(CIRCLEHOME)/circle.ld
-	$(LD) -o $(TARGET).elf -Map $(TARGET).map -T $(CIRCLEHOME)/circle.ld $(CIRCLEHOME)/lib/startup.o $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
-	$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
-	$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
-	wc -c $(TARGET).img
+$(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
+	@echo "  LD    $(TARGET).elf"
+	@$(LD) -o $(TARGET).elf -Map $(TARGET).map --section-start=.init=$(LOADADDR) \
+		-T $(CIRCLEHOME)/circle.ld $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
+	@echo "  DUMP  $(TARGET).lst"
+	@$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
+	@echo "  COPY  $(TARGET).img"
+	@$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
+	@echo -n "  WC    $(TARGET).img => "
+	@wc -c < $(TARGET).img
 
 clean:
 	rm -f *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
@@ -113,7 +133,8 @@ FLASHBAUD ?= 115200
 REBOOTMAGIC ?=
 
 $(TARGET).hex: $(TARGET).img
-	$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
+	@echo "  COPY  $(TARGET).hex"
+	@$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
 
 flash: $(TARGET).hex
 ifneq ($(strip $(REBOOTMAGIC)),)

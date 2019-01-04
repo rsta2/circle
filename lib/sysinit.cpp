@@ -41,6 +41,17 @@ void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 	// TODO
 }
 
+#if AARCH == 64
+
+void __cxa_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle) WEAK;
+
+void __cxa_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
+{
+	// TODO
+}
+
+#endif
+
 #if STDLIB_SUPPORT >= 2
 
 void __sync_synchronize (void)
@@ -55,8 +66,13 @@ void halt (void)
 #ifdef ARM_ALLOW_MULTI_CORE
 	static volatile boolean s_bCoreHalted[CORES] = {FALSE};
 
+#if AARCH == 32
 	u32 nMPIDR;
 	asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (nMPIDR));
+#else
+	u64 nMPIDR;
+	asm volatile ("mrs %0, mpidr_el1" : "=r" (nMPIDR));
+#endif
 	unsigned nCore = nMPIDR & (CORES-1);
 
 	// core 0 must not halt until all secondary cores have been halted
@@ -110,6 +126,8 @@ void reboot (void)					// by PlutoniumBob@raspi-forum
 	for (;;);					// wait for reset
 }
 
+#if AARCH == 32
+
 static void vfpinit (void)
 {
 	// Coprocessor Access Control Register
@@ -127,10 +145,13 @@ static void vfpinit (void)
 	__asm volatile ("fmxr fpscr, %0" : : "r" (VFP_FPSCR_DN));
 }
 
+#endif
+
 void sysinit (void)
 {
 	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
 
+#if AARCH == 32
 #if RASPPI != 1
 #ifndef USE_RPI_STUB_AT
 	// L1 data cache may contain random entries after reset, delete them
@@ -146,6 +167,11 @@ void sysinit (void)
 #endif
 
 	vfpinit ();
+#endif
+
+#if defined (USE_PHYSICAL_COUNTER) && AARCH == 64
+	write32 (ARM_LOCAL_PRESCALER, 0x6AAAAAB);
+#endif
 
 	// clear BSS
 	extern unsigned char __bss_start;
@@ -184,10 +210,12 @@ void sysinit_secondary (void)
 {
 	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
 
+#if AARCH == 32
 	// L1 data cache may contain random entries after reset, delete them
 	InvalidateDataCacheL1Only ();
 
 	vfpinit ();
+#endif
 
 	main_secondary ();
 

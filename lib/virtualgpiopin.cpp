@@ -28,7 +28,7 @@
 #include <circle/memory.h>
 #include <circle/bcm2835.h>
 
-u32 CVirtualGPIOPin::s_nGPIOBaseAddress = 0;
+uintptr CVirtualGPIOPin::s_nGPIOBaseAddress = 0;
 
 CSpinLock CVirtualGPIOPin::s_SpinLock (TASK_LEVEL);
 
@@ -51,7 +51,7 @@ CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
 		CBcmPropertyTags Tags;
 		TPropertyTagSimple TagSimple;
 		TagSimple.nValue = BUS_ADDRESS (s_nGPIOBaseAddress);
-		if (!Tags.GetTag (PROPTAG_SET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))
+		if (!Tags.GetTag (PROPTAG_SET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple, 4))
 		{
 			if (Tags.GetTag (PROPTAG_GET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))
 			{
@@ -62,6 +62,11 @@ CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
 				s_nGPIOBaseAddress = 0;
 			}
 		}
+	}
+
+	if (s_nGPIOBaseAddress != 0)
+	{
+		write32 (s_nGPIOBaseAddress + m_nPin * 4, 0);
 	}
 
 	s_SpinLock.Release ();

@@ -22,6 +22,7 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/logger.h>
 #include <circle/util.h>
+#include <circle/macros.h>
 #include <assert.h>
 
 unsigned CUSBKeyboardDevice::s_nDeviceNumber = 1;
@@ -32,7 +33,7 @@ static const char DevicePrefix[] = "ukbd";
 CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBFunction *pFunction)
 :	CUSBHIDDevice (pFunction, USBKEYB_REPORT_SIZE),
 	m_pKeyStatusHandlerRaw (0),
-	m_ucLastLEDStatus (0xFF),
+	m_ucLastLEDStatus (0),
 	m_nDeviceNumber (0)		// not assigned
 {
 	memset (m_LastReport, 0, sizeof m_LastReport);
@@ -53,6 +54,9 @@ boolean CUSBKeyboardDevice::Configure (void)
 
 		return FALSE;
 	}
+
+	// setting the LED status forces some keyboard adapters to work
+	SetLEDs (m_ucLastLEDStatus);
 
 	m_nDeviceNumber = s_nDeviceNumber++;
 
@@ -124,7 +128,7 @@ void CUSBKeyboardDevice::RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKey
 
 boolean CUSBKeyboardDevice::SetLEDs (u8 ucStatus)
 {
-	u8 Buffer[1] = {ucStatus};
+	u8 Buffer[1] ALIGN (4) = {ucStatus};		// DMA buffer
 
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,

@@ -2,7 +2,7 @@
 // sampler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,14 +20,16 @@
 #ifndef _sampler_h
 #define _sampler_h
 
+#include <circle/types.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // returns run time (micro seconds)
-unsigned Sampler (unsigned *pBuffer, unsigned nSamples,
-		  unsigned nTriggerMask, unsigned nTriggerLevel,
-		  unsigned nDelayCount);
+u32 Sampler (u32 *pBuffer, size_t nSamples,
+	     u32 nTriggerMask, u32 nTriggerLevel,
+	     u32 nDelayCount);
 
 #ifdef __cplusplus
 }

@@ -103,8 +103,8 @@ private:
 
 	boolean m_bStatus;
 
-	u32 m_nDestinationAddress;
-	u32 m_nBufferLength;
+	uintptr m_nDestinationAddress;
+	size_t m_nBufferLength;
 };
 
 #endif

@@ -37,6 +37,9 @@ private:
 
 private:
 	CMouseDevice *m_pMouseDevice;
+
+	u8 *m_pHIDReportDescriptor;
+	u16 m_usReportDescriptorLength;
 };
 
 #endif

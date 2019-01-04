@@ -2,7 +2,7 @@
 // types.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,15 +25,30 @@
 typedef unsigned char		u8;
 typedef unsigned short		u16;
 typedef unsigned int		u32;
-typedef unsigned long long	u64;
 
 typedef signed char		s8;
 typedef signed short		s16;
 typedef signed int		s32;
+
+#if AARCH == 32
+typedef unsigned long long	u64;
 typedef signed long long	s64;
 
 typedef int			intptr;
 typedef unsigned int		uintptr;
+
+typedef unsigned int		size_t;
+typedef int			ssize_t;
+#else
+typedef unsigned long		u64;
+typedef signed long		s64;
+
+typedef long			intptr;
+typedef unsigned long		uintptr;
+
+typedef unsigned long		size_t;
+typedef long			ssize_t;
+#endif
 
 #ifdef __cplusplus
 typedef bool		boolean;
@@ -45,8 +60,5 @@ typedef char		boolean;
 #define TRUE		1
 #endif
 ASSERT_STATIC (sizeof (boolean) == 1);
-
-typedef unsigned int	size_t;
-typedef int		ssize_t;
 
 #endif

@@ -8,14 +8,9 @@
 
 void spin_lock (spinlock_t *lock)
 {
-	asm volatile
-	(
-		"mrs %0, cpsr\n"
-		"cpsid i\n"
+	EnterCritical (IRQ_LEVEL);
 
-		: "=r" (lock->cpsr[CMultiCoreSupport::ThisCore ()])
-	);
-
+#if AARCH == 32
 	// See: ARMv7-A Architecture Reference Manual, Section D7.3
 	asm volatile
 	(
@@ -33,10 +28,26 @@ void spin_lock (spinlock_t *lock)
 
 		: : "r" ((uintptr) &lock->lock)
 	);
+#else
+	// See: ARMv8-A Architecture Reference Manual, Section K10.3.1
+	asm volatile
+	(
+		"mov x1, %0\n"
+		"mov w2, #1\n"
+		"prfm pstl1keep, [x1]\n"
+		"1: ldaxr w3, [x1]\n"
+		"cbnz w3, 1b\n"
+		"stxr w3, w2, [x1]\n"
+		"cbnz w3, 1b\n"
+
+		: : "r" ((uintptr) &lock->lock)
+	);
+#endif
 }
 
 void spin_unlock (spinlock_t *lock)
 {
+#if AARCH == 32
 	// See: ARMv7-A Architecture Reference Manual, Section D7.3
 	asm volatile
 	(
@@ -51,13 +62,18 @@ void spin_unlock (spinlock_t *lock)
 
 		: : "r" ((uintptr) &lock->lock)
 	);
-
+#else
+	// See: ARMv8-A Architecture Reference Manual, Section K10.3.2
 	asm volatile
 	(
-		"msr cpsr_c, %0\n"
+		"mov x1, %0\n"
+		"stlr wzr, [x1]\n"
 
-		: : "r" (lock->cpsr[CMultiCoreSupport::ThisCore ()])
+		: : "r" ((uintptr) &lock->lock)
 	);
+#endif
+
+	LeaveCritical ();
 }
 
 #else

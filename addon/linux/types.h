@@ -6,7 +6,7 @@
 
 typedef unsigned long	loff_t;
 typedef int		gfp_t;
-typedef u32		dma_addr_t;
+typedef uintptr		dma_addr_t;
 
 #ifndef __cplusplus
 typedef char	bool;

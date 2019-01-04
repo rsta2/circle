@@ -30,7 +30,8 @@ OBJS	= netsubsystem.o nettask.o netsocket.o socket.o \
 	  dhcpclient.o ntpdaemon.o httpdaemon.o httpclient.o tftpdaemon.o syslogdaemon.o
 
 libnet.a: $(OBJS)
-	rm -f libnet.a
-	$(AR) cr libnet.a $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

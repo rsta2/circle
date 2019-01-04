@@ -2,7 +2,7 @@
 // task.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,11 @@ CTask::CTask (unsigned nStackSize)
 	if (m_nStackSize != 0)
 	{
 		assert (m_nStackSize >= 1024);
+#if AARCH == 32
 		assert ((m_nStackSize & 3) == 0);
+#else
+		assert ((m_nStackSize & 15) == 0);
+#endif
 		m_pStack = new u8[m_nStackSize];
 		assert (m_pStack != 0);
 
@@ -54,6 +58,8 @@ void CTask::Run (void)		// dummy method which is never called
 	assert (0);
 }
 
+#if AARCH == 32
+
 void CTask::InitializeRegs (void)
 {
 	memset (&m_Regs, 0, sizeof m_Regs);
@@ -67,8 +73,29 @@ void CTask::InitializeRegs (void)
 
 #define VFP_FPEXC_EN	(1 << 30)
 	m_Regs.fpexc = VFP_FPEXC_EN;
-	m_Regs.fpscr = 0;
+#define VFP_FPSCR_DN	(1 << 25)	// enable Default NaN mode
+	m_Regs.fpscr = VFP_FPSCR_DN;
 }
+
+#else
+
+void CTask::InitializeRegs (void)
+{
+	memset (&m_Regs, 0, sizeof m_Regs);
+
+	m_Regs.x0 = (u64) this;		// pParam for TaskEntry()
+
+	assert (m_pStack != 0);
+	m_Regs.sp = (u64) m_pStack + m_nStackSize;
+
+	m_Regs.x30 = (u64) &TaskEntry;
+
+	u32 nFPCR;
+	asm volatile ("mrs %0, fpcr" : "=r" (nFPCR));
+	m_Regs.fpcr = nFPCR;
+}
+
+#endif
 
 void CTask::TaskEntry (void *pParam)
 {

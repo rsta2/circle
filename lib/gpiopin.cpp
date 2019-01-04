@@ -102,8 +102,8 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	}
 
 	assert (m_nPin < GPIO_PINS);
-	unsigned nSelReg = ARM_GPIO_GPFSEL0 + (m_nPin / 10) * 4;
-	unsigned nShift = (m_nPin % 10) * 3;
+	uintptr nSelReg = ARM_GPIO_GPFSEL0 + (m_nPin / 10) * 4;
+	u32 nShift = (m_nPin % 10) * 3;
 
 	s_SpinLock.Acquire ();
 	u32 nValue = read32 (nSelReg);
@@ -152,7 +152,7 @@ void CGPIOPin::Write (unsigned nValue)
 	assert (nValue == LOW || nValue == HIGH);
 	m_nValue = nValue;
 
-	unsigned nSetClrReg = (m_nValue ? ARM_GPIO_GPSET0 : ARM_GPIO_GPCLR0) + m_nRegOffset;
+	uintptr nSetClrReg = (m_nValue ? ARM_GPIO_GPSET0 : ARM_GPIO_GPCLR0) + m_nRegOffset;
 
 	write32 (nSetClrReg, m_nRegMask);
 
@@ -230,7 +230,7 @@ void CGPIOPin::EnableInterrupt (TGPIOInterrupt Interrupt)
 	assert (Interrupt != m_Interrupt2);
 	m_Interrupt = Interrupt;
 
-	unsigned nReg =   ARM_GPIO_GPREN0
+	uintptr nReg =   ARM_GPIO_GPREN0
 			+ m_nRegOffset
 			+ (Interrupt - GPIOInterruptOnRisingEdge) * 12;
 
@@ -248,7 +248,7 @@ void CGPIOPin::DisableInterrupt (void)
 
 	assert (m_Interrupt < GPIOInterruptUnknown);
 
-	unsigned nReg =   ARM_GPIO_GPREN0
+	uintptr nReg =   ARM_GPIO_GPREN0
 			+ m_nRegOffset
 			+ (m_Interrupt - GPIOInterruptOnRisingEdge) * 12;
 
@@ -271,7 +271,7 @@ void CGPIOPin::EnableInterrupt2 (TGPIOInterrupt Interrupt)
 	assert (Interrupt != m_Interrupt);
 	m_Interrupt2 = Interrupt;
 
-	unsigned nReg =   ARM_GPIO_GPREN0
+	uintptr nReg =   ARM_GPIO_GPREN0
 			+ m_nRegOffset
 			+ (Interrupt - GPIOInterruptOnRisingEdge) * 12;
 
@@ -289,7 +289,7 @@ void CGPIOPin::DisableInterrupt2 (void)
 
 	assert (m_Interrupt2 < GPIOInterruptUnknown);
 
-	unsigned nReg =   ARM_GPIO_GPREN0
+	uintptr nReg =   ARM_GPIO_GPREN0
 			+ m_nRegOffset
 			+ (m_Interrupt2 - GPIOInterruptOnRisingEdge) * 12;
 
@@ -308,7 +308,7 @@ u32 CGPIOPin::ReadAll (void)
 // See: http://www.raspberrypi.org/forums/viewtopic.php?t=163352&p=1059178#p1059178
 void CGPIOPin::SetPullUpMode (unsigned nMode)
 {
-	unsigned nClkReg = ARM_GPIO_GPPUDCLK0 + m_nRegOffset;
+	uintptr nClkReg = ARM_GPIO_GPPUDCLK0 + m_nRegOffset;
 
 	s_SpinLock.Acquire ();
 
@@ -326,7 +326,7 @@ void CGPIOPin::SetPullUpMode (unsigned nMode)
 void CGPIOPin::SetAlternateFunction (unsigned nFunction)
 {
 	assert (m_nPin < GPIO_PINS);
-	unsigned nSelReg = ARM_GPIO_GPFSEL0 + (m_nPin / 10) * 4;
+	uintptr nSelReg = ARM_GPIO_GPFSEL0 + (m_nPin / 10) * 4;
 	unsigned nShift = (m_nPin % 10) * 3;
 
 	assert (nFunction <= 5);
@@ -356,7 +356,7 @@ void CGPIOPin::DisableAllInterrupts (unsigned nPin)
 {
 	assert (nPin < GPIO_PINS);
 
-	unsigned nReg = ARM_GPIO_GPREN0 + (nPin / 32) * 4;
+	uintptr nReg = ARM_GPIO_GPREN0 + (nPin / 32) * 4;
 	u32 nMask = 1 << (nPin % 32);
 
 	s_SpinLock.Acquire ();

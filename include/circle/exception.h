@@ -2,7 +2,7 @@
 // exception.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,10 +20,20 @@
 #ifndef _circle_exception_h
 #define _circle_exception_h
 
+#if AARCH == 32
+
 #define EXCEPTION_DIVISION_BY_ZERO		0
 #define EXCEPTION_UNDEFINED_INSTRUCTION		1
 #define EXCEPTION_PREFETCH_ABORT		2
 #define EXCEPTION_DATA_ABORT			3
 #define EXCEPTION_UNKNOWN			4
+
+#else
+
+#define EXCEPTION_UNEXPECTED			0
+#define EXCEPTION_SYNCHRONOUS			1
+#define EXCEPTION_SYSTEM_ERROR			2
+
+#endif
 
 #endif

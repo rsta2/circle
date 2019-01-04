@@ -499,13 +499,13 @@ boolean CEMMCDevice::Initialize (void)
 	return TRUE;
 }
 
-int CEMMCDevice::Read (void *pBuffer, unsigned nCount)
+int CEMMCDevice::Read (void *pBuffer, size_t nCount)
 {
 	if (m_ullOffset % SD_BLOCK_SIZE != 0)
 	{
 		return -1;
 	}
-	unsigned nBlock = m_ullOffset / SD_BLOCK_SIZE;
+	u32 nBlock = m_ullOffset / SD_BLOCK_SIZE;
 
 	if (m_pActLED != 0)
 	{
@@ -536,13 +536,13 @@ int CEMMCDevice::Read (void *pBuffer, unsigned nCount)
 	return nCount;
 }
 
-int CEMMCDevice::Write (const void *pBuffer, unsigned nCount)
+int CEMMCDevice::Write (const void *pBuffer, size_t nCount)
 {
 	if (m_ullOffset % SD_BLOCK_SIZE != 0)
 	{
 		return -1;
 	}
-	unsigned nBlock = m_ullOffset / SD_BLOCK_SIZE;
+	u32 nBlock = m_ullOffset / SD_BLOCK_SIZE;
 
 	if (m_pActLED != 0)
 	{
@@ -573,7 +573,7 @@ int CEMMCDevice::Write (const void *pBuffer, unsigned nCount)
 	return nCount;
 }
 
-unsigned long long CEMMCDevice::Seek (unsigned long long ullOffset)
+u64 CEMMCDevice::Seek (u64 ullOffset)
 {
 	m_ullOffset = ullOffset;
 	
@@ -898,7 +898,7 @@ void CEMMCDevice::IssueCommandInt (u32 cmd_reg, u32 argument, int timeout)
 		}
 #endif
 
-		assert (((u32) m_buf & 3) == 0);
+		assert (((uintptr) m_buf & 3) == 0);
 		u32 *pData = (u32 *) m_buf;
 
 		for (int nBlock = 0; nBlock < m_blocks_to_transfer; nBlock++)

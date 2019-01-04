@@ -2,7 +2,7 @@
 // softserial.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/device.h>
 #include <circle/gpiomanager.h>
 #include <circle/gpiopin.h>
+#include <circle/timer.h>
 
 #define SOFTSERIAL_BUFSIZE	64
 
@@ -42,7 +43,7 @@ private:
 	static void InterruptStub (void *pParam);
 
 	void TimerHandler (void);
-	static void TimerStub (unsigned hTimer, void *pParam, void *pContext);
+	static void TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
 	void InBuf (char chChar);
 	int BufStat (void) const;
@@ -53,7 +54,7 @@ private:
 	CGPIOPin m_RxDPin;
 	boolean  m_bInterruptOn;
 
-	unsigned m_hTimer;
+	TKernelTimerHandle m_hTimer;
 
 	boolean  m_bCurrentLevel;
 	boolean  m_bStartBitExpected;

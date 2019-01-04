@@ -4,7 +4,7 @@
 // Provides access to configuration properties saved in a file
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,15 +22,12 @@
 #ifndef _Properties_propertiesfile_h
 #define _Properties_propertiesfile_h
 
-#include <Properties/properties.h>
+#include <Properties/propertiesbasefile.h>
 #include <circle/fs/fat/fatfs.h>
 #include <circle/string.h>
 #include <circle/types.h>
 
-#define MAX_PROPERTY_NAME_LENGTH	100
-#define MAX_PROPERTY_VALUE_LENTGH	500
-
-class CPropertiesFile : public CProperties
+class CPropertiesFile : public CPropertiesBaseFile
 {
 public:
 	CPropertiesFile (const char *pFileName, CFATFileSystem *pFileSystem);
@@ -39,24 +36,9 @@ public:
 	boolean Load (void);		// may be partially loaded on error
 	boolean Save (void);		// overwrites existing file
 
-	// if Load() fails this returns the line where the error occurred
-	unsigned GetErrorLine (void) const;
-
-private:
-	boolean Parse (char chChar);
-
-	static boolean IsValidNameChar (char chChar);
-
 private:
 	CFATFileSystem *m_pFileSystem;
 	CString m_FileName;
-
-	unsigned m_nState;
-	unsigned m_nIndex;	// for the arrays below
-	char m_PropertyName[MAX_PROPERTY_NAME_LENGTH];
-	char m_PropertyValue[MAX_PROPERTY_VALUE_LENTGH];
-
-	unsigned m_nLine;
 };
 
 #endif

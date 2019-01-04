@@ -27,6 +27,7 @@
 #else
 #define ARM_IO_BASE		0x3F000000
 #endif
+#define ARM_IO_END		(ARM_IO_BASE + 0xFFFFFF)
 
 #define GPU_IO_BASE		0x7E000000
 

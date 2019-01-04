@@ -1,0 +1,9 @@
+README
+
+This sample program does consecutive temperature and barometric pressure
+measurements using the BMP180 digital pressure sensor and displays the results
+on the screen.
+
+The BMP180 sensor module has to be attached properly to the I2C interface of
+your Raspberry Pi. Don't forget to connect GND and power (3.3V) to the
+respective pins of your Raspberry Pi.

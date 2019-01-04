@@ -86,7 +86,11 @@ int notmain ( void )
             uart_send(0x0D);
             uart_send(0x0A);
             uart_send(0x0A);
+#if AARCH == 32
             BRANCHTO(0x8000);
+#else
+            BRANCHTO(0x80000);
+#endif
             state=0;
             break;
         }

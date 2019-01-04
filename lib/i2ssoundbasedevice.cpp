@@ -136,8 +136,8 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	// setup and concatenate DMA buffers and control blocks
 	SetupDMAControlBlock (0);
 	SetupDMAControlBlock (1);
-	m_pControlBlock[0]->nNextControlBlockAddress = BUS_ADDRESS ((u32) m_pControlBlock[1]);
-	m_pControlBlock[1]->nNextControlBlockAddress = BUS_ADDRESS ((u32) m_pControlBlock[0]);
+	m_pControlBlock[0]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[1]);
+	m_pControlBlock[1]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[0]);
 
 	// start clock and I2S device
 	assert (8000 <= nSampleRate && nSampleRate <= 192000);
@@ -250,7 +250,7 @@ boolean CI2SSoundBaseDevice::Start (void)
 	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << DMA_CHANNEL_PCM)));
 
 	assert (m_pControlBlock[0] != 0);
-	write32 (ARM_DMACHAN_CONBLK_AD (DMA_CHANNEL_PCM), BUS_ADDRESS ((u32) m_pControlBlock[0]));
+	write32 (ARM_DMACHAN_CONBLK_AD (DMA_CHANNEL_PCM), BUS_ADDRESS ((uintptr) m_pControlBlock[0]));
 
 	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM),   CS_WAIT_FOR_OUTSTANDING_WRITES
 					           | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
@@ -311,8 +311,8 @@ boolean CI2SSoundBaseDevice::GetNextChunk (void)
 	assert (m_pControlBlock[m_nNextBuffer] != 0);
 	m_pControlBlock[m_nNextBuffer]->nTransferLength = nTransferLength;
 
-	CleanAndInvalidateDataCacheRange ((u32) m_pDMABuffer[m_nNextBuffer], nTransferLength);
-	CleanAndInvalidateDataCacheRange ((u32) m_pControlBlock[m_nNextBuffer], sizeof (TDMAControlBlock));
+	CleanAndInvalidateDataCacheRange ((uintptr) m_pDMABuffer[m_nNextBuffer], nTransferLength);
+	CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock[m_nNextBuffer], sizeof (TDMAControlBlock));
 
 	m_nNextBuffer ^= 1;
 
@@ -446,7 +446,7 @@ void CI2SSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 
 	m_pControlBlockBuffer[nID] = new u8[sizeof (TDMAControlBlock) + 31];
 	assert (m_pControlBlockBuffer[nID] != 0);
-	m_pControlBlock[nID] = (TDMAControlBlock *) (((u32) m_pControlBlockBuffer[nID] + 31) & ~31);
+	m_pControlBlock[nID] = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer[nID] + 31) & ~31);
 
 	m_pControlBlock[nID]->nTransferInformation     =   (DREQSourcePCMTX << TI_PERMAP_SHIFT)
 						         | (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
@@ -455,7 +455,7 @@ void CI2SSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 						         | TI_DEST_DREQ
 						         | TI_WAIT_RESP
 						         | TI_INTEN;
-	m_pControlBlock[nID]->nSourceAddress           = BUS_ADDRESS ((u32) m_pDMABuffer[nID]);
+	m_pControlBlock[nID]->nSourceAddress           = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
 	m_pControlBlock[nID]->nDestinationAddress      = (ARM_PCM_FIFO_A & 0xFFFFFF) + GPU_IO_BASE;
 	m_pControlBlock[nID]->n2DModeStride            = 0;
 	m_pControlBlock[nID]->nReserved[0]	       = 0;
