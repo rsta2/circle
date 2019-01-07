@@ -2,7 +2,7 @@
 // dwhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,6 +44,8 @@ public:
 	~CDWHCIDevice (void);
 
 	boolean Initialize (void);
+
+	void ReScanDevices (void);
 
 	boolean SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	boolean SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
@@ -136,6 +138,7 @@ private:
 	CSpinLock m_WaitBlockSpinLock;
 
 	CDWHCIRootPort m_RootPort;
+	boolean m_bRootPortEnabled;
 };
 
 #endif

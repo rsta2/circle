@@ -2,7 +2,7 @@
 // usbstandardhub.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,12 +34,14 @@ static const char FromHub[] = "usbhub";
 CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_pHubDesc (0),
-	m_nPorts (0)
+	m_nPorts (0),
+	m_bPowerIsOn (FALSE)
 {
 	for (unsigned nPort = 0; nPort < USB_HUB_MAX_PORTS; nPort++)
 	{
 		m_pDevice[nPort] = 0;
 		m_pStatus[nPort] = 0;
+		m_bPortConfigured[nPort] = FALSE;
 	}
 }
 
@@ -134,6 +136,11 @@ boolean CUSBStandardHub::Configure (void)
 	return TRUE;
 }
 
+boolean CUSBStandardHub::ReScanDevices (void)
+{
+	return EnumeratePorts ();
+}
+
 boolean CUSBStandardHub::EnumeratePorts (void)
 {
 	CUSBHostController *pHost = GetHost ();
@@ -144,39 +151,54 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 
 	assert (m_nPorts > 0);
 
-	// first power on all ports
-	for (unsigned nPort = 0; nPort < m_nPorts; nPort++)
+	if (!m_bPowerIsOn)
 	{
-		if (pHost->ControlMessage (pEndpoint0,
-			REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_OTHER,
-			SET_FEATURE, PORT_POWER, nPort+1, 0, 0) < 0)
+		// first power on all ports
+		for (unsigned nPort = 0; nPort < m_nPorts; nPort++)
 		{
-			CLogger::Get ()->Write (FromHub, LogError, "Cannot power port %u", nPort+1);
+			if (pHost->ControlMessage (pEndpoint0,
+				REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_OTHER,
+				SET_FEATURE, PORT_POWER, nPort+1, 0, 0) < 0)
+			{
+				CLogger::Get ()->Write (FromHub, LogError,
+							"Cannot power port %u", nPort+1);
 
-			return FALSE;
+				return FALSE;
+			}
 		}
-	}
 
-	// m_pHubDesc->bPwrOn2PwrGood delay seems to be not enough for some devices,
-	// so we use the maximum or a configured value here
-	unsigned nMsDelay = 510;
-	CKernelOptions *pOptions = CKernelOptions::Get ();
-	if (pOptions != 0)
-	{
-		unsigned nUSBPowerDelay = pOptions->GetUSBPowerDelay ();
-		if (nUSBPowerDelay != 0)
+		m_bPowerIsOn = TRUE;
+
+		// m_pHubDesc->bPwrOn2PwrGood delay seems to be not enough for some devices,
+		// so we use the maximum or a configured value here
+		unsigned nMsDelay = 510;
+		CKernelOptions *pOptions = CKernelOptions::Get ();
+		if (pOptions != 0)
 		{
-			nMsDelay = nUSBPowerDelay;
+			unsigned nUSBPowerDelay = pOptions->GetUSBPowerDelay ();
+			if (nUSBPowerDelay != 0)
+			{
+				nMsDelay = nUSBPowerDelay;
+			}
 		}
+		CTimer::Get ()->MsDelay (nMsDelay);
 	}
-	CTimer::Get ()->MsDelay (nMsDelay);
 
 	// now detect devices, reset and initialize them
 	for (unsigned nPort = 0; nPort < m_nPorts; nPort++)
 	{
-		assert (m_pStatus[nPort] == 0);
-		m_pStatus[nPort] = new TUSBPortStatus;
-		assert (m_pStatus[nPort] != 0);
+		if (m_pDevice[nPort] != 0)
+		{
+			m_pDevice[nPort]->ReScanDevices ();
+
+			continue;
+		}
+
+		if (m_pStatus[nPort] == 0)
+		{
+			m_pStatus[nPort] = new TUSBPortStatus;
+			assert (m_pStatus[nPort] != 0);
+		}
 
 		if (pHost->ControlMessage (pEndpoint0,
 			REQUEST_IN | REQUEST_CLASS | REQUEST_TO_OTHER,
@@ -287,6 +309,12 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 		{
 			continue;
 		}
+
+		if (m_bPortConfigured[nPort])
+		{
+			continue;
+		}
+		m_bPortConfigured[nPort] = TRUE;
 
 		if (!m_pDevice[nPort]->Configure ())
 		{

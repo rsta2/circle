@@ -2,7 +2,7 @@
 // usbstandardhub.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbstandardhub_h
-#define _usbstandardhub_h
+#ifndef _circle_usb_usbstandardhub_h
+#define _circle_usb_usbstandardhub_h
 
 #include <circle/usb/usb.h>
 #include <circle/usb/usbhub.h>
@@ -35,6 +35,8 @@ public:
 	
 	boolean Configure (void);
 
+	boolean ReScanDevices (void);
+
 private:
 	boolean EnumeratePorts (void);
 
@@ -42,8 +44,10 @@ private:
 	TUSBHubDescriptor *m_pHubDesc;
 
 	unsigned m_nPorts;
+	boolean m_bPowerIsOn;
 	CUSBDevice *m_pDevice[USB_HUB_MAX_PORTS];
 	TUSBPortStatus *m_pStatus[USB_HUB_MAX_PORTS];
+	boolean m_bPortConfigured[USB_HUB_MAX_PORTS];
 
 	static unsigned s_nDeviceNumber;
 };

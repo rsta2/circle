@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -382,6 +382,24 @@ boolean CUSBDevice::Configure (void)
 		}
 	}
 	
+	return bResult;
+}
+
+boolean CUSBDevice::ReScanDevices (void)
+{
+	boolean bResult = FALSE;
+
+	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
+	{
+		if (m_pFunction[nFunction] != 0)
+		{
+			if (m_pFunction[nFunction]->ReScanDevices ())
+			{
+				bResult = TRUE;
+			}
+		}
+	}
+
 	return bResult;
 }
 
