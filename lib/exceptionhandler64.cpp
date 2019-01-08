@@ -60,7 +60,7 @@ void CExceptionHandler::Throw (unsigned nException, TAbortFrame *pFrame)
 	}
 
 	u64 nEC  = (pFrame->esr_el1 >> 26) & 0x3F;
-	u64 nISS = pFrame->esr_el1 & 0x1FFFFFFF;
+	u64 nISS = pFrame->esr_el1 & 0x1FFFFFF;
 
 	u64 nFAR = 0;
 	if (   (0x20 <= nEC && nEC <= 0x25)
