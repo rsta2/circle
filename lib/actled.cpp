@@ -43,7 +43,7 @@ CActLED::CActLED (void)
 			unsigned nType = (BoardRevision.nValue >> 4) & 0xFF;
 
 			bOld = nType <= 0x01;
-			bIsPi3 = nType == 0x08 || nType == 0x0A || nType == 0x0D || nType == 0x0E;
+			bIsPi3 = nType == 0x08 || nType == 0x0A || nType == 0x0D || nType == 0x0E || nType == 0x10;
 			bIsPiCM3 = nType == 0x0A;
 			bIsPi3Plus = nType == 0x0D || nType == 0x0E;
 			bIsPiZero = nType == 0x09 || nType == 0x0C;

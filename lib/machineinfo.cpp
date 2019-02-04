@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,7 +68,8 @@ s_NewInfo[]
 	{10, MachineModelCM3,		3},
 	{12, MachineModelZeroW,		1},
 	{13, MachineModel3BPlus,	3},
-	{14, MachineModel3APlus,	3}
+	{14, MachineModel3APlus,	3},
+	{16, MachineModelCM3Plus,	3}
 };
 
 static const char *s_MachineName[] =		// must match TMachineModel
@@ -87,6 +88,7 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Raspberry Pi 3 Model B+",
 	"Compute Module",
 	"Compute Module 3",
+	"Compute Module 3+",
 	"Unknown"
 };
 
