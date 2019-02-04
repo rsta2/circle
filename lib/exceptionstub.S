@@ -2,7 +2,7 @@
  * exceptionstub.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 
 	.globl	\name
 \name:
+	sub	sp, sp, #4			/* correct stack (number of pushs must be even) */
 	sub	lr, lr, #\pc_offset		/* lr: correct PC of aborted program */
 	stmfd	sp!, {lr}			/* store PC onto stack */
 	mrs	lr, spsr			/* lr can be overwritten now */
@@ -80,6 +81,7 @@ IRQStub:
 	sub	lr, lr, #4			/* lr: return address */
 	stmfd	sp!, {r0-r3, r12, lr}		/* save r0-r3, r12 and return address */
 #ifdef SAVE_VFP_REGS_ON_IRQ
+	sub	sp, sp, #4			/* correct stack (number of pushs must be even) */
 	vmrs	r0, fpscr			/* save VFP registers */
 	stmfd	sp!, {r0}
 	vstmdb	sp!, {d0-d15}
@@ -95,6 +97,7 @@ IRQStub:
 	vldmia	sp!, {d0-d15}			/* restore VFP registers */
 	ldmfd	sp!, {r0}
 	vmsr	fpscr, r0
+	add	sp, sp, #4			/* correct stack */
 #endif
 	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
 
@@ -106,6 +109,7 @@ FIQStub:
 	sub	lr, lr, #4			/* lr: return address */
 	stmfd	sp!, {r0-r3, r12, lr}		/* save r0-r3, r12 and return address */
 #ifdef SAVE_VFP_REGS_ON_FIQ
+	sub	sp, sp, #4			/* correct stack (number of pushs must be even) */
 	vmrs	r0, fpscr			/* save VFP registers */
 	stmfd	sp!, {r0}
 	vstmdb	sp!, {d0-d15}
@@ -134,6 +138,7 @@ FIQStub:
 	vldmia	sp!, {d0-d15}			/* restore VFP registers */
 	ldmfd	sp!, {r0}
 	vmsr	fpscr, r0
+	add	sp, sp, #4			/* correct stack */
 #endif
 	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
 
@@ -157,6 +162,7 @@ FIQStub:
 	vldmia	sp!, {d0-d15}			/* restore VFP registers */
 	ldmfd	sp!, {r0}
 	vmsr	fpscr, r0
+	add	sp, sp, #4			/* correct stack */
 #endif
 	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
 
