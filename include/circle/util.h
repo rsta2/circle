@@ -2,7 +2,7 @@
 // util.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ extern "C" {
 #define strncpy		circle_strncpy
 #define strcat		circle_strcat
 #define strchr		circle_strchr
+#define strstr		circle_strstr
 #define strtok_r	circle_strtok_r
 #define strtoul		circle_strtoul
 
@@ -62,6 +63,7 @@ char *strncpy (char *pDest, const char *pSrc, size_t nMaxLen);
 char *strcat (char *pDest, const char *pSrc);
 
 char *strchr (const char *pString, int chChar);
+char *strstr (const char *pString, const char *pNeedle);
 
 char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr);
 
