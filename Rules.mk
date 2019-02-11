@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -86,6 +86,11 @@ CFLAGS	  += -nostdinc
 else
 LIBGCC	  != $(CPP) $(ARCH) -print-file-name=libgcc.a
 EXTRALIBS += $(LIBGCC)
+endif
+
+ifeq ($(strip $(STDLIB_SUPPORT)),1)
+LIBM	  != $(CPP) $(ARCH) -print-file-name=libm.a
+EXTRALIBS += $(LIBM)
 endif
 
 OPTIMIZE ?= -O2
