@@ -2,7 +2,7 @@
 // task.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@
 CTask::CTask (unsigned nStackSize)
 :	m_State (TaskStateReady),
 	m_nStackSize (nStackSize),
-	m_pStack (0)
+	m_pStack (0),
+	m_pUserData (0)
 {
 	if (m_nStackSize != 0)
 	{
@@ -56,6 +57,30 @@ CTask::~CTask (void)
 void CTask::Run (void)		// dummy method which is never called
 {
 	assert (0);
+}
+
+void CTask::Terminate (void)
+{
+	m_State = TaskStateTerminated;
+	m_Event.Set ();
+	CScheduler::Get ()->Yield ();
+
+	assert (0);
+}
+
+void CTask::WaitForTermination (void)
+{
+	m_Event.Wait ();
+}
+
+void CTask::SetUserData (void *pData)
+{
+	m_pUserData = pData;
+}
+
+void *CTask::GetUserData (void)
+{
+	return m_pUserData;
 }
 
 #if AARCH == 32
@@ -105,6 +130,7 @@ void CTask::TaskEntry (void *pParam)
 	pThis->Run ();
 
 	pThis->m_State = TaskStateTerminated;
+	pThis->m_Event.Set ();
 	CScheduler::Get ()->Yield ();
 
 	assert (0);
