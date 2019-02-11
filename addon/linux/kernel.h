@@ -6,6 +6,7 @@
 #include <linux/bug.h>
 #include <linux/barrier.h>
 #include <linux/types.h>
+#include <circle/stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,8 +29,10 @@ extern "C" {
 
 #define sprintf		linuxemu_sprintf
 #define snprintf	linuxemu_snprintf
+#define vsnprintf	linuxemu_vsnprintf
 int sprintf (char *buf, const char *fmt, ...);
 int snprintf (char *buf, size_t size, const char *fmt, ...);
+int vsnprintf (char *buf, size_t size, const char *fmt, va_list var);
 
 #ifdef __cplusplus
 }
