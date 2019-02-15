@@ -39,10 +39,34 @@ VideoCore OS Abstraction Layer - public header file
   *
   */
 
+#ifdef __circle__
+#include "interface/vcos/vcos.h"
+#else
 #ifdef __KERNEL__
 #include <linux/ctype.h>
 #else
 #include <ctype.h>
+#endif
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+VCOS_STATIC_INLINE
+int vcos_isspace (int c)
+{
+   return c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v';
+}
+
+VCOS_STATIC_INLINE
+int vcos_isalnum (int c)
+{
+   return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || ('0' <= c && c <= '9');
+}
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

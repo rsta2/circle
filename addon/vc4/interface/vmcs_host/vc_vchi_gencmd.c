@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/vcos/vcos.h"
 #ifdef __circle__
 #include "interface/vcinclude/common.h"
+#include "interface/vcos/vcos_ctype.h"
 #include "vc_vchi_gencmd.h"
 #include <vc4/vchi/vchi.h>
 #else

@@ -48,7 +48,6 @@ extern "C" {
 
 #ifdef __circle__
 #include <linux/string.h>
-#include <linux/kernel.h>
 #else
 #include <string.h>
 #endif
@@ -125,18 +124,6 @@ void *vcos_memset(void *p, int c, size_t n) { return memset(p, c, n); }
 
 VCOS_STATIC_INLINE
 int vcos_memcmp(const void *ptr1, const void *ptr2, size_t count) { return memcmp(ptr1, ptr2, count); }
-
-VCOS_STATIC_INLINE
-int vcos_isspace (int c)
-{
-   return c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v';
-}
-
-VCOS_STATIC_INLINE
-int vcos_isalnum (int c)
-{
-   return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || ('0' <= c && c <= '9');
-}
 
 #ifdef __cplusplus
 }
