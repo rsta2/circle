@@ -2,7 +2,7 @@
 // util.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ extern "C" {
 
 #if STDLIB_SUPPORT >= 2
 
+#define memmove		circle_memmove
 #define memcmp		circle_memcmp
 #define strlen		circle_strlen
 #define strcmp		circle_strcmp
@@ -46,6 +47,8 @@ void *memset (void *pBuffer, int nValue, size_t nLength);
 
 void *memcpy (void *pDest, const void *pSrc, size_t nLength);
 #define memcpyblk memcpy
+
+void *memmove (void *pDest, const void *pSrc, size_t nLength);
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength);
 
