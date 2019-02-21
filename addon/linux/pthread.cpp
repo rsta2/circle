@@ -7,11 +7,12 @@
 #include <circle/multicore.h>
 #include <circle/sched/task.h>
 
+static pthread_key_t next_key = 1;
+
 struct pthread_key_element
 {
 	struct list_head head;
 	pthread_key_t key;
-	void (*destructor) (void *);
 	void *value;
 };
 
@@ -51,7 +52,6 @@ int pthread_create (pthread_t *thread, const pthread_attr_t *attr,
 	p->start_func = func;
 	p->start_arg = arg;
 	p->retval = 0;
-	p->next_key = 1;
 	INIT_LIST_HEAD (&p->key_list);
 
 	p->kthread = kthread_create (_start, p, "pthread");
@@ -75,7 +75,6 @@ pthread_t pthread_self (void)
 		BUG_ON (p == 0);
 
 		p->retval = 0;
-		p->next_key = 1;
 		INIT_LIST_HEAD (&p->key_list);
 		p->kthread = current;
 
@@ -188,47 +187,16 @@ int pthread_mutex_unlock (pthread_mutex_t *mutex)
 
 int pthread_key_create (pthread_key_t *key, void (*destructor) (void *))
 {
-	pthread_t thread = pthread_self ();
-	BUG_ON (thread == 0);
-
-	struct pthread_key_element *key_element = new struct pthread_key_element;
-	BUG_ON (key_element == 0);
-
-	BUG_ON (thread->next_key == 0);
-	BUG_ON (key == 0);
-	*key = thread->next_key;
-	key_element->key = thread->next_key++;
-
-	key_element->destructor = destructor;
-	key_element->value = 0;
-
-	list_add_tail (&key_element->head, &thread->key_list);
+	BUG_ON (next_key == 0);
+	*key = next_key++;
 
 	return 0;
 }
 
+// TODO: delete specific values associated with this key for all threads
 int pthread_key_delete (pthread_key_t key)
 {
-	pthread_t thread = pthread_self ();
-	BUG_ON (thread == 0);
-
-	struct list_head *elem;
-	list_for_each (elem, &thread->key_list)
-	{
-		struct pthread_key_element *key_element =
-			list_entry (elem, struct pthread_key_element, head);
-
-		if (key_element->key == key)
-		{
-			list_del (elem);
-
-			kfree (key_element);
-
-			return 0;
-		}
-	}
-
-	return -EINVAL;
+	return 0;
 }
 
 int pthread_setspecific (pthread_key_t key, const void *value)
@@ -250,7 +218,15 @@ int pthread_setspecific (pthread_key_t key, const void *value)
 		}
 	}
 
-	return -EINVAL;
+	struct pthread_key_element *key_element = new struct pthread_key_element;
+	BUG_ON (key_element == 0);
+
+	key_element->key = key;
+	key_element->value = (void *) value;
+
+	list_add_tail (&key_element->head, &thread->key_list);
+
+	return 0;
 }
 
 void *pthread_getspecific (pthread_key_t key)

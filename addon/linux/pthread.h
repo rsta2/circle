@@ -24,7 +24,6 @@ typedef struct pthread
 	void *(*start_func) (void *);
 	void *start_arg;
 	void *retval;
-	pthread_key_t next_key;
 	struct list_head key_list;
 }
 *pthread_t;
