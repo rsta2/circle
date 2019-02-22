@@ -30,7 +30,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef VC_DISPSERVICEX_DEFS_H
 #define VC_DISPSERVICEX_DEFS_H
 
+#ifdef __circle__
+#include "interface/vcinclude/vc_image_types.h"
+#else
 #include "interface/vctypes/vc_image_types.h"
+#endif
 
 #define  HOST_PITCH_ALIGNMENT    4
 

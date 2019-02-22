@@ -29,7 +29,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __VC_INCLUDE_COMMON_H__
 
 #include "interface/vcos/vcos_stdint.h"
+#ifdef __circle__
+#include "interface/vcinclude/vc_image_types.h"
+#else
 #include "interface/vctypes/vc_image_types.h"
+#endif
 
 #if defined(__HIGHC__) && defined(_VIDEOCORE) && !defined(_I386)
 // __HIGHC__ is only available with MW
