@@ -28,8 +28,9 @@ In the addon/vc4/interface/sample/ directory there are some sample programs,
 which demonstrate, how to use the referenced APIs. They have been used for
 testing too.
 
-The accelerated graphics support is somewhat experimental, because there were
-only a few test cases available. It does build with AARCH = 32 only.
+The accelerated graphics support is still experimental, because there were only
+a few test cases available. It does build with AARCH = 32 only and cannot be
+built on Raspbian.
 
 The source code for porting this accelerated graphics support has been taken
 from:
