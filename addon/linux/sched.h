@@ -8,7 +8,9 @@ extern "C" {
 struct task_struct
 {
 	int pid;
+	int terminated;
 	void *taskobj;		// opaque pointer
+	void *userdata;
 };
 
 extern struct task_struct *current;

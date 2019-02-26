@@ -1,0 +1,18 @@
+README
+
+This directory contains the following accelerated graphics sample programs in
+the respective subdirectory, which show some accelerated graphics demo:
+
+hello_dispmanx	Shows some squares, demonstrates the Dispmanx API
+hello_tiger	Shows a rotating tiger face, demonstrates the OpenVG API
+hello_triangle	Shows a rotating cube, demonstrates the OpenGL ES API
+hello_triangle2	Shows a fractal image, movable by using an USB mouse,
+		demonstrates the OpenGL ES API
+
+Please go to the subdirectory of your choice and enter the following commands to
+build the sample. The Circle libraries, the libraries in addon/linux/ and
+addon/vc4/vchiq/ and the accelerated graphics libraries in addon/vc4/interface/
+have to be built before!
+
+	make clean
+	make

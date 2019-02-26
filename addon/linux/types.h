@@ -9,9 +9,7 @@ typedef int		gfp_t;
 typedef uintptr		dma_addr_t;
 
 #ifndef __cplusplus
-typedef char	bool;
-#define false	0
-#define true	1
+#include <stdbool.h>
 #endif
 
 #ifndef NULL

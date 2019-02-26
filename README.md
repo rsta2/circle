@@ -182,3 +182,7 @@ PS3 and PS4 are registered trademarks of Sony Computer Entertainment Inc.
 Xbox 360 and Xbox One are trademarks of the Microsoft group of companies.
 
 Nintendo Switch is a trademark of Nintendo.
+
+Khronos and OpenVG are trademarks of The Khronos Group Inc.
+
+OpenGL ES is a trademark of Silicon Graphics Inc.

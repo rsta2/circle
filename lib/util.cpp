@@ -270,6 +270,43 @@ char *strchr (const char *pString, int chChar)
 	return 0;
 }
 
+char *strstr (const char *pString, const char *pNeedle)
+{
+	if (!*pString)
+	{
+		if (*pNeedle)
+		{
+			return 0;
+		}
+
+		return (char *) pString;
+	}
+
+	while (*pString)
+	{
+		size_t i = 0;
+
+		while (1)
+		{
+			if (!pNeedle[i])
+			{
+				return (char *) pString;
+			}
+
+			if (pNeedle[i] != pString[i])
+			{
+				break;
+			}
+
+			i++;
+		}
+
+		pString++;
+	}
+
+	return 0;
+}
+
 char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr)
 {
 	char *pToken;
