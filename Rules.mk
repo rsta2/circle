@@ -90,7 +90,9 @@ endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),1)
 LIBM	  != $(CPP) $(ARCH) -print-file-name=libm.a
+ifneq ($(strip $(LIBM)),libm.a)
 EXTRALIBS += $(LIBM)
+endif
 endif
 
 OPTIMIZE ?= -O2
