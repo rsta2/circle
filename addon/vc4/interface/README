@@ -26,7 +26,10 @@ in this directory:
 
 In the addon/vc4/interface/sample/ directory there are some sample programs,
 which demonstrate, how to use the referenced APIs. They have been used for
-testing too.
+testing too. There is a new project (under construction), which provides a few
+additional samples:
+
+	https://github.com/rsta2/libgraphics
 
 The accelerated graphics support is still experimental, because there were only
 a few test cases available. It does build with AARCH = 32 only and cannot be
