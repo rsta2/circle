@@ -128,7 +128,7 @@ AArch64
 
 Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3. There are also Raspberry Pi 2 versions, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too.
 
-The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://releases.linaro.org/components/toolchain/binaries/latest-7/aarch64-elf/). It is based on GCC 7.3.1 at the moment.
+The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://releases.linaro.org/components/toolchain/binaries/latest-7/aarch64-elf/). It is based on GCC 7.4.1 at the moment.
 
 First edit the file *Rules.mk* and set the Raspberry Pi architecture (*AARCH*, 32 or 64) and the *PREFIX64* of your toolchain commands. The *RASPPI* variable is set automatically to 3 for `AARCH = 64` and does not need to be set here. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi architecture and the *PREFIX64* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
