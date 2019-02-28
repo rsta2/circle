@@ -100,6 +100,27 @@ static const char *s_SoCName[] =		// must match TSoCType
 	"Unknown"
 };
 
+static unsigned s_ActLEDInfo[] =		// must match TMachineModel
+{
+	16 | ACTLED_ACTIVE_LOW,		// A
+	16 | ACTLED_ACTIVE_LOW,		// B R1
+	16 | ACTLED_ACTIVE_LOW,		// B R2 256MB
+	16 | ACTLED_ACTIVE_LOW,		// B R2 512MB
+	47,				// A+
+	47,				// B+
+	47 | ACTLED_ACTIVE_LOW,		// Zero
+	47 | ACTLED_ACTIVE_LOW,		// Zero W
+	47,				// 2B
+	0 | ACTLED_VIRTUAL_PIN,		// 3B
+	29,				// 3A+
+	29,				// 3B+
+	47,				// CM
+	0 | ACTLED_VIRTUAL_PIN,		// CM3
+	0 | ACTLED_VIRTUAL_PIN,		// CM3+
+
+	ACTLED_UNKNOWN			// Unknown
+};
+
 CMachineInfo *CMachineInfo::s_pThis = 0;
 
 CMachineInfo::CMachineInfo (void)
@@ -239,6 +260,11 @@ const char *CMachineInfo::GetSoCName (void) const
 u32 CMachineInfo::GetRevisionRaw (void) const
 {
 	return m_nRevisionRaw;
+}
+
+unsigned CMachineInfo::GetActLEDInfo (void) const
+{
+	return s_ActLEDInfo[m_MachineModel];
 }
 
 unsigned CMachineInfo::GetClockRate (u32 nClockId) const

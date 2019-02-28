@@ -80,6 +80,11 @@ public:
 	u32 GetRevisionRaw (void) const;
 
 	// Clock and peripheral info
+	unsigned GetActLEDInfo (void) const;
+#define ACTLED_PIN_MASK		0x3F
+#define ACTLED_ACTIVE_LOW	0x40
+#define ACTLED_VIRTUAL_PIN	0x80
+#define ACTLED_UNKNOWN		(ACTLED_VIRTUAL_PIN | 0)
 	unsigned GetClockRate (u32 nClockId) const;	// see circle/bcmpropertytags.h for nClockId
 	unsigned GetGPIOPin (TGPIOVirtualPin Pin) const;// see circle/gpiopin.h for Pin
 	unsigned GetDevice (TDeviceId DeviceId) const;
