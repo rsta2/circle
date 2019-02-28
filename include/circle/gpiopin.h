@@ -2,7 +2,7 @@
 // gpiopin.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -105,6 +105,10 @@ public:
 	void EnableInterrupt2 (TGPIOInterrupt Interrupt);
 	void DisableInterrupt2 (void);
 
+	/// \param nValue Level of GPIO0-31 in the respective bits to be written (masked by nMask)
+	/// \param nMask  Bit mask for the written value (only those GPIOs are affected, for which
+	///		  the respective bit is set in nMask, the others are not touched)
+	static void WriteAll (u32 nValue, u32 nMask);
 	/// \return Level of GPIO0-31 in the respective bits
 	static u32 ReadAll (void);
 
