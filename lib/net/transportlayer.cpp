@@ -2,7 +2,7 @@
 // transportlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,13 +40,6 @@ CTransportLayer::CTransportLayer (CNetConfig *pNetConfig, CNetworkLayer *pNetwor
 
 CTransportLayer::~CTransportLayer (void)
 {
-#ifndef NDEBUG
-	for (unsigned i = 0; i < m_pConnection.GetCount (); i++)
-	{
-		assert (m_pConnection[i] == 0);
-	}
-#endif
-
 	m_pNetworkLayer = 0;
 	m_pNetConfig = 0;
 }

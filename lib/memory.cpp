@@ -2,7 +2,7 @@
 // memory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -107,10 +107,9 @@ CMemorySystem::~CMemorySystem (void)
 
 		// invalidate unified TLB (if MMU is re-enabled later)
 		asm volatile ("mcr p15, 0, %0, c8, c7,  0" : : "r" (0) : "memory");
+
+		InvalidateDataCache ();
 	}
-	
-	delete m_pPageTable;
-	m_pPageTable = 0;
 }
 
 #ifdef ARM_ALLOW_MULTI_CORE
