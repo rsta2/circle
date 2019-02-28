@@ -1,0 +1,17 @@
+README
+
+This sample program is a TFTP boot loader. When the sample is running, you can
+send an other kernel*.img file via the local network to the Raspberry Pi and
+automatically start it in memory. The kernel image is not written out to the SD
+card. You need an TFTP client installed on your host computer to do this. Enter
+the following command to send the kernel image:
+
+	tftp -m binary ip_address -c put kernel.img
+
+ip_address is the IP address of your Raspberry Pi and is displayed on the
+screen. The file name of the kernel image may be slightly different, depending
+on your project settings.
+
+Please note that there may be a "Transfer timed out" message on your Raspberry
+Pi, before the transfer runs and completes successfully. This is normal and can
+be ignored.
