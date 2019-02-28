@@ -20,11 +20,11 @@ Circle supports the following accelerated graphics APIs now:
 * EGL 1.4
 * Dispmanx
 
-This has been realized by (partially) porting the Raspberry Pi [userland libraries](https://github.com/raspberrypi/userland), which use the VC4 GPU to render the graphics. Please see the *addon/vc4/interface/* directory and the *README* file in this directory for more details. This support is limited to to AArch32 and cannot be built on Raspbian.
+This has been realized by (partially) porting the Raspberry Pi [userland libraries](https://github.com/raspberrypi/userland), which use the VC4 GPU to render the graphics. Please see the *addon/vc4/interface/* directory and the *README* file in this directory for more details. This support is limited to AArch32 and cannot be built on Raspbian.
 
 The accelerated graphics support requires support for <math.h> functions. To provide this, the *libm.a* standard library is linked now, in case `STDLIB_SUPPORT = 1` is set (default). You need an appropriate toolchain so that it works. See the *Building* section for a link. You may use the <math.h> functions in your own applications too now.
 
-Circle does not support USB hot-plugging, but there is a new feature, which allows to detect newly attached USB devices on application request. You can call CDWHCIDevice::ReScanDevices() now, while the application is running, to accomplish this.
+Circle does not support normal USB hot-plugging, but there is a new feature, which allows to detect newly attached USB devices on application request. You can call CDWHCIDevice::ReScanDevices() now, while the application is running, to accomplish this.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
