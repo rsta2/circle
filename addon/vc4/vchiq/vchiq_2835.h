@@ -34,9 +34,7 @@
 #ifndef VCHIQ_2835_H
 #define VCHIQ_2835_H
 
-#ifndef __circle__
 #include "vchiq_pagelist.h"
-#endif
 
 #define VCHIQ_PLATFORM_FRAGMENTS_OFFSET_IDX 0
 #define VCHIQ_PLATFORM_FRAGMENTS_COUNT_IDX  1

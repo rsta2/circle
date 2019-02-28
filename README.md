@@ -6,18 +6,25 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be useable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2 and 3 and on Raspberry Pi Zero). It provides several ready-tested C++ classes which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered some samples which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2 and 3 and on Raspberry Pi Zero). It provides several ready-tested C++ classes which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered some samples which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-The 38th Step
+The 39th Step
 -------------
 
-The entire Circle project has been ported to the AArch64 architecture. Please see the *AArch64* section below for details! The 32-bit support is still available and will be maintained and developed further.
+Circle supports the following accelerated graphics APIs now:
 
-Moreover a driver for the BMP180 digital pressure sensor has been added to *addon/sensor/*.
+* OpenGL ES 1.1 and 2.0
+* OpenVG 1.1
+* EGL 1.4
+* Dispmanx
 
-Circle creates a short beautified build log now.
+This has been realized by (partially) porting the Raspberry Pi [userland libraries](https://github.com/raspberrypi/userland), which use the VC4 GPU to render the graphics. Please see the *addon/vc4/interface/* directory and the *README* file in this directory for more details. This support is limited to AArch32 and cannot be built on Raspbian.
+
+The accelerated graphics support requires support for <math.h> functions. To provide this, the *libm.a* standard library is linked now, in case `STDLIB_SUPPORT = 1` is set (default). You need an appropriate toolchain so that it works. See the *Building* section for a link. You may use the <math.h> functions in your own applications too now.
+
+Circle does not support normal USB hot-plugging, but there is a new feature, which allows to detect newly attached USB devices on application request. You can call CDWHCIDevice::ReScanDevices() now, while the application is running, to accomplish this.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 
@@ -76,7 +83,8 @@ Circle supports the following features:
 |                       | Servers: HTTP, TFTP                                 |
 |                       | BSD-like C++ socket API                             |
 |                       |                                                     |
-| GUI                   | uGUI (by Achim Doebler)                             |
+| Graphics              | OpenGL ES 1.1 and 2.0, OpenVG 1.1, EGL 1.4          |
+|                       | uGUI (by Achim Doebler)                             |
 |                       |                                                     |
 | Bluetooth             | Device inquiry support only                         |
 |                       | USB BR/EDR dongle driver                            |
@@ -120,7 +128,7 @@ AArch64
 
 Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3. There are also Raspberry Pi 2 versions, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too.
 
-The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://releases.linaro.org/components/toolchain/binaries/latest-7/aarch64-elf/). It is based on GCC 7.3.1 at the moment.
+The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://releases.linaro.org/components/toolchain/binaries/latest-7/aarch64-elf/). It is based on GCC 7.4.1 at the moment.
 
 First edit the file *Rules.mk* and set the Raspberry Pi architecture (*AARCH*, 32 or 64) and the *PREFIX64* of your toolchain commands. The *RASPPI* variable is set automatically to 3 for `AARCH = 64` and does not need to be set here. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi architecture and the *PREFIX64* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -158,12 +166,6 @@ Directories
 Classes
 -------
 
-The following C++ classes were added to Circle:
-
-Base library
-
-* CTranslationTable: Encapsulates a translation table to be used by MMU (AArch64)
-
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
 `./makedoc`
@@ -182,3 +184,7 @@ PS3 and PS4 are registered trademarks of Sony Computer Entertainment Inc.
 Xbox 360 and Xbox One are trademarks of the Microsoft group of companies.
 
 Nintendo Switch is a trademark of Nintendo.
+
+Khronos and OpenVG are trademarks of The Khronos Group Inc.
+
+OpenGL ES is a trademark of Silicon Graphics Inc.

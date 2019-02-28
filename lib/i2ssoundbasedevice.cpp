@@ -11,7 +11,7 @@
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -222,7 +222,7 @@ boolean CI2SSoundBaseDevice::Start (void)
 	// fill buffer 0
 	m_nNextBuffer = 0;
 
-	if (!GetNextChunk ())
+	if (!GetNextChunk (TRUE))
 	{
 		return FALSE;
 	}
@@ -296,13 +296,23 @@ boolean CI2SSoundBaseDevice::IsActive (void) const
 	return m_State != I2SSoundIdle ? TRUE : FALSE;
 }
 
-boolean CI2SSoundBaseDevice::GetNextChunk (void)
+boolean CI2SSoundBaseDevice::GetNextChunk (boolean bFirstCall)
 {
 	assert (m_pDMABuffer[m_nNextBuffer] != 0);
-	unsigned nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
-	if (nChunkSize == 0)
+
+	unsigned nChunkSize;
+	if (!bFirstCall)
 	{
-		return FALSE;
+		nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
+		if (nChunkSize == 0)
+		{
+			return FALSE;
+		}
+	}
+	else
+	{
+		nChunkSize = m_nChunkSize;
+		memset (m_pDMABuffer[m_nNextBuffer], 0, nChunkSize * sizeof (u32));
 	}
 
 	unsigned nTransferLength = nChunkSize * sizeof (u32);

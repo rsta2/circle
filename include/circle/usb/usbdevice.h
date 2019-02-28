@@ -2,7 +2,7 @@
 // usbdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbdevice_h
-#define _usbdevice_h
+#ifndef _circle_usb_usbdevice_h
+#define _circle_usb_usbdevice_h
 
 #include <circle/usb/usb.h>
 #include <circle/usb/usbconfigparser.h>
@@ -44,10 +44,12 @@ class CUSBDevice
 public:
 	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
 		    boolean bSplitTransfer, u8 ucHubAddress, u8 ucHubPortNumber);
-	virtual ~CUSBDevice (void);
+	~CUSBDevice (void);
 	
-	virtual boolean Initialize (void);			// onto address state (phase 1)
-	virtual boolean Configure (void);			// onto configured state (phase 2)
+	boolean Initialize (void);		// onto address state (phase 1)
+	boolean Configure (void);		// onto configured state (phase 2)
+
+	boolean ReScanDevices (void);
 
 	CString *GetName (TDeviceNameSelector Selector) const;	// string deleted by caller
 	CString *GetNames (void) const;				// string deleted by caller

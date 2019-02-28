@@ -7,7 +7,7 @@
 //	no dynamic attachments
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -67,7 +67,8 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_nChannelAllocated (0),
 	m_nWaitBlockAllocated (0),
 	m_WaitBlockSpinLock (TASK_LEVEL),
-	m_RootPort (this)
+	m_RootPort (this),
+	m_bRootPortEnabled (FALSE)
 {
 	assert (m_pInterruptSystem != 0);
 	assert (m_pTimer != 0);
@@ -139,24 +140,41 @@ boolean CDWHCIDevice::Initialize (void)
 		return FALSE;
 	}
 
-	// The following calls will fail if there is no device or no supported device connected
-	// to root port. This is not an error because the system may run without an USB device.
-
-	if (!EnableRootPort ())
-	{
-		CLogger::Get ()->Write (FromDWHCI, LogWarning, "No device connected to root port");
-		return TRUE;
-	}
-
-	if (!m_RootPort.Initialize ())
-	{
-		CLogger::Get ()->Write (FromDWHCI, LogWarning, "Cannot initialize root port");
-		return TRUE;
-	}
-	
 	PeripheralExit ();
 
+	ReScanDevices ();
+
 	return TRUE;
+}
+
+void CDWHCIDevice::ReScanDevices (void)
+{
+	PeripheralEntry ();
+
+	if (!m_bRootPortEnabled)
+	{
+		if (EnableRootPort ())
+		{
+			m_bRootPortEnabled = TRUE;
+
+			if (!m_RootPort.Initialize ())
+			{
+				CLogger::Get ()->Write (FromDWHCI, LogWarning,
+							"Cannot initialize root port");
+			}
+		}
+		else
+		{
+			CLogger::Get ()->Write (FromDWHCI, LogWarning,
+						"No device connected to root port");
+		}
+	}
+	else
+	{
+		m_RootPort.ReScanDevices ();
+	}
+
+	PeripheralExit ();
 }
 
 boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)

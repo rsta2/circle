@@ -2,7 +2,7 @@
 // scheduler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
+typedef void TSchedulerTaskHandler (CTask *pTask);
+
 class CScheduler				// simple cooperative (non-preemtive) scheduler
 {
 public:
@@ -35,6 +37,11 @@ public:
 	void Sleep (unsigned nSeconds);
 	void MsSleep (unsigned nMilliSeconds);
 	void usSleep (unsigned nMicroSeconds);
+
+	CTask *GetCurrentTask (void);
+
+	void RegisterTaskSwitchHandler (TSchedulerTaskHandler *pHandler);
+	void RegisterTaskTerminationHandler (TSchedulerTaskHandler *pHandler);
 
 	static CScheduler *Get (void);
 
@@ -60,6 +67,9 @@ private:
 
 	CTask *m_pCurrent;
 	unsigned m_nCurrent;			// index into m_pTask
+
+	TSchedulerTaskHandler *m_pTaskSwitchHandler;
+	TSchedulerTaskHandler *m_pTaskTerminationHandler;
 
 	static CScheduler *s_pThis;
 };

@@ -2,7 +2,7 @@
 // util.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,28 @@ void *memset (void *pBuffer, int nValue, size_t nLength)
 	}
 
 	return pBuffer;
+}
+
+void *memmove (void *pDest, const void *pSrc, size_t nLength)
+{
+	char *pchDest = (char *) pDest;
+	const char *pchSrc = (const char *) pSrc;
+
+	if (   pchSrc < pchDest
+	    && pchDest < pchSrc + nLength)
+	{
+		pchSrc += nLength;
+		pchDest += nLength;
+
+		while (nLength--)
+		{
+			*--pchDest = *--pchSrc;
+		}
+
+		return pDest;
+	}
+
+	return memcpy (pDest, pSrc, nLength);
 }
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength)
@@ -240,6 +262,43 @@ char *strchr (const char *pString, int chChar)
 		if (*pString == chChar)
 		{
 			return (char *) pString;
+		}
+
+		pString++;
+	}
+
+	return 0;
+}
+
+char *strstr (const char *pString, const char *pNeedle)
+{
+	if (!*pString)
+	{
+		if (*pNeedle)
+		{
+			return 0;
+		}
+
+		return (char *) pString;
+	}
+
+	while (*pString)
+	{
+		size_t i = 0;
+
+		while (1)
+		{
+			if (!pNeedle[i])
+			{
+				return (char *) pString;
+			}
+
+			if (pNeedle[i] != pString[i])
+			{
+				break;
+			}
+
+			i++;
 		}
 
 		pString++;

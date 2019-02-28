@@ -5,7 +5,7 @@
  * which is licensed under the GNU Lesser General Public License version 2.1
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,10 @@
  */
 
 	.text
+
+#if STDLIB_SUPPORT >= 2
+	.weak	memcpy		/* this memcpy() is not used, if linked with libc */
+#endif
 
 #if AARCH == 32
 

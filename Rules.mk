@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -88,10 +88,19 @@ LIBGCC	  != $(CPP) $(ARCH) -print-file-name=libgcc.a
 EXTRALIBS += $(LIBGCC)
 endif
 
+ifeq ($(strip $(STDLIB_SUPPORT)),1)
+LIBM	  != $(CPP) $(ARCH) -print-file-name=libm.a
+ifneq ($(strip $(LIBM)),libm.a)
+EXTRALIBS += $(LIBM)
+endif
+endif
+
 OPTIMIZE ?= -O2
 
-INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib
-DEFINE	+= -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) #-DNDEBUG
+INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib \
+	   -I $(CIRCLEHOME)/addon/vc4 -I $(CIRCLEHOME)/addon/vc4/interface/khronos/include
+DEFINE	+= -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
+	   -D__VCCOREVER__=0x04000000 #-DNDEBUG
 
 AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
 CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding $(DEFINE) $(INCLUDE) $(OPTIMIZE) -g
@@ -103,7 +112,7 @@ CPPFLAGS+= $(CFLAGS) -std=c++14
 
 %.o: %.c
 	@echo "  CC    $@"
-	@$(CC) $(CFLAGS) -c -o $@ $<
+	@$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
 
 %.o: %.cpp
 	@echo "  CPP   $@"

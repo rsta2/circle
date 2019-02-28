@@ -6,6 +6,8 @@
 #include <linux/bug.h>
 #include <linux/barrier.h>
 #include <linux/types.h>
+#include <circle/stdarg.h>
+#include <circle/macros.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,17 +21,16 @@ extern "C" {
 #endif
 #endif
 
-#define container_of(ptr, type, member) \
-	((type *) ((char *) (ptr) - offsetof (type, member)))
-
-#ifndef min
-#define min(a, b)	((a) < (b) ? (a) : (b))
+#ifndef container_of
+	#define container_of(ptr, type, member) \
+		((type *) ((char *) (ptr) - offsetof (type, member)))
 #endif
 
-#define sprintf		linuxemu_sprintf
-#define snprintf	linuxemu_snprintf
-int sprintf (char *buf, const char *fmt, ...);
+int sprintf (char *buf, const char *fmt, ...) FROM_STDLIB;
+
+// is not provided with -std=gnu99, so provide it here with (STDLIB_SUPPORT >= 2) too
 int snprintf (char *buf, size_t size, const char *fmt, ...);
+int vsnprintf (char *buf, size_t size, const char *fmt, va_list var);
 
 #ifdef __cplusplus
 }

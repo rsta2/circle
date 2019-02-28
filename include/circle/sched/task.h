@@ -2,7 +2,7 @@
 // task.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_sched_task_h
 
 #include <circle/sched/taskswitch.h>
+#include <circle/sched/synchronizationevent.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
@@ -42,6 +43,12 @@ public:
 	virtual ~CTask (void);
 
 	virtual void Run (void);
+
+	void Terminate (void);			// callable from this task only
+	void WaitForTermination (void);		// callable from other task only
+
+	void SetUserData (void *pData);
+	void *GetUserData (void);
 
 private:
 	TTaskState GetState (void) const	{ return m_State; }
@@ -65,6 +72,9 @@ private:
 	TTaskRegisters	    m_Regs;
 	unsigned	    m_nStackSize;
 	u8		   *m_pStack;
+	void		   *m_pUserData;
+	CSynchronizationEvent m_Event;
+
 };
 
 #endif

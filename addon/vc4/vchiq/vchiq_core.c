@@ -55,6 +55,10 @@
 #define SRVTRACE_ENABLED(srv, lev) \
 	(((srv) && (srv)->trace) || (vchiq_core_msg_log_level >= (lev)))
 
+#ifndef min
+	#define min(a, b)	((a) < (b) ? (a) : (b))
+#endif
+
 struct vchiq_open_payload {
 	int fourcc;
 	int client_id;
