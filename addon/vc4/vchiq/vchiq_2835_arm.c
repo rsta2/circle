@@ -405,7 +405,7 @@ vchiq_doorbell_irq(int irq, void *dev_id)
 #define PAGE_SIZE	4096
 
 struct page {};
-#define vmalloc_to_page(p)	((struct page *) (p))
+#define vmalloc_to_page(p)	((struct page *) ((uintptr_t) (p) & ~(PAGE_SIZE - 1)))
 #define page_address(pg)	((void *) (pg))
 #endif
 
