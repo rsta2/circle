@@ -23,6 +23,7 @@
 #include <circle/bcm2836.h>
 #include <circle/machineinfo.h>
 #include <circle/memory.h>
+#include <circle/chainboot.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/macros.h>
@@ -209,6 +210,11 @@ void sysinit (void)
 	extern int main (void);
 	if (main () == EXIT_REBOOT)
 	{
+		if (IsChainBootEnabled ())
+		{
+			DoChainBoot ();
+		}
+
 		reboot ();
 	}
 
