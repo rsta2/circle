@@ -30,6 +30,7 @@
 #include <circle/bcm2835.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
+#include <circle/koptions.h>
 #include <circle/sysconfig.h>
 #include <circle/debug.h>
 #include <assert.h>
@@ -429,8 +430,19 @@ boolean CDWHCIDevice::InitHost (void)
 
 boolean CDWHCIDevice::EnableRootPort (void)
 {
+	unsigned nMsDelay = 510;
+	CKernelOptions *pOptions = CKernelOptions::Get ();
+	if (pOptions != 0)
+	{
+		unsigned nUSBPowerDelay = pOptions->GetUSBPowerDelay ();
+		if (nUSBPowerDelay != 0)
+		{
+			nMsDelay = nUSBPowerDelay;
+		}
+	}
+
 	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
-	if (!WaitForBit (&HostPort, DWHCI_HOST_PORT_CONNECT, TRUE, 20))
+	if (!WaitForBit (&HostPort, DWHCI_HOST_PORT_CONNECT, TRUE, nMsDelay))
 	{
 		return FALSE;
 	}
