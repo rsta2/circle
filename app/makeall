@@ -1,23 +1,25 @@
 #!/bin/bash
 
+make="${MAKE:-make}"
+
 cd lib
 
 cd template
-make $1 $2 || exit
+$make $1 $2 || exit
 cd ..
 
 # TODO: Add new libs here
 #cd subdir
-#make $1 $2 || exit
+#$make $1 $2 || exit
 #cd ..
 
 cd ..
 
 cd template
-make $1 $2 || exit
+$make $1 $2 || exit
 cd ..
 
 # TODO: Add new apps here
 #cd subdir
-#make $1 $2 || exit
+#$make $1 $2 || exit
 #cd ..
