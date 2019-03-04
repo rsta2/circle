@@ -2,7 +2,7 @@
 // memory64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <circle/bcmpropertytags.h>
 #include <circle/alloc.h>
 #include <circle/spinlock.h>
+#include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
 
@@ -57,6 +58,24 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 
 CMemorySystem::~CMemorySystem (void)
 {
+	if (m_bEnableMMU)
+	{
+		// disable MMU and data cache
+		u32 nSCTLR_EL1;
+		asm volatile ("mrs %0, sctlr_el1" : "=r" (nSCTLR_EL1));
+		nSCTLR_EL1 &= ~(SCTLR_EL1_M | SCTLR_EL1_C);
+		asm volatile ("msr sctlr_el1, %0" : : "r" (nSCTLR_EL1) : "memory");
+		DataSyncBarrier ();
+		InstructionSyncBarrier ();
+
+		CleanDataCache ();
+		InvalidateDataCache ();
+
+		// invalidate TLB (if MMU is re-enabled later)
+		asm volatile ("tlbi vmalle1" : : : "memory");
+		DataSyncBarrier ();
+		InstructionSyncBarrier ();
+	}
 }
 
 #ifdef ARM_ALLOW_MULTI_CORE

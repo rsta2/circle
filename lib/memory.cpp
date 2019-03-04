@@ -102,13 +102,15 @@ CMemorySystem::~CMemorySystem (void)
 		// disable MMU
 		u32 nControl;
 		asm volatile ("mrc p15, 0, %0, c1, c0,  0" : "=r" (nControl));
-		nControl &=  ~MMU_MODE;
+		nControl &=  ~(ARM_CONTROL_MMU | ARM_CONTROL_L1_CACHE);
 		asm volatile ("mcr p15, 0, %0, c1, c0,  0" : : "r" (nControl) : "memory");
+
+		CleanDataCache ();
+		InvalidateDataCache ();
 
 		// invalidate unified TLB (if MMU is re-enabled later)
 		asm volatile ("mcr p15, 0, %0, c8, c7,  0" : : "r" (0) : "memory");
-
-		InvalidateDataCache ();
+		DataSyncBarrier ();
 	}
 }
 

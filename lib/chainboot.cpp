@@ -21,6 +21,7 @@
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/util.h>
+#include <assert.h>
 
 typedef void TKernelStart (void);
 typedef void TChainBootStub (void *, size_t);
@@ -31,13 +32,24 @@ static size_t s_nKernelSize = 0;
 #define STUB_MAX_SIZE	0x400
 static void ChainBootStub (void *pKernelImage, size_t nKernelSize)
 {
-	u8 *pSrc = (u8 *) pKernelImage;
-	u8 *pDest = (u8 *) MEM_KERNEL_START;
+	u32 *pSrc = (u32 *) pKernelImage;
+	u32 *pDest = (u32 *) MEM_KERNEL_START;
+
+	nKernelSize += sizeof (u32)-1;
+	nKernelSize /= sizeof (u32);
 
 	while (nKernelSize--)
 	{
 		*pDest++ = *pSrc++;
 	}
+
+	// all implemented as macros (must not call into overwritten code)
+	InvalidateInstructionCache ();
+#if AARCH == 32
+	FlushBranchTargetCache ();
+#endif
+	DataSyncBarrier ();
+	InstructionSyncBarrier ();
 
 	TKernelStart *pKernelStart = (TKernelStart *) MEM_KERNEL_START;
 	(*pKernelStart) ();
@@ -45,6 +57,10 @@ static void ChainBootStub (void *pKernelImage, size_t nKernelSize)
 
 void EnableChainBoot (void *pKernelImage, size_t nKernelSize)
 {
+#ifdef ARM_ALLOW_MULTI_CORE
+	assert (0);		// not supported with multi-core
+#endif
+
 	s_pKernelImage = pKernelImage;
 	s_nKernelSize = nKernelSize;
 }
@@ -62,6 +78,17 @@ void DoChainBoot (void)
 	TChainBootStub *pStub = (TChainBootStub *) (MEM_KERNEL_START - STUB_MAX_SIZE);
 
 	memcpy ((void *) pStub, (const void *) &ChainBootStub, STUB_MAX_SIZE);
+
+	InvalidateInstructionCache ();
+#if AARCH == 32
+	FlushBranchTargetCache ();
+#endif
+	DataSyncBarrier ();
+	InstructionSyncBarrier ();
+
+#if AARCH == 64
+	asm volatile ("hvc #0");		// return to EL2h mode
+#endif
 
 	(*pStub) (s_pKernelImage, s_nKernelSize);
 }
