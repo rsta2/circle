@@ -180,10 +180,6 @@ void sysinit (void)
 	vfpinit ();
 #endif
 
-#if defined (USE_PHYSICAL_COUNTER) && AARCH == 64
-	write32 (ARM_LOCAL_PRESCALER, 0x6AAAAAB);
-#endif
-
 	// clear BSS
 	extern unsigned char __bss_start;
 	extern unsigned char _end;
