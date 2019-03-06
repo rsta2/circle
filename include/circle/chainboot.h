@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-void EnableChainBoot (void *pKernelImage, size_t nKernelSize);
+void EnableChainBoot (const void *pKernelImage, size_t nKernelSize);
 
 boolean IsChainBootEnabled (void);
 

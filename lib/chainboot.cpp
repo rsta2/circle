@@ -24,15 +24,15 @@
 #include <assert.h>
 
 typedef void TKernelStart (void);
-typedef void TChainBootStub (void *, size_t);
+typedef void TChainBootStub (const void *, size_t);
 
-static void *s_pKernelImage = 0;
+static const void *s_pKernelImage = 0;
 static size_t s_nKernelSize = 0;
 
 #define STUB_MAX_SIZE	0x400
-static void ChainBootStub (void *pKernelImage, size_t nKernelSize)
+static void ChainBootStub (const void *pKernelImage, size_t nKernelSize)
 {
-	u32 *pSrc = (u32 *) pKernelImage;
+	const u32 *pSrc = (const u32 *) pKernelImage;
 	u32 *pDest = (u32 *) MEM_KERNEL_START;
 
 	nKernelSize += sizeof (u32)-1;
@@ -55,7 +55,7 @@ static void ChainBootStub (void *pKernelImage, size_t nKernelSize)
 	(*pKernelStart) ();
 }
 
-void EnableChainBoot (void *pKernelImage, size_t nKernelSize)
+void EnableChainBoot (const void *pKernelImage, size_t nKernelSize)
 {
 #ifdef ARM_ALLOW_MULTI_CORE
 	assert (0);		// not supported with multi-core
