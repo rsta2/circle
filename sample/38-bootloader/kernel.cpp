@@ -47,7 +47,6 @@ CKernel::CKernel (void)
 	, m_Net (IPAddress, NetMask, DefaultGateway, DNSServer)
 #endif
 {
-	m_ActLED.Blink (5);	// show we are alive
 }
 
 CKernel::~CKernel (void)
@@ -126,7 +125,7 @@ TShutdownMode CKernel::Run (void)
 
 	m_Logger.Write (FromKernel, LogNotice, "Rebooting ...");
 
-	m_Scheduler.Sleep (1);
+	m_Scheduler.Sleep (2);
 
 	return ShutdownReboot;
 }

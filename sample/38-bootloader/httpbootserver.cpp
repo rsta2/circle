@@ -20,8 +20,10 @@
 #include "httpbootserver.h"
 #include <circle/chainboot.h>
 #include <circle/logger.h>
+#include <circle/machineinfo.h>
 #include <circle/string.h>
 #include <circle/util.h>
+#include <circle/version.h>
 #include <assert.h>
 
 #define MAX_CONTENT_SIZE	4000
@@ -76,6 +78,8 @@ THTTPStatus CHTTPBootServer::GetContent (const char  *pPath,
 	if (   strcmp (pPath, "/") == 0
 	    || strcmp (pPath, "/index.html") == 0)
 	{
+		const char *pMsg = 0;
+
 		const char *pPartHeader;
 		const u8 *pPartData;
 		unsigned nPartLength;
@@ -84,6 +88,7 @@ THTTPStatus CHTTPBootServer::GetContent (const char  *pPath,
 			assert (pPartHeader != 0);
 			if (   strstr (pPartHeader, "name=\"kernelimg\"") != 0
 			    && strstr (pPartHeader, "filename=\"kernel") != 0
+			    && strstr (pPartHeader, ".img\"") != 0
 			    && nPartLength > 0)
 			{
 				u8 *pKernelImage = new u8[nPartLength];
@@ -94,24 +99,27 @@ THTTPStatus CHTTPBootServer::GetContent (const char  *pPath,
 
 					EnableChainBoot (pKernelImage, nPartLength);
 
-					String.Format (s_Index, "Now booting...");
+					pMsg = "Now booting...";
 				}
 				else
 				{
-					String.Format (s_Index, "Out of memory");
+					pMsg = "Out of memory";
 				}
 			}
 			else
 			{
-				String.Format (s_Index, "Invalid request");
+				pMsg = "Invalid request";
 			}
 		}
 		else
 		{
-			String.Format (s_Index,
-				       "Select the kernel image file to be loaded "
-				       "and press the boot button!");
+			pMsg = "Select the kernel image file to be loaded "
+			       "and press the boot button!";
 		}
+
+		assert (pMsg != 0);
+		String.Format (s_Index, pMsg, CIRCLE_VERSION_STRING,
+			       CMachineInfo::Get ()->GetMachineName ());
 
 		pContent = (const u8 *) (const char *) String;
 		nLength = String.GetLength ();

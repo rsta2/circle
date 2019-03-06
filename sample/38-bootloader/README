@@ -22,3 +22,22 @@ a web browser on your host computer and follow the instructions in the browser
 window:
 
 	http://ip_address:8080/
+
+
+If you want to include the boot loader support into your own application, please
+note that:
+
+* The chain boot mechanism is not supported for multi-core applications.
+
+* The accelerated graphics support cannot be restored after chain boot.
+
+* The Act LED does not work on the Raspberry Pi 3 Model B after chain boot,
+  if it was enabled before. The same is valid for the Compute Module 3(+).
+  That's why the Act LED is not used in this sample.
+
+* Some devices are not reset in the destructors of their driver classes.
+  This may cause problems with some devices. The devices used in this sample
+  should work in any way.
+
+* The source file main.cpp of this sample is slightly different from that,
+  which is used in other sample programs.
