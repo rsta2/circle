@@ -87,9 +87,6 @@ boolean IsChainBootEnabled (void)
 
 void DoChainBoot (void)
 {
-	DisableFIQs ();
-	DisableIRQs ();
-
 #if AARCH == 64
 	asm volatile ("hvc #0");		// return to EL2h mode
 #endif

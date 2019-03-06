@@ -2,7 +2,7 @@
 // interrupt.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,6 +60,18 @@ CInterruptSystem::CInterruptSystem (void)
 
 CInterruptSystem::~CInterruptSystem (void)
 {
+	DisableIRQs ();
+
+	PeripheralEntry ();
+
+	write32 (ARM_IC_FIQ_CONTROL, 0);
+
+	write32 (ARM_IC_DISABLE_IRQS_1, (u32) -1);
+	write32 (ARM_IC_DISABLE_IRQS_2, (u32) -1);
+	write32 (ARM_IC_DISABLE_BASIC_IRQS, (u32) -1);
+
+	PeripheralExit ();
+
 	s_pThis = 0;
 }
 

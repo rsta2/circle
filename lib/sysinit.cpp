@@ -212,6 +212,8 @@ void sysinit (void)
 	{
 		if (IsChainBootEnabled ())
 		{
+			DisableFIQs ();
+
 			DoChainBoot ();
 		}
 
