@@ -29,9 +29,12 @@ typedef void TChainBootStub (const void *, size_t);
 static const void *s_pKernelImage = 0;
 static size_t s_nKernelSize = 0;
 
+static void ChainBootStub (const void *pKernelImage, size_t nKernelSize) MAXOPT;
+
 #define STUB_MAX_SIZE	0x400
 static void ChainBootStub (const void *pKernelImage, size_t nKernelSize)
 {
+	// copy the new kernel image over the old one
 	const u32 *pSrc = (const u32 *) pKernelImage;
 	u32 *pDest = (u32 *) MEM_KERNEL_START;
 
@@ -63,6 +66,18 @@ void EnableChainBoot (const void *pKernelImage, size_t nKernelSize)
 
 	s_pKernelImage = pKernelImage;
 	s_nKernelSize = nKernelSize;
+
+	// copy ChainBootStub() in front of kernel image
+	// STUB_MAX_SIZE is a safe size value for the stub function
+	void *pStub = (void *) (MEM_KERNEL_START - STUB_MAX_SIZE);
+	memcpy (pStub, (const void *) &ChainBootStub, STUB_MAX_SIZE);
+
+	InvalidateInstructionCache ();
+#if AARCH == 32
+	FlushBranchTargetCache ();
+#endif
+	DataSyncBarrier ();
+	InstructionSyncBarrier ();
 }
 
 boolean IsChainBootEnabled (void)
@@ -75,20 +90,13 @@ void DoChainBoot (void)
 	DisableFIQs ();
 	DisableIRQs ();
 
-	TChainBootStub *pStub = (TChainBootStub *) (MEM_KERNEL_START - STUB_MAX_SIZE);
-
-	memcpy ((void *) pStub, (const void *) &ChainBootStub, STUB_MAX_SIZE);
-
-	InvalidateInstructionCache ();
-#if AARCH == 32
-	FlushBranchTargetCache ();
-#endif
-	DataSyncBarrier ();
-	InstructionSyncBarrier ();
-
 #if AARCH == 64
 	asm volatile ("hvc #0");		// return to EL2h mode
 #endif
 
+	// must not use stack from here on
+
+	// jump to ChainBootStub()
+	TChainBootStub *pStub = (TChainBootStub *) (MEM_KERNEL_START - STUB_MAX_SIZE);
 	(*pStub) (s_pKernelImage, s_nKernelSize);
 }

@@ -20,6 +20,7 @@
 #ifndef _circle_chainboot_h
 #define _circle_chainboot_h
 
+#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
@@ -30,7 +31,7 @@ void EnableChainBoot (const void *pKernelImage, size_t nKernelSize);
 
 boolean IsChainBootEnabled (void);
 
-void DoChainBoot (void);
+void DoChainBoot (void) MAXOPT;
 
 #ifdef __cplusplus
 }
