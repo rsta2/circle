@@ -18,9 +18,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include "httpbootserver.h"
 #include "tftpbootserver.h"
+#include <circle/chainboot.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
+
+#define HTTP_BOOT_PORT		8080
 
 // Network configuration
 #define USE_DHCP
@@ -104,14 +108,21 @@ TShutdownMode CKernel::Run (void)
 
 	CString IPString;
 	m_Net.GetConfig ()->GetIPAddress ()->Format (&IPString);
+	m_Logger.Write (FromKernel, LogNotice, "Open \"http://%s:%u/\" in your web browser!",
+			(const char *) IPString, HTTP_BOOT_PORT);
 	m_Logger.Write (FromKernel, LogNotice,
 			"Try \"tftp -m binary %s -c put kernel.img\" from another computer!",
 			(const char *) IPString);
 
-	CTask *pBootServer = new CTFTPBootServer (&m_Net, KERNEL_MAX_SIZE);
-	assert (pBootServer != 0);
+	new CHTTPBootServer (&m_Net, HTTP_BOOT_PORT, KERNEL_MAX_SIZE + 2000);
+	new CTFTPBootServer (&m_Net, KERNEL_MAX_SIZE);
 
-	pBootServer->WaitForTermination ();
+	for (unsigned nCount = 0; !IsChainBootEnabled (); nCount++)
+	{
+		m_Screen.Rotor (0, nCount);
+
+		m_Scheduler.Yield ();
+	}
 
 	m_Logger.Write (FromKernel, LogNotice, "Rebooting ...");
 

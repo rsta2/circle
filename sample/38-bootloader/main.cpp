@@ -25,7 +25,6 @@ int main (void)
 	CKernel Kernel;
 	if (!Kernel.Initialize ())
 	{
-		halt ();
 		return EXIT_HALT;
 	}
 	
