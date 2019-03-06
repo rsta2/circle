@@ -314,24 +314,42 @@ THTTPStatus CHTTPDaemon::ParseRequest (void)
 						if (   m_bRequestFormDataAvailable
 						    && m_nRequestContentLength > 0)
 						{
-							nChar = 0;
-							nState = 1;
-						}
-						else if (   m_bMultipartFormDataAvailable
-							 && m_nMultipartContentLength > 0)
-						{
-							assert (m_pMultipartBuffer == 0);
-							m_pMultipartBuffer = new char[m_nMultipartContentLength];
-							if (m_pMultipartBuffer == 0)
+							if (m_nRequestContentLength <= HTTP_MAX_FORM_DATA)
 							{
-								Status = HTTPInternalServerError;
-
-								nState = 3;
+								nChar = 0;
+								nState = 1;
 							}
 							else
 							{
-								nChar = 0;
-								nState = 2;
+								Status = HTTPRequestEntityTooLarge;
+								nState = 3;
+							}
+						}
+						else if (   m_bMultipartFormDataAvailable
+							 && m_nRequestContentLength > 0)
+						{
+							m_nMultipartContentLength = m_nRequestContentLength;
+							m_nRequestContentLength = 0;
+
+							if (m_nMultipartContentLength <= m_nMaxMultipartSize)
+							{
+								assert (m_pMultipartBuffer == 0);
+								m_pMultipartBuffer = new char[m_nMultipartContentLength];
+								if (m_pMultipartBuffer == 0)
+								{
+									Status = HTTPInternalServerError;
+									nState = 3;
+								}
+								else
+								{
+									nChar = 0;
+									nState = 2;
+								}
+							}
+							else
+							{
+								Status = HTTPRequestEntityTooLarge;
+								nState = 3;
 							}
 						}
 						else
@@ -554,24 +572,7 @@ THTTPStatus CHTTPDaemon::ParseHeaderField (char *pLine)
 			}
 		}
 
-		if (!m_bMultipartFormDataAvailable)
-		{
-			if (nAccu > HTTP_MAX_FORM_DATA)
-			{
-				return HTTPRequestEntityTooLarge;
-			}
-
-			m_nRequestContentLength = nAccu;
-		}
-		else
-		{
-			if (nAccu > m_nMaxMultipartSize)
-			{
-				return HTTPRequestEntityTooLarge;
-			}
-
-			m_nMultipartContentLength = nAccu;
-		}
+		m_nRequestContentLength = nAccu;
 	}
 
 	return HTTPOK;
