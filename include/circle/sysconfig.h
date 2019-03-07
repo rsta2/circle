@@ -96,9 +96,10 @@
 // counter, which is only available on the Raspberry Pi 2 and 3. Reading
 // this counter is much faster than reading the BCM2835 system timer
 // counter (which is used without this option). It reduces the I/O load
-// too. This option cannot be used with QEMU.
+// too. For some QEMU versions this is the only supported timer option,
+// for other older QEMU versions it does not work.
 
-//#define USE_PHYSICAL_COUNTER
+#define USE_PHYSICAL_COUNTER
 
 #endif
 
