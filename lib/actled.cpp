@@ -23,7 +23,7 @@
 
 CActLED *CActLED::s_pThis = 0;
 
-CActLED::CActLED (void)
+CActLED::CActLED (boolean bSafeMode)
 :	m_pPin (0),
 	m_pVirtualPin (0)
 {
@@ -33,7 +33,7 @@ CActLED::CActLED (void)
 
 	if (nActLEDInfo & ACTLED_VIRTUAL_PIN)
 	{
-		m_pVirtualPin = new CVirtualGPIOPin (nActLEDInfo & ACTLED_PIN_MASK);
+		m_pVirtualPin = new CVirtualGPIOPin (nActLEDInfo & ACTLED_PIN_MASK, bSafeMode);
 	}
 	else
 	{

@@ -21,6 +21,7 @@
 #define _kernel_h
 
 #include <circle/memory.h>
+#include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
 #include <circle/screen.h>
@@ -54,6 +55,7 @@ public:
 private:
 	// do not change this order
 	CMemorySystem		m_Memory;
+	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
 	CScreenDevice		m_Screen;

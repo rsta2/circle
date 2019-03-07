@@ -2,7 +2,7 @@
 // bcmpropertytags.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@
 #define PROPTAG_GET_EDID_BLOCK		0x00030020
 #define PROPTAG_SET_CLOCK_RATE		0x00038002
 #define PROPTAG_SET_TURBO		0x00038009
+#define PROPTAG_SET_SET_GPIO_STATE	0x00038041
 #define PROPTAG_ALLOCATE_BUFFER		0x00040001
 #define PROPTAG_GET_DISPLAY_DIMENSIONS	0x00040003
 #define PROPTAG_GET_PITCH		0x00040008
@@ -181,6 +182,16 @@ struct TPropertyTagTurbo
 	u32		nLevel;
 	#define TURBO_OFF		0
 	#define TURBO_ON		1
+}
+PACKED;
+
+struct TPropertyTagGPIOState
+{
+	TPropertyTag	Tag;
+	u32		nGPIO;
+	#define EXP_GPIO_BASE		128
+	#define EXP_GPIO_NUM		8
+	u32		nState;
 }
 PACKED;
 
