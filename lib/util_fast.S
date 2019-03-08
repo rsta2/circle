@@ -23,10 +23,6 @@
 
 	.text
 
-#if STDLIB_SUPPORT >= 2
-	.weak	memcpy		/* this memcpy() is not used, if linked with libc */
-#endif
-
 #if AARCH == 32
 
 	.globl	memcpy
