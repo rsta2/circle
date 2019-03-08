@@ -23,7 +23,7 @@
 #include <circle/util.h>
 #include <assert.h>
 
-static const char FromBootServer[] = "boot";
+static const char FromBootServer[] = "tftpboot";
 
 CTFTPBootServer::CTFTPBootServer (CNetSubSystem *pNetSubSystem, size_t nMaxKernelSize)
 :	CTFTPDaemon (pNetSubSystem),
@@ -97,8 +97,6 @@ boolean CTFTPBootServer::FileClose (void)
 	if (m_nCurrentOffset > 0)
 	{
 		EnableChainBoot (m_pKernelBuffer, m_nCurrentOffset);
-
-		Terminate ();
 	}
 
 	return TRUE;
