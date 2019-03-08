@@ -73,9 +73,6 @@ CInterruptSystem::~CInterruptSystem (void)
 
 #if RASPPI >= 2
 	write32 (ARM_LOCAL_TIMER_INT_CONTROL0, 0);
-	write32 (ARM_LOCAL_PM_ROUTING_CLR, 0xFF);
-	write32 (ARM_LOCAL_AXI_IRQ, 0);
-	write32 (ARM_LOCAL_TIMER_WRITE, 1 << 31);
 #endif
 
 	PeripheralExit ();
@@ -106,9 +103,6 @@ boolean CInterruptSystem::Initialize (void)
 
 #if RASPPI >= 2
 	write32 (ARM_LOCAL_TIMER_INT_CONTROL0, 0);
-	write32 (ARM_LOCAL_PM_ROUTING_CLR, 0xFF);
-	write32 (ARM_LOCAL_AXI_IRQ, 0);
-	write32 (ARM_LOCAL_TIMER_WRITE, 1 << 31);
 #endif
 
 	PeripheralExit ();
