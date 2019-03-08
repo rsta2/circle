@@ -61,12 +61,24 @@ CInterruptSystem::CInterruptSystem (void)
 
 CInterruptSystem::~CInterruptSystem (void)
 {
+	DisableIRQs ();
+
+	PeripheralEntry ();
+
+	write32 (ARM_IC_FIQ_CONTROL, 0);
+
+	write32 (ARM_IC_DISABLE_IRQS_1, (u32) -1);
+	write32 (ARM_IC_DISABLE_IRQS_2, (u32) -1);
+	write32 (ARM_IC_DISABLE_BASIC_IRQS, (u32) -1);
+
 #if RASPPI >= 2
 	write32 (ARM_LOCAL_TIMER_INT_CONTROL0, 0);
 	write32 (ARM_LOCAL_PM_ROUTING_CLR, 0xFF);
 	write32 (ARM_LOCAL_AXI_IRQ, 0);
 	write32 (ARM_LOCAL_TIMER_WRITE, 1 << 31);
 #endif
+
+	PeripheralExit ();
 
 	s_pThis = 0;
 }

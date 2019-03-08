@@ -4,7 +4,7 @@
 // Definitions common to HTTP client and server
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #define HTTP_MAX_PATH		256
 #define HTTP_MAX_PARAMS		(HTTP_MAX_URI-HTTP_MAX_PATH-1)
 #define HTTP_MAX_FORM_DATA	2048
+#define HTTP_MAX_MULTIPART_BOUNDARY 100
 
 enum THTTPRequestMethod
 {

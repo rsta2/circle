@@ -87,6 +87,14 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 
 CDWHCIDevice::~CDWHCIDevice (void)
 {
+	Reset ();
+
+	CBcmPropertyTags Tags;
+	TPropertyTagPowerState PowerState;
+	PowerState.nDeviceId = DEVICE_ID_USB_HCD;
+	PowerState.nState = POWER_STATE_OFF | POWER_STATE_WAIT;
+	Tags.GetTag (PROPTAG_SET_POWER_STATE, &PowerState, sizeof PowerState);
+
 	m_pInterruptSystem = 0;
 	m_pTimer = 0;
 }

@@ -45,12 +45,6 @@ CScheduler::~CScheduler (void)
 	m_pTaskSwitchHandler = 0;
 	m_pTaskTerminationHandler = 0;
 
-	assert (m_nTasks == 1);
-	assert (m_pTask[0] == m_pCurrent);
-	RemoveTask (m_pCurrent);
-	delete m_pCurrent;
-	m_pCurrent = 0;
-
 	s_pThis = 0;
 }
 
