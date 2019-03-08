@@ -132,6 +132,12 @@ $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 clean:
 	rm -f *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
 
+ifneq ($(strip $(SDCARD)),)
+install: $(TARGET).img
+	cp $(TARGET).img $(SDCARD)
+	sync
+endif
+
 #
 # Eclipse support
 #
