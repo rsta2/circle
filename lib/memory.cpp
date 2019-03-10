@@ -60,7 +60,7 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 	s_pThis = this;
 
 #ifndef USE_RPI_STUB_AT
-	CBcmPropertyTags Tags;
+	CBcmPropertyTags Tags (TRUE);
 	TPropertyTagMemory TagMemory;
 	if (!Tags.GetTag (PROPTAG_GET_ARM_MEMORY, &TagMemory, sizeof TagMemory))
 	{

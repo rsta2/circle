@@ -30,7 +30,7 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 	m_nMemSize (0),
 	m_pTranslationTable (0)
 {
-	CBcmPropertyTags Tags;
+	CBcmPropertyTags Tags (TRUE);
 	TPropertyTagMemory TagMemory;
 	if (!Tags.GetTag (PROPTAG_GET_ARM_MEMORY, &TagMemory, sizeof TagMemory))
 	{

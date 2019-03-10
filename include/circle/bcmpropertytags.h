@@ -270,7 +270,7 @@ PACKED;
 class CBcmPropertyTags
 {
 public:
-	CBcmPropertyTags (void);
+	CBcmPropertyTags (boolean bEarlyUse = FALSE);		// do not use spinlock early
 	~CBcmPropertyTags (void);
 
 	boolean GetTag (u32	  nTagId,			// tag identifier
