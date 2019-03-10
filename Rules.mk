@@ -21,6 +21,7 @@
 CIRCLEHOME ?= ..
 
 -include $(CIRCLEHOME)/Config.mk
+-include $(CIRCLEHOME)/Config2.mk	# is not overwritten by "configure"
 
 AARCH	 ?= 32
 RASPPI	 ?= 1
@@ -77,6 +78,10 @@ LIBGCC_EH != $(CPP) $(ARCH) -print-file-name=libgcc_eh.a
 ifneq ($(strip $(LIBGCC_EH)),libgcc_eh.a)
 EXTRALIBS += $(LIBGCC_EH)
 endif
+ifeq ($(strip $(AARCH)),64)
+CRTBEGIN != $(CPP) $(ARCH) -print-file-name=crtbegin.o
+CRTEND   != $(CPP) $(ARCH) -print-file-name=crtend.o
+endif
 else
 CPPFLAGS  += -fno-exceptions -fno-rtti -nostdinc++
 endif
@@ -121,7 +126,8 @@ CPPFLAGS+= $(CFLAGS) -std=c++14
 $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@echo "  LD    $(TARGET).elf"
 	@$(LD) -o $(TARGET).elf -Map $(TARGET).map --section-start=.init=$(LOADADDR) \
-		-T $(CIRCLEHOME)/circle.ld $(OBJS) $(EXTRALIBS) $(LIBS) $(EXTRALIBS)
+		-T $(CIRCLEHOME)/circle.ld $(CRTBEGIN) $(OBJS) $(EXTRALIBS) $(LIBS) \
+		$(EXTRALIBS) $(CRTEND)
 	@echo "  DUMP  $(TARGET).lst"
 	@$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
 	@echo "  COPY  $(TARGET).img"

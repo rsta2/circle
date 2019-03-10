@@ -91,6 +91,11 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 
 CMemorySystem::~CMemorySystem (void)
 {
+	Destructor ();
+}
+
+void CMemorySystem::Destructor (void)
+{
 	if (s_pThis != this)
 	{
 		return;
@@ -126,7 +131,7 @@ void CMemorySystem::InitializeSecondary (void)
 
 #endif
 
-u32 CMemorySystem::GetMemSize (void) const
+size_t CMemorySystem::GetMemSize (void) const
 {
 	assert (s_pThis != 0);
 	return s_pThis->m_nMemSize;

@@ -25,11 +25,19 @@
 #include <circle/sysconfig.h>
 #include <assert.h>
 
+CMemorySystem *CMemorySystem::s_pThis = 0;
+
 CMemorySystem::CMemorySystem (boolean bEnableMMU)
 :	m_bEnableMMU (bEnableMMU),
 	m_nMemSize (0),
 	m_pTranslationTable (0)
 {
+	if (s_pThis != 0)	// ignore second instance
+	{
+		return;
+	}
+	s_pThis = this;
+
 	CBcmPropertyTags Tags (TRUE);
 	TPropertyTagMemory TagMemory;
 	if (!Tags.GetTag (PROPTAG_GET_ARM_MEMORY, &TagMemory, sizeof TagMemory))
@@ -58,6 +66,17 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 
 CMemorySystem::~CMemorySystem (void)
 {
+	Destructor ();
+}
+
+void CMemorySystem::Destructor (void)
+{
+	if (s_pThis != this)
+	{
+		return;
+	}
+	s_pThis = 0;
+
 	if (m_bEnableMMU)
 	{
 		// disable MMU and data cache
@@ -82,16 +101,24 @@ CMemorySystem::~CMemorySystem (void)
 
 void CMemorySystem::InitializeSecondary (void)
 {
-	assert (m_bEnableMMU);		// required to use spin locks
+	assert (s_pThis != 0);
+	assert (s_pThis->m_bEnableMMU);		// required to use spin locks
 
-	EnableMMU ();
+	s_pThis->EnableMMU ();
 }
 
 #endif
 
 size_t CMemorySystem::GetMemSize (void) const
 {
-	return m_nMemSize;
+	assert (s_pThis != 0);
+	return s_pThis->m_nMemSize;
+}
+
+CMemorySystem *CMemorySystem::Get (void)
+{
+	assert (s_pThis != 0);
+	return s_pThis;
 }
 
 void CMemorySystem::EnableMMU (void)

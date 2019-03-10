@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-void *__dso_handle;
+void *__dso_handle WEAK;
 
 void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle) WEAK;
 
@@ -195,7 +195,7 @@ void sysinit (void)
 	CMemorySystem Memory;
 #endif
 
-	// call construtors of static objects
+	// call constructors of static objects
 	extern void (*__init_start) (void);
 	extern void (*__init_end) (void);
 	for (void (**pFunc) (void) = &__init_start; pFunc < &__init_end; pFunc++)
@@ -208,6 +208,10 @@ void sysinit (void)
 	{
 		if (IsChainBootEnabled ())
 		{
+#if STDLIB_SUPPORT >= 2
+			Memory.Destructor ();
+#endif
+
 			DisableFIQs ();
 
 			DoChainBoot ();
