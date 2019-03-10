@@ -22,6 +22,7 @@
 
 #include <circle/bcmpropertytags.h>
 #include <circle/gpiopin.h>
+#include <circle/macros.h>
 #include <circle/types.h>
 
 enum TMachineModel
@@ -61,7 +62,7 @@ enum TDeviceId
 class CMachineInfo
 {
 public:
-	CMachineInfo (void);
+	CMachineInfo (void) NOOPT;
 	~CMachineInfo (void);
 
 	// Basic info

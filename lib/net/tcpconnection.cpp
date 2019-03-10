@@ -13,7 +13,7 @@
 //	user timeout
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ struct TTCPHeader
 	u16	nWindow;
 	u16	nChecksum;
 	u16	nUrgentPointer;
-	u32	Options[0];
+	u32	Options[];
 }
 PACKED;
 
@@ -92,7 +92,7 @@ struct TTCPOption
 #define TCP_OPTION_SACK_PERM	4	//	None
 #define TCP_OPTION_TIMESTAMP	8	//	Timestamp value, Timestamp echo reply (2*4 byte)
 	u8	nLength;
-	u8	Data[0];
+	u8	Data[];
 }
 PACKED;
 
