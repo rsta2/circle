@@ -139,6 +139,8 @@ private:
 
 	CDWHCIRootPort m_RootPort;
 	boolean m_bRootPortEnabled;
+
+	volatile boolean m_bShutdown;			// USB driver will shutdown
 };
 
 #endif

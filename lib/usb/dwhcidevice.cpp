@@ -69,7 +69,8 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_nWaitBlockAllocated (0),
 	m_WaitBlockSpinLock (TASK_LEVEL),
 	m_RootPort (this),
-	m_bRootPortEnabled (FALSE)
+	m_bRootPortEnabled (FALSE),
+	m_bShutdown (FALSE)
 {
 	assert (m_pInterruptSystem != 0);
 	assert (m_pTimer != 0);
@@ -87,6 +88,14 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 
 CDWHCIDevice::~CDWHCIDevice (void)
 {
+	m_bShutdown = TRUE;
+
+	assert (m_pTimer != 0);
+	m_pTimer->MsDelay (200);	// wait for completion of all transactions
+
+	assert (m_pInterruptSystem != 0);
+	m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_USB);
+
 	Reset ();
 
 	CBcmPropertyTags Tags;
@@ -188,6 +197,11 @@ void CDWHCIDevice::ReScanDevices (void)
 
 boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
 {
+	if (m_bShutdown)
+	{
+		return FALSE;
+	}
+
 	PeripheralEntry ();
 
 	assert (pURB != 0);
@@ -252,6 +266,11 @@ boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeou
 
 boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
 {
+	if (m_bShutdown)
+	{
+		return FALSE;
+	}
+
 	PeripheralEntry ();
 
 	assert (pURB != 0);
@@ -921,6 +940,11 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 
 void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 {
+	if (m_bShutdown)
+	{
+		return;
+	}
+
 	CDWHCITransferStageData *pStageData = m_pStageData[nChannel];
 	assert (pStageData != 0);
 	CUSBRequest *pURB = pStageData->GetURB ();
@@ -1198,6 +1222,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 void CDWHCIDevice::SOFInterruptHandler (void)
 {
+	if (m_bShutdown)
+	{
+		return;
+	}
+
 	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
 	u16 usFrameNumber = DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ());
 
