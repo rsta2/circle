@@ -31,6 +31,8 @@ void *memset (void *pBuffer, int nValue, size_t nLength)
 	return pBuffer;
 }
 
+#if STDLIB_SUPPORT <= 1
+
 void *memmove (void *pDest, const void *pSrc, size_t nLength)
 {
 	char *pchDest = (char *) pDest;
@@ -489,6 +491,8 @@ unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase)
 
 	return ulResult;
 }
+
+#endif
 
 int char2int (char chValue)
 {

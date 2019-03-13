@@ -3,6 +3,8 @@
 #include <circle/stdarg.h>
 #include <circle/util.h>
 
+#if STDLIB_SUPPORT <= 1
+
 int sprintf (char *buf, const char *fmt, ...)
 {
 	va_list var;
@@ -56,3 +58,5 @@ int vsnprintf (char *buf, size_t size, const char *fmt, va_list var)
 
 	return len;
 }
+
+#endif

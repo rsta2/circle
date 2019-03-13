@@ -20,7 +20,6 @@
 #ifndef _circle_util_h
 #define _circle_util_h
 
-#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
@@ -32,28 +31,28 @@ void *memset (void *pBuffer, int nValue, size_t nLength);
 void *memcpy (void *pDest, const void *pSrc, size_t nLength);
 #define memcpyblk memcpy
 
-void *memmove (void *pDest, const void *pSrc, size_t nLength) FROM_STDLIB;
+void *memmove (void *pDest, const void *pSrc, size_t nLength);
 
-int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength) FROM_STDLIB;
+int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength);
 
-size_t strlen (const char *pString) FROM_STDLIB;
+size_t strlen (const char *pString);
 
-int strcmp (const char *pString1, const char *pString2) FROM_STDLIB;
-int strcasecmp (const char *pString1, const char *pString2) FROM_STDLIB;
-int strncmp (const char *pString1, const char *pString2, size_t nMaxLen) FROM_STDLIB;
+int strcmp (const char *pString1, const char *pString2);
+int strcasecmp (const char *pString1, const char *pString2);
+int strncmp (const char *pString1, const char *pString2, size_t nMaxLen);
 
-char *strcpy (char *pDest, const char *pSrc) FROM_STDLIB;
+char *strcpy (char *pDest, const char *pSrc);
 
-char *strncpy (char *pDest, const char *pSrc, size_t nMaxLen) FROM_STDLIB;
+char *strncpy (char *pDest, const char *pSrc, size_t nMaxLen);
 
-char *strcat (char *pDest, const char *pSrc) FROM_STDLIB;
+char *strcat (char *pDest, const char *pSrc);
 
-char *strchr (const char *pString, int chChar) FROM_STDLIB;
-char *strstr (const char *pString, const char *pNeedle) FROM_STDLIB;
+char *strchr (const char *pString, int chChar);
+char *strstr (const char *pString, const char *pNeedle);
 
-char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr) FROM_STDLIB;
+char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr);
 
-unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase) FROM_STDLIB;
+unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase);
 
 int char2int (char chValue);			// with sign extension
 

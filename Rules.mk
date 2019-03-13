@@ -126,8 +126,8 @@ CPPFLAGS+= $(CFLAGS) -std=c++14
 $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@echo "  LD    $(TARGET).elf"
 	@$(LD) -o $(TARGET).elf -Map $(TARGET).map --section-start=.init=$(LOADADDR) \
-		-T $(CIRCLEHOME)/circle.ld $(CRTBEGIN) $(OBJS) $(EXTRALIBS) $(LIBS) \
-		$(EXTRALIBS) $(CRTEND)
+		-T $(CIRCLEHOME)/circle.ld $(CRTBEGIN) $(OBJS) \
+		--start-group $(LIBS) $(EXTRALIBS) --end-group $(CRTEND)
 	@echo "  DUMP  $(TARGET).lst"
 	@$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
 	@echo "  COPY  $(TARGET).img"
