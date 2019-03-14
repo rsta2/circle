@@ -21,7 +21,27 @@
 
 void *memset (void *pBuffer, int nValue, size_t nLength)
 {
-	char *p = (char *) pBuffer;
+	u32 *p32 = (u32 *) pBuffer;
+
+	if (   ((uintptr) p32 & 3) == 0
+	    && nLength >= 16)
+	{
+		u32 nValue32 = nValue | nValue << 8;
+		nValue32 |= nValue32 << 16;
+
+		do
+		{
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+
+			nLength -= 16;
+		}
+		while (nLength >= 16);
+	}
+
+	char *p = (char *) p32;
 
 	while (nLength--)
 	{
