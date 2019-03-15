@@ -90,6 +90,17 @@ public:
 	unsigned GetGPIOPin (TGPIOVirtualPin Pin) const;// see circle/gpiopin.h for Pin
 	unsigned GetDevice (TDeviceId DeviceId) const;
 
+	// DMA channel resource management
+#define DMA_CHANNEL_MAX		12			// channels 0-12 are supported
+#define DMA_CHANNEL__MASK	0x0F			// explicit channel number 0-12
+#define DMA_CHANNEL_NONE	0x80			// returned if no channel available
+#define DMA_CHANNEL_NORMAL	0x81			// normal DMA engine requested
+#define DMA_CHANNEL_LITE	0x82			// lite (or normal) DMA engine requested
+	// nChannel must be DMA_CHANNEL_NORMAL, DMA_CHANNEL_LITE or an explicit channel number
+	// returns the allocated channel number or DMA_CHANNEL_NONE on failure
+	unsigned AllocateDMAChannel (unsigned nChannel);
+	void FreeDMAChannel (unsigned nChannel);
+
 	static CMachineInfo *Get (void);
 
 private:
@@ -99,6 +110,8 @@ private:
 	unsigned	m_nModelRevision;
 	TSoCType	m_SoCType;
 	unsigned	m_nRAMSize;
+
+	u16		m_usDMAChannelMap;		// channel bit set if channel is free
 
 	static CMachineInfo *s_pThis;
 };
