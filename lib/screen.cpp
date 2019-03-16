@@ -734,7 +734,7 @@ void CScreenDevice::Scroll (void)
 	if (nSize > 0)
 	{
 #ifdef SCREEN_DMA_BURST_LENGTH
-		m_DMAChannel.SetupMemCopy (pTo, pFrom, nSize, SCREEN_DMA_BURST_LENGTH);
+		m_DMAChannel.SetupMemCopy (pTo, pFrom, nSize, SCREEN_DMA_BURST_LENGTH, FALSE);
 
 		m_DMAChannel.Start ();
 		m_DMAChannel.Wait ();

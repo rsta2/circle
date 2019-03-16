@@ -64,7 +64,7 @@ public:
 
 	// nBurstLength > 0 increases speed, but may congest the system bus
 	void SetupMemCopy (void *pDestination, const void *pSource, size_t nLength,
-			   unsigned nBurstLength = 0);
+			   unsigned nBurstLength = 0, boolean bCached = TRUE);
 	void SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ);
 	void SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ);
 

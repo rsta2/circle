@@ -143,7 +143,7 @@ CDMAChannel::~CDMAChannel (void)
 }
 
 void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t nLength,
-				unsigned nBurstLength)
+				unsigned nBurstLength, boolean bCached)
 {
 	assert (pDestination != 0);
 	assert (pSource != 0);
@@ -166,11 +166,18 @@ void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t 
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
 
-	m_nDestinationAddress = (uintptr) pDestination;
-	m_nBufferLength = nLength;
+	if (bCached)
+	{
+		m_nDestinationAddress = (uintptr) pDestination;
+		m_nBufferLength = nLength;
 
-	CleanAndInvalidateDataCacheRange ((uintptr) pSource, nLength);
-	CleanAndInvalidateDataCacheRange ((uintptr) pDestination, nLength);
+		CleanAndInvalidateDataCacheRange ((uintptr) pSource, nLength);
+		CleanAndInvalidateDataCacheRange ((uintptr) pDestination, nLength);
+	}
+	else
+	{
+		m_nDestinationAddress = 0;
+	}
 }
 
 void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ)
