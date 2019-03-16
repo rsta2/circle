@@ -164,7 +164,7 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 
 	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
 	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
-	CTimer::Get ()->usDelay (1000);
+	CTimer::SimpleusDelay (1000);
 
 	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
 	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
