@@ -39,8 +39,7 @@ static const u8 DNSServer[]      = {192, 168, 0, 1};
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
-:	m_ActLED (TRUE),
-	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
+:	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer)
@@ -48,7 +47,6 @@ CKernel::CKernel (void)
 	, m_Net (IPAddress, NetMask, DefaultGateway, DNSServer)
 #endif
 {
-	m_ActLED.Blink (5);	// show we are alive
 }
 
 CKernel::~CKernel (void)

@@ -50,3 +50,6 @@ Adding bootloader support and tools
 
 Stephane Damo
 Helping to fix FIQ synchronization issue
+
+Steve Maynard
+Patches and testing for Compute Module 3(+)

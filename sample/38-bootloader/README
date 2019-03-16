@@ -46,7 +46,8 @@ note that:
 * The chain boot mechanism is not supported in multi-core applications.
 
 * The accelerated graphics and HDMI sound support cannot be restored after
-  chain boot.
+  chain boot, if used before. There may be problems with the Act LED too.
+  That's why it is not used in this bootloader.
 
 * Some devices are not reset in the destructors of their driver classes.
   This may cause problems with some devices. Please report such issues.
