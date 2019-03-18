@@ -10,6 +10,19 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
+Release 39.1
+------------
+
+This intermediate release comes with a new in-memory-update (chain boot) function and some improvements in detail. Furthermore it is the basis for AArch64 support in the [circle-stdlib](https://github.com/smuehlst/circle-stdlib) project.
+
+The in-memory-update function allows starting a new (Circle-based) kernel image without writing it out to the SD card. This is used to implement a HTTP- and TFTP-based bootloader with Web front-end in *sample/38-bootloader*. Starting larger kernel images with it is much quicker, compared with the serial bootloader. See the *README* file in this directory for details.
+
+The ARM Generic Timer is supported now on Raspberry Pi 2 and 3 as a replacement for the BCM2835 System Timer. This should improve performance and allows using QEMU with AArch64. The system option *USE_PHYSICAL_COUNTER* is enabled by default now.
+
+The relatively rare resource of DMA channels is assigned dynamically now. Lite DMA channels are supported. This allows to use DMA for scrolling the screen much quicker.
+
+There is a new make target "install". If you define `SDCARD = /path` with the full path of your SD card mount point in *Config.mk*, the built kernel image can be copied directly to the SD card. There is a second optional configuration file *Config2.mk* now. Because some Circle-based projects overwrite the file *Config.mk* for configuration, you can set additional non-volatile configuration variables using this new file.
+
 The 39th Step
 -------------
 
