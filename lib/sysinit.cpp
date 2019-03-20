@@ -169,13 +169,6 @@ void sysinit (void)
 	// L1 data cache may contain random entries after reset, delete them
 	InvalidateDataCacheL1Only ();
 #endif
-#ifndef ARM_ALLOW_MULTI_CORE
-	// put all secondary cores to sleep
-	for (unsigned nCore = 1; nCore < CORES; nCore++)
-	{
-		write32 (ARM_LOCAL_MAILBOX3_SET0 + 0x10 * nCore, (u32) &_start_secondary);
-	}
-#endif
 #endif
 
 	vfpinit ();
