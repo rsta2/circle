@@ -36,6 +36,10 @@ SECTIONS
 		__exidx_end = .;
 	}
 
+	.eh_frame : {
+		*(.eh_frame*)
+	}
+
 	.data : {
 		*(.data*)
 	}

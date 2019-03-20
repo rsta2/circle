@@ -100,6 +100,27 @@ static const char *s_SoCName[] =		// must match TSoCType
 	"Unknown"
 };
 
+static unsigned s_ActLEDInfo[] =		// must match TMachineModel
+{
+	16 | ACTLED_ACTIVE_LOW,		// A
+	16 | ACTLED_ACTIVE_LOW,		// B R1
+	16 | ACTLED_ACTIVE_LOW,		// B R2 256MB
+	16 | ACTLED_ACTIVE_LOW,		// B R2 512MB
+	47,				// A+
+	47,				// B+
+	47 | ACTLED_ACTIVE_LOW,		// Zero
+	47 | ACTLED_ACTIVE_LOW,		// Zero W
+	47,				// 2B
+	0 | ACTLED_VIRTUAL_PIN,		// 3B
+	29,				// 3A+
+	29,				// 3B+
+	47,				// CM
+	0 | ACTLED_VIRTUAL_PIN,		// CM3
+	0 | ACTLED_VIRTUAL_PIN,		// CM3+
+
+	ACTLED_UNKNOWN			// Unknown
+};
+
 CMachineInfo *CMachineInfo::s_pThis = 0;
 
 CMachineInfo::CMachineInfo (void)
@@ -108,7 +129,8 @@ CMachineInfo::CMachineInfo (void)
 	m_nModelMajor (0),
 	m_nModelRevision (0),
 	m_SoCType (SoCTypeUnknown),
-	m_nRAMSize (0)
+	m_nRAMSize (0),
+	m_usDMAChannelMap (0x1F35)	// default mapping
 {
 	if (s_pThis != 0)
 	{
@@ -123,7 +145,13 @@ CMachineInfo::CMachineInfo (void)
 	}
 	s_pThis = this;
 
-	CBcmPropertyTags Tags;
+	CBcmPropertyTags Tags (TRUE);
+	TPropertyTagSimple DMAChannels;
+	if (Tags.GetTag (PROPTAG_GET_DMA_CHANNELS, &DMAChannels, sizeof DMAChannels))
+	{
+		m_usDMAChannelMap = (u16) DMAChannels.nValue;
+	}
+
 	TPropertyTagSimple BoardRevision;
 	if (!Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
 	{
@@ -239,6 +267,11 @@ const char *CMachineInfo::GetSoCName (void) const
 u32 CMachineInfo::GetRevisionRaw (void) const
 {
 	return m_nRevisionRaw;
+}
+
+unsigned CMachineInfo::GetActLEDInfo (void) const
+{
+	return s_ActLEDInfo[m_MachineModel];
 }
 
 unsigned CMachineInfo::GetClockRate (u32 nClockId) const
@@ -363,6 +396,58 @@ unsigned CMachineInfo::GetDevice (TDeviceId DeviceId) const
 	}
 
 	return nResult;
+}
+
+unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)
+{
+	assert (s_pThis != 0);
+	if (s_pThis != this)
+	{
+		return s_pThis->AllocateDMAChannel (nChannel);
+	}
+
+	if (!(nChannel & ~DMA_CHANNEL__MASK))
+	{
+		// explicit channel allocation
+		assert (nChannel <=  DMA_CHANNEL_MAX);
+		if (m_usDMAChannelMap & (1 << nChannel))
+		{
+			m_usDMAChannelMap &= ~(1 << nChannel);
+
+			return nChannel;
+		}
+	}
+	else
+	{
+		// arbitrary channel allocation
+		int i = nChannel == DMA_CHANNEL_NORMAL ? 6 : DMA_CHANNEL_MAX;
+		for (; i >= 0; i--)
+		{
+			if (m_usDMAChannelMap & (1 << i))
+			{
+				m_usDMAChannelMap &= ~(1 << i);
+
+				return (unsigned) i;
+			}
+		}
+	}
+
+	return DMA_CHANNEL_NONE;
+}
+
+void CMachineInfo::FreeDMAChannel (unsigned nChannel)
+{
+	assert (s_pThis != 0);
+	if (s_pThis != this)
+	{
+		s_pThis->FreeDMAChannel (nChannel);
+
+		return;
+	}
+
+	assert (nChannel <= DMA_CHANNEL_MAX);
+	assert (!(m_usDMAChannelMap & (1 << nChannel)));
+	m_usDMAChannelMap |= 1 << nChannel;
 }
 
 CMachineInfo *CMachineInfo::Get (void)

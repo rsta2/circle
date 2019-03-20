@@ -2,7 +2,7 @@
  * exceptionstub64.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ VectorTable:
 	vector	SErrorStub
 
 	/* from lower EL, target EL minus 1 is AArch64 */
-	vector	UnexpectedStub
+	vector	HVCStub
 	vector	UnexpectedStub
 	vector	UnexpectedStub
 	vector	UnexpectedStub
@@ -205,6 +205,17 @@ FIQStub:
 	mov	w0, #0
 	str	w0, [x1]
 	b	1b
+
+/*
+ * HVC stub
+ */
+HVCStub:					/* return to EL2h mode */
+	mrs	x0, spsr_el2
+	bic	x0, x0, #0xF
+	mov	x1, #9
+	orr	x0, x0, x1
+	msr	spsr_el2, x0
+	eret
 
 	.data
 

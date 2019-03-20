@@ -1,4 +1,5 @@
 -include ../../Config.mk
+-include ../../Config2.mk
 
 PREFIX ?= arm-none-eabi-
 PREFIX64 ?= aarch64-elf-

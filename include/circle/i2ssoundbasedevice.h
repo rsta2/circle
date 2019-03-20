@@ -99,6 +99,7 @@ private:
 	boolean m_bIRQConnected;
 	volatile TI2SSoundState m_State;
 
+	unsigned m_nDMAChannel;
 	u32 *m_pDMABuffer[2];
 	u8 *m_pControlBlockBuffer[2];
 	TDMAControlBlock *m_pControlBlock[2];

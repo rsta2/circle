@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -65,7 +65,17 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 CTimer::~CTimer (void)
 {
 	assert (m_pInterruptSystem != 0);
+#ifndef USE_PHYSICAL_COUNTER
 	m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_TIMER3);
+#else
+#if AARCH == 32
+	asm volatile ("mcr p15, 0, %0, c14, c2, 1" :: "r" (0));
+#else
+	asm volatile ("msr CNTP_CTL_EL0, %0" :: "r" (0));
+#endif
+
+	m_pInterruptSystem->DisconnectIRQ (ARM_IRQLOCAL0_CNTPNS);
+#endif
 
 	TPtrListElement *pElement;
 	while ((pElement = m_KernelTimerList.GetFirst ()) != 0)
@@ -85,6 +95,7 @@ CTimer::~CTimer (void)
 boolean CTimer::Initialize (void)
 {
 	assert (m_pInterruptSystem != 0);
+#ifndef USE_PHYSICAL_COUNTER
 	m_pInterruptSystem->ConnectIRQ (ARM_IRQ_TIMER3, InterruptHandler, this);
 
 	PeripheralEntry ();
@@ -92,19 +103,39 @@ boolean CTimer::Initialize (void)
 	write32 (ARM_SYSTIMER_CLO, -(30 * CLOCKHZ));	// timer wraps soon, to check for problems
 
 	write32 (ARM_SYSTIMER_C3, read32 (ARM_SYSTIMER_CLO) + CLOCKHZ / HZ);
+#else
+	m_pInterruptSystem->ConnectIRQ (ARM_IRQLOCAL0_CNTPNS, InterruptHandler, this);
+
+#if AARCH == 32
+	u32 nCNTPCTLow, nCNTPCTHigh;
+	asm volatile ("mrrc p15, 0, %0, %1, c14" : "=r" (nCNTPCTLow), "=r" (nCNTPCTHigh));
+
+	u64 nCNTP_CVAL = ((u64) nCNTPCTHigh << 32 | nCNTPCTLow) + CLOCKHZ / HZ;
+	asm volatile ("mcrr p15, 2, %0, %1, c14" :: "r" (nCNTP_CVAL & 0xFFFFFFFFU),
+						    "r" (nCNTP_CVAL >> 32));
+
+	asm volatile ("mcr p15, 0, %0, c14, c2, 1" :: "r" (1));
+#else
+	u64 nCNTFRQ;
+	asm volatile ("mrs %0, CNTFRQ_EL0" : "=r" (nCNTFRQ));
+	assert (nCNTFRQ % HZ == 0);
+	m_nClockTicksPerHZTick = nCNTFRQ / HZ;
+
+	u64 nCNTPCT;
+	asm volatile ("mrs %0, CNTPCT_EL0" : "=r" (nCNTPCT));
+	asm volatile ("msr CNTP_CVAL_EL0, %0" :: "r" (nCNTPCT + m_nClockTicksPerHZTick));
+
+	asm volatile ("msr CNTP_CTL_EL0, %0" :: "r" (1));
+#endif
+#endif
 	
 #ifdef CALIBRATE_DELAY
 	TuneMsDelay ();
 #endif
 
-#ifdef USE_PHYSICAL_COUNTER
-#if AARCH == 32
+#if defined (USE_PHYSICAL_COUNTER) && AARCH == 32
 	u32 nCNTFRQ;
 	asm volatile ("mrc p15, 0, %0, c14, c0, 0" : "=r" (nCNTFRQ));
-#else
-	u64 nCNTFRQ;
-	asm volatile ("mrs %0, CNTFRQ_EL0" : "=r" (nCNTFRQ));
-#endif
 
 	u32 nPrescaler = read32 (ARM_LOCAL_PRESCALER);
 
@@ -115,9 +146,9 @@ boolean CTimer::Initialize (void)
 					"USE_PHYSICAL_COUNTER is not supported (freq %u, pre 0x%X)",
 					nCNTFRQ, nPrescaler);
 	}
-#endif
 
 	PeripheralExit ();
+#endif
 
 	return TRUE;
 }
@@ -185,8 +216,10 @@ unsigned CTimer::GetClockTicks (void)
 
 	u64 nCNTPCT;
 	asm volatile ("mrs %0, CNTPCT_EL0" : "=r" (nCNTPCT));
+	u64 nCNTFRQ;
+	asm volatile ("mrs %0, CNTFRQ_EL0" : "=r" (nCNTFRQ));
 
-	return (unsigned) nCNTPCT;
+	return (unsigned) (nCNTPCT * CLOCKHZ / nCNTFRQ);
 #endif
 #endif
 }
@@ -446,6 +479,7 @@ void CTimer::PollKernelTimers (void)
 
 void CTimer::InterruptHandler (void)
 {
+#ifndef USE_PHYSICAL_COUNTER
 	PeripheralEntry ();
 
 	//assert (read32 (ARM_SYSTIMER_CS) & (1 << 3));
@@ -461,6 +495,20 @@ void CTimer::InterruptHandler (void)
 	write32 (ARM_SYSTIMER_CS, 1 << 3);
 
 	PeripheralExit ();
+#else
+#if AARCH == 32
+	u32 nCNTP_CVALLow, nCNTP_CVALHigh;
+	asm volatile ("mrrc p15, 2, %0, %1, c14" : "=r" (nCNTP_CVALLow), "=r" (nCNTP_CVALHigh));
+
+	u64 nCNTP_CVAL = ((u64) nCNTP_CVALHigh << 32 | nCNTP_CVALLow) + CLOCKHZ / HZ;
+	asm volatile ("mcrr p15, 2, %0, %1, c14" :: "r" (nCNTP_CVAL & 0xFFFFFFFFU),
+						    "r" (nCNTP_CVAL >> 32));
+#else
+	u64 nCNTP_CVAL;
+	asm volatile ("mrs %0, CNTP_CVAL_EL0" : "=r" (nCNTP_CVAL));
+	asm volatile ("msr CNTP_CVAL_EL0, %0" :: "r" (nCNTP_CVAL + m_nClockTicksPerHZTick));
+#endif
+#endif
 
 #ifndef NDEBUG
 	//debug_click ();

@@ -21,7 +21,27 @@
 
 void *memset (void *pBuffer, int nValue, size_t nLength)
 {
-	char *p = (char *) pBuffer;
+	u32 *p32 = (u32 *) pBuffer;
+
+	if (   ((uintptr) p32 & 3) == 0
+	    && nLength >= 16)
+	{
+		u32 nValue32 = nValue | nValue << 8;
+		nValue32 |= nValue32 << 16;
+
+		do
+		{
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+
+			nLength -= 16;
+		}
+		while (nLength >= 16);
+	}
+
+	char *p = (char *) p32;
 
 	while (nLength--)
 	{
@@ -30,6 +50,8 @@ void *memset (void *pBuffer, int nValue, size_t nLength)
 
 	return pBuffer;
 }
+
+#if STDLIB_SUPPORT <= 1
 
 void *memmove (void *pDest, const void *pSrc, size_t nLength)
 {
@@ -489,6 +511,8 @@ unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase)
 
 	return ulResult;
 }
+
+#endif
 
 int char2int (char chValue)
 {

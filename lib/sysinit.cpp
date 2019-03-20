@@ -23,6 +23,7 @@
 #include <circle/bcm2836.h>
 #include <circle/machineinfo.h>
 #include <circle/memory.h>
+#include <circle/chainboot.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/macros.h>
@@ -32,7 +33,7 @@
 extern "C" {
 #endif
 
-void *__dso_handle;
+void *__dso_handle WEAK;
 
 void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle) WEAK;
 
@@ -168,20 +169,9 @@ void sysinit (void)
 	// L1 data cache may contain random entries after reset, delete them
 	InvalidateDataCacheL1Only ();
 #endif
-#ifndef ARM_ALLOW_MULTI_CORE
-	// put all secondary cores to sleep
-	for (unsigned nCore = 1; nCore < CORES; nCore++)
-	{
-		write32 (ARM_LOCAL_MAILBOX3_SET0 + 0x10 * nCore, (u32) &_start_secondary);
-	}
-#endif
 #endif
 
 	vfpinit ();
-#endif
-
-#if defined (USE_PHYSICAL_COUNTER) && AARCH == 64
-	write32 (ARM_LOCAL_PRESCALER, 0x6AAAAAB);
 #endif
 
 	// clear BSS
@@ -198,7 +188,7 @@ void sysinit (void)
 	CMemorySystem Memory;
 #endif
 
-	// call construtors of static objects
+	// call constructors of static objects
 	extern void (*__init_start) (void);
 	extern void (*__init_end) (void);
 	for (void (**pFunc) (void) = &__init_start; pFunc < &__init_end; pFunc++)
@@ -209,6 +199,17 @@ void sysinit (void)
 	extern int main (void);
 	if (main () == EXIT_REBOOT)
 	{
+		if (IsChainBootEnabled ())
+		{
+#if STDLIB_SUPPORT >= 2
+			Memory.Destructor ();
+#endif
+
+			DisableFIQs ();
+
+			DoChainBoot ();
+		}
+
 		reboot ();
 	}
 

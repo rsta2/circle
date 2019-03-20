@@ -23,10 +23,6 @@
 
 	.text
 
-#if STDLIB_SUPPORT >= 2
-	.weak	memcpy		/* this memcpy() is not used, if linked with libc */
-#endif
-
 #if AARCH == 32
 
 	.globl	memcpy
@@ -64,7 +60,7 @@ memcpy:
 
 	.globl	memcpy
 memcpy:
-	stp	x0, x3, [sp, #-16]!
+	mov	x8, x0
 
 	cmp	x2, #127
 	b.ls	2f
@@ -73,8 +69,6 @@ memcpy:
 	tst	x1, #7
 	b.ne	2f
 
-	stp	x4, x5, [sp, #-16]!
-	stp	x6, x7, [sp, #-16]!
 	mov	x3, #64
 1:	ldp	x4, x5, [x1], #16
 	ldp	x6, x7, [x1], #16
@@ -84,8 +78,6 @@ memcpy:
 	prfm	pldl1strm, [x1, x3]
 	cmp	x2, #32-1
 	b.hi	1b
-	ldp	x6, x7, [sp], #16
-	ldp	x4, x5, [sp], #16
 
 2:	cmp	x2, #0
 	b.eq	4f
@@ -95,7 +87,7 @@ memcpy:
 	strb	w3, [x0], #1
 	b.ne	3b
 
-4:	ldp	x0, x3, [sp], #16
+4:	mov	x0, x8
 	ret
 
 #endif

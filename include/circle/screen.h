@@ -2,7 +2,7 @@
 // screen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,9 @@
 #include <circle/device.h>
 #include <circle/bcmframebuffer.h>
 #include <circle/chargenerator.h>
+#include <circle/dmachannel.h>
 #include <circle/spinlock.h>
+#include <circle/sysconfig.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -191,6 +193,9 @@ private:
 	unsigned	 m_nParam1;
 	unsigned	 m_nParam2;
 	boolean		 m_bUpdated;
+#ifdef SCREEN_DMA_BURST_LENGTH
+	CDMAChannel	 m_DMAChannel;
+#endif
 	CSpinLock	 m_SpinLock;
 };
 

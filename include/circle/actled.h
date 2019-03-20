@@ -2,7 +2,7 @@
 // actled.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,9 @@
 class CActLED
 {
 public:
-	CActLED (void);
+	// safe mode works with LED connected to GPIO expander and chain boot,
+	// but is not as quick
+	CActLED (boolean bSafeMode = FALSE);
 	~CActLED (void);
 
 	void On (void);

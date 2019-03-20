@@ -35,6 +35,7 @@ int notmain ( void )
 {
     unsigned int state;
     unsigned int byte_count;
+    unsigned int digits_read;
     unsigned int address;
     unsigned int record_type;
     unsigned int segment;
@@ -107,6 +108,7 @@ int notmain ( void )
                 if(ra>0x39) ra-=7;
                 byte_count|=(ra&0xF);
                 byte_count&=0xFF;
+                digits_read=0;
                 state++;
                 break;
             }
@@ -152,6 +154,7 @@ int notmain ( void )
                         break;
                     }
                     case 0x02:
+                    case 0x04:
                     {
                         state=9;
                         break;
@@ -179,36 +182,36 @@ int notmain ( void )
             case 13:
             {
                 segment<<=4;
+                if(record_type==0x04)
+                {
+                    segment<<=12;
+                }
                 state=0;
                 break;
             }
             case 14:
-            case 15:
-            case 16:
-            case 17:
-            case 18:
-            case 19:
-            case 20:
-            case 21:
             {
                 data<<=4;
                 if(ra>0x39) ra-=7;
                 data|=(ra&0xF);
-                if(state==21)
+                if (++digits_read%8==0||digits_read==byte_count*2)
                 {
                     ra=(data>>24)|(data<<24);
                     ra|=(data>>8)&0x0000FF00;
                     ra|=(data<<8)&0x00FF0000;
+                    if(digits_read%8!=0)
+                    {
+                        ra>>=(8-digits_read%8)*4;
+                    }
                     data=ra;
                     PUT32(address,data);
                     sum+=address;
                     sum+=data;
                     address+=4;
-                    state=14;
-                }
-                else
-                {
-                    state++;
+                    if(digits_read==byte_count*2)
+                    {
+                        state=0;
+                    }
                 }
                 break;
             }

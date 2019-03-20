@@ -30,6 +30,7 @@
 #include <circle/bcm2835.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
+#include <circle/koptions.h>
 #include <circle/sysconfig.h>
 #include <circle/debug.h>
 #include <assert.h>
@@ -68,7 +69,8 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_nWaitBlockAllocated (0),
 	m_WaitBlockSpinLock (TASK_LEVEL),
 	m_RootPort (this),
-	m_bRootPortEnabled (FALSE)
+	m_bRootPortEnabled (FALSE),
+	m_bShutdown (FALSE)
 {
 	assert (m_pInterruptSystem != 0);
 	assert (m_pTimer != 0);
@@ -86,6 +88,22 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 
 CDWHCIDevice::~CDWHCIDevice (void)
 {
+	m_bShutdown = TRUE;
+
+	assert (m_pTimer != 0);
+	m_pTimer->MsDelay (200);	// wait for completion of all transactions
+
+	assert (m_pInterruptSystem != 0);
+	m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_USB);
+
+	Reset ();
+
+	CBcmPropertyTags Tags;
+	TPropertyTagPowerState PowerState;
+	PowerState.nDeviceId = DEVICE_ID_USB_HCD;
+	PowerState.nState = POWER_STATE_OFF | POWER_STATE_WAIT;
+	Tags.GetTag (PROPTAG_SET_POWER_STATE, &PowerState, sizeof PowerState);
+
 	m_pInterruptSystem = 0;
 	m_pTimer = 0;
 }
@@ -179,6 +197,11 @@ void CDWHCIDevice::ReScanDevices (void)
 
 boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
 {
+	if (m_bShutdown)
+	{
+		return FALSE;
+	}
+
 	PeripheralEntry ();
 
 	assert (pURB != 0);
@@ -243,6 +266,11 @@ boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeou
 
 boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
 {
+	if (m_bShutdown)
+	{
+		return FALSE;
+	}
+
 	PeripheralEntry ();
 
 	assert (pURB != 0);
@@ -429,8 +457,19 @@ boolean CDWHCIDevice::InitHost (void)
 
 boolean CDWHCIDevice::EnableRootPort (void)
 {
+	unsigned nMsDelay = 510;
+	CKernelOptions *pOptions = CKernelOptions::Get ();
+	if (pOptions != 0)
+	{
+		unsigned nUSBPowerDelay = pOptions->GetUSBPowerDelay ();
+		if (nUSBPowerDelay != 0)
+		{
+			nMsDelay = nUSBPowerDelay;
+		}
+	}
+
 	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
-	if (!WaitForBit (&HostPort, DWHCI_HOST_PORT_CONNECT, TRUE, 20))
+	if (!WaitForBit (&HostPort, DWHCI_HOST_PORT_CONNECT, TRUE, nMsDelay))
 	{
 		return FALSE;
 	}
@@ -901,6 +940,11 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 
 void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 {
+	if (m_bShutdown)
+	{
+		return;
+	}
+
 	CDWHCITransferStageData *pStageData = m_pStageData[nChannel];
 	assert (pStageData != 0);
 	CUSBRequest *pURB = pStageData->GetURB ();
@@ -1178,6 +1222,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 void CDWHCIDevice::SOFInterruptHandler (void)
 {
+	if (m_bShutdown)
+	{
+		return;
+	}
+
 	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
 	u16 usFrameNumber = DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ());
 

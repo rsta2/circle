@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -96,9 +96,10 @@
 // counter, which is only available on the Raspberry Pi 2 and 3. Reading
 // this counter is much faster than reading the BCM2835 system timer
 // counter (which is used without this option). It reduces the I/O load
-// too. This option cannot be used with QEMU.
+// too. For some QEMU versions this is the only supported timer option,
+// for other older QEMU versions it does not work.
 
-//#define USE_PHYSICAL_COUNTER
+#define USE_PHYSICAL_COUNTER
 
 #endif
 
@@ -126,6 +127,15 @@
 //#define USE_USB_SOF_INTR
 
 #endif
+
+// SCREEN_DMA_BURST_LENGTH enables using DMA for scrolling the screen
+// contents and set the burst length parameter for the DMA controller.
+// Using DMA speeds up the scrolling, especially with a burst length
+// greater than 0. The parameter can be 0-15 theoretically, but values
+// over 2 are normally not useful, because the system bus gets congested
+// with it.
+
+#define SCREEN_DMA_BURST_LENGTH	2
 
 // CALIBRATE_DELAY activates the calibration of the delay loop. Because
 // this loop is normally not used any more in Circle, the only use of

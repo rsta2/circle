@@ -2,7 +2,7 @@
 // gpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -300,9 +300,34 @@ void CGPIOPin::DisableInterrupt2 (void)
 	m_Interrupt2 = GPIOInterruptUnknown;
 }
 
+void CGPIOPin::WriteAll (u32 nValue, u32 nMask)
+{
+	PeripheralEntry ();
+
+	u32 nClear = ~nValue & nMask;
+	if (nClear != 0)
+	{
+		write32 (ARM_GPIO_GPCLR0, nClear);
+	}
+
+	u32 nSet = nValue & nMask;
+	if (nSet != 0)
+	{
+		write32 (ARM_GPIO_GPSET0, nSet);
+	}
+
+	PeripheralExit ();
+}
+
 u32 CGPIOPin::ReadAll (void)
 {
-	return read32 (ARM_GPIO_GPLEV0);
+	PeripheralEntry ();
+
+	u32 nResult = read32 (ARM_GPIO_GPLEV0);
+
+	PeripheralExit ();
+
+	return nResult;
 }
 
 // See: http://www.raspberrypi.org/forums/viewtopic.php?t=163352&p=1059178#p1059178

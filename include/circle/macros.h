@@ -27,13 +27,6 @@
 #define MAXOPT		__attribute__ ((optimize (3)))
 #define WEAK		__attribute__ ((weak))
 
-// attribute for functions, which have to be used from libc, if available
-#if STDLIB_SUPPORT >= 2
-	#define FROM_STDLIB	WEAK
-#else
-	#define FROM_STDLIB
-#endif
-
 #define BIT(n)		(1 << (n))
 
 // big endian (to be used for constants only)

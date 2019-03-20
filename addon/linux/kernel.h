@@ -7,7 +7,6 @@
 #include <linux/barrier.h>
 #include <linux/types.h>
 #include <circle/stdarg.h>
-#include <circle/macros.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,9 +25,7 @@ extern "C" {
 		((type *) ((char *) (ptr) - offsetof (type, member)))
 #endif
 
-int sprintf (char *buf, const char *fmt, ...) FROM_STDLIB;
-
-// is not provided with -std=gnu99, so provide it here with (STDLIB_SUPPORT >= 2) too
+int sprintf (char *buf, const char *fmt, ...);
 int snprintf (char *buf, size_t size, const char *fmt, ...);
 int vsnprintf (char *buf, size_t size, const char *fmt, va_list var);
 

@@ -2,7 +2,7 @@
 // memory64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,15 +21,24 @@
 #include <circle/bcmpropertytags.h>
 #include <circle/alloc.h>
 #include <circle/spinlock.h>
+#include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
+
+CMemorySystem *CMemorySystem::s_pThis = 0;
 
 CMemorySystem::CMemorySystem (boolean bEnableMMU)
 :	m_bEnableMMU (bEnableMMU),
 	m_nMemSize (0),
 	m_pTranslationTable (0)
 {
-	CBcmPropertyTags Tags;
+	if (s_pThis != 0)	// ignore second instance
+	{
+		return;
+	}
+	s_pThis = this;
+
+	CBcmPropertyTags Tags (TRUE);
 	TPropertyTagMemory TagMemory;
 	if (!Tags.GetTag (PROPTAG_GET_ARM_MEMORY, &TagMemory, sizeof TagMemory))
 	{
@@ -57,22 +66,59 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 
 CMemorySystem::~CMemorySystem (void)
 {
+	Destructor ();
+}
+
+void CMemorySystem::Destructor (void)
+{
+	if (s_pThis != this)
+	{
+		return;
+	}
+	s_pThis = 0;
+
+	if (m_bEnableMMU)
+	{
+		// disable MMU and data cache
+		u32 nSCTLR_EL1;
+		asm volatile ("mrs %0, sctlr_el1" : "=r" (nSCTLR_EL1));
+		nSCTLR_EL1 &= ~(SCTLR_EL1_M | SCTLR_EL1_C);
+		asm volatile ("msr sctlr_el1, %0" : : "r" (nSCTLR_EL1) : "memory");
+		DataSyncBarrier ();
+		InstructionSyncBarrier ();
+
+		CleanDataCache ();
+		InvalidateDataCache ();
+
+		// invalidate TLB (if MMU is re-enabled later)
+		asm volatile ("tlbi vmalle1" : : : "memory");
+		DataSyncBarrier ();
+		InstructionSyncBarrier ();
+	}
 }
 
 #ifdef ARM_ALLOW_MULTI_CORE
 
 void CMemorySystem::InitializeSecondary (void)
 {
-	assert (m_bEnableMMU);		// required to use spin locks
+	assert (s_pThis != 0);
+	assert (s_pThis->m_bEnableMMU);		// required to use spin locks
 
-	EnableMMU ();
+	s_pThis->EnableMMU ();
 }
 
 #endif
 
 size_t CMemorySystem::GetMemSize (void) const
 {
-	return m_nMemSize;
+	assert (s_pThis != 0);
+	return s_pThis->m_nMemSize;
+}
+
+CMemorySystem *CMemorySystem::Get (void)
+{
+	assert (s_pThis != 0);
+	return s_pThis;
 }
 
 void CMemorySystem::EnableMMU (void)
