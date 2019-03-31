@@ -146,6 +146,11 @@ unsigned CScreenDevice::GetRows (void) const
 	return m_nUsedHeight / m_CharGen.GetCharHeight ();
 }
 
+CBcmFrameBuffer *CScreenDevice::GetFrameBuffer (void)
+{
+	return m_pFrameBuffer;
+}
+
 TScreenStatus CScreenDevice::GetStatus (void)
 {
 	TScreenStatus Status;
