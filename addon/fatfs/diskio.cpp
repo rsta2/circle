@@ -217,6 +217,30 @@ DRESULT disk_ioctl (
 		assert (buff != 0);
 		*(WORD *) buff = SECTOR_SIZE;
 		return RES_OK;
+
+	case CTRL_EJECT:
+		if (pdrv >= FF_VOLUMES)
+		{
+			return RES_PARERR;
+		}
+
+		if (s_pVolume[pdrv] == 0)
+		{
+			s_pVolume[pdrv] = CDeviceNameService::Get ()->GetDevice (s_pVolumeName[pdrv], TRUE);
+			if (s_pVolume[pdrv] == 0)
+			{
+				return RES_NOTRDY;
+			}
+		}
+
+		if (!s_pVolume[pdrv]->RemoveDevice ())
+		{
+			return RES_ERROR;
+		}
+
+		s_pVolume[pdrv] = 0;
+
+		return RES_OK;
 	}
 
 	return RES_PARERR;

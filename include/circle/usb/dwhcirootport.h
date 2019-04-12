@@ -34,6 +34,7 @@ public:
 	boolean Initialize (void);
 
 	boolean ReScanDevices (void);
+	boolean RemoveDevice (void);
 
 private:
 	CDWHCIDevice *m_pHost;

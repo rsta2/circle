@@ -97,6 +97,12 @@ boolean CUSBFunction::ReScanDevices (void)
 	return FALSE;
 }
 
+boolean CUSBFunction::RemoveDevice (void)
+{
+	assert (m_pDevice != 0);
+	return m_pDevice->RemoveDevice ();
+}
+
 CString *CUSBFunction::GetInterfaceName () const
 {
 	CString *pString = new CString ("unknown");

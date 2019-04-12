@@ -52,7 +52,7 @@ boolean CDWHCIRootPort::Initialize (void)
 	
 	// first create default device
 	assert (m_pDevice == 0);
-	m_pDevice = new CUSBDevice (m_pHost, Speed, FALSE, 0, 1);
+	m_pDevice = new CUSBDevice (m_pHost, Speed, this);
 	assert (m_pDevice != 0);
 
 	if (!m_pDevice->Initialize ())
@@ -102,4 +102,15 @@ boolean CDWHCIRootPort::ReScanDevices (void)
 	}
 
 	return m_pDevice->ReScanDevices ();
+}
+
+boolean CDWHCIRootPort::RemoveDevice (void)
+{
+	assert (m_pHost != 0);
+	m_pHost->DisableRootPort (FALSE);
+
+	delete m_pDevice;
+	m_pDevice = 0;
+
+	return TRUE;
 }

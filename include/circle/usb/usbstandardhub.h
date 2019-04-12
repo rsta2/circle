@@ -36,6 +36,7 @@ public:
 	boolean Configure (void);
 
 	boolean ReScanDevices (void);
+	boolean RemoveDevice (unsigned nPortIndex);	// nPortIndex is 0-based
 
 private:
 	boolean EnumeratePorts (void);
