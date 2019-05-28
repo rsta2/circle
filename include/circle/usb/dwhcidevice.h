@@ -53,7 +53,7 @@ public:
 private:
 	TUSBSpeed GetPortSpeed (void);
 	boolean OvercurrentDetected (void);
-	void DisableRootPort (void);
+	void DisableRootPort (boolean bPowerOff = TRUE);
 	friend class CDWHCIRootPort;
 
 private:

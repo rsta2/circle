@@ -327,12 +327,20 @@ boolean CDWHCIDevice::OvercurrentDetected (void)
 	return FALSE;
 }
 
-void CDWHCIDevice::DisableRootPort (void)
+void CDWHCIDevice::DisableRootPort (boolean bPowerOff)
 {
-	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
+	m_bRootPortEnabled = FALSE;
 
+	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
 	HostPort.Read ();
-	HostPort.And (~DWHCI_HOST_PORT_POWER);
+
+	HostPort.And (~DWHCI_HOST_PORT_ENABLE);
+
+	if (bPowerOff)
+	{
+		HostPort.And (~DWHCI_HOST_PORT_POWER);
+	}
+
 	HostPort.Write ();
 }
 
