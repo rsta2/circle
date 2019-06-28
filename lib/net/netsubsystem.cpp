@@ -60,12 +60,12 @@ CNetSubSystem::~CNetSubSystem (void)
 	s_pThis = 0;
 }
 
-boolean CNetSubSystem::Initialize (void)
+boolean CNetSubSystem::Initialize (boolean bWaitForActivate)
 {
 	m_bUseDHCP = m_Config.GetIPAddress ()->IsNull ();
 	m_Config.SetDHCP (m_bUseDHCP);
 
-	if (!m_NetDevLayer.Initialize ())
+	if (!m_NetDevLayer.Initialize (bWaitForActivate))
 	{
 		return FALSE;
 	}
@@ -92,6 +92,11 @@ boolean CNetSubSystem::Initialize (void)
 		assert (m_pDHCPClient == 0);
 		m_pDHCPClient = new CDHCPClient (this);
 		assert (m_pDHCPClient != 0);
+	}
+
+	if (!bWaitForActivate)
+	{
+		return TRUE;
 	}
 
 	while (!IsRunning ())
