@@ -181,6 +181,15 @@
 //
 ///////////////////////////////////////////////////////////////////////
 
+// SERIAL_GPIO_SELECT selects the TXD GPIO pin used for the serial
+// device (UART0). The RXD pin is (SERIAL_GPIO_SELECT+1). Modifying
+// this setting can be useful for Compute Modules. Select only one
+// definition.
+
+#define SERIAL_GPIO_SELECT	14	// and 15
+//#define SERIAL_GPIO_SELECT	32	// and 33
+//#define SERIAL_GPIO_SELECT	36	// and 37
+
 // SAVE_VFP_REGS_ON_IRQ enables saving the floating point registers
 // on entry when an IRQ occurs and will restore these registers on exit
 // from the IRQ handler. This has to be defined, if an IRQ handler
