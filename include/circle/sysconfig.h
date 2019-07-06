@@ -185,7 +185,7 @@
 // on entry when an IRQ occurs and will restore these registers on exit
 // from the IRQ handler. This has to be defined, if an IRQ handler
 // modifies floating point registers. IRQ handling will be a little
-// slower then. Not supported with AARCH = 64.
+// slower then.
 
 //#define SAVE_VFP_REGS_ON_IRQ
 
@@ -193,7 +193,7 @@
 // on entry when an FIQ occurs and will restore these registers on exit
 // from the FIQ handler. This has to be defined, if the FIQ handler
 // modifies floating point registers. FIQ handling will be a little
-// slower then. Not supported with AARCH = 64.
+// slower then.
 
 //#define SAVE_VFP_REGS_ON_FIQ
 
