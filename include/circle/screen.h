@@ -141,6 +141,10 @@ public:
 	/// \param nIndex Index of the rotor to be displayed (0..3)
 	/// \param nCount Phase (angle) of the current rotor symbol (0..3)
 	void Rotor (unsigned nIndex, unsigned nCount);
+	
+	/// \brief Set screen backlight brightness 
+	/// \param nBrightness Brightness level
+	void SetBacklightBrightness(unsigned nBrightness);
 
 private:
 	void Write (char chChar);

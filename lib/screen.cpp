@@ -838,3 +838,11 @@ void CScreenDevice::Rotor (unsigned nIndex, unsigned nCount)
 
 	DisplayChar (chChars[nCount], nPosX, 0, HIGH_COLOR);
 }
+
+void CScreenDevice::SetBacklightBrightness(unsigned nBrightness)
+{
+	CBcmPropertyTags Tags;
+	TPropertyTagSimple Dummy;
+	Dummy.nValue=nBrightness;
+	Tags.GetTag (PROPTAG_SET_BACKLIGHT, &Dummy, sizeof Dummy, 4);
+}
