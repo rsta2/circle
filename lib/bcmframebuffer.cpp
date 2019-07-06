@@ -232,3 +232,11 @@ boolean CBcmFrameBuffer::WaitForVerticalSync (void)
 	TPropertyTagSimple Dummy;
 	return Tags.GetTag (PROPTAG_WAIT_FOR_VSYNC, &Dummy, sizeof Dummy);
 }
+
+boolean CBcmFrameBuffer::SetBacklightBrightness(unsigned nBrightness)
+{
+	CBcmPropertyTags Tags;
+	TPropertyTagSimple TagBrightness;
+	TagBrightness.nValue = nBrightness;
+	return Tags.GetTag (PROPTAG_SET_BACKLIGHT, &TagBrightness, sizeof TagBrightness, 4);
+}
