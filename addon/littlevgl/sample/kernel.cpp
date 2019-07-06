@@ -23,7 +23,7 @@
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
-:	m_Screen (LV_HOR_RES, LV_VER_RES),
+:	m_Screen (LV_HOR_RES_MAX, LV_VER_RES_MAX),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_DWHCI (&m_Interrupt, &m_Timer),

@@ -1,7 +1,7 @@
 README 
 
 This sample program demonstrates some features of the LittlevGL embedded GUI
-library (by Gabor Kiss-Vamosi):
+library v6.0 (by Gabor Kiss-Vamosi):
 
 	https://github.com/littlevgl/lvgl
 	https://littlevgl.com
@@ -19,7 +19,7 @@ enter:
 	git submodule update --init
 
 Before build you may have to set the wanted screen resolution in the file
-lv_conf.h. Search for LV_HOR_RES and LV_VER_RES in this file.
+lv_conf.h. Search for LV_HOR_RES_MAX and LV_VER_RES_MAX in this file.
 
 First build the Circle libraries from Circle project root, then the LittlevGL
 and lv_examples libraries by entering "make" in the addon/littlevgl/ directory.

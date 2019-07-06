@@ -16,12 +16,12 @@
 /*******************
  *   TEST USAGE
  *******************/
-#define USE_LV_TESTS        0
+#define LV_USE_TESTS        0
 
 /*******************
  * TUTORIAL USAGE
  *******************/
-#define USE_LV_TUTORIALS   0
+#define LV_USE_TUTORIALS   0
 
 
 /*********************
@@ -30,23 +30,23 @@
 
 /* Test the graphical performance of your MCU
  * with different settings*/
-#define USE_LV_BENCHMARK   0
+#define LV_USE_BENCHMARK   0
 
 /*A demo application with Keyboard, Text area, List and Chart
  * placed on Tab view */
-#define USE_LV_DEMO        1
-#if USE_LV_DEMO
+#define LV_USE_DEMO        1
+#if LV_USE_DEMO
 #define LV_DEMO_WALLPAPER  1    /*Create a wallpaper too*/
 #define LV_DEMO_SLIDE_SHOW 0    /*Automatically switch between tabs*/
 #endif
 
 /*MCU and memory usage monitoring*/
-#define USE_LV_SYSMON      0
+#define LV_USE_SYSMON      0
 
 /*A terminal to display received characters*/
-#define USE_LV_TERMINAL    0
+#define LV_USE_TERMINAL    0
 
 /*Touch pad calibration with 4 points*/
-#define USE_LV_TPCAL       0
+#define LV_USE_TPCAL       0
 
 #endif /*LV_EX_CONF_H*/

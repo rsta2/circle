@@ -24,7 +24,9 @@
 CLittlevGL *CLittlevGL::s_pThis = 0;
 
 CLittlevGL::CLittlevGL (CScreenDevice *pScreen, CInterruptSystem *pInterrupt)
-:	m_pScreen (pScreen),
+:	m_pBuffer1 (0),
+	m_pBuffer2 (0),
+	m_pScreen (pScreen),
 	m_pFrameBuffer (0),
 	m_DMAChannel (DMA_CHANNEL_NORMAL, pInterrupt),
 	m_nLastUpdate (0),
@@ -41,7 +43,9 @@ CLittlevGL::CLittlevGL (CScreenDevice *pScreen, CInterruptSystem *pInterrupt)
 }
 
 CLittlevGL::CLittlevGL (CBcmFrameBuffer *pFrameBuffer, CInterruptSystem *pInterrupt)
-:	m_pScreen (0),
+:	m_pBuffer1 (0),
+	m_pBuffer2 (0),
+	m_pScreen (0),
 	m_pFrameBuffer (pFrameBuffer),
 	m_DMAChannel (DMA_CHANNEL_NORMAL, pInterrupt),
 	m_nLastUpdate (0),
@@ -65,6 +69,11 @@ CLittlevGL::~CLittlevGL (void)
 	m_pMouseDevice = 0;
 	m_pFrameBuffer = 0;
 	m_pScreen = 0;
+
+	delete [] m_pBuffer1;
+	delete [] m_pBuffer2;
+	m_pBuffer1 = 0;
+	m_pBuffer2 = 0;
 }
 
 boolean CLittlevGL::Initialize (void)
@@ -80,9 +89,21 @@ boolean CLittlevGL::Initialize (void)
 
 	lv_init ();
 
-	static lv_disp_drv_t disp_drv;
+	m_pBuffer1 = new lv_color_t[LV_HOR_RES_MAX*10];
+	m_pBuffer2 = new lv_color_t[LV_HOR_RES_MAX*10];
+	if (   m_pBuffer1 == 0
+	    || m_pBuffer2 == 0)
+	{
+		return FALSE;
+	}
+
+	static lv_disp_buf_t disp_buf;
+	lv_disp_buf_init (&disp_buf, m_pBuffer1, m_pBuffer2, LV_HOR_RES_MAX*10);
+
+	lv_disp_drv_t disp_drv;
 	lv_disp_drv_init (&disp_drv);
-	disp_drv.disp_flush = DisplayFlush;
+	disp_drv.buffer = &disp_buf;
+	disp_drv.flush_cb = DisplayFlush;
 	lv_disp_drv_register (&disp_drv);
 
 	m_pMouseDevice = (CMouseDevice *) CDeviceNameService::Get ()->GetDevice ("mouse1", FALSE);
@@ -112,10 +133,10 @@ boolean CLittlevGL::Initialize (void)
 	if (   m_pMouseDevice != 0
 	    || m_pTouchScreen != 0)
 	{
-		static lv_indev_drv_t indev_drv;
+		lv_indev_drv_t indev_drv;
 		lv_indev_drv_init (&indev_drv);
 		indev_drv.type = LV_INDEV_TYPE_POINTER;
-		indev_drv.read = PointerRead;
+		indev_drv.read_cb = PointerRead;
 		lv_indev_drv_register (&indev_drv);
 	}
 
@@ -149,10 +170,15 @@ void CLittlevGL::Update (void)
 	}
 }
 
-void CLittlevGL::DisplayFlush (int32_t x1, int32_t y1, int32_t x2, int32_t y2,
-			       const lv_color_t *pBuffer)
+void CLittlevGL::DisplayFlush (lv_disp_drv_t *pDriver, const lv_area_t *pArea, lv_color_t *pBuffer)
 {
 	assert (s_pThis != 0);
+
+	assert (pArea != 0);
+	int32_t x1 = pArea->x1;
+	int32_t x2 = pArea->x2;
+	int32_t y1 = pArea->y1;
+	int32_t y2 = pArea->y2;
 
 	assert (x1 <= x2);
 	assert (y1 <= y2);
@@ -169,7 +195,8 @@ void CLittlevGL::DisplayFlush (int32_t x1, int32_t y1, int32_t x2, int32_t y2,
 					      nBlockLength, y2-y1+1,
 					      s_pThis->m_pFrameBuffer->GetPitch ()-nBlockLength);
 
-	s_pThis->m_DMAChannel.SetCompletionRoutine (DisplayFlushComplete, s_pThis);
+	assert (pDriver != 0);
+	s_pThis->m_DMAChannel.SetCompletionRoutine (DisplayFlushComplete, pDriver);
 	s_pThis->m_DMAChannel.Start ();
 }
 
@@ -177,10 +204,13 @@ void CLittlevGL::DisplayFlushComplete (unsigned nChannel, boolean bStatus, void 
 {
 	assert (bStatus);
 
-	lv_flush_ready ();
+	lv_disp_drv_t *pDriver = (lv_disp_drv_t *) pParam;
+	assert (pDriver != 0);
+
+	lv_disp_flush_ready (pDriver);
 }
 
-bool CLittlevGL::PointerRead (lv_indev_data_t *pData)
+bool CLittlevGL::PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData)
 {
 	assert (s_pThis != 0);
 

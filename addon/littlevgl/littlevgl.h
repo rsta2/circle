@@ -44,17 +44,20 @@ public:
 	void Update (void);
 
 private:
-	static void DisplayFlush (int32_t x1, int32_t y1, int32_t x2, int32_t y2,
-				  const lv_color_t *pBuffer);
+	static void DisplayFlush (lv_disp_drv_t *pDriver, const lv_area_t *pArea,
+				  lv_color_t *pBuffer);
 	static void DisplayFlushComplete (unsigned nChannel, boolean bStatus, void *pParam);
 
-	static bool PointerRead (lv_indev_data_t *pData);
+	static bool PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData);
 	static void MouseEventHandler (TMouseEvent Event, unsigned nButtons,
 				       unsigned nPosX, unsigned nPosY);
 	static void TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
 					     unsigned nPosX, unsigned nPosY);
 
 private:
+	lv_color_t *m_pBuffer1;
+	lv_color_t *m_pBuffer2;
+
 	CScreenDevice *m_pScreen;
 	CBcmFrameBuffer *m_pFrameBuffer;
 	CDMAChannel m_DMAChannel;
