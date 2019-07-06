@@ -60,6 +60,8 @@ public:
 
 	u64 Seek (u64 ullOffset);
 
+	u32 *GetID (void);
+
 private:
 	int PowerOn (void);
 	void PowerOff (void);

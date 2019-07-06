@@ -2084,3 +2084,8 @@ void CEMMCDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 
 	va_end (var);
 }
+
+u32 *CEMMCDevice::GetID (void)
+{
+	return m_device_id;
+}
