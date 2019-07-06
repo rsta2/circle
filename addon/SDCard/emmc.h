@@ -59,6 +59,8 @@ public:
 	int Write (const void *pBuffer, size_t nCount);
 
 	u64 Seek (u64 ullOffset);
+	
+	u32* GetID();
 
 private:
 	int PowerOn (void);
