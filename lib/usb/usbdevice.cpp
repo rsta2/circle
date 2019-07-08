@@ -19,6 +19,8 @@
 //
 #include <circle/usb/usbdevice.h>
 #include <circle/usb/usbhostcontroller.h>
+#include <circle/usb/dwhcirootport.h>
+#include <circle/usb/usbstandardhub.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/usb/usbstring.h>
@@ -31,29 +33,73 @@
 
 static const char FromDevice[] = "usbdev";
 
-u8 CUSBDevice::s_ucNextAddress = USB_FIRST_DEDICATED_ADDRESS;
+u64 CUSBDevice::s_nDeviceAddressMap = 0;
 
-CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
-			boolean bSplitTransfer, u8 ucHubAddress, u8 ucHubPortNumber)
+CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CDWHCIRootPort *pRootPort)
 :	m_pHost (pHost),
+	m_pRootPort (pRootPort),
+	m_pHub (0),
 	m_ucAddress (USB_DEFAULT_ADDRESS),
 	m_Speed (Speed),
 	m_pEndpoint0 (0),
-	m_bSplitTransfer (bSplitTransfer),
-	m_ucHubAddress (ucHubAddress),
-	m_ucHubPortNumber (ucHubPortNumber),
+	m_bSplitTransfer (FALSE),
+	m_ucHubAddress (0),
+	m_ucHubPortNumber (1),
 	m_pDeviceDesc (0),
 	m_pConfigDesc (0),
 	m_pConfigParser (0)
 {
 	assert (m_pHost != 0);
+	assert (m_pRootPort != 0);
+
+	assert (m_pEndpoint0 == 0);
+	m_pEndpoint0 = new CUSBEndpoint (this);
+	assert (m_pEndpoint0 != 0);
+
+	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
+	{
+		m_pFunction[nFunction] = 0;
+	}
+}
+
+CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
+			CUSBStandardHub *pHub, unsigned nHubPortIndex)
+:	m_pHost (pHost),
+	m_pRootPort (0),
+	m_pHub (pHub),
+	m_nHubPortIndex (nHubPortIndex),
+	m_ucAddress (USB_DEFAULT_ADDRESS),
+	m_Speed (Speed),
+	m_pEndpoint0 (0),
+	m_pDeviceDesc (0),
+	m_pConfigDesc (0),
+	m_pConfigParser (0)
+{
+	assert (m_pHost != 0);
+	assert (m_pHub != 0);
+
+	CUSBDevice *pHubDevice = pHub->GetDevice ();
+	assert (pHubDevice != 0);
+
+	m_bSplitTransfer  = pHubDevice->IsSplit ();
+	m_ucHubAddress    = pHubDevice->GetHubAddress ();
+	m_ucHubPortNumber = pHubDevice->GetHubPortNumber ();
+
+	// Is this the first high-speed hub with a non-high-speed device following in chain?
+	if (   !m_bSplitTransfer
+	    && pHubDevice->GetSpeed () == USBSpeedHigh
+	    && m_Speed < USBSpeedHigh)
+	{
+		// Then enable split transfers with this hub port as translator.
+		m_bSplitTransfer  = TRUE;
+		m_ucHubAddress    = pHubDevice->GetAddress ();
+		m_ucHubPortNumber = m_nHubPortIndex+1;
+	}
 
 	assert (m_pEndpoint0 == 0);
 	m_pEndpoint0 = new CUSBEndpoint (this);
 	assert (m_pEndpoint0 != 0);
 	
-	assert (ucHubPortNumber >= 1);
-
 	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
 	{
 		m_pFunction[nFunction] = 0;
@@ -66,6 +112,12 @@ CUSBDevice::~CUSBDevice (void)
 	{
 		delete (m_pFunction[nFunction]);
 		m_pFunction[nFunction] = 0;
+	}
+
+	if (m_ucAddress != USB_DEFAULT_ADDRESS)
+	{
+		assert (s_nDeviceAddressMap & ((u64) 1 << m_ucAddress));
+		s_nDeviceAddressMap &= ~((u64) 1 << m_ucAddress);
 	}
 
 	delete m_pConfigParser;
@@ -144,14 +196,25 @@ boolean CUSBDevice::Initialize (void)
 #ifndef NDEBUG
 	//debug_hexdump (m_pDeviceDesc, sizeof *m_pDeviceDesc, FromDevice);
 #endif
-	
-	u8 ucAddress = s_ucNextAddress++;
+
+	// find and allocate first free device address
+	u8 ucAddress;
+	for (ucAddress = USB_FIRST_DEDICATED_ADDRESS; ucAddress <= USB_MAX_ADDRESS; ucAddress++)
+	{
+		if (!(s_nDeviceAddressMap & ((u64) 1 << ucAddress)))
+		{
+			break;
+		}
+	}
+
 	if (ucAddress > USB_MAX_ADDRESS)
 	{
 		LogWrite (LogError, "Too many devices");
 
 		return FALSE;
 	}
+
+	s_nDeviceAddressMap |= (u64) 1 << ucAddress;
 
 	if (!m_pHost->SetAddress (m_pEndpoint0, ucAddress))
 	{
@@ -401,6 +464,17 @@ boolean CUSBDevice::ReScanDevices (void)
 	}
 
 	return bResult;
+}
+
+boolean CUSBDevice::RemoveDevice (void)
+{
+	if (m_pRootPort != 0)
+	{
+		return m_pRootPort->RemoveDevice ();
+	}
+
+	assert (m_pHub != 0);
+	return m_pHub->RemoveDevice (m_nHubPortIndex);
 }
 
 CString *CUSBDevice::GetName (TDeviceNameSelector Selector) const

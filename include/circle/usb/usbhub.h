@@ -4,7 +4,7 @@
 // Definitions for USB hubs
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbhub_h
-#define _usbhub_h
+#ifndef _circle_usb_usbhub_h
+#define _circle_usb_usbhub_h
 
 #include <circle/macros.h>
 
@@ -37,6 +37,7 @@
 #define DESCRIPTOR_HUB			0x29
 
 // Feature Selectors
+#define PORT_ENABLE			1
 #define PORT_RESET			4
 #define PORT_POWER			8
 

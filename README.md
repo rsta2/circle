@@ -6,22 +6,26 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2 and 3 and on Raspberry Pi Zero). It provides several ready-tested C++ classes which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered some samples which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models before the Raspberry Pi 4 (tested on model A+, B, B+, on Raspberry Pi 2 and 3 and on Raspberry Pi Zero). It provides several ready-tested C++ classes which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered some samples which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-Release 39.1
+Release 39.2
 ------------
 
-This intermediate release comes with a new in-memory-update (chain boot) function and some improvements in detail. Furthermore it is the basis for AArch64 support in the [circle-stdlib](https://github.com/smuehlst/circle-stdlib) project.
+This is another intermediate release, which collects the recent changes to the project as a basis for the planned Raspberry Pi 4 support in Circle 40.
 
-The in-memory-update function allows starting a new (Circle-based) kernel image without writing it out to the SD card. This is used to implement a HTTP- and TFTP-based bootloader with Web front-end in *sample/38-bootloader*. Starting larger kernel images with it is much quicker, compared with the serial bootloader. See the *README* file in this directory for details.
+News in this release are:
 
-The ARM Generic Timer is supported now on Raspberry Pi 2 and 3 as a replacement for the BCM2835 System Timer. This should improve performance and allows using QEMU with AArch64. The system option *USE_PHYSICAL_COUNTER* is enabled by default now.
+* LittlevGL embedded GUI library (by Gabor Kiss-Vamosi) supported (in addon/littlevgl/).
 
-The relatively rare resource of DMA channels is assigned dynamically now. Lite DMA channels are supported. This allows to use DMA for scrolling the screen much quicker.
+* The SD card access (EMMC) performance has been remarkable improved.
 
-There is a new make target "install". If you define `SDCARD = /path` with the full path of your SD card mount point in *Config.mk*, the built kernel image can be copied directly to the SD card. There is a second optional configuration file *Config2.mk* now. Because some Circle-based projects overwrite the file *Config.mk* for configuration, you can set additional non-volatile configuration variables using this new file.
+* USB mass-storage devices (e.g. flash drives) can be removed from the running system now. The application has to call `CDevice::RemoveDevice()` for the device object of the USB mass-storage device, which will be removed afterwards. The file system has to be unmounted before by the application. If FatFs (in addon/fatfs/) is used, the device removal is announced by calling `disk_ioctl (pdrv, CTRL_EJECT, 0)`, where pdrv is the physical drive number (e.g. 1 for the first USB mass-storage device).
+
+* Network initialization can be done in background now to speed-up system initialization. If `CNetSubSystem::Initialize()` is called with the parameter FALSE, it returns quickly without waiting for the Ethernet link to come up and for DHCP to be bound. The network must not be accessed, before `CNetSubSystem::IsRunning()` returns TRUE. This has to be ensured by the application.
+
+Please note that the rudimentary Bluetooth support is deprecated now. There are legal reasons, why it cannot be developed further and because it is currently of very limited use, it will probably be removed soon.
 
 The 39th Step
 -------------
@@ -98,9 +102,10 @@ Circle supports the following features:
 |                       |                                                     |
 | Graphics              | OpenGL ES 1.1 and 2.0, OpenVG 1.1, EGL 1.4          |
 |                       | uGUI (by Achim Doebler)                             |
+|                       | LittlevGL GUI library (by Gabor Kiss-Vamosi)        |
 |                       |                                                     |
 | Bluetooth             | Device inquiry support only                         |
-|                       | USB BR/EDR dongle driver                            |
+| (deprecated)          | USB BR/EDR dongle driver                            |
 |                       | Internal controller of Raspberry Pi 3 B             |
 
 Building
@@ -108,7 +113,7 @@ Building
 
 > For building 64-bit applications (AArch64) see the next section.
 
-Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads). Circle has been tested with the version *7-2018-q2-update* from this website.
+Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3 you need a toolchain with Cortex-A7/-A53 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/open-source/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *8.2-2019.01* (gcc-arm-8.2-2019.01-x86_64-arm-eabi.tar.xz) from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2 or 3) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -141,7 +146,7 @@ AArch64
 
 Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3. There are also Raspberry Pi 2 versions, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too.
 
-The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://releases.linaro.org/components/toolchain/binaries/latest-7/aarch64-elf/). It is based on GCC 7.4.1 at the moment.
+The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/open-source/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *8.2-2019.01* (gcc-arm-8.2-2019.01-x86_64-aarch64-elf.tar.xz) from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi architecture (*AARCH*, 32 or 64) and the *PREFIX64* of your toolchain commands. The *RASPPI* variable is set automatically to 3 for `AARCH = 64` and does not need to be set here. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi architecture and the *PREFIX64* variable to the prefix of your compiler like this (don't forget the dash at the end):
 

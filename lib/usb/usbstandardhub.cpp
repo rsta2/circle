@@ -141,6 +141,27 @@ boolean CUSBStandardHub::ReScanDevices (void)
 	return EnumeratePorts ();
 }
 
+boolean CUSBStandardHub::RemoveDevice (unsigned nPortIndex)
+{
+	assert (nPortIndex < m_nPorts);
+
+	if (GetHost ()->ControlMessage (GetEndpoint0 (),
+					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_OTHER,
+					CLEAR_FEATURE, PORT_ENABLE, nPortIndex+1, 0, 0) < 0)
+	{
+		CLogger::Get ()->Write (FromHub, LogError, "Cannot disable port %u", nPortIndex+1);
+
+		return FALSE;
+	}
+
+	m_bPortConfigured[nPortIndex] = FALSE;
+
+	delete m_pDevice[nPortIndex];
+	m_pDevice[nPortIndex] = 0;
+
+	return TRUE;
+}
+
 boolean CUSBStandardHub::EnumeratePorts (void)
 {
 	CUSBHostController *pHost = GetHost ();
@@ -271,26 +292,8 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 			Speed = USBSpeedFull;
 		}
 
-		CUSBDevice *pHubDevice = GetDevice ();
-		assert (pHubDevice != 0);
-
-		boolean bSplit     = pHubDevice->IsSplit ();
-		u8 ucHubAddress    = pHubDevice->GetHubAddress ();
-		u8 ucHubPortNumber = pHubDevice->GetHubPortNumber ();
-
-		// Is this the first high-speed hub with a non-high-speed device following in chain?
-		if (   !bSplit
-		    && pHubDevice->GetSpeed () == USBSpeedHigh
-		    && Speed < USBSpeedHigh)
-		{
-			// Then enable split transfers with this hub port as translator.
-			bSplit          = TRUE;
-			ucHubAddress    = pHubDevice->GetAddress ();
-			ucHubPortNumber = nPort+1;
-		}
-
 		assert (m_pDevice[nPort] == 0);
-		m_pDevice[nPort] = new CUSBDevice (pHost, Speed, bSplit, ucHubAddress, ucHubPortNumber);
+		m_pDevice[nPort] = new CUSBDevice (pHost, Speed, this, nPort);
 		assert (m_pDevice[nPort] != 0);
 
 		if (!m_pDevice[nPort]->Initialize ())

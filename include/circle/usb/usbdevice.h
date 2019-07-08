@@ -37,19 +37,23 @@ enum TDeviceNameSelector		// do not change this order
 };
 
 class CUSBHostController;
+class CDWHCIRootPort;
+class CUSBStandardHub;
 class CUSBEndpoint;
 
 class CUSBDevice
 {
 public:
+	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CDWHCIRootPort *pRootPort);
 	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
-		    boolean bSplitTransfer, u8 ucHubAddress, u8 ucHubPortNumber);
+		    CUSBStandardHub *pHub, unsigned nHubPortIndex);
 	~CUSBDevice (void);
 	
 	boolean Initialize (void);		// onto address state (phase 1)
 	boolean Configure (void);		// onto configured state (phase 2)
 
 	boolean ReScanDevices (void);
+	boolean RemoveDevice (void);
 
 	CString *GetName (TDeviceNameSelector Selector) const;	// string deleted by caller
 	CString *GetNames (void) const;				// string deleted by caller
@@ -78,6 +82,10 @@ private:
 
 private:
 	CUSBHostController *m_pHost;
+	CDWHCIRootPort	   *m_pRootPort;	// the root port, this device is connected to
+	CUSBStandardHub	   *m_pHub;		// alternatively the hub, this device is connected to
+	unsigned	    m_nHubPortIndex;	//	the 0-based index at this hub
+
 	u8		    m_ucAddress;
 	TUSBSpeed	    m_Speed;
 	CUSBEndpoint	   *m_pEndpoint0;
@@ -93,7 +101,7 @@ private:
 
 	CUSBFunction *m_pFunction[USBDEV_MAX_FUNCTIONS];
 
-	static u8 s_ucNextAddress;
+	static u64 s_nDeviceAddressMap;
 };
 
 #endif

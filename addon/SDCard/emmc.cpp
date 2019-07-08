@@ -2053,20 +2053,16 @@ int CEMMCDevice::DoWrite (u8 *buf, size_t buf_size, u32 block_no)
 
 int CEMMCDevice::TimeoutWait (unsigned reg, unsigned mask, int value, unsigned usec)
 {
-	unsigned nCount = usec / 1000;
-
 	do
 	{
-		usDelay (1);
-
 		if ((read32 (reg) & mask) ? value : !value)
 		{
 			return 0;
 		}
 
-		usDelay (999);
+		usDelay (1);
 	}
-	while (nCount--);
+	while (usec--);
 
 	return -1;
 }
@@ -2087,4 +2083,9 @@ void CEMMCDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 	CLogger::Get ()->WriteV ("emmc", Severity, pMessage, var);
 
 	va_end (var);
+}
+
+u32 *CEMMCDevice::GetID (void)
+{
+	return m_device_id;
 }

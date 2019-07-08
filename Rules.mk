@@ -25,7 +25,7 @@ CIRCLEHOME ?= ..
 
 AARCH	 ?= 32
 RASPPI	 ?= 1
-PREFIX	 ?= arm-none-eabi-
+PREFIX	 ?= arm-eabi-
 PREFIX64 ?= aarch64-elf-
 
 # see: doc/stdlib-support.txt

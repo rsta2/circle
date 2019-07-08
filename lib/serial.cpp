@@ -2,7 +2,7 @@
 // serial.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -86,12 +86,21 @@
 
 CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFIQ)
 :
+#if SERIAL_GPIO_SELECT == 14
 	// to be sure there is no collision with the Bluetooth controller
 	m_GPIO32 (32, GPIOModeInput),
 	m_GPIO33 (33, GPIOModeInput),
-
 	m_TxDPin (14, GPIOModeAlternateFunction0),
 	m_RxDPin (15, GPIOModeAlternateFunction0),
+#elif SERIAL_GPIO_SELECT == 32
+	m_TxDPin (32, GPIOModeAlternateFunction3),
+	m_RxDPin (33, GPIOModeAlternateFunction3),
+#elif SERIAL_GPIO_SELECT == 36
+	m_TxDPin (36, GPIOModeAlternateFunction2),
+	m_RxDPin (37, GPIOModeAlternateFunction2),
+#else
+	#error SERIAL_GPIO_SELECT must be 14, 32 or 36!
+#endif
 	m_pInterruptSystem (pInterruptSystem),
 	m_bUseFIQ (bUseFIQ),
 	m_bInterruptConnected (FALSE),

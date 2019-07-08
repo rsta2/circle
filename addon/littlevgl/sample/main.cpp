@@ -1,8 +1,8 @@
 //
-// dwhcirootport.h
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,29 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_dwhcirootport_h
-#define _circle_usb_dwhcirootport_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-#include <circle/usb/usbdevice.h>
-#include <circle/types.h>
-
-class CDWHCIDevice;
-
-class CDWHCIRootPort
+int main (void)
 {
-public:
-	CDWHCIRootPort (CDWHCIDevice *pHost);
-	~CDWHCIRootPort (void);
+	// cannot return here because some destructors used in CKernel are not implemented
 
-	boolean Initialize (void);
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
+	
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-	boolean ReScanDevices (void);
-	boolean RemoveDevice (void);
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
 
-private:
-	CDWHCIDevice *m_pHost;
-
-	CUSBDevice *m_pDevice;
-};
-
-#endif
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

@@ -62,6 +62,12 @@ public:
 
 	boolean WaitForVerticalSync (void);
 
+	/// \brief Set screen backlight brightness
+	/// \param nBrightness Brightness level
+	/// \return Operation successful?
+	/// \note Tested with the Official Touchscreen only (level can be about 0..180)
+	boolean SetBacklightBrightness(unsigned nBrightness);
+
 private:
 	u32 m_nWidth;
 	u32 m_nHeight;

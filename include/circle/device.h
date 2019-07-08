@@ -2,7 +2,7 @@
 // device.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,6 +36,9 @@ public:
 
 	// returns the resulting offset, (u64) -1 on error
 	virtual u64 Seek (u64 ullOffset);		// byte offset
+
+	// returns TRUE on successful removal
+	virtual boolean RemoveDevice (void);
 };
 
 #endif

@@ -110,6 +110,9 @@ public:
 	/// \return Screen height in characters
 	unsigned GetRows (void) const;
 
+	/// \return Pointer to frame buffer object
+	CBcmFrameBuffer *GetFrameBuffer (void);
+
 	/// \return Current screen status to be written back with SetStatus()
 	TScreenStatus GetStatus (void);
 	/// \param Status Screen status previously returned from GetStatus()

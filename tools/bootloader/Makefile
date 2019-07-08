@@ -1,7 +1,7 @@
 -include ../../Config.mk
 -include ../../Config2.mk
 
-PREFIX ?= arm-none-eabi-
+PREFIX ?= arm-eabi-
 PREFIX64 ?= aarch64-elf-
 FLASHBAUD ?= 115200
 

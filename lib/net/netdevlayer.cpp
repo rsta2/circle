@@ -2,7 +2,7 @@
 // netdevlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ CNetDeviceLayer::~CNetDeviceLayer (void)
 	m_pNetConfig = 0;
 }
 
-boolean CNetDeviceLayer::Initialize (void)
+boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 {
 	assert (m_pDevice == 0);
 	m_pDevice = (CNetDevice *) CDeviceNameService::Get ()->GetDevice ("eth0", FALSE);
@@ -47,6 +47,11 @@ boolean CNetDeviceLayer::Initialize (void)
 		CLogger::Get ()->Write (FromNetDev, LogError, "Net device not available");
 
 		return FALSE;
+	}
+
+	if (!bWaitForActivate)
+	{
+		return TRUE;
 	}
 
 	// wait for Ethernet PHY to come up

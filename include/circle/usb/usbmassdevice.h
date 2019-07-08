@@ -2,7 +2,7 @@
 // usbmassdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbmassdevice_h
-#define _usbmassdevice_h
+#ifndef _circle_usb_usbmassdevice_h
+#define _circle_usb_usbmassdevice_h
 
 #include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
@@ -64,7 +64,8 @@ private:
 
 	CPartitionManager *m_pPartitionManager;
 
-	static unsigned s_nDeviceNumber;
+	static unsigned s_nDeviceNumberMap;
+	unsigned m_nDeviceNumber;
 };
 
 #endif

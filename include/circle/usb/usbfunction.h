@@ -41,6 +41,7 @@ public:
 	virtual boolean Configure (void);
 
 	virtual boolean ReScanDevices (void);
+	virtual boolean RemoveDevice (void);
 
 	CString *GetInterfaceName (void) const;		// string deleted by caller
 	u8 GetNumEndpoints (void) const;

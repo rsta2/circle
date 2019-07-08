@@ -93,10 +93,6 @@ VectorTable:
 /*
  * IRQ stub
  */
-#ifdef SAVE_VFP_REGS_ON_IRQ
-	SAVE_VFP_REGS_ON_IRQ is not supported with AARCH = 64!
-#endif
-
 	.globl	IRQStub
 IRQStub:
 	stp	x29, x30, [sp, #-16]!		/* save x29, x30 onto stack */
@@ -106,6 +102,24 @@ IRQStub:
 	stp	x29, x30, [sp, #-16]!
 	msr	DAIFClr, #1			/* enable FIQ */
 
+#ifdef SAVE_VFP_REGS_ON_IRQ
+	stp	q30, q31, [sp, #-32]!		/* save q0-q31 onto stack */
+	stp	q28, q29, [sp, #-32]!
+	stp	q26, q27, [sp, #-32]!
+	stp	q24, q25, [sp, #-32]!
+	stp	q22, q23, [sp, #-32]!
+	stp	q20, q21, [sp, #-32]!
+	stp	q18, q19, [sp, #-32]!
+	stp	q16, q17, [sp, #-32]!
+	stp	q14, q15, [sp, #-32]!
+	stp	q12, q13, [sp, #-32]!
+	stp	q10, q11, [sp, #-32]!
+	stp	q8, q9, [sp, #-32]!
+	stp	q6, q7, [sp, #-32]!
+	stp	q4, q5, [sp, #-32]!
+	stp	q2, q3, [sp, #-32]!
+	stp	q0, q1, [sp, #-32]!
+#endif
 	stp	x27, x28, [sp, #-16]!		/* save x0-x28 onto stack */
 	stp	x25, x26, [sp, #-16]!
 	stp	x23, x24, [sp, #-16]!
@@ -139,6 +153,24 @@ IRQStub:
 	ldp	x23, x24, [sp], #16
 	ldp	x25, x26, [sp], #16
 	ldp	x27, x28, [sp], #16
+#ifdef SAVE_VFP_REGS_ON_IRQ
+	ldp	q0, q1, [sp], #32		/* restore q0-q31 from stack */
+	ldp	q2, q3, [sp], #32
+	ldp	q4, q5, [sp], #32
+	ldp	q6, q7, [sp], #32
+	ldp	q8, q9, [sp], #32
+	ldp	q10, q11, [sp], #32
+	ldp	q12, q13, [sp], #32
+	ldp	q14, q15, [sp], #32
+	ldp	q16, q17, [sp], #32
+	ldp	q18, q19, [sp], #32
+	ldp	q20, q21, [sp], #32
+	ldp	q22, q23, [sp], #32
+	ldp	q24, q25, [sp], #32
+	ldp	q26, q27, [sp], #32
+	ldp	q28, q29, [sp], #32
+	ldp	q30, q31, [sp], #32
+#endif
 
 	msr	DAIFSet, #1			/* disable FIQ */
 	ldp	x29, x30, [sp], #16		/* restore elr_el1, spsr_el1 from stack */
@@ -152,12 +184,26 @@ IRQStub:
 /*
  * FIQ stub
  */
-#ifdef SAVE_VFP_REGS_ON_FIQ
-	SAVE_VFP_REGS_ON_FIQ is not supported with AARCH = 64!
-#endif
-
 	.globl	FIQStub
 FIQStub:
+#ifdef SAVE_VFP_REGS_ON_FIQ
+	stp	q30, q31, [sp, #-32]!
+	stp	q28, q29, [sp, #-32]!
+	stp	q26, q27, [sp, #-32]!
+	stp	q24, q25, [sp, #-32]!
+	stp	q22, q23, [sp, #-32]!
+	stp	q20, q21, [sp, #-32]!
+	stp	q18, q19, [sp, #-32]!
+	stp	q16, q17, [sp, #-32]!
+	stp	q14, q15, [sp, #-32]!
+	stp	q12, q13, [sp, #-32]!
+	stp	q10, q11, [sp, #-32]!
+	stp	q8, q9, [sp, #-32]!
+	stp	q6, q7, [sp, #-32]!
+	stp	q4, q5, [sp, #-32]!
+	stp	q2, q3, [sp, #-32]!
+	stp	q0, q1, [sp, #-32]!
+#endif
 	stp	x29, x30, [sp, #-16]!
 	stp	x27, x28, [sp, #-16]!
 	stp	x25, x26, [sp, #-16]!
@@ -198,6 +244,24 @@ FIQStub:
 	ldp	x25, x26, [sp], #16
 	ldp	x27, x28, [sp], #16
 	ldp	x29, x30, [sp], #16
+#ifdef SAVE_VFP_REGS_ON_FIQ
+	ldp	q0, q1, [sp], #32
+	ldp	q2, q3, [sp], #32
+	ldp	q4, q5, [sp], #32
+	ldp	q6, q7, [sp], #32
+	ldp	q8, q9, [sp], #32
+	ldp	q10, q11, [sp], #32
+	ldp	q12, q13, [sp], #32
+	ldp	q14, q15, [sp], #32
+	ldp	q16, q17, [sp], #32
+	ldp	q18, q19, [sp], #32
+	ldp	q20, q21, [sp], #32
+	ldp	q22, q23, [sp], #32
+	ldp	q24, q25, [sp], #32
+	ldp	q26, q27, [sp], #32
+	ldp	q28, q29, [sp], #32
+	ldp	q30, q31, [sp], #32
+#endif
 
 	eret
 
