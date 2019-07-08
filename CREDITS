@@ -50,6 +50,8 @@ Adding bootloader support and tools
 
 Stephane Damo
 Helping to fix FIQ synchronization issue
+Improving SD card (EMMC) performance
+Adding utility functions for Official Touchscreen and SD card
 
 Steve Maynard
 Patches and testing for Compute Module 3(+)
