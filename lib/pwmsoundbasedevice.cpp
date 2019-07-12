@@ -32,8 +32,7 @@
 #include <circle/util.h>
 #include <assert.h>
 
-#define CLOCK_FREQ		500000000		// PLLD
-#define CLOCK_DIVIDER		2
+#define CLOCK_RATE		250000000
 
 //
 // PWM control register
@@ -128,13 +127,13 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
 					  unsigned	    nChunkSize)
 :	CSoundBaseDevice (SoundFormatUnsigned32,
-			  (CLOCK_FREQ / CLOCK_DIVIDER + nSampleRate/2) / nSampleRate, nSampleRate),
+			  (CLOCK_RATE + nSampleRate/2) / nSampleRate, nSampleRate),
 	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
-	m_nRange ((CLOCK_FREQ / CLOCK_DIVIDER + nSampleRate/2) / nSampleRate),
+	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
 	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction0),
 	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction0),
-	m_Clock (GPIOClockPWM, GPIOClockSourcePLLD),
+	m_Clock (GPIOClockPWM),
 	m_bIRQConnected (FALSE),
 	m_State (PWMSoundIdle),
 	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
@@ -346,7 +345,11 @@ void CPWMSoundBaseDevice::RunPWM (void)
 {
 	PeripheralEntry ();
 
-	m_Clock.Start (CLOCK_DIVIDER);
+#ifndef NDEBUG
+	boolean bOK =
+#endif
+		m_Clock.StartRate (CLOCK_RATE);
+	assert (bOK);
 	CTimer::SimpleusDelay (2000);
 
 	assert ((1 << 8) <= m_nRange && m_nRange < (1 << 16));
