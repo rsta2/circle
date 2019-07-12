@@ -2,7 +2,7 @@
 // synchronize64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -135,12 +135,14 @@ void LeaveCritical (void)
 // Cache maintenance operations for ARMv8-A
 //
 // NOTE: The following functions should hold all variables in CPU registers. Currently this will be
-//	 ensured using the register keyword and maximum optimation (see circle/synchronize.h).
+//	 ensured using the register keyword and maximum optimation (see circle/synchronize64.h).
 //
 //	 The following numbers can be determined (dynamically) using CTR_EL0, CSSELR_EL1, CCSIDR_EL1
-//	 and CLIDR_EL1. As long we use the Cortex-A53 implementation in the BCM2837 these static
-//	 values will work:
+//	 and CLIDR_EL1. As long we use the Cortex-A53/A72 implementation in the BCM2837/BCM2711 these
+//	 static values will work:
 //
+
+#if RASPPI == 3
 
 #define SETWAY_LEVEL_SHIFT		1
 
@@ -157,6 +159,26 @@ void LeaveCritical (void)
 	#define L2_SETWAY_SET_SHIFT		6	// Log2(L2_CACHE_LINE_LENGTH)
 
 #define DATA_CACHE_LINE_LENGTH_MIN	64		// min(L1_DATA_CACHE_LINE_LENGTH, L2_CACHE_LINE_LENGTH)
+
+#else
+
+#define SETWAY_LEVEL_SHIFT		1
+
+#define L1_DATA_CACHE_SETS		256
+#define L1_DATA_CACHE_WAYS		2
+	#define L1_SETWAY_WAY_SHIFT		31	// 32-Log2(L1_DATA_CACHE_WAYS)
+#define L1_DATA_CACHE_LINE_LENGTH	64
+	#define L1_SETWAY_SET_SHIFT		6	// Log2(L1_DATA_CACHE_LINE_LENGTH)
+
+#define L2_CACHE_SETS			1024
+#define L2_CACHE_WAYS			16
+	#define L2_SETWAY_WAY_SHIFT		28	// 32-Log2(L2_CACHE_WAYS)
+#define L2_CACHE_LINE_LENGTH		64
+	#define L2_SETWAY_SET_SHIFT		6	// Log2(L2_CACHE_LINE_LENGTH)
+
+#define DATA_CACHE_LINE_LENGTH_MIN	64		// min(L1_DATA_CACHE_LINE_LENGTH, L2_CACHE_LINE_LENGTH)
+
+#endif
 
 void InvalidateDataCache (void)
 {

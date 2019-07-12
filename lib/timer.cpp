@@ -26,6 +26,10 @@
 #include <circle/debug.h>
 #include <assert.h>
 
+#if RASPPI >= 4 && !defined (USE_PHYSICAL_COUNTER)
+	#error USE_PHYSICAL_COUNTER is required on Raspberry Pi 4!
+#endif
+
 struct TKernelTimer
 {
 #ifndef NDEBUG
@@ -54,7 +58,7 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 	m_nUptime (0),
 	m_nTime (0),
 	m_nMinutesDiff (0),
-	m_nMsDelay (350000),
+	m_nMsDelay (175000),
 	m_nusDelay (m_nMsDelay / 1000),
 	m_pPeriodicHandler (0)
 {
@@ -139,16 +143,21 @@ boolean CTimer::Initialize (void)
 
 	u32 nPrescaler = read32 (ARM_LOCAL_PRESCALER);
 
+#if RASPPI <= 3
 	if (   nCNTFRQ    != 19200000
 	    || nPrescaler != 0x6AAAAAB)
+#else
+	if (   nCNTFRQ    != 54000000
+	    || nPrescaler != 39768216U)
+#endif
 	{
 		CLogger::Get ()->Write (FromTimer, LogPanic,
 					"USE_PHYSICAL_COUNTER is not supported (freq %u, pre 0x%X)",
 					nCNTFRQ, nPrescaler);
 	}
+#endif
 
 	PeripheralExit ();
-#endif
 
 	return TRUE;
 }

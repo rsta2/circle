@@ -10,6 +10,8 @@
 
 	.globl	DelayLoop
 DelayLoop:
+	nop
+	nop
 	subs	r0, r0, #1
 	bhi	DelayLoop
 	mov	pc, lr
@@ -20,6 +22,8 @@ DelayLoop:
 
 	.globl	DelayLoop
 DelayLoop:
+	nop
+	nop
 	subs	w0, w0, #1
 	bne	DelayLoop
 	ret

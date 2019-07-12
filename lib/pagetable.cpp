@@ -2,7 +2,7 @@
 // pagetable.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/sysconfig.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2836.h>
+#include <circle/bcm2711.h>
 #include <circle/synchronize.h>
 #include <assert.h>
 
@@ -30,8 +31,13 @@
 
 #define TTBR_MODE	(  ARM_TTBR_INNER_CACHEABLE		\
 			 | ARM_TTBR_OUTER_NON_CACHEABLE)
-#else
+#elif RASPPI <= 3
 #define MEM_TOTAL_END	ARM_LOCAL_END
+
+#define TTBR_MODE	(  ARM_TTBR_INNER_WRITE_BACK		\
+			 | ARM_TTBR_OUTER_WRITE_BACK)
+#else
+#define MEM_TOTAL_END	ARM_GIC_END
 
 #define TTBR_MODE	(  ARM_TTBR_INNER_WRITE_BACK		\
 			 | ARM_TTBR_OUTER_WRITE_BACK)

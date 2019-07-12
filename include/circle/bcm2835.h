@@ -2,7 +2,7 @@
 // bcm2835.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,10 @@
 
 #if RASPPI == 1
 #define ARM_IO_BASE		0x20000000
-#else
+#elif RASPPI <= 3
 #define ARM_IO_BASE		0x3F000000
+#else
+#define ARM_IO_BASE		0xFE000000
 #endif
 #define ARM_IO_END		(ARM_IO_BASE + 0xFFFFFF)
 
@@ -65,8 +67,15 @@
 #define ARM_GPIO_GPLEN0		(ARM_GPIO_BASE + 0x70)
 #define ARM_GPIO_GPAREN0	(ARM_GPIO_BASE + 0x7C)
 #define ARM_GPIO_GPAFEN0	(ARM_GPIO_BASE + 0x88)
+#if RASPPI <= 3
 #define ARM_GPIO_GPPUD		(ARM_GPIO_BASE + 0x94)
 #define ARM_GPIO_GPPUDCLK0	(ARM_GPIO_BASE + 0x98)
+#else
+#define ARM_GPIO_GPPUPPDN0	(ARM_GPIO_BASE + 0xE4)
+#define ARM_GPIO_GPPUPPDN1	(ARM_GPIO_BASE + 0xE8)
+#define ARM_GPIO_GPPUPPDN2	(ARM_GPIO_BASE + 0xEC)
+#define ARM_GPIO_GPPUPPDN3	(ARM_GPIO_BASE + 0xF0)
+#endif
 
 //
 // UART0

@@ -330,12 +330,13 @@ u32 CGPIOPin::ReadAll (void)
 	return nResult;
 }
 
-// See: http://www.raspberrypi.org/forums/viewtopic.php?t=163352&p=1059178#p1059178
 void CGPIOPin::SetPullUpMode (unsigned nMode)
 {
-	uintptr nClkReg = ARM_GPIO_GPPUDCLK0 + m_nRegOffset;
-
 	s_SpinLock.Acquire ();
+
+#if RASPPI <= 3
+	// See: http://www.raspberrypi.org/forums/viewtopic.php?t=163352&p=1059178#p1059178
+	uintptr nClkReg = ARM_GPIO_GPPUDCLK0 + m_nRegOffset;
 
 	assert (nMode <= 2);
 	write32 (ARM_GPIO_GPPUD, nMode);
@@ -344,6 +345,19 @@ void CGPIOPin::SetPullUpMode (unsigned nMode)
 	CTimer::SimpleusDelay (5);		// 1us should be enough, but to be sure
 	write32 (ARM_GPIO_GPPUD, 0);
 	write32 (nClkReg, 0);
+#else
+	assert (m_nPin < GPIO_PINS);
+	uintptr nModeReg = ARM_GPIO_GPPUPPDN0 + (m_nPin / 16) * 4;
+	unsigned nShift = (m_nPin % 16) * 2;
+
+	assert (nMode <= 2);
+	static const unsigned ModeMap[3] = {0, 2, 1};
+
+	u32 nValue = read32 (nModeReg);
+	nValue &= ~(3 << nShift);
+	nValue |= ModeMap[nMode] << nShift;
+	write32 (nModeReg, nValue);
+#endif
 
 	s_SpinLock.Release ();
 }

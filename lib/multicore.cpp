@@ -6,7 +6,7 @@
 //	Licensed under GPL2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 
 #include <circle/startup.h>
 #include <circle/bcm2836.h>
+#include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/memio.h>
@@ -53,12 +54,14 @@ CMultiCoreSupport::~CMultiCoreSupport (void)
 
 boolean CMultiCoreSupport::Initialize (void)
 {
+#if RASPPI <= 3
 	// Route IRQ and FIQ to core 0
 	u32 nRouting = read32 (ARM_LOCAL_GPU_INT_ROUTING);
 	nRouting &= ~0x0F;
 	write32 (ARM_LOCAL_GPU_INT_ROUTING, nRouting);
 
 	write32 (ARM_LOCAL_MAILBOX_INT_CONTROL0, 1);		// enable IPI on core 0
+#endif
 
 	for (unsigned nCore = 1; nCore < CORES; nCore++)
 	{
@@ -120,7 +123,7 @@ boolean CMultiCoreSupport::Initialize (void)
 void CMultiCoreSupport::IPIHandler (unsigned nCore, unsigned nIPI)
 {
 	assert (nCore < CORES);
-	assert (nIPI < 32);
+	assert (nIPI <= IPI_MAX);
 
 	if (nIPI == IPI_HALT_CORE)
 	{
@@ -133,9 +136,13 @@ void CMultiCoreSupport::IPIHandler (unsigned nCore, unsigned nIPI)
 void CMultiCoreSupport::SendIPI (unsigned nCore, unsigned nIPI)
 {
 	assert (nCore < CORES);
-	assert (nIPI < 32);
+	assert (nIPI <= IPI_MAX);
 
+#if RASPPI <= 3
 	write32 (ARM_LOCAL_MAILBOX0_SET0 + 0x10 * nCore, 1 << nIPI);
+#else
+	CInterruptSystem::SendIPI (nCore, nIPI);
+#endif
 }
 
 void CMultiCoreSupport::HaltAll (void)
@@ -150,6 +157,8 @@ void CMultiCoreSupport::HaltAll (void)
 	
 	halt ();
 }
+
+#if RASPPI <= 3
 
 boolean CMultiCoreSupport::LocalInterruptHandler (void)
 {
@@ -185,6 +194,18 @@ boolean CMultiCoreSupport::LocalInterruptHandler (void)
 	return TRUE;
 }
 
+#else
+
+void CMultiCoreSupport::LocalInterruptHandler (unsigned nFromCore, unsigned nIPI)
+{
+	if (s_pThis != 0)
+	{
+		s_pThis->IPIHandler (ThisCore (), nIPI);
+	}
+}
+
+#endif
+
 void CMultiCoreSupport::EntrySecondary (void)
 {
 	assert (s_pThis != 0);
@@ -200,7 +221,11 @@ void CMultiCoreSupport::EntrySecondary (void)
 	pSpinTable->SpinCore[nCore] = 0;
 #endif
 
+#if RASPPI <= 3
 	write32 (ARM_LOCAL_MAILBOX_INT_CONTROL0 + 4 * nCore, 1);
+#else
+	CInterruptSystem::InitializeSecondary ();
+#endif
 	EnableIRQs ();
 
 	CLogger::Get ()->Write (FromMultiCore, LogDebug, "CPU core %u started", nCore);

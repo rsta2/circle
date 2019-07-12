@@ -23,6 +23,10 @@
 #ifndef _circle_bcm2835int_h
 #define _circle_bcm2835int_h
 
+#if RASPPI >= 4
+	#include <circle/bcm2711int.h>
+#else
+
 // IRQs
 #define ARM_IRQS_PER_REG	32
 #define ARM_IRQS_BASIC_REG	8
@@ -204,5 +208,7 @@
 #define ARM_FIQ_ILLEGAL_TYPE1	71
 
 #define ARM_MAX_FIQ		71
+
+#endif
 
 #endif

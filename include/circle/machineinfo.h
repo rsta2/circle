@@ -42,6 +42,7 @@ enum TMachineModel
 	MachineModelCM,
 	MachineModelCM3,
 	MachineModelCM3Plus,
+	MachineModel4B,
 	MachineModelUnknown
 };
 
@@ -50,6 +51,7 @@ enum TSoCType
 	SoCTypeBCM2835,
 	SoCTypeBCM2836,
 	SoCTypeBCM2837,
+	SoCTypeBCM2711,
 	SoCTypeUnknown
 };
 
@@ -88,11 +90,18 @@ public:
 #define ACTLED_UNKNOWN		(ACTLED_VIRTUAL_PIN | 0)
 	unsigned GetClockRate (u32 nClockId) const;	// see circle/bcmpropertytags.h for nClockId
 	unsigned GetGPIOPin (TGPIOVirtualPin Pin) const;// see circle/gpiopin.h for Pin
+	unsigned GetGPIOClockSourceRate (unsigned nSourceId);
+#define GPIO_CLOCK_SOURCE_ID_MAX	15		// source ID is 0-15
+#define GPIO_CLOCK_SOURCE_UNUSED	0		// returned for unused clock sources
 	unsigned GetDevice (TDeviceId DeviceId) const;
 
 	// DMA channel resource management
+#if RASPPI <= 3
 #define DMA_CHANNEL_MAX		12			// channels 0-12 are supported
-#define DMA_CHANNEL__MASK	0x0F			// explicit channel number 0-12
+#else
+#define DMA_CHANNEL_MAX		7			// TODO: channels 0-7 are supported
+#endif
+#define DMA_CHANNEL__MASK	0x0F			// explicit channel number
 #define DMA_CHANNEL_NONE	0x80			// returned if no channel available
 #define DMA_CHANNEL_NORMAL	0x81			// normal DMA engine requested
 #define DMA_CHANNEL_LITE	0x82			// lite (or normal) DMA engine requested

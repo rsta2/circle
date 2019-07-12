@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/machineinfo.h>
+#include <circle/gpioclock.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
 
@@ -69,7 +70,8 @@ s_NewInfo[]
 	{12, MachineModelZeroW,		1},
 	{13, MachineModel3BPlus,	3},
 	{14, MachineModel3APlus,	3},
-	{16, MachineModelCM3Plus,	3}
+	{16, MachineModelCM3Plus,	3},
+	{17, MachineModel4B,		4}
 };
 
 static const char *s_MachineName[] =		// must match TMachineModel
@@ -89,6 +91,7 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Compute Module",
 	"Compute Module 3",
 	"Compute Module 3+",
+	"Raspberry Pi 4 Model B",
 	"Unknown"
 };
 
@@ -97,6 +100,7 @@ static const char *s_SoCName[] =		// must match TSoCType
 	"BCM2835",
 	"BCM2836",
 	"BCM2837",
+	"BCM2711",
 	"Unknown"
 };
 
@@ -117,6 +121,7 @@ static unsigned s_ActLEDInfo[] =		// must match TMachineModel
 	47,				// CM
 	0 | ACTLED_VIRTUAL_PIN,		// CM3
 	0 | ACTLED_VIRTUAL_PIN,		// CM3+
+	42,				// 4B
 
 	ACTLED_UNKNOWN			// Unknown
 };
@@ -130,7 +135,11 @@ CMachineInfo::CMachineInfo (void)
 	m_nModelRevision (0),
 	m_SoCType (SoCTypeUnknown),
 	m_nRAMSize (0),
+#if RASPPI <= 3
 	m_usDMAChannelMap (0x1F35)	// default mapping
+#else
+	m_usDMAChannelMap (0x71F5)	// default mapping
+#endif
 {
 	if (s_pThis != 0)
 	{
@@ -371,6 +380,40 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 	}
 
 	return nResult;
+}
+
+unsigned CMachineInfo::GetGPIOClockSourceRate (unsigned nSourceId)
+{
+	if (m_nModelMajor <= 3)
+	{
+		switch (nSourceId)
+		{
+		case GPIOClockSourceOscillator:
+			return 19200000;
+
+		case GPIOClockSourcePLLD:
+			return 500000000;
+
+		default:
+			break;
+		}
+	}
+	else
+	{
+		switch (nSourceId)
+		{
+		case GPIOClockSourceOscillator:
+			return 54000000;
+
+		case GPIOClockSourcePLLD:
+			return 750000000;
+
+		default:
+			break;
+		}
+	}
+
+	return GPIO_CLOCK_SOURCE_UNUSED;
 }
 
 unsigned CMachineInfo::GetDevice (TDeviceId DeviceId) const
