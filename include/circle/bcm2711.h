@@ -22,6 +22,13 @@
 
 #if RASPPI >= 4
 
+#include <circle/bcm2835.h>
+
+//
+// Hardware Random Number Generator RNG200
+//
+#define ARM_HW_RNG200_BASE	(ARM_IO_BASE + 0x104000)
+
 //
 // Generic Interrupt Controller (GIC-400)
 //

@@ -19,7 +19,7 @@
 #
 
 OBJS	= actled.o alloc.o assert.o bcmframebuffer.o bcmmailbox.o \
-	  bcmpropertytags.o bcmrandom.o chargenerator.o classallocator.o \
+	  bcmpropertytags.o chargenerator.o classallocator.o \
 	  cputhrottle.o debug.o delayloop.o device.o devicenameservice.o \
 	  dmachannel.o gpioclock.o gpiomanager.o gpiopin.o gpiopinfiq.o \
 	  i2cmaster.o i2cslave.o i2ssoundbasedevice.o koptions.o \
@@ -49,9 +49,9 @@ OBJS	+= $(OBJS64)
 endif
 
 ifneq ($(strip $(RASPPI)),4)
-OBJS	+= interrupt.o usertimer.o
+OBJS	+= bcmrandom.o interrupt.o usertimer.o
 else
-OBJS	+= interruptgic.o
+OBJS	+= bcmrandom200.o interruptgic.o
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),3)
