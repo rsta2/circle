@@ -24,14 +24,22 @@
 #include <circle/multicore.h>
 #include <circle/bcm2711.h>
 #include <circle/memio.h>
+#include <circle/logger.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 #include <assert.h>
 
-// GIC distributor registers (non-secure access)
+// The following definitions are valid for non-secure access,
+// if not labeled otherwise.
+
+// GIC distributor registers
 #define GICD_CTLR		(ARM_GICD_BASE + 0x000)
 	#define GICD_CTLR_DISABLE	(0 << 0)
 	#define GICD_CTLR_ENABLE	(1 << 0)
+	// secure access
+	#define GICD_CTLR_ENABLE_GROUP0	(1 << 0)
+	#define GICD_CTLR_ENABLE_GROUP1	(1 << 1)
+#define GICD_IGROUPR0		(ARM_GICD_BASE + 0x080)		// secure access for group 0
 #define GICD_ISENABLER0		(ARM_GICD_BASE + 0x100)
 #define GICD_ICENABLER0		(ARM_GICD_BASE + 0x180)
 #define GICD_ISPENDR0		(ARM_GICD_BASE + 0x200)
@@ -40,6 +48,7 @@
 #define GICD_ICACTIVER0		(ARM_GICD_BASE + 0x380)
 #define GICD_IPRIORITYR0	(ARM_GICD_BASE + 0x400)
 	#define GICD_IPRIORITYR_DEFAULT	0xA0
+	#define GICD_IPRIORITYR_FIQ	0x40
 #define GICD_ITARGETSR0		(ARM_GICD_BASE + 0x800)
 	#define GICD_ITARGETSR_CORE0	(1 << 0)
 #define GICD_ICFGR0		(ARM_GICD_BASE + 0xC00)
@@ -50,10 +59,14 @@
 	#define GICD_SGIR_CPU_TARGET_LIST__SHIFT	16
 	#define GICD_SGIR_TARGET_LIST_FILTER__SHIFT	24
 
-// GIC CPU interface registers (non-secure access)
+// GIC CPU interface registers
 #define GICC_CTLR		(ARM_GICC_BASE + 0x000)
 	#define GICC_CTLR_DISABLE	(0 << 0)
 	#define GICC_CTLR_ENABLE	(1 << 0)
+	// secure access
+	#define GICC_CTLR_ENABLE_GROUP0	(1 << 0)
+	#define GICC_CTLR_ENABLE_GROUP1	(1 << 1)
+	#define GICC_CTLR_FIQ_ENABLE	(1 << 3)
 #define GICC_PMR		(ARM_GICC_BASE + 0x004)
 	#define GICC_PMR_PRIORITY	(0xF0 << 0)
 #define GICC_IAR		(ARM_GICC_BASE + 0x00C)
@@ -64,6 +77,12 @@
 	#define GICC_EOIR_EOIINTID__MASK	0x3FF
 	#define GICC_EOIR_CPUID__SHIFT		10
 	#define GICC_EOIR_CPUID__MASK		(3 << 10)
+
+enum TSMCFunction
+{
+	SMCFunctionEnableFIQ,		// nParam: FIQ number
+	SMCFunctionDisableFIQ		// nParam: FIQ number
+};
 
 CInterruptSystem *CInterruptSystem::s_pThis = 0;
 
@@ -93,6 +112,9 @@ boolean CInterruptSystem::Initialize (void)
 	TExceptionTable *pTable = (TExceptionTable *) ARM_EXCEPTION_TABLE_BASE;
 	pTable->IRQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->IRQ, IRQStub));
 	pTable->FIQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->FIQ, FIQStub));
+
+	pTable->SecureMonitorCall = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->SecureMonitorCall,
+								     SMCStub));
 
 	SyncDataAndInstructionCache ();
 #endif
@@ -201,12 +223,27 @@ void CInterruptSystem::DisableIRQ (unsigned nIRQ)
 
 void CInterruptSystem::EnableFIQ (unsigned nFIQ)
 {
-	assert (0);	// TODO: support FIQ
+#if AARCH == 32
+	assert (nFIQ >= 16);
+	assert (nFIQ < ARM_MAX_FIQ);
+	FIQData.nFIQNumber = nFIQ;
+
+	CallSecureMonitor (SMCFunctionEnableFIQ, nFIQ);
+#else
+	CLogger::Get ()->Write ("intgic", LogPanic, "FIQ not supported in 64-bit mode");
+#endif
 }
 
 void CInterruptSystem::DisableFIQ (void)	// may be called, when FIQ is not enabled
 {
-	// TODO: support FIQ
+#if AARCH == 32
+	if (FIQData.nFIQNumber != 0)
+	{
+		CallSecureMonitor (SMCFunctionDisableFIQ, FIQData.nFIQNumber);
+
+		FIQData.nFIQNumber = 0;
+	}
+#endif
 }
 
 CInterruptSystem *CInterruptSystem::Get (void)
@@ -288,3 +325,70 @@ void CInterruptSystem::SendIPI (unsigned nCore, unsigned nIPI)
 	write32 (GICD_SGIR,   1 << (nCore + GICD_SGIR_CPU_TARGET_LIST__SHIFT)
 			    | nIPI);
 }
+
+#if AARCH == 32
+
+void CInterruptSystem::CallSecureMonitor (u32 nFunction, u32 nParam)
+{
+	asm volatile
+	(
+		"mov	r0, %0\n"
+		"mov	r1, %1\n"
+		"smc	#0\n"
+
+		: : "r" (nFunction), "r" (nParam)
+	);
+}
+
+void CInterruptSystem::SecureMonitorHandler (u32 nFunction, u32 nParam)
+{
+	u32 nRegOffset = (nParam / 32) * 4;		// for GICD_IGROUPRn, GICD_IxENABLERn
+	u32 nMask = 1 << (nParam % 32);
+
+	u32 nRegPrio = GICD_IPRIORITYR0 + (nParam / 4) * 4;
+	u32 nPrioShift = (nParam % 4) * 8;
+	u32 nPrioMask = 0xFF << nPrioShift;
+
+	if (nFunction == SMCFunctionEnableFIQ)
+	{
+		// global FIQ enable
+		write32 (GICD_CTLR,   GICD_CTLR_ENABLE_GROUP0
+				    | GICD_CTLR_ENABLE_GROUP1);
+		write32 (GICC_CTLR,   GICC_CTLR_ENABLE_GROUP0
+				    | GICC_CTLR_ENABLE_GROUP1
+				    | GICC_CTLR_FIQ_ENABLE);
+
+		// set this interrupt to group 0
+		write32 (GICD_IGROUPR0 + nRegOffset, read32 (GICD_IGROUPR0 + nRegOffset) & ~nMask);
+
+		// increase interrupt priority for FIQ
+		write32 (nRegPrio,   (read32 (nRegPrio) & ~nPrioMask)
+				   | GICD_IPRIORITYR_FIQ << nPrioShift);
+
+		// enable this interupt
+		write32 (GICD_ISENABLER0 + nRegOffset, nMask);
+	}
+	else if (nFunction == SMCFunctionDisableFIQ)
+	{
+		// disable this interupt
+		write32 (GICD_ICENABLER0 + nRegOffset, nMask);
+
+		// set default interrupt priority
+		write32 (nRegPrio,   (read32 (nRegPrio) & ~nPrioMask)
+				   | GICD_IPRIORITYR_DEFAULT << nPrioShift);
+
+		// set this interrupt to group 1
+		write32 (GICD_IGROUPR0 + nRegOffset, read32 (GICD_IGROUPR0 + nRegOffset) | nMask);
+
+		// global FIQ disable
+		write32 (GICC_CTLR, GICC_CTLR_ENABLE_GROUP1);
+		write32 (GICD_CTLR, GICD_CTLR_ENABLE_GROUP1);
+	}
+}
+
+void SecureMonitorHandler (u32 nFunction, u32 nParam)
+{
+	CInterruptSystem::SecureMonitorHandler (nFunction, nParam);
+}
+
+#endif

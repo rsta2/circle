@@ -22,6 +22,7 @@
 
 #include <circle/bcm2835int.h>
 #include <circle/exceptionstub.h>
+#include <circle/types.h>
 
 typedef void TIRQHandler (void *pParam);
 
@@ -53,6 +54,11 @@ public:
 	static void InitializeSecondary (void);
 
 	static void SendIPI (unsigned nCore, unsigned nIPI);
+
+#if AARCH == 32
+	static void CallSecureMonitor (u32 nFunction, u32 nParam);
+	static void SecureMonitorHandler (u32 nFunction, u32 nParam);
+#endif
 #endif
 
 private:
