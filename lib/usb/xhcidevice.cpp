@@ -1,9 +1,9 @@
 //
-// dwhcirootport.h
+// xhcidevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,30 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_dwhcirootport_h
-#define _circle_usb_dwhcirootport_h
+#include <circle/usb/xhcidevice.h>
 
-#include <circle/usb/usbhcirootport.h>
-#include <circle/usb/usbdevice.h>
-#include <circle/types.h>
-
-class CDWHCIDevice;
-
-class CDWHCIRootPort : public CUSBHCIRootPort
+CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 {
-public:
-	CDWHCIRootPort (CDWHCIDevice *pHost);
-	~CDWHCIRootPort (void);
+}
 
-	boolean Initialize (void);
+CXHCIDevice::~CXHCIDevice (void)
+{
+}
 
-	boolean ReScanDevices (void);
-	boolean RemoveDevice (void);
+boolean CXHCIDevice::Initialize (void)
+{
+	return TRUE;
+}
 
-private:
-	CDWHCIDevice *m_pHost;
+void CXHCIDevice::ReScanDevices (void)
+{
+}
 
-	CUSBDevice *m_pDevice;
-};
+boolean CXHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
+{
+	return FALSE;
+}
 
-#endif
+boolean CXHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
+{
+	return FALSE;
+}

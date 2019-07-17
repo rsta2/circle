@@ -1,9 +1,9 @@
 //
-// dwhcirootport.h
+// usbhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,30 +17,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_dwhcirootport_h
-#define _circle_usb_dwhcirootport_h
+#ifndef _circle_usb_usbhcidevice_h
+#define _circle_usb_usbhcidevice_h
 
-#include <circle/usb/usbhcirootport.h>
-#include <circle/usb/usbdevice.h>
-#include <circle/types.h>
-
-class CDWHCIDevice;
-
-class CDWHCIRootPort : public CUSBHCIRootPort
-{
-public:
-	CDWHCIRootPort (CDWHCIDevice *pHost);
-	~CDWHCIRootPort (void);
-
-	boolean Initialize (void);
-
-	boolean ReScanDevices (void);
-	boolean RemoveDevice (void);
-
-private:
-	CDWHCIDevice *m_pHost;
-
-	CUSBDevice *m_pDevice;
-};
+#if RASPPI <= 3
+	#include <circle/usb/dwhcidevice.h>
+	#define CUSBHCIDevice	CDWHCIDevice
+#else
+	#include <circle/usb/xhcidevice.h>
+	#define CUSBHCIDevice	CXHCIDevice
+#endif
 
 #endif

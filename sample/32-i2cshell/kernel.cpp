@@ -27,7 +27,7 @@ CKernel::CKernel (void)
 	m_Serial (&m_Interrupt, TRUE),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_DWHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer),
 	m_Console (&m_Serial),
 	m_I2CMaster (CMachineInfo::Get ()->GetDevice (DeviceI2CMaster)),
 	m_I2CShell (&m_Console, &m_I2CMaster)
@@ -76,7 +76,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_DWHCI.Initialize ();
+		bOK = m_USBHCI.Initialize ();
 	}
 
 	if (bOK)

@@ -32,7 +32,7 @@ CKernel::CKernel (void)
 :	m_Screen (640, 480),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_DWHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer),
 	m_pGamePad (0)
 {
 	s_pThis = this;
@@ -82,7 +82,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_DWHCI.Initialize ();
+		bOK = m_USBHCI.Initialize ();
 	}
 
 	return bOK;

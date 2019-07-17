@@ -30,7 +30,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include <circle/usb/dwhcidevice.h>
+#include <circle/usb/usbhcidevice.h>
 #include <SDCard/emmc.h>
 #include <fatfs/ff.h>
 #include <circle/types.h>
@@ -65,7 +65,7 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 
-	CDWHCIDevice		m_DWHCI;
+	CUSBHCIDevice		m_USBHCI;
 	CEMMCDevice		m_EMMC;
 	FATFS			m_FileSystem;
 };

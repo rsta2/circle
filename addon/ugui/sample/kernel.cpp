@@ -28,7 +28,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_Recorder (8, 9, 10, 11, &m_Config),
-	m_DWHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer),
 	m_Clock0 (GPIOClock0),
 	m_ClockPin (4, GPIOModeAlternateFunction0),
 	m_GUI (&m_Screen)
@@ -81,7 +81,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_DWHCI.Initialize ();
+		bOK = m_USBHCI.Initialize ();
 	}
 
 	if (bOK)

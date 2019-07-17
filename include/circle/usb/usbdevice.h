@@ -37,14 +37,14 @@ enum TDeviceNameSelector		// do not change this order
 };
 
 class CUSBHostController;
-class CDWHCIRootPort;
+class CUSBHCIRootPort;
 class CUSBStandardHub;
 class CUSBEndpoint;
 
 class CUSBDevice
 {
 public:
-	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CDWHCIRootPort *pRootPort);
+	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CUSBHCIRootPort *pRootPort);
 	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
 		    CUSBStandardHub *pHub, unsigned nHubPortIndex);
 	~CUSBDevice (void);
@@ -82,7 +82,7 @@ private:
 
 private:
 	CUSBHostController *m_pHost;
-	CDWHCIRootPort	   *m_pRootPort;	// the root port, this device is connected to
+	CUSBHCIRootPort	   *m_pRootPort;	// the root port, this device is connected to
 	CUSBStandardHub	   *m_pHub;		// alternatively the hub, this device is connected to
 	unsigned	    m_nHubPortIndex;	//	the 0-based index at this hub
 

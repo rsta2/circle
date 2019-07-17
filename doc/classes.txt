@@ -51,7 +51,7 @@ Base library
 
 USB library
 
-* CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi.
+* CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi 1-3.
 * CDWHCIFrameScheduler: Base class for a simple micro frame scheduler
 * CDWHCIFrameSchedulerNonPeriodic: Schedules the transmission of non-interrupt split frames to non-high-speed devices
 * CDWHCIFrameSchedulerNoSplit: Schedules the transmission of frames to direct attached non-high-speed devices
@@ -79,6 +79,8 @@ USB library
 * CUSBGamePadSwitchProDevice: Driver for Nintendo Switch Pro gamepad
 * CUSBGamePadXbox360Device: Driver for Xbox 360 Wired gamepad
 * CUSBGamePadXboxOneDevice: Driver for Xbox One gamepad
+* CUSBHCIDevice: Alias for CDWHCIDevice or CXHCIDevice, depending on Raspberry Pi model.
+* CUSBHCIRootPort: Base class, which represents an USB HCI root port.
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse, gamepad)
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards
@@ -88,6 +90,7 @@ USB library
 * CUSBRequest: A request to an USB device (URB).
 * CUSBStandardHub: USB hub driver for LAN9512/9514 and external hubs (max. 8 ports)
 * CUSBString: Encapsulates a string descriptor, available on an USB device.
+* CXHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi 4 (incomplete).
 
 Input library
 

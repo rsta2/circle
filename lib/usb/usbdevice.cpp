@@ -19,7 +19,7 @@
 //
 #include <circle/usb/usbdevice.h>
 #include <circle/usb/usbhostcontroller.h>
-#include <circle/usb/dwhcirootport.h>
+#include <circle/usb/usbhcirootport.h>
 #include <circle/usb/usbstandardhub.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbdevicefactory.h>
@@ -35,7 +35,7 @@ static const char FromDevice[] = "usbdev";
 
 u64 CUSBDevice::s_nDeviceAddressMap = 0;
 
-CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CDWHCIRootPort *pRootPort)
+CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CUSBHCIRootPort *pRootPort)
 :	m_pHost (pHost),
 	m_pRootPort (pRootPort),
 	m_pHub (0),

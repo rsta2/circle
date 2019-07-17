@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,19 +20,25 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= dwhcidevice.o dwhciregister.o dwhcixferstagedata.o dwhcixactqueue.o \
-	  usbconfigparser.o usbdevice.o usbendpoint.o usbhostcontroller.o usbrequest.o usbstring.o \
-	  smsc951x.o lan7800.o macaddress.o netdevice.o usbdevicefactory.o usbstandardhub.o \
-	  usbmassdevice.o \
-	  dwhciframeschednper.o dwhciframeschedper.o usbkeyboard.o \
-	  dwhcirootport.o usbhiddevice.o usbmouse.o \
-	  usbgamepad.o usbgamepadstandard.o usbgamepadps3.o usbgamepadps4.o usbgamepadxbox360.o \
-	  usbgamepadxboxone.o usbgamepadswitchpro.o usbfunction.o \
-	  dwhciframeschednsplit.o usbprinter.o usbbluetooth.o usbmidi.o usbcdcethernet.o
+all: libusb.a
+
+include $(CIRCLEHOME)/Rules.mk
+
+OBJS	= lan7800.o macaddress.o netdevice.o smsc951x.o usbbluetooth.o usbcdcethernet.o \
+	  usbconfigparser.o usbdevice.o usbdevicefactory.o usbendpoint.o usbfunction.o \
+	  usbgamepad.o usbgamepadps3.o usbgamepadps4.o usbgamepadstandard.o usbgamepadswitchpro.o \
+	  usbgamepadxbox360.o usbgamepadxboxone.o usbhiddevice.o usbhostcontroller.o \
+	  usbkeyboard.o usbmassdevice.o usbmidi.o usbmouse.o usbprinter.o usbrequest.o \
+	  usbstandardhub.o usbstring.o
+
+ifneq ($(strip $(RASPPI)),4)
+OBJS	+= dwhcidevice.o dwhciframeschednper.o dwhciframeschednsplit.o dwhciframeschedper.o \
+	   dwhciregister.o dwhcirootport.o dwhcixactqueue.o dwhcixferstagedata.o
+else
+OBJS	+= xhcidevice.o
+endif
 
 libusb.a: $(OBJS)
 	@echo "  AR    $@"
 	@rm -f $@
 	@$(AR) cr $@ $(OBJS)
-
-include $(CIRCLEHOME)/Rules.mk
