@@ -2,7 +2,7 @@
 // usbcdcethernet.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,13 +20,14 @@
 #ifndef _circle_usb_usbcdcethernet_h
 #define _circle_usb_usbcdcethernet_h
 
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
+#include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
-#include <circle/usb/macaddress.h>
+#include <circle/macaddress.h>
 #include <circle/types.h>
 
-class CUSBCDCEthernetDevice : public CNetDevice
+class CUSBCDCEthernetDevice : public CUSBFunction, CNetDevice
 {
 public:
 	CUSBCDCEthernetDevice (CUSBFunction *pFunction);

@@ -24,9 +24,11 @@ Base library
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CKernelOptions: Providing kernel options from file cmdline.txt (see doc/cmdline.txt).
 * CLogger: Writing logging messages to a target device
+* CMACAddress: Encapsulates an Ethernet MAC address.
 * CMachineInfo: Helper class to get different information about the running computer.
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
+* CNetDevice: Base class (interface) of net devices.
 * CNullDevice: Character device which ignores sent data and returns 0 bytes on read.
 * CPageTable: Encapsulates a page table to be used by MMU (AArch32).
 * CPtrArray: Container class. Dynamic array of pointers.
@@ -61,8 +63,6 @@ USB library
 * CDWHCITransactionQueue: Queues coming USB transactions (with USE_USB_SOF_INTR enabled).
 * CDWHCITransferStageData: Holds all the data needed for a transfer stage on one HCI channel.
 * CLAN7800Device: Driver for the on-board USB Gigabit Ethernet device of the Raspberry Pi 3 B+.
-* CMACAddress: Encapsulates an Ethernet MAC address.
-* CNetDevice: Base class of CSMSC951xDevice.
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
 * CUSBBluetoothDevice: Bluetooth HCI transport driver for USB Bluetooth BR/EDR dongles.
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)

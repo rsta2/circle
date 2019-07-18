@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
 //
 #include "kernel.h"
 #include <circle/usb/usb.h>
-#include <circle/usb/netdevice.h>
-#include <circle/usb/macaddress.h>
+#include <circle/netdevice.h>
+#include <circle/macaddress.h>
 #include <circle/string.h>
 #include <circle/macros.h>
 #include <circle/debug.h>
@@ -87,7 +87,7 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CNetDevice *pEth0 = (CNetDevice *) m_DeviceNameService.GetDevice ("eth0", FALSE);
+	CNetDevice *pEth0 = CNetDevice::GetNetDevice (0);
 	if (pEth0 == 0)
 	{
 		m_Logger.Write (FromKernel, LogError, "Net device not found");

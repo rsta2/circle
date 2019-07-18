@@ -21,7 +21,7 @@
 #define _circle_net_netdevlayer_h
 
 #include <circle/net/netconfig.h>
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
 #include <circle/net/netqueue.h>
 #include <circle/types.h>
 

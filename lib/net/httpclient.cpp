@@ -18,7 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/httpclient.h>
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
 #include <circle/util.h>
 #include <circle/net/in.h>
 #include <assert.h>

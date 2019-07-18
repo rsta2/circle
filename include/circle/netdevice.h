@@ -2,7 +2,7 @@
 // netdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,14 +17,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_netdevice_h
-#define _circle_usb_netdevice_h
+#ifndef _circle_netdevice_h
+#define _circle_netdevice_h
 
-#include <circle/usb/usbfunction.h>
-#include <circle/usb/macaddress.h>
+#include <circle/macaddress.h>
 #include <circle/types.h>
 
 #define FRAME_BUFFER_SIZE	1600
+
+#define MAX_NET_DEVICES		5
 
 enum TNetDeviceSpeed
 {
@@ -37,12 +38,9 @@ enum TNetDeviceSpeed
 	NetDeviceSpeedUnknown
 };
 
-class CNetDevice : public CUSBFunction
+class CNetDevice
 {
 public:
-	CNetDevice (CUSBFunction *pFunction);
-	virtual ~CNetDevice (void);
-
 	virtual boolean Configure (void) = 0;
 	
 	virtual const CMACAddress *GetMACAddress (void) const = 0;
@@ -59,11 +57,15 @@ public:
 
 	static const char *GetSpeedString (TNetDeviceSpeed Speed);
 
+	// nDeviceNumber is 0-based
+	static CNetDevice *GetNetDevice (unsigned nDeviceNumber);
+
 protected:
 	void AddNetDevice (void);
 
 private:
 	static unsigned s_nDeviceNumber;
+	static CNetDevice *s_pDevice[MAX_NET_DEVICES];
 
 	static const char *s_SpeedString[NetDeviceSpeedUnknown];
 };
