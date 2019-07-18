@@ -30,8 +30,10 @@ static const char FromKernel[] = "kernel";
 CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
-	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer)
+	m_Logger (m_Options.GetLogLevel (), &m_Timer)
+#if RASPPI <= 3
+	, m_USBHCI (&m_Interrupt, &m_Timer)
+#endif
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -77,7 +79,11 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
+#if RASPPI <= 3
 		bOK = m_USBHCI.Initialize ();
+#else
+		bOK = m_Bcm54213.Initialize ();
+#endif
 	}
 
 	return bOK;

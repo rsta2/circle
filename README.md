@@ -186,6 +186,10 @@ Classes
 
 The following C++ classes were added to Circle:
 
+Base library
+
+* CBcm54213Device: Driver for BCM54213PE Gigabit Ethernet Transceiver of Raspberry Pi 4.
+
 USB library
 
 * CUSBHCIDevice: Alias for CDWHCIDevice or CXHCIDevice, depending on Raspberry Pi model.

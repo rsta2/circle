@@ -51,7 +51,7 @@ endif
 ifneq ($(strip $(RASPPI)),4)
 OBJS	+= bcmrandom.o interrupt.o usertimer.o
 else
-OBJS	+= bcmrandom200.o interruptgic.o
+OBJS	+= bcm54213.o bcmrandom200.o interruptgic.o
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),3)

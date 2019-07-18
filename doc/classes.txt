@@ -3,6 +3,7 @@ CLASSES
 Base library
 
 * CActLED: Switch the Act LED on and off, checks the Raspberry Pi model to use the right LED pin.
+* CBcm54213Device: Driver for BCM54213PE Gigabit Ethernet Transceiver of Raspberry Pi 4.
 * CBcmFrameBuffer: Frame buffer initialization, setting color palette for 8 bit depth.
 * CBcmMailBox: Simple GPU mailbox interface, currently used for the property interface.
 * CBcmPropertyTags: Get several information from the GPU side or control something on this side.

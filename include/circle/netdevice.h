@@ -41,8 +41,8 @@ enum TNetDeviceSpeed
 class CNetDevice
 {
 public:
-	virtual boolean Configure (void) = 0;
-	
+	virtual ~CNetDevice (void) {}
+
 	virtual const CMACAddress *GetMACAddress (void) const = 0;
 
 	virtual boolean SendFrame (const void *pBuffer, unsigned nLength) = 0;

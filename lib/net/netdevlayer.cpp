@@ -39,6 +39,13 @@ CNetDeviceLayer::~CNetDeviceLayer (void)
 
 boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 {
+#if RASPPI >= 4
+	if (!m_Bcm54213.Initialize ())
+	{
+		return FALSE;
+	}
+#endif
+
 	assert (m_pDevice == 0);
 	m_pDevice = CNetDevice::GetNetDevice (0);	// get "eth0"
 	if (m_pDevice == 0)
