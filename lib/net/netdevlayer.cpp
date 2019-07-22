@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/netdevlayer.h>
+#include <circle/net/phytask.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
 #include <circle/macros.h>
@@ -54,6 +55,8 @@ boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 
 		return FALSE;
 	}
+
+	new CPHYTask (m_pDevice);
 
 	if (!bWaitForActivate)
 	{

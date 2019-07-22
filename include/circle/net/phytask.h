@@ -1,8 +1,8 @@
 //
-// bcm2711.h
+// phytask.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,33 +17,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_bcm2711_h
-#define _circle_bcm2711_h
+#ifndef _circle_net_phytask_h
+#define _circle_net_phytask_h
 
-#if RASPPI >= 4
+#include <circle/sched/task.h>
+#include <circle/netdevice.h>
 
-#include <circle/bcm2835.h>
+class CPHYTask : public CTask
+{
+public:
+	CPHYTask (CNetDevice *pDevice);
+	~CPHYTask (void);
 
-//
-// Hardware Random Number Generator RNG200
-//
-#define ARM_HW_RNG200_BASE	(ARM_IO_BASE + 0x104000)
+	void Run (void);
 
-//
-// Generic Interrupt Controller (GIC-400)
-//
-#define ARM_GICD_BASE		0xFF841000
-#define ARM_GICC_BASE		0xFF842000
-#define ARM_GIC_END		0xFF847FFF
-
-//
-// BCM54213PE Gigabit Ethernet Transceiver (external)
-//
-#define ARM_BCM54213_BASE	0xFD580000
-#define ARM_BCM54213_MDIO	(ARM_BCM54213_BASE + 0x0E14)
-#define ARM_BCM54213_MDIO_END	(ARM_BCM54213_BASE + 0x0E1B)
-#define ARM_BCM54213_END	(ARM_BCM54213_BASE + 0xFFFF)
-
-#endif
+private:
+	CNetDevice *m_pDevice;
+};
 
 #endif

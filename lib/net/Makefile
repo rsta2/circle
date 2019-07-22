@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 CIRCLEHOME = ../..
 
 OBJS	= netsubsystem.o nettask.o netsocket.o socket.o \
-	  transportlayer.o networklayer.o linklayer.o netdevlayer.o arphandler.o \
+	  transportlayer.o networklayer.o linklayer.o netdevlayer.o phytask.o arphandler.o \
 	  icmphandler.o routecache.o \
 	  netconnection.o udpconnection.o \
 	  tcpconnection.o retransmissionqueue.o retranstimeoutcalc.o tcprejector.o \
