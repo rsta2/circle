@@ -196,6 +196,10 @@ USB library
 * CUSBHCIRootPort: Base class, which represents an USB HCI root port.
 * CXHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi 4 (incomplete).
 
+Net library
+
+* CPHYTask: Background task which continuously updates the PHY of the used net device.
+
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
 `./makedoc`
