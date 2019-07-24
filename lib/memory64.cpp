@@ -144,12 +144,17 @@ void CMemorySystem::EnableMMU (void)
 		      | TCR_EL1_EPD0
 		      | TCR_EL1_T0SZ__MASK);
 	nTCR_EL1 |=   TCR_EL1_EPD1
-		    | TCR_EL1_IPS_4GB	    << TCR_EL1_IPS__SHIFT
 		    | TCR_EL1_TG0_64KB	    << TCR_EL1_TG0__SHIFT
 		    | TCR_EL1_SH0_INNER     << TCR_EL1_SH0__SHIFT
 		    | TCR_EL1_ORGN0_WR_BACK << TCR_EL1_ORGN0__SHIFT
 		    | TCR_EL1_IRGN0_WR_BACK << TCR_EL1_IRGN0__SHIFT
+#if RASPPI == 3
+		    | TCR_EL1_IPS_4GB	    << TCR_EL1_IPS__SHIFT
 		    | TCR_EL1_T0SZ_4GB	    << TCR_EL1_T0SZ__SHIFT;
+#else
+		    | TCR_EL1_IPS_64GB	    << TCR_EL1_IPS__SHIFT
+		    | TCR_EL1_T0SZ_64GB	    << TCR_EL1_T0SZ__SHIFT;
+#endif
 	asm volatile ("msr tcr_el1, %0" : : "r" (nTCR_EL1));
 
 	u32 nSCTLR_EL1;

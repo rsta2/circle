@@ -4,7 +4,7 @@
 // Memory addresses and sizes (for AArch64)
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,9 @@
 #ifndef MEGABYTE
 	#define MEGABYTE	0x100000
 #endif
+#ifndef GIGABYTE
+	#define GIGABYTE	0x100000000UL
+#endif
 
 #define CORES			4				// must be a power of 2
 
@@ -52,5 +55,19 @@
 #define MEM_COHERENT_REGION	((MEM_EXCEPTION_STACK_END + 2*MEGABYTE) & ~(MEGABYTE-1))
 
 #define MEM_HEAP_START		(MEM_COHERENT_REGION + MEGABYTE)
+
+#if RASPPI >= 4
+// PCIe memory range (outbound)
+#define MEM_PCIE_RANGE_START		0x600000000UL
+#define MEM_PCIE_RANGE_SIZE		0x4000000UL
+#define MEM_PCIE_RANGE_END		(MEM_PCIE_RANGE_START + MEM_PCIE_RANGE_SIZE - 1UL)
+#define MEM_PCIE_RANGE_PCIE_START	0xF8000000		// mapping on PCIe side
+
+// PCIe memory range (inbound)
+#define MEM_PCIE_DMA_RANGE_START	0UL
+#define MEM_PCIE_DMA_RANGE_SIZE		0x100000000UL
+#define MEM_PCIE_DMA_RANGE_END		(MEM_PCIE_DMA_RANGE_START + MEM_PCIE_DMA_RANGE_SIZE - 1UL)
+#define MEM_PCIE_DMA_RANGE_PCIE_START	0UL			// mapping on PCIe side
+#endif
 
 #endif

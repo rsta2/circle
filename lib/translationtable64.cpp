@@ -24,16 +24,19 @@
 #include <circle/util.h>
 #include <assert.h>
 
-// Granule size is 64KB. Only EL1 stage 1 translation is enabled with 32 bits IPA (= PA) size (4GB).
+// Granule size is 64KB. Only EL1 stage 1 translation is enabled with 32 bits IPA
+// (= PA) size (4GB).
 
 #if RASPPI == 3
-// We create one level 2 (first lookup level) translation table with 3 table entries (total 1.5GB) which
-// point to a level 3 (final lookup level) translation table each with 8192 page entries a 64KB (total 512MB).
+// We create one level 2 (first lookup level) translation table with 3 table
+// entries (total 1.5GB) which point to a level 3 (final lookup level) translation
+// table each with 8192 page entries a 64KB (total 512MB).
 #define LEVEL2_TABLE_ENTRIES	3
 #elif RASPPI >= 4
-// We create one level 2 (first lookup level) translation table with 8 table entries (total 4GB) which
-// point to a level 3 (final lookup level) translation table each with 8192 page entries a 64KB (total 512MB).
-#define LEVEL2_TABLE_ENTRIES	8
+// We create one level 2 (first lookup level) translation table with 128 table
+// entries (total 64GB) which point to a level 3 (final lookup level) translation
+// table each with 8192 page entries a 64KB (total 512MB).
+#define LEVEL2_TABLE_ENTRIES	128
 #endif
 
 CTranslationTable::CTranslationTable (size_t nMemSize)
@@ -48,6 +51,15 @@ CTranslationTable::CTranslationTable (size_t nMemSize)
 	for (unsigned nEntry = 0; nEntry < LEVEL2_TABLE_ENTRIES; nEntry++)	// entries a 512MB
 	{
 		u64 nBaseAddress = (u64) nEntry * ARMV8MMU_TABLE_ENTRIES * ARMV8MMU_LEVEL3_PAGE_SIZE;
+
+#if RASPPI >= 4
+		if (   nBaseAddress >= GIGABYTE
+		    && !(   MEM_PCIE_RANGE_START <= nBaseAddress
+			 && nBaseAddress <= MEM_PCIE_RANGE_END))
+		{
+			continue;
+		}
+#endif
 
 		TARMV8MMU_LEVEL3_DESCRIPTOR *pTable = CreateLevel3Table (nBaseAddress);
 		assert (pTable != 0);
