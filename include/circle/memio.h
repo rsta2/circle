@@ -2,7 +2,7 @@
 // memio.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,26 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+static inline u8 read8 (uintptr nAddress)
+{
+	return *(u8 volatile *) nAddress;
+}
+
+static inline void write8 (uintptr nAddress, u8 uchValue)
+{
+	*(u8 volatile *) nAddress = uchValue;
+}
+
+static inline u16 read16 (uintptr nAddress)
+{
+	return *(u16 volatile *) nAddress;
+}
+
+static inline void write16 (uintptr nAddress, u16 usValue)
+{
+	*(u16 volatile *) nAddress = usValue;
+}
 
 static inline u32 read32 (uintptr nAddress)
 {
