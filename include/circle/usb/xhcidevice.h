@@ -24,6 +24,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/usb/usbrequest.h>
+#include <circle/bcmpciehostbridge.h>
 #include <circle/types.h>
 
 class CXHCIDevice : public CUSBHostController
@@ -38,6 +39,13 @@ public:
 
 	boolean SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	boolean SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
+
+private:
+	void InterruptHandler (unsigned nVector);
+	static void InterruptStub (unsigned nVector, void *pParam);
+
+private:
+	CBcmPCIeHostBridge m_PCIeHostBridge;
 };
 
 #endif

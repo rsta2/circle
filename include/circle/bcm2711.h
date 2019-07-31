@@ -23,6 +23,7 @@
 #if RASPPI >= 4
 
 #include <circle/bcm2835.h>
+#include <circle/sysconfig.h>
 
 //
 // Hardware Random Number Generator RNG200
@@ -43,6 +44,18 @@
 #define ARM_BCM54213_MDIO	(ARM_BCM54213_BASE + 0x0E14)
 #define ARM_BCM54213_MDIO_END	(ARM_BCM54213_BASE + 0x0E1B)
 #define ARM_BCM54213_END	(ARM_BCM54213_BASE + 0xFFFF)
+
+//
+// PCIe Host Bridge
+//
+#define ARM_PCIE_HOST_BASE	0xFD500000
+#define ARM_PCIE_HOST_END	(ARM_PCIE_HOST_BASE + 0x930F)
+
+//
+// xHCI USB Host Controller (external)
+//
+#define ARM_XHCI_BASE		MEM_PCIE_RANGE_START
+#define ARM_XHCI_END		(ARM_XHCI_BASE + 0x0FFF)
 
 #endif
 
