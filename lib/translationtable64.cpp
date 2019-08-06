@@ -54,8 +54,8 @@ CTranslationTable::CTranslationTable (size_t nMemSize)
 
 #if RASPPI >= 4
 		if (   nBaseAddress >= GIGABYTE
-		    && !(   MEM_PCIE_RANGE_START <= nBaseAddress
-			 && nBaseAddress <= MEM_PCIE_RANGE_END))
+		    && !(   MEM_PCIE_RANGE_START_VIRTUAL <= nBaseAddress
+			 && nBaseAddress <= MEM_PCIE_RANGE_END_VIRTUAL))
 		{
 			continue;
 		}

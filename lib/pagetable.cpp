@@ -18,12 +18,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/pagetable.h>
-#include <circle/armv6mmu.h>
+#if RASPPI <= 3
+	#include <circle/armv6mmu.h>
+#else
+	#include <circle/armv7lpae.h>
+#endif
 #include <circle/sysconfig.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2836.h>
 #include <circle/bcm2711.h>
 #include <circle/synchronize.h>
+#include <circle/alloc.h>
+#include <circle/util.h>
 #include <assert.h>
 
 #if RASPPI == 1
@@ -38,10 +44,9 @@
 			 | ARM_TTBR_OUTER_WRITE_BACK)
 #else
 #define MEM_TOTAL_END	ARM_GIC_END
-
-#define TTBR_MODE	(  ARM_TTBR_INNER_WRITE_BACK		\
-			 | ARM_TTBR_OUTER_WRITE_BACK)
 #endif
+
+#if RASPPI <= 3
 
 CPageTable::CPageTable (u32 nMemSize)
 :	m_pTable ((u32 *) MEM_PAGE_TABLE1)
@@ -86,3 +91,103 @@ u32 CPageTable::GetBaseAddress (void) const
 {
 	return (u32) m_pTable | TTBR_MODE;
 }
+
+#else	// RASPPI <= 3
+
+#define LEVEL1_TABLE_ENTRIES	4
+
+CPageTable::CPageTable (u32 nMemSize)
+:	m_nMemSize (nMemSize),
+	m_pTable ((u64 *) MEM_PAGE_TABLE1)
+{
+	memset (m_pTable, 0, PAGE_SIZE);
+
+	for (unsigned nEntry = 0; nEntry < LEVEL1_TABLE_ENTRIES; nEntry++)	// entries a 1GB
+	{
+		u64 nBaseAddress =
+			(u64) nEntry * ARMV7LPAE_TABLE_ENTRIES * ARMV7LPAE_LEVEL2_BLOCK_SIZE;
+
+		u64 *pTable = CreateLevel2Table (nBaseAddress);
+		assert (pTable != 0);
+
+		TARMV7LPAE_LEVEL1_TABLE_DESCRIPTOR *pDesc =
+			(TARMV7LPAE_LEVEL1_TABLE_DESCRIPTOR *) &m_pTable[nEntry];
+
+		pDesc->Value11	    = 3;
+		pDesc->Ignored1	    = 0;
+		pDesc->TableAddress = ARMV7LPAEL1TABLEADDR ((u64) pTable);
+		pDesc->Unknown      = 0;
+		pDesc->Ignored2	    = 0;
+		pDesc->PXNTable	    = 0;
+		pDesc->XNTable	    = 0;
+		pDesc->APTable	    = AP_TABLE_ALL_ACCESS;
+		pDesc->NSTable	    = 0;
+	}
+
+	DataSyncBarrier ();
+}
+
+CPageTable::~CPageTable (void)
+{
+}
+
+u64 CPageTable::GetBaseAddress (void) const
+{
+	return (u64) m_pTable;
+}
+
+u64 *CPageTable::CreateLevel2Table (u64 nBaseAddress)
+{
+	u64 *pTable = (u64 *) palloc ();
+	assert (pTable != 0);
+
+	for (unsigned nEntry = 0; nEntry < ARMV7LPAE_TABLE_ENTRIES; nEntry++)	// 512 entries a 2MB
+	{
+		TARMV7LPAE_LEVEL2_BLOCK_DESCRIPTOR *pDesc =
+			(TARMV7LPAE_LEVEL2_BLOCK_DESCRIPTOR *) &pTable[nEntry];
+
+		pDesc->Value01	     = 1;
+		pDesc->AttrIndx	     = ATTRINDX_NORMAL;
+		pDesc->NS	     = 0;
+		pDesc->AP	     = ATTRIB_AP_RW_PL1;
+		pDesc->SH	     = ATTRIB_SH_INNER_SHAREABLE;
+		pDesc->AF	     = 1;
+		pDesc->nG	     = 0;
+		pDesc->Unknown1      = 0;
+		pDesc->OutputAddress = ARMV7LPAEL2BLOCKADDR (nBaseAddress);
+		pDesc->Unknown2      = 0;
+		pDesc->Continous     = 0;
+		pDesc->PXN	     = 0;
+		pDesc->XN	     = 0;
+		pDesc->Ignored	     = 0;
+
+		extern u8 _etext;
+		if (nBaseAddress >= (u64) &_etext)
+		{
+			pDesc->PXN = 1;
+
+			if (nBaseAddress >= m_nMemSize)
+			{
+				pDesc->AttrIndx = ATTRINDX_DEVICE;
+				pDesc->SH	= ATTRIB_SH_OUTER_SHAREABLE;
+			}
+			else if (   nBaseAddress >= MEM_COHERENT_REGION
+				 && nBaseAddress <  MEM_HEAP_START)
+			{
+				pDesc->AttrIndx = ATTRINDX_COHERENT;
+				pDesc->SH	= ATTRIB_SH_OUTER_SHAREABLE;
+			}
+
+			if (nBaseAddress == MEM_PCIE_RANGE_START_VIRTUAL)
+			{
+				pDesc->OutputAddress = ARMV7LPAEL2BLOCKADDR (MEM_PCIE_RANGE_START);
+			}
+		}
+
+		nBaseAddress += ARMV7LPAE_LEVEL2_BLOCK_SIZE;
+	}
+
+	return pTable;
+}
+
+#endif	// RASPPI <= 3

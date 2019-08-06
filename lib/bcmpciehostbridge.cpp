@@ -596,9 +596,9 @@ int CBcmPCIeHostBridge::pcie_set_dma_ranges(void)
 }
 
 void CBcmPCIeHostBridge::pcie_set_outbound_win(unsigned win, u64 cpu_addr,
-					       u64 pcie_addr, uintptr size)
+					       u64 pcie_addr, u64 size)
 {
-	uintptr cpu_addr_mb, limit_addr_mb;
+	u64 cpu_addr_mb, limit_addr_mb;
 	u32 tmp;
 
 	/* Set the m_base of the pcie_addr window */
@@ -868,10 +868,10 @@ void CBcmPCIeHostBridge::msleep (unsigned ms)
 	m_pTimer->MsDelay (ms);
 }
 
-int CBcmPCIeHostBridge::ilog2 (unsigned long v)
+int CBcmPCIeHostBridge::ilog2 (u64 v)
 {
 	int l = 0;
-	while ((1ULL << l) < v)
+	while (((u64) 1 << l) < v)
 		l++;
 	return l;
 }

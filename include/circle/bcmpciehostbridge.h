@@ -32,7 +32,7 @@
 struct TPCIeMemoryWindow
 {
 	u64		pcie_addr;
-	uintptr		cpu_addr;
+	u64		cpu_addr;
 	u64		size;
 };
 
@@ -75,7 +75,7 @@ private:
 	int pcie_set_pci_ranges(void);
 	int pcie_set_dma_ranges(void);
 
-	void pcie_set_outbound_win(unsigned win, u64 cpu_addr, u64 pcie_addr, uintptr size);
+	void pcie_set_outbound_win(unsigned win, u64 cpu_addr, u64 pcie_addr, u64 size);
 	uintptr pcie_map_conf(unsigned busnr, unsigned devfn, int where);
 
 	static uintptr find_pci_capability (uintptr nPCIConfig, u8 uchCapID);
@@ -104,7 +104,7 @@ private:
 
 	void usleep_range (unsigned min, unsigned max);
 	void msleep (unsigned ms);
-	static int ilog2 (unsigned long v);
+	static int ilog2 (u64 v);
 
 private:
 	CInterruptSystem	*m_pInterrupt;
@@ -120,7 +120,7 @@ private:
 
 	TPCIeMemoryWindow	 m_dma_ranges[1];	// inbound window
 	int			 m_num_dma_ranges;
-	uintptr			 m_scb_size[1];
+	u64			 m_scb_size[1];
 	int			 m_num_scbs;
 
 	u64			 m_msi_target_addr;
