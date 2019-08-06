@@ -53,7 +53,7 @@ CTranslationTable::CTranslationTable (size_t nMemSize)
 		u64 nBaseAddress = (u64) nEntry * ARMV8MMU_TABLE_ENTRIES * ARMV8MMU_LEVEL3_PAGE_SIZE;
 
 #if RASPPI >= 4
-		if (   nBaseAddress >= GIGABYTE
+		if (   nBaseAddress >= 4*GIGABYTE
 		    && !(   MEM_PCIE_RANGE_START_VIRTUAL <= nBaseAddress
 			 && nBaseAddress <= MEM_PCIE_RANGE_END_VIRTUAL))
 		{

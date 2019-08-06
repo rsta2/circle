@@ -30,7 +30,7 @@
 	#define MEGABYTE	0x100000
 #endif
 #ifndef GIGABYTE
-	#define GIGABYTE	0x100000000ULL
+	#define GIGABYTE	0x40000000ULL
 #endif
 
 #define MEM_SIZE		(256 * MEGABYTE)		// default size
@@ -62,15 +62,15 @@
 #define MEM_PAGE_TABLE1_END	(MEM_PAGE_TABLE1 + PAGE_TABLE1_SIZE)
 
 #if RASPPI <= 3
-// coherent memory region (one 1MB section)
+// coherent memory region (one 1 MB section)
 #define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 2*MEGABYTE) & ~(MEGABYTE-1))
 
 #define MEM_HEAP_START		(MEM_COHERENT_REGION + MEGABYTE)
 #else
-// coherent memory region (one 2MB block)
+// coherent memory region (eight 2 MB blocks)
 #define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 3*MEGABYTE) & ~(2*MEGABYTE-1))
 
-#define MEM_HEAP_START		(MEM_COHERENT_REGION + 2*MEGABYTE)
+#define MEM_HEAP_START		(MEM_COHERENT_REGION + 8*2*MEGABYTE)
 #endif
 
 #if RASPPI >= 4

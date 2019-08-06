@@ -30,7 +30,7 @@
 	#define MEGABYTE	0x100000
 #endif
 #ifndef GIGABYTE
-	#define GIGABYTE	0x100000000UL
+	#define GIGABYTE	0x40000000UL
 #endif
 
 #define CORES			4				// must be a power of 2
@@ -51,10 +51,17 @@
 #define MEM_EXCEPTION_STACK	(MEM_KERNEL_STACK + KERNEL_STACK_SIZE * (CORES-1) + EXCEPTION_STACK_SIZE)
 #define MEM_EXCEPTION_STACK_END	(MEM_EXCEPTION_STACK + EXCEPTION_STACK_SIZE * (CORES-1))
 
+#if RASPPI <= 3
 // coherent memory region (1 MB)
 #define MEM_COHERENT_REGION	((MEM_EXCEPTION_STACK_END + 2*MEGABYTE) & ~(MEGABYTE-1))
 
 #define MEM_HEAP_START		(MEM_COHERENT_REGION + MEGABYTE)
+#else
+// coherent memory region (16 MB)
+#define MEM_COHERENT_REGION	((MEM_EXCEPTION_STACK_END + 2*MEGABYTE) & ~(MEGABYTE-1))
+
+#define MEM_HEAP_START		(MEM_COHERENT_REGION + 16*MEGABYTE)
+#endif
 
 #if RASPPI >= 4
 // PCIe memory range (outbound)
