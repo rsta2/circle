@@ -1,8 +1,8 @@
 //
-// usbhcirootport.h
+// xhciroothub.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,22 +17,36 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbhcirootport_h
-#define _circle_usb_usbhcirootport_h
+#ifndef _circle_usb_xhciroothub_h
+#define _circle_usb_xhciroothub_h
 
+#include <circle/usb/xhcirootport.h>
+#include <circle/usb/xhci.h>
 #include <circle/types.h>
 
-class CUSBHCIRootPort
+class CXHCIDevice;
+
+class CXHCIRootHub	/// Initializes the available USB root ports of the xHCI controller
 {
 public:
-	virtual ~CUSBHCIRootPort (void) {}
+	CXHCIRootHub (unsigned nPorts, CXHCIDevice *pXHCIDevice);
+	~CXHCIRootHub (void);
 
-	virtual boolean ReScanDevices (void) = 0;
-	virtual boolean RemoveDevice (void) = 0;
+	boolean Initialize (void);
 
-#if RASPPI >= 4
-	virtual u8 GetPortID (void) const = 0;
+#ifndef NDEBUG
+	void DumpStatus (void);
 #endif
+
+private:
+	void StatusChanged (u8 uchPortID);
+	friend class CXHCIEventManager;
+
+private:
+	unsigned	 m_nPorts;
+	CXHCIDevice	*m_pXHCIDevice;
+
+	CXHCIRootPort	*m_pRootPort[XHCI_CONFIG_MAX_PORTS];
 };
 
 #endif

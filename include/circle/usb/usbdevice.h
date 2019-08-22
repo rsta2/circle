@@ -47,23 +47,24 @@ public:
 	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CUSBHCIRootPort *pRootPort);
 	CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
 		    CUSBStandardHub *pHub, unsigned nHubPortIndex);
-	~CUSBDevice (void);
+	virtual ~CUSBDevice (void);
 	
-	boolean Initialize (void);		// onto address state (phase 1)
-	boolean Configure (void);		// onto configured state (phase 2)
+	virtual boolean Initialize (void);	// onto address state (phase 1)
+	virtual boolean Configure (void);	// onto configured state (phase 2)
 
 	boolean ReScanDevices (void);
 	boolean RemoveDevice (void);
 
 	CString *GetName (TDeviceNameSelector Selector) const;	// string deleted by caller
 	CString *GetNames (void) const;				// string deleted by caller
-	
-	u8 GetAddress (void) const;
+
+	u8 GetAddress (void) const;		// xHCI: slot ID
 	TUSBSpeed GetSpeed (void) const;
 
 	boolean IsSplit (void) const;
-	u8 GetHubAddress (void) const;
+	u8 GetHubAddress (void) const;		// xHCI: slot ID
 	u8 GetHubPortNumber (void) const;
+	CUSBDevice *GetTTHubDevice (void) const;
 
 	CUSBEndpoint *GetEndpoint0 (void) const;
 	CUSBHostController *GetHost (void) const;
@@ -77,8 +78,26 @@ public:
 
 	void LogWrite (TLogSeverity Severity, const char *pMessage, ...);
 
+#if RASPPI >= 4
+	virtual boolean EnableHubFunction (void) = 0;
+
+	unsigned GetRootHubPortID (void) const		{ return m_nRootHubPortID; }
+	u32 GetRouteString (void) const			{ return m_nRouteString; }
+
+	// returns 0 if this is not a hub device
+	const TUSBHubInfo *GetHubInfo (void) const
+	{
+		return m_pFunction[0] != 0 ? m_pFunction[0]->GetHubInfo () : 0;
+	}
+#endif
+
+protected:
+	void SetAddress (u8 ucAddress);		// xHCI: set slot ID
+
 private:
-	void SetAddress (u8 ucAddress);
+#if RASPPI >= 4
+	static u32 AppendPortToRouteString (u32 nRouteString, unsigned nPort);
+#endif
 
 private:
 	CUSBHostController *m_pHost;
@@ -93,7 +112,8 @@ private:
 	boolean		    m_bSplitTransfer;
 	u8		    m_ucHubAddress;
 	u8		    m_ucHubPortNumber;
-	
+	CUSBDevice	   *m_pTTHubDevice;
+
 	TUSBDeviceDescriptor	    *m_pDeviceDesc;
 	TUSBConfigurationDescriptor *m_pConfigDesc;
 
@@ -101,7 +121,14 @@ private:
 
 	CUSBFunction *m_pFunction[USBDEV_MAX_FUNCTIONS];
 
+#if RASPPI >= 4
+	unsigned m_nRootHubPortID;
+	u32	 m_nRouteString;
+#endif
+
+#if RASPPI <= 3
 	static u64 s_nDeviceAddressMap;
+#endif
 };
 
 #endif

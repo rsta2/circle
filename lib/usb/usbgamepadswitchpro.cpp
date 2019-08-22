@@ -2,7 +2,7 @@
 // usbgamepadswitchpro.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 //
 // This driver was developed by:
 //	Jose Luis Sanchez, jspeccy@gmail.com, jsanchezv@github.com
@@ -131,7 +131,7 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 	}
 
 	// This command switches "something" in the controller
-        static u8 switch_baudrate[2] = { 0x80, 0x03 };
+        u8 switch_baudrate[2] ALIGN (4) = { 0x80, 0x03 };	// DMA buffer
         if (!SendToEndpointOut(switch_baudrate, sizeof(switch_baudrate))) {
                 CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "switch_baudrate command failed!");
                 return FALSE;
@@ -153,7 +153,7 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 	}
 
 	// This command switches "another something" in the controller
-        static u8 handshake[2] = { 0x80, 0x02 };
+        u8 handshake[2] ALIGN (4) = { 0x80, 0x02 };	// DMA buffer
         if (!SendToEndpointOut(handshake, sizeof(handshake))) {
                 CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "handshake command failed!");
                 return FALSE;
@@ -176,7 +176,7 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 
 	// This command switches the controller to a HID mode, from here all works
 	// like a "standard" controller (ehem!). No ACK to this command.
-        static u8 hid_only_mode[2] = { 0x80, 0x04 };
+        u8 hid_only_mode[2] ALIGN (4) = { 0x80, 0x04 };		// DMA buffer
         if (!SendToEndpointOut(hid_only_mode, sizeof(hid_only_mode))) {
                 CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "hid_only_mode command failed!");
                 return FALSE;

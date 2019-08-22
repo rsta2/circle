@@ -1,8 +1,8 @@
 //
-// usbhcirootport.h
+// xhcieventmanager.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,22 +17,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbhcirootport_h
-#define _circle_usb_usbhcirootport_h
+#ifndef _circle_usb_xhcieventmanager_h
+#define _circle_usb_xhcieventmanager_h
 
+#include <circle/usb/xhcimmiospace.h>
+#include <circle/usb/xhciring.h>
+#include <circle/usb/xhci.h>
 #include <circle/types.h>
 
-class CUSBHCIRootPort
+class CXHCIDevice;
+
+class CXHCIEventManager		/// xHC event handling for the xHCI driver
 {
 public:
-	virtual ~CUSBHCIRootPort (void) {}
+	CXHCIEventManager (CXHCIDevice *pXHCIDevice);
+	~CXHCIEventManager (void);
 
-	virtual boolean ReScanDevices (void) = 0;
-	virtual boolean RemoveDevice (void) = 0;
+	boolean IsValid (void);
 
-#if RASPPI >= 4
-	virtual u8 GetPortID (void) const = 0;
+	boolean HandleEvents (void);
+
+#ifndef NDEBUG
+	void DumpStatus (void);
 #endif
+
+private:
+	CXHCIDevice	*m_pXHCIDevice;
+	CXHCIMMIOSpace	*m_pMMIO;
+	CXHCIRing	 m_EventRing;
+	TXHCIERSTEntry	*m_pERST;
 };
 
 #endif

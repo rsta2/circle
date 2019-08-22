@@ -124,6 +124,7 @@
 // should normally be set. Unfortunately this causes a heavily changed
 // system timing, because it triggers up to 8000 IRQs per second. For
 // compatibility with existing applications it is not set by default.
+// This option has no influence on the Raspberry Pi 4.
 
 //#define USE_USB_SOF_INTR
 

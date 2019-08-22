@@ -23,6 +23,7 @@
 #include <circle/device.h>
 #include <circle/usb/usbconfigparser.h>
 #include <circle/usb/usb.h>
+#include <circle/usb/usbhub.h>
 #include <circle/string.h>
 #include <circle/types.h>
 
@@ -62,6 +63,11 @@ public:
 	u8 GetInterfaceClass (void) const;
 	u8 GetInterfaceSubClass (void) const;
 	u8 GetInterfaceProtocol (void) const;
+
+#if RASPPI >= 4
+	// returns 0 if this is not a hub function
+	virtual const TUSBHubInfo *GetHubInfo (void) const	{ return 0; }
+#endif
 
 private:
 	CUSBDevice *m_pDevice;

@@ -67,10 +67,10 @@
 
 #define MEM_HEAP_START		(MEM_COHERENT_REGION + MEGABYTE)
 #else
-// coherent memory region (eight 2 MB blocks)
+// coherent memory region (two 2 MB blocks)
 #define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 3*MEGABYTE) & ~(2*MEGABYTE-1))
 
-#define MEM_HEAP_START		(MEM_COHERENT_REGION + 8*2*MEGABYTE)
+#define MEM_HEAP_START		(MEM_COHERENT_REGION + 2*2*MEGABYTE)
 #endif
 
 #if RASPPI >= 4

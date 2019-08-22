@@ -25,9 +25,15 @@
 #include <circle/timer.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/bcmpciehostbridge.h>
+#include <circle/usb/xhcimmiospace.h>
+#include <circle/usb/xhcislotmanager.h>
+#include <circle/usb/xhcieventmanager.h>
+#include <circle/usb/xhcicommandmanager.h>
+#include <circle/usb/xhciroothub.h>
+#include <circle/usb/xhci.h>
 #include <circle/types.h>
 
-class CXHCIDevice : public CUSBHostController
+class CXHCIDevice : public CUSBHostController	/// USB host controller interface (xHCI) driver
 {
 public:
 	CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer);
@@ -40,12 +46,43 @@ public:
 	boolean SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	boolean SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
+public:
+	CXHCIMMIOSpace *GetMMIOSpace (void);
+	CXHCISlotManager *GetSlotManager (void);
+	CXHCICommandManager *GetCommandManager (void);
+	CXHCIRootHub *GetRootHub (void);
+
+	// returned memory block has been set to zero
+	void *AllocateSharedMem (size_t nSize, size_t nAlign = 64,
+				 size_t nBoundary = XHCI_PAGE_SIZE);
+	void FreeSharedMem (void *pBlock);
+
+#ifndef NDEBUG
+	void DumpStatus (void);
+#endif
+
 private:
 	void InterruptHandler (unsigned nVector);
 	static void InterruptStub (unsigned nVector, void *pParam);
 
+	boolean HWReset (void);
+
 private:
 	CBcmPCIeHostBridge m_PCIeHostBridge;
+
+	uintptr m_nSharedMemStart;
+	uintptr m_nSharedMemEnd;
+
+	CXHCIMMIOSpace *m_pMMIO;
+
+	CXHCISlotManager    *m_pSlotManager;
+	CXHCIEventManager   *m_pEventManager;
+	CXHCICommandManager *m_pCommandManager;
+
+	void *m_pScratchpadBuffers;
+	u64  *m_pScratchpadBufferArray;
+
+	CXHCIRootHub *m_pRootHub;
 };
 
 #endif

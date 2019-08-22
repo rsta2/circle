@@ -53,7 +53,7 @@ public:
 
 #if RASPPI >= 4
 #define COHERENT_SLOT_XHCI_START	(MEGABYTE / PAGE_SIZE)
-#define COHERENT_SLOT_XHCI_END		(16*MEGABYTE / PAGE_SIZE - 1)
+#define COHERENT_SLOT_XHCI_END		(4*MEGABYTE / PAGE_SIZE - 1)
 #endif
 
 	static CMemorySystem *Get (void);

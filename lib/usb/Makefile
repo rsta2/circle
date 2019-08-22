@@ -35,7 +35,8 @@ ifneq ($(strip $(RASPPI)),4)
 OBJS	+= dwhcidevice.o dwhciframeschednper.o dwhciframeschednsplit.o dwhciframeschedper.o \
 	   dwhciregister.o dwhcirootport.o dwhcixactqueue.o dwhcixferstagedata.o
 else
-OBJS	+= xhcidevice.o
+OBJS	+= xhcicommandmanager.o xhcidevice.o xhciendpoint.o xhcieventmanager.o xhcimmiospace.o \
+	   xhciring.o xhciroothub.o xhcirootport.o xhcislotmanager.o xhciusbdevice.o
 endif
 
 libusb.a: $(OBJS)

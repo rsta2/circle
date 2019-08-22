@@ -23,6 +23,7 @@
 #define _circle_usb_usbhub_h
 
 #include <circle/macros.h>
+#include <circle/types.h>
 
 // Configuration
 #define USB_HUB_MAX_PORTS		8		// TODO
@@ -83,5 +84,16 @@ struct TUSBPortStatus
 	unsigned short	wChangeStatus;
 }
 PACKED;
+
+#if RASPPI >= 4
+
+struct TUSBHubInfo
+{
+	unsigned	NumberOfPorts;
+	boolean		HasMultipleTTs;
+	u8		TTThinkTime;
+};
+
+#endif
 
 #endif

@@ -92,7 +92,16 @@ USB library
 * CUSBRequest: A request to an USB device (URB).
 * CUSBStandardHub: USB hub driver for LAN9512/9514 and external hubs (max. 8 ports)
 * CUSBString: Encapsulates a string descriptor, available on an USB device.
-* CXHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi 4 (incomplete).
+* CXHCICommandManager: Synchronous xHC command execution for the xHCI driver.
+* CXHCIDevice: USB host controller interface (xHCI) driver for Raspberry Pi 4.
+* CXHCIEndpoint: Encapsulates a single endpoint of an USB device for the xHCI driver.
+* CXHCIEventManager: xHC event handling for the xHCI driver.
+* CXHCIMMIOSpace: Provides access to the memory-mapped I/O registers of the xHCI controller.
+* CXHCIRing: Encapsulates a transfer, command or event ring for communication with the xHCI controller.
+* CXHCIRootHub: Initializes the available USB root ports of the xHCI controller.
+* CXHCIRootPort: Encapsulates an USB root port of the xHCI controller.
+* CXHCISlotManager: Manages the USB device slots of the xHCI controller.
+* CXHCIUSBDevice: Encapsulates a single USB device, attached to the xHCI controller.
 
 Input library
 
