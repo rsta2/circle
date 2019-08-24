@@ -27,6 +27,9 @@
 #define MAXOPT		__attribute__ ((optimize (3)))
 #define WEAK		__attribute__ ((weak))
 
+#define likely(exp)	__builtin_expect (!!(exp), 1)
+#define unlikely(exp)	__builtin_expect (!!(exp), 0)
+
 #define BIT(n)		(1 << (n))
 
 // big endian (to be used for constants only)
