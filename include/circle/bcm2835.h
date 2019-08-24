@@ -174,6 +174,19 @@
 #define ARM_PWM_RNG2		(ARM_PWM_BASE + 0x20)
 #define ARM_PWM_DAT2		(ARM_PWM_BASE + 0x24)
 
+#if RASPPI >= 4
+#define ARM_PWM1_BASE		(ARM_IO_BASE + 0x20C800)
+
+#define ARM_PWM1_CTL		(ARM_PWM1_BASE + 0x00)
+#define ARM_PWM1_STA		(ARM_PWM1_BASE + 0x04)
+#define ARM_PWM1_DMAC		(ARM_PWM1_BASE + 0x08)
+#define ARM_PWM1_RNG1		(ARM_PWM1_BASE + 0x10)
+#define ARM_PWM1_DAT1		(ARM_PWM1_BASE + 0x14)
+#define ARM_PWM1_FIF1		(ARM_PWM1_BASE + 0x18)
+#define ARM_PWM1_RNG2		(ARM_PWM1_BASE + 0x20)
+#define ARM_PWM1_DAT2		(ARM_PWM1_BASE + 0x24)
+#endif
+
 //
 // Clock Manager
 //

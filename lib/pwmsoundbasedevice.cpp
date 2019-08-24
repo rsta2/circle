@@ -35,6 +35,29 @@
 #define CLOCK_RATE		250000000
 
 //
+// PWM device selection
+//
+#if RASPPI <= 3
+	#define PWM_BASE	ARM_PWM_BASE
+	#define DREQ_SOURCE	DREQSourcePWM
+#else
+	#define PWM_BASE	ARM_PWM1_BASE
+	#define DREQ_SOURCE	DREQSourcePWM1
+#endif
+
+//
+// PWM register offsets
+//
+#define PWM_CTL			(PWM_BASE + 0x00)
+#define PWM_STA			(PWM_BASE + 0x04)
+#define PWM_DMAC		(PWM_BASE + 0x08)
+#define PWM_RNG1		(PWM_BASE + 0x10)
+#define PWM_DAT1		(PWM_BASE + 0x14)
+#define PWM_FIF1		(PWM_BASE + 0x18)
+#define PWM_RNG2		(PWM_BASE + 0x20)
+#define PWM_DAT2		(PWM_BASE + 0x24)
+
+//
 // PWM control register
 //
 #define ARM_PWM_CTL_PWEN1	(1 << 0)
@@ -255,12 +278,12 @@ boolean CPWMSoundBaseDevice::Start (void)
 	// enable PWM DMA operation
 	PeripheralEntry ();
 
-	write32 (ARM_PWM_DMAC,   ARM_PWM_DMAC_ENAB
-			       | (7 << ARM_PWM_DMAC_PANIC__SHIFT)
-			       | (7 << ARM_PWM_DMAC_DREQ__SHIFT));
+	write32 (PWM_DMAC,   ARM_PWM_DMAC_ENAB
+			   | (7 << ARM_PWM_DMAC_PANIC__SHIFT)
+			   | (7 << ARM_PWM_DMAC_DREQ__SHIFT));
 
 	// switched this on when playback stops to avoid clicks, switch it off here
-	write32 (ARM_PWM_CTL, read32 (ARM_PWM_CTL) & ~(ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2));
+	write32 (PWM_CTL, read32 (PWM_CTL) & ~(ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2));
 
 	PeripheralExit ();
 
@@ -353,12 +376,12 @@ void CPWMSoundBaseDevice::RunPWM (void)
 	CTimer::SimpleusDelay (2000);
 
 	assert ((1 << 8) <= m_nRange && m_nRange < (1 << 16));
-	write32 (ARM_PWM_RNG1, m_nRange);
-	write32 (ARM_PWM_RNG2, m_nRange);
+	write32 (PWM_RNG1, m_nRange);
+	write32 (PWM_RNG2, m_nRange);
 
-	write32 (ARM_PWM_CTL,   ARM_PWM_CTL_PWEN1 | ARM_PWM_CTL_USEF1
-			      | ARM_PWM_CTL_PWEN2 | ARM_PWM_CTL_USEF2
-			      | ARM_PWM_CTL_CLRF1);
+	write32 (PWM_CTL,   ARM_PWM_CTL_PWEN1 | ARM_PWM_CTL_USEF1
+			  | ARM_PWM_CTL_PWEN2 | ARM_PWM_CTL_USEF2
+			  | ARM_PWM_CTL_CLRF1);
 	CTimer::SimpleusDelay (2000);
 
 	PeripheralExit ();
@@ -368,8 +391,8 @@ void CPWMSoundBaseDevice::StopPWM (void)
 {
 	PeripheralEntry ();
 
-	write32 (ARM_PWM_DMAC, 0);
-	write32 (ARM_PWM_CTL, 0);			// disable PWM channel 0 and 1
+	write32 (PWM_DMAC, 0);
+	write32 (PWM_CTL, 0);			// disable PWM channel 0 and 1
 	CTimer::SimpleusDelay (2000);
 
 	m_Clock.Stop ();
@@ -423,7 +446,7 @@ void CPWMSoundBaseDevice::InterruptHandler (void)
 
 		// avoid clicks
 		PeripheralEntry ();
-		write32 (ARM_PWM_CTL, read32 (ARM_PWM_CTL) | ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2);
+		write32 (PWM_CTL, read32 (PWM_CTL) | ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2);
 		PeripheralExit ();
 
 		m_State = PWMSoundTerminating;
@@ -460,7 +483,7 @@ void CPWMSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 	assert (m_pControlBlockBuffer[nID] != 0);
 	m_pControlBlock[nID] = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer[nID] + 31) & ~31);
 
-	m_pControlBlock[nID]->nTransferInformation     =   (DREQSourcePWM << TI_PERMAP_SHIFT)
+	m_pControlBlock[nID]->nTransferInformation     =   (DREQ_SOURCE << TI_PERMAP_SHIFT)
 						         | (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
 						         | TI_SRC_WIDTH
 						         | TI_SRC_INC
@@ -468,7 +491,7 @@ void CPWMSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 						         | TI_WAIT_RESP
 						         | TI_INTEN;
 	m_pControlBlock[nID]->nSourceAddress           = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
-	m_pControlBlock[nID]->nDestinationAddress      = (ARM_PWM_FIF1 & 0xFFFFFF) + GPU_IO_BASE;
+	m_pControlBlock[nID]->nDestinationAddress      = (PWM_FIF1 & 0xFFFFFF) + GPU_IO_BASE;
 	m_pControlBlock[nID]->n2DModeStride            = 0;
 	m_pControlBlock[nID]->nReserved[0]	       = 0;
 	m_pControlBlock[nID]->nReserved[1]	       = 0;

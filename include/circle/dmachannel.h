@@ -43,6 +43,9 @@ PACKED;
 enum TDREQ
 {
 	DREQSourceNone	 = 0,
+#if RASPPI >= 4
+	DREQSourcePWM1	 = 1,
+#endif
 	DREQSourcePCMTX	 = 2,
 	DREQSourcePCMRX	 = 3,
 	DREQSourcePWM	 = 5,
