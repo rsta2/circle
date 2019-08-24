@@ -456,6 +456,7 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
 		}
 	}
+#if RASPPI >= 4
 	// Raspberry Pi 4 requires to explicitly set the GPIO and pull modes
 	else if (CMachineInfo::Get ()->GetModelMajor () >= 4)
 	{
@@ -468,6 +469,7 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 			m_GPIO48_53[i].SetPullMode (i == 0 ? GPIOPullModeOff : GPIOPullModeUp);
 		}
 	}
+#endif
 #endif
 }
 
