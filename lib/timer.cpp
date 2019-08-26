@@ -58,7 +58,7 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 	m_nUptime (0),
 	m_nTime (0),
 	m_nMinutesDiff (0),
-	m_nMsDelay (175000),
+	m_nMsDelay (200000),
 	m_nusDelay (m_nMsDelay / 1000),
 	m_pPeriodicHandler (0)
 {
