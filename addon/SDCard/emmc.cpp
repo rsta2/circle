@@ -456,6 +456,20 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
 		}
 	}
+#if RASPPI >= 4
+	// Raspberry Pi 4 requires to explicitly set the GPIO and pull modes
+	else if (CMachineInfo::Get ()->GetModelMajor () >= 4)
+	{
+		write32 (ARM_GPIO_GPPINMUXSD, 3);	// select legacy EMMC1 controller
+
+		for (unsigned i = 0; i <= 5; i++)
+		{
+			m_GPIO48_53[i].AssignPin (48+i);
+			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
+			m_GPIO48_53[i].SetPullMode (i == 0 ? GPIOPullModeOff : GPIOPullModeUp);
+		}
+	}
+#endif
 #endif
 }
 
@@ -473,6 +487,20 @@ CEMMCDevice::~CEMMCDevice (void)
 
 boolean CEMMCDevice::Initialize (void)
 {
+#if RASPPI >= 4
+	// disable 1.8V supply
+	CBcmPropertyTags Tags;
+	TPropertyTagGPIOState GPIOState;
+	GPIOState.nGPIO = EXP_GPIO_BASE + 4;
+	GPIOState.nState = 0;
+	if (!Tags.GetTag (PROPTAG_SET_SET_GPIO_STATE, &GPIOState, sizeof GPIOState, 8))
+	{
+		return FALSE;
+	}
+
+	usDelay (5000);
+#endif
+
 	PeripheralEntry ();
 
 	if (CardInit () != 0)
@@ -909,7 +937,7 @@ void CEMMCDevice::IssueCommandInt (u32 cmd_reg, u32 argument, int timeout)
 
 			if ((irpts & (0xffff0000 | wr_irpt)) != wr_irpt)
 			{
-#ifdef EMMC_DEBUG
+#ifdef EMMC_DEBUG2
 				LogWrite (LogWarning, "Error occured whilst waiting for data ready interrupt");
 #endif
 				m_last_error = irpts & 0xffff0000;
@@ -1687,13 +1715,15 @@ int CEMMCDevice::CardReset (void)
 	m_buf = &m_pSCR->scr[0];
 	m_block_size = 8;
 	m_blocks_to_transfer = 1;
-	IssueCommand (SEND_SCR, 0);
+	IssueCommand (SEND_SCR, 0, 1000000);
 	m_block_size = SD_BLOCK_SIZE;
 	if (FAIL)
 	{
+#ifdef EMMC_DEBUG2
 		LogWrite (LogError, "Error sending SEND_SCR");
+#endif
 
-		return -1;
+		return -2;
 	}
 
 	// Determine card version
@@ -1816,12 +1846,21 @@ int CEMMCDevice::CardInit (void)
 #endif
 	}
 
-	if (CardReset () != 0)
+	// The SEND_SCR command may fail with a DATA_TIMEOUT on the Raspberry Pi 4
+	// for unknown reason. As a workaround the whole card reset is retried.
+	int ret;
+	for (unsigned nTries = 3; nTries > 0; nTries--)
 	{
-		return -1;
+		ret = CardReset ();
+		if (ret != -2)
+		{
+			break;
+		}
+
+		LogWrite (LogWarning, "Card reset failed. Retrying.");
 	}
 
-	return 0;
+	return ret;
 }
 
 int CEMMCDevice::EnsureDataMode (void)
@@ -2053,16 +2092,18 @@ int CEMMCDevice::DoWrite (u8 *buf, size_t buf_size, u32 block_no)
 
 int CEMMCDevice::TimeoutWait (unsigned reg, unsigned mask, int value, unsigned usec)
 {
+	assert (m_pTimer != 0);
+	unsigned nStartTicks = m_pTimer->GetClockTicks ();
+	unsigned nTimeoutTicks = usec * (CLOCKHZ / 1000000);
+
 	do
 	{
 		if ((read32 (reg) & mask) ? value : !value)
 		{
 			return 0;
 		}
-
-		usDelay (1);
 	}
-	while (usec--);
+	while (m_pTimer->GetClockTicks () - nStartTicks < nTimeoutTicks);
 
 	return -1;
 }

@@ -30,7 +30,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include <circle/usb/dwhcidevice.h>
+#include <circle/usb/usbhcidevice.h>
 #include <circle/usb/usbgamepad.h>
 #include <circle/types.h>
 
@@ -66,7 +66,7 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
-	CDWHCIDevice		m_DWHCI;
+	CUSBHCIDevice		m_USBHCI;
 };
 
 #endif

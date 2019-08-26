@@ -19,6 +19,7 @@
 //
 #include <circle/memory.h>
 #include <circle/armv6mmu.h>
+#include <circle/armv7lpae.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/alloc.h>
 #include <circle/synchronize.h>
@@ -147,6 +148,7 @@ void CMemorySystem::EnableMMU (void)
 {
 	assert (m_bEnableMMU);
 
+#if RASPPI <= 3
 	u32 nAuxControl;
 	asm volatile ("mrc p15, 0, %0, c1, c0,  1" : "=r" (nAuxControl));
 #if RASPPI == 1
@@ -166,6 +168,28 @@ void CMemorySystem::EnableMMU (void)
 	// set TTBR0
 	assert (m_pPageTable != 0);
 	asm volatile ("mcr p15, 0, %0, c2, c0,  0" : : "r" (m_pPageTable->GetBaseAddress ()));
+#else	// RASPPI <= 3
+	// set MAIR0
+	u32 nMAIR0 =   LPAE_MAIR_NORMAL   << ATTRINDX_NORMAL*8
+                     | LPAE_MAIR_DEVICE   << ATTRINDX_DEVICE*8
+	             | LPAE_MAIR_COHERENT << ATTRINDX_COHERENT*8;
+	asm volatile ("mcr p15, 0, %0, c10, c2, 0" : : "r" (nMAIR0));
+
+	// set TTBCR
+	asm volatile ("mcr p15, 0, %0, c2, c0,  2" : : "r" (
+		        LPAE_TTBCR_EAE
+		      | LPAE_TTBCR_EPD1
+		      | ATTRIB_SH_INNER_SHAREABLE << LPAE_TTBCR_SH0__SHIFT
+		      | LPAE_TTBCR_ORGN0_WR_BACK_ALLOCATE << LPAE_TTBCR_ORGN0__SHIFT
+		      | LPAE_TTBCR_IRGN0_WR_BACK_ALLOCATE << LPAE_TTBCR_IRGN0__SHIFT
+		      | LPAE_TTBCR_T0SZ_4GB));
+
+	// set TTBR0
+	assert (m_pPageTable != 0);
+	u64 nBaseAddress = m_pPageTable->GetBaseAddress ();
+	asm volatile ("mcrr p15, 0, %0, %1, c2" : : "r" ((u32) nBaseAddress),
+						    "r" ((u32) (nBaseAddress >> 32)));
+#endif	// RASPPI <= 3
 
 	// set Domain Access Control register (Domain 0 to client)
 	asm volatile ("mcr p15, 0, %0, c3, c0,  0" : : "r" (DOMAIN_CLIENT << 0));

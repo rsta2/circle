@@ -289,5 +289,6 @@ HVCStub:					/* return to EL2h mode */
 FIQData:					/* matches TFIQData: */
 	.quad	0				/* pHandler */
 	.quad	0				/* pParam */
+	.word	0				/* nFIQNumber (unused) */
 
 /* End */

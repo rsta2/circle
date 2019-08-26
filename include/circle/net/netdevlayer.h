@@ -21,8 +21,9 @@
 #define _circle_net_netdevlayer_h
 
 #include <circle/net/netconfig.h>
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
 #include <circle/net/netqueue.h>
+#include <circle/bcm54213.h>
 #include <circle/types.h>
 
 class CNetDeviceLayer
@@ -46,6 +47,10 @@ private:
 
 	CNetQueue m_TxQueue;
 	CNetQueue m_RxQueue;
+
+#if RASPPI >= 4
+	CBcm54213Device m_Bcm54213;
+#endif
 };
 
 #endif

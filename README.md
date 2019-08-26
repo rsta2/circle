@@ -184,6 +184,32 @@ Directories
 Classes
 -------
 
+The following C++ classes were added to Circle:
+
+Base library
+
+* CBcm54213Device: Driver for BCM54213PE Gigabit Ethernet Transceiver of Raspberry Pi 4.
+* CBcmPCIeHostBridge: Driver for PCIe Host Bridge of Raspberry Pi 4.
+
+USB library
+
+* CUSBHCIDevice: Alias for CDWHCIDevice or CXHCIDevice, depending on Raspberry Pi model.
+* CUSBHCIRootPort: Base class, which represents an USB HCI root port.
+* CXHCICommandManager: Synchronous xHC command execution for the xHCI driver.
+* CXHCIDevice: USB host controller interface (xHCI) driver for Raspberry Pi 4.
+* CXHCIEndpoint: Encapsulates a single endpoint of an USB device for the xHCI driver.
+* CXHCIEventManager: xHC event handling for the xHCI driver.
+* CXHCIMMIOSpace: Provides access to the memory-mapped I/O registers of the xHCI controller.
+* CXHCIRing: Encapsulates a transfer, command or event ring for communication with the xHCI controller.
+* CXHCIRootHub: Initializes the available USB root ports of the xHCI controller.
+* CXHCIRootPort: Encapsulates an USB root port of the xHCI controller.
+* CXHCISlotManager: Manages the USB device slots of the xHCI controller.
+* CXHCIUSBDevice: Encapsulates a single USB device, attached to the xHCI controller.
+
+Net library
+
+* CPHYTask: Background task which continuously updates the PHY of the used net device.
+
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 
 `./makedoc`

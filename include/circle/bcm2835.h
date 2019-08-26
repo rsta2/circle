@@ -2,7 +2,7 @@
 // bcm2835.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,10 @@
 
 #if RASPPI == 1
 #define ARM_IO_BASE		0x20000000
-#else
+#elif RASPPI <= 3
 #define ARM_IO_BASE		0x3F000000
+#else
+#define ARM_IO_BASE		0xFE000000
 #endif
 #define ARM_IO_END		(ARM_IO_BASE + 0xFFFFFF)
 
@@ -65,8 +67,16 @@
 #define ARM_GPIO_GPLEN0		(ARM_GPIO_BASE + 0x70)
 #define ARM_GPIO_GPAREN0	(ARM_GPIO_BASE + 0x7C)
 #define ARM_GPIO_GPAFEN0	(ARM_GPIO_BASE + 0x88)
+#if RASPPI <= 3
 #define ARM_GPIO_GPPUD		(ARM_GPIO_BASE + 0x94)
 #define ARM_GPIO_GPPUDCLK0	(ARM_GPIO_BASE + 0x98)
+#else
+#define ARM_GPIO_GPPINMUXSD	(ARM_GPIO_BASE + 0xD0)
+#define ARM_GPIO_GPPUPPDN0	(ARM_GPIO_BASE + 0xE4)
+#define ARM_GPIO_GPPUPPDN1	(ARM_GPIO_BASE + 0xE8)
+#define ARM_GPIO_GPPUPPDN2	(ARM_GPIO_BASE + 0xEC)
+#define ARM_GPIO_GPPUPPDN3	(ARM_GPIO_BASE + 0xF0)
+#endif
 
 //
 // UART0
@@ -163,6 +173,19 @@
 #define ARM_PWM_FIF1		(ARM_PWM_BASE + 0x18)
 #define ARM_PWM_RNG2		(ARM_PWM_BASE + 0x20)
 #define ARM_PWM_DAT2		(ARM_PWM_BASE + 0x24)
+
+#if RASPPI >= 4
+#define ARM_PWM1_BASE		(ARM_IO_BASE + 0x20C800)
+
+#define ARM_PWM1_CTL		(ARM_PWM1_BASE + 0x00)
+#define ARM_PWM1_STA		(ARM_PWM1_BASE + 0x04)
+#define ARM_PWM1_DMAC		(ARM_PWM1_BASE + 0x08)
+#define ARM_PWM1_RNG1		(ARM_PWM1_BASE + 0x10)
+#define ARM_PWM1_DAT1		(ARM_PWM1_BASE + 0x14)
+#define ARM_PWM1_FIF1		(ARM_PWM1_BASE + 0x18)
+#define ARM_PWM1_RNG2		(ARM_PWM1_BASE + 0x20)
+#define ARM_PWM1_DAT2		(ARM_PWM1_BASE + 0x24)
+#endif
 
 //
 // Clock Manager

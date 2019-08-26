@@ -2,7 +2,7 @@
 // usbgamepadps3.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 //
 // Information to implement this was taken from:
 //	https://github.com/felis/USB_Host_Shield_2.0/blob/master/PS3USB.cpp
@@ -27,6 +27,7 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/logger.h>
 #include <circle/util.h>
+#include <circle/macros.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -192,7 +193,7 @@ void CUSBGamePadPS3Device::DecodeReport (const u8 *pReportBuffer)
 boolean CUSBGamePadPS3Device::PS3Enable (void)
 {
 	/* Special PS3 Controller enable commands */
-	static u8 Enable[] = {0x42, 0x0C, 0x00, 0x00};
+	u8 Enable[] ALIGN (4) = {0x42, 0x0C, 0x00, 0x00};	// DMA buffer
 
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,

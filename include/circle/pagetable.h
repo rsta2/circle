@@ -2,7 +2,7 @@
 // pagetable.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
 #include <circle/types.h>
 
+#if RASPPI <= 3
+
 class CPageTable
 {
 public:
@@ -33,5 +35,31 @@ public:
 private:
 	u32 *m_pTable;
 };
+
+#else
+
+// index into MAIR0 register
+#define ATTRINDX_NORMAL		0
+#define ATTRINDX_DEVICE		1
+#define ATTRINDX_COHERENT	2
+
+class CPageTable		// with LPAE
+{
+public:
+	CPageTable (u32 nMemSize);
+	~CPageTable (void);
+
+	u64 GetBaseAddress (void) const;
+
+private:
+	u64 *CreateLevel2Table (u64 nBaseAddress);
+
+private:
+	u32 m_nMemSize;
+
+	u64 *m_pTable;
+};
+
+#endif
 
 #endif

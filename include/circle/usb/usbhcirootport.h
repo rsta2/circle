@@ -1,9 +1,9 @@
 //
-// macaddress.h
+// usbhcirootport.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,38 +17,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _macaddress_h
-#define _macaddress_h
+#ifndef _circle_usb_usbhcirootport_h
+#define _circle_usb_usbhcirootport_h
 
-#include <circle/string.h>
 #include <circle/types.h>
 
-#define MAC_ADDRESS_SIZE	6
-
-class CMACAddress
+class CUSBHCIRootPort
 {
 public:
-	CMACAddress (void);
-	CMACAddress (const u8 *pAddress);
-	~CMACAddress (void);
+	virtual ~CUSBHCIRootPort (void) {}
 
-	boolean operator== (const CMACAddress &rAddress2) const;
-	boolean operator!= (const CMACAddress &rAddress2) const;
-	
-	void Set (const u8 *pAddress);
-	void SetBroadcast (void);
-	const u8 *Get (void) const;
-	void CopyTo (u8 *pBuffer) const;
+	virtual boolean ReScanDevices (void) = 0;
+	virtual boolean RemoveDevice (void) = 0;
 
-	boolean IsBroadcast (void) const;
-	unsigned GetSize (void) const;
-
-	void Format (CString *pString) const;
-	
-private:
-	boolean m_bValid;
-
-	u8 m_Address[MAC_ADDRESS_SIZE];
+#if RASPPI >= 4
+	virtual u8 GetPortID (void) const = 0;
+#endif
 };
 
 #endif

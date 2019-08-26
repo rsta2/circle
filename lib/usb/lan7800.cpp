@@ -7,7 +7,7 @@
 //	Licensed under GPLv2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -229,7 +229,7 @@
 static const char FromLAN7800[] = "lan7800";
 
 CLAN7800Device::CLAN7800Device (CUSBFunction *pFunction)
-:	CNetDevice (pFunction),
+:	CUSBFunction (pFunction),
 	m_pEndpointBulkIn (0),
 	m_pEndpointBulkOut (0)
 {

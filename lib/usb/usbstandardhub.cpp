@@ -19,6 +19,7 @@
 //
 #include <circle/usb/usbstandardhub.h>
 #include <circle/usb/usbdevicefactory.h>
+#include <circle/usb/xhciusbdevice.h>
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
@@ -34,8 +35,12 @@ static const char FromHub[] = "usbhub";
 CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_pHubDesc (0),
+	m_pInterruptEndpoint (0),
 	m_nPorts (0),
 	m_bPowerIsOn (FALSE)
+#if RASPPI >= 4
+	, m_pHubInfo (0)
+#endif
 {
 	for (unsigned nPort = 0; nPort < USB_HUB_MAX_PORTS; nPort++)
 	{
@@ -47,6 +52,11 @@ CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
 
 CUSBStandardHub::~CUSBStandardHub (void)
 {
+#if RASPPI >= 4
+	delete m_pHubInfo;
+	m_pHubInfo = 0;
+#endif
+
 	for (unsigned nPort = 0; nPort < m_nPorts; nPort++)
 	{
 		delete m_pStatus[nPort];
@@ -58,8 +68,68 @@ CUSBStandardHub::~CUSBStandardHub (void)
 
 	m_nPorts = 0;
 
+	delete m_pInterruptEndpoint;
+	m_pInterruptEndpoint = 0;
+
 	delete m_pHubDesc;
 	m_pHubDesc = 0;
+}
+
+boolean CUSBStandardHub::Initialize (void)
+{
+	if (!CUSBFunction::Initialize ())
+	{
+		return FALSE;
+	}
+
+	assert (m_pHubDesc == 0);
+	m_pHubDesc = new TUSBHubDescriptor;
+	assert (m_pHubDesc != 0);
+
+	if (GetHost ()->GetDescriptor (GetEndpoint0 (),
+					DESCRIPTOR_HUB, DESCRIPTOR_INDEX_DEFAULT,
+					m_pHubDesc, sizeof *m_pHubDesc,
+					REQUEST_IN | REQUEST_CLASS)
+	   != (int) sizeof *m_pHubDesc)
+	{
+		CLogger::Get ()->Write (FromHub, LogError, "Cannot get hub descriptor");
+
+		delete m_pHubDesc;
+		m_pHubDesc = 0;
+
+		return FALSE;
+	}
+
+#ifndef NDEBUG
+	//debug_hexdump (m_pHubDesc, sizeof *m_pHubDesc, FromHub);
+#endif
+
+	m_nPorts = m_pHubDesc->bNbrPorts;
+	if (m_nPorts > USB_HUB_MAX_PORTS)
+	{
+		CLogger::Get ()->Write (FromHub, LogError, "Too many ports (%u)", m_nPorts);
+
+		delete m_pHubDesc;
+		m_pHubDesc = 0;
+
+		return FALSE;
+	}
+
+#if RASPPI >= 4
+	m_pHubInfo = new TUSBHubInfo;
+	assert (m_pHubInfo != 0);
+
+	m_pHubInfo->NumberOfPorts = m_nPorts;
+	m_pHubInfo->HasMultipleTTs = GetInterfaceProtocol () == 2;
+	m_pHubInfo->TTThinkTime = HUB_TT_THINK_TIME (m_pHubDesc->wHubCharacteristics);
+
+	if (!GetDevice ()->EnableHubFunction ())
+	{
+		return FALSE;
+	}
+#endif
+
+	return TRUE;
 }
 
 boolean CUSBStandardHub::Configure (void)
@@ -82,43 +152,13 @@ boolean CUSBStandardHub::Configure (void)
 		return FALSE;
 	}
 
+	m_pInterruptEndpoint = new CUSBEndpoint (GetDevice (), pEndpointDesc);
+	assert (m_pInterruptEndpoint != 0);
+
 	if (!CUSBFunction::Configure ())
 	{
 		CLogger::Get ()->Write (FromHub, LogError, "Cannot set interface");
 
-		return FALSE;
-	}
-
-	assert (m_pHubDesc == 0);
-	m_pHubDesc = new TUSBHubDescriptor;
-	assert (m_pHubDesc != 0);
-
-	if (GetHost ()->GetDescriptor (GetEndpoint0 (),
-					DESCRIPTOR_HUB, DESCRIPTOR_INDEX_DEFAULT,
-					m_pHubDesc, sizeof *m_pHubDesc,
-					REQUEST_IN | REQUEST_CLASS)
-	   != (int) sizeof *m_pHubDesc)
-	{
-		CLogger::Get ()->Write (FromHub, LogError, "Cannot get hub descriptor");
-		
-		delete m_pHubDesc;
-		m_pHubDesc = 0;
-		
-		return FALSE;
-	}
-
-#ifndef NDEBUG
-	//debug_hexdump (m_pHubDesc, sizeof *m_pHubDesc, FromHub);
-#endif
-
-	m_nPorts = m_pHubDesc->bNbrPorts;
-	if (m_nPorts > USB_HUB_MAX_PORTS)
-	{
-		CLogger::Get ()->Write (FromHub, LogError, "Too many ports (%u)", m_nPorts);
-		
-		delete m_pHubDesc;
-		m_pHubDesc = 0;
-		
 		return FALSE;
 	}
 
@@ -143,6 +183,19 @@ boolean CUSBStandardHub::ReScanDevices (void)
 
 boolean CUSBStandardHub::RemoveDevice (unsigned nPortIndex)
 {
+	if (!DisablePort (nPortIndex))
+	{
+		return FALSE;
+	}
+
+	delete m_pDevice[nPortIndex];
+	m_pDevice[nPortIndex] = 0;
+
+	return TRUE;
+}
+
+boolean CUSBStandardHub::DisablePort (unsigned nPortIndex)
+{
 	assert (nPortIndex < m_nPorts);
 
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
@@ -156,11 +209,17 @@ boolean CUSBStandardHub::RemoveDevice (unsigned nPortIndex)
 
 	m_bPortConfigured[nPortIndex] = FALSE;
 
-	delete m_pDevice[nPortIndex];
-	m_pDevice[nPortIndex] = 0;
-
 	return TRUE;
 }
+
+#if RASPPI >= 4
+
+const TUSBHubInfo *CUSBStandardHub::GetHubInfo (void) const
+{
+	return m_pHubInfo;
+}
+
+#endif
 
 boolean CUSBStandardHub::EnumeratePorts (void)
 {
@@ -293,7 +352,11 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 		}
 
 		assert (m_pDevice[nPort] == 0);
+#if RASPPI <= 3
 		m_pDevice[nPort] = new CUSBDevice (pHost, Speed, this, nPort);
+#else
+		m_pDevice[nPort] = new CXHCIUSBDevice ((CXHCIDevice *) pHost, Speed, this, nPort);
+#endif
 		assert (m_pDevice[nPort] != 0);
 
 		if (!m_pDevice[nPort]->Initialize ())

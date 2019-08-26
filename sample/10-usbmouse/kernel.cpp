@@ -30,7 +30,7 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_DWHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer),
 	m_nPosX (0),
 	m_nPosY (0),
 	m_ShutdownMode (ShutdownNone)
@@ -82,7 +82,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_DWHCI.Initialize ();
+		bOK = m_USBHCI.Initialize ();
 	}
 
 	return bOK;

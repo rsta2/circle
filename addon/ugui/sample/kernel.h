@@ -33,7 +33,7 @@
 #include <circle/logger.h>
 #include "scopeconfig.h"
 #include "recorder.h"
-#include <circle/usb/dwhcidevice.h>
+#include <circle/usb/usbhcidevice.h>
 #include <circle/gpioclock.h>
 #include <circle/gpiopin.h>
 #include <circle/input/touchscreen.h>
@@ -72,7 +72,7 @@ private:
 	CLogger			m_Logger;
 	CScopeConfig		m_Config;
 	CRecorder		m_Recorder;
-	CDWHCIDevice		m_DWHCI;
+	CUSBHCIDevice		m_USBHCI;
 	CGPIOClock		m_Clock0;
 	CGPIOPin		m_ClockPin;
 	CTouchScreenDevice	m_TouchScreen;

@@ -2,8 +2,10 @@
 //-------------------------------------------------------------------------
 //-------------------------------------------------------------------------
 
-#if defined (RPI2) || AARCH == 64
-#include "BCM2836.h" /* Raspberriy Pi 2 */
+#if defined (RPI4)
+#include "BCM2711.h" /* Raspberry Pi 4 */
+#elif defined (RPI2) || AARCH == 64
+#include "BCM2836.h" /* Raspberry Pi 2 */
 #else
 #include "BCM2835.h" /* Original B,A,A+,B+ */
 #endif

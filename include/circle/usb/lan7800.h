@@ -2,7 +2,7 @@
 // lan7800.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,14 +20,15 @@
 #ifndef _circle_usb_lan7800_h
 #define _circle_usb_lan7800_h
 
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
+#include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
-#include <circle/usb/macaddress.h>
+#include <circle/macaddress.h>
 #include <circle/timer.h>
 #include <circle/types.h>
 
-class CLAN7800Device : public CNetDevice
+class CLAN7800Device : public CUSBFunction, CNetDevice
 {
 public:
 	CLAN7800Device (CUSBFunction *pFunction);

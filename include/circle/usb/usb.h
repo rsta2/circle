@@ -44,6 +44,7 @@ enum TUSBSpeed
 	USBSpeedLow,
 	USBSpeedFull,
 	USBSpeedHigh,
+	USBSpeedSuper,
 	USBSpeedUnknown
 };
 

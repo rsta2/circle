@@ -2,7 +2,7 @@
 // smsc951x.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,13 +20,14 @@
 #ifndef _circle_usb_smsc951x_h
 #define _circle_usb_smsc951x_h
 
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
+#include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
-#include <circle/usb/macaddress.h>
+#include <circle/macaddress.h>
 #include <circle/types.h>
 
-class CSMSC951xDevice : public CNetDevice
+class CSMSC951xDevice : public CUSBFunction, CNetDevice
 {
 public:
 	CSMSC951xDevice (CUSBFunction *pFunction);

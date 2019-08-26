@@ -24,7 +24,7 @@
 #include <circle/net/netdevlayer.h>
 #include <circle/net/arphandler.h>
 #include <circle/net/ipaddress.h>
-#include <circle/usb/macaddress.h>
+#include <circle/macaddress.h>
 #include <circle/net/netqueue.h>
 #include <circle/macros.h>
 #include <circle/types.h>

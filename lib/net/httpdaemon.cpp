@@ -22,7 +22,7 @@
 #include <circle/net/httpdaemon.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/in.h>
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
 #include <circle/sysconfig.h>
 #include <circle/logger.h>
 #include <circle/string.h>

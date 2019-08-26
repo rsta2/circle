@@ -2,7 +2,7 @@
 // i2ssoundbasedevice.cpp
 //
 // Supports:
-//	BCM283x I2S output
+//	BCM283x/BCM2711 I2S output
 //	two 24-bit audio channels
 //	sample rate up to 192 KHz
 //	tested with PCM5102A DAC only
@@ -127,7 +127,6 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_PCMFSPin (19, GPIOModeAlternateFunction0),
 	m_PCMDOUTPin (21, GPIOModeAlternateFunction0),
 	m_Clock (GPIOClockPCM, GPIOClockSourcePLLD),
-#define CLOCK_FREQ	500000000
 	m_bIRQConnected (FALSE),
 	m_State (I2SSoundIdle),
 	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
@@ -143,10 +142,12 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_pControlBlock[1]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[0]);
 
 	// start clock and I2S device
+	unsigned nClockFreq = CMachineInfo::Get ()->GetGPIOClockSourceRate (GPIOClockSourcePLLD);
+	assert (nClockFreq > 0);
 	assert (8000 <= nSampleRate && nSampleRate <= 192000);
-	assert (CLOCK_FREQ % (CHANLEN*CHANS) == 0);
-	unsigned nDivI = CLOCK_FREQ / (CHANLEN*CHANS) / nSampleRate;
-	unsigned nTemp = CLOCK_FREQ / (CHANLEN*CHANS) % nSampleRate;
+	assert (nClockFreq % (CHANLEN*CHANS) == 0);
+	unsigned nDivI = nClockFreq / (CHANLEN*CHANS) / nSampleRate;
+	unsigned nTemp = nClockFreq / (CHANLEN*CHANS) % nSampleRate;
 	unsigned nDivF = (nTemp * 4096 + nSampleRate/2) / nSampleRate;
 	assert (nDivF <= 4096);
 	if (nDivF > 4095)

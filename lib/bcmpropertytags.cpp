@@ -61,11 +61,6 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 		return FALSE;
 	}
 
-	if (!(pHeader->nValueLength & VALUE_LENGTH_RESPONSE))
-	{
-		return FALSE;
-	}
-
 	pHeader->nValueLength &= ~VALUE_LENGTH_RESPONSE;
 	if (pHeader->nValueLength == 0)
 	{

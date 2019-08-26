@@ -21,7 +21,7 @@
 //
 #include <circle/net/dhcpclient.h>
 #include <circle/net/in.h>
-#include <circle/usb/macaddress.h>
+#include <circle/macaddress.h>
 #include <circle/sched/scheduler.h>
 #include <circle/logger.h>
 #include <circle/timer.h>

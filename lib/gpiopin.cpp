@@ -85,7 +85,7 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	{
 		if (bInitPin)
 		{
-			SetPullUpMode (0);
+			SetPullMode (GPIOPullModeOff);
 		}
 
 		SetAlternateFunction (m_Mode-GPIOModeAlternateFunction0);
@@ -98,7 +98,7 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	if (   bInitPin
 	    && m_Mode == GPIOModeOutput)
 	{
-		SetPullUpMode (0);
+		SetPullMode (GPIOPullModeOff);
 	}
 
 	assert (m_nPin < GPIO_PINS);
@@ -117,7 +117,7 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 		switch (m_Mode)
 		{
 		case GPIOModeInput:
-			SetPullUpMode (0);
+			SetPullMode (GPIOPullModeOff);
 			break;
 
 		case GPIOModeOutput:
@@ -125,11 +125,11 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 			break;
 
 		case GPIOModeInputPullUp:
-			SetPullUpMode (2);
+			SetPullMode (GPIOPullModeUp);
 			break;
 
 		case GPIOModeInputPullDown:
-			SetPullUpMode (1);
+			SetPullMode (GPIOPullModeDown);
 			break;
 
 		default:
@@ -330,20 +330,38 @@ u32 CGPIOPin::ReadAll (void)
 	return nResult;
 }
 
-// See: http://www.raspberrypi.org/forums/viewtopic.php?t=163352&p=1059178#p1059178
-void CGPIOPin::SetPullUpMode (unsigned nMode)
+void CGPIOPin::SetPullMode (TGPIOPullMode Mode)
 {
-	uintptr nClkReg = ARM_GPIO_GPPUDCLK0 + m_nRegOffset;
-
 	s_SpinLock.Acquire ();
 
-	assert (nMode <= 2);
-	write32 (ARM_GPIO_GPPUD, nMode);
+	PeripheralEntry ();
+
+#if RASPPI <= 3
+	// See: http://www.raspberrypi.org/forums/viewtopic.php?t=163352&p=1059178#p1059178
+	uintptr nClkReg = ARM_GPIO_GPPUDCLK0 + m_nRegOffset;
+
+	assert (Mode <= 2);
+	write32 (ARM_GPIO_GPPUD, Mode);
 	CTimer::SimpleusDelay (5);		// 1us should be enough, but to be sure
 	write32 (nClkReg, m_nRegMask);
 	CTimer::SimpleusDelay (5);		// 1us should be enough, but to be sure
 	write32 (ARM_GPIO_GPPUD, 0);
 	write32 (nClkReg, 0);
+#else
+	assert (m_nPin < GPIO_PINS);
+	uintptr nModeReg = ARM_GPIO_GPPUPPDN0 + (m_nPin / 16) * 4;
+	unsigned nShift = (m_nPin % 16) * 2;
+
+	assert (Mode <= 2);
+	static const unsigned ModeMap[3] = {0, 2, 1};
+
+	u32 nValue = read32 (nModeReg);
+	nValue &= ~(3 << nShift);
+	nValue |= ModeMap[Mode] << nShift;
+	write32 (nModeReg, nValue);
+#endif
+
+	PeripheralExit ();
 
 	s_SpinLock.Release ();
 }

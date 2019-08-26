@@ -18,7 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/netdevlayer.h>
-#include <circle/devicenameservice.h>
+#include <circle/net/phytask.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
 #include <circle/macros.h>
@@ -40,14 +40,23 @@ CNetDeviceLayer::~CNetDeviceLayer (void)
 
 boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 {
+#if RASPPI >= 4
+	if (!m_Bcm54213.Initialize ())
+	{
+		return FALSE;
+	}
+#endif
+
 	assert (m_pDevice == 0);
-	m_pDevice = (CNetDevice *) CDeviceNameService::Get ()->GetDevice ("eth0", FALSE);
+	m_pDevice = CNetDevice::GetNetDevice (0);	// get "eth0"
 	if (m_pDevice == 0)
 	{
 		CLogger::Get ()->Write (FromNetDev, LogError, "Net device not available");
 
 		return FALSE;
 	}
+
+	new CPHYTask (m_pDevice);
 
 	if (!bWaitForActivate)
 	{
