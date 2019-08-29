@@ -19,6 +19,11 @@ Known issues of Circle are:
 
 * Some modules in the addon/ subdirectory will not build with STDLIB_SUPPORT = 0.
 
+* There may be a few USB devices, which report a transfer error 3 (babble) on the
+  Raspberry Pi 4. According to some comments on the Internet, this may be caused
+  by incompatibilities of the USB device firmware. These devices cannot be used
+  with Circle on the Raspberry Pi 4 currently.
+
 
 You can see or report further issues here:
 
