@@ -37,7 +37,8 @@ CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_pCommandManager (0),
 	m_pScratchpadBuffers (0),
 	m_pScratchpadBufferArray (0),
-	m_pRootHub (0)
+	m_pRootHub (0),
+	m_bShutdown (FALSE)
 {
 	assert (m_nSharedMemStart != 0);
 	assert (m_nSharedMemEnd != 0);
@@ -45,8 +46,7 @@ CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 
 CXHCIDevice::~CXHCIDevice (void)
 {
-	delete m_pRootHub;
-	m_pRootHub = 0;
+	m_bShutdown = TRUE;
 
 	if (m_pMMIO != 0)
 	{
@@ -219,6 +219,11 @@ void CXHCIDevice::ReScanDevices (void)	// TODO
 
 boolean CXHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
 {
+	if (m_bShutdown)
+	{
+		return FALSE;
+	}
+
 	assert (pURB != 0);
 	CXHCIEndpoint *pEndpoint = pURB->GetEndpoint ()->GetXHCIEndpoint ();
 	assert (pEndpoint != 0);
@@ -228,6 +233,11 @@ boolean CXHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeout
 
 boolean CXHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
 {
+	if (m_bShutdown)
+	{
+		return FALSE;
+	}
+
 	assert (pURB != 0);
 	CXHCIEndpoint *pEndpoint = pURB->GetEndpoint ()->GetXHCIEndpoint ();
 	assert (pEndpoint != 0);
@@ -322,6 +332,11 @@ void CXHCIDevice::InterruptHandler (unsigned nVector)
 	{
 		CLogger::Get ()->Write (From, LogError, "HC halted");
 
+		return;
+	}
+
+	if (m_bShutdown)
+	{
 		return;
 	}
 
