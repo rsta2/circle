@@ -19,7 +19,6 @@ This Circle release adds support for the Raspberry Pi 4 Model B. All features su
 * FIQ on AArch64
 * User timer (class CUserTimer)
 * I2C slave (class CI2CSlave)
-* Headless operation with most samples
 * USB RescanDevices() and RemoveDevice()
 
 The Raspberry Pi 4 provides a number of new features. Not all of these are supported yet. Support for the following features is planned to be added later:
@@ -29,6 +28,8 @@ The Raspberry Pi 4 provides a number of new features. Not all of these are suppo
 * additional peripherals (SPI, I2C, UART)
 
 The Raspberry Pi 4 has a new xHCI USB host controller and a non-USB Gigabit Ethernet controller. This requires slight modifications to existing applications. The generic USB host controller class is named `CUSBHCIDevice` and has to be included from `<circle/usb/usbhcidevice.h>` now. The Ethernet controller driver is automatically loaded, if the TCP/IP network library is used, but has to be loaded manually otherwise (see *sample/06-ethernet*).
+
+Please note that there is a different behavior regarding headless operation on the Raspberry Pi 4 compared to earlier models, where the frame buffer initialization succeeds, even if there is no display connected. On the Raspberry Pi 4 there must be a display connected, the initialization of the class CBcmFrameBuffer (and following of the class CScreenDevice) will fail otherwise. Most of the Circle samples are not aware of this and may fail to run without a connected display. You have to modify CKernel::Initialize() for headless operation so that `m_Screen.Initialize()` is not called. `m_Serial` (or maybe class `CNullDevice`) can be used as logging target in this case.
 
 The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
 

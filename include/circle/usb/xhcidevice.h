@@ -83,6 +83,8 @@ private:
 	u64  *m_pScratchpadBufferArray;
 
 	CXHCIRootHub *m_pRootHub;
+
+	boolean m_bShutdown;
 };
 
 #endif

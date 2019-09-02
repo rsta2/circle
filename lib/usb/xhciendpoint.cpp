@@ -353,8 +353,16 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 	if (   XHCI_TRB_SUCCESS (uchCompletionCode)
 	    || uchCompletionCode == XHCI_TRB_COMPLETION_CODE_SHORT_PACKET)
 	{
-		assert (nTransferLength <= pURB->GetBufLen ());
-		pURB->SetResultLen (pURB->GetBufLen () - nTransferLength);
+		void *pBuffer = pURB->GetBuffer ();
+		u32 nBufLen = pURB->GetBufLen ();
+		if (pBuffer != 0)
+		{
+			assert (nBufLen > 0);
+			CleanAndInvalidateDataCacheRange ((uintptr) pBuffer, nBufLen);
+		}
+
+		assert (nTransferLength <= nBufLen);
+		pURB->SetResultLen (nBufLen - nTransferLength);
 
 		pURB->SetStatus (1);
 	}
