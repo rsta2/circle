@@ -23,7 +23,11 @@
 
 #if RASPPI >= 2
 
+#if RASPPI <= 3
 #define ARM_LOCAL_BASE			0x40000000
+#else
+#define ARM_LOCAL_BASE			0xFF800000
+#endif
 
 #define ARM_LOCAL_CONTROL		(ARM_LOCAL_BASE + 0x000)
 #define ARM_LOCAL_PRESCALER		(ARM_LOCAL_BASE + 0x008)

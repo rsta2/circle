@@ -68,7 +68,7 @@
 
 ///////////////////////////////////////////////////////////////////////
 //
-// Raspberry Pi 2 and 3
+// Raspberry Pi 2, 3 and 4
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -93,11 +93,12 @@
 #endif
 
 // USE_PHYSICAL_COUNTER enables the use of the CPU internal physical
-// counter, which is only available on the Raspberry Pi 2 and 3. Reading
+// counter, which is only available on the Raspberry Pi 2, 3 and 4. Reading
 // this counter is much faster than reading the BCM2835 system timer
 // counter (which is used without this option). It reduces the I/O load
 // too. For some QEMU versions this is the only supported timer option,
-// for other older QEMU versions it does not work.
+// for other older QEMU versions it does not work. On the Raspberry Pi 4
+// setting this option is required.
 
 #define USE_PHYSICAL_COUNTER
 
@@ -123,6 +124,7 @@
 // should normally be set. Unfortunately this causes a heavily changed
 // system timing, because it triggers up to 8000 IRQs per second. For
 // compatibility with existing applications it is not set by default.
+// This option has no influence on the Raspberry Pi 4.
 
 //#define USE_USB_SOF_INTR
 

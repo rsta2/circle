@@ -2,7 +2,7 @@
 // translationtable64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,9 +24,20 @@
 #include <circle/util.h>
 #include <assert.h>
 
-// Granule size is 64KB. Only EL1 stage 1 translation is enabled with 32 bits IPA (= PA) size (4GB).
-// We create one level 2 (first lookup level) translation table with 3 table entries (total 1.5GB) which
-// point to a level 3 (final lookup level) translation table each with 8192 page entries a 64KB (total 512MB).
+// Granule size is 64KB. Only EL1 stage 1 translation is enabled with 32 bits IPA
+// (= PA) size (4GB).
+
+#if RASPPI == 3
+// We create one level 2 (first lookup level) translation table with 3 table
+// entries (total 1.5GB) which point to a level 3 (final lookup level) translation
+// table each with 8192 page entries a 64KB (total 512MB).
+#define LEVEL2_TABLE_ENTRIES	3
+#elif RASPPI >= 4
+// We create one level 2 (first lookup level) translation table with 128 table
+// entries (total 64GB) which point to a level 3 (final lookup level) translation
+// table each with 8192 page entries a 64KB (total 512MB).
+#define LEVEL2_TABLE_ENTRIES	128
+#endif
 
 CTranslationTable::CTranslationTable (size_t nMemSize)
 :	m_nMemSize (nMemSize),
@@ -37,9 +48,18 @@ CTranslationTable::CTranslationTable (size_t nMemSize)
 
 	memset (m_pTable, 0, PAGE_SIZE);
 
-	for (unsigned nEntry = 0; nEntry < 3; nEntry++)		// 3 entries a 512MB
+	for (unsigned nEntry = 0; nEntry < LEVEL2_TABLE_ENTRIES; nEntry++)	// entries a 512MB
 	{
 		u64 nBaseAddress = (u64) nEntry * ARMV8MMU_TABLE_ENTRIES * ARMV8MMU_LEVEL3_PAGE_SIZE;
+
+#if RASPPI >= 4
+		if (   nBaseAddress >= 4*GIGABYTE
+		    && !(   MEM_PCIE_RANGE_START_VIRTUAL <= nBaseAddress
+			 && nBaseAddress <= MEM_PCIE_RANGE_END_VIRTUAL))
+		{
+			continue;
+		}
+#endif
 
 		TARMV8MMU_LEVEL3_DESCRIPTOR *pTable = CreateLevel3Table (nBaseAddress);
 		assert (pTable != 0);

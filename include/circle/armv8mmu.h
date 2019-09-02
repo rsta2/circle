@@ -2,7 +2,7 @@
 // armv8mmu.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -150,6 +150,7 @@ PACKED;
 #define TCR_EL1_IPS__SHIFT	32			// TCR_EL1
 #define TCR_EL1_IPS__MASK	(7UL << 32)
 	#define TCR_EL1_IPS_4GB		0UL
+	#define TCR_EL1_IPS_64GB	1UL
 #define TCR_EL1_EPD1		(1 << 23)
 #define TCR_EL1_A1		(1 << 22)
 #define TCR_EL1_TG0__SHIFT	14
@@ -160,13 +161,16 @@ PACKED;
 	#define TCR_EL1_SH0_INNER	3
 #define TCR_EL1_ORGN0__SHIFT	10
 #define TCR_EL1_ORGN0__MASK	(3 << 10)
-	#define TCR_EL1_ORGN0_WR_BACK	3
+	#define TCR_EL1_ORGN0_WR_BACK_ALLOCATE	1
+	#define TCR_EL1_ORGN0_WR_BACK		3
 #define TCR_EL1_IRGN0__SHIFT	8
 #define TCR_EL1_IRGN0__MASK	(3 << 8)
-	#define TCR_EL1_IRGN0_WR_BACK	3
+	#define TCR_EL1_IRGN0_WR_BACK_ALLOCATE	1
+	#define TCR_EL1_IRGN0_WR_BACK		3
 #define TCR_EL1_EPD0		(1 << 7)
 #define TCR_EL1_T0SZ__SHIFT	0
 #define TCR_EL1_T0SZ__MASK	(0x3F << 0)
 	#define TCR_EL1_T0SZ_4GB	32
+	#define TCR_EL1_T0SZ_64GB	28
 
 #endif

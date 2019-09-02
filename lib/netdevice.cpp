@@ -2,7 +2,7 @@
 // netdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,9 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/usb/netdevice.h>
-#include <circle/devicenameservice.h>
-#include <circle/string.h>
+#include <circle/netdevice.h>
 
 const char *CNetDevice::s_SpeedString[NetDeviceSpeedUnknown] =
 {
@@ -33,20 +31,14 @@ const char *CNetDevice::s_SpeedString[NetDeviceSpeedUnknown] =
 
 unsigned CNetDevice::s_nDeviceNumber = 0;
 
-CNetDevice::CNetDevice (CUSBFunction *pFunction)
-:	CUSBFunction (pFunction)
-{
-}
-
-CNetDevice::~CNetDevice (void)
-{
-}
+CNetDevice *CNetDevice::s_pDevice[MAX_NET_DEVICES];
 
 void CNetDevice::AddNetDevice (void)
 {
-	CString DeviceName;
-	DeviceName.Format ("eth%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	if (s_nDeviceNumber < MAX_NET_DEVICES)
+	{
+		s_pDevice[s_nDeviceNumber++] = this;
+	}
 }
 
 const char *CNetDevice::GetSpeedString (TNetDeviceSpeed Speed)
@@ -57,4 +49,14 @@ const char *CNetDevice::GetSpeedString (TNetDeviceSpeed Speed)
 	}
 
 	return s_SpeedString[Speed];
+}
+
+CNetDevice *CNetDevice::GetNetDevice (unsigned nDeviceNumber)
+{
+	if (nDeviceNumber < s_nDeviceNumber)
+	{
+		return s_pDevice[nDeviceNumber];
+	}
+
+	return 0;
 }

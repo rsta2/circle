@@ -172,6 +172,11 @@ void sysinit (void)
 #endif
 
 	vfpinit ();
+
+#if RASPPI >= 4
+	// generate 1 MHz clock for timer from 54 MHz oscillator
+	write32 (ARM_LOCAL_PRESCALER, 39768216U);
+#endif
 #endif
 
 	// clear BSS

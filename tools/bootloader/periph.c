@@ -2,8 +2,10 @@
 //-------------------------------------------------------------------------
 //-------------------------------------------------------------------------
 
-#if defined (RPI2) || AARCH == 64
-#include "BCM2836.h" /* Raspberriy Pi 2 */
+#if defined (RPI4)
+#include "BCM2711.h" /* Raspberry Pi 4 */
+#elif defined (RPI2) || AARCH == 64
+#include "BCM2836.h" /* Raspberry Pi 2 */
 #else
 #include "BCM2835.h" /* Original B,A,A+,B+ */
 #endif
@@ -38,6 +40,29 @@ extern void dummy ( unsigned int );
 
 //GPIO14  TXD0 and TXD1
 //GPIO15  RXD0 and RXD1
+//------------------------------------------------------------------------
+#define MAILBOX_BASE		(PBASE + 0xB880)
+
+#define MAILBOX0_READ  		(MAILBOX_BASE + 0x00)
+#define MAILBOX0_STATUS 	(MAILBOX_BASE + 0x18)
+	#define MAILBOX_STATUS_EMPTY	0x40000000
+#define MAILBOX1_WRITE		(MAILBOX_BASE + 0x20)
+#define MAILBOX1_STATUS 	(MAILBOX_BASE + 0x38)
+	#define MAILBOX_STATUS_FULL	0x80000000
+
+#define BCM_MAILBOX_PROP_OUT	8
+
+#define CODE_REQUEST		0x00000000
+#define CODE_RESPONSE_SUCCESS	0x80000000
+#define CODE_RESPONSE_FAILURE	0x80000001
+
+#define PROPTAG_GET_CLOCK_RATE	0x00030002
+#define PROPTAG_END		0x00000000
+
+#define CLOCK_ID_CORE		4
+
+unsigned get_core_clock (void);
+unsigned div (unsigned nDividend, unsigned nDivisor);
 //------------------------------------------------------------------------
 unsigned int uart_lcr ( void )
 {
@@ -112,7 +137,7 @@ void uart_init ( void )
     PUT32(AUX_MU_MCR_REG,0);
     PUT32(AUX_MU_IER_REG,0);
     PUT32(AUX_MU_IIR_REG,0xC6);
-    PUT32(AUX_MU_BAUD_REG,(250000000/8 + DEFAULTBAUD/2) / DEFAULTBAUD - 1);
+    PUT32(AUX_MU_BAUD_REG,div(get_core_clock()/8 + DEFAULTBAUD/2, DEFAULTBAUD) - 1);
     ra=GET32(GPFSEL1);
     ra&=~(7<<12); //gpio14
     ra|=2<<12;    //alt5
@@ -138,6 +163,82 @@ void  timer_init ( void )
 unsigned int timer_tick ( void )
 {
     return(GET32(ARM_TIMER_CNT));
+}
+//-------------------------------------------------------------------------
+unsigned mbox_writeread (unsigned nData)
+{
+	while (GET32 (MAILBOX1_STATUS) & MAILBOX_STATUS_FULL)
+	{
+		// do nothing
+	}
+
+	PUT32 (MAILBOX1_WRITE, BCM_MAILBOX_PROP_OUT | nData);
+
+	unsigned nResult;
+	do
+	{
+		while (GET32 (MAILBOX0_STATUS) & MAILBOX_STATUS_EMPTY)
+		{
+			// do nothing
+		}
+
+		nResult = GET32 (MAILBOX0_READ);
+	}
+	while ((nResult & 0xF) != BCM_MAILBOX_PROP_OUT);
+
+	return nResult & ~0xF;
+}
+//-------------------------------------------------------------------------
+unsigned get_core_clock (void)
+{
+	unsigned proptag[] __attribute__ ((aligned (16))) =
+	{
+		8*4,
+		CODE_REQUEST,
+		PROPTAG_GET_CLOCK_RATE,
+		4*4,
+		1*4,
+		CLOCK_ID_CORE,
+		0,
+		PROPTAG_END
+	};
+
+	mbox_writeread ((unsigned) (unsigned long) &proptag);
+
+	return proptag[6];
+}
+//-------------------------------------------------------------------------
+unsigned div (unsigned nDividend, unsigned nDivisor)
+{
+	if (nDivisor == 0)
+	{
+		return 0;
+	}
+
+	unsigned long long ullDivisor = nDivisor;
+
+	unsigned nCount = 1;
+	while (nDividend > ullDivisor)
+	{
+		ullDivisor <<= 1;
+		nCount++;
+	}
+
+	unsigned nQuotient = 0;
+	while (nCount--)
+	{
+		nQuotient <<= 1;
+
+		if (nDividend >= ullDivisor)
+		{
+			nQuotient |= 1;
+			nDividend -= ullDivisor;
+		}
+
+		ullDivisor >>= 1;
+	}
+
+	return nQuotient;
 }
 //-------------------------------------------------------------------------
 //-------------------------------------------------------------------------

@@ -47,6 +47,14 @@ enum TGPIOMode
 	GPIOModeUnknown
 };
 
+enum TGPIOPullMode
+{
+	GPIOPullModeOff,
+	GPIOPullModeDown,
+	GPIOPullModeUp,
+	GPIOPullModeUnknown
+};
+
 enum TGPIOInterrupt
 {
 	GPIOInterruptOnRisingEdge,
@@ -82,6 +90,9 @@ public:
 	void SetMode (TGPIOMode	Mode,
 		      boolean	bInitPin = TRUE);
 	
+	/// \param Mode Pull mode to be set
+	void SetPullMode (TGPIOPullMode Mode);
+
 	/// \param nValue Value to be written to the pin (LOW or HIGH)
 	void Write (unsigned nValue);
 	/// \return Value read from pin (LOW or HIGH)
@@ -113,8 +124,6 @@ public:
 	static u32 ReadAll (void);
 
 private:
-	void SetPullUpMode (unsigned nMode);
-
 	void SetAlternateFunction (unsigned nFunction);
 
 	void InterruptHandler (void);

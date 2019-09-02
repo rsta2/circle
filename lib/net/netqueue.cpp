@@ -18,7 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/netqueue.h>
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
 #include <circle/util.h>
 #include <assert.h>
 

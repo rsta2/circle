@@ -50,15 +50,24 @@ TARGET	?= kernel7
 else ifeq ($(strip $(RASPPI)),3)
 ARCH	?= -DAARCH=32 -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel8-32
+else ifeq ($(strip $(RASPPI)),4)
+ARCH	?= -DAARCH=32 -march=armv8-a -mtune=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+TARGET	?= kernel7l
 else
-$(error RASPPI must be set to 1, 2 or 3)
+$(error RASPPI must be set to 1, 2, 3 or 4)
 endif
 LOADADDR = 0x8000
 else ifeq ($(strip $(AARCH)),64)
-RASPPI	= 3
-PREFIX	= $(PREFIX64)
+ifeq ($(strip $(RASPPI)),3)
 ARCH	?= -DAARCH=64 -march=armv8-a -mtune=cortex-a53 -mlittle-endian -mcmodel=small
 TARGET	?= kernel8
+else ifeq ($(strip $(RASPPI)),4)
+ARCH	?= -DAARCH=64 -march=armv8-a -mtune=cortex-a72 -mlittle-endian -mcmodel=small
+TARGET	?= kernel8-rpi4
+else
+$(error RASPPI must be set to 3 or 4)
+endif
+PREFIX	= $(PREFIX64)
 LOADADDR = 0x80000
 else
 $(error AARCH must be set to 32 or 64)

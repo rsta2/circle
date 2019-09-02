@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,12 +28,11 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_Recorder (8, 9, 10, 11, &m_Config),
-	m_DWHCI (&m_Interrupt, &m_Timer),
-	m_Clock0 (GPIOClock0, GPIOClockSourceOscillator),	// clock source OSC, 19.2 MHz
+	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_Clock0 (GPIOClock0),
 	m_ClockPin (4, GPIOModeAlternateFunction0),
 	m_GUI (&m_Screen)
 {
-	m_Clock0.Start (192);		// 19.2 MHz / 192 = 100 KHz
 }
 
 CKernel::~CKernel (void)
@@ -82,7 +81,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_DWHCI.Initialize ();
+		bOK = m_USBHCI.Initialize ();
 	}
 
 	if (bOK)
@@ -98,6 +97,11 @@ boolean CKernel::Initialize (void)
 TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
+
+	if (!m_Clock0.StartRate (100000))
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Cannot generate 100 KHz clock");
+	}
 
 	CScopeWindow ScopeWindow (0, 0, &m_Recorder, &m_Config);
 	CControlWindow ControlWindow (600, 0, &ScopeWindow, &m_Recorder, &m_Config);

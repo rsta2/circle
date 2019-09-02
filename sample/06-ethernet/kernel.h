@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,8 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include <circle/usb/dwhcidevice.h>
+#include <circle/usb/usbhcidevice.h>
+#include <circle/bcm54213.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -62,7 +63,11 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
-	CDWHCIDevice		m_DWHCI;
+#if RASPPI <= 3
+	CUSBHCIDevice		m_USBHCI;
+#else
+	CBcm54213Device		m_Bcm54213;
+#endif
 };
 
 #endif

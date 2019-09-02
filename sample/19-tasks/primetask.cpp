@@ -4,7 +4,7 @@
 // Prime number calculation task
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,11 @@
 #include <circle/string.h>
 #include <circle/util.h>
 
+// The CPU is given up after each YIELD_COUNT loop cycles, so that other
+// tasks can run. Increase this value for faster prime number calculation,
+// decrease it, to give the other tasks more time to run.
+#define YIELD_COUNT	1000000
+
 CPrimeTask::CPrimeTask (CScreenDevice *pScreen)
 :	m_pScreen (pScreen)
 {
@@ -43,9 +48,18 @@ void CPrimeTask::Run (void)
 	{
 		if (IsPrime (i))
 		{
+			unsigned nYieldCount = YIELD_COUNT;
+
 			for (unsigned j = i*i; j < PRIME_MAX; j += i)
 			{
 				NotPrime (j);
+
+				if (--nYieldCount == 0)
+				{
+					CScheduler::Get ()->Yield ();	// give up CPU
+
+					nYieldCount = YIELD_COUNT;
+				}
 			}
 
 			CScheduler::Get ()->Yield ();		// give up CPU

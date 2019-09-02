@@ -2,7 +2,7 @@
 // exceptionstub.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ struct TExceptionTable
 	//u32 Reset;
 	u32 UndefinedInstruction;
 	u32 SupervisorCall;
+#define SecureMonitorCall		SupervisorCall	// VBAR and MVBAR point to same location
 	u32 PrefetchAbort;
 	u32 DataAbort;
 	u32 Unused;
@@ -76,9 +77,11 @@ void PrefetchAbortStub (void);
 void DataAbortStub (void);
 void IRQStub (void);
 void FIQStub (void);
+void SMCStub (void);
 
 void ExceptionHandler (u32 nException, TAbortFrame *pFrame);
 void InterruptHandler (void);
+void SecureMonitorHandler (u32 nFunction, u32 nParam);
 
 #else	// #if AARCH == 32
 
@@ -107,6 +110,7 @@ struct TFIQData
 {
 	TFIQHandler *pHandler;
 	void *pParam;
+	u32 nFIQNumber;
 }
 PACKED;
 

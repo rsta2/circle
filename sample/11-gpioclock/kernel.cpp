@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #define GPIO_INPUT_PIN		18
 #define GPIO_INPUT_PIN_MASK	(1 << GPIO_INPUT_PIN)
 
-#define CLOCK_DIVIDER		4000		// 500 MHz / 4000 = 125 KHz
+#define CLOCK_RATE		125000
 
 #define SAMPLING_DELAY		0		// controls sampling rate, 0 is fastest
 
@@ -36,13 +36,11 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_Clock0 (GPIOClock0, GPIOClockSourcePLLD),	// clock source PLLD, 500 MHz
+	m_Clock0 (GPIOClock0),
 	m_ClockPin (4, GPIOModeAlternateFunction0),
 	m_InputPin (GPIO_INPUT_PIN, GPIOModeInput)
 {
 	m_ActLED.Blink (5);	// show we are alive
-
-	m_Clock0.Start (CLOCK_DIVIDER);
 }
 
 CKernel::~CKernel (void)
@@ -90,6 +88,11 @@ boolean CKernel::Initialize (void)
 TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
+
+	if (!m_Clock0.StartRate (CLOCK_RATE))
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Cannot generate %u Hz clock", CLOCK_RATE);
+	}
 
 	size_t nSamples = m_Screen.GetWidth ();
 	assert (nSamples > 0);

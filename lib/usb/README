@@ -7,6 +7,10 @@ The Circle USB library was inspired by and information was get from:
 * the Embedded Xinu SMSC LAN9512 USB driver by Douglas Comer and Dennis Brylow
 	(http://embedded-xinu.readthedocs.org/en/latest/arm/rpi/SMSC-LAN9512.html)
 * the Linux lan78xx driver by Microchip Technology Inc.
+* eXtensible Host Controller Interface for Universal Serial Bus (xHCI)
+	Specification, Revision 1.0
+	Copyright (c) 2008-2010 Intel Corporation. All rights reserved.
+* the Linux xHCI driver by Intel Corp.
 
 
 
@@ -133,3 +137,16 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+
+
+Copyright notice from the Linux xHCI driver:
+
+SPDX-License-Identifier: GPL-2.0
+
+xHCI host controller driver
+
+Copyright (C) 2008 Intel Corp.
+
+Author: Sarah Sharp
+Some code borrowed from the Linux EHCI driver.

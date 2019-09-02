@@ -20,12 +20,13 @@
 #ifndef _circle_usb_dwhcirootport_h
 #define _circle_usb_dwhcirootport_h
 
+#include <circle/usb/usbhcirootport.h>
 #include <circle/usb/usbdevice.h>
 #include <circle/types.h>
 
 class CDWHCIDevice;
 
-class CDWHCIRootPort
+class CDWHCIRootPort : public CUSBHCIRootPort
 {
 public:
 	CDWHCIRootPort (CDWHCIDevice *pHost);

@@ -9,7 +9,7 @@
 // See the file lib/usb/README for details!
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -126,7 +126,7 @@
 static const char FromSMSC951x[] = "smsc951x";
 
 CSMSC951xDevice::CSMSC951xDevice (CUSBFunction *pFunction)
-:	CNetDevice (pFunction),
+:	CUSBFunction (pFunction),
 	m_pEndpointBulkIn (0),
 	m_pEndpointBulkOut (0)
 {

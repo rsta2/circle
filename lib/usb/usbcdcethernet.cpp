@@ -2,7 +2,7 @@
 // usbcdcethernet.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ PACKED;
 static const char FromCDCEthernet[] = "ucdceth";
 
 CUSBCDCEthernetDevice::CUSBCDCEthernetDevice (CUSBFunction *pFunction)
-:	CNetDevice (pFunction),
+:	CUSBFunction (pFunction),
 	m_pEndpointBulkIn (0),
 	m_pEndpointBulkOut (0)
 {
