@@ -161,7 +161,7 @@ Installation
 
 Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the *kernel.img* (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
 
-The *config.txt* file, provided in the boot/ directory, is only needed to enable 64-bit mode on the Raspberry Pi 4 and has to be copied on the SD card in this case. It must not be on the SD card otherwise!
+The *config.txt* file, provided in the boot/ directory, is only needed to enable 64-bit mode and has to be copied on the SD card in this case. It must not be on the SD card otherwise!
 
 Directories
 -----------
