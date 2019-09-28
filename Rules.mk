@@ -34,6 +34,9 @@ STDLIB_SUPPORT ?= 1
 # set this to "softfp" if you want to link specific libraries
 FLOAT_ABI ?= hard
 
+# set this to 1 to enable garbage collection on sections, may cause side effects
+GC_SECTIONS ?= 0
+
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
 AS	= $(CC)
@@ -109,6 +112,11 @@ EXTRALIBS += $(LIBM)
 endif
 endif
 
+ifeq ($(strip $(GC_SECTIONS)),1)
+CFLAGS	+= -ffunction-sections -fdata-sections
+LDFLAGS	+= --gc-sections
+endif
+
 OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib \
@@ -119,6 +127,7 @@ DEFINE	+= -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
 AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
 CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding $(DEFINE) $(INCLUDE) $(OPTIMIZE) -g
 CPPFLAGS+= $(CFLAGS) -std=c++14
+LDFLAGS	+= --section-start=.init=$(LOADADDR)
 
 %.o: %.S
 	@echo "  AS    $@"
@@ -134,7 +143,7 @@ CPPFLAGS+= $(CFLAGS) -std=c++14
 
 $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@echo "  LD    $(TARGET).elf"
-	@$(LD) -o $(TARGET).elf -Map $(TARGET).map --section-start=.init=$(LOADADDR) \
+	@$(LD) -o $(TARGET).elf -Map $(TARGET).map $(LDFLAGS) \
 		-T $(CIRCLEHOME)/circle.ld $(CRTBEGIN) $(OBJS) \
 		--start-group $(LIBS) $(EXTRALIBS) --end-group $(CRTEND)
 	@echo "  DUMP  $(TARGET).lst"
