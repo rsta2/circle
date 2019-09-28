@@ -59,8 +59,14 @@ try:
 except Exception:
     print("ERROR: Serial port disconnected. Check connections!")
     F.close()
+    time.sleep(0.2)
+    ser.flush()
+    time.sleep(0.2)
     ser.close()
     exit()
 
 F.close()
+time.sleep(0.2)
+ser.flush()
+time.sleep(0.2)
 ser.close()
