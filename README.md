@@ -115,7 +115,7 @@ The following table gives support for selecting the right *RASPPI* value:
 | RASPPI | Target         | Models                   | Optimized for |
 | ------ | -------------- | ------------------------ | ------------- |
 |      1 | kernel.img     | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
-|      2 | kernel7.img    | 2, 3, (CM3)              | ARMv7-A       |
+|      2 | kernel7.img    | 2, 3, (CM3)              | Cortex-A7     |
 |      3 | kernel8-32.img | 3, (CM3)                 | Cortex-A53    |
 |      4 | kernel7l.img   | 4                        | Cortex-A72    |
 

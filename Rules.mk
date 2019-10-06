@@ -45,16 +45,16 @@ AR	= $(PREFIX)ar
 
 ifeq ($(strip $(AARCH)),32)
 ifeq ($(strip $(RASPPI)),1)
-ARCH	?= -DAARCH=32 -march=armv6k -mtune=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -mcpu=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
-ARCH	?= -DAARCH=32 -march=armv7-a -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -mcpu=cortex-a7 -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7
 else ifeq ($(strip $(RASPPI)),3)
-ARCH	?= -DAARCH=32 -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -mcpu=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel8-32
 else ifeq ($(strip $(RASPPI)),4)
-ARCH	?= -DAARCH=32 -march=armv8-a -mtune=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -mcpu=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7l
 else
 $(error RASPPI must be set to 1, 2, 3 or 4)
@@ -62,10 +62,10 @@ endif
 LOADADDR = 0x8000
 else ifeq ($(strip $(AARCH)),64)
 ifeq ($(strip $(RASPPI)),3)
-ARCH	?= -DAARCH=64 -march=armv8-a -mtune=cortex-a53 -mlittle-endian -mcmodel=small
+ARCH	?= -DAARCH=64 -mcpu=cortex-a53 -mlittle-endian -mcmodel=small
 TARGET	?= kernel8
 else ifeq ($(strip $(RASPPI)),4)
-ARCH	?= -DAARCH=64 -march=armv8-a -mtune=cortex-a72 -mlittle-endian -mcmodel=small
+ARCH	?= -DAARCH=64 -mcpu=cortex-a72 -mlittle-endian -mcmodel=small
 TARGET	?= kernel8-rpi4
 else
 $(error RASPPI must be set to 3 or 4)
