@@ -2,7 +2,7 @@
 // keyboardbehaviour.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_input_keyboardbehaviour_h
 
 #include <circle/input/keymap.h>
+#include <circle/timer.h>
 #include <circle/types.h>
 
 enum TModifierKey
@@ -71,8 +72,8 @@ public:
 private:
 	void GenerateKeyEvent (u8 ucKeyCode);
 
-	void TimerHandler (unsigned hTimer);
-	static void TimerStub (unsigned hTimer, void *pParam, void *pContext);
+	void TimerHandler (TKernelTimerHandle hTimer);
+	static void TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
 private:
 	TKeyPressedHandler	*m_pKeyPressedHandler;
@@ -82,7 +83,7 @@ private:
 	u8 m_ucModifiers;
 	u8 m_ucLastKeyCode;
 
-	unsigned m_hTimer;
+	TKernelTimerHandle m_hTimer;
 
 	CKeyMap m_KeyMap;
 };

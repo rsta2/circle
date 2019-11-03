@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,28 +23,52 @@
 #include <circle/bcm2836.h>
 #include <circle/machineinfo.h>
 #include <circle/memory.h>
+#include <circle/chainboot.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
+#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void *__dso_handle;
+void *__dso_handle WEAK;
 
-#if STDLIB_SUPPORT < 2
+void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle) WEAK;
 
 void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 {
 	// TODO
 }
 
-#else
+#if AARCH == 64
+
+void __cxa_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle) WEAK;
+
+void __cxa_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
+{
+	// TODO
+}
+
+#endif
+
+#if STDLIB_SUPPORT >= 2
 
 void __sync_synchronize (void)
 {
 	DataSyncBarrier ();
+}
+
+#endif
+
+#if STDLIB_SUPPORT == 1
+
+int *__errno (void)
+{
+	static int errno = 0;
+
+	return &errno;
 }
 
 #endif
@@ -54,8 +78,13 @@ void halt (void)
 #ifdef ARM_ALLOW_MULTI_CORE
 	static volatile boolean s_bCoreHalted[CORES] = {FALSE};
 
+#if AARCH == 32
 	u32 nMPIDR;
 	asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (nMPIDR));
+#else
+	u64 nMPIDR;
+	asm volatile ("mrs %0, mpidr_el1" : "=r" (nMPIDR));
+#endif
 	unsigned nCore = nMPIDR & (CORES-1);
 
 	// core 0 must not halt until all secondary cores have been halted
@@ -109,6 +138,8 @@ void reboot (void)					// by PlutoniumBob@raspi-forum
 	for (;;);					// wait for reset
 }
 
+#if AARCH == 32
+
 static void vfpinit (void)
 {
 	// Coprocessor Access Control Register
@@ -126,25 +157,28 @@ static void vfpinit (void)
 	__asm volatile ("fmxr fpscr, %0" : : "r" (VFP_FPSCR_DN));
 }
 
+#endif
+	extern "C" { int main (void); }
+
 void sysinit (void)
 {
 	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
 
+#if AARCH == 32
 #if RASPPI != 1
 #ifndef USE_RPI_STUB_AT
 	// L1 data cache may contain random entries after reset, delete them
 	InvalidateDataCacheL1Only ();
 #endif
-#ifndef ARM_ALLOW_MULTI_CORE
-	// put all secondary cores to sleep
-	for (unsigned nCore = 1; nCore < CORES; nCore++)
-	{
-		write32 (ARM_LOCAL_MAILBOX3_SET0 + 0x10 * nCore, (u32) &_start_secondary);
-	}
-#endif
 #endif
 
 	vfpinit ();
+
+#if RASPPI >= 4
+	// generate 1 MHz clock for timer from 54 MHz oscillator
+	write32 (ARM_LOCAL_PRESCALER, 39768216U);
+#endif
+#endif
 
 	// clear BSS
 	extern unsigned char __bss_start;
@@ -160,7 +194,7 @@ void sysinit (void)
 	CMemorySystem Memory;
 #endif
 
-	// call construtors of static objects
+	// call constructors of static objects
 	extern void (*__init_start) (void);
 	extern void (*__init_end) (void);
 	for (void (**pFunc) (void) = &__init_start; pFunc < &__init_end; pFunc++)
@@ -168,9 +202,19 @@ void sysinit (void)
 		(**pFunc) ();
 	}
 
-	extern int main (void);
 	if (main () == EXIT_REBOOT)
 	{
+		if (IsChainBootEnabled ())
+		{
+#if STDLIB_SUPPORT >= 2
+			Memory.Destructor ();
+#endif
+
+			DisableFIQs ();
+
+			DoChainBoot ();
+		}
+
 		reboot ();
 	}
 
@@ -183,10 +227,12 @@ void sysinit_secondary (void)
 {
 	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
 
+#if AARCH == 32
 	// L1 data cache may contain random entries after reset, delete them
 	InvalidateDataCacheL1Only ();
 
 	vfpinit ();
+#endif
 
 	main_secondary ();
 

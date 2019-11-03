@@ -4,10 +4,11 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= ff.o diskio.o syscall.o unicode.o
+OBJS	= ff.o diskio.o syscall.o ffunicode.o
 
-libfatfs$(RASPPI).a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
+libfatfs.a: $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

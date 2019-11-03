@@ -49,7 +49,7 @@
 
 	.endm
 
-	.text
+	.sect	.init
 
 	.globl	_start
 _start:

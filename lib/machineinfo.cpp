@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/machineinfo.h>
+#include <circle/gpioclock.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
 
@@ -66,7 +67,11 @@ s_NewInfo[]
 	{8, MachineModel3B,		3},
 	{9, MachineModelZero,		1},
 	{10, MachineModelCM3,		3},
-	{12, MachineModelZeroW,		1}
+	{12, MachineModelZeroW,		1},
+	{13, MachineModel3BPlus,	3},
+	{14, MachineModel3APlus,	3},
+	{16, MachineModelCM3Plus,	3},
+	{17, MachineModel4B,		4}
 };
 
 static const char *s_MachineName[] =		// must match TMachineModel
@@ -81,8 +86,12 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Raspberry Pi Zero W",
 	"Raspberry Pi 2 Model B",
 	"Raspberry Pi 3 Model B",
+	"Raspberry Pi 3 Model A+",
+	"Raspberry Pi 3 Model B+",
 	"Compute Module",
 	"Compute Module 3",
+	"Compute Module 3+",
+	"Raspberry Pi 4 Model B",
 	"Unknown"
 };
 
@@ -91,7 +100,30 @@ static const char *s_SoCName[] =		// must match TSoCType
 	"BCM2835",
 	"BCM2836",
 	"BCM2837",
+	"BCM2711",
 	"Unknown"
+};
+
+static unsigned s_ActLEDInfo[] =		// must match TMachineModel
+{
+	16 | ACTLED_ACTIVE_LOW,		// A
+	16 | ACTLED_ACTIVE_LOW,		// B R1
+	16 | ACTLED_ACTIVE_LOW,		// B R2 256MB
+	16 | ACTLED_ACTIVE_LOW,		// B R2 512MB
+	47,				// A+
+	47,				// B+
+	47 | ACTLED_ACTIVE_LOW,		// Zero
+	47 | ACTLED_ACTIVE_LOW,		// Zero W
+	47,				// 2B
+	0 | ACTLED_VIRTUAL_PIN,		// 3B
+	29,				// 3A+
+	29,				// 3B+
+	47,				// CM
+	0 | ACTLED_VIRTUAL_PIN,		// CM3
+	0 | ACTLED_VIRTUAL_PIN,		// CM3+
+	42,				// 4B
+
+	ACTLED_UNKNOWN			// Unknown
 };
 
 CMachineInfo *CMachineInfo::s_pThis = 0;
@@ -102,7 +134,12 @@ CMachineInfo::CMachineInfo (void)
 	m_nModelMajor (0),
 	m_nModelRevision (0),
 	m_SoCType (SoCTypeUnknown),
-	m_nRAMSize (0)
+	m_nRAMSize (0),
+#if RASPPI <= 3
+	m_usDMAChannelMap (0x1F35)	// default mapping
+#else
+	m_usDMAChannelMap (0x71F5)	// default mapping
+#endif
 {
 	if (s_pThis != 0)
 	{
@@ -117,7 +154,13 @@ CMachineInfo::CMachineInfo (void)
 	}
 	s_pThis = this;
 
-	CBcmPropertyTags Tags;
+	CBcmPropertyTags Tags (TRUE);
+	TPropertyTagSimple DMAChannels;
+	if (Tags.GetTag (PROPTAG_GET_DMA_CHANNELS, &DMAChannels, sizeof DMAChannels))
+	{
+		m_usDMAChannelMap = (u16) DMAChannels.nValue;
+	}
+
 	TPropertyTagSimple BoardRevision;
 	if (!Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
 	{
@@ -235,6 +278,11 @@ u32 CMachineInfo::GetRevisionRaw (void) const
 	return m_nRevisionRaw;
 }
 
+unsigned CMachineInfo::GetActLEDInfo (void) const
+{
+	return s_ActLEDInfo[m_MachineModel];
+}
+
 unsigned CMachineInfo::GetClockRate (u32 nClockId) const
 {
 	CBcmPropertyTags Tags;
@@ -334,6 +382,40 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 	return nResult;
 }
 
+unsigned CMachineInfo::GetGPIOClockSourceRate (unsigned nSourceId)
+{
+	if (m_nModelMajor <= 3)
+	{
+		switch (nSourceId)
+		{
+		case GPIOClockSourceOscillator:
+			return 19200000;
+
+		case GPIOClockSourcePLLD:
+			return 500000000;
+
+		default:
+			break;
+		}
+	}
+	else
+	{
+		switch (nSourceId)
+		{
+		case GPIOClockSourceOscillator:
+			return 54000000;
+
+		case GPIOClockSourcePLLD:
+			return 750000000;
+
+		default:
+			break;
+		}
+	}
+
+	return GPIO_CLOCK_SOURCE_UNUSED;
+}
+
 unsigned CMachineInfo::GetDevice (TDeviceId DeviceId) const
 {
 	unsigned nResult = 0;
@@ -357,6 +439,58 @@ unsigned CMachineInfo::GetDevice (TDeviceId DeviceId) const
 	}
 
 	return nResult;
+}
+
+unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)
+{
+	assert (s_pThis != 0);
+	if (s_pThis != this)
+	{
+		return s_pThis->AllocateDMAChannel (nChannel);
+	}
+
+	if (!(nChannel & ~DMA_CHANNEL__MASK))
+	{
+		// explicit channel allocation
+		assert (nChannel <=  DMA_CHANNEL_MAX);
+		if (m_usDMAChannelMap & (1 << nChannel))
+		{
+			m_usDMAChannelMap &= ~(1 << nChannel);
+
+			return nChannel;
+		}
+	}
+	else
+	{
+		// arbitrary channel allocation
+		int i = nChannel == DMA_CHANNEL_NORMAL ? 6 : DMA_CHANNEL_MAX;
+		for (; i >= 0; i--)
+		{
+			if (m_usDMAChannelMap & (1 << i))
+			{
+				m_usDMAChannelMap &= ~(1 << i);
+
+				return (unsigned) i;
+			}
+		}
+	}
+
+	return DMA_CHANNEL_NONE;
+}
+
+void CMachineInfo::FreeDMAChannel (unsigned nChannel)
+{
+	assert (s_pThis != 0);
+	if (s_pThis != this)
+	{
+		s_pThis->FreeDMAChannel (nChannel);
+
+		return;
+	}
+
+	assert (nChannel <= DMA_CHANNEL_MAX);
+	assert (!(m_usDMAChannelMap & (1 << nChannel)));
+	m_usDMAChannelMap |= 1 << nChannel;
 }
 
 CMachineInfo *CMachineInfo::Get (void)

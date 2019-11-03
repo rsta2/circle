@@ -222,3 +222,5 @@ boolean CDWHCIFrameSchedulerPeriodic::IsOddFrame (void) const
 {
 	return m_usNextFrame & 1 ? TRUE : FALSE;
 }
+
+IMPLEMENT_CLASS_ALLOCATOR (CDWHCIFrameSchedulerPeriodic)

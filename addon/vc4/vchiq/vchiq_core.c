@@ -55,6 +55,10 @@
 #define SRVTRACE_ENABLED(srv, lev) \
 	(((srv) && (srv)->trace) || (vchiq_core_msg_log_level >= (lev)))
 
+#ifndef min
+	#define min(a, b)	((a) < (b) ? (a) : (b))
+#endif
+
 struct vchiq_open_payload {
 	int fourcc;
 	int client_id;
@@ -382,7 +386,7 @@ make_service_callback(VCHIQ_SERVICE_T *service, VCHIQ_REASON_T reason,
 	VCHIQ_STATUS_T status;
 	vchiq_log_trace(vchiq_core_log_level, "%d: callback:%d (%s, %x, %x)",
 		service->state->id, service->localport, reason_names[reason],
-		(unsigned int)header, (unsigned int)bulk_userdata);
+		(unsigned int)(uintptr_t)header, (unsigned int)(uintptr_t)bulk_userdata);
 	status = service->base.callback(reason, header, service->handle,
 		bulk_userdata);
 	if (status == VCHIQ_ERROR) {
@@ -411,7 +415,7 @@ remote_event_create(REMOTE_EVENT_T *event)
 	event->armed = 0;
 	/* Don't clear the 'fired' flag because it may already have been set
 	** by the other side. */
-	sema_init(event->event, 0);
+	sema_init((struct semaphore *)(uintptr_t)event->event, 0);
 }
 
 static inline void
@@ -427,7 +431,7 @@ remote_event_wait(REMOTE_EVENT_T *event)
 		event->armed = 1;
 		dsb();
 		if (!event->fired) {
-			if (down_interruptible(event->event) != 0) {
+			if (down_interruptible((struct semaphore *)(uintptr_t)event->event) != 0) {
 				event->armed = 0;
 				return 0;
 			}
@@ -444,7 +448,7 @@ static inline void
 remote_event_signal_local(REMOTE_EVENT_T *event)
 {
 	event->armed = 0;
-	up(event->event);
+	up((struct semaphore *)(uintptr_t)event->event);
 }
 
 static inline void
@@ -629,7 +633,7 @@ process_free_queue(VCHIQ_STATE_T *state)
 		rmb();
 
 		vchiq_log_trace(vchiq_core_log_level, "%d: pfq %d=%x %x %x",
-			state->id, slot_index, (unsigned int)data,
+			state->id, slot_index, (unsigned int)(uintptr_t)data,
 			local->slot_queue_recycle, slot_queue_available);
 
 		/* Initialise the bitmask for services which have used this
@@ -669,7 +673,7 @@ process_free_queue(VCHIQ_STATE_T *state)
 						port,
 						service_quota->
 							message_use_count,
-						(unsigned int)header, msgid,
+						(unsigned int)(uintptr_t)header, msgid,
 						header->msgid,
 						header->size);
 					WARN(1, "invalid message use count\n");
@@ -696,7 +700,7 @@ process_free_queue(VCHIQ_STATE_T *state)
 							"slot_use->%d",
 							state->id, port,
 							header->size,
-							(unsigned int)header,
+							(unsigned int)(uintptr_t)header,
 							count - 1);
 					} else {
 						vchiq_log_error(
@@ -709,7 +713,7 @@ process_free_queue(VCHIQ_STATE_T *state)
 								" %x, header->"
 								"size %x)",
 							port, count,
-							(unsigned int)header,
+							(unsigned int)(uintptr_t)header,
 							msgid,
 							header->msgid,
 							header->size);
@@ -725,7 +729,7 @@ process_free_queue(VCHIQ_STATE_T *state)
 				vchiq_log_error(vchiq_core_log_level,
 					"pfq - pos %x: header %x, msgid %x, "
 					"header->msgid %x, header->size %x",
-					pos, (unsigned int)header, msgid,
+					pos, (unsigned int)(uintptr_t)header, msgid,
 					header->msgid, header->size);
 				WARN(1, "invalid slot position\n");
 			}
@@ -875,7 +879,7 @@ queue_message(VCHIQ_STATE_T *state, VCHIQ_SERVICE_T *service,
 			"%d: qm %s@%x,%x (%d->%d)",
 			state->id,
 			msg_type_str(VCHIQ_MSG_TYPE(msgid)),
-			(unsigned int)header, size,
+			(unsigned int)(uintptr_t)header, size,
 			VCHIQ_MSG_SRCPORT(msgid),
 			VCHIQ_MSG_DSTPORT(msgid));
 
@@ -940,7 +944,7 @@ queue_message(VCHIQ_STATE_T *state, VCHIQ_SERVICE_T *service,
 		vchiq_log_info(vchiq_core_log_level,
 			"%d: qm %s@%x,%x (%d->%d)", state->id,
 			msg_type_str(VCHIQ_MSG_TYPE(msgid)),
-			(unsigned int)header, size,
+			(unsigned int)(uintptr_t)header, size,
 			VCHIQ_MSG_SRCPORT(msgid),
 			VCHIQ_MSG_DSTPORT(msgid));
 		if (size != 0) {
@@ -1025,7 +1029,7 @@ queue_message_sync(VCHIQ_STATE_T *state, VCHIQ_SERVICE_T *service,
 		vchiq_log_info(vchiq_sync_log_level,
 			"%d: qms %s@%x,%x (%d->%d)", state->id,
 			msg_type_str(VCHIQ_MSG_TYPE(msgid)),
-			(unsigned int)header, size,
+			(unsigned int)(uintptr_t)header, size,
 			VCHIQ_MSG_SRCPORT(msgid),
 			VCHIQ_MSG_DSTPORT(msgid));
 
@@ -1054,7 +1058,7 @@ queue_message_sync(VCHIQ_STATE_T *state, VCHIQ_SERVICE_T *service,
 		vchiq_log_info(vchiq_sync_log_level,
 			"%d: qms %s@%x,%x (%d->%d)", state->id,
 			msg_type_str(VCHIQ_MSG_TYPE(msgid)),
-			(unsigned int)header, size,
+			(unsigned int)(uintptr_t)header, size,
 			VCHIQ_MSG_SRCPORT(msgid),
 			VCHIQ_MSG_DSTPORT(msgid));
 		if (size != 0) {
@@ -1361,8 +1365,8 @@ resolve_bulks(VCHIQ_SERVICE_T *service, VCHIQ_BULK_QUEUE_T *queue)
 						service->base.fourcc),
 					service->remoteport,
 					bulk->size,
-					(unsigned int)bulk->data,
-					(unsigned int)bulk->remote_data);
+					(unsigned int)(uintptr_t)bulk->data,
+					(unsigned int)(uintptr_t)bulk->remote_data);
 			else
 				vchiq_log_info(SRVTRACE_LEVEL(service),
 					"%s %c%c%c%c d:%d ABORTED - tx len:%d,"
@@ -1373,8 +1377,8 @@ resolve_bulks(VCHIQ_SERVICE_T *service, VCHIQ_BULK_QUEUE_T *queue)
 					service->remoteport,
 					bulk->size,
 					bulk->remote_size,
-					(unsigned int)bulk->data,
-					(unsigned int)bulk->remote_data);
+					(unsigned int)(uintptr_t)bulk->data,
+					(unsigned int)(uintptr_t)bulk->remote_data);
 		}
 
 		vchiq_complete_bulk(bulk);
@@ -1511,7 +1515,7 @@ parse_open(VCHIQ_STATE_T *state, VCHIQ_HEADER_T *header)
 		fourcc = payload->fourcc;
 		vchiq_log_info(vchiq_core_log_level,
 			"%d: prs OPEN@%x (%d->'%c%c%c%c')",
-			state->id, (unsigned int)header,
+			state->id, (unsigned int)(uintptr_t)header,
 			localport,
 			VCHIQ_FOURCC_AS_4CHARS(fourcc));
 
@@ -1649,7 +1653,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 
 		header = (VCHIQ_HEADER_T *)(state->rx_data +
 			(state->rx_pos & VCHIQ_SLOT_MASK));
-		DEBUG_VALUE(PARSE_HEADER, (int)header);
+		DEBUG_VALUE(PARSE_HEADER, (int)(intptr_t)header);
 		msgid = header->msgid;
 		DEBUG_VALUE(PARSE_MSGID, msgid);
 		size = header->size;
@@ -1686,7 +1690,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 						"%d: prs %s@%x (%d->%d) - "
 						"found connected service %d",
 						state->id, msg_type_str(type),
-						(unsigned int)header,
+						(unsigned int)(uintptr_t)header,
 						remoteport, localport,
 						service->localport);
 			}
@@ -1696,7 +1700,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 					"%d: prs %s@%x (%d->%d) - "
 					"invalid/closed service %d",
 					state->id, msg_type_str(type),
-					(unsigned int)header,
+					(unsigned int)(uintptr_t)header,
 					remoteport, localport, localport);
 				goto skip_message;
 			}
@@ -1722,12 +1726,12 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 					min(16, size));
 		}
 
-		if (((unsigned int)header & VCHIQ_SLOT_MASK) + calc_stride(size)
+		if (((uintptr_t)header & VCHIQ_SLOT_MASK) + calc_stride(size)
 			> VCHIQ_SLOT_SIZE) {
 			vchiq_log_error(vchiq_core_log_level,
 				"header %x (msgid %x) - size %x too big for "
 				"slot",
-				(unsigned int)header, (unsigned int)msgid,
+				(unsigned int)(uintptr_t)header, (unsigned int)msgid,
 				(unsigned int)size);
 			WARN(1, "oversized for slot\n");
 		}
@@ -1747,7 +1751,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 			}
 			vchiq_log_info(vchiq_core_log_level,
 				"%d: prs OPENACK@%x,%x (%d->%d) v:%d",
-				state->id, (unsigned int)header, size,
+				state->id, (unsigned int)(uintptr_t)header, size,
 				remoteport, localport, service->peer_version);
 			if (service->srvstate ==
 				VCHIQ_SRVSTATE_OPENING) {
@@ -1765,7 +1769,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 
 			vchiq_log_info(vchiq_core_log_level,
 				"%d: prs CLOSE@%x (%d->%d)",
-				state->id, (unsigned int)header,
+				state->id, (unsigned int)(uintptr_t)header,
 				remoteport, localport);
 
 			mark_service_closing_internal(service, 1);
@@ -1783,7 +1787,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 		case VCHIQ_MSG_DATA:
 			vchiq_log_info(vchiq_core_log_level,
 				"%d: prs DATA@%x,%x (%d->%d)",
-				state->id, (unsigned int)header, size,
+				state->id, (unsigned int)(uintptr_t)header, size,
 				remoteport, localport);
 
 			if ((service->remoteport == remoteport)
@@ -1808,7 +1812,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 		case VCHIQ_MSG_CONNECT:
 			vchiq_log_info(vchiq_core_log_level,
 				"%d: prs CONNECT@%x",
-				state->id, (unsigned int)header);
+				state->id, (unsigned int)(uintptr_t)header);
 			state->version_common = ((VCHIQ_SLOT_ZERO_T *)
 						 state->slot_data)->version;
 			up(&state->connect);
@@ -1839,17 +1843,17 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 					BULK_INDEX(queue->remote_insert)];
 				pdata = (int *)header->data;
 				bulk->remote_data =
-					(void *)pdata[0];
+					(void *)(uintptr_t)pdata[0];
 				bulk->remote_size = ((int *)header->data)[1];
 				wmb();
 
 				vchiq_log_info(vchiq_core_log_level,
 					"%d: prs %s@%x (%d->%d) %x@%x",
 					state->id, msg_type_str(type),
-					(unsigned int)header,
+					(unsigned int)(uintptr_t)header,
 					remoteport, localport,
 					bulk->remote_size,
-					(unsigned int)bulk->remote_data);
+					(unsigned int)(uintptr_t)bulk->remote_data);
 
 				queue->remote_insert++;
 
@@ -1906,7 +1910,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 						"%d: prs %s@%x (%d->%d) "
 						"unexpected (ri=%d,li=%d)",
 						state->id, msg_type_str(type),
-						(unsigned int)header,
+						(unsigned int)(uintptr_t)header,
 						remoteport, localport,
 						queue->remote_insert,
 						queue->local_insert);
@@ -1926,9 +1930,9 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 				vchiq_log_info(vchiq_core_log_level,
 					"%d: prs %s@%x (%d->%d) %x@%x",
 					state->id, msg_type_str(type),
-					(unsigned int)header,
+					(unsigned int)(uintptr_t)header,
 					remoteport, localport,
-					bulk->actual, (unsigned int)bulk->data);
+					bulk->actual, (unsigned int)(uintptr_t)bulk->data);
 
 				vchiq_log_trace(vchiq_core_log_level,
 					"%d: prs:%d %cx li=%x ri=%x p=%x",
@@ -1951,13 +1955,13 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 		case VCHIQ_MSG_PADDING:
 			vchiq_log_trace(vchiq_core_log_level,
 				"%d: prs PADDING@%x,%x",
-				state->id, (unsigned int)header, size);
+				state->id, (unsigned int)(uintptr_t)header, size);
 			break;
 		case VCHIQ_MSG_PAUSE:
 			/* If initiated, signal the application thread */
 			vchiq_log_trace(vchiq_core_log_level,
 				"%d: prs PAUSE@%x,%x",
-				state->id, (unsigned int)header, size);
+				state->id, (unsigned int)(uintptr_t)header, size);
 			if (state->conn_state == VCHIQ_CONNSTATE_PAUSED) {
 				vchiq_log_error(vchiq_core_log_level,
 					"%d: PAUSE received in state PAUSED",
@@ -1981,7 +1985,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 		case VCHIQ_MSG_RESUME:
 			vchiq_log_trace(vchiq_core_log_level,
 				"%d: prs RESUME@%x,%x",
-				state->id, (unsigned int)header, size);
+				state->id, (unsigned int)(uintptr_t)header, size);
 			/* Release the slot mutex */
 			mutex_unlock(&state->slot_mutex);
 			if (state->is_master)
@@ -2003,7 +2007,7 @@ parse_rx_slots(VCHIQ_STATE_T *state)
 		default:
 			vchiq_log_error(vchiq_core_log_level,
 				"%d: prs invalid msgid %x@%x,%x",
-				state->id, msgid, (unsigned int)header, size);
+				state->id, msgid, (unsigned int)(uintptr_t)header, size);
 			WARN(1, "invalid message\n");
 			break;
 		}
@@ -2171,7 +2175,7 @@ sync_func(void *v)
 				"%d: sf %s@%x (%d->%d) - "
 				"invalid/closed service %d",
 				state->id, msg_type_str(type),
-				(unsigned int)header,
+				(unsigned int)(uintptr_t)header,
 				remoteport, localport, localport);
 			release_message_sync(state, header);
 			continue;
@@ -2203,7 +2207,7 @@ sync_func(void *v)
 			}
 			vchiq_log_info(vchiq_sync_log_level,
 				"%d: sf OPENACK@%x,%x (%d->%d) v:%d",
-				state->id, (unsigned int)header, size,
+				state->id, (unsigned int)(uintptr_t)header, size,
 				remoteport, localport, service->peer_version);
 			if (service->srvstate == VCHIQ_SRVSTATE_OPENING) {
 				service->remoteport = remoteport;
@@ -2218,7 +2222,7 @@ sync_func(void *v)
 		case VCHIQ_MSG_DATA:
 			vchiq_log_trace(vchiq_sync_log_level,
 				"%d: sf DATA@%x,%x (%d->%d)",
-				state->id, (unsigned int)header, size,
+				state->id, (unsigned int)(uintptr_t)header, size,
 				remoteport, localport);
 
 			if ((service->remoteport == remoteport) &&
@@ -2238,7 +2242,7 @@ sync_func(void *v)
 		default:
 			vchiq_log_error(vchiq_sync_log_level,
 				"%d: sf unexpected msgid %x@%x,%x",
-				state->id, msgid, (unsigned int)header, size);
+				state->id, msgid, (unsigned int)(uintptr_t)header, size);
 			release_message_sync(state, header);
 			break;
 		}
@@ -2271,7 +2275,7 @@ get_conn_state_name(VCHIQ_CONNSTATE_T conn_state)
 VCHIQ_SLOT_ZERO_T *
 vchiq_init_slots(void *mem_base, int mem_size)
 {
-	int mem_align = (VCHIQ_SLOT_SIZE - (int)mem_base) & VCHIQ_SLOT_MASK;
+	int mem_align = (VCHIQ_SLOT_SIZE - (int)(intptr_t)mem_base) & VCHIQ_SLOT_MASK;
 	VCHIQ_SLOT_ZERO_T *slot_zero =
 		(VCHIQ_SLOT_ZERO_T *)((char *)mem_base + mem_align);
 	int num_slots = (mem_size - mem_align)/VCHIQ_SLOT_SIZE;
@@ -2328,7 +2332,7 @@ vchiq_init_state(VCHIQ_STATE_T *state, VCHIQ_SLOT_ZERO_T *slot_zero,
 		vchiq_loud_error_header();
 		vchiq_loud_error("Invalid VCHIQ magic value found.");
 		vchiq_loud_error("slot_zero=%x: magic=%x (expected %x)",
-			(unsigned int)slot_zero, slot_zero->magic, VCHIQ_MAGIC);
+			(unsigned int)(uintptr_t)slot_zero, slot_zero->magic, VCHIQ_MAGIC);
 		vchiq_loud_error_footer();
 		return VCHIQ_ERROR;
 	}
@@ -2338,7 +2342,7 @@ vchiq_init_state(VCHIQ_STATE_T *state, VCHIQ_SLOT_ZERO_T *slot_zero,
 		vchiq_loud_error("Incompatible VCHIQ versions found.");
 		vchiq_loud_error("slot_zero=%x: VideoCore version=%d "
 			"(minimum %d)",
-			(unsigned int)slot_zero, slot_zero->version,
+			(unsigned int)(uintptr_t)slot_zero, slot_zero->version,
 			VCHIQ_VERSION_MIN);
 		vchiq_loud_error("Restart with a newer VideoCore image.");
 		vchiq_loud_error_footer();
@@ -2350,7 +2354,7 @@ vchiq_init_state(VCHIQ_STATE_T *state, VCHIQ_SLOT_ZERO_T *slot_zero,
 		vchiq_loud_error("Incompatible VCHIQ versions found.");
 		vchiq_loud_error("slot_zero=%x: version=%d (VideoCore "
 			"minimum %d)",
-			(unsigned int)slot_zero, VCHIQ_VERSION,
+			(unsigned int)(uintptr_t)slot_zero, VCHIQ_VERSION,
 			slot_zero->version_min);
 		vchiq_loud_error("Restart with a newer kernel.");
 		vchiq_loud_error_footer();
@@ -2365,23 +2369,23 @@ vchiq_init_state(VCHIQ_STATE_T *state, VCHIQ_SLOT_ZERO_T *slot_zero,
 		if (slot_zero->slot_zero_size != sizeof(VCHIQ_SLOT_ZERO_T))
 			vchiq_loud_error("slot_zero=%x: slot_zero_size=%x "
 				"(expected %x)",
-				(unsigned int)slot_zero,
+				(unsigned int)(uintptr_t)slot_zero,
 				slot_zero->slot_zero_size,
 				sizeof(VCHIQ_SLOT_ZERO_T));
 		if (slot_zero->slot_size != VCHIQ_SLOT_SIZE)
 			vchiq_loud_error("slot_zero=%x: slot_size=%d "
 				"(expected %d",
-				(unsigned int)slot_zero, slot_zero->slot_size,
+				(unsigned int)(uintptr_t)slot_zero, slot_zero->slot_size,
 				VCHIQ_SLOT_SIZE);
 		if (slot_zero->max_slots != VCHIQ_MAX_SLOTS)
 			vchiq_loud_error("slot_zero=%x: max_slots=%d "
 				"(expected %d)",
-				(unsigned int)slot_zero, slot_zero->max_slots,
+				(unsigned int)(uintptr_t)slot_zero, slot_zero->max_slots,
 				VCHIQ_MAX_SLOTS);
 		if (slot_zero->max_slots_per_side != VCHIQ_MAX_SLOTS_PER_SIDE)
 			vchiq_loud_error("slot_zero=%x: max_slots_per_side=%d "
 				"(expected %d)",
-				(unsigned int)slot_zero,
+				(unsigned int)(uintptr_t)slot_zero,
 				slot_zero->max_slots_per_side,
 				VCHIQ_MAX_SLOTS_PER_SIDE);
 		vchiq_loud_error_footer();
@@ -2466,18 +2470,34 @@ vchiq_init_state(VCHIQ_STATE_T *state, VCHIQ_SLOT_ZERO_T *slot_zero,
 	state->data_use_count = 0;
 	state->data_quota = state->slot_queue_available - 1;
 
+#if AARCH == 32
 	local->trigger.event = &state->trigger_event;
+#else
+	local->trigger.event = (unsigned)(uintptr_t)&state->trigger_event;
+#endif
 	remote_event_create(&local->trigger);
 	local->tx_pos = 0;
 
+#if AARCH == 32
 	local->recycle.event = &state->recycle_event;
+#else
+	local->recycle.event = (unsigned)(uintptr_t)&state->recycle_event;
+#endif
 	remote_event_create(&local->recycle);
 	local->slot_queue_recycle = state->slot_queue_available;
 
+#if AARCH == 32
 	local->sync_trigger.event = &state->sync_trigger_event;
+#else
+	local->sync_trigger.event = (unsigned)(uintptr_t)&state->sync_trigger_event;
+#endif
 	remote_event_create(&local->sync_trigger);
 
+#if AARCH == 32
 	local->sync_release.event = &state->sync_release_event;
+#else
+	local->sync_release.event = (unsigned)(uintptr_t)&state->sync_release_event;
+#endif
 	remote_event_create(&local->sync_release);
 
 	/* At start-of-day, the slot is empty and available */
@@ -2760,7 +2780,7 @@ release_service_messages(VCHIQ_SERVICE_T *service)
 					(msgid & VCHIQ_MSGID_CLAIMED)) {
 					vchiq_log_info(vchiq_core_log_level,
 						"  fsi - hdr %x",
-						(unsigned int)header);
+						(unsigned int)(uintptr_t)header);
 					release_slot(state, slot_info, header,
 						NULL);
 				}
@@ -2770,7 +2790,7 @@ release_service_messages(VCHIQ_SERVICE_T *service)
 						"fsi - pos %x: header %x, "
 						"msgid %x, header->msgid %x, "
 						"header->size %x",
-						pos, (unsigned int)header,
+						pos, (unsigned int)(uintptr_t)header,
 						msgid, header->msgid,
 						header->size);
 					WARN(1, "invalid slot position\n");
@@ -3347,7 +3367,7 @@ vchiq_bulk_transfer(VCHIQ_SERVICE_HANDLE_T handle,
 		"%d: bt (%d->%d) %cx %x@%x %x",
 		state->id,
 		service->localport, service->remoteport, dir_char,
-		size, (unsigned int)bulk->data, (unsigned int)userdata);
+		size, (unsigned int)(uintptr_t)bulk->data, (unsigned int)(uintptr_t)userdata);
 
 	/* The slot mutex must be held when the service is being closed, so
 	   claim it here to ensure that isn't happening */
@@ -3366,7 +3386,7 @@ vchiq_bulk_transfer(VCHIQ_SERVICE_HANDLE_T handle,
 				(dir == VCHIQ_BULK_TRANSMIT) ?
 				VCHIQ_POLL_TXNOTIFY : VCHIQ_POLL_RXNOTIFY);
 	} else {
-		int payload[2] = { (int)bulk->data, bulk->size };
+		int payload[2] = { (int)(intptr_t)bulk->data, bulk->size };
 		VCHIQ_ELEMENT_T element = { payload, sizeof(payload) };
 
 		status = queue_message(state, NULL,

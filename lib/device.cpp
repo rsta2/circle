@@ -2,7 +2,7 @@
 // device.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,17 +27,22 @@ CDevice::~CDevice (void)
 {
 }
 
-int CDevice::Read (void *pBuffer, unsigned nCount)
+int CDevice::Read (void *pBuffer, size_t nCount)
 {
 	return -1;
 }
 
-int CDevice::Write (const void *pBuffer, unsigned nCount)
+int CDevice::Write (const void *pBuffer, size_t nCount)
 {
 	return -1;
 }
 
-unsigned long long CDevice::Seek (unsigned long long ullOffset)
+u64 CDevice::Seek (u64 ullOffset)
 {
-	return (unsigned long long) -1;
+	return (u64) -1;
+}
+
+boolean CDevice::RemoveDevice (void)
+{
+	return FALSE;
 }

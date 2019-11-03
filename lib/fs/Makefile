@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,8 +22,9 @@ CIRCLEHOME = ../..
 
 OBJS	= partition.o partitionmanager.o
 
-libfs$(RASPPI).a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
+libfs.a: $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

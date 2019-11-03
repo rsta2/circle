@@ -2,7 +2,7 @@
 // mousebehaviour.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -89,7 +89,7 @@ boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
 	TagSetCursorInfo.nWidth = CURSOR_WIDTH;
 	TagSetCursorInfo.nHeight = CURSOR_HEIGHT;
 	TagSetCursorInfo.nUnused = 0;
-	TagSetCursorInfo.nPixelPointer = GPU_MEM_BASE + (u32) CursorSymbol;
+	TagSetCursorInfo.nPixelPointer = BUS_ADDRESS ((uintptr) CursorSymbol);
 	TagSetCursorInfo.nHotspotX = CURSOR_HOTSPOT_X;
 	TagSetCursorInfo.nHotspotY = CURSOR_HOTSPOT_Y;
 	if (!Tags.GetTag (PROPTAG_SET_CURSOR_INFO, &TagSetCursorInfo, sizeof TagSetCursorInfo, 6*4))

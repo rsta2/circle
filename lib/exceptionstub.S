@@ -2,7 +2,7 @@
  * exceptionstub.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,11 +20,16 @@
 #include <circle/sysconfig.h>
 #include <circle/exception.h>
 #include <circle/bcm2835.h>
+#include <circle/bcm2711.h>
+
+#define GICC_AIAR	(ARM_GICC_BASE + 0x020)
+#define GICC_AEOIR	(ARM_GICC_BASE + 0x024)
 
 	.macro	stub name, exception, pc_offset
 
 	.globl	\name
 \name:
+	sub	sp, sp, #4			/* correct stack (number of pushs must be even) */
 	sub	lr, lr, #\pc_offset		/* lr: correct PC of aborted program */
 	stmfd	sp!, {lr}			/* store PC onto stack */
 	mrs	lr, spsr			/* lr can be overwritten now */
@@ -35,9 +40,12 @@
 	cps	#0x12				/* set IRQ mode to access sp_irq and lr_irq */
 	mov	r2, sp
 	mov	r3, lr
+	cps	#0x11				/* set FIQ mode to access sp_fiq and lr_fiq */
+	mov	r4, sp
+	mov	r5, lr
 	cps	#0x1F				/* our abort handler runs in system mode */
 	mov	sp, r1				/* set sp_sys to stack top of abort stack */
-	stmfd	sp!, {r2, r3}			/* store lr_irq and sp_irq onto stack */
+	stmfd	sp!, {r2-r5}			/* store lr_fiq, sp_fiq, lr_irq, sp_irq onto stack */
 	mov	r1, sp				/* r1: pointer to register frame */
 	mov	r0, #\exception			/* r0: exception identifier */
 	b	ExceptionHandler		/* jump to ExceptionHandler (never returns) */
@@ -75,9 +83,27 @@ UndefinedInstructionStub:
 	.globl	IRQStub
 IRQStub:
 	sub	lr, lr, #4			/* lr: return address */
-	stmfd	sp!, {r0-r12, lr}		/* save r0-r12 and return address */
+	stmfd	sp!, {r0-r3, r12, lr}		/* save r0-r3, r12 and return address */
+#ifdef SAVE_VFP_REGS_ON_IRQ
+	sub	sp, sp, #4			/* correct stack (number of pushs must be even) */
+	vmrs	r0, fpscr			/* save VFP registers */
+	stmfd	sp!, {r0}
+	vstmdb	sp!, {d0-d15}
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vstmdb	sp!, {d16-d31}
+#endif
+#endif
 	bl	InterruptHandler
-	ldmfd	sp!, {r0-r12, pc}^		/* restore registers and return */
+#ifdef SAVE_VFP_REGS_ON_IRQ
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vldmia	sp!, {d16-d31}
+#endif
+	vldmia	sp!, {d0-d15}			/* restore VFP registers */
+	ldmfd	sp!, {r0}
+	vmsr	fpscr, r0
+	add	sp, sp, #4			/* correct stack */
+#endif
+	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
 
 /*
  * FIQ stub
@@ -85,10 +111,26 @@ IRQStub:
 	.globl	FIQStub
 FIQStub:
 	sub	lr, lr, #4			/* lr: return address */
-	stmfd	sp!, {r0-r3, lr}		/* save r0-r3 and return address */
+	stmfd	sp!, {r0-r3, r12, lr}		/* save r0-r3, r12 and return address */
+#ifdef SAVE_VFP_REGS_ON_FIQ
+	sub	sp, sp, #4			/* correct stack (number of pushs must be even) */
+	vmrs	r0, fpscr			/* save VFP registers */
+	stmfd	sp!, {r0}
+	vstmdb	sp!, {d0-d15}
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vstmdb	sp!, {d16-d31}
+#endif
+#endif
 #if RASPPI == 1
 	mov	r3, #0
 	mcr	p15, 0, r3, c7, c10, 5		/* PeripheralExit() */
+#endif
+#if RASPPI == 4
+	ldr	r2, =GICC_AIAR			/* read interrupt ID group 0 */
+	ldr	r3, [r2]
+	tst	r3, #0x300			/* check for spurious interrupt (> 256) */
+	bne	2f
+	push	{r3}
 #endif
 	ldr	r2, =FIQData
 	ldr	r1, [r2]			/* get FIQData.pHandler */
@@ -96,11 +138,26 @@ FIQStub:
 	beq	1f
 	ldr	r0, [r2, #4]			/* get FIQData.pParam */
 	blx	r1				/* call handler (saves r4-r7) */
+#if RASPPI == 4
+	pop	{r3}
+	ldr	r2, =GICC_AEOIR			/* trigger end of interrupt */
+	str	r3, [r2]
+2:
+#endif
 #if RASPPI == 1
 	mov	r3, #0
 	mcr	p15, 0, r3, c7, c10, 4		/* PeripheralEntry() */
 #endif
-	ldmfd	sp!, {r0-r3, pc}^		/* restore registers and return */
+#ifdef SAVE_VFP_REGS_ON_FIQ
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vldmia	sp!, {d16-d31}
+#endif
+	vldmia	sp!, {d0-d15}			/* restore VFP registers */
+	ldmfd	sp!, {r0}
+	vmsr	fpscr, r0
+	add	sp, sp, #4			/* correct stack */
+#endif
+	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
 
 1:
 #if RASPPI == 1
@@ -115,7 +172,31 @@ FIQStub:
 	mcr	p15, 0, r3, c7, c10, 5		/* PeripheralExit() */
 	mcr	p15, 0, r3, c7, c10, 4		/* PeripheralEntry() */
 #endif
-	ldmfd	sp!, {r0-r3, pc}^		/* restore registers and return */
+#ifdef SAVE_VFP_REGS_ON_FIQ
+#if RASPPI >= 2 && defined (__FAST_MATH__)
+	vldmia	sp!, {d16-d31}
+#endif
+	vldmia	sp!, {d0-d15}			/* restore VFP registers */
+	ldmfd	sp!, {r0}
+	vmsr	fpscr, r0
+	add	sp, sp, #4			/* correct stack */
+#endif
+	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
+
+#if RASPPI == 4
+
+/*
+ * SMC stub
+ */
+	.globl	SMCStub
+SMCStub:
+	ldr	sp, =SMCStack
+	push	{lr}
+	bl	SecureMonitorHandler
+	pop	{lr}
+	movs	pc, lr
+
+#endif
 
 	.data
 
@@ -123,5 +204,17 @@ FIQStub:
 FIQData:					/* matches TFIQData: */
 	.word	0				/* pHandler */
 	.word	0				/* pParam */
+	.word	0				/* nFIQNumber */
+
+#if RASPPI == 4
+
+	.bss
+
+	.align	2
+
+	.space	128
+SMCStack:
+
+#endif
 
 /* End */

@@ -2,7 +2,7 @@
 // dmachannel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 #include <circle/synchronize.h>
 #include <assert.h>
 
-#define DMA_CHANNELS			7	// only channels 0-6 are supported so far
+#define DMA_CHANNELS			(DMA_CHANNEL_MAX + 1)
 
 #define ARM_DMACHAN_CS(chan)		(ARM_DMA_BASE + ((chan) * 0x100) + 0x00)
 	#define CS_RESET			(1 << 31)
@@ -60,6 +60,7 @@
 	#define TXFR_LEN_XLENGTH_SHIFT		0
 	#define TXFR_LEN_YLENGTH_SHIFT		16
 	#define TXFR_LEN_MAX			0x3FFFFFFF
+	#define TXFR_LEN_MAX_LITE		0xFFFF
 #define ARM_DMACHAN_STRIDE(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x18)
 	#define STRIDE_SRC_SHIFT		0
 	#define STRIDE_DEST_SHIFT		16
@@ -70,7 +71,7 @@
 #define ARM_DMA_ENABLE			(ARM_DMA_BASE + 0xFF0)
 
 CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
-:	m_nChannel (nChannel),
+:	m_nChannel (CMachineInfo::Get ()->AllocateDMAChannel (nChannel)),
 	m_pControlBlockBuffer (0),
 	m_pControlBlock (0),
 	m_pInterruptSystem (pInterruptSystem),
@@ -81,18 +82,18 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 {
 	PeripheralEntry ();
 
+	assert (m_nChannel != DMA_CHANNEL_NONE);
 	assert (m_nChannel < DMA_CHANNELS);
-	assert (!(read32 (ARM_DMACHAN_DEBUG (m_nChannel)) & DEBUG_LITE));
 
 	m_pControlBlockBuffer = new u8[sizeof (TDMAControlBlock) + 31];
 	assert (m_pControlBlockBuffer != 0);
 
-	m_pControlBlock = (TDMAControlBlock *) (((u32) m_pControlBlockBuffer + 31) & ~31);
+	m_pControlBlock = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer + 31) & ~31);
 	m_pControlBlock->nReserved[0] = 0;
 	m_pControlBlock->nReserved[1] = 0;
 
 	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nChannel));
-	CTimer::Get ()->usDelay (1000);
+	CTimer::SimpleusDelay (1000);
 
 	write32 (ARM_DMACHAN_CS (m_nChannel), CS_RESET);
 	while (read32 (ARM_DMACHAN_CS (m_nChannel)) & CS_RESET)
@@ -106,6 +107,20 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 
 CDMAChannel::~CDMAChannel (void)
 {
+	PeripheralEntry ();
+
+	assert (m_nChannel < DMA_CHANNELS);
+
+	write32 (ARM_DMACHAN_CS (m_nChannel), CS_RESET);
+	while (read32 (ARM_DMACHAN_CS (m_nChannel)) & CS_RESET)
+	{
+		// do nothing
+	}
+
+	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) & ~(1 << m_nChannel));
+
+	PeripheralExit ();
+
 	m_pCompletionRoutine = 0;
 
 	if (m_pInterruptSystem != 0)
@@ -119,37 +134,50 @@ CDMAChannel::~CDMAChannel (void)
 		m_pInterruptSystem = 0;
 	}
 
+	CMachineInfo::Get ()->FreeDMAChannel (m_nChannel);
+
 	m_pControlBlock = 0;
 
 	delete [] m_pControlBlockBuffer;
 	m_pControlBlockBuffer = 0;
 }
 
-void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t nLength)
+void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t nLength,
+				unsigned nBurstLength, boolean bCached)
 {
 	assert (pDestination != 0);
 	assert (pSource != 0);
 	assert (nLength > 0);
+	assert (nBurstLength <= 15);
 
 	assert (m_pControlBlock != 0);
 	assert (nLength <= TXFR_LEN_MAX);
+	assert (   !(read32 (ARM_DMACHAN_DEBUG (m_nChannel)) & DEBUG_LITE)
+		|| nLength <= TXFR_LEN_MAX_LITE);
 
-	m_pControlBlock->nTransferInformation     =   (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
+	m_pControlBlock->nTransferInformation     =   (nBurstLength << TI_BURST_LENGTH_SHIFT)
 						    | TI_SRC_WIDTH
 						    | TI_SRC_INC
 						    | TI_DEST_WIDTH
 						    | TI_DEST_INC;
-	m_pControlBlock->nSourceAddress           = (u32) pSource + GPU_MEM_BASE;
-	m_pControlBlock->nDestinationAddress      = (u32) pDestination + GPU_MEM_BASE;
+	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pSource);
+	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDestination);
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
 
-	m_nDestinationAddress = (u32) pDestination;
-	m_nBufferLength = nLength;
+	if (bCached)
+	{
+		m_nDestinationAddress = (uintptr) pDestination;
+		m_nBufferLength = nLength;
 
-	CleanAndInvalidateDataCacheRange ((u32) pSource, nLength);
-	CleanAndInvalidateDataCacheRange ((u32) pDestination, nLength);
+		CleanAndInvalidateDataCacheRange ((uintptr) pSource, nLength);
+		CleanAndInvalidateDataCacheRange ((uintptr) pDestination, nLength);
+	}
+	else
+	{
+		m_nDestinationAddress = 0;
+	}
 }
 
 void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ)
@@ -157,6 +185,8 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 	assert (pDestination != 0);
 	assert (nLength > 0);
 	assert (nLength <= TXFR_LEN_MAX);
+	assert (   !(read32 (ARM_DMACHAN_DEBUG (m_nChannel)) & DEBUG_LITE)
+		|| nLength <= TXFR_LEN_MAX_LITE);
 
 	nIOAddress &= 0xFFFFFF;
 	assert (nIOAddress != 0);
@@ -170,15 +200,15 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 						    | TI_DEST_INC
 						    | TI_WAIT_RESP;
 	m_pControlBlock->nSourceAddress           = nIOAddress;
-	m_pControlBlock->nDestinationAddress      = (u32) pDestination + GPU_MEM_BASE;
+	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDestination);
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
 
-	m_nDestinationAddress = (u32) pDestination;
+	m_nDestinationAddress = (uintptr) pDestination;
 	m_nBufferLength = nLength;
 
-	CleanAndInvalidateDataCacheRange ((u32) pDestination, nLength);
+	CleanAndInvalidateDataCacheRange ((uintptr) pDestination, nLength);
 }
 
 void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
@@ -186,6 +216,8 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 	assert (pSource != 0);
 	assert (nLength > 0);
 	assert (nLength <= TXFR_LEN_MAX);
+	assert (   !(read32 (ARM_DMACHAN_DEBUG (m_nChannel)) & DEBUG_LITE)
+		|| nLength <= TXFR_LEN_MAX_LITE);
 
 	nIOAddress &= 0xFFFFFF;
 	assert (nIOAddress != 0);
@@ -198,7 +230,7 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 						    | TI_SRC_INC
 						    | TI_DEST_DREQ
 						    | TI_WAIT_RESP;
-	m_pControlBlock->nSourceAddress           = (u32) pSource + GPU_MEM_BASE;
+	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pSource);
 	m_pControlBlock->nDestinationAddress      = nIOAddress;
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
@@ -206,7 +238,42 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 
 	m_nDestinationAddress = 0;
 
-	CleanAndInvalidateDataCacheRange ((u32) pSource, nLength);
+	CleanAndInvalidateDataCacheRange ((uintptr) pSource, nLength);
+}
+
+void CDMAChannel::SetupMemCopy2D (void *pDestination, const void *pSource,
+				  size_t nBlockLength, unsigned nBlockCount, size_t nBlockStride,
+				  unsigned nBurstLength)
+{
+	assert (pDestination != 0);
+	assert (pSource != 0);
+	assert (nBlockLength > 0);
+	assert (nBlockLength <= 0xFFFF);
+	assert (nBlockCount > 0);
+	assert (nBlockCount <= 0x3FFF);
+	assert (nBlockStride <= 0xFFFF);
+	assert (nBurstLength <= 15);
+
+	assert (!(read32 (ARM_DMACHAN_DEBUG (m_nChannel)) & DEBUG_LITE));
+
+	assert (m_pControlBlock != 0);
+
+	m_pControlBlock->nTransferInformation     =   (nBurstLength << TI_BURST_LENGTH_SHIFT)
+						    | TI_SRC_WIDTH
+						    | TI_SRC_INC
+						    | TI_DEST_WIDTH
+						    | TI_DEST_INC
+						    | TI_TDMODE;
+	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pSource);
+	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDestination);
+	m_pControlBlock->nTransferLength          =   ((nBlockCount-1) << TXFR_LEN_YLENGTH_SHIFT)
+						    | (nBlockLength << TXFR_LEN_XLENGTH_SHIFT);
+	m_pControlBlock->n2DModeStride            = nBlockStride << STRIDE_DEST_SHIFT;
+	m_pControlBlock->nNextControlBlockAddress = 0;
+
+	m_nDestinationAddress = 0;
+
+	CleanAndInvalidateDataCacheRange ((uintptr) pSource, nBlockLength*nBlockCount);
 }
 
 void CDMAChannel::SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam)
@@ -244,9 +311,9 @@ void CDMAChannel::Start (void)
 	assert (!(read32 (ARM_DMACHAN_CS (m_nChannel)) & CS_INT));
 	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nChannel)));
 
-	write32 (ARM_DMACHAN_CONBLK_AD (m_nChannel), (u32) m_pControlBlock + GPU_MEM_BASE);
+	write32 (ARM_DMACHAN_CONBLK_AD (m_nChannel), BUS_ADDRESS ((uintptr) m_pControlBlock));
 
-	CleanAndInvalidateDataCacheRange ((u32) m_pControlBlock, sizeof *m_pControlBlock);
+	CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock, sizeof *m_pControlBlock);
 
 	write32 (ARM_DMACHAN_CS (m_nChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
 					      | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)

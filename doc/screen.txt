@@ -5,6 +5,7 @@ ESCAPE SEQUENCES
 \E[A		Cursor up one line
 \E[%d;%dH	Cursor move to row %1 and column %2 (starting at 1)
 ^H		Cursor left one character
+\E[D		Cursor left one character
 \E[C		Cursor right one character
 ^M		Carriage return
 \E[J		Clear to end of screen

@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,8 +22,7 @@
 #define GPIO_INPUT_PIN		17			// connect this pin to GPIO4 and oscilloscope
 #define GPIO_OUTPUT_PIN		18			// connect this pin to oscilloscope
 
-#define CLOCK_SOURCE		GPIOClockSourcePLLD	// PLLD, 500 MHz
-#define CLOCK_DIVIDER		1000			// 500 MHz / 1000 = 500 KHz
+#define CLOCK_RATE		500000			// Hz
 
 #define TRACE_DEPTH		20			// number of trace entries
 
@@ -35,15 +34,13 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_Clock0 (GPIOClock0, CLOCK_SOURCE),
+	m_Clock0 (GPIOClock0),
 	m_ClockPin (4, GPIOModeAlternateFunction0),
 	m_InputPin (GPIO_INPUT_PIN, GPIOModeInput, &m_Interrupt),
 	m_OutputPin (GPIO_OUTPUT_PIN, GPIOModeOutput),
 	m_Tracer (TRACE_DEPTH, FALSE)
 {
 	m_ActLED.Blink (5);	// show we are alive
-
-	m_Clock0.Start (CLOCK_DIVIDER);
 }
 
 CKernel::~CKernel (void)
@@ -91,6 +88,11 @@ boolean CKernel::Initialize (void)
 TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
+
+	if (!m_Clock0.StartRate (CLOCK_RATE))
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Cannot generate %u Hz clock", CLOCK_RATE);
+	}
 
 	m_Logger.Write (FromKernel, LogNotice, "Running GPIO event capture for %u seconds", RUNTIME_SECS);
 

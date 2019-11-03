@@ -81,6 +81,7 @@ $RECYCLE.BIN/
 *.lst
 *.map
 Config.mk
+Config2.mk
 
 # Directories
 # ----------------------------------------------

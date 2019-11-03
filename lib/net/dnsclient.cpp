@@ -2,7 +2,7 @@
 // dnsclient.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ struct TDNSResourceRecordTrailerAIN
 {
 	unsigned short nType;
 	unsigned short nClass;
-	unsigned long  nTTL;
+	unsigned int   nTTL;
 	unsigned short nRDLength;
 #define DNS_RDLENGTH_AIN	4
 	unsigned char  RData[DNS_RDLENGTH_AIN];
@@ -97,7 +97,10 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 
 	if ('1' <= *pHostname && *pHostname <= '9')
 	{
-		return FALSE;
+		if (ConvertIPString (pHostname, pIPAddress))
+		{
+			return TRUE;
+		}
 	}
 
 	assert (m_pNetSubSystem != 0);
@@ -269,6 +272,50 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 
 	assert (pIPAddress != 0);
 	pIPAddress->Set (RRTrailer.RData);
+
+	return TRUE;
+}
+
+boolean CDNSClient::ConvertIPString (const char *pIPString, CIPAddress *pIPAddress)
+{
+	u8 IPAddress[IP_ADDRESS_SIZE];
+
+	for (unsigned i = 0; i <= 3; i++)
+	{
+		char *pEnd = 0;
+		assert (pIPString != 0);
+		unsigned long nNumber = strtoul (pIPString, &pEnd, 10);
+
+		if (i < 3)
+		{
+			if (    pEnd == 0
+			    || *pEnd != '.')
+			{
+				return FALSE;
+			}
+		}
+		else
+		{
+			if (    pEnd != 0
+			    && *pEnd != '\0')
+			{
+				return FALSE;
+			}
+		}
+
+		if (nNumber > 255)
+		{
+			return FALSE;
+		}
+
+		IPAddress[i] = (u8) nNumber;
+
+		assert (pEnd != 0);
+		pIPString = pEnd + 1;
+	}
+
+	assert (pIPAddress != 0);
+	pIPAddress->Set (IPAddress);
 
 	return TRUE;
 }

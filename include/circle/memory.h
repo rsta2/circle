@@ -2,7 +2,7 @@
 // memory.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,12 @@
 #ifndef _circle_memory_h
 #define _circle_memory_h
 
-#include <circle/pagetable.h>
+#if AARCH == 32
+	#include <circle/pagetable.h>
+#else
+	#include <circle/translationtable64.h>
+#endif
+
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
@@ -30,27 +35,26 @@ public:
 	CMemorySystem (boolean bEnableMMU = TRUE);
 	~CMemorySystem (void);
 
+	void Destructor (void);		// explicit callable
+
 #ifdef ARM_ALLOW_MULTI_CORE
 	void InitializeSecondary (void);
 #endif
 
-	u32 GetMemSize (void) const;
+	size_t GetMemSize (void) const;
 
-	// use without parameters to set default page table
-	void SetPageTable0 (CPageTable *pPageTable = 0, u32 nContextID = 0);
-	
-	void SetPageTable0 (u32 nTTBR0, u32 nContextID);
-
-	u32 GetTTBR0 (void) const;
-	u32 GetContextID (void) const;
-
-	static u32 GetCoherentPage (unsigned nSlot);
+	static uintptr GetCoherentPage (unsigned nSlot);
 #define COHERENT_SLOT_PROP_MAILBOX	0
 #define COHERENT_SLOT_GPIO_VIRTBUF	1
 #define COHERENT_SLOT_TOUCHBUF		2
 
 #define COHERENT_SLOT_VCHIQ_START	(MEGABYTE / PAGE_SIZE / 2)
 #define COHERENT_SLOT_VCHIQ_END		(MEGABYTE / PAGE_SIZE - 1)
+
+#if RASPPI >= 4
+#define COHERENT_SLOT_XHCI_START	(MEGABYTE / PAGE_SIZE)
+#define COHERENT_SLOT_XHCI_END		(4*MEGABYTE / PAGE_SIZE - 1)
+#endif
 
 	static CMemorySystem *Get (void);
 
@@ -59,10 +63,13 @@ private:
 
 private:
 	boolean m_bEnableMMU;
-	u32 m_nMemSize;
+	size_t m_nMemSize;
 
-	CPageTable *m_pPageTable0Default;
-	CPageTable *m_pPageTable1;
+#if AARCH == 32
+	CPageTable *m_pPageTable;
+#else
+	CTranslationTable *m_pTranslationTable;
+#endif
 
 	static CMemorySystem *s_pThis;
 };

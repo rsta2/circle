@@ -2,7 +2,7 @@
 // bcmmailbox.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,23 +22,26 @@
 
 #include <circle/bcm2835.h>
 #include <circle/spinlock.h>
+#include <circle/types.h>
 
 class CBcmMailBox
 {
 public:
-	CBcmMailBox (unsigned nChannel);
+	CBcmMailBox (unsigned nChannel,
+		     boolean bEarlyUse = FALSE);	// do not use spinlock early
 	~CBcmMailBox (void);
 
-	unsigned WriteRead (unsigned nData);
+	u32 WriteRead (unsigned nData);
 
 private:
 	void Flush (void);
 
-	unsigned Read (void);
-	void Write (unsigned nData);
+	u32 Read (void);
+	void Write (u32 nData);
 
 private:
 	unsigned m_nChannel;
+	boolean m_bEarlyUse;
 
 	static CSpinLock s_SpinLock;
 };

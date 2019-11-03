@@ -2,7 +2,7 @@
 // pagetable.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,116 +18,66 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/pagetable.h>
-#include <circle/alloc.h>
+#if RASPPI <= 3
+	#include <circle/armv6mmu.h>
+#else
+	#include <circle/armv7lpae.h>
+#endif
 #include <circle/sysconfig.h>
+#include <circle/bcm2835.h>
+#include <circle/bcm2836.h>
+#include <circle/bcm2711.h>
 #include <circle/synchronize.h>
+#include <circle/alloc.h>
 #include <circle/util.h>
 #include <assert.h>
 
 #if RASPPI == 1
-#define SDRAM_SIZE_MBYTE	512
+#define MEM_TOTAL_END	ARM_IO_END
 
 #define TTBR_MODE	(  ARM_TTBR_INNER_CACHEABLE		\
 			 | ARM_TTBR_OUTER_NON_CACHEABLE)
-#else
-#define SDRAM_SIZE_MBYTE	1024
+#elif RASPPI <= 3
+#define MEM_TOTAL_END	ARM_LOCAL_END
 
 #define TTBR_MODE	(  ARM_TTBR_INNER_WRITE_BACK		\
 			 | ARM_TTBR_OUTER_WRITE_BACK)
+#else
+#define MEM_TOTAL_END	ARM_GIC_END
 #endif
 
-CPageTable::CPageTable (void)
-:	m_bTableAllocated (FALSE),
-	m_pTable ((TARMV6MMU_LEVEL1_SECTION_DESCRIPTOR *) MEM_PAGE_TABLE1)
+#if RASPPI <= 3
+
+CPageTable::CPageTable (u32 nMemSize)
+:	m_pTable ((u32 *) MEM_PAGE_TABLE1)
 {
 	assert (((u32) m_pTable & 0x3FFF) == 0);
 
 	for (unsigned nEntry = 0; nEntry < 4096; nEntry++)
 	{
 		u32 nBaseAddress = MEGABYTE * nEntry;
-		
-		TARMV6MMU_LEVEL1_SECTION_DESCRIPTOR *pEntry = &m_pTable[nEntry];
 
-		// shared device
-		pEntry->Value10	= 2;
-		pEntry->BBit    = 1;
-		pEntry->CBit    = 0;
-		pEntry->XNBit   = 0;
-		pEntry->Domain	= 0;
-		pEntry->IMPBit	= 0;
-		pEntry->AP	= AP_SYSTEM_ACCESS;
-		pEntry->TEX     = 0;
-		pEntry->APXBit	= APX_RW_ACCESS;
-		pEntry->SBit    = 1;
-		pEntry->NGBit	= 0;
-		pEntry->Value0	= 0;
-		pEntry->SBZ	= 0;
-		pEntry->Base	= ARMV6MMUL1SECTIONBASE (nBaseAddress);
-
-		if (nEntry >= SDRAM_SIZE_MBYTE)
-		{
-			pEntry->XNBit = 1;
-		}
-	}
-
-	CleanDataCache ();
-}
-
-CPageTable::CPageTable (u32 nMemSize)
-:	m_bTableAllocated (TRUE),
-	m_pTable ((TARMV6MMU_LEVEL1_SECTION_DESCRIPTOR *) palloc ())
-{
-	assert (m_pTable != 0);
-	assert (((u32) m_pTable & 0xFFF) == 0);
-
-	for (unsigned nEntry = 0; nEntry < SDRAM_SIZE_MBYTE; nEntry++)
-	{
-		u32 nBaseAddress = MEGABYTE * nEntry;
-
-		TARMV6MMU_LEVEL1_SECTION_DESCRIPTOR *pEntry = &m_pTable[nEntry];
-
-		// outer and inner write back, no write allocate
-		pEntry->Value10	= 2;
-		pEntry->BBit	= 1;
-		pEntry->CBit	= 1;
-		pEntry->XNBit	= 0;
-		pEntry->Domain	= 0;
-		pEntry->IMPBit	= 0;
-		pEntry->AP	= AP_SYSTEM_ACCESS;
-		pEntry->TEX	= 0;
-		pEntry->APXBit	= APX_RW_ACCESS;
-#ifndef ARM_ALLOW_MULTI_CORE
-		pEntry->SBit	= 0;
-#else
-		pEntry->SBit	= 1;		// required for spin locks, TODO: shared pool
-#endif
-		pEntry->NGBit	= 0;
-		pEntry->Value0	= 0;
-		pEntry->SBZ	= 0;
-		pEntry->Base	= ARMV6MMUL1SECTIONBASE (nBaseAddress);
+		u32 nAttributes = ARMV6MMU_FAULT;
 
 		extern u8 _etext;
-		if (nBaseAddress >= (u32) &_etext)
+		if (nBaseAddress < (u32) &_etext)
 		{
-			pEntry->XNBit = 1;
-
-			if (nBaseAddress >= nMemSize)
-			{
-				// shared device
-				pEntry->BBit  = 1;
-				pEntry->CBit  = 0;
-				pEntry->TEX   = 0;
-				pEntry->SBit  = 1;
-			}
-			else if (nBaseAddress == MEM_COHERENT_REGION)
-			{
-				// strongly ordered
-				pEntry->BBit  = 0;
-				pEntry->CBit  = 0;
-				pEntry->TEX   = 0;
-				pEntry->SBit  = 1;
-			}
+			nAttributes = ARMV6MMUL1SECTION_NORMAL;
 		}
+		else if (nBaseAddress == MEM_COHERENT_REGION)
+		{
+			nAttributes = ARMV6MMUL1SECTION_COHERENT;
+		}
+		else if (nBaseAddress < nMemSize)
+		{
+			nAttributes = ARMV6MMUL1SECTION_NORMAL_XN;
+		}
+		else if (nBaseAddress < MEM_TOTAL_END)
+		{
+			nAttributes = ARMV6MMUL1SECTION_DEVICE;
+		}
+
+		m_pTable[nEntry] = nBaseAddress | nAttributes;
 	}
 
 	CleanDataCache ();
@@ -135,14 +85,109 @@ CPageTable::CPageTable (u32 nMemSize)
 
 CPageTable::~CPageTable (void)
 {
-	if (m_bTableAllocated)
-	{
-		pfree (m_pTable);
-		m_pTable = 0;
-	}
 }
 
 u32 CPageTable::GetBaseAddress (void) const
 {
 	return (u32) m_pTable | TTBR_MODE;
 }
+
+#else	// RASPPI <= 3
+
+#define LEVEL1_TABLE_ENTRIES	4
+
+CPageTable::CPageTable (u32 nMemSize)
+:	m_nMemSize (nMemSize),
+	m_pTable ((u64 *) MEM_PAGE_TABLE1)
+{
+	memset (m_pTable, 0, PAGE_SIZE);
+
+	for (unsigned nEntry = 0; nEntry < LEVEL1_TABLE_ENTRIES; nEntry++)	// entries a 1GB
+	{
+		u64 nBaseAddress =
+			(u64) nEntry * ARMV7LPAE_TABLE_ENTRIES * ARMV7LPAE_LEVEL2_BLOCK_SIZE;
+
+		u64 *pTable = CreateLevel2Table (nBaseAddress);
+		assert (pTable != 0);
+
+		TARMV7LPAE_LEVEL1_TABLE_DESCRIPTOR *pDesc =
+			(TARMV7LPAE_LEVEL1_TABLE_DESCRIPTOR *) &m_pTable[nEntry];
+
+		pDesc->Value11	    = 3;
+		pDesc->Ignored1	    = 0;
+		pDesc->TableAddress = ARMV7LPAEL1TABLEADDR ((u64) pTable);
+		pDesc->Unknown      = 0;
+		pDesc->Ignored2	    = 0;
+		pDesc->PXNTable	    = 0;
+		pDesc->XNTable	    = 0;
+		pDesc->APTable	    = AP_TABLE_ALL_ACCESS;
+		pDesc->NSTable	    = 0;
+	}
+
+	DataSyncBarrier ();
+}
+
+CPageTable::~CPageTable (void)
+{
+}
+
+u64 CPageTable::GetBaseAddress (void) const
+{
+	return (u64) m_pTable;
+}
+
+u64 *CPageTable::CreateLevel2Table (u64 nBaseAddress)
+{
+	u64 *pTable = (u64 *) palloc ();
+	assert (pTable != 0);
+
+	for (unsigned nEntry = 0; nEntry < ARMV7LPAE_TABLE_ENTRIES; nEntry++)	// 512 entries a 2MB
+	{
+		TARMV7LPAE_LEVEL2_BLOCK_DESCRIPTOR *pDesc =
+			(TARMV7LPAE_LEVEL2_BLOCK_DESCRIPTOR *) &pTable[nEntry];
+
+		pDesc->Value01	     = 1;
+		pDesc->AttrIndx	     = ATTRINDX_NORMAL;
+		pDesc->NS	     = 0;
+		pDesc->AP	     = ATTRIB_AP_RW_PL1;
+		pDesc->SH	     = ATTRIB_SH_INNER_SHAREABLE;
+		pDesc->AF	     = 1;
+		pDesc->nG	     = 0;
+		pDesc->Unknown1      = 0;
+		pDesc->OutputAddress = ARMV7LPAEL2BLOCKADDR (nBaseAddress);
+		pDesc->Unknown2      = 0;
+		pDesc->Continous     = 0;
+		pDesc->PXN	     = 0;
+		pDesc->XN	     = 0;
+		pDesc->Ignored	     = 0;
+
+		extern u8 _etext;
+		if (nBaseAddress >= (u64) &_etext)
+		{
+			pDesc->PXN = 1;
+
+			if (nBaseAddress >= m_nMemSize)
+			{
+				pDesc->AttrIndx = ATTRINDX_DEVICE;
+				pDesc->SH	= ATTRIB_SH_OUTER_SHAREABLE;
+			}
+			else if (   nBaseAddress >= MEM_COHERENT_REGION
+				 && nBaseAddress <  MEM_HEAP_START)
+			{
+				pDesc->AttrIndx = ATTRINDX_COHERENT;
+				pDesc->SH	= ATTRIB_SH_OUTER_SHAREABLE;
+			}
+
+			if (nBaseAddress == MEM_PCIE_RANGE_START_VIRTUAL)
+			{
+				pDesc->OutputAddress = ARMV7LPAEL2BLOCKADDR (MEM_PCIE_RANGE_START);
+			}
+		}
+
+		nBaseAddress += ARMV7LPAE_LEVEL2_BLOCK_SIZE;
+	}
+
+	return pTable;
+}
+
+#endif	// RASPPI <= 3

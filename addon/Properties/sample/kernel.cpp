@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,11 +18,19 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <Properties/propertiesfile.h>
+#ifdef USE_FATFS
+	#include <Properties/propertiesfatfsfile.h>
+#else
+	#include <Properties/propertiesfile.h>
+#endif
 
-#define PARTITION	"emmc1-1"
-
-#define FILENAME	"params.txt"
+#ifdef USE_FATFS
+	#define DRIVE		"SD:"
+	#define FILENAME	"/params.txt"
+#else
+	#define PARTITION	"emmc1-1"
+	#define FILENAME	"params.txt"
+#endif
 
 static const char FromKernel[] = "kernel";
 
@@ -86,6 +94,15 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
+#ifdef USE_FATFS
+	// Mount file system
+	if (f_mount (&m_FileSystem, DRIVE, 1) != FR_OK)
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Cannot mount drive: %s", DRIVE);
+	}
+
+	CPropertiesFatFsFile Properties (DRIVE FILENAME, &m_FileSystem);
+#else
 	// Mount file system
 	CDevice *pPartition = m_DeviceNameService.GetDevice (PARTITION, TRUE);
 	if (pPartition == 0)
@@ -99,6 +116,8 @@ TShutdownMode CKernel::Run (void)
 	}
 
 	CPropertiesFile Properties (FILENAME, &m_FileSystem);
+#endif
+
 	if (!Properties.Load ())
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Error loading properties from %s (line %u)",

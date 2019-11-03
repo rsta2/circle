@@ -67,10 +67,18 @@ CPartitionManager::CPartitionManager (CDevice *pDevice, const char *pDeviceName)
 
 CPartitionManager::~CPartitionManager (void)
 {
+	unsigned nPartition = 0;
 	for (unsigned i = 0; i < MAX_PARTITIONS; i++)
 	{
-		delete m_pPartition[i];
-		m_pPartition[i] = 0;
+		if (m_pPartition[i] != 0)
+		{
+			CString PartitionName;
+			PartitionName.Format ("%s-%u", (const char *) m_DeviceName, ++nPartition);
+			CDeviceNameService::Get ()->RemoveDevice (PartitionName, TRUE);
+
+			delete m_pPartition[i];
+			m_pPartition[i] = 0;
+		}
 	}
 
 	m_pDevice = 0;

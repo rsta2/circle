@@ -38,6 +38,7 @@
 #include <circle/bcmpropertytags.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
+#include <circle/machineinfo.h>
 #include <circle/memio.h>
 #include <circle/util.h>
 #include <circle/stdarg.h>
@@ -439,6 +440,37 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 
 	m_pSCR = new TSCR;
 	assert (m_pSCR != 0);
+
+#if RASPPI >= 2
+	// workaround if bootloader does not restore GPIO modes
+	if (   CMachineInfo::Get ()->GetMachineModel () == MachineModel3B
+	    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3APlus
+	    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3BPlus)
+	{
+		for (unsigned i = 0; i <= 5; i++)
+		{
+			m_GPIO34_39[i].AssignPin (34+i);
+			m_GPIO34_39[i].SetMode (GPIOModeInput, FALSE);
+
+			m_GPIO48_53[i].AssignPin (48+i);
+			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
+		}
+	}
+#if RASPPI >= 4
+	// Raspberry Pi 4 requires to explicitly set the GPIO and pull modes
+	else if (CMachineInfo::Get ()->GetModelMajor () >= 4)
+	{
+		write32 (ARM_GPIO_GPPINMUXSD, 3);	// select legacy EMMC1 controller
+
+		for (unsigned i = 0; i <= 5; i++)
+		{
+			m_GPIO48_53[i].AssignPin (48+i);
+			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
+			m_GPIO48_53[i].SetPullMode (i == 0 ? GPIOPullModeOff : GPIOPullModeUp);
+		}
+	}
+#endif
+#endif
 }
 
 CEMMCDevice::~CEMMCDevice (void)
@@ -455,6 +487,20 @@ CEMMCDevice::~CEMMCDevice (void)
 
 boolean CEMMCDevice::Initialize (void)
 {
+#if RASPPI >= 4
+	// disable 1.8V supply
+	CBcmPropertyTags Tags;
+	TPropertyTagGPIOState GPIOState;
+	GPIOState.nGPIO = EXP_GPIO_BASE + 4;
+	GPIOState.nState = 0;
+	if (!Tags.GetTag (PROPTAG_SET_SET_GPIO_STATE, &GPIOState, sizeof GPIOState, 8))
+	{
+		return FALSE;
+	}
+
+	usDelay (5000);
+#endif
+
 	PeripheralEntry ();
 
 	if (CardInit () != 0)
@@ -481,13 +527,13 @@ boolean CEMMCDevice::Initialize (void)
 	return TRUE;
 }
 
-int CEMMCDevice::Read (void *pBuffer, unsigned nCount)
+int CEMMCDevice::Read (void *pBuffer, size_t nCount)
 {
 	if (m_ullOffset % SD_BLOCK_SIZE != 0)
 	{
 		return -1;
 	}
-	unsigned nBlock = m_ullOffset / SD_BLOCK_SIZE;
+	u32 nBlock = m_ullOffset / SD_BLOCK_SIZE;
 
 	if (m_pActLED != 0)
 	{
@@ -518,13 +564,13 @@ int CEMMCDevice::Read (void *pBuffer, unsigned nCount)
 	return nCount;
 }
 
-int CEMMCDevice::Write (const void *pBuffer, unsigned nCount)
+int CEMMCDevice::Write (const void *pBuffer, size_t nCount)
 {
 	if (m_ullOffset % SD_BLOCK_SIZE != 0)
 	{
 		return -1;
 	}
-	unsigned nBlock = m_ullOffset / SD_BLOCK_SIZE;
+	u32 nBlock = m_ullOffset / SD_BLOCK_SIZE;
 
 	if (m_pActLED != 0)
 	{
@@ -555,7 +601,7 @@ int CEMMCDevice::Write (const void *pBuffer, unsigned nCount)
 	return nCount;
 }
 
-unsigned long long CEMMCDevice::Seek (unsigned long long ullOffset)
+u64 CEMMCDevice::Seek (u64 ullOffset)
 {
 	m_ullOffset = ullOffset;
 	
@@ -880,7 +926,7 @@ void CEMMCDevice::IssueCommandInt (u32 cmd_reg, u32 argument, int timeout)
 		}
 #endif
 
-		assert (((u32) m_buf & 3) == 0);
+		assert (((uintptr) m_buf & 3) == 0);
 		u32 *pData = (u32 *) m_buf;
 
 		for (int nBlock = 0; nBlock < m_blocks_to_transfer; nBlock++)
@@ -891,7 +937,7 @@ void CEMMCDevice::IssueCommandInt (u32 cmd_reg, u32 argument, int timeout)
 
 			if ((irpts & (0xffff0000 | wr_irpt)) != wr_irpt)
 			{
-#ifdef EMMC_DEBUG
+#ifdef EMMC_DEBUG2
 				LogWrite (LogWarning, "Error occured whilst waiting for data ready interrupt");
 #endif
 				m_last_error = irpts & 0xffff0000;
@@ -1669,13 +1715,15 @@ int CEMMCDevice::CardReset (void)
 	m_buf = &m_pSCR->scr[0];
 	m_block_size = 8;
 	m_blocks_to_transfer = 1;
-	IssueCommand (SEND_SCR, 0);
+	IssueCommand (SEND_SCR, 0, 1000000);
 	m_block_size = SD_BLOCK_SIZE;
 	if (FAIL)
 	{
+#ifdef EMMC_DEBUG2
 		LogWrite (LogError, "Error sending SEND_SCR");
+#endif
 
-		return -1;
+		return -2;
 	}
 
 	// Determine card version
@@ -1798,12 +1846,21 @@ int CEMMCDevice::CardInit (void)
 #endif
 	}
 
-	if (CardReset () != 0)
+	// The SEND_SCR command may fail with a DATA_TIMEOUT on the Raspberry Pi 4
+	// for unknown reason. As a workaround the whole card reset is retried.
+	int ret;
+	for (unsigned nTries = 3; nTries > 0; nTries--)
 	{
-		return -1;
+		ret = CardReset ();
+		if (ret != -2)
+		{
+			break;
+		}
+
+		LogWrite (LogWarning, "Card reset failed. Retrying.");
 	}
 
-	return 0;
+	return ret;
 }
 
 int CEMMCDevice::EnsureDataMode (void)
@@ -2035,20 +2092,18 @@ int CEMMCDevice::DoWrite (u8 *buf, size_t buf_size, u32 block_no)
 
 int CEMMCDevice::TimeoutWait (unsigned reg, unsigned mask, int value, unsigned usec)
 {
-	unsigned nCount = usec / 1000;
+	assert (m_pTimer != 0);
+	unsigned nStartTicks = m_pTimer->GetClockTicks ();
+	unsigned nTimeoutTicks = usec * (CLOCKHZ / 1000000);
 
 	do
 	{
-		usDelay (1);
-
 		if ((read32 (reg) & mask) ? value : !value)
 		{
 			return 0;
 		}
-
-		usDelay (999);
 	}
-	while (nCount--);
+	while (m_pTimer->GetClockTicks () - nStartTicks < nTimeoutTicks);
 
 	return -1;
 }
@@ -2069,4 +2124,9 @@ void CEMMCDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 	CLogger::Get ()->WriteV ("emmc", Severity, pMessage, var);
 
 	va_end (var);
+}
+
+u32 *CEMMCDevice::GetID (void)
+{
+	return m_device_id;
 }

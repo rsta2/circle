@@ -4,7 +4,7 @@
 // Generates RESET response on any received TCP segment
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,14 +60,10 @@ static const char FromTCP[] = "tcp";
 CTCPRejector::CTCPRejector (CNetConfig *pNetConfig, CNetworkLayer *pNetworkLayer)
 :	CNetConnection (pNetConfig, pNetworkLayer, 0, IPPROTO_TCP)
 {
-	m_pTxBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pTxBuffer != 0);
 }
 
 CTCPRejector::~CTCPRejector (void)
 {
-	delete m_pTxBuffer;
-	m_pTxBuffer = 0;
 }
 
 int CTCPRejector::PacketReceived (const void *pPacket, unsigned nLength,
@@ -171,8 +167,8 @@ boolean CTCPRejector::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAc
 	unsigned nPacketLength = nHeaderLength;
 	assert (nHeaderLength <= FRAME_BUFFER_SIZE);
 
-	assert (m_pTxBuffer != 0);
-	TTCPHeader *pHeader = (TTCPHeader *) m_pTxBuffer;
+	u8 TxBuffer[FRAME_BUFFER_SIZE];
+	TTCPHeader *pHeader = (TTCPHeader *) TxBuffer;
 
 	pHeader->nSourcePort	 	= le2be16 (m_nOwnPort);
 	pHeader->nDestPort	 	= le2be16 (m_nForeignPort);
@@ -183,7 +179,7 @@ boolean CTCPRejector::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAc
 	pHeader->nUrgentPointer		= 0;
 
 	pHeader->nChecksum = 0;		// must be 0 for calculation
-	pHeader->nChecksum = m_Checksum.Calculate (m_pTxBuffer, nPacketLength);
+	pHeader->nChecksum = m_Checksum.Calculate (TxBuffer, nPacketLength);
 
 #ifdef TCP_DEBUG
 	CLogger::Get ()->Write (FromTCP, LogDebug,
@@ -201,5 +197,5 @@ boolean CTCPRejector::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAc
 #endif
 
 	assert (m_pNetworkLayer != 0);
-	return m_pNetworkLayer->Send (m_ForeignIP, m_pTxBuffer, nPacketLength, IPPROTO_TCP);
+	return m_pNetworkLayer->Send (m_ForeignIP, TxBuffer, nPacketLength, IPPROTO_TCP);
 }

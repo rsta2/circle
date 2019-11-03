@@ -2,7 +2,7 @@
 // dmachannel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,19 +21,12 @@
 #define _circle_dmachannel_h
 
 #include <circle/interrupt.h>
+#include <circle/machineinfo.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
 // Not all DMA channels are available to the ARM.
-// Normally channels 0, 2, 4 and 5 are available.
-
-// channel assignment
-#define DMA_CHANNEL_PWM		0
-
-#define DMA_CHANNEL_PCM		0
-
-#define DMA_CHANNEL_SPI_TX	0
-#define DMA_CHANNEL_SPI_RX	2
+// Channel assignment is made dynamically using the class CMachineInfo.
 
 struct TDMAControlBlock
 {
@@ -50,6 +43,9 @@ PACKED;
 enum TDREQ
 {
 	DREQSourceNone	 = 0,
+#if RASPPI >= 4
+	DREQSourcePWM1	 = 1,
+#endif
 	DREQSourcePCMTX	 = 2,
 	DREQSourcePCMRX	 = 3,
 	DREQSourcePWM	 = 5,
@@ -65,12 +61,23 @@ typedef void TDMACompletionRoutine (unsigned nChannel, boolean bStatus, void *pP
 class CDMAChannel
 {
 public:
+	// nChannel must be DMA_CHANNEL_NORMAL, DMA_CHANNEL_LITE or an explicit channel number
 	CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem = 0);
 	~CDMAChannel (void);
 
-	void SetupMemCopy (void *pDestination, const void *pSource, size_t nLength);
+	// nBurstLength > 0 increases speed, but may congest the system bus
+	void SetupMemCopy (void *pDestination, const void *pSource, size_t nLength,
+			   unsigned nBurstLength = 0, boolean bCached = TRUE);
 	void SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ);
 	void SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ);
+
+	// copy nBlockCount blocks of nBlockLength size and skip nBlockStride bytes after
+	// each block on destination, source is continuous, destination cache is not touched
+	// nBurstLength > 0 increases speed, but may congest the system bus
+	// (this method is not supported with DMA_CHANNEL_LITE)
+	void SetupMemCopy2D (void *pDestination, const void *pSource,
+			     size_t nBlockLength, unsigned nBlockCount, size_t nBlockStride,
+			     unsigned nBurstLength = 0);
 
 	void SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam);
 
@@ -96,8 +103,8 @@ private:
 
 	boolean m_bStatus;
 
-	u32 m_nDestinationAddress;
-	u32 m_nBufferLength;
+	uintptr m_nDestinationAddress;
+	size_t m_nBufferLength;
 };
 
 #endif

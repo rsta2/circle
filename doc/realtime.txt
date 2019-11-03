@@ -20,3 +20,13 @@ in include/circle/sysconfig.h.
 
 * Writes to the screen or serial device may noticeable raise the interrupt
 latency too. If REALTIME is defined this influence is relatively small.
+
+* The GPIO block of the Raspberry Pi is able to output data with up to about 60
+MHz (32-bit words) and to input data with up to about 15 MHz. The exact rates
+depend on the Raspberry Pi model and the system clock.
+
+* The system clock of the ARM CPU on the Raspberry Pi in a bare metal
+environment is normally less than the nominal maximum system clock. It is 700
+MHz on the Raspberry Pi 1 and Zero and 600 MHz on the Raspberry Pi 2 and 3. If
+you need the full speed of your Raspberry Pi, you can use the class CCPUThrottle
+to switch the system clock up. This is demonstrated in the sample/26-cpustress.

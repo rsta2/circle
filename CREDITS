@@ -21,6 +21,8 @@ Providing fixes for using u-boot
 Fixing issues for u-boot support
 Support while adding CPU clock rate management and sample/26-cpustress
 Testing while adding USB transaction queueing and SOF interrupt support
+Updating addon/fatfs/ module
+Driver for PS4, Xbox One and Nintendo Switch Pro gamepads
 
 Arjan van Vught
 Support while adding Raspberry Pi 3 support
@@ -42,3 +44,14 @@ Idea for sample/30-gpiofiq
 
 Marco Maccaferri
 USB HID class gamepad driver
+
+@Matheus-Garbelini
+Adding bootloader support and tools
+
+Stephane Damo
+Helping to fix FIQ synchronization issue
+Improving SD card (EMMC) performance
+Adding utility functions for Official Touchscreen and SD card
+
+Steve Maynard
+Patches and testing for Compute Module 3(+)

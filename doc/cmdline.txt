@@ -1,6 +1,8 @@
 CMDLINE OPTIONS
 
-Create a file cmdline.txt on the SD(HC) card used for booting. The following options are available:
+Create a file cmdline.txt on the SD(HC) card used for booting. Multiple options
+must be placed on a single line delimited by a space character. The following
+options are available:
 
 width=640 height=480		Changes screen size (default is maximum size)
 
@@ -19,6 +21,14 @@ keymap=UK			Select keyboard mapping ("DE", "ES", "FR", "IT", "UK" or "US")
 usbpowerdelay=510		Delay in milliseconds between powering on an USB device on an attached
 				USB hub (both internal and external) and accessing the device
 				(default 510, which is sometimes not enough to detect a device)
+
+sounddev=sndpwm			Set device used for sound output
+				("sndpwm" for PWM (via headphone jack), "sndi2s" for I2S (external
+				 hardware required), "sndvchiq" for VCHIQ (HDMI or headphone jack),
+				 default depends on application)
+
+soundopt=0			Select destination for sound output with "sounddev=sndvchiq"
+				(0: detected automatically (default), 1: headphone jack, 2: HDMI)
 
 fast=true			Set maximum CPU speed (if class CCPUThrottle is in the system,
 				default is low speed on Raspberry Pi 2/3)

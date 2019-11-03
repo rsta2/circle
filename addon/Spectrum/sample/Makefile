@@ -6,7 +6,7 @@ CIRCLEHOME = ../../..
 
 OBJS	= main.o kernel.o
 
-LIBS	= ../libspectrum$(RASPPI).a \
-	  $(CIRCLEHOME)/lib/libcircle$(RASPPI).a
+LIBS	= ../libspectrum.a \
+	  $(CIRCLEHOME)/lib/libcircle.a
 
 include $(CIRCLEHOME)/sample/Rules.mk

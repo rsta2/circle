@@ -2,7 +2,7 @@
 // debug.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,13 +43,14 @@ void debug_hexdump (const void *pStart, unsigned nBytes, const char *pSource)
 		pSource = FromDebug;
 	}
 
-	CLogger::Get ()->Write (pSource, LogDebug, "Dumping 0x%X bytes starting at 0x%X", nBytes, (unsigned) pOffset);
+	CLogger::Get ()->Write (pSource, LogDebug, "Dumping 0x%X bytes starting at 0x%lX", nBytes,
+				(unsigned long) (uintptr) pOffset);
 	
 	while (nBytes > 0)
 	{
 		CLogger::Get ()->Write (pSource, LogDebug,
 				"%04X: %02X %02X %02X %02X %02X %02X %02X %02X-%02X %02X %02X %02X %02X %02X %02X %02X",
-				(unsigned) pOffset & 0xFFFF,
+				(unsigned) (uintptr) pOffset & 0xFFFF,
 				(unsigned) pOffset[0],  (unsigned) pOffset[1],  (unsigned) pOffset[2],  (unsigned) pOffset[3],
 				(unsigned) pOffset[4],  (unsigned) pOffset[5],  (unsigned) pOffset[6],  (unsigned) pOffset[7],
 				(unsigned) pOffset[8],  (unsigned) pOffset[9],  (unsigned) pOffset[10], (unsigned) pOffset[11],
@@ -68,7 +69,7 @@ void debug_hexdump (const void *pStart, unsigned nBytes, const char *pSource)
 	}
 }
 
-void debug_stacktrace (const u32 *pStackPtr, const char *pSource)
+void debug_stacktrace (const uintptr *pStackPtr, const char *pSource)
 {
 	if (pSource == 0)
 	{
@@ -80,9 +81,10 @@ void debug_stacktrace (const u32 *pStackPtr, const char *pSource)
 		extern unsigned char _etext;
 
 		if (   *pStackPtr >= MEM_KERNEL_START
-		    && *pStackPtr < (u32) &_etext)
+		    && *pStackPtr < (uintptr) &_etext
+		    && (*pStackPtr & 3) == 0)
 		{
-			CLogger::Get ()->Write (pSource, LogDebug, "stack[%u] is 0x%X", i, (unsigned) *pStackPtr);
+			CLogger::Get ()->Write (pSource, LogDebug, "stack[%u] is 0x%lX", i, (unsigned long) *pStackPtr);
 		}
 	}
 }

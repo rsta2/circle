@@ -1,0 +1,14 @@
+#
+# Enable 64-bit mode (AArch64) on Raspberry Pi 4
+#
+# This file must be copied along with the generated kernel8-rpi4.img
+# onto a SDHC card with FAT file system, if 64-bit mode is used.
+#
+# This file is not needed on the Raspberry Pi 3 to enable 64-bit mode,
+# because the firmware does this automatically, if kernel8.img is found.
+#
+
+arm_64bit=1
+
+[pi4]
+kernel=kernel8-rpi4.img

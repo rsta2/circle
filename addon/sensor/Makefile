@@ -4,10 +4,11 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= hcsr04.o mpu6050.o
+OBJS	= hcsr04.o mpu6050.o bmp180.o
 
-libsensor$(RASPPI).a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
+libsensor.a: $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

@@ -2,7 +2,7 @@
 // timer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,11 +26,17 @@
 #include <circle/sysconfig.h>
 #include <circle/spinlock.h>
 
+#if !defined(FIPS_RASPBERRYPI)
+#include <circle/types.h>
+#endif
+
 #define HZ		100			// ticks per second
 
 #define MSEC2HZ(msec)	((msec) * HZ / 1000)
 
-typedef void TKernelTimerHandler (unsigned hTimer, void *pParam, void *pContext);
+typedef uintptr TKernelTimerHandle;
+
+typedef void TKernelTimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
 typedef void TPeriodicTimerHandler (void);
 
@@ -69,10 +75,21 @@ public:
 	unsigned GetTime (void) const;
 	/// \brief Same function as GetTime()
 	unsigned GetLocalTime (void) const	{ return GetTime (); }
+	/// \brief Get current local time (see GetTime()) with microseconds part
+	/// \param pSeconds Seconds will be stored here
+	/// \param pMicroSeconds Microseconds will be stored here
+	/// \return TRUE if time is valid
+	boolean GetLocalTime (unsigned *pSeconds, unsigned *pMicroSeconds);
 
 	/// \return Current time (UTC) in seconds since 1970-01-01 00:00:00\n
 	/// may be 0 if time was not set and time zone diff is > 0
 	unsigned GetUniversalTime (void) const;
+	/// \brief Get current time (UTC) with microseconds part
+	/// \param pSeconds Seconds will be stored here
+	/// \param pMicroSeconds Microseconds will be stored here
+	/// \return TRUE if time is valid\n
+	/// may be FALSE if time was not set and time zone diff is > 0
+	boolean GetUniversalTime (unsigned *pSeconds, unsigned *pMicroSeconds);
 
 	/// \return "[MMM dD ]HH:MM:SS.ss" or 0 if Initialize() was not called yet,\n
 	/// resulting CString object must be deleted by caller\n
@@ -86,14 +103,14 @@ public:
 	/// \param pParam	First user defined parameter to hand over to the handler
 	/// \param pContext	Second user defined parameter to hand over to the handler
 	/// \return Timer handle (cannot be 0)
-	unsigned StartKernelTimer (unsigned nDelay,
-				   TKernelTimerHandler *pHandler,
-				   void *pParam   = 0,
-				   void *pContext = 0);
+	TKernelTimerHandle StartKernelTimer (unsigned nDelay,
+					     TKernelTimerHandler *pHandler,
+					     void *pParam   = 0,
+					     void *pContext = 0);
 	/// \brief Cancel a running kernel timer,\n
 	/// The timer will not elapse any more.
 	/// \param hTimer	Timer handle
-	void CancelKernelTimer (unsigned hTimer);
+	void CancelKernelTimer (TKernelTimerHandle hTimer);
 
 	/// When a CTimer object is available better use this instead of SimpleMsDelay()\n
 	/// \param nMilliSeconds Delay in milliseconds (<= 2000)
@@ -130,6 +147,10 @@ public:
 
 private:
 	CInterruptSystem	*m_pInterruptSystem;
+
+#if defined (USE_PHYSICAL_COUNTER) && AARCH == 64
+	u32			 m_nClockTicksPerHZTick;
+#endif
 
 	volatile unsigned	 m_nTicks;
 	volatile unsigned	 m_nUptime;

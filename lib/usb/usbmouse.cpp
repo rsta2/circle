@@ -2,7 +2,7 @@
 // usbmouse.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,29 +19,55 @@
 //
 #include <circle/usb/usbmouse.h>
 #include <circle/usb/usbhid.h>
-#include <circle/devicenameservice.h>
 #include <circle/logger.h>
 #include <assert.h>
 
 #define REPORT_SIZE	3
 
-unsigned CUSBMouseDevice::s_nDeviceNumber = 1;
-
 static const char FromUSBMouse[] = "umouse";
 
 CUSBMouseDevice::CUSBMouseDevice (CUSBFunction *pFunction)
 :	CUSBHIDDevice (pFunction, REPORT_SIZE),
-	m_pStatusHandler (0)
+	m_pMouseDevice (0),
+	m_pHIDReportDescriptor (0)
 {
 }
 
 CUSBMouseDevice::~CUSBMouseDevice (void)
 {
-	m_pStatusHandler = 0;
+	delete m_pMouseDevice;
+	m_pMouseDevice = 0;
+
+	delete [] m_pHIDReportDescriptor;
+	m_pHIDReportDescriptor = 0;
 }
 
 boolean CUSBMouseDevice::Configure (void)
 {
+	TUSBHIDDescriptor *pHIDDesc = (TUSBHIDDescriptor *) GetDescriptor (DESCRIPTOR_HID);
+	if (   pHIDDesc == 0
+	    || pHIDDesc->wReportDescriptorLength == 0)
+	{
+		ConfigurationError (FromUSBMouse);
+
+		return FALSE;
+	}
+
+	m_usReportDescriptorLength = pHIDDesc->wReportDescriptorLength;
+	m_pHIDReportDescriptor = new u8[m_usReportDescriptorLength];
+	assert (m_pHIDReportDescriptor != 0);
+
+	if (   GetHost ()->GetDescriptor (GetEndpoint0 (),
+					  pHIDDesc->bReportDescriptorType, DESCRIPTOR_INDEX_DEFAULT,
+					  m_pHIDReportDescriptor, m_usReportDescriptorLength,
+					  REQUEST_IN | REQUEST_TO_INTERFACE, GetInterfaceNumber ())
+	    != m_usReportDescriptorLength)
+	{
+		CLogger::Get ()->Write (FromUSBMouse, LogError, "Cannot get HID report descriptor");
+
+		return FALSE;
+	}
+
 	if (!CUSBHIDDevice::Configure ())
 	{
 		CLogger::Get ()->Write (FromUSBMouse, LogError, "Cannot configure HID device");
@@ -49,51 +75,16 @@ boolean CUSBMouseDevice::Configure (void)
 		return FALSE;
 	}
 
-	CString DeviceName;
-	DeviceName.Format ("umouse%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	m_pMouseDevice = new CMouseDevice;
+	assert (m_pMouseDevice != 0);
 
-	return TRUE;
+	return StartRequest ();
 }
 
-boolean CUSBMouseDevice::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
+void CUSBMouseDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
-	return m_Behaviour.Setup (nScreenWidth, nScreenHeight);
-}
-
-void CUSBMouseDevice::RegisterEventHandler (TMouseEventHandler *pEventHandler)
-{
-	m_Behaviour.RegisterEventHandler (pEventHandler);
-}
-
-boolean CUSBMouseDevice::SetCursor (unsigned nPosX, unsigned nPosY)
-{
-	return m_Behaviour.SetCursor (nPosX, nPosY);
-}
-
-boolean CUSBMouseDevice::ShowCursor (boolean bShow)
-{
-	return m_Behaviour.ShowCursor (bShow);
-}
-
-void CUSBMouseDevice::UpdateCursor (void)
-{
-	if (m_pStatusHandler == 0)
-	{
-		m_Behaviour.UpdateCursor ();
-	}
-}
-
-void CUSBMouseDevice::RegisterStatusHandler (TMouseStatusHandler *pStatusHandler)
-{
-	assert (m_pStatusHandler == 0);
-	m_pStatusHandler = pStatusHandler;
-	assert (m_pStatusHandler != 0);
-}
-
-void CUSBMouseDevice::ReportHandler (const u8 *pReport)
-{
-	if (pReport != 0)
+	if (   pReport != 0
+	    && nReportSize == REPORT_SIZE)
 	{
 		u8 ucHIDButtons = pReport[0];
 
@@ -111,11 +102,10 @@ void CUSBMouseDevice::ReportHandler (const u8 *pReport)
 			nButtons |= MOUSE_BUTTON_MIDDLE;
 		}
 
-		m_Behaviour.MouseStatusChanged (nButtons, (char) pReport[1], (char) pReport[2]);
-
-		if (m_pStatusHandler != 0)
+		if (m_pMouseDevice != 0)
 		{
-			(*m_pStatusHandler) (nButtons, (char) pReport[1], (char) pReport[2]);
+			m_pMouseDevice->ReportHandler (nButtons, (char) pReport[1],
+						       (char) pReport[2]);
 		}
 	}
 }

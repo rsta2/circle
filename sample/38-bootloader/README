@@ -1,0 +1,57 @@
+README
+
+This sample program is a boot-loader with in-memory update of the kernel image
+(chain boot). When the sample is running, you can send an other kernel*.img
+file via the local network to your Raspberry Pi and automatically start it. The
+kernel image is not written out to the SD card. The boot-loader has two user
+interfaces, a HTTP-based web front-end and a TFTP file server daemon.
+
+The boot-loader does not implement any authorization method (e.g. a password).
+Be sure to be the only user on your local network, who has access to it!
+
+
+USING HTTP
+
+Open the following URL in a web browser on your host computer, enter a kernel
+image file to be uploaded (kernel*.img) and press the "Boot now!" button.
+ip_address is the IP address of your Raspberry Pi and is displayed on its
+screen.
+
+	http://ip_address:8080/
+
+
+USING TFTP
+
+You need a TFTP client installed on your host computer to use this. Enter the
+following command to send the kernel image:
+
+	tftp -m binary ip_address -c put kernel.img
+
+ip_address is the IP address of your Raspberry Pi and is displayed on its
+screen. The file name of the kernel image may be slightly different, depending
+on your Circle project settings. Some TFTP clients do not allow to specify all
+options on the command line. You may have to specify the "binary" and "put"
+commands manually behind the tftp> prompt.
+
+Please note that there may be a "Transfer timed out" message on your Raspberry
+Pi, before the transfer runs and completes successfully. This is normal and can
+be ignored.
+
+
+SOME NOTES
+
+If you want to include the boot-loader support into your own application, please
+note that:
+
+* The chain boot mechanism is not supported in multi-core applications.
+
+* The accelerated graphics and HDMI sound support cannot be restored after
+  chain boot, if used before. There may be problems with the Act LED too.
+  That's why it is not used in this bootloader.
+
+* Some devices are not reset in the destructors of their driver classes.
+  This may cause problems with some devices. Please report such issues.
+  The devices used in this sample should work in any way.
+
+* The source file main.cpp of this sample is slightly different from that,
+  which is used in other sample programs.

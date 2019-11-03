@@ -4,7 +4,7 @@
 // Memory addresses and sizes
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,17 +22,24 @@
 #ifndef _circle_memorymap_h
 #define _circle_memorymap_h
 
+#if AARCH == 64
+	#include <circle/memorymap64.h>
+#else
+
 #ifndef MEGABYTE
 	#define MEGABYTE	0x100000
 #endif
+#ifndef GIGABYTE
+	#define GIGABYTE	0x40000000ULL
+#endif
 
-#define MEM_SIZE		(512 * MEGABYTE)		// default size
+#define MEM_SIZE		(256 * MEGABYTE)		// default size
 #define GPU_MEM_SIZE		(64 * MEGABYTE)			// set in config.txt
 #define ARM_MEM_SIZE		(MEM_SIZE - GPU_MEM_SIZE)	// normally overwritten
 
 #define PAGE_SIZE		4096				// page size used by us
 
-#define KERNEL_STACK_SIZE	0x20000					// all sizes must be a multiple of 16K
+#define KERNEL_STACK_SIZE	0x20000				// all sizes must be a multiple of 16K
 #define EXCEPTION_STACK_SIZE	0x8000
 #define PAGE_TABLE1_SIZE	0x4000
 #define PAGE_RESERVE		(4 * MEGABYTE)
@@ -54,9 +61,32 @@
 #endif
 #define MEM_PAGE_TABLE1_END	(MEM_PAGE_TABLE1 + PAGE_TABLE1_SIZE)
 
-// coherent memory region (1 section)
+#if RASPPI <= 3
+// coherent memory region (one 1 MB section)
 #define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 2*MEGABYTE) & ~(MEGABYTE-1))
 
 #define MEM_HEAP_START		(MEM_COHERENT_REGION + MEGABYTE)
+#else
+// coherent memory region (two 2 MB blocks)
+#define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 3*MEGABYTE) & ~(2*MEGABYTE-1))
+
+#define MEM_HEAP_START		(MEM_COHERENT_REGION + 2*2*MEGABYTE)
+#endif
+
+#if RASPPI >= 4
+// PCIe memory range (outbound)
+#define MEM_PCIE_RANGE_START		0x600000000ULL
+#define MEM_PCIE_RANGE_SIZE		0x4000000ULL
+#define MEM_PCIE_RANGE_PCIE_START	0xF8000000ULL		// mapping on PCIe side
+#define MEM_PCIE_RANGE_START_VIRTUAL	0xFA000000UL
+#define MEM_PCIE_RANGE_END_VIRTUAL	(MEM_PCIE_RANGE_START_VIRTUAL + 2*MEGABYTE - 1ULL)
+
+// PCIe memory range (inbound)
+#define MEM_PCIE_DMA_RANGE_START	0ULL
+#define MEM_PCIE_DMA_RANGE_SIZE		0x100000000ULL
+#define MEM_PCIE_DMA_RANGE_PCIE_START	0ULL			// mapping on PCIe side
+#endif
+
+#endif
 
 #endif

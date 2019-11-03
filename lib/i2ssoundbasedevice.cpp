@@ -2,7 +2,7 @@
 // i2ssoundbasedevice.cpp
 //
 // Supports:
-//	BCM283x I2S output
+//	BCM283x/BCM2711 I2S output
 //	two 24-bit audio channels
 //	sample rate up to 192 KHz
 //	tested with PCM5102A DAC only
@@ -11,7 +11,7 @@
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 #include <circle/memio.h>
 #include <circle/timer.h>
 #include <circle/synchronize.h>
+#include <circle/machineinfo.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -106,6 +107,7 @@
 	#define TXFR_LEN_XLENGTH_SHIFT		0
 	#define TXFR_LEN_YLENGTH_SHIFT		16
 	#define TXFR_LEN_MAX			0x3FFFFFFF
+	#define TXFR_LEN_MAX_LITE		0xFFFF
 #define ARM_DMACHAN_STRIDE(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x18)
 	#define STRIDE_SRC_SHIFT		0
 	#define STRIDE_DEST_SHIFT		16
@@ -125,9 +127,9 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_PCMFSPin (19, GPIOModeAlternateFunction0),
 	m_PCMDOUTPin (21, GPIOModeAlternateFunction0),
 	m_Clock (GPIOClockPCM, GPIOClockSourcePLLD),
-#define CLOCK_FREQ	500000000
 	m_bIRQConnected (FALSE),
-	m_State (I2SSoundIdle)
+	m_State (I2SSoundIdle),
+	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
 {
 	assert (m_pInterruptSystem != 0);
 	assert (m_nChunkSize > 0);
@@ -136,14 +138,16 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	// setup and concatenate DMA buffers and control blocks
 	SetupDMAControlBlock (0);
 	SetupDMAControlBlock (1);
-	m_pControlBlock[0]->nNextControlBlockAddress = (u32) m_pControlBlock[1] + GPU_MEM_BASE;
-	m_pControlBlock[1]->nNextControlBlockAddress = (u32) m_pControlBlock[0] + GPU_MEM_BASE;
+	m_pControlBlock[0]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[1]);
+	m_pControlBlock[1]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[0]);
 
 	// start clock and I2S device
+	unsigned nClockFreq = CMachineInfo::Get ()->GetGPIOClockSourceRate (GPIOClockSourcePLLD);
+	assert (nClockFreq > 0);
 	assert (8000 <= nSampleRate && nSampleRate <= 192000);
-	assert (CLOCK_FREQ % (CHANLEN*CHANS) == 0);
-	unsigned nDivI = CLOCK_FREQ / (CHANLEN*CHANS) / nSampleRate;
-	unsigned nTemp = CLOCK_FREQ / (CHANLEN*CHANS) % nSampleRate;
+	assert (nClockFreq % (CHANLEN*CHANS) == 0);
+	unsigned nDivI = nClockFreq / (CHANLEN*CHANS) / nSampleRate;
+	unsigned nTemp = nClockFreq / (CHANLEN*CHANS) % nSampleRate;
 	unsigned nDivF = (nTemp * 4096 + nSampleRate/2) / nSampleRate;
 	assert (nDivF <= 4096);
 	if (nDivF > 4095)
@@ -159,13 +163,12 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	// enable and reset DMA channel
 	PeripheralEntry ();
 
-	assert (!(read32 (ARM_DMACHAN_DEBUG (DMA_CHANNEL_PCM)) & DEBUG_LITE));
+	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
+	CTimer::SimpleusDelay (1000);
 
-	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << DMA_CHANNEL_PCM));
-	CTimer::Get ()->usDelay (1000);
-
-	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM), CS_RESET);
-	while (read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM)) & CS_RESET)
+	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
+	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
 	{
 		// do nothing
 	}
@@ -182,14 +185,32 @@ CI2SSoundBaseDevice::~CI2SSoundBaseDevice (void)
 	// stop I2S device and clock
 	StopI2S ();
 
+	// reset and disable DMA channel
+	PeripheralEntry ();
+
+	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+
+	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
+	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
+	{
+		// do nothing
+	}
+
+	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) & ~(1 << m_nDMAChannel));
+
+	PeripheralExit ();
+
 	// disconnect IRQ
 	assert (m_pInterruptSystem != 0);
 	if (m_bIRQConnected)
 	{
-		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_DMA0+DMA_CHANNEL_PCM);
+		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel);
 	}
 
 	m_pInterruptSystem = 0;
+
+	// free DMA channel
+	CMachineInfo::Get ()->FreeDMAChannel (m_nDMAChannel);
 
 	// free buffers
 	m_pControlBlock[0] = 0;
@@ -222,7 +243,7 @@ boolean CI2SSoundBaseDevice::Start (void)
 	// fill buffer 0
 	m_nNextBuffer = 0;
 
-	if (!GetNextChunk ())
+	if (!GetNextChunk (TRUE))
 	{
 		return FALSE;
 	}
@@ -230,10 +251,12 @@ boolean CI2SSoundBaseDevice::Start (void)
 	m_State = I2SSoundRunning;
 
 	// connect IRQ
+	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+
 	if (!m_bIRQConnected)
 	{
 		assert (m_pInterruptSystem != 0);
-		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+DMA_CHANNEL_PCM, InterruptStub, this);
+		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel, InterruptStub, this);
 
 		m_bIRQConnected = TRUE;
 	}
@@ -246,16 +269,16 @@ boolean CI2SSoundBaseDevice::Start (void)
 	// start DMA
 	PeripheralEntry ();
 
-	assert (!(read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM)) & CS_INT));
-	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << DMA_CHANNEL_PCM)));
+	assert (!(read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_INT));
+	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nDMAChannel)));
 
 	assert (m_pControlBlock[0] != 0);
-	write32 (ARM_DMACHAN_CONBLK_AD (DMA_CHANNEL_PCM), (u32) m_pControlBlock[0] + GPU_MEM_BASE);
+	write32 (ARM_DMACHAN_CONBLK_AD (m_nDMAChannel), BUS_ADDRESS ((uintptr) m_pControlBlock[0]));
 
-	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM),   CS_WAIT_FOR_OUTSTANDING_WRITES
-					           | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
-					           | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
-					           | CS_ACTIVE);
+	write32 (ARM_DMACHAN_CS (m_nDMAChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
+					         | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
+					         | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
+					         | CS_ACTIVE);
 
 	PeripheralExit ();
 
@@ -267,7 +290,7 @@ boolean CI2SSoundBaseDevice::Start (void)
 		if (m_State == I2SSoundRunning)
 		{
 			PeripheralEntry ();
-			write32 (ARM_DMACHAN_NEXTCONBK (DMA_CHANNEL_PCM), 0);
+			write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
 			PeripheralExit ();
 
 			m_State = I2SSoundTerminating;
@@ -296,23 +319,33 @@ boolean CI2SSoundBaseDevice::IsActive (void) const
 	return m_State != I2SSoundIdle ? TRUE : FALSE;
 }
 
-boolean CI2SSoundBaseDevice::GetNextChunk (void)
+boolean CI2SSoundBaseDevice::GetNextChunk (boolean bFirstCall)
 {
 	assert (m_pDMABuffer[m_nNextBuffer] != 0);
-	unsigned nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
-	if (nChunkSize == 0)
+
+	unsigned nChunkSize;
+	if (!bFirstCall)
 	{
-		return FALSE;
+		nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
+		if (nChunkSize == 0)
+		{
+			return FALSE;
+		}
+	}
+	else
+	{
+		nChunkSize = m_nChunkSize;
+		memset (m_pDMABuffer[m_nNextBuffer], 0, nChunkSize * sizeof (u32));
 	}
 
 	unsigned nTransferLength = nChunkSize * sizeof (u32);
-	assert (nTransferLength <= TXFR_LEN_MAX);
+	assert (nTransferLength <= TXFR_LEN_MAX_LITE);
 
 	assert (m_pControlBlock[m_nNextBuffer] != 0);
 	m_pControlBlock[m_nNextBuffer]->nTransferLength = nTransferLength;
 
-	CleanAndInvalidateDataCacheRange ((u32) m_pDMABuffer[m_nNextBuffer], nTransferLength);
-	CleanAndInvalidateDataCacheRange ((u32) m_pControlBlock[m_nNextBuffer], sizeof (TDMAControlBlock));
+	CleanAndInvalidateDataCacheRange ((uintptr) m_pDMABuffer[m_nNextBuffer], nTransferLength);
+	CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock[m_nNextBuffer], sizeof (TDMAControlBlock));
 
 	m_nNextBuffer ^= 1;
 
@@ -375,19 +408,20 @@ void CI2SSoundBaseDevice::StopI2S (void)
 void CI2SSoundBaseDevice::InterruptHandler (void)
 {
 	assert (m_State != I2SSoundIdle);
+	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
 
 	PeripheralEntry ();
 
 #ifndef NDEBUG
 	u32 nIntStatus = read32 (ARM_DMA_INT_STATUS);
 #endif
-	u32 nIntMask = 1 << DMA_CHANNEL_PCM;
+	u32 nIntMask = 1 << m_nDMAChannel;
 	assert (nIntStatus & nIntMask);
 	write32 (ARM_DMA_INT_STATUS, nIntMask);
 
-	u32 nCS = read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM));
+	u32 nCS = read32 (ARM_DMACHAN_CS (m_nDMAChannel));
 	assert (nCS & CS_INT);
-	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PCM), nCS);	// reset CS_INT
+	write32 (ARM_DMACHAN_CS (m_nDMAChannel), nCS);	// reset CS_INT
 
 	PeripheralExit ();
 
@@ -411,7 +445,7 @@ void CI2SSoundBaseDevice::InterruptHandler (void)
 
 	case I2SSoundCancelled:
 		PeripheralEntry ();
-		write32 (ARM_DMACHAN_NEXTCONBK (DMA_CHANNEL_PCM), 0);
+		write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
 		PeripheralExit ();
 
 		m_State = I2SSoundTerminating;
@@ -446,7 +480,7 @@ void CI2SSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 
 	m_pControlBlockBuffer[nID] = new u8[sizeof (TDMAControlBlock) + 31];
 	assert (m_pControlBlockBuffer[nID] != 0);
-	m_pControlBlock[nID] = (TDMAControlBlock *) (((u32) m_pControlBlockBuffer[nID] + 31) & ~31);
+	m_pControlBlock[nID] = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer[nID] + 31) & ~31);
 
 	m_pControlBlock[nID]->nTransferInformation     =   (DREQSourcePCMTX << TI_PERMAP_SHIFT)
 						         | (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
@@ -455,7 +489,7 @@ void CI2SSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 						         | TI_DEST_DREQ
 						         | TI_WAIT_RESP
 						         | TI_INTEN;
-	m_pControlBlock[nID]->nSourceAddress           = (u32) m_pDMABuffer[nID] + GPU_MEM_BASE;
+	m_pControlBlock[nID]->nSourceAddress           = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
 	m_pControlBlock[nID]->nDestinationAddress      = (ARM_PCM_FIFO_A & 0xFFFFFF) + GPU_IO_BASE;
 	m_pControlBlock[nID]->n2DModeStride            = 0;
 	m_pControlBlock[nID]->nReserved[0]	       = 0;

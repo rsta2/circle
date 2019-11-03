@@ -33,6 +33,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/actled.h>
+#include <circle/gpiopin.h>
 #include <circle/fs/partitionmanager.h>
 #include <circle/logger.h>
 #include <circle/types.h>
@@ -54,10 +55,12 @@ public:
 
 	boolean Initialize (void);
 
-	int Read (void *pBuffer, unsigned nCount);
-	int Write (const void *pBuffer, unsigned nCount);
+	int Read (void *pBuffer, size_t nCount);
+	int Write (const void *pBuffer, size_t nCount);
 
-	unsigned long long Seek (unsigned long long ullOffset);
+	u64 Seek (u64 ullOffset);
+
+	u32 *GetID (void);
 
 private:
 	int PowerOn (void);
@@ -93,6 +96,11 @@ private:
 	CInterruptSystem *m_pInterruptSystem;
 	CTimer		 *m_pTimer;
 	CActLED		 *m_pActLED;
+
+#if RASPPI >= 2
+	CGPIOPin	  m_GPIO34_39[6];	// WiFi
+	CGPIOPin	  m_GPIO48_53[6];	// SD card
+#endif
 
 	u64 m_ullOffset;
 

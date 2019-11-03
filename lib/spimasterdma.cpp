@@ -2,7 +2,7 @@
 // spimasterdma.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -51,12 +51,13 @@
 #define CS_CS__SHIFT	0
 
 CSPIMasterDMA::CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
-			      unsigned nClockSpeed, unsigned CPOL, unsigned CPHA)
+			      unsigned nClockSpeed, unsigned CPOL, unsigned CPHA,
+			      boolean bDMAChannelLite)
 :	m_nClockSpeed (nClockSpeed),
 	m_CPOL (CPOL),
 	m_CPHA (CPHA),
-	m_TxDMA (DMA_CHANNEL_SPI_TX, pInterruptSystem),
-	m_RxDMA (DMA_CHANNEL_SPI_RX, pInterruptSystem),
+	m_TxDMA (bDMAChannelLite ? DMA_CHANNEL_LITE : DMA_CHANNEL_NORMAL, pInterruptSystem),
+	m_RxDMA (bDMAChannelLite ? DMA_CHANNEL_LITE : DMA_CHANNEL_NORMAL, pInterruptSystem),
 	m_SCLK (11, GPIOModeAlternateFunction0),
 	m_MOSI (10, GPIOModeAlternateFunction0),
 	m_MISO ( 9, GPIOModeAlternateFunction0),
@@ -173,8 +174,6 @@ void CSPIMasterDMA::DMACompletionRoutine (boolean bRxStatus)
 
 void CSPIMasterDMA::DMACompletionStub (unsigned nChannel, boolean bStatus, void *pParam)
 {
-	assert (nChannel == DMA_CHANNEL_SPI_RX);
-
 	CSPIMasterDMA *pThis = (CSPIMasterDMA *) pParam;
 	assert (pThis != 0);
 

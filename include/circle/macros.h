@@ -2,7 +2,7 @@
 // macros.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,12 @@
 #define NORETURN	__attribute__ ((noreturn))
 #define NOOPT		__attribute__ ((optimize (0)))
 #define MAXOPT		__attribute__ ((optimize (3)))
+#define WEAK		__attribute__ ((weak))
+
+#define likely(exp)	__builtin_expect (!!(exp), 1)
+#define unlikely(exp)	__builtin_expect (!!(exp), 0)
+
+#define BIT(n)		(1 << (n))
 
 // big endian (to be used for constants only)
 #define BE(value)	((((value) & 0xFF00) >> 8) | (((value) & 0x00FF) << 8))

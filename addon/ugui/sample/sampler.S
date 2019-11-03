@@ -2,7 +2,7 @@
  * sampler.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <circle/bcm2835.h>
+
+#if AARCH == 32
 
 /*
  * Sampler
@@ -92,5 +94,61 @@ fastloop:
 	subs	r1, r1, #1
 	bhi	fastloop
 	b	4b
+
+#else
+
+/*
+ * Sampler
+ *
+ * In:	x0	pBuffer
+ *	x1	nSamples
+ *	w2	nTriggerMask
+ *	w3	nTriggerLevel
+ *	w4	nDelayCount
+ *
+ * Out:	w0	run time (micro seconds)
+ */
+	.globl	Sampler
+Sampler:
+	msr	DAIFSet, #2			/* disable IRQ */
+
+	ldr	x5, =ARM_GPIO_GPLEV0
+1:	ldr	w6, [x5]			/* wait for trigger */
+	and	w7, w6, w2
+	cmp	w7, w3
+	b.ne	1b
+
+	ldr	x2, =ARM_SYSTIMER_CLO
+	ldr	w3, [x2]			/* get start time */
+
+	cmp	w4, #0				/* if nDelayCount if 0 */
+	b.eq	fastloop			/* branch to fast loop */
+
+2:	str	w6, [x0], #4			/* sample loop */
+
+	mov	w7, w4				/* delay loop */
+3:	subs	w7, w7, #1
+	b.hi	3b
+
+	ldr	w6, [x5]
+	subs	x1, x1, #1
+	b.hi	2b
+
+4:	ldr	w2, [x2]			/* get end time */
+
+	msr	DAIFClr, #2			/* enable IRQ */
+
+	sub	w0, w2, w3			/* calculate run time */
+
+	ret
+
+fastloop:
+	str	w6, [x0], #4			/* fast sample loop */
+	ldr	w6, [x5]
+	subs	w1, w1, #1
+	b.hi	fastloop
+	b	4b
+
+#endif
 
 /* End */

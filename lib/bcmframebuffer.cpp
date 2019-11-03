@@ -2,7 +2,7 @@
 // bcmframebuffer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,16 +20,7 @@
 #include <circle/bcmframebuffer.h>
 #include <circle/util.h>
 
-static struct
-{
-	TPropertyTagDisplayDimensions	SetPhysWidthHeight;
-	TPropertyTagDisplayDimensions	SetVirtWidthHeight;
-	TPropertyTagSimple		SetDepth;
-	TPropertyTagVirtualOffset	SetVirtOffset;
-	TPropertyTagAllocateBuffer	AllocateBuffer;
-	TPropertyTagSimple		GetPitch;
-}
-InitTags =
+TBcmFrameBufferInitTags CBcmFrameBuffer::s_InitTags =
 {
 	{{PROPTAG_SET_PHYS_WIDTH_HEIGHT, 8, 8}},
 	{{PROPTAG_SET_VIRT_WIDTH_HEIGHT, 8, 8}},
@@ -93,11 +84,13 @@ CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nD
 		memset (m_pTagSetPalette->Palette, 0, PALETTE_ENTRIES * sizeof (u32));	// clear palette
 	}
 
-	InitTags.SetPhysWidthHeight.nWidth  = m_nWidth;
-	InitTags.SetPhysWidthHeight.nHeight = m_nHeight;
-	InitTags.SetVirtWidthHeight.nWidth  = m_nVirtualWidth;
-	InitTags.SetVirtWidthHeight.nHeight = m_nVirtualHeight;
-	InitTags.SetDepth.nValue            = m_nDepth;
+	memcpy (&m_InitTags, &s_InitTags, sizeof s_InitTags);
+
+	m_InitTags.SetPhysWidthHeight.nWidth  = m_nWidth;
+	m_InitTags.SetPhysWidthHeight.nHeight = m_nHeight;
+	m_InitTags.SetVirtWidthHeight.nWidth  = m_nVirtualWidth;
+	m_InitTags.SetVirtWidthHeight.nHeight = m_nVirtualHeight;
+	m_InitTags.SetDepth.nValue            = m_nDepth;
 }
 
 CBcmFrameBuffer::~CBcmFrameBuffer (void)
@@ -131,24 +124,24 @@ void CBcmFrameBuffer::SetPalette32 (u8 nIndex, u32 nRGBA)
 boolean CBcmFrameBuffer::Initialize (void)
 {
 	CBcmPropertyTags Tags;
-	if (!Tags.GetTags (&InitTags, sizeof InitTags))
+	if (!Tags.GetTags (&m_InitTags, sizeof m_InitTags))
 	{
 		return FALSE;
 	}
 
-	if (   InitTags.SetPhysWidthHeight.nWidth         == 0
-	    || InitTags.SetPhysWidthHeight.nHeight        == 0
-	    || InitTags.SetVirtWidthHeight.nWidth         == 0
-	    || InitTags.SetVirtWidthHeight.nHeight        == 0
-	    || InitTags.SetDepth.nValue                   == 0
-	    || InitTags.AllocateBuffer.nBufferBaseAddress == 0)
+	if (   m_InitTags.SetPhysWidthHeight.nWidth         == 0
+	    || m_InitTags.SetPhysWidthHeight.nHeight        == 0
+	    || m_InitTags.SetVirtWidthHeight.nWidth         == 0
+	    || m_InitTags.SetVirtWidthHeight.nHeight        == 0
+	    || m_InitTags.SetDepth.nValue                   == 0
+	    || m_InitTags.AllocateBuffer.nBufferBaseAddress == 0)
 	{
 		return FALSE;
 	}
 
-	m_nBufferPtr  = InitTags.AllocateBuffer.nBufferBaseAddress & 0x3FFFFFFF;
-	m_nBufferSize = InitTags.AllocateBuffer.nBufferSize;
-	m_nPitch      = InitTags.GetPitch.nValue;
+	m_nBufferPtr  = m_InitTags.AllocateBuffer.nBufferBaseAddress & 0x3FFFFFFF;
+	m_nBufferSize = m_InitTags.AllocateBuffer.nBufferSize;
+	m_nPitch      = m_InitTags.GetPitch.nValue;
 
 	return UpdatePalette ();
 }
@@ -238,4 +231,12 @@ boolean CBcmFrameBuffer::WaitForVerticalSync (void)
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple Dummy;
 	return Tags.GetTag (PROPTAG_WAIT_FOR_VSYNC, &Dummy, sizeof Dummy);
+}
+
+boolean CBcmFrameBuffer::SetBacklightBrightness(unsigned nBrightness)
+{
+	CBcmPropertyTags Tags;
+	TPropertyTagSimple TagBrightness;
+	TagBrightness.nValue = nBrightness;
+	return Tags.GetTag (PROPTAG_SET_BACKLIGHT, &TagBrightness, sizeof TagBrightness, 4);
 }

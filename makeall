@@ -1,5 +1,7 @@
 #!/bin/bash
 
+make="${MAKE:-make}"
+
 makesample=true
 if [[ $1 == "--nosample" ]]
 then
@@ -8,48 +10,38 @@ then
 fi
 
 cd lib
-make $1 $2 || exit
+$make $1 $2 || exit
 
 cd usb
-make $1 $2 || exit
+$make $1 $2 || exit
 cd ..
 
 cd input
-make $1 $2 || exit
+$make $1 $2 || exit
 cd ..
 
 cd fs
-make $1 $2 || exit
+$make $1 $2 || exit
 
 cd fat
-make $1 $2 || exit
+$make $1 $2 || exit
 cd ..
 
 cd ..
 
 cd sched
-make $1 $2 || exit
+$make $1 $2 || exit
 cd ..
 
 cd net
-make $1 $2 || exit
+$make $1 $2 || exit
 cd ..
 
 cd bt
-make $1 $2 || exit
+$make $1 $2 || exit
 cd ..
 
 cd ..
-
-cd addon
-cd SDCard
-make $1 $2 || exit
-cd ..
-cd fatfs
-make $1 $2 || exit
-cd ..
-cd ..
-
 
 if [[ $makesample == true ]]
 then

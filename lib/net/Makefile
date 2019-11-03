@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,17 +20,18 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= netsubsystem.o nettask.o socket.o \
-	  transportlayer.o networklayer.o linklayer.o netdevlayer.o arphandler.o \
+OBJS	= netsubsystem.o nettask.o netsocket.o socket.o \
+	  transportlayer.o networklayer.o linklayer.o netdevlayer.o phytask.o arphandler.o \
 	  icmphandler.o routecache.o \
 	  netconnection.o udpconnection.o \
 	  tcpconnection.o retransmissionqueue.o retranstimeoutcalc.o tcprejector.o \
 	  netconfig.o ipaddress.o netqueue.o checksumcalculator.o \
-	  dnsclient.o ntpclient.o \
-	  dhcpclient.o ntpdaemon.o httpdaemon.o httpclient.o tftpdaemon.o
+	  dnsclient.o ntpclient.o mqttclient.o mqttsendpacket.o mqttreceivepacket.o \
+	  dhcpclient.o ntpdaemon.o httpdaemon.o httpclient.o tftpdaemon.o syslogdaemon.o
 
-libnet$(RASPPI).a: $(OBJS)
-	rm -f libnet$(RASPPI).a
-	$(AR) cr libnet$(RASPPI).a $(OBJS)
+libnet.a: $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

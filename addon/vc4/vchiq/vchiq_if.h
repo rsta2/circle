@@ -101,7 +101,7 @@ typedef struct {
 	unsigned int size;
 } VCHIQ_ELEMENT_T;
 
-typedef unsigned int VCHIQ_SERVICE_HANDLE_T;
+typedef unsigned long VCHIQ_SERVICE_HANDLE_T;
 
 typedef VCHIQ_STATUS_T (*VCHIQ_CALLBACK_T)(VCHIQ_REASON_T, VCHIQ_HEADER_T *,
 	VCHIQ_SERVICE_HANDLE_T, void *);

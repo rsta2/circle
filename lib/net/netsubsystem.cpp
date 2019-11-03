@@ -2,7 +2,7 @@
 // netsubsystem.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,8 +21,9 @@
 #include <circle/net/nettask.h>
 #include <circle/net/dhcpclient.h>
 #include <circle/sched/scheduler.h>
-#include <circle/timer.h>
 #include <assert.h>
+
+CNetSubSystem *CNetSubSystem::s_pThis = 0;
 
 CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8 *pDefaultGateway, const u8 *pDNSServer)
 :	m_NetDevLayer (&m_Config),
@@ -32,6 +33,9 @@ CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8
 	m_bUseDHCP (pIPAddress == 0 ? TRUE : FALSE),
 	m_pDHCPClient (0)
 {
+	assert (s_pThis == 0);
+	s_pThis = this;
+
 	m_Config.SetDHCP (m_bUseDHCP);
 
 	if (!m_bUseDHCP)
@@ -53,19 +57,15 @@ CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8
 
 CNetSubSystem::~CNetSubSystem (void)
 {
-	delete m_pDHCPClient;
-	m_pDHCPClient = 0;
+	s_pThis = 0;
 }
 
-boolean CNetSubSystem::Initialize (void)
+boolean CNetSubSystem::Initialize (boolean bWaitForActivate)
 {
 	m_bUseDHCP = m_Config.GetIPAddress ()->IsNull ();
 	m_Config.SetDHCP (m_bUseDHCP);
 
-	// wait for Ethernet PHY to come up
-	CTimer::Get ()->MsDelay (2000);
-
-	if (!m_NetDevLayer.Initialize ())
+	if (!m_NetDevLayer.Initialize (bWaitForActivate))
 	{
 		return FALSE;
 	}
@@ -92,6 +92,11 @@ boolean CNetSubSystem::Initialize (void)
 		assert (m_pDHCPClient == 0);
 		m_pDHCPClient = new CDHCPClient (this);
 		assert (m_pDHCPClient != 0);
+	}
+
+	if (!bWaitForActivate)
+	{
+		return TRUE;
 	}
 
 	while (!IsRunning ())
@@ -137,4 +142,10 @@ boolean CNetSubSystem::IsRunning (void) const
 
 	assert (m_pDHCPClient != 0);
 	return m_pDHCPClient->IsBound ();
+}
+
+CNetSubSystem *CNetSubSystem::Get (void)
+{
+	assert (s_pThis != 0);
+	return s_pThis;
 }

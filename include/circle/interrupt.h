@@ -2,7 +2,7 @@
 // interrupt.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <circle/bcm2835int.h>
 #include <circle/exceptionstub.h>
+#include <circle/types.h>
 
 typedef void TIRQHandler (void *pParam);
 
@@ -48,6 +49,17 @@ public:
 	static CInterruptSystem *Get (void);
 
 	static void InterruptHandler (void);
+
+#if RASPPI >= 4
+	static void InitializeSecondary (void);
+
+	static void SendIPI (unsigned nCore, unsigned nIPI);
+
+#if AARCH == 32
+	static void CallSecureMonitor (u32 nFunction, u32 nParam);
+	static void SecureMonitorHandler (u32 nFunction, u32 nParam);
+#endif
+#endif
 
 private:
 	boolean CallIRQHandler (unsigned nIRQ);

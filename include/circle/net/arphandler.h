@@ -2,7 +2,7 @@
 // arphandler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@
 #include <circle/net/netdevlayer.h>
 #include <circle/net/netqueue.h>
 #include <circle/net/ipaddress.h>
-#include <circle/usb/macaddress.h>
+#include <circle/macaddress.h>
+#include <circle/timer.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
@@ -43,7 +44,7 @@ struct TARPEntry
 	volatile TARPState	State;
 	u8			IPAddress[IP_ADDRESS_SIZE];
 	u8			MACAddress[MAC_ADDRESS_SIZE];
-	unsigned		hTimer;
+	TKernelTimerHandle	hTimer;
 	unsigned		nTicksLastUsed;
 };
 
@@ -63,7 +64,7 @@ private:
 
 	void SendPacket (boolean bRequest, const CIPAddress &rForeignIP, const CMACAddress &rForeignMAC);
 
-	static void TimerHandler (unsigned hTimer, void *pParam, void *pContext);
+	static void TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
 private:
 	CNetConfig	*m_pNetConfig;
@@ -72,8 +73,6 @@ private:
 
 	TARPEntry m_Entry[ARP_MAX_ENTRIES];
 	CSpinLock m_SpinLock;
-
-	u8 *m_pBuffer;
 };
 
 #endif

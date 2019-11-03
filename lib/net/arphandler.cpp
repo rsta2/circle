@@ -2,7 +2,7 @@
 // arphandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 //
 #include <circle/net/arphandler.h>
 #include <circle/net/linklayer.h>
-#include <circle/timer.h>
 #include <circle/util.h>
 #include <circle/macros.h>
 #include <assert.h>
@@ -56,8 +55,7 @@ PACKED;
 CARPHandler::CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer, CNetQueue *pRxQueue)
 :	m_pNetConfig (pNetConfig),
 	m_pNetDevLayer (pNetDevLayer),
-	m_pRxQueue (pRxQueue),
-	m_pBuffer (0)
+	m_pRxQueue (pRxQueue)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pNetDevLayer != 0);
@@ -67,16 +65,10 @@ CARPHandler::CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer,
 	{
 		m_Entry[nEntry].State = ARPStateFreeSlot;
 	}
-
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
 }
 
 CARPHandler::~CARPHandler (void)
 {
-	delete [] m_pBuffer;
-	m_pBuffer =  0;
-
 	m_pRxQueue = 0;
 	m_pNetDevLayer = 0;
 	m_pNetConfig = 0;
@@ -88,9 +80,9 @@ void CARPHandler::Process (void)
 	const CIPAddress *pOwnIPAddress = m_pNetConfig->GetIPAddress ();
 	assert (pOwnIPAddress != 0);
 
-	TARPPacket *pPacket = (TARPPacket *) m_pBuffer;
-	assert (pPacket != 0);
-	
+	u8 Buffer[FRAME_BUFFER_SIZE];
+	TARPPacket *pPacket = (TARPPacket *) Buffer;
+
 	u32 nResultLength;
 	assert (m_pRxQueue != 0);
 	while ((nResultLength = m_pRxQueue->Dequeue (pPacket)) != 0)
@@ -133,7 +125,7 @@ void CARPHandler::Process (void)
 		}
 	}
 
-	unsigned long nTicks = CTimer::Get ()->GetTicks ();
+	unsigned nTicks = CTimer::Get ()->GetTicks ();
 	if ((nTicks / HZ) % 60 == 0)
 	{
 		m_SpinLock.Acquire ();
@@ -223,7 +215,7 @@ boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAdd
 
 	pEntry->nTicksLastUsed = CTimer::Get ()->GetTicks ();
 
-	pEntry->hTimer = CTimer::Get ()->StartKernelTimer (ARP_TIMEOUT_HZ, TimerHandler, (void *) nEntry, this);
+	pEntry->hTimer = CTimer::Get ()->StartKernelTimer (ARP_TIMEOUT_HZ, TimerHandler, (void *) (uintptr) nEntry, this);
 
 	m_SpinLock.Release ();
 
@@ -327,12 +319,12 @@ void CARPHandler::SendPacket (boolean		 bRequest,
 	m_pNetDevLayer->Send (&ARPFrame, sizeof ARPFrame);
 }
 
-void CARPHandler::TimerHandler (unsigned hTimer, void *pParam, void *pContext)
+void CARPHandler::TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext)
 {
 	CARPHandler *pThis = (CARPHandler *) pContext;
 	assert (pThis != 0);
 
-	unsigned nEntry = (unsigned) pParam;
+	unsigned nEntry = (unsigned) (uintptr) pParam;
 	assert (nEntry < ARP_MAX_ENTRIES);
 
 	pThis->m_SpinLock.Acquire ();

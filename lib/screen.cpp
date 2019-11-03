@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 #include <circle/screen.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
-#include <circle/sysconfig.h>
 #include <circle/util.h>
 
 #define ROTORS		4
@@ -51,6 +50,9 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtua
 	m_Color (NORMAL_COLOR),
 	m_bInsertOn (FALSE),
 	m_bUpdated (FALSE)
+#ifdef SCREEN_DMA_BURST_LENGTH
+	, m_DMAChannel (DMA_CHANNEL_NORMAL)
+#endif
 #ifdef REALTIME
 	, m_SpinLock (TASK_LEVEL)
 #endif
@@ -89,7 +91,7 @@ boolean CScreenDevice::Initialize (void)
 			return FALSE;
 		}
 
-		m_pBuffer = (TScreenColor *) m_pFrameBuffer->GetBuffer ();
+		m_pBuffer = (TScreenColor *) (uintptr) m_pFrameBuffer->GetBuffer ();
 		m_nSize   = m_pFrameBuffer->GetSize ();
 		m_nPitch  = m_pFrameBuffer->GetPitch ();
 		m_nWidth  = m_pFrameBuffer->GetWidth ();
@@ -144,6 +146,11 @@ unsigned CScreenDevice::GetRows (void) const
 	return m_nUsedHeight / m_CharGen.GetCharHeight ();
 }
 
+CBcmFrameBuffer *CScreenDevice::GetFrameBuffer (void)
+{
+	return m_pFrameBuffer;
+}
+
 TScreenStatus CScreenDevice::GetStatus (void)
 {
 	TScreenStatus Status;
@@ -165,7 +172,7 @@ TScreenStatus CScreenDevice::GetStatus (void)
 	return Status;
 }
 
-boolean CScreenDevice::SetStatus (TScreenStatus Status)
+boolean CScreenDevice::SetStatus (const TScreenStatus &Status)
 {
 	if (   m_nSize  != Status.nSize
 	    || m_nPitch != m_nWidth)
@@ -203,7 +210,7 @@ boolean CScreenDevice::SetStatus (TScreenStatus Status)
 	return TRUE;
 }
 
-int CScreenDevice::Write (const void *pBuffer, unsigned nCount)
+int CScreenDevice::Write (const void *pBuffer, size_t nCount)
 {
 	m_SpinLock.Acquire ();
 
@@ -731,11 +738,18 @@ void CScreenDevice::Scroll (void)
 	unsigned nSize = m_nPitch * (m_nScrollEnd - m_nScrollStart - nLines) * sizeof (TScreenColor);
 	if (nSize > 0)
 	{
+#ifdef SCREEN_DMA_BURST_LENGTH
+		m_DMAChannel.SetupMemCopy (pTo, pFrom, nSize, SCREEN_DMA_BURST_LENGTH, FALSE);
+
+		m_DMAChannel.Start ();
+		m_DMAChannel.Wait ();
+#else
 		unsigned nSizeBlk = nSize & ~0xF;
 		memcpyblk (pTo, pFrom, nSizeBlk);
 
 		// Handle framebuffers with row lengths not aligned to 16 bytes
 		memcpy ((u8 *) pTo + nSizeBlk, (u8 *) pFrom + nSizeBlk, nSize & 0xF);
+#endif
 
 		pTo += nSize / sizeof (u32);
 	}

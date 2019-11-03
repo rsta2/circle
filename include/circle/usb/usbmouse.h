@@ -2,7 +2,7 @@
 // usbmouse.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,13 +21,8 @@
 #define _circle_usb_usbmouse_h
 
 #include <circle/usb/usbhiddevice.h>
-#include <circle/input/mousebehaviour.h>
+#include <circle/input/mouse.h>
 #include <circle/types.h>
-
-#define MOUSE_DISPLACEMENT_MIN	-127
-#define MOUSE_DISPLACEMENT_MAX	127
-
-typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY);
 
 class CUSBMouseDevice : public CUSBHIDDevice
 {
@@ -37,28 +32,14 @@ public:
 
 	boolean Configure (void);
 
-	// cooked mode
-	boolean Setup (unsigned nScreenWidth, unsigned nScreenHeight);	// returns FALSE on failure
-
-	void RegisterEventHandler (TMouseEventHandler *pEventHandler);
-
-	boolean SetCursor (unsigned nPosX, unsigned nPosY);		// returns FALSE on failure
-	boolean ShowCursor (boolean bShow);				// returns previous state
-
-	void UpdateCursor (void);	// call this frequently from TASK_LEVEL (cooked mode only)
-
-	// raw mode
-	void RegisterStatusHandler (TMouseStatusHandler *pStatusHandler);
+private:
+	void ReportHandler (const u8 *pReport, unsigned nReportSize);
 
 private:
-	void ReportHandler (const u8 *pReport);
+	CMouseDevice *m_pMouseDevice;
 
-private:
-	CMouseBehaviour m_Behaviour;
-
-	TMouseStatusHandler *m_pStatusHandler;
-
-	static unsigned s_nDeviceNumber;
+	u8 *m_pHIDReportDescriptor;
+	u16 m_usReportDescriptorLength;
 };
 
 #endif

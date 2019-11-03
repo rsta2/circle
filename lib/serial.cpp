@@ -2,7 +2,7 @@
 // serial.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -86,12 +86,21 @@
 
 CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFIQ)
 :
+#if SERIAL_GPIO_SELECT == 14
 	// to be sure there is no collision with the Bluetooth controller
 	m_GPIO32 (32, GPIOModeInput),
 	m_GPIO33 (33, GPIOModeInput),
-
 	m_TxDPin (14, GPIOModeAlternateFunction0),
 	m_RxDPin (15, GPIOModeAlternateFunction0),
+#elif SERIAL_GPIO_SELECT == 32
+	m_TxDPin (32, GPIOModeAlternateFunction3),
+	m_RxDPin (33, GPIOModeAlternateFunction3),
+#elif SERIAL_GPIO_SELECT == 36
+	m_TxDPin (36, GPIOModeAlternateFunction2),
+	m_RxDPin (37, GPIOModeAlternateFunction2),
+#else
+	#error SERIAL_GPIO_SELECT must be 14, 32 or 36!
+#endif
 	m_pInterruptSystem (pInterruptSystem),
 	m_bUseFIQ (bUseFIQ),
 	m_bInterruptConnected (FALSE),
@@ -101,6 +110,7 @@ CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFI
 	m_nTxInPtr (0),
 	m_nTxOutPtr (0),
 	m_nOptions (SERIAL_OPTION_ONLCR),
+	m_pMagic (0),
 	m_SpinLock (bUseFIQ ? FIQ_LEVEL : IRQ_LEVEL)
 #ifdef REALTIME
 	, m_LineSpinLock (TASK_LEVEL)
@@ -186,7 +196,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 	return TRUE;
 }
 
-int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
+int CSerialDevice::Write (const void *pBuffer, size_t nCount)
 {
 	m_LineSpinLock.Acquire ();
 
@@ -250,7 +260,7 @@ int CSerialDevice::Write (const void *pBuffer, unsigned nCount)
 	return nResult;
 }
 
-int CSerialDevice::Read (void *pBuffer, unsigned nCount)
+int CSerialDevice::Read (void *pBuffer, size_t nCount)
 {
 	u8 *pChar = (u8 *) pBuffer;
 	assert (pChar != 0);
@@ -338,6 +348,92 @@ void CSerialDevice::SetOptions (unsigned nOptions)
 	m_nOptions = nOptions;
 }
 
+void CSerialDevice::RegisterMagicReceivedHandler (const char *pMagic, TMagicReceivedHandler *pHandler)
+{
+	assert (m_pInterruptSystem != 0);
+	assert (m_pMagic == 0);
+
+	assert (pMagic != 0);
+	assert (*pMagic != '\0');
+	assert (pHandler != 0);
+
+	m_pMagicReceivedHandler = pHandler;
+
+	m_pMagicPtr = pMagic;
+	m_pMagic = pMagic;		// enables the scanner
+}
+
+unsigned CSerialDevice::AvailableForWrite (void)
+{
+	assert (m_pInterruptSystem != 0);
+
+	m_SpinLock.Acquire ();
+
+	unsigned nResult;
+	if (m_nTxOutPtr <= m_nTxInPtr)
+	{
+		nResult = SERIAL_BUF_SIZE+m_nTxOutPtr-m_nTxInPtr-1;
+	}
+	else
+	{
+		nResult = m_nTxOutPtr-m_nTxInPtr-1;
+	}
+
+	m_SpinLock.Release ();
+
+	return nResult;
+}
+
+unsigned CSerialDevice::AvailableForRead (void)
+{
+	assert (m_pInterruptSystem != 0);
+
+	m_SpinLock.Acquire ();
+
+	unsigned nResult;
+	if (m_nRxInPtr < m_nRxOutPtr)
+	{
+		nResult = SERIAL_BUF_SIZE+m_nRxInPtr-m_nRxOutPtr;
+	}
+	else
+	{
+		nResult = m_nRxInPtr-m_nRxOutPtr;
+	}
+
+	m_SpinLock.Release ();
+
+	return nResult;
+}
+
+int CSerialDevice::Peek (void)
+{
+	assert (m_pInterruptSystem != 0);
+
+	m_SpinLock.Acquire ();
+
+	int nResult = -1;
+	if (m_nRxInPtr != m_nRxOutPtr)
+	{
+		nResult = m_RxBuffer[m_nRxOutPtr];
+	}
+
+	m_SpinLock.Release ();
+
+	return nResult;
+}
+
+void CSerialDevice::Flush (void)
+{
+	PeripheralEntry ();
+
+	while (read32 (ARM_UART0_FR) & FR_BUSY_MASK)
+	{
+		// just wait
+	}
+
+	PeripheralExit ();
+}
+
 boolean CSerialDevice::Write (u8 uchChar)
 {
 	boolean bOK = TRUE;
@@ -377,6 +473,8 @@ boolean CSerialDevice::Write (u8 uchChar)
 
 void CSerialDevice::InterruptHandler (void)
 {
+	boolean bMagicReceived = FALSE;
+
 	m_SpinLock.Acquire ();
 
 	PeripheralEntry ();
@@ -406,6 +504,21 @@ void CSerialDevice::InterruptHandler (void)
 			if (m_nRxStatus == 0)
 			{
 				m_nRxStatus = -SERIAL_ERROR_FRAMING;
+			}
+		}
+
+		if (m_pMagic != 0)
+		{
+			if ((char) (nDR & 0xFF) == *m_pMagicPtr)
+			{
+				if (*++m_pMagicPtr == '\0')
+				{
+					bMagicReceived = TRUE;
+				}
+			}
+			else
+			{
+				m_pMagicPtr = m_pMagic;
 			}
 		}
 
@@ -441,6 +554,11 @@ void CSerialDevice::InterruptHandler (void)
 	PeripheralExit ();
 
 	m_SpinLock.Release ();
+
+	if (bMagicReceived)
+	{
+		(*m_pMagicReceivedHandler) ();
+	}
 }
 
 void CSerialDevice::InterruptStub (void *pParam)

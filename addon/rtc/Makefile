@@ -6,8 +6,9 @@ CIRCLEHOME = ../..
 
 OBJS	= mcp7941x.o
 
-librtc$(RASPPI).a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
+librtc.a: $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

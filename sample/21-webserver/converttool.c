@@ -35,7 +35,7 @@ int main (int nArgC, char **ppArgV)
 	pFileName = *ppArgV++;
 	nArgC--;
 
-	pFile = fopen (pFileName, "r");
+	pFile = fopen (pFileName, bBinary ? "rb" : "r");
 	if (pFile == NULL)
 	{
 		fprintf (stderr, "\n%s: File not found: %s\n\n", pArg0, pFileName);

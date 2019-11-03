@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,20 +25,23 @@ OBJS	= btsubsystem.o bttask.o \
 	  bthcilayer.o btdevicemanager.o \
 	  btqueue.o btuarttransport.o
 
-libbluetooth$(RASPPI).a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
+libbluetooth.a: $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 EXTRACLEAN = BCM43430A1.h converttool
 
 include $(CIRCLEHOME)/Rules.mk
 
 %.h: %.hcd
-	./converttool -b $< > $@
+	@echo "  GEN   $@"
+	@./converttool -b $< > $@
 
 btdevicemanager.o: BCM43430A1.h
 
 BCM43430A1.h: converttool
 
 converttool: converttool.c
-	gcc -o converttool converttool.c
+	@echo "  TOOL  $@"
+	@gcc -o converttool converttool.c

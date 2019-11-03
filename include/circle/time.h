@@ -20,10 +20,13 @@
 #ifndef _circle_time_h
 #define _circle_time_h
 
+#if !defined(FIPS_RASPBERRYPI)
+
 #include <circle/string.h>
 #include <circle/types.h>
 
 typedef signed long time_t;
+#endif
 
 class CTime			/// Holds, makes and breaks the time
 {

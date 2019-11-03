@@ -2,7 +2,7 @@
 // virtualgpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 // 
 // This file contains code taken from Linux:
 //	from file drivers/gpio/gpio-bcm-virt.c
@@ -28,15 +28,21 @@
 #include <circle/memory.h>
 #include <circle/bcm2835.h>
 
-u32 CVirtualGPIOPin::s_nGPIOBaseAddress = 0;
+uintptr CVirtualGPIOPin::s_nGPIOBaseAddress = 0;
 
 CSpinLock CVirtualGPIOPin::s_SpinLock (TASK_LEVEL);
 
-CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
-:	m_nPin (nPin),
+CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin, boolean bSafeMode)
+:	m_bSafeMode (bSafeMode),
+	m_nPin (nPin),
 	m_nEnableCount (0),
 	m_nDisableCount (0)
 {
+	if (m_bSafeMode)
+	{
+		return;
+	}
+
 	if (m_nPin >= VIRTUAL_GPIO_PINS)
 	{
 		return;
@@ -50,8 +56,8 @@ CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
 
 		CBcmPropertyTags Tags;
 		TPropertyTagSimple TagSimple;
-		TagSimple.nValue = s_nGPIOBaseAddress + GPU_MEM_BASE;
-		if (!Tags.GetTag (PROPTAG_SET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))
+		TagSimple.nValue = BUS_ADDRESS (s_nGPIOBaseAddress);
+		if (!Tags.GetTag (PROPTAG_SET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple, 4))
 		{
 			if (Tags.GetTag (PROPTAG_GET_GPIO_VIRTBUF, &TagSimple, sizeof TagSimple))
 			{
@@ -62,6 +68,11 @@ CVirtualGPIOPin::CVirtualGPIOPin (unsigned nPin)
 				s_nGPIOBaseAddress = 0;
 			}
 		}
+	}
+
+	if (s_nGPIOBaseAddress != 0)
+	{
+		write32 (s_nGPIOBaseAddress + m_nPin * 4, 0);
 	}
 
 	s_SpinLock.Release ();
@@ -75,6 +86,19 @@ CVirtualGPIOPin::~CVirtualGPIOPin (void)
 
 void CVirtualGPIOPin::Write (unsigned nValue)
 {
+	if (m_bSafeMode)
+	{
+		assert (m_nPin == 0);		// only Act LED is supported
+
+		CBcmPropertyTags Tags;
+		TPropertyTagGPIOState GPIOState;
+		GPIOState.nGPIO = EXP_GPIO_BASE + 2;
+		GPIOState.nState = nValue;
+		Tags.GetTag (PROPTAG_SET_SET_GPIO_STATE, &GPIOState, sizeof GPIOState, 8);
+
+		return;
+	}
+
 	if (   m_nPin >= VIRTUAL_GPIO_PINS
 	    || s_nGPIOBaseAddress == 0
 	    || (nValue != LOW && nValue != HIGH))

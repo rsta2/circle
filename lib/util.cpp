@@ -2,7 +2,7 @@
 // util.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,27 @@
 
 void *memset (void *pBuffer, int nValue, size_t nLength)
 {
-	char *p = (char *) pBuffer;
+	u32 *p32 = (u32 *) pBuffer;
+
+	if (   ((uintptr) p32 & 3) == 0
+	    && nLength >= 16)
+	{
+		u32 nValue32 = nValue | nValue << 8;
+		nValue32 |= nValue32 << 16;
+
+		do
+		{
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+
+			nLength -= 16;
+		}
+		while (nLength >= 16);
+	}
+
+	char *p = (char *) p32;
 
 	while (nLength--)
 	{
@@ -29,6 +49,30 @@ void *memset (void *pBuffer, int nValue, size_t nLength)
 	}
 
 	return pBuffer;
+}
+
+#if STDLIB_SUPPORT <= 1
+
+void *memmove (void *pDest, const void *pSrc, size_t nLength)
+{
+	char *pchDest = (char *) pDest;
+	const char *pchSrc = (const char *) pSrc;
+
+	if (   pchSrc < pchDest
+	    && pchDest < pchSrc + nLength)
+	{
+		pchSrc += nLength;
+		pchDest += nLength;
+
+		while (nLength--)
+		{
+			*--pchDest = *--pchSrc;
+		}
+
+		return pDest;
+	}
+
+	return memcpy (pDest, pSrc, nLength);
 }
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength)
@@ -248,6 +292,43 @@ char *strchr (const char *pString, int chChar)
 	return 0;
 }
 
+char *strstr (const char *pString, const char *pNeedle)
+{
+	if (!*pString)
+	{
+		if (*pNeedle)
+		{
+			return 0;
+		}
+
+		return (char *) pString;
+	}
+
+	while (*pString)
+	{
+		size_t i = 0;
+
+		while (1)
+		{
+			if (!pNeedle[i])
+			{
+				return (char *) pString;
+			}
+
+			if (pNeedle[i] != pString[i])
+			{
+				break;
+			}
+
+			i++;
+		}
+
+		pString++;
+	}
+
+	return 0;
+}
+
 char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr)
 {
 	char *pToken;
@@ -299,7 +380,7 @@ char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr)
 	return pToken;
 }
 
-unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase)
+unsigned long _strtoul (const char *pString, char **ppEndPtr, int nBase)
 {
 	unsigned long ulResult = 0;
 	unsigned long ulPrevResult;
@@ -430,6 +511,8 @@ unsigned long strtoul (const char *pString, char **ppEndPtr, int nBase)
 
 	return ulResult;
 }
+
+#endif
 
 int char2int (char chValue)
 {

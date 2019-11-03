@@ -2,7 +2,7 @@
 // usbmassdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbmassdevice_h
-#define _usbmassdevice_h
+#ifndef _circle_usb_usbmassdevice_h
+#define _circle_usb_usbmassdevice_h
 
 #include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
@@ -39,18 +39,18 @@ public:
 
 	boolean Configure (void);
 
-	int Read (void *pBuffer, unsigned nCount);
-	int Write (const void *pBuffer, unsigned nCount);
+	int Read (void *pBuffer, size_t nCount);
+	int Write (const void *pBuffer, size_t nCount);
 
-	unsigned long long Seek (unsigned long long ullOffset);
+	u64 Seek (u64 ullOffset);
 
 	unsigned GetCapacity (void) const;
 
 private:
-	int TryRead (void *pBuffer, unsigned nCount);
-	int TryWrite (const void *pBuffer, unsigned nCount);
+	int TryRead (void *pBuffer, size_t nCount);
+	int TryWrite (const void *pBuffer, size_t nCount);
 
-	int Command (void *pCmdBlk, unsigned nCmdBlkLen, void *pBuffer, unsigned nBufLen, boolean bIn);
+	int Command (void *pCmdBlk, size_t nCmdBlkLen, void *pBuffer, size_t nBufLen, boolean bIn);
 
 	int Reset (void);
 
@@ -60,11 +60,12 @@ private:
 
 	unsigned m_nCWBTag;
 	unsigned m_nBlockCount;
-	unsigned long long m_ullOffset;
+	u64 m_ullOffset;
 
 	CPartitionManager *m_pPartitionManager;
 
-	static unsigned s_nDeviceNumber;
+	static unsigned s_nDeviceNumberMap;
+	unsigned m_nDeviceNumber;
 };
 
 #endif

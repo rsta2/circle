@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="iso-8859-1" />
+	<link rel="stylesheet" href="style.css" type="text/css" />
+	<title>Bare metal Bootloader</title>
+</head>
+<body>
+	<h1>Bare metal Bootloader</h1>
+
+	<p>%s</p>
+
+	<form action="index.html" method="post" enctype="multipart/form-data">
+		<table>
+		<tr>
+			<th>Kernel image file (kernel*.img)</th>
+		</tr>
+		<tr>
+			<td><input type="file" name="kernelimg" /></td>
+		</tr>
+		<tr>
+			<td><input type="submit" value="Boot now!" /></td>
+		</tr>
+		</table>
+	</form>
+
+	<hr />
+	<p class="small"><a href="https://github.com/rsta2/circle" target="_blank">Circle %s</a> running on %s</p>
+</body>
+</html>

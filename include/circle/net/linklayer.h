@@ -2,7 +2,7 @@
 // linklayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include <circle/net/netdevlayer.h>
 #include <circle/net/arphandler.h>
 #include <circle/net/ipaddress.h>
-#include <circle/usb/macaddress.h>
+#include <circle/macaddress.h>
 #include <circle/net/netqueue.h>
 #include <circle/macros.h>
 #include <circle/types.h>
@@ -61,8 +61,6 @@ private:
 
 	CNetQueue m_ARPRxQueue;
 	CNetQueue m_IPRxQueue;
-
-	unsigned char *m_pBuffer;
 };
 
 #endif

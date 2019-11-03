@@ -6,15 +6,15 @@
 
 typedef unsigned long	loff_t;
 typedef int		gfp_t;
-typedef u32		dma_addr_t;
+typedef uintptr		dma_addr_t;
 
 #ifndef __cplusplus
-typedef char	bool;
-#define false	0
-#define true	1
+#include <stdbool.h>
 #endif
 
+#ifndef NULL
 #define NULL	0
+#endif
 
 struct list_head
 {

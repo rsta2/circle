@@ -8,22 +8,24 @@
 /* storage control modules to the FatFs module with a defined API.       */
 /*-----------------------------------------------------------------------*/
 
+#include "ff.h"			/* Obtains integer types */
 #include "diskio.h"		/* FatFs lower layer API */
-#include "ffconf.h"		/* FatFs configuration options */
 #include <circle/device.h>
 #include <circle/devicenameservice.h>
+#include <circle/util.h>
+#include <circle/types.h>
 #include <assert.h>
 
-#if _MIN_SS != _MAX_SS
-	#error _MIN_SS != _MAX_SS is not supported!
+#if FF_MIN_SS != FF_MAX_SS
+	#error FF_MIN_SS != FF_MAX_SS is not supported!
 #endif
-#define SECTOR_SIZE		_MIN_SS
+#define SECTOR_SIZE		FF_MIN_SS
 
 /*-----------------------------------------------------------------------*/
 /* Static Data                                                           */
 /*-----------------------------------------------------------------------*/
 
-static const char *s_pVolumeName[_VOLUMES] =
+static const char *s_pVolumeName[FF_VOLUMES] =
 {
 	"emmc1",
 	"umsd1",
@@ -31,7 +33,10 @@ static const char *s_pVolumeName[_VOLUMES] =
 	"umsd3",
 };
 
-static CDevice *s_pVolume[_VOLUMES] = {0};
+static CDevice *s_pVolume[FF_VOLUMES] = {0};
+
+static u8 *s_pBuffer = 0;
+static unsigned s_nBufferSize = 0;
 
 
 
@@ -43,7 +48,7 @@ DSTATUS disk_status (
 	BYTE pdrv		/* Physical drive nmuber to identify the drive */
 )
 {
-	if (   pdrv < _VOLUMES
+	if (   pdrv < FF_VOLUMES
 	    && s_pVolume[pdrv] != 0)
 	{
 		return 0;
@@ -62,7 +67,7 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-	if (pdrv >= _VOLUMES)
+	if (pdrv >= FF_VOLUMES)
 	{
 		return STA_NOINIT;
 	}
@@ -89,7 +94,7 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-	if (pdrv >= _VOLUMES)
+	if (pdrv >= FF_VOLUMES)
 	{
 		return RES_PARERR;
 	}
@@ -100,13 +105,36 @@ DRESULT disk_read (
 		return RES_NOTRDY;
 	}
 
+	/* Ensure that the transfer buffer is word aligned */
+	BYTE *pBuffer = buff;
+	unsigned nSize = count * SECTOR_SIZE;
+	if (((uintptr) pBuffer & 3) != 0)
+	{
+		if (s_nBufferSize < nSize)
+		{
+			delete [] s_pBuffer;
+
+			s_nBufferSize = nSize;
+
+			s_pBuffer = new u8[s_nBufferSize];
+			assert (s_pBuffer != 0);
+		}
+
+		pBuffer = s_pBuffer;
+	}
+
 	QWORD offset = sector;
 	offset *= SECTOR_SIZE;
 	pDevice->Seek (offset);
 
-	if (pDevice->Read (buff, count * SECTOR_SIZE) < 0)
+	if (pDevice->Read (pBuffer, nSize) < 0)
 	{
 		return RES_ERROR;
+	}
+
+	if (pBuffer != buff)
+	{
+		memcpy (buff, pBuffer, nSize);
 	}
 
 	return RES_OK;
@@ -125,7 +153,7 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-	if (pdrv >= _VOLUMES)
+	if (pdrv >= FF_VOLUMES)
 	{
 		return RES_PARERR;
 	}
@@ -136,11 +164,31 @@ DRESULT disk_write (
 		return RES_NOTRDY;
 	}
 
+	/* Ensure that the transfer buffer is word aligned */
+	const BYTE *pBuffer = buff;
+	unsigned nSize = count * SECTOR_SIZE;
+	if (((uintptr) pBuffer & 3) != 0)
+	{
+		if (s_nBufferSize < nSize)
+		{
+			delete [] s_pBuffer;
+
+			s_nBufferSize = nSize;
+
+			s_pBuffer = new u8[s_nBufferSize];
+			assert (s_pBuffer != 0);
+		}
+
+		memcpy (s_pBuffer, buff, nSize);
+
+		pBuffer = s_pBuffer;
+	}
+
 	QWORD offset = sector;
 	offset *= SECTOR_SIZE;
 	pDevice->Seek (offset);
 
-	if (pDevice->Write (buff, count * SECTOR_SIZE) < 0)
+	if (pDevice->Write (pBuffer, nSize) < 0)
 	{
 		return RES_ERROR;
 	}
@@ -168,6 +216,30 @@ DRESULT disk_ioctl (
 	case GET_SECTOR_SIZE:
 		assert (buff != 0);
 		*(WORD *) buff = SECTOR_SIZE;
+		return RES_OK;
+
+	case CTRL_EJECT:
+		if (pdrv >= FF_VOLUMES)
+		{
+			return RES_PARERR;
+		}
+
+		if (s_pVolume[pdrv] == 0)
+		{
+			s_pVolume[pdrv] = CDeviceNameService::Get ()->GetDevice (s_pVolumeName[pdrv], TRUE);
+			if (s_pVolume[pdrv] == 0)
+			{
+				return RES_NOTRDY;
+			}
+		}
+
+		if (!s_pVolume[pdrv]->RemoveDevice ())
+		{
+			return RES_ERROR;
+		}
+
+		s_pVolume[pdrv] = 0;
+
 		return RES_OK;
 	}
 

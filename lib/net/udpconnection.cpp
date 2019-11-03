@@ -2,7 +2,7 @@
 // udpconnection.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -128,9 +128,8 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 		return -1;
 	}
 
-	u8 *pPacketBuffer = new u8[nPacketLength];
-	assert (pPacketBuffer != 0);
-	TUDPHeader *pHeader = (TUDPHeader *) pPacketBuffer;
+	u8 PacketBuffer[nPacketLength];
+	TUDPHeader *pHeader = (TUDPHeader *) PacketBuffer;
 
 	pHeader->nSourcePort = le2be16 (m_nOwnPort);
 	pHeader->nDestPort   = le2be16 (m_nForeignPort);
@@ -139,18 +138,15 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 	
 	assert (pData != 0);
 	assert (nLength > 0);
-	memcpy (pPacketBuffer+sizeof (TUDPHeader), pData, nLength);
+	memcpy (PacketBuffer+sizeof (TUDPHeader), pData, nLength);
 
 	m_Checksum.SetSourceAddress (*m_pNetConfig->GetIPAddress ());
 	m_Checksum.SetDestinationAddress (m_ForeignIP);
-	pHeader->nChecksum = m_Checksum.Calculate (pPacketBuffer, nPacketLength);
+	pHeader->nChecksum = m_Checksum.Calculate (PacketBuffer, nPacketLength);
 
 	assert (m_pNetworkLayer != 0);
-	boolean bOK = m_pNetworkLayer->Send (m_ForeignIP, pPacketBuffer, nPacketLength, IPPROTO_UDP);
+	boolean bOK = m_pNetworkLayer->Send (m_ForeignIP, PacketBuffer, nPacketLength, IPPROTO_UDP);
 	
-	delete [] pPacketBuffer;
-	pPacketBuffer = 0;
-
 	return bOK ? nLength : -1;
 }
 
@@ -237,9 +233,8 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 		return -1;
 	}
 
-	u8 *pPacketBuffer = new u8[nPacketLength];
-	assert (pPacketBuffer != 0);
-	TUDPHeader *pHeader = (TUDPHeader *) pPacketBuffer;
+	u8 PacketBuffer[nPacketLength];
+	TUDPHeader *pHeader = (TUDPHeader *) PacketBuffer;
 
 	pHeader->nSourcePort = le2be16 (m_nOwnPort);
 	pHeader->nDestPort   = le2be16 (nForeignPort);
@@ -248,18 +243,15 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 	
 	assert (pData != 0);
 	assert (nLength > 0);
-	memcpy (pPacketBuffer+sizeof (TUDPHeader), pData, nLength);
+	memcpy (PacketBuffer+sizeof (TUDPHeader), pData, nLength);
 
 	m_Checksum.SetSourceAddress (*m_pNetConfig->GetIPAddress ());
 	m_Checksum.SetDestinationAddress (rForeignIP);
-	pHeader->nChecksum = m_Checksum.Calculate (pPacketBuffer, nPacketLength);
+	pHeader->nChecksum = m_Checksum.Calculate (PacketBuffer, nPacketLength);
 
 	assert (m_pNetworkLayer != 0);
-	boolean bOK = m_pNetworkLayer->Send (rForeignIP, pPacketBuffer, nPacketLength, IPPROTO_UDP);
+	boolean bOK = m_pNetworkLayer->Send (rForeignIP, PacketBuffer, nPacketLength, IPPROTO_UDP);
 	
-	delete [] pPacketBuffer;
-	pPacketBuffer = 0;
-
 	return bOK ? nLength : -1;
 }
 
@@ -320,6 +312,11 @@ int CUDPConnection::SetOptionBroadcast (boolean bAllowed)
 	m_bBroadcastsAllowed = bAllowed;
 
 	return 0;
+}
+
+boolean CUDPConnection::IsConnected (void) const
+{
+	return FALSE;
 }
 
 boolean CUDPConnection::IsTerminated (void) const

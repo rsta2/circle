@@ -5,8 +5,8 @@
 
 struct resource
 {
-	u32	 start;
-	u32	 end;
+	uintptr	 start;
+	uintptr	 end;
 
 	unsigned flags;
 #define IORESOURCE_MEM		0x200

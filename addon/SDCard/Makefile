@@ -6,8 +6,9 @@ CIRCLEHOME = ../..
 
 OBJS	= emmc.o
 
-libsdcard$(RASPPI).a: $(OBJS)
-	rm -f $@
-	$(AR) cr $@ $(OBJS)
+libsdcard.a: $(OBJS)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(OBJS)
 
 include $(CIRCLEHOME)/Rules.mk

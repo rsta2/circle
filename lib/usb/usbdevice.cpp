@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,9 +19,12 @@
 //
 #include <circle/usb/usbdevice.h>
 #include <circle/usb/usbhostcontroller.h>
+#include <circle/usb/usbhcirootport.h>
+#include <circle/usb/usbstandardhub.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/usb/usbstring.h>
+#include <circle/usb/xhci.h>
 #include <circle/util.h>
 #include <circle/sysconfig.h>
 #include <circle/debug.h>
@@ -31,29 +34,88 @@
 
 static const char FromDevice[] = "usbdev";
 
-u8 CUSBDevice::s_ucNextAddress = USB_FIRST_DEDICATED_ADDRESS;
+#if RASPPI <= 3
+u64 CUSBDevice::s_nDeviceAddressMap = 0;
+#endif
 
-CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
-			boolean bSplitTransfer, u8 ucHubAddress, u8 ucHubPortNumber)
+CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CUSBHCIRootPort *pRootPort)
 :	m_pHost (pHost),
+	m_pRootPort (pRootPort),
+	m_pHub (0),
 	m_ucAddress (USB_DEFAULT_ADDRESS),
 	m_Speed (Speed),
 	m_pEndpoint0 (0),
-	m_bSplitTransfer (bSplitTransfer),
-	m_ucHubAddress (ucHubAddress),
-	m_ucHubPortNumber (ucHubPortNumber),
+	m_bSplitTransfer (FALSE),
+	m_ucHubAddress (0),
+	m_ucHubPortNumber (1),
+	m_pTTHubDevice (0),
 	m_pDeviceDesc (0),
 	m_pConfigDesc (0),
 	m_pConfigParser (0)
 {
 	assert (m_pHost != 0);
+	assert (m_pRootPort != 0);
+
+#if RASPPI >= 4
+        m_nRootHubPortID = m_pRootPort->GetPortID ();
+	m_nRouteString = 0;
+#endif
+
+	assert (m_pEndpoint0 == 0);
+	m_pEndpoint0 = new CUSBEndpoint (this);
+	assert (m_pEndpoint0 != 0);
+
+	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
+	{
+		m_pFunction[nFunction] = 0;
+	}
+}
+
+CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
+			CUSBStandardHub *pHub, unsigned nHubPortIndex)
+:	m_pHost (pHost),
+	m_pRootPort (0),
+	m_pHub (pHub),
+	m_nHubPortIndex (nHubPortIndex),
+	m_ucAddress (USB_DEFAULT_ADDRESS),
+	m_Speed (Speed),
+	m_pEndpoint0 (0),
+	m_pDeviceDesc (0),
+	m_pConfigDesc (0),
+	m_pConfigParser (0)
+{
+	assert (m_pHost != 0);
+	assert (m_pHub != 0);
+
+	CUSBDevice *pHubDevice = pHub->GetDevice ();
+	assert (pHubDevice != 0);
+
+#if RASPPI >= 4
+	m_nRootHubPortID = pHubDevice->GetRootHubPortID ();
+	m_nRouteString = AppendPortToRouteString (pHubDevice->GetRouteString (), nHubPortIndex+1);
+#endif
+
+	m_bSplitTransfer  = pHubDevice->IsSplit ();
+	m_ucHubAddress    = pHubDevice->GetHubAddress ();
+	m_ucHubPortNumber = pHubDevice->GetHubPortNumber ();
+	m_pTTHubDevice    = pHubDevice->GetTTHubDevice ();
+
+	// Is this the first high-speed hub with a non-high-speed device following in chain?
+	if (   !m_bSplitTransfer
+	    && pHubDevice->GetSpeed () == USBSpeedHigh
+	    && m_Speed < USBSpeedHigh)
+	{
+		// Then enable split transfers with this hub port as translator.
+		m_bSplitTransfer  = TRUE;
+		m_ucHubAddress    = pHubDevice->GetAddress ();
+		m_ucHubPortNumber = m_nHubPortIndex+1;
+		m_pTTHubDevice    = pHubDevice;
+	}
 
 	assert (m_pEndpoint0 == 0);
 	m_pEndpoint0 = new CUSBEndpoint (this);
 	assert (m_pEndpoint0 != 0);
 	
-	assert (ucHubPortNumber >= 1);
-
 	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
 	{
 		m_pFunction[nFunction] = 0;
@@ -67,6 +129,14 @@ CUSBDevice::~CUSBDevice (void)
 		delete (m_pFunction[nFunction]);
 		m_pFunction[nFunction] = 0;
 	}
+
+#if RASPPI <= 3
+	if (m_ucAddress != USB_DEFAULT_ADDRESS)
+	{
+		assert (s_nDeviceAddressMap & ((u64) 1 << m_ucAddress));
+		s_nDeviceAddressMap &= ~((u64) 1 << m_ucAddress);
+	}
+#endif
 
 	delete m_pConfigParser;
 	m_pConfigParser = 0;
@@ -85,7 +155,7 @@ CUSBDevice::~CUSBDevice (void)
 
 boolean CUSBDevice::Initialize (void)
 {
-#ifdef REALTIME
+#if RASPPI <= 3 && defined (REALTIME)
 	if (m_Speed != USBSpeedHigh)
 	{
 		LogWrite (LogWarning, "Device speed is not allowed with REALTIME");
@@ -126,7 +196,15 @@ boolean CUSBDevice::Initialize (void)
 		return FALSE;
 	}
 
-	m_pEndpoint0->SetMaxPacketSize (m_pDeviceDesc->bMaxPacketSize0);
+	if (!m_pEndpoint0->SetMaxPacketSize (m_pDeviceDesc->bMaxPacketSize0))
+	{
+		LogWrite (LogError, "Cannot set maximum packet size on EP0");
+
+		delete m_pDeviceDesc;
+		m_pDeviceDesc = 0;
+
+		return FALSE;
+	}
 
 	if (m_pHost->GetDescriptor (m_pEndpoint0,
 				    DESCRIPTOR_DEVICE, DESCRIPTOR_INDEX_DEFAULT,
@@ -144,14 +222,26 @@ boolean CUSBDevice::Initialize (void)
 #ifndef NDEBUG
 	//debug_hexdump (m_pDeviceDesc, sizeof *m_pDeviceDesc, FromDevice);
 #endif
-	
-	u8 ucAddress = s_ucNextAddress++;
+
+#if RASPPI <= 3
+	// find and allocate first free device address
+	u8 ucAddress;
+	for (ucAddress = USB_FIRST_DEDICATED_ADDRESS; ucAddress <= USB_MAX_ADDRESS; ucAddress++)
+	{
+		if (!(s_nDeviceAddressMap & ((u64) 1 << ucAddress)))
+		{
+			break;
+		}
+	}
+
 	if (ucAddress > USB_MAX_ADDRESS)
 	{
 		LogWrite (LogError, "Too many devices");
 
 		return FALSE;
 	}
+
+	s_nDeviceAddressMap |= (u64) 1 << ucAddress;
 
 	if (!m_pHost->SetAddress (m_pEndpoint0, ucAddress))
 	{
@@ -161,6 +251,7 @@ boolean CUSBDevice::Initialize (void)
 	}
 	
 	SetAddress (ucAddress);
+#endif
 
 	assert (m_pConfigDesc == 0);
 	m_pConfigDesc = new TUSBConfigurationDescriptor;
@@ -258,16 +349,15 @@ boolean CUSBDevice::Initialize (void)
 	TUSBInterfaceDescriptor *pInterfaceDesc;
 	while ((pInterfaceDesc = (TUSBInterfaceDescriptor *) m_pConfigParser->GetDescriptor (DESCRIPTOR_INTERFACE)) != 0)
 	{
-		if (   pInterfaceDesc->bInterfaceNumber != ucInterfaceNumber
-		    && pInterfaceDesc->bInterfaceNumber != ucInterfaceNumber+1)
+		if (pInterfaceDesc->bInterfaceNumber > ucInterfaceNumber)
+		{
+			ucInterfaceNumber = pInterfaceDesc->bInterfaceNumber;
+		}
+
+		if (pInterfaceDesc->bInterfaceNumber != ucInterfaceNumber)
 		{
 			LogWrite (LogDebug, "Alternate setting %u ignored",
 				  (unsigned) pInterfaceDesc->bAlternateSetting);
-
-			if (pInterfaceDesc->bInterfaceNumber == ucInterfaceNumber+1)
-			{
-				ucInterfaceNumber++;
-			}
 
 			continue;
 		}
@@ -276,16 +366,6 @@ boolean CUSBDevice::Initialize (void)
 		assert (m_pFunction[nFunction] == 0);
 		m_pFunction[nFunction] = new CUSBFunction (this, m_pConfigParser);
 		assert (m_pFunction[nFunction] != 0);
-
-		if (!m_pFunction[nFunction]->Initialize ())
-		{
-			LogWrite (LogError, "Cannot initialize function");
-
-			delete m_pFunction[nFunction];
-			m_pFunction[nFunction] = 0;
-
-			continue;
-		}
 
 		CUSBFunction *pChild = 0;
 
@@ -325,6 +405,16 @@ boolean CUSBDevice::Initialize (void)
 		}
 
 		m_pFunction[nFunction] = pChild;
+
+		if (!m_pFunction[nFunction]->Initialize ())
+		{
+			LogWrite (LogError, "Cannot initialize function");
+
+			delete m_pFunction[nFunction];
+			m_pFunction[nFunction] = 0;
+
+			continue;
+		}
 
 		if (++nFunction == USBDEV_MAX_FUNCTIONS)
 		{
@@ -384,6 +474,35 @@ boolean CUSBDevice::Configure (void)
 	}
 	
 	return bResult;
+}
+
+boolean CUSBDevice::ReScanDevices (void)
+{
+	boolean bResult = FALSE;
+
+	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
+	{
+		if (m_pFunction[nFunction] != 0)
+		{
+			if (m_pFunction[nFunction]->ReScanDevices ())
+			{
+				bResult = TRUE;
+			}
+		}
+	}
+
+	return bResult;
+}
+
+boolean CUSBDevice::RemoveDevice (void)
+{
+	if (m_pRootPort != 0)
+	{
+		return m_pRootPort->RemoveDevice ();
+	}
+
+	assert (m_pHub != 0);
+	return m_pHub->RemoveDevice (m_nHubPortIndex);
 }
 
 CString *CUSBDevice::GetName (TDeviceNameSelector Selector) const
@@ -456,7 +575,11 @@ CString *CUSBDevice::GetNames (void) const
 
 void CUSBDevice::SetAddress (u8 ucAddress)
 {
+#if RASPPI <= 3
 	assert (ucAddress <= USB_MAX_ADDRESS);
+#else
+	assert (XHCI_IS_SLOTID (ucAddress));
+#endif
 	m_ucAddress = ucAddress;
 
 	//LogWrite (LogDebug, "Device address set to %u", (unsigned) m_ucAddress);
@@ -485,6 +608,11 @@ u8 CUSBDevice::GetHubAddress (void) const
 u8 CUSBDevice::GetHubPortNumber (void) const
 {
 	return m_ucHubPortNumber;
+}
+
+CUSBDevice *CUSBDevice::GetTTHubDevice (void) const
+{
+	return m_pTTHubDevice;
 }
 
 CUSBEndpoint *CUSBDevice::GetEndpoint0 (void) const
@@ -528,7 +656,25 @@ void CUSBDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 	assert (pMessage != 0);
 
 	CString Source;
+#if RASPPI <= 3
 	Source.Format ("%s%u-%u", FromDevice, (unsigned) m_ucHubAddress, (unsigned) m_ucHubPortNumber);
+#else
+	Source.Format ("%s%u", FromDevice, m_nRootHubPortID);
+
+	for (unsigned nTier = 0; nTier < 5; nTier++)
+	{
+		unsigned nHubPort = (m_nRouteString >> (nTier * 4)) & 0x0F;
+		if (nHubPort == 0)
+		{
+			break;
+		}
+
+		CString HubPort;
+		HubPort.Format ("-%u", nHubPort);
+
+		Source.Append (HubPort);
+	}
+#endif
 
 	va_list var;
 	va_start (var, pMessage);
@@ -537,3 +683,27 @@ void CUSBDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 
 	va_end (var);
 }
+
+#if RASPPI >= 4
+
+u32 CUSBDevice::AppendPortToRouteString (u32 nRouteString, unsigned nPort)
+{
+	unsigned nTier;
+	for (nTier = 0; nTier < 5; nTier++)
+	{
+		if ((nRouteString & (0x0F << (nTier * 4))) == 0)
+		{
+			break;
+		}
+	}
+
+	if (nTier < 5)
+	{
+		assert (nPort <= 15);
+		nRouteString |= nPort << (nTier * 4);
+	}
+
+	return nRouteString;
+}
+
+#endif

@@ -13,7 +13,6 @@ typedef struct spinlock
 {
 #ifdef ARM_ALLOW_MULTI_CORE
 	u32 lock;
-	u32 cpsr[CORES];
 #endif
 }
 spinlock_t;

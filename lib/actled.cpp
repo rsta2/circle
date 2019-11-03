@@ -2,7 +2,7 @@
 // actled.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,62 +18,31 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/actled.h>
-#include <circle/bcmpropertytags.h>
+#include <circle/machineinfo.h>
 #include <circle/timer.h>
 
 CActLED *CActLED::s_pThis = 0;
 
-CActLED::CActLED (void)
+CActLED::CActLED (boolean bSafeMode)
 :	m_pPin (0),
 	m_pVirtualPin (0)
 {
 	s_pThis = this;
 
-	CBcmPropertyTags Tags;
-	TPropertyTagSimple BoardRevision;
-	if (Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
+	unsigned nActLEDInfo = CMachineInfo::Get ()->GetActLEDInfo ();
+
+	if (nActLEDInfo & ACTLED_VIRTUAL_PIN)
 	{
-		boolean bOld;
-		boolean bIsPiZero = FALSE;
-		boolean bIsPi3 = FALSE;
-		if (BoardRevision.nValue & (1 << 23))	// new revision scheme?
-		{
-			unsigned nType = (BoardRevision.nValue >> 4) & 0xFF;
-
-			bOld = nType <= 0x01;
-			bIsPi3 = nType == 0x08;
-			bIsPiZero = nType == 0x09 || nType == 0x0C;
-		}
-		else
-		{
-			unsigned nRevision = BoardRevision.nValue & 0xFFFF;
-
-			bOld = nRevision <= 0x000F;
-		}
-
-		if (bOld)
-		{
-			// Model B and earlier
-			m_pPin = new CGPIOPin (16, GPIOModeOutput);
-			m_bActiveHigh = FALSE;
-		}
-		else
-		{
-			// Model B+ and later
-			if (!bIsPi3)
-			{
-				m_pPin = new CGPIOPin (47, GPIOModeOutput);
-			}
-			else
-			{
-				m_pVirtualPin = new CVirtualGPIOPin (0);
-			}
-
-			m_bActiveHigh = !bIsPiZero;
-		}
-
-		Off ();
+		m_pVirtualPin = new CVirtualGPIOPin (nActLEDInfo & ACTLED_PIN_MASK, bSafeMode);
 	}
+	else
+	{
+		m_pPin = new CGPIOPin (nActLEDInfo & ACTLED_PIN_MASK, GPIOModeOutput);
+	}
+
+	m_bActiveHigh = nActLEDInfo & ACTLED_ACTIVE_LOW ? FALSE : TRUE;
+
+	Off ();
 }
 
 CActLED::~CActLED (void)

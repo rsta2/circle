@@ -2,7 +2,7 @@
 // serial.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,18 +56,41 @@ public:
 	/// \param pBuffer Pointer to data to be sent
 	/// \param nCount Number of bytes to be sent
 	/// \return Number of bytes successfully sent (< 0 on error)
-	int Write (const void *pBuffer, unsigned nCount);
+	int Write (const void *pBuffer, size_t nCount);
 
 #ifndef USE_RPI_STUB_AT
 	/// \param pBuffer Pointer to buffer for received data
 	/// \param nCount Maximum number of bytes to be received
 	/// \return Number of bytes received (0 no data available, < 0 on error)
-	int Read (void *pBuffer, unsigned nCount);
+	int Read (void *pBuffer, size_t nCount);
 
 	/// \return Serial options mask (see serial options)
 	unsigned GetOptions (void) const;
 	/// \param nOptions Serial options mask (see serial options)
 	void SetOptions (unsigned nOptions);
+
+	typedef void TMagicReceivedHandler (void);
+	/// \param pMagic String for which is searched in the received data\n
+	/// (must remain valid after return from this method)
+	/// \param pHandler Handler which is called, when the magic string is found
+	/// \note Does only work with interrupt driver.
+	void RegisterMagicReceivedHandler (const char *pMagic, TMagicReceivedHandler *pHandler);
+
+protected:
+	/// \return Number of bytes buffer space available for Write()
+	/// \note Does only work with interrupt driver.
+	unsigned AvailableForWrite (void);
+
+	/// \return Number of bytes already received available for Read()
+	/// \note Does only work with interrupt driver.
+	unsigned AvailableForRead (void);
+
+	/// \return Next received byte which will be returned by Read() (-1 if no data available)
+	/// \note Does only work with interrupt driver.
+	int Peek (void);
+
+	/// \brief Waits until all written bytes have been sent out
+	void Flush (void);
 
 private:
 	boolean Write (u8 uchChar);
@@ -76,8 +99,10 @@ private:
 	static void InterruptStub (void *pParam);
 
 private:
+#if SERIAL_GPIO_SELECT == 14
 	CGPIOPin m_GPIO32;
 	CGPIOPin m_GPIO33;
+#endif
 	CGPIOPin m_TxDPin;
 	CGPIOPin m_RxDPin;
 
@@ -95,6 +120,10 @@ private:
 	volatile unsigned m_nTxOutPtr;
 
 	unsigned m_nOptions;
+
+	const char *m_pMagic;
+	const char *m_pMagicPtr;
+	TMagicReceivedHandler *m_pMagicReceivedHandler;
 
 	CSpinLock m_SpinLock;
 	CSpinLock m_LineSpinLock;

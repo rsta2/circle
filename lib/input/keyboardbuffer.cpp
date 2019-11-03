@@ -2,7 +2,7 @@
 // keyboardbuffer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ CKeyboardBuffer::~CKeyboardBuffer (void)
 	s_pThis = 0;
 }
 
-int CKeyboardBuffer::Read (void *pBuffer, unsigned nCount)
+int CKeyboardBuffer::Read (void *pBuffer, size_t nCount)
 {
 	assert (pBuffer != 0);
 	char *p = (char *) pBuffer;

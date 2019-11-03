@@ -2,7 +2,7 @@
 // socket.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,53 +20,52 @@
 #include <circle/net/socket.h>
 #include <circle/net/netsubsystem.h>
 #include <circle/net/in.h>
-#include <circle/logger.h>
 #include <circle/util.h>
 #include <assert.h>
 
-static const char FromSocket[] = "socket";
-
 CSocket::CSocket (CNetSubSystem *pNetSubSystem, int nProtocol)
-:	m_pNetConfig (pNetSubSystem->GetConfig ()),
+:	CNetSocket (pNetSubSystem),
+	m_pNetConfig (pNetSubSystem->GetConfig ()),
 	m_pTransportLayer (pNetSubSystem->GetTransportLayer ()),
 	m_nProtocol (nProtocol),
 	m_nOwnPort (0),
 	m_hConnection (-1),
-	m_pBuffer (0)
+	m_nBackLog (0)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pTransportLayer != 0);
-
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
 }
 
-CSocket::CSocket (CSocket &rSocket)
-:	m_pNetConfig (rSocket.m_pNetConfig),
+CSocket::CSocket (CSocket &rSocket, int hConnection)
+:	CNetSocket (rSocket.GetNetSubSystem ()),
+	m_pNetConfig (rSocket.m_pNetConfig),
 	m_pTransportLayer (rSocket.m_pTransportLayer),
 	m_nProtocol (rSocket.m_nProtocol),
 	m_nOwnPort (rSocket.m_nOwnPort),
-	m_hConnection (rSocket.m_hConnection),
-	m_pBuffer (0)
+	m_hConnection (hConnection),
+	m_nBackLog (0)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pTransportLayer != 0);
-
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
 }
 
 CSocket::~CSocket (void)
 {
+	assert (m_pTransportLayer != 0);
+
 	if (m_hConnection >= 0)
 	{
-		assert (m_pTransportLayer != 0);
+		assert (m_nBackLog == 0);
 		m_pTransportLayer->Disconnect (m_hConnection);
 		m_hConnection = -1;
 	}
-
-	delete m_pBuffer;
-	m_pBuffer = 0;
+	else
+	{
+		for (unsigned i = 0; i < m_nBackLog; i++)
+		{
+			m_pTransportLayer->Disconnect (m_hListenConnection[i]);
+		}
+	}
 
 	m_pTransportLayer = 0;
 	m_pNetConfig = 0;
@@ -136,7 +135,7 @@ int CSocket::Connect (CIPAddress &rForeignIP, u16 nForeignPort)
 	return m_hConnection >= 0 ? 0 : m_hConnection;
 }
 
-int CSocket::Listen (void)
+int CSocket::Listen (unsigned nBackLog)
 {
 	if (   m_nProtocol != IPPROTO_TCP
 	    || m_nOwnPort == 0)
@@ -149,37 +148,76 @@ int CSocket::Listen (void)
 		return -1;
 	}
 
-	assert (m_pTransportLayer != 0);
-	m_hConnection = m_pTransportLayer->Listen (m_nOwnPort, m_nProtocol);
+	if (   nBackLog == 0
+	    || nBackLog > SOCKET_MAX_LISTEN_BACKLOG)
+	{
+		return -1;
+	}
 
-	return m_hConnection >= 0 ? 0 : m_hConnection;
+	assert (m_nBackLog == 0);
+	m_nBackLog = nBackLog;
+
+	assert (m_pTransportLayer != 0);
+
+	for (unsigned i = 0; i < m_nBackLog; i++)
+	{
+		m_hListenConnection[i] = m_pTransportLayer->Listen (m_nOwnPort, m_nProtocol);
+		assert (m_hListenConnection[i] >= 0);
+	}
+
+	return 0;
 }
 
 CSocket *CSocket::Accept (CIPAddress *pForeignIP, u16 *pForeignPort)
 {
-	if (   m_hConnection < 0
+	if (   m_nBackLog == 0
 	    || m_nOwnPort == 0)
 	{
 		return 0;
 	}
 
+	assert (m_pTransportLayer != 0);
+	assert (m_nBackLog <= SOCKET_MAX_LISTEN_BACKLOG);
+
+	// find a connection, which is already active or will be active first (with lowest handle)
+#define INT_MAX		0x7FFFFFFF
+	int hConnection = INT_MAX;
+	unsigned nIndex = SOCKET_MAX_LISTEN_BACKLOG;
+	for (unsigned i = 0; i < m_nBackLog; i++)
+	{
+		if (m_pTransportLayer->IsConnected (m_hListenConnection[i]))
+		{
+			hConnection = m_hListenConnection[i];
+			nIndex = i;
+
+			break;
+		}
+
+		if (m_hListenConnection[i] < hConnection)
+		{
+			hConnection = m_hListenConnection[i];
+			nIndex = i;
+		}
+	}
+
+	assert (0 <= hConnection && hConnection < INT_MAX);
+	assert (nIndex < m_nBackLog);
+
 	CSocket *pNewSocket = 0;
 
 	assert (pForeignIP != 0);
 	assert (pForeignPort != 0);
-	assert (m_pTransportLayer != 0);
-	if (m_pTransportLayer->Accept (pForeignIP, pForeignPort, m_hConnection) >= 0)
+
+	// blocks until connection is active
+	if (m_pTransportLayer->Accept (pForeignIP, pForeignPort, hConnection) >= 0)
 	{
-		pNewSocket = new CSocket (*this);
+		pNewSocket = new CSocket (*this, hConnection);
 		assert (pNewSocket != 0);
 	}
 
-	// if this fails no further connection can be accepted
-	m_hConnection = m_pTransportLayer->Listen (m_nOwnPort, m_nProtocol);
-	if (m_hConnection < 0)
-	{
-		CLogger::Get ()->Write (FromSocket, LogPanic, "Re-Listen failed. Limit number of clients!");
-	}
+	// replace the returned connection with a new listening one
+	m_hListenConnection[nIndex] = m_pTransportLayer->Listen (m_nOwnPort, m_nProtocol);
+	assert (m_hListenConnection[nIndex] >= 0);
 
 	return pNewSocket;
 }
@@ -214,8 +252,8 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 	}
 	
 	assert (m_pTransportLayer != 0);
-	assert (m_pBuffer != 0);
-	int nResult = m_pTransportLayer->Receive (m_pBuffer, nFlags, m_hConnection);
+	u8 TempBuffer[FRAME_BUFFER_SIZE];
+	int nResult = m_pTransportLayer->Receive (TempBuffer, nFlags, m_hConnection);
 	if (nResult < 0)
 	{
 		return nResult;
@@ -227,7 +265,7 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 	}
 
 	assert (pBuffer != 0);
-	memcpy (pBuffer, m_pBuffer, nResult);
+	memcpy (pBuffer, TempBuffer, nResult);
 
 	return nResult;
 }
@@ -275,8 +313,8 @@ int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
 	}
 	
 	assert (m_pTransportLayer != 0);
-	assert (m_pBuffer != 0);
-	int nResult = m_pTransportLayer->ReceiveFrom (m_pBuffer, nFlags,
+	u8 TempBuffer[FRAME_BUFFER_SIZE];
+	int nResult = m_pTransportLayer->ReceiveFrom (TempBuffer, nFlags,
 						      pForeignIP, pForeignPort, m_hConnection);
 	if (nResult < 0)
 	{
@@ -289,7 +327,7 @@ int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
 	}
 
 	assert (pBuffer != 0);
-	memcpy (pBuffer, m_pBuffer, nResult);
+	memcpy (pBuffer, TempBuffer, nResult);
 
 	return nResult;
 }

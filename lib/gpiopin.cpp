@@ -2,7 +2,7 @@
 // gpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,22 +28,25 @@
 
 CSpinLock CGPIOPin::s_SpinLock;
 
+CGPIOPin::CGPIOPin (void)
+:	m_nPin (GPIO_PINS),
+	m_Mode (GPIOModeUnknown),
+	m_pManager (0),
+	m_pHandler (0),
+	m_Interrupt (GPIOInterruptUnknown),
+	m_Interrupt2 (GPIOInterruptUnknown)
+{
+}
+
 CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
-:	m_nPin (nPin),
+:	m_nPin (GPIO_PINS),
 	m_Mode (GPIOModeUnknown),
 	m_pManager (pManager),
 	m_pHandler (0),
 	m_Interrupt (GPIOInterruptUnknown),
 	m_Interrupt2 (GPIOInterruptUnknown)
 {
-	if (m_nPin >= GPIO_PINS)
-	{
-		m_nPin = CMachineInfo::Get ()->GetGPIOPin ((TGPIOVirtualPin) nPin);
-	}
-	assert (m_nPin < GPIO_PINS);
-
-	m_nRegOffset = (m_nPin / 32) * 4;
-	m_nRegMask = 1 << (m_nPin % 32);
+	AssignPin (nPin);
 
 	SetMode (Mode, TRUE);
 }
@@ -54,6 +57,21 @@ CGPIOPin::~CGPIOPin (void)
 	m_pManager = 0;
 	
 	m_nPin = GPIO_PINS;
+}
+
+void CGPIOPin::AssignPin (unsigned nPin)
+{
+	assert (m_nPin == GPIO_PINS);
+	m_nPin = nPin;
+
+	if (m_nPin >= GPIO_PINS)
+	{
+		m_nPin = CMachineInfo::Get ()->GetGPIOPin ((TGPIOVirtualPin) nPin);
+	}
+	assert (m_nPin < GPIO_PINS);
+
+	m_nRegOffset = (m_nPin / 32) * 4;
+	m_nRegMask = 1 << (m_nPin % 32);
 }
 
 void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
@@ -67,7 +85,7 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	{
 		if (bInitPin)
 		{
-			SetPullUpMode (0);
+			SetPullMode (GPIOPullModeOff);
 		}
 
 		SetAlternateFunction (m_Mode-GPIOModeAlternateFunction0);
@@ -80,12 +98,12 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	if (   bInitPin
 	    && m_Mode == GPIOModeOutput)
 	{
-		SetPullUpMode (0);
+		SetPullMode (GPIOPullModeOff);
 	}
 
 	assert (m_nPin < GPIO_PINS);
-	unsigned nSelReg = ARM_GPIO_GPFSEL0 + (m_nPin / 10) * 4;
-	unsigned nShift = (m_nPin % 10) * 3;
+	uintptr nSelReg = ARM_GPIO_GPFSEL0 + (m_nPin / 10) * 4;
+	u32 nShift = (m_nPin % 10) * 3;
 
 	s_SpinLock.Acquire ();
 	u32 nValue = read32 (nSelReg);
@@ -99,7 +117,7 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 		switch (m_Mode)
 		{
 		case GPIOModeInput:
-			SetPullUpMode (0);
+			SetPullMode (GPIOPullModeOff);
 			break;
 
 		case GPIOModeOutput:
@@ -107,11 +125,11 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 			break;
 
 		case GPIOModeInputPullUp:
-			SetPullUpMode (2);
+			SetPullMode (GPIOPullModeUp);
 			break;
 
 		case GPIOModeInputPullDown:
-			SetPullUpMode (1);
+			SetPullMode (GPIOPullModeDown);
 			break;
 
 		default:
@@ -124,6 +142,8 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 
 void CGPIOPin::Write (unsigned nValue)
 {
+	assert (m_nPin < GPIO_PINS);
+
 	// Output level can be set in input mode for subsequent switch to output
 	assert (m_Mode < GPIOModeAlternateFunction0);
 
@@ -132,7 +152,7 @@ void CGPIOPin::Write (unsigned nValue)
 	assert (nValue == LOW || nValue == HIGH);
 	m_nValue = nValue;
 
-	unsigned nSetClrReg = (m_nValue ? ARM_GPIO_GPSET0 : ARM_GPIO_GPCLR0) + m_nRegOffset;
+	uintptr nSetClrReg = (m_nValue ? ARM_GPIO_GPSET0 : ARM_GPIO_GPCLR0) + m_nRegOffset;
 
 	write32 (nSetClrReg, m_nRegMask);
 
@@ -141,6 +161,8 @@ void CGPIOPin::Write (unsigned nValue)
 
 unsigned CGPIOPin::Read (void) const
 {
+	assert (m_nPin < GPIO_PINS);
+
 	assert (   m_Mode == GPIOModeInput
 		|| m_Mode == GPIOModeInputPullUp
 		|| m_Mode == GPIOModeInputPullDown);
@@ -208,7 +230,7 @@ void CGPIOPin::EnableInterrupt (TGPIOInterrupt Interrupt)
 	assert (Interrupt != m_Interrupt2);
 	m_Interrupt = Interrupt;
 
-	unsigned nReg =   ARM_GPIO_GPREN0
+	uintptr nReg =   ARM_GPIO_GPREN0
 			+ m_nRegOffset
 			+ (Interrupt - GPIOInterruptOnRisingEdge) * 12;
 
@@ -226,7 +248,7 @@ void CGPIOPin::DisableInterrupt (void)
 
 	assert (m_Interrupt < GPIOInterruptUnknown);
 
-	unsigned nReg =   ARM_GPIO_GPREN0
+	uintptr nReg =   ARM_GPIO_GPREN0
 			+ m_nRegOffset
 			+ (m_Interrupt - GPIOInterruptOnRisingEdge) * 12;
 
@@ -249,7 +271,7 @@ void CGPIOPin::EnableInterrupt2 (TGPIOInterrupt Interrupt)
 	assert (Interrupt != m_Interrupt);
 	m_Interrupt2 = Interrupt;
 
-	unsigned nReg =   ARM_GPIO_GPREN0
+	uintptr nReg =   ARM_GPIO_GPREN0
 			+ m_nRegOffset
 			+ (Interrupt - GPIOInterruptOnRisingEdge) * 12;
 
@@ -267,7 +289,7 @@ void CGPIOPin::DisableInterrupt2 (void)
 
 	assert (m_Interrupt2 < GPIOInterruptUnknown);
 
-	unsigned nReg =   ARM_GPIO_GPREN0
+	uintptr nReg =   ARM_GPIO_GPREN0
 			+ m_nRegOffset
 			+ (m_Interrupt2 - GPIOInterruptOnRisingEdge) * 12;
 
@@ -278,25 +300,68 @@ void CGPIOPin::DisableInterrupt2 (void)
 	m_Interrupt2 = GPIOInterruptUnknown;
 }
 
-u32 CGPIOPin::ReadAll (void)
+void CGPIOPin::WriteAll (u32 nValue, u32 nMask)
 {
-	return read32 (ARM_GPIO_GPLEV0);
+	PeripheralEntry ();
+
+	u32 nClear = ~nValue & nMask;
+	if (nClear != 0)
+	{
+		write32 (ARM_GPIO_GPCLR0, nClear);
+	}
+
+	u32 nSet = nValue & nMask;
+	if (nSet != 0)
+	{
+		write32 (ARM_GPIO_GPSET0, nSet);
+	}
+
+	PeripheralExit ();
 }
 
-// See: http://www.raspberrypi.org/forums/viewtopic.php?t=163352&p=1059178#p1059178
-void CGPIOPin::SetPullUpMode (unsigned nMode)
+u32 CGPIOPin::ReadAll (void)
 {
-	unsigned nClkReg = ARM_GPIO_GPPUDCLK0 + m_nRegOffset;
+	PeripheralEntry ();
 
+	u32 nResult = read32 (ARM_GPIO_GPLEV0);
+
+	PeripheralExit ();
+
+	return nResult;
+}
+
+void CGPIOPin::SetPullMode (TGPIOPullMode Mode)
+{
 	s_SpinLock.Acquire ();
 
-	assert (nMode <= 2);
-	write32 (ARM_GPIO_GPPUD, nMode);
+	PeripheralEntry ();
+
+#if RASPPI <= 3
+	// See: http://www.raspberrypi.org/forums/viewtopic.php?t=163352&p=1059178#p1059178
+	uintptr nClkReg = ARM_GPIO_GPPUDCLK0 + m_nRegOffset;
+
+	assert (Mode <= 2);
+	write32 (ARM_GPIO_GPPUD, Mode);
 	CTimer::SimpleusDelay (5);		// 1us should be enough, but to be sure
 	write32 (nClkReg, m_nRegMask);
 	CTimer::SimpleusDelay (5);		// 1us should be enough, but to be sure
 	write32 (ARM_GPIO_GPPUD, 0);
 	write32 (nClkReg, 0);
+#else
+	assert (m_nPin < GPIO_PINS);
+	uintptr nModeReg = ARM_GPIO_GPPUPPDN0 + (m_nPin / 16) * 4;
+	unsigned nShift = (m_nPin % 16) * 2;
+
+	assert (Mode <= 2);
+	static const unsigned ModeMap[3] = {0, 2, 1};
+
+	u32 nValue = read32 (nModeReg);
+	nValue &= ~(3 << nShift);
+	nValue |= ModeMap[Mode] << nShift;
+	write32 (nModeReg, nValue);
+#endif
+
+	PeripheralExit ();
 
 	s_SpinLock.Release ();
 }
@@ -304,7 +369,7 @@ void CGPIOPin::SetPullUpMode (unsigned nMode)
 void CGPIOPin::SetAlternateFunction (unsigned nFunction)
 {
 	assert (m_nPin < GPIO_PINS);
-	unsigned nSelReg = ARM_GPIO_GPFSEL0 + (m_nPin / 10) * 4;
+	uintptr nSelReg = ARM_GPIO_GPFSEL0 + (m_nPin / 10) * 4;
 	unsigned nShift = (m_nPin % 10) * 3;
 
 	assert (nFunction <= 5);
@@ -334,7 +399,7 @@ void CGPIOPin::DisableAllInterrupts (unsigned nPin)
 {
 	assert (nPin < GPIO_PINS);
 
-	unsigned nReg = ARM_GPIO_GPREN0 + (nPin / 32) * 4;
+	uintptr nReg = ARM_GPIO_GPREN0 + (nPin / 32) * 4;
 	u32 nMask = 1 << (nPin % 32);
 
 	s_SpinLock.Acquire ();

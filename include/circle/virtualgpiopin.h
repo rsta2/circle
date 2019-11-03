@@ -2,7 +2,7 @@
 // virtualgpiopin.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,7 +28,8 @@
 class CVirtualGPIOPin
 {
 public:
-	CVirtualGPIOPin (unsigned nPin);		// can be used for output only
+	// safe mode works with chain boot, but is not as quick
+	CVirtualGPIOPin (unsigned nPin, boolean bSafeMode = FALSE); // can be used for output only
 	virtual ~CVirtualGPIOPin (void);
 
 	void Write (unsigned nValue);
@@ -38,12 +39,14 @@ public:
 	void Invert (void);
 
 private:
+	boolean   m_bSafeMode;
+
 	unsigned  m_nPin;
 	unsigned  m_nValue;
 	u16	  m_nEnableCount;
 	u16	  m_nDisableCount;
 
-	static u32 s_nGPIOBaseAddress;
+	static uintptr s_nGPIOBaseAddress;
 
 	static CSpinLock s_SpinLock;
 };

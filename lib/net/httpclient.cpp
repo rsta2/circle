@@ -2,7 +2,7 @@
 // httpclient.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,12 +18,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/httpclient.h>
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
 #include <circle/util.h>
 #include <circle/net/in.h>
 #include <assert.h>
 
-#define CLIENT_VERSION	"0.01"
+#define CLIENT_VERSION	"0.02"
 #define USER_AGENT	"CHTTPClient/" CLIENT_VERSION " (Circle)"
 
 CHTTPClient::CHTTPClient (CNetSubSystem	*pNetSubSystem,
@@ -307,7 +307,7 @@ THTTPStatus CHTTPClient::Request (THTTPRequestMethod  Method,
 
 	// close everything and exit
 	if (   nState < 5
-	    && nResult < 0)
+	    && nState != 1)
 	{
 		delete m_pSocket;
 		m_pSocket = 0;

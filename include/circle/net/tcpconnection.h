@@ -2,7 +2,7 @@
 // tcpconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -82,6 +82,7 @@ public:
 
 	int SetOptionBroadcast (boolean bAllowed);
 
+	boolean IsConnected (void) const;
 	boolean IsTerminated (void) const;
 	
 	void Process (void);
@@ -107,7 +108,7 @@ private:
 	void StartTimer (unsigned nTimer, unsigned nHZ);
 	void StopTimer (unsigned nTimer);
 	void TimerHandler (unsigned nTimer);
-	static void TimerStub (unsigned hTimer, void *pParam, void *pContext);
+	static void TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 
 #ifndef NDEBUG
 	void DumpStatus (void);
@@ -133,13 +134,10 @@ private:
 	volatile unsigned m_nRetransmissionCount;
 	volatile boolean m_bTimedOut;		// abort connection and close
 	
-	u8 *m_pTxBuffer;
-	u8 *m_pTempBuffer;
-
 	CSynchronizationEvent m_Event;
 
 	CTimer *m_pTimer;
-	unsigned m_hTimer[TCPTimerUnknown];
+	TKernelTimerHandle m_hTimer[TCPTimerUnknown];
 	CSpinLock m_TimerSpinLock;
 
 	// Send Sequence Variables

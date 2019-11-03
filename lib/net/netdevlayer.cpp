@@ -2,7 +2,7 @@
 // netdevlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,32 +18,37 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/netdevlayer.h>
-#include <circle/devicenameservice.h>
+#include <circle/net/phytask.h>
 #include <circle/logger.h>
+#include <circle/timer.h>
+#include <circle/macros.h>
 #include <assert.h>
 
 const char FromNetDev[] = "netdev";
 
 CNetDeviceLayer::CNetDeviceLayer (CNetConfig *pNetConfig)
 :	m_pNetConfig (pNetConfig),
-	m_pDevice (0),
-	m_pBuffer (0)
+	m_pDevice (0)
 {
 }
 
 CNetDeviceLayer::~CNetDeviceLayer (void)
 {
-	delete [] m_pBuffer;
-	m_pBuffer = 0;
-
 	m_pDevice = 0;
 	m_pNetConfig = 0;
 }
 
-boolean CNetDeviceLayer::Initialize (void)
+boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 {
+#if RASPPI >= 4
+	if (!m_Bcm54213.Initialize ())
+	{
+		return FALSE;
+	}
+#endif
+
 	assert (m_pDevice == 0);
-	m_pDevice = (CNetDevice *) CDeviceNameService::Get ()->GetDevice ("eth0", FALSE);
+	m_pDevice = CNetDevice::GetNetDevice (0);	// get "eth0"
 	if (m_pDevice == 0)
 	{
 		CLogger::Get ()->Write (FromNetDev, LogError, "Net device not available");
@@ -51,9 +56,32 @@ boolean CNetDeviceLayer::Initialize (void)
 		return FALSE;
 	}
 
-	assert (m_pBuffer == 0);
-	m_pBuffer = new unsigned char[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
+	new CPHYTask (m_pDevice);
+
+	if (!bWaitForActivate)
+	{
+		return TRUE;
+	}
+
+	// wait for Ethernet PHY to come up
+	unsigned nStartTicks = CTimer::Get ()->GetTicks ();
+	do
+	{
+		if (CTimer::Get ()->GetTicks () - nStartTicks >= 4*HZ)
+		{
+			CLogger::Get ()->Write (FromNetDev, LogWarning, "Link is down");
+
+			return TRUE;
+		}
+	}
+	while (!m_pDevice->IsLinkUp ());
+
+	TNetDeviceSpeed Speed = m_pDevice->GetLinkSpeed ();
+	if (Speed != NetDeviceSpeedUnknown)
+	{
+		CLogger::Get ()->Write (FromNetDev, LogNotice, "Link is %s",
+					CNetDevice::GetSpeedString (Speed));
+	}
 
 	return TRUE;
 }
@@ -61,12 +89,12 @@ boolean CNetDeviceLayer::Initialize (void)
 void CNetDeviceLayer::Process (void)
 {
 	assert (m_pDevice != 0);
-	assert (m_pBuffer != 0);
 
+	u8 Buffer[FRAME_BUFFER_SIZE] ALIGN(4);		// DMA buffer
 	unsigned nLength;
-	while ((nLength = m_TxQueue.Dequeue (m_pBuffer)) > 0)
+	while ((nLength = m_TxQueue.Dequeue (Buffer)) > 0)
 	{
-		if (!m_pDevice->SendFrame (m_pBuffer, nLength))
+		if (!m_pDevice->SendFrame (Buffer, nLength))
 		{
 			CLogger::Get ()->Write (FromNetDev, LogWarning, "Frame dropped");
 
@@ -74,10 +102,10 @@ void CNetDeviceLayer::Process (void)
 		}
 	}
 
-	while (m_pDevice->ReceiveFrame (m_pBuffer, &nLength))
+	while (m_pDevice->ReceiveFrame (Buffer, &nLength))
 	{
 		assert (nLength > 0);
-		m_RxQueue.Enqueue (m_pBuffer, nLength);
+		m_RxQueue.Enqueue (Buffer, nLength);
 	}
 }
 

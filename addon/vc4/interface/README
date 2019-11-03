@@ -1,0 +1,41 @@
+README
+
+This directory with its subdirectories contains a partial port of the Raspbian
+userland accelerated graphics libraries, which implement the following APIs:
+
+* EGL 1.4
+* OpenGL ES 1.1 and 2.0
+* OpenVG 1.1
+* Dispmanx (proprietary)
+
+Please see the following website for detailed information about the first three
+APIs:
+
+	https://www.khronos.org/
+
+The main goal has been to offer an opportunity to use 2D and 3D accelerated
+graphics applications with Circle. Other APIs, which are implemented by the
+userland code, are not supported here, because they are inactive standards and
+to reduce the porting effort.
+
+To build all needed accelerated graphics libraries enter the following commands
+in this directory:
+
+	./makeall clean
+	./makeall
+
+In the addon/vc4/interface/sample/ directory there are some sample programs,
+which demonstrate, how to use the referenced APIs. They have been used for
+testing too. There is a new project (under construction), which provides a few
+additional samples:
+
+	https://github.com/rsta2/libgraphics
+
+The accelerated graphics support is still experimental, because there were only
+a few test cases available. It does build with AARCH = 32 only and cannot be
+built on Raspbian.
+
+The source code for porting this accelerated graphics support has been taken
+from:
+
+	https://github.com/raspberrypi/userland

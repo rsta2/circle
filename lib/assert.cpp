@@ -2,7 +2,7 @@
 // assert.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 
 void assertion_failed (const char *pExpr, const char *pFile, unsigned nLine)
 {
-	u32 ulStackPtr;
+	uintptr ulStackPtr;
 	asm volatile ("mov %0,sp" : "=r" (ulStackPtr));
 
 	// if an assertion fails on FIQ_LEVEL, the system would otherwise hang in the next spin lock
@@ -41,7 +41,7 @@ void assertion_failed (const char *pExpr, const char *pFile, unsigned nLine)
 	Source.Format ("%s(%u)", pFile, nLine);
 
 #ifndef USE_RPI_STUB_AT
-	debug_stacktrace ((u32 *) ulStackPtr, Source);
+	debug_stacktrace ((const uintptr *) ulStackPtr, Source);
 	
 	CLogger::Get ()->Write (Source, LogPanic, "assertion failed: %s", pExpr);
 #else

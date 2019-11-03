@@ -2,10 +2,14 @@
  * circle.ld
  */
 
+ENTRY(_start)
+
 SECTIONS
 {
-	. = 0x8000;
-	
+	.init : {
+		*(.init)
+	}
+
 	.text : {
 		*(.text*)
 
@@ -30,6 +34,10 @@ SECTIONS
 		*(.ARM.exidx*)
 
 		__exidx_end = .;
+	}
+
+	.eh_frame : {
+		*(.eh_frame*)
 	}
 
 	.data : {

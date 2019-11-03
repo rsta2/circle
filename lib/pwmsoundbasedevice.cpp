@@ -2,7 +2,7 @@
 // pwmsoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
 //
 // Information to implement PWM sound is from:
 //	"Bare metal sound" by Joeboy (RPi forum)
@@ -28,11 +28,34 @@
 #include <circle/memio.h>
 #include <circle/timer.h>
 #include <circle/synchronize.h>
+#include <circle/machineinfo.h>
 #include <circle/util.h>
 #include <assert.h>
 
-#define CLOCK_FREQ		500000000		// PLLD
-#define CLOCK_DIVIDER		2
+#define CLOCK_RATE		250000000
+
+//
+// PWM device selection
+//
+#if RASPPI <= 3
+	#define PWM_BASE	ARM_PWM_BASE
+	#define DREQ_SOURCE	DREQSourcePWM
+#else
+	#define PWM_BASE	ARM_PWM1_BASE
+	#define DREQ_SOURCE	DREQSourcePWM1
+#endif
+
+//
+// PWM register offsets
+//
+#define PWM_CTL			(PWM_BASE + 0x00)
+#define PWM_STA			(PWM_BASE + 0x04)
+#define PWM_DMAC		(PWM_BASE + 0x08)
+#define PWM_RNG1		(PWM_BASE + 0x10)
+#define PWM_DAT1		(PWM_BASE + 0x14)
+#define PWM_FIF1		(PWM_BASE + 0x18)
+#define PWM_RNG2		(PWM_BASE + 0x20)
+#define PWM_DAT2		(PWM_BASE + 0x24)
 
 //
 // PWM control register
@@ -113,6 +136,7 @@
 	#define TXFR_LEN_XLENGTH_SHIFT		0
 	#define TXFR_LEN_YLENGTH_SHIFT		16
 	#define TXFR_LEN_MAX			0x3FFFFFFF
+	#define TXFR_LEN_MAX_LITE		0xFFFF
 #define ARM_DMACHAN_STRIDE(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x18)
 	#define STRIDE_SRC_SHIFT		0
 	#define STRIDE_DEST_SHIFT		16
@@ -126,15 +150,16 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
 					  unsigned	    nChunkSize)
 :	CSoundBaseDevice (SoundFormatUnsigned32,
-			  (CLOCK_FREQ / CLOCK_DIVIDER + nSampleRate/2) / nSampleRate, nSampleRate),
+			  (CLOCK_RATE + nSampleRate/2) / nSampleRate, nSampleRate),
 	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
-	m_nRange ((CLOCK_FREQ / CLOCK_DIVIDER + nSampleRate/2) / nSampleRate),
+	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
 	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction0),
 	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction0),
-	m_Clock (GPIOClockPWM, GPIOClockSourcePLLD),
+	m_Clock (GPIOClockPWM),
 	m_bIRQConnected (FALSE),
-	m_State (PWMSoundIdle)
+	m_State (PWMSoundIdle),
+	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
 {
 	assert (m_pInterruptSystem != 0);
 	assert (m_nChunkSize > 0);
@@ -143,8 +168,8 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 	// setup and concatenate DMA buffers and control blocks
 	SetupDMAControlBlock (0);
 	SetupDMAControlBlock (1);
-	m_pControlBlock[0]->nNextControlBlockAddress = (u32) m_pControlBlock[1] + GPU_MEM_BASE;
-	m_pControlBlock[1]->nNextControlBlockAddress = (u32) m_pControlBlock[0] + GPU_MEM_BASE;
+	m_pControlBlock[0]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[1]);
+	m_pControlBlock[1]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[0]);
 
 	// start clock and PWM device
 	RunPWM ();
@@ -152,13 +177,12 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 	// enable and reset DMA channel
 	PeripheralEntry ();
 
-	assert (!(read32 (ARM_DMACHAN_DEBUG (DMA_CHANNEL_PWM)) & DEBUG_LITE));
+	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
+	CTimer::SimpleusDelay (1000);
 
-	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << DMA_CHANNEL_PWM));
-	CTimer::Get ()->usDelay (1000);
-
-	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM), CS_RESET);
-	while (read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM)) & CS_RESET)
+	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
+	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
 	{
 		// do nothing
 	}
@@ -175,14 +199,32 @@ CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
 	// stop PWM device and clock
 	StopPWM ();
 
+	// reset and disable DMA channel
+	PeripheralEntry ();
+
+	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+
+	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
+	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
+	{
+		// do nothing
+	}
+
+	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) & ~(1 << m_nDMAChannel));
+
+	PeripheralExit ();
+
 	// disconnect IRQ
 	assert (m_pInterruptSystem != 0);
 	if (m_bIRQConnected)
 	{
-		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_DMA0+DMA_CHANNEL_PWM);
+		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel);
 	}
 
 	m_pInterruptSystem = 0;
+
+	// free DMA channel
+	CMachineInfo::Get ()->FreeDMAChannel (m_nDMAChannel);
 
 	// free buffers
 	m_pControlBlock[0] = 0;
@@ -223,10 +265,12 @@ boolean CPWMSoundBaseDevice::Start (void)
 	m_State = PWMSoundRunning;
 
 	// connect IRQ
+	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+
 	if (!m_bIRQConnected)
 	{
 		assert (m_pInterruptSystem != 0);
-		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+DMA_CHANNEL_PWM, InterruptStub, this);
+		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel, InterruptStub, this);
 
 		m_bIRQConnected = TRUE;
 	}
@@ -234,29 +278,29 @@ boolean CPWMSoundBaseDevice::Start (void)
 	// enable PWM DMA operation
 	PeripheralEntry ();
 
-	write32 (ARM_PWM_DMAC,   ARM_PWM_DMAC_ENAB
-			       | (7 << ARM_PWM_DMAC_PANIC__SHIFT)
-			       | (7 << ARM_PWM_DMAC_DREQ__SHIFT));
+	write32 (PWM_DMAC,   ARM_PWM_DMAC_ENAB
+			   | (7 << ARM_PWM_DMAC_PANIC__SHIFT)
+			   | (7 << ARM_PWM_DMAC_DREQ__SHIFT));
 
 	// switched this on when playback stops to avoid clicks, switch it off here
-	write32 (ARM_PWM_CTL, read32 (ARM_PWM_CTL) & ~(ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2));
+	write32 (PWM_CTL, read32 (PWM_CTL) & ~(ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2));
 
 	PeripheralExit ();
 
 	// start DMA
 	PeripheralEntry ();
 
-	assert (!(read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM)) & CS_INT));
-	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << DMA_CHANNEL_PWM)));
+	assert (!(read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_INT));
+	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nDMAChannel)));
 
 	assert (m_pControlBlock[0] != 0);
-	write32 (ARM_DMACHAN_CONBLK_AD (DMA_CHANNEL_PWM), (u32) m_pControlBlock[0] + GPU_MEM_BASE);
+	write32 (ARM_DMACHAN_CONBLK_AD (m_nDMAChannel), BUS_ADDRESS ((uintptr) m_pControlBlock[0]));
 
 
-	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM),   CS_WAIT_FOR_OUTSTANDING_WRITES
-					           | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
-					           | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
-					           | CS_ACTIVE);
+	write32 (ARM_DMACHAN_CS (m_nDMAChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
+					         | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
+					         | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
+					         | CS_ACTIVE);
 
 	PeripheralExit ();
 
@@ -268,7 +312,7 @@ boolean CPWMSoundBaseDevice::Start (void)
 		if (m_State == PWMSoundRunning)
 		{
 			PeripheralEntry ();
-			write32 (ARM_DMACHAN_NEXTCONBK (DMA_CHANNEL_PWM), 0);
+			write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
 			PeripheralExit ();
 
 			m_State = PWMSoundTerminating;
@@ -307,13 +351,13 @@ boolean CPWMSoundBaseDevice::GetNextChunk (void)
 	}
 
 	unsigned nTransferLength = nChunkSize * sizeof (u32);
-	assert (nTransferLength <= TXFR_LEN_MAX);
+	assert (nTransferLength <= TXFR_LEN_MAX_LITE);
 
 	assert (m_pControlBlock[m_nNextBuffer] != 0);
 	m_pControlBlock[m_nNextBuffer]->nTransferLength = nTransferLength;
 
-	CleanAndInvalidateDataCacheRange ((u32) m_pDMABuffer[m_nNextBuffer], nTransferLength);
-	CleanAndInvalidateDataCacheRange ((u32) m_pControlBlock[m_nNextBuffer], sizeof (TDMAControlBlock));
+	CleanAndInvalidateDataCacheRange ((uintptr) m_pDMABuffer[m_nNextBuffer], nTransferLength);
+	CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock[m_nNextBuffer], sizeof (TDMAControlBlock));
 
 	m_nNextBuffer ^= 1;
 
@@ -324,16 +368,20 @@ void CPWMSoundBaseDevice::RunPWM (void)
 {
 	PeripheralEntry ();
 
-	m_Clock.Start (CLOCK_DIVIDER);
+#ifndef NDEBUG
+	boolean bOK =
+#endif
+		m_Clock.StartRate (CLOCK_RATE);
+	assert (bOK);
 	CTimer::SimpleusDelay (2000);
 
 	assert ((1 << 8) <= m_nRange && m_nRange < (1 << 16));
-	write32 (ARM_PWM_RNG1, m_nRange);
-	write32 (ARM_PWM_RNG2, m_nRange);
+	write32 (PWM_RNG1, m_nRange);
+	write32 (PWM_RNG2, m_nRange);
 
-	write32 (ARM_PWM_CTL,   ARM_PWM_CTL_PWEN1 | ARM_PWM_CTL_USEF1
-			      | ARM_PWM_CTL_PWEN2 | ARM_PWM_CTL_USEF2
-			      | ARM_PWM_CTL_CLRF1);
+	write32 (PWM_CTL,   ARM_PWM_CTL_PWEN1 | ARM_PWM_CTL_USEF1
+			  | ARM_PWM_CTL_PWEN2 | ARM_PWM_CTL_USEF2
+			  | ARM_PWM_CTL_CLRF1);
 	CTimer::SimpleusDelay (2000);
 
 	PeripheralExit ();
@@ -343,8 +391,8 @@ void CPWMSoundBaseDevice::StopPWM (void)
 {
 	PeripheralEntry ();
 
-	write32 (ARM_PWM_DMAC, 0);
-	write32 (ARM_PWM_CTL, 0);			// disable PWM channel 0 and 1
+	write32 (PWM_DMAC, 0);
+	write32 (PWM_CTL, 0);			// disable PWM channel 0 and 1
 	CTimer::SimpleusDelay (2000);
 
 	m_Clock.Stop ();
@@ -356,19 +404,20 @@ void CPWMSoundBaseDevice::StopPWM (void)
 void CPWMSoundBaseDevice::InterruptHandler (void)
 {
 	assert (m_State != PWMSoundIdle);
+	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
 
 	PeripheralEntry ();
 
 #ifndef NDEBUG
 	u32 nIntStatus = read32 (ARM_DMA_INT_STATUS);
 #endif
-	u32 nIntMask = 1 << DMA_CHANNEL_PWM;
+	u32 nIntMask = 1 << m_nDMAChannel;
 	assert (nIntStatus & nIntMask);
 	write32 (ARM_DMA_INT_STATUS, nIntMask);
 
-	u32 nCS = read32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM));
+	u32 nCS = read32 (ARM_DMACHAN_CS (m_nDMAChannel));
 	assert (nCS & CS_INT);
-	write32 (ARM_DMACHAN_CS (DMA_CHANNEL_PWM), nCS);	// reset CS_INT
+	write32 (ARM_DMACHAN_CS (m_nDMAChannel), nCS);	// reset CS_INT
 
 	PeripheralExit ();
 
@@ -392,12 +441,12 @@ void CPWMSoundBaseDevice::InterruptHandler (void)
 
 	case PWMSoundCancelled:
 		PeripheralEntry ();
-		write32 (ARM_DMACHAN_NEXTCONBK (DMA_CHANNEL_PWM), 0);
+		write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
 		PeripheralExit ();
 
 		// avoid clicks
 		PeripheralEntry ();
-		write32 (ARM_PWM_CTL, read32 (ARM_PWM_CTL) | ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2);
+		write32 (PWM_CTL, read32 (PWM_CTL) | ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2);
 		PeripheralExit ();
 
 		m_State = PWMSoundTerminating;
@@ -432,17 +481,17 @@ void CPWMSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 
 	m_pControlBlockBuffer[nID] = new u8[sizeof (TDMAControlBlock) + 31];
 	assert (m_pControlBlockBuffer[nID] != 0);
-	m_pControlBlock[nID] = (TDMAControlBlock *) (((u32) m_pControlBlockBuffer[nID] + 31) & ~31);
+	m_pControlBlock[nID] = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer[nID] + 31) & ~31);
 
-	m_pControlBlock[nID]->nTransferInformation     =   (DREQSourcePWM << TI_PERMAP_SHIFT)
+	m_pControlBlock[nID]->nTransferInformation     =   (DREQ_SOURCE << TI_PERMAP_SHIFT)
 						         | (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
 						         | TI_SRC_WIDTH
 						         | TI_SRC_INC
 						         | TI_DEST_DREQ
 						         | TI_WAIT_RESP
 						         | TI_INTEN;
-	m_pControlBlock[nID]->nSourceAddress           = (u32) m_pDMABuffer[nID] + GPU_MEM_BASE;
-	m_pControlBlock[nID]->nDestinationAddress      = (ARM_PWM_FIF1 & 0xFFFFFF) + GPU_IO_BASE;
+	m_pControlBlock[nID]->nSourceAddress           = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
+	m_pControlBlock[nID]->nDestinationAddress      = (PWM_FIF1 & 0xFFFFFF) + GPU_IO_BASE;
 	m_pControlBlock[nID]->n2DModeStride            = 0;
 	m_pControlBlock[nID]->nReserved[0]	       = 0;
 	m_pControlBlock[nID]->nReserved[1]	       = 0;

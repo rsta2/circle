@@ -2,7 +2,7 @@
 // dwhcixferstagedata.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,12 +25,14 @@
 #include <circle/usb/usbdevice.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/dwhciframescheduler.h>
+#include <circle/classallocator.h>
 #include <circle/types.h>
 
 class CDWHCITransferStageData
 {
 public:
-	CDWHCITransferStageData (unsigned nChannel, CUSBRequest *pURB, boolean bIn, boolean bStatusStage);
+	CDWHCITransferStageData (unsigned nChannel, CUSBRequest *pURB, boolean bIn,
+				 boolean bStatusStage, unsigned nTimeoutMs);
 	~CDWHCITransferStageData (void);
 
 	// reassign channel number
@@ -76,6 +78,7 @@ public:
 	u32 GetTransactionStatus (void) const;
 	boolean IsStageComplete (void) const;
 	u32 GetResultLen (void) const;
+	boolean IsTimeout (void) const;
 
 	CUSBRequest *GetURB (void) const;
 	CDWHCIFrameScheduler *GetFrameScheduler (void) const;
@@ -85,6 +88,7 @@ private:
 	CUSBRequest	*m_pURB;
 	boolean		 m_bIn;
 	boolean		 m_bStatusStage;
+	unsigned	 m_nTimeoutHZ;
 
 	boolean		 m_bSplitTransaction;
 	boolean		 m_bSplitComplete;
@@ -107,7 +111,11 @@ private:
 	u32		*m_pTempBuffer;
 	void		*m_pBufferPointer;
 
+	unsigned	 m_nStartTicksHZ;
+
 	CDWHCIFrameScheduler *m_pFrameScheduler;
+
+	DECLARE_CLASS_ALLOCATOR
 };
 
 #endif

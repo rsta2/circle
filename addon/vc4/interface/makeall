@@ -1,0 +1,19 @@
+#!/bin/bash
+
+make="${MAKE:-make}"
+
+cd vcos
+$make $1 $2 || exit
+cd ..
+
+cd vmcs_host
+$make $1 $2 || exit
+cd ..
+
+cd khronos
+$make $1 $2 || exit
+cd ..
+
+cd bcm_host
+$make $1 $2 || exit
+cd ..

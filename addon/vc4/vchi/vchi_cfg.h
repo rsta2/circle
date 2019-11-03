@@ -41,6 +41,7 @@
 
 /* Required alignment of base addresses for bulk transfer, if unaligned transfers are not enabled */
 /* Really determined by the message driver, and should be available from a run-time call. */
+#define VCHI_BULK_ALIGN 1
 #ifndef VCHI_BULK_ALIGN
 #   if __VCCOREVER__ >= 0x04000000
 #       define VCHI_BULK_ALIGN 32 // Allows for the need to do cache cleans
@@ -52,6 +53,7 @@
 /* Required length multiple for bulk transfers, if unaligned transfers are not enabled */
 /* May be less than or greater than VCHI_BULK_ALIGN */
 /* Really determined by the message driver, and should be available from a run-time call. */
+#define VCHI_BULK_GRANULARITY 1
 #ifndef VCHI_BULK_GRANULARITY
 #   if __VCCOREVER__ >= 0x04000000
 #       define VCHI_BULK_GRANULARITY 32 // Allows for the need to do cache cleans

@@ -6,9 +6,9 @@ CIRCLEHOME = ../../..
 
 OBJS	= main.o kernel.o
 
-LIBS	= ../libsdcard$(RASPPI).a \
-	  $(CIRCLEHOME)/lib/fs/fat/libfatfs$(RASPPI).a \
-	  $(CIRCLEHOME)/lib/fs/libfs$(RASPPI).a \
-	  $(CIRCLEHOME)/lib/libcircle$(RASPPI).a
+LIBS	= ../libsdcard.a \
+	  $(CIRCLEHOME)/lib/fs/fat/libfatfs.a \
+	  $(CIRCLEHOME)/lib/fs/libfs.a \
+	  $(CIRCLEHOME)/lib/libcircle.a
 
 include $(CIRCLEHOME)/sample/Rules.mk

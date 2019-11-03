@@ -55,12 +55,17 @@
 
 extern void dmac_map_area(const void *, size_t, int);
 extern void dmac_unmap_area(const void *, size_t, int);
+#else
+void CleanAndInvalidateDataCacheRange (uintptr_t nAddress, size_t nLength);
 #endif
 
 #define TOTAL_SLOTS (VCHIQ_SLOT_ZERO_SLOTS + 2 * 32)
 
 #ifndef __circle__
 #define VCHIQ_ARM_ADDRESS(x) ((void *)((char *)x + g_virt_to_bus_offset))
+#else
+#include <circle/bcm2835.h>
+#define VCHIQ_ARM_ADDRESS(x) ((void *)((char *)x + GPU_MEM_BASE))
 #endif
 
 #include "vchiq_arm.h"
@@ -97,14 +102,12 @@ static DEFINE_SEMAPHORE(g_free_fragments_mutex);
 static irqreturn_t
 vchiq_doorbell_irq(int irq, void *dev_id);
 
-#ifndef __circle__
 static int
 create_pagelist(char __user *buf, size_t count, unsigned short type,
                 struct task_struct *task, PAGELIST_T ** ppagelist);
 
 static void
 free_pagelist(PAGELIST_T *pagelist, int actual);
-#endif
 
 int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 {
@@ -148,7 +151,7 @@ int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 		return -ENOMEM;
 	}
 
-	WARN_ON(((int)slot_mem & (PAGE_SIZE - 1)) != 0);
+	WARN_ON(((intptr_t)slot_mem & (PAGE_SIZE - 1)) != 0);
 
 	vchiq_slot_zero = vchiq_init_slots(slot_mem, slot_mem_size);
 	if (!vchiq_slot_zero)
@@ -204,7 +207,7 @@ int vchiq_platform_init(struct platform_device *pdev, VCHIQ_STATE_T *state)
 
 	vchiq_log_info(vchiq_arm_log_level,
 		"vchiq_init - done (slots %x, phys %pad)",
-		(unsigned int)vchiq_slot_zero, &slot_phys);
+		(unsigned int)(uintptr_t)vchiq_slot_zero, &slot_phys);
 
 	vchiq_call_connected_callbacks();
 
@@ -266,7 +269,6 @@ VCHIQ_STATUS_T
 vchiq_prepare_bulk_data(VCHIQ_BULK_T *bulk, VCHI_MEM_HANDLE_T memhandle,
 	void *offset, int size, int dir)
 {
-#ifndef __circle__
 	PAGELIST_T *pagelist;
 	int ret;
 
@@ -289,24 +291,13 @@ vchiq_prepare_bulk_data(VCHIQ_BULK_T *bulk, VCHI_MEM_HANDLE_T memhandle,
 	bulk->remote_data = pagelist;
 
 	return VCHIQ_SUCCESS;
-#else
-	WARN_ON(memhandle != VCHI_MEM_HANDLE_INVALID);
-
-	bulk->handle = memhandle;
-	bulk->data = offset;
-	bulk->remote_data = NULL;
-
-	return VCHIQ_SUCCESS;
-#endif
 }
 
 void
 vchiq_complete_bulk(VCHIQ_BULK_T *bulk)
 {
-#ifndef __circle__
 	if (bulk && bulk->remote_data && bulk->actual)
 		free_pagelist((PAGELIST_T *)bulk->remote_data, bulk->actual);
-#endif
 }
 
 void
@@ -396,7 +387,6 @@ vchiq_doorbell_irq(int irq, void *dev_id)
 	return ret;
 }
 
-#ifndef __circle__
 /* There is a potential problem with partial cache lines (pages?)
 ** at the ends of the block when reading. If the CPU accessed anything in
 ** the same line (page?) then it may have pulled old data into the cache,
@@ -410,19 +400,28 @@ vchiq_doorbell_irq(int irq, void *dev_id)
 ** from increased speed as a result.
 */
 
+#ifdef __circle__
+#undef PAGE_SIZE
+#define PAGE_SIZE	4096
+
+struct page {};
+#define vmalloc_to_page(p)	((struct page *) ((uintptr_t) (p) & ~(PAGE_SIZE - 1)))
+#define page_address(pg)	((void *) (pg))
+#endif
+
 static int
 create_pagelist(char __user *buf, size_t count, unsigned short type,
 	struct task_struct *task, PAGELIST_T ** ppagelist)
 {
 	PAGELIST_T *pagelist;
 	struct page **pages;
-	unsigned long *addrs;
+	unsigned int *addrs;
 	unsigned int num_pages, offset, i;
 	char *addr, *base_addr, *next_addr;
 	int run, addridx, actual_pages;
-        unsigned long *need_release;
+        unsigned int *need_release;
 
-	offset = (unsigned int)buf & (PAGE_SIZE - 1);
+	offset = (unsigned int)(uintptr_t)buf & (PAGE_SIZE - 1);
 	num_pages = (count + offset + PAGE_SIZE - 1) / PAGE_SIZE;
 
 	*ppagelist = NULL;
@@ -431,24 +430,26 @@ create_pagelist(char __user *buf, size_t count, unsigned short type,
 	** list
 	*/
 	pagelist = kmalloc(sizeof(PAGELIST_T) +
-                           (num_pages * sizeof(unsigned long)) +
-                           sizeof(unsigned long) +
+                           (num_pages * sizeof(unsigned int)) +
+                           sizeof(unsigned int) +
                            (num_pages * sizeof(pages[0])),
                            GFP_KERNEL);
 
 	vchiq_log_trace(vchiq_arm_log_level,
-		"create_pagelist - %x", (unsigned int)pagelist);
+		"create_pagelist - %x", (unsigned int)(uintptr_t)pagelist);
 	if (!pagelist)
 		return -ENOMEM;
 
 	addrs = pagelist->addrs;
-        need_release = (unsigned long *)(addrs + num_pages);
+        need_release = (unsigned int *)(addrs + num_pages);
 	pages = (struct page **)(addrs + num_pages + 1);
 
+#ifndef __circle__
 	if (is_vmalloc_addr(buf)) {
 		int dir = (type == PAGELIST_WRITE) ?
 			DMA_TO_DEVICE : DMA_FROM_DEVICE;
-		unsigned long length = count;
+#endif
+		unsigned int length = count;
 		unsigned int off = offset;
 
 		for (actual_pages = 0; actual_pages < num_pages;
@@ -460,15 +461,20 @@ create_pagelist(char __user *buf, size_t count, unsigned short type,
 			if (bytes > length)
 				bytes = length;
 			pages[actual_pages] = pg;
+#ifndef __circle__
 			dmac_map_area(page_address(pg) + off, bytes, dir);
+#else
+			CleanAndInvalidateDataCacheRange ((uintptr_t) pg + off, bytes);
+#endif
 			length -= bytes;
 			off = 0;
 		}
 		*need_release = 0; /* do not try and release vmalloc pages */
+#ifndef __circle__
 	} else {
 		down_read(&task->mm->mmap_sem);
 		actual_pages = get_user_pages(
-				          (unsigned long)buf & ~(PAGE_SIZE - 1),
+				          (unsigned int)buf & ~(PAGE_SIZE - 1),
 					  num_pages,
 					  (type == PAGELIST_READ) ? FOLL_WRITE : 0,
 					  pages,
@@ -494,6 +500,7 @@ create_pagelist(char __user *buf, size_t count, unsigned short type,
 		}
 		*need_release = 1; /* release user pages */
 	}
+#endif
 
 	pagelist->length = count;
 	pagelist->type = type;
@@ -512,7 +519,7 @@ create_pagelist(char __user *buf, size_t count, unsigned short type,
 			next_addr += PAGE_SIZE;
 			run++;
 		} else {
-			addrs[addridx] = (unsigned long)base_addr + run;
+			addrs[addridx] = (unsigned int)(uintptr_t)base_addr + run;
 			addridx++;
 			base_addr = addr;
 			next_addr = addr + PAGE_SIZE;
@@ -520,9 +527,10 @@ create_pagelist(char __user *buf, size_t count, unsigned short type,
 		}
 	}
 
-	addrs[addridx] = (unsigned long)base_addr + run;
+	addrs[addridx] = (unsigned int)(uintptr_t)base_addr + run;
 	addridx++;
 
+#ifndef __circle__
 	/* Partial cache lines (fragments) require special measures */
 	if ((type == PAGELIST_READ) &&
 		((pagelist->offset & (g_cache_line_size - 1)) ||
@@ -547,6 +555,10 @@ create_pagelist(char __user *buf, size_t count, unsigned short type,
 	}
 
 	dmac_flush_range(pagelist, addrs + num_pages);
+#else
+	CleanAndInvalidateDataCacheRange ((uintptr_t) pagelist,
+					  (uintptr_t) (addrs + num_pages) - (uintptr_t) pagelist);
+#endif
 
 	*ppagelist = pagelist;
 
@@ -556,13 +568,16 @@ create_pagelist(char __user *buf, size_t count, unsigned short type,
 static void
 free_pagelist(PAGELIST_T *pagelist, int actual)
 {
+#ifndef __circle__
         unsigned long *need_release;
 	struct page **pages;
 	unsigned int num_pages, i;
+#endif
 
 	vchiq_log_trace(vchiq_arm_log_level,
-		"free_pagelist - %x, %d", (unsigned int)pagelist, actual);
+		"free_pagelist - %x, %d", (unsigned int)(uintptr_t)pagelist, actual);
 
+#ifndef __circle__
 	num_pages =
 		(pagelist->length + pagelist->offset + PAGE_SIZE - 1) /
 		PAGE_SIZE;
@@ -629,7 +644,7 @@ free_pagelist(PAGELIST_T *pagelist, int actual)
 			put_page(pg);
 		}
 	}
+#endif
 
 	kfree(pagelist);
 }
-#endif

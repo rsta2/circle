@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,9 +25,15 @@
 #include <circle/usb/usbmassdevice.h>
 #include <circle/usb/usbkeyboard.h>
 #include <circle/usb/usbmouse.h>
-#include <circle/usb/usbgamepad.h>
+#include <circle/usb/usbgamepadstandard.h>
+#include <circle/usb/usbgamepadps3.h>
+#include <circle/usb/usbgamepadps4.h>
+#include <circle/usb/usbgamepadxbox360.h>
+#include <circle/usb/usbgamepadxboxone.h>
+#include <circle/usb/usbgamepadswitchpro.h>
 #include <circle/usb/usbprinter.h>
 #include <circle/usb/smsc951x.h>
+#include <circle/usb/lan7800.h>
 #include <circle/usb/usbbluetooth.h>
 #include <circle/usb/usbmidi.h>
 #include <circle/usb/usbcdcethernet.h>
@@ -36,7 +42,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 {
 	assert (pParent != 0);
 	assert (pName != 0);
-	
+
 	CUSBFunction *pResult = 0;
 
 	if (   pName->Compare ("int9-0-0") == 0
@@ -58,7 +64,32 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	}
 	else if (pName->Compare ("int3-0-0") == 0)
 	{
-		pResult = new CUSBGamePadDevice (pParent);
+		pResult = new CUSBGamePadStandardDevice (pParent);
+	}
+	else if (pName->Compare ("ven54c-268") == 0)
+	{
+		pResult = new CUSBGamePadPS3Device (pParent);
+	}
+	else if (   pName->Compare ("ven54c-5c4") == 0
+		 || pName->Compare ("ven54c-9cc") == 0)
+	{
+		pResult = new CUSBGamePadPS4Device (pParent);
+	}
+	else if (   pName->Compare ("ven45e-28e") == 0
+		 || pName->Compare ("ven45e-28f") == 0)
+	{
+		pResult = new CUSBGamePadXbox360Device (pParent);
+	}
+	else if (   pName->Compare ("ven45e-2d1") == 0		// XBox One Controller
+		 || pName->Compare ("ven45e-2dd") == 0		// XBox One Controller (FW 2015)
+		 || pName->Compare ("ven45e-2e3") == 0		// XBox One Elite Controller
+		 || pName->Compare ("ven45e-2ea") == 0)		// XBox One S Controller
+	{
+		pResult = new CUSBGamePadXboxOneDevice (pParent);
+	}
+	else if (pName->Compare ("ven57e-2009") == 0)
+	{
+		pResult = new CUSBGamePadSwitchProDevice (pParent);
 	}
 	else if (   pName->Compare ("int7-1-1") == 0
 		 || pName->Compare ("int7-1-2") == 0)
@@ -68,6 +99,10 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (pName->Compare ("ven424-ec00") == 0)
 	{
 		pResult = new CSMSC951xDevice (pParent);
+	}
+	else if (pName->Compare ("ven424-7800") == 0)
+	{
+		pResult = new CLAN7800Device (pParent);
 	}
 	else if (   pName->Compare ("inte0-1-1") == 0
 		 || pName->Compare ("ven50d-65a") == 0)		// Belkin F8T065BF Mini Bluetooth 4.0 Adapter
@@ -89,8 +124,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult->GetDevice ()->LogWrite (LogNotice, "Using device/interface %s", (const char *) *pName);
 	}
-	
+
 	delete pName;
-	
+
 	return pResult;
 }

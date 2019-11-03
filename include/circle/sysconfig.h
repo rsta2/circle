@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@
 
 ///////////////////////////////////////////////////////////////////////
 //
-// Raspberry Pi 2 and 3
+// Raspberry Pi 2, 3 and 4
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -90,22 +90,17 @@
 
 //#define ARM_ALLOW_MULTI_CORE
 
-// USE_QEMU_USB_FIX fixes an issue when using Circle images inside
-// QEMU. If you encounter Circle freezing when using USB in QEMU
-// you should activate this option. It must not be defined for
-// Circle images which will run on real Raspberry Pi boards.
-
-//#define USE_QEMU_USB_FIX
-
 #endif
 
 // USE_PHYSICAL_COUNTER enables the use of the CPU internal physical
-// counter, which is only available on the Raspberry Pi 2 and 3. Reading
+// counter, which is only available on the Raspberry Pi 2, 3 and 4. Reading
 // this counter is much faster than reading the BCM2835 system timer
 // counter (which is used without this option). It reduces the I/O load
-// too. This option cannot be used with QEMU.
+// too. For some QEMU versions this is the only supported timer option,
+// for other older QEMU versions it does not work. On the Raspberry Pi 4
+// setting this option is required.
 
-//#define USE_PHYSICAL_COUNTER
+#define USE_PHYSICAL_COUNTER
 
 #endif
 
@@ -129,10 +124,20 @@
 // should normally be set. Unfortunately this causes a heavily changed
 // system timing, because it triggers up to 8000 IRQs per second. For
 // compatibility with existing applications it is not set by default.
+// This option has no influence on the Raspberry Pi 4.
 
 //#define USE_USB_SOF_INTR
 
 #endif
+
+// SCREEN_DMA_BURST_LENGTH enables using DMA for scrolling the screen
+// contents and set the burst length parameter for the DMA controller.
+// Using DMA speeds up the scrolling, especially with a burst length
+// greater than 0. The parameter can be 0-15 theoretically, but values
+// over 2 are normally not useful, because the system bus gets congested
+// with it.
+
+#define SCREEN_DMA_BURST_LENGTH	2
 
 // CALIBRATE_DELAY activates the calibration of the delay loop. Because
 // this loop is normally not used any more in Circle, the only use of
@@ -171,6 +176,44 @@
 //#define DEFAULT_KEYMAP		"IT"
 //#define DEFAULT_KEYMAP		"UK"
 //#define DEFAULT_KEYMAP		"US"
+
+///////////////////////////////////////////////////////////////////////
+//
+// Other
+//
+///////////////////////////////////////////////////////////////////////
+
+// SERIAL_GPIO_SELECT selects the TXD GPIO pin used for the serial
+// device (UART0). The RXD pin is (SERIAL_GPIO_SELECT+1). Modifying
+// this setting can be useful for Compute Modules. Select only one
+// definition.
+
+#define SERIAL_GPIO_SELECT	14	// and 15
+//#define SERIAL_GPIO_SELECT	32	// and 33
+//#define SERIAL_GPIO_SELECT	36	// and 37
+
+// SAVE_VFP_REGS_ON_IRQ enables saving the floating point registers
+// on entry when an IRQ occurs and will restore these registers on exit
+// from the IRQ handler. This has to be defined, if an IRQ handler
+// modifies floating point registers. IRQ handling will be a little
+// slower then.
+
+//#define SAVE_VFP_REGS_ON_IRQ
+
+// SAVE_VFP_REGS_ON_FIQ enables saving the floating point registers
+// on entry when an FIQ occurs and will restore these registers on exit
+// from the FIQ handler. This has to be defined, if the FIQ handler
+// modifies floating point registers. FIQ handling will be a little
+// slower then.
+
+//#define SAVE_VFP_REGS_ON_FIQ
+
+// USE_QEMU_USB_FIX fixes an issue when using Circle images inside
+// QEMU. If you encounter Circle freezing when using USB in QEMU
+// you should activate this option. It must not be defined for
+// Circle images which will run on real Raspberry Pi boards.
+
+//#define USE_QEMU_USB_FIX
 
 ///////////////////////////////////////////////////////////////////////
 

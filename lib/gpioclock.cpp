@@ -11,6 +11,7 @@
 #include <circle/timer.h>
 #include <circle/memio.h>
 #include <circle/synchronize.h>
+#include <circle/machineinfo.h>
 #include <assert.h>
 
 #define CLK_CTL_MASH(x)		((x) << 9)
@@ -27,7 +28,7 @@ CGPIOClock::CGPIOClock (TGPIOClock Clock, TGPIOClockSource Source)
 	m_Source (Source)
 {
 	assert (m_Clock <= GPIOClockPWM);
-	assert (m_Source <= GPIOClockSourceHDMI);
+	assert (m_Source <= GPIOClockSourceUnknown);
 }
 
 CGPIOClock::~CGPIOClock (void)
@@ -50,10 +51,13 @@ void CGPIOClock::Start (unsigned nDivI, unsigned nDivF, unsigned nMASH)
 
 	Stop ();
 
+	PeripheralEntry ();
+
 	write32 (nDivReg, ARM_CM_PASSWD | CLK_DIV_DIVI (nDivI) | CLK_DIV_DIVF (nDivF));
 
 	CTimer::SimpleusDelay (10);
 
+	assert (m_Source < GPIOClockSourceUnknown);
 	write32 (nCtlReg, ARM_CM_PASSWD | CLK_CTL_MASH (nMASH) | CLK_CTL_SRC (m_Source));
 
 	CTimer::SimpleusDelay (10);
@@ -61,6 +65,33 @@ void CGPIOClock::Start (unsigned nDivI, unsigned nDivF, unsigned nMASH)
 	write32 (nCtlReg, read32 (nCtlReg) | ARM_CM_PASSWD | CLK_CTL_ENAB);
 
 	PeripheralExit ();
+}
+
+boolean CGPIOClock::StartRate (unsigned nRateHZ)
+{
+	assert (nRateHZ > 0);
+
+	for (unsigned nSourceId = 0; nSourceId <= GPIO_CLOCK_SOURCE_ID_MAX; nSourceId++)
+	{
+		unsigned nSourceRate = CMachineInfo::Get ()->GetGPIOClockSourceRate (nSourceId);
+		if (nSourceRate == GPIO_CLOCK_SOURCE_UNUSED)
+		{
+			continue;
+		}
+
+		unsigned nDivI = nSourceRate / nRateHZ;
+		if (   1 <= nDivI && nDivI <= 4095
+		    && nRateHZ * nDivI == nSourceRate)
+		{
+			m_Source = (TGPIOClockSource) nSourceId;
+
+			Start (nDivI, 0, 0);
+
+			return TRUE;
+		}
+	}
+
+	return FALSE;
 }
 
 void CGPIOClock::Stop (void)

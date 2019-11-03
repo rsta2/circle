@@ -2,7 +2,7 @@
 // bcmframebuffer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,16 @@
 #include <circle/types.h>
 
 #define PALETTE_ENTRIES		256
+
+struct TBcmFrameBufferInitTags
+{
+	TPropertyTagDisplayDimensions	SetPhysWidthHeight;
+	TPropertyTagDisplayDimensions	SetVirtWidthHeight;
+	TPropertyTagSimple		SetDepth;
+	TPropertyTagVirtualOffset	SetVirtOffset;
+	TPropertyTagAllocateBuffer	AllocateBuffer;
+	TPropertyTagSimple		GetPitch;
+};
 
 class CBcmFrameBuffer
 {
@@ -52,6 +62,12 @@ public:
 
 	boolean WaitForVerticalSync (void);
 
+	/// \brief Set screen backlight brightness
+	/// \param nBrightness Brightness level
+	/// \return Operation successful?
+	/// \note Tested with the Official Touchscreen only (level can be about 0..180)
+	boolean SetBacklightBrightness(unsigned nBrightness);
+
 private:
 	u32 m_nWidth;
 	u32 m_nHeight;
@@ -64,6 +80,9 @@ private:
 	u32 m_nPitch;
 
 	TPropertyTagSetPalette *m_pTagSetPalette;	// with Depth <= 8 only (256 entries)
+
+	TBcmFrameBufferInitTags m_InitTags;
+	static TBcmFrameBufferInitTags s_InitTags;
 };
 
 #endif

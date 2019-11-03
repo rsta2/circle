@@ -1,0 +1,30 @@
+ISSUES
+
+Known issues of Circle are:
+
+* There are known issues with the included USB library (e.g. no dynamic
+  attachments, no error recovery, limited split support, no isochronous support).
+  You should only attach the USB devices, which are needed for your application!
+
+* Circle is not a real-time OS. That means different simultaneous operations may
+  interfere in respect of its timing behaviour. The provided samples are tested to
+  work but if you try different combinations of hardware support classes this has
+  to be tested by yourself. Nevertheless real-time applications based on Circle
+  are possible. Have a look at doc/realtime.txt for more information!
+
+* sample/31-webclient does not work any more, because of the missing SSL/TLS
+  support. SSL/TLS support for Circle is developed here:
+
+	https://github.com/smuehlst/circle-stdlib
+
+* Some modules in the addon/ subdirectory will not build with STDLIB_SUPPORT = 0.
+
+* There may be a few USB devices, which report a transfer error 3 (babble) on the
+  Raspberry Pi 4. According to some comments on the Internet, this may be caused
+  by incompatibilities of the USB device firmware. These devices cannot be used
+  with Circle on the Raspberry Pi 4 currently.
+
+
+You can see or report further issues here:
+
+	https://github.com/rsta2/circle/issues

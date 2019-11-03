@@ -1,0 +1,27 @@
+README
+
+This sample demonstrates how to send normal Circle log messages to a syslog
+server using UDP. It can only be used on Raspberry Pi models with internal
+Ethernet interface. Before building the sample you have to set your
+configuration in the file kernel.cpp. In any case you need to set the IP address
+and port number of your syslog server there.
+
+Circle supports the syslog protocol according to RFC5424 and RFC5426. Therefore
+you can use any syslog server program which supports these standards (e.g. on
+your smartphone). You can also use the "syslogserver" application, which comes
+with this sample. It has been tested on Linux and can be build separately using
+"make syslogserver". You have to specify the port number to be used on the
+command line, like that:
+
+	./syslogserver 8514
+
+Please note, that you may have to execute this program with root privileges, if
+the port number is 514 (syslog standard port). Other port numbers (like 8514)
+can be used with normal user privileges.
+
+You should start your syslog server application before your Raspberry Pi (with
+this sample installed) is switched on. Otherwise you may get ICMP "Destination
+unreachable" messages, which is not critical. Some seconds after starting your
+Raspberry Pi you should see the log messages, send by Circle, displayed by your
+syslog server. The sample sends ten "Hello syslog!" messages (every five
+seconds) and then halts the system with a panic message.

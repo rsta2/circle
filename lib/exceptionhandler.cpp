@@ -2,7 +2,7 @@
 // exceptionhandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <circle/multicore.h>
 #include <circle/sysconfig.h>
 #include <circle/string.h>
+#include <circle/macros.h>
 #include <assert.h>
 
 #ifndef ARM_ALLOW_MULTI_CORE
@@ -105,12 +106,19 @@ void CExceptionHandler::Throw (unsigned nException, TAbortFrame *pFrame)
 	u32 lr = pFrame->lr;
 	u32 sp = pFrame->sp;
 
-	if ((pFrame->spsr & 0x1F) == 0x12)	// IRQ mode?
+	switch (pFrame->spsr & 0x1F)
 	{
+	case 0x11:			// FIQ mode?
+		lr = pFrame->lr_fiq;
+		sp = pFrame->sp_fiq;
+		break;
+
+	case 0x12:			// IRQ mode?
 		lr = pFrame->lr_irq;
 		sp = pFrame->sp_irq;
+		break;
 	}
-	
+
 #ifndef NDEBUG
 	debug_stacktrace ((u32 *) sp, FromExcept);
 #endif
@@ -132,12 +140,18 @@ void ExceptionHandler (u32 nException, TAbortFrame *pFrame)
 {
 	PeripheralExit ();	// exit from interrupted peripheral
 
+	// if an exception occurs on FIQ_LEVEL, the system would otherwise hang in the next spin lock
+	CInterruptSystem::DisableFIQ ();
+	EnableFIQs ();
+
 	CExceptionHandler::Get ()->Throw (nException, pFrame);
 }
 
 #if STDLIB_SUPPORT == 1 || STDLIB_SUPPORT == 2
 
-extern "C" int raise (int nSignal)
+extern "C" int raise (int nSignal) WEAK;
+
+int raise (int nSignal)
 {
 	CExceptionHandler::Get ()->Throw (EXCEPTION_UNKNOWN);
 

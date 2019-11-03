@@ -2,7 +2,7 @@
 // transportlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@ CTransportLayer::CTransportLayer (CNetConfig *pNetConfig, CNetworkLayer *pNetwor
 	m_pNetworkLayer (pNetworkLayer),
 	m_nOwnPort (OWN_PORT_MIN),
 	m_SpinLock (TASK_LEVEL),
-	m_pBuffer (0),
 	m_TCPRejector (pNetConfig, pNetworkLayer)
 {
 	assert (m_pNetConfig != 0);
@@ -41,26 +40,12 @@ CTransportLayer::CTransportLayer (CNetConfig *pNetConfig, CNetworkLayer *pNetwor
 
 CTransportLayer::~CTransportLayer (void)
 {
-#ifndef NDEBUG
-	for (unsigned i = 0; i < m_pConnection.GetCount (); i++)
-	{
-		assert (m_pConnection[i] == 0);
-	}
-#endif
-
-	delete [] m_pBuffer;
-	m_pBuffer = 0;
-
 	m_pNetworkLayer = 0;
 	m_pNetConfig = 0;
 }
 
 boolean CTransportLayer::Initialize (void)
 {
-	assert (m_pBuffer == 0);
-	m_pBuffer = new u8[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
-
 	return TRUE;
 }
 
@@ -71,8 +56,8 @@ void CTransportLayer::Process (void)
 	CIPAddress Receiver;
 	int nProtocol;
 	assert (m_pNetworkLayer != 0);
-	assert (m_pBuffer != 0);
-	while (m_pNetworkLayer->Receive (m_pBuffer, &nResultLength, &Sender, &Receiver, &nProtocol))
+	u8 Buffer[FRAME_BUFFER_SIZE];
+	while (m_pNetworkLayer->Receive (Buffer, &nResultLength, &Sender, &Receiver, &nProtocol))
 	{
 		unsigned i;
 		for (i = 0; i < m_pConnection.GetCount (); i++)
@@ -83,7 +68,7 @@ void CTransportLayer::Process (void)
 			}
 
 			if (((CNetConnection *) m_pConnection[i])->PacketReceived (
-				m_pBuffer, nResultLength, Sender, Receiver, nProtocol) != 0)
+				Buffer, nResultLength, Sender, Receiver, nProtocol) != 0)
 			{
 				break;
 			}
@@ -92,7 +77,7 @@ void CTransportLayer::Process (void)
 		if (i >= m_pConnection.GetCount ())
 		{
 			// send RESET on not consumed TCP segment
-			m_TCPRejector.PacketReceived (m_pBuffer, nResultLength,
+			m_TCPRejector.PacketReceived (Buffer, nResultLength,
 						      Sender, Receiver, nProtocol);
 		}
 	}
@@ -404,6 +389,18 @@ int CTransportLayer::SetOptionBroadcast (boolean bAllowed, int hConnection)
 	}
 
 	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionBroadcast (bAllowed);
+}
+
+boolean CTransportLayer::IsConnected (int hConnection) const
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return 0;
+	}
+
+	return ((CNetConnection *) m_pConnection[hConnection])->IsConnected ();
 }
 
 const u8 *CTransportLayer::GetForeignIP (int hConnection) const

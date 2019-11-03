@@ -2,7 +2,7 @@
 // scheduler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,9 @@ CScheduler *CScheduler::s_pThis = 0;
 CScheduler::CScheduler (void)
 :	m_nTasks (0),
 	m_pCurrent (0),
-	m_nCurrent (0)
+	m_nCurrent (0),
+	m_pTaskSwitchHandler (0),
+	m_pTaskTerminationHandler (0)
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -40,11 +42,8 @@ CScheduler::CScheduler (void)
 
 CScheduler::~CScheduler (void)
 {
-	assert (m_nTasks == 1);
-	assert (m_pTask[0] == m_pCurrent);
-	RemoveTask (m_pCurrent);
-	delete m_pCurrent;
-	m_pCurrent = 0;
+	m_pTaskSwitchHandler = 0;
+	m_pTaskTerminationHandler = 0;
 
 	s_pThis = 0;
 }
@@ -67,6 +66,11 @@ void CScheduler::Yield (void)
 	TTaskRegisters *pOldRegs = m_pCurrent->GetRegs ();
 	m_pCurrent = pNext;
 	TTaskRegisters *pNewRegs = m_pCurrent->GetRegs ();
+
+	if (m_pTaskSwitchHandler != 0)
+	{
+		(*m_pTaskSwitchHandler) (m_pCurrent);
+	}
 
 	assert (pOldRegs != 0);
 	assert (pNewRegs != 0);
@@ -110,6 +114,25 @@ void CScheduler::usSleep (unsigned nMicroSeconds)
 
 		Yield ();
 	}
+}
+
+CTask *CScheduler::GetCurrentTask (void)
+{
+	return m_pCurrent;
+}
+
+void CScheduler::RegisterTaskSwitchHandler (TSchedulerTaskHandler *pHandler)
+{
+	assert (m_pTaskSwitchHandler == 0);
+	m_pTaskSwitchHandler = pHandler;
+	assert (m_pTaskSwitchHandler != 0);
+}
+
+void CScheduler::RegisterTaskTerminationHandler (TSchedulerTaskHandler *pHandler)
+{
+	assert (m_pTaskTerminationHandler == 0);
+	m_pTaskTerminationHandler = pHandler;
+	assert (m_pTaskTerminationHandler != 0);
 }
 
 void CScheduler::AddTask (CTask *pTask)
@@ -224,6 +247,10 @@ unsigned CScheduler::GetNextTask (void)
 			return nTask;
 
 		case TaskStateTerminated:
+			if (m_pTaskTerminationHandler != 0)
+			{
+				(*m_pTaskTerminationHandler) (pTask);
+			}
 			RemoveTask (pTask);
 			delete pTask;
 			return MAX_TASKS;

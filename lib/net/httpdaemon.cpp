@@ -4,7 +4,7 @@
 // A simple HTTP webserver
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,14 +22,14 @@
 #include <circle/net/httpdaemon.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/in.h>
-#include <circle/usb/netdevice.h>
+#include <circle/netdevice.h>
 #include <circle/sysconfig.h>
 #include <circle/logger.h>
 #include <circle/string.h>
 #include <circle/util.h>
 #include <assert.h>
 
-#define HTTPD_VERSION		"0.01"
+#define HTTPD_VERSION		"0.02"
 #define SERVER			"CHTTPDaemon/" HTTPD_VERSION " (Circle)"
 
 #define MAX_CLIENTS		10
@@ -40,12 +40,14 @@ static const char FromHTTPDaemon[] = "httpd";
 
 unsigned CHTTPDaemon::s_nInstanceCount = 0;
 
-CHTTPDaemon::CHTTPDaemon (CNetSubSystem *pNetSubSystem, CSocket *pSocket, unsigned nMaxContentSize, u16 nPort)
+CHTTPDaemon::CHTTPDaemon (CNetSubSystem *pNetSubSystem, CSocket *pSocket,
+			  unsigned nMaxContentSize, u16 nPort, unsigned nMaxMultipartSize)
 :	CTask (HTTPD_STACK_SIZE),
 	m_pNetSubSystem (pNetSubSystem),
 	m_pSocket (pSocket),
 	m_nMaxContentSize (nMaxContentSize),
 	m_nPort (nPort),
+	m_nMaxMultipartSize (nMaxMultipartSize),
 	m_pContentBuffer (0)
 {
 	s_nInstanceCount++;
@@ -97,7 +99,7 @@ void CHTTPDaemon::Listener (void)
 		return;
 	}
 
-	if (m_pSocket->Listen () < 0)
+	if (m_pSocket->Listen (MAX_CLIENTS) < 0)
 	{
 		CLogger::Get ()->Write (FromHTTPDaemon, LogError, "Cannot listen on socket");
 
@@ -160,6 +162,9 @@ void CHTTPDaemon::Worker (void)
 				     m_pContentBuffer, &nContentLength, &pContentType);
 		assert (nContentLength <= m_nMaxContentSize);
 		assert (pContentType != 0);
+
+		delete [] m_pMultipartBuffer;
+		m_pMultipartBuffer = 0;
 	}
 
 	if (Status != HTTPOK)
@@ -270,6 +275,10 @@ THTTPStatus CHTTPDaemon::ParseRequest (void)
 	m_bRequestFormDataAvailable = FALSE;
 	m_nRequestContentLength = 0;
 	m_RequestFormData[0] = '\0';
+	m_bMultipartFormDataAvailable = FALSE;
+	m_MultipartBoundary[0] = '\0';
+	m_nMultipartContentLength = 0;
+	m_pMultipartBuffer = 0;
 
 	char Buffer[FRAME_BUFFER_SIZE];
 	char Line[HTTP_MAX_REQUEST_LINE+1];
@@ -277,14 +286,14 @@ THTTPStatus CHTTPDaemon::ParseRequest (void)
 	#error Increase HTTPD_STACK_SIZE!
 #endif
 
-	unsigned nState = 0;	// 0: parse header, 1: parse form data, 2: leave
+	unsigned nState = 0; // 0: parse header, 1: parse form data, 2: parse multipart data, 3: leave
 	unsigned nLine = 0;
 	unsigned nChar = 0;
 
 	int nResult;
 
 	assert (m_pSocket != 0);
-	while (   nState < 2
+	while (   nState < 3
 	       && (nResult = m_pSocket->Receive (Buffer, sizeof Buffer, 0)) > 0)
 	{
 		for (unsigned i = 0; i < (unsigned) nResult; i++)
@@ -305,12 +314,47 @@ THTTPStatus CHTTPDaemon::ParseRequest (void)
 						if (   m_bRequestFormDataAvailable
 						    && m_nRequestContentLength > 0)
 						{
-							nChar = 0;
-							nState = 1;
+							if (m_nRequestContentLength <= HTTP_MAX_FORM_DATA)
+							{
+								nChar = 0;
+								nState = 1;
+							}
+							else
+							{
+								Status = HTTPRequestEntityTooLarge;
+								nState = 3;
+							}
+						}
+						else if (   m_bMultipartFormDataAvailable
+							 && m_nRequestContentLength > 0)
+						{
+							m_nMultipartContentLength = m_nRequestContentLength;
+							m_nRequestContentLength = 0;
+
+							if (m_nMultipartContentLength <= m_nMaxMultipartSize)
+							{
+								assert (m_pMultipartBuffer == 0);
+								m_pMultipartBuffer = new char[m_nMultipartContentLength];
+								if (m_pMultipartBuffer == 0)
+								{
+									Status = HTTPInternalServerError;
+									nState = 3;
+								}
+								else
+								{
+									nChar = 0;
+									nState = 2;
+								}
+							}
+							else
+							{
+								Status = HTTPRequestEntityTooLarge;
+								nState = 3;
+							}
 						}
 						else
 						{
-							nState = 2;
+							nState = 3;
 						}
 					}
 					else
@@ -354,7 +398,18 @@ THTTPStatus CHTTPDaemon::ParseRequest (void)
 
 				if (nChar >= m_nRequestContentLength)
 				{
-					nState = 2;
+					nState = 3;
+				}
+			}
+			else if (nState == 2)
+			{
+				m_pMultipartBuffer[nChar++] = chChar;
+
+				if (nChar >= m_nMultipartContentLength)
+				{
+					m_pMultipartPointer = m_pMultipartBuffer;
+
+					nState = 3;
 				}
 			}
 		}
@@ -468,7 +523,7 @@ THTTPStatus CHTTPDaemon::ParseHeaderField (char *pLine)
 
 	if (strcmp (pToken, "Content-Type") == 0)
 	{
-		if ((pToken = strtok_r (0, " ", &pSavePtr)) == 0)
+		if ((pToken = strtok_r (0, " ;", &pSavePtr)) == 0)
 		{
 			return HTTPBadRequest;
 		}
@@ -476,6 +531,20 @@ THTTPStatus CHTTPDaemon::ParseHeaderField (char *pLine)
 		if (strcmp (pToken, "application/x-www-form-urlencoded") == 0)
 		{
 			m_bRequestFormDataAvailable = TRUE;
+		}
+		else if (strcmp (pToken, "multipart/form-data") == 0)
+		{
+			if (   (pToken = strtok_r (0, " =", &pSavePtr)) == 0
+			    || strcmp (pToken, "boundary") != 0
+			    || (pToken = strtok_r (0, ";", &pSavePtr)) == 0
+			    || strlen (pToken) > HTTP_MAX_MULTIPART_BOUNDARY)
+			{
+				return HTTPBadRequest;
+			}
+
+			m_bMultipartFormDataAvailable = TRUE;
+
+			strcpy (m_MultipartBoundary, pToken);
 		}
 	}
 	else if (strcmp (pToken, "Content-Length") == 0)
@@ -497,7 +566,7 @@ THTTPStatus CHTTPDaemon::ParseHeaderField (char *pLine)
 			nAccu *= 10;
 			nAccu += nDigit;
 
-			if (nAccu > HTTP_MAX_FORM_DATA)
+			if (nAccu > 1000000000U)	// prevent wrapping
 			{
 				return HTTPRequestEntityTooLarge;
 			}
@@ -507,4 +576,106 @@ THTTPStatus CHTTPDaemon::ParseHeaderField (char *pLine)
 	}
 
 	return HTTPOK;
+}
+
+boolean CHTTPDaemon::GetMultipartFormPart (const char **ppHeader,
+					   const u8 **ppData, unsigned *pLength)
+{
+	if (   !m_bMultipartFormDataAvailable
+	    || m_pMultipartPointer == 0)
+	{
+		return FALSE;
+	}
+
+	assert (ppHeader != 0);
+	*ppHeader = m_pMultipartPointer;
+
+	// find end of part header
+	char *p = (char *) Search (m_pMultipartPointer, m_nMultipartContentLength, "\r\n\r\n", 4);
+	if (p == 0)
+	{
+		return FALSE;
+	}
+
+	*p = '\0';	// terminate header
+
+	p += 4;
+	assert (ppData != 0);
+	*ppData = (u8 *) p;
+
+	m_nMultipartContentLength -= p - m_pMultipartPointer;
+	m_pMultipartPointer = p;
+
+	// find end of part data
+	size_t nBoundaryLen = strlen (m_MultipartBoundary);
+	assert (nBoundaryLen > 0);
+
+	char *q = (char *) Search (p, m_nMultipartContentLength, m_MultipartBoundary, nBoundaryLen);
+	if (q == 0)
+	{
+		return FALSE;
+	}
+
+	if (q - p < 4)
+	{
+		return FALSE;
+	}
+	q -= 4;
+
+	if (memcmp (q, "\r\n--", 4) != 0)
+	{
+		return FALSE;
+	}
+
+	unsigned nLength = q - p;
+
+	assert (pLength != 0);
+	*pLength = nLength;
+
+	m_nMultipartContentLength -= nLength;
+	m_pMultipartPointer += nLength;
+
+	// advance m_pMultipartPointer to next part (if any)
+	nLength = nBoundaryLen + 4;
+
+	assert (m_nMultipartContentLength >= nLength);
+	m_nMultipartContentLength -= nLength;
+	m_pMultipartPointer += nLength;
+
+	if (m_nMultipartContentLength >= nBoundaryLen)		// another part follows?
+	{
+		m_nMultipartContentLength -= 2;
+		m_pMultipartPointer += 2;
+	}
+	else
+	{
+		m_pMultipartPointer = 0;			// no: next call will fail
+	}
+
+	return TRUE;
+}
+
+// TODO: optimize
+void *CHTTPDaemon::Search (const void *pBuffer, unsigned nBufLen,
+			   const void *pNeedle, unsigned nNeedleLen)
+{
+	if (nNeedleLen == 0)
+	{
+		return (void *) pBuffer;
+	}
+
+	const u8 *puchBuffer = (const u8 *) pBuffer;
+	const u8 *puchNeedle = (const u8 *) pNeedle;
+	while (nNeedleLen <= nBufLen)
+	{
+		if (!memcmp (puchBuffer, puchNeedle, nNeedleLen))
+		{
+			return (void *) puchBuffer;
+		}
+
+		puchBuffer++;
+		nBufLen--;
+	}
+
+	return 0;
 }

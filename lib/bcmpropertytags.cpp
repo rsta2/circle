@@ -2,7 +2,7 @@
 // bcmpropertytags.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 #include <circle/synchronize.h>
 #include <circle/bcm2835.h>
 #include <circle/memory.h>
-#include <circle/sysconfig.h>
+#include <circle/macros.h>
 #include <assert.h>
 
 struct TPropertyBuffer
@@ -34,10 +34,11 @@ struct TPropertyBuffer
 	#define CODE_RESPONSE_FAILURE	0x80000001
 	u8	Tags[0];
 	// end tag follows
-};
+}
+PACKED;
 
-CBcmPropertyTags::CBcmPropertyTags (void)
-:	m_MailBox (BCM_MAILBOX_PROP_OUT)
+CBcmPropertyTags::CBcmPropertyTags (boolean bEarlyUse)
+:	m_MailBox (BCM_MAILBOX_PROP_OUT, bEarlyUse)
 {
 }
 
@@ -56,11 +57,6 @@ boolean CBcmPropertyTags::GetTag (u32 nTagId, void *pTag, unsigned nTagSize, uns
 	pHeader->nValueLength = nRequestParmSize & ~VALUE_LENGTH_RESPONSE;
 
 	if (!GetTags (pTag, nTagSize))
-	{
-		return FALSE;
-	}
-
-	if (!(pHeader->nValueLength & VALUE_LENGTH_RESPONSE))
 	{
 		return FALSE;
 	}
@@ -93,7 +89,7 @@ boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
 
 	DataSyncBarrier ();
 
-	u32 nBufferAddress = GPU_MEM_BASE + (u32) pBuffer;
+	u32 nBufferAddress = BUS_ADDRESS ((uintptr) pBuffer);
 	if (m_MailBox.WriteRead (nBufferAddress) != nBufferAddress)
 	{
 		return FALSE;

@@ -2,7 +2,7 @@
 // linklayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,7 @@
 CLinkLayer::CLinkLayer (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer)
 :	m_pNetConfig (pNetConfig),
 	m_pNetDevLayer (pNetDevLayer),
-	m_pARPHandler (0),
-	m_pBuffer (0)
+	m_pARPHandler (0)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pNetDevLayer != 0);
@@ -36,19 +35,12 @@ CLinkLayer::~CLinkLayer (void)
 	delete m_pARPHandler;
 	m_pARPHandler = 0;
 
-	delete m_pBuffer;
-	m_pBuffer = 0;
-
 	m_pNetDevLayer = 0;
 	m_pNetConfig = 0;
 }
 
 boolean CLinkLayer::Initialize (void)
 {
-	assert (m_pBuffer == 0);
-	m_pBuffer = new unsigned char[FRAME_BUFFER_SIZE];
-	assert (m_pBuffer != 0);
-
 	assert (m_pNetConfig != 0);
 	m_pARPHandler = new CARPHandler (m_pNetConfig, m_pNetDevLayer, &m_ARPRxQueue);
 	assert (m_pARPHandler != 0);
@@ -63,16 +55,16 @@ void CLinkLayer::Process (void)
 	assert (pOwnMACAddress != 0);
 
 	assert (m_pNetDevLayer != 0);
-	assert (m_pBuffer != 0);
+	u8 Buffer[FRAME_BUFFER_SIZE];
 	unsigned nLength;
-	while (m_pNetDevLayer->Receive (m_pBuffer, &nLength))
+	while (m_pNetDevLayer->Receive (Buffer, &nLength))
 	{
 		assert (nLength <= FRAME_BUFFER_SIZE);
 		if (nLength <= sizeof (TEthernetHeader))
 		{
 			continue;
 		}
-		TEthernetHeader *pHeader = (TEthernetHeader *) m_pBuffer;
+		TEthernetHeader *pHeader = (TEthernetHeader *) Buffer;
 
 		CMACAddress MACAddressReceiver (pHeader->MACReceiver);
 		if (    MACAddressReceiver != *pOwnMACAddress
@@ -87,11 +79,11 @@ void CLinkLayer::Process (void)
 		switch (pHeader->nProtocolType)
 		{
 		case BE (ETH_PROT_IP):
-			m_IPRxQueue.Enqueue (m_pBuffer+sizeof (TEthernetHeader), nLength);
+			m_IPRxQueue.Enqueue (Buffer+sizeof (TEthernetHeader), nLength);
 			break;
 
 		case BE (ETH_PROT_ARP):
-			m_ARPRxQueue.Enqueue (m_pBuffer+sizeof (TEthernetHeader), nLength);
+			m_ARPRxQueue.Enqueue (Buffer+sizeof (TEthernetHeader), nLength);
 			break;
 		}
 	}
@@ -123,9 +115,8 @@ boolean CLinkLayer::Send (const CIPAddress &rReceiver, const void *pIPPacket, un
 		return FALSE;
 	}
 
-	u8 *pFrameBuffer = new u8[nFrameLength];
-	assert (pFrameBuffer != 0);
-	TEthernetHeader *pHeader = (TEthernetHeader *) pFrameBuffer;
+	u8 FrameBuffer[nFrameLength];
+	TEthernetHeader *pHeader = (TEthernetHeader *) FrameBuffer;
 
 	MACAddressReceiver.CopyTo (pHeader->MACReceiver);
 
@@ -138,13 +129,10 @@ boolean CLinkLayer::Send (const CIPAddress &rReceiver, const void *pIPPacket, un
 
 	assert (pIPPacket != 0);
 	assert (nLength > 0);
-	memcpy (pFrameBuffer+sizeof (TEthernetHeader), pIPPacket, nLength);
+	memcpy (FrameBuffer+sizeof (TEthernetHeader), pIPPacket, nLength);
 
-	m_pNetDevLayer->Send (pFrameBuffer, nFrameLength);
+	m_pNetDevLayer->Send (FrameBuffer, nFrameLength);
 
-	delete [] pFrameBuffer;
-	pFrameBuffer = 0;
-	
 	return TRUE;
 }
 

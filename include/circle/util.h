@@ -2,7 +2,7 @@
 // util.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,26 +26,12 @@
 extern "C" {
 #endif
 
-#if STDLIB_SUPPORT >= 2
-
-#define memcmp		circle_memcmp
-#define strlen		circle_strlen
-#define strcmp		circle_strcmp
-#define strcasecmp	circle_strcasecmp
-#define strncmp		circle_strncmp
-#define strcpy		circle_strcpy
-#define strncpy		circle_strncpy
-#define strcat		circle_strcat
-#define strchr		circle_strchr
-#define strtok_r	circle_strtok_r
-#define strtoul		circle_strtoul
-
-#endif
-
 void *memset (void *pBuffer, int nValue, size_t nLength);
 
 void *memcpy (void *pDest, const void *pSrc, size_t nLength);
 #define memcpyblk memcpy
+
+void *memmove (void *pDest, const void *pSrc, size_t nLength);
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength);
 
@@ -62,6 +48,7 @@ char *strncpy (char *pDest, const char *pSrc, size_t nMaxLen);
 char *strcat (char *pDest, const char *pSrc);
 
 char *strchr (const char *pString, int chChar);
+char *strstr (const char *pString, const char *pNeedle);
 
 char *strtok_r (char *pString, const char *pDelim, char **ppSavePtr);
 

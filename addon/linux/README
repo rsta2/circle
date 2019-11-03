@@ -5,6 +5,11 @@ It is not perfect, far from complete and basically intended to make is easier to
 port the Linux VCHIQ driver to Circle. This code implements the Linux kernel
 interfaces used by the VCHIQ driver using Circle services.
 
+The code in this directory has also been used for porting the accelerated
+graphics userland libraries. This concerns especially a rudimentary pthreads
+emulation, which has been added here, although the pthreads support is normally
+not part of the Linux kernel.
+
 Information to implement this, has been taken from the Linux kernel 4.9.59. Some
 source code has been copied from Linux, other has been implemented to meet the
 requirements of Circle.

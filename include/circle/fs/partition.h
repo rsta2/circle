@@ -2,7 +2,7 @@
 // partition.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,18 +29,18 @@ public:
 	CPartition (CDevice *pDevice, unsigned nFirstSector, unsigned nNumberOfSectors);
 	~CPartition (void);
 
-	int Read (void *pBuffer, unsigned nCount);
+	int Read (void *pBuffer, size_t nCount);
 
-	int Write (const void *pBuffer, unsigned nCount);
+	int Write (const void *pBuffer, size_t nCount);
 
-	unsigned long long Seek (unsigned long long ullOffset);
+	u64 Seek (u64 ullOffset);
 
 private:
 	CDevice *m_pDevice;
 	unsigned m_nFirstSector;
 	unsigned m_nNumberOfSectors;
 
-	unsigned long long m_ullOffset;
+	u64 m_ullOffset;
 	boolean m_bSeekError;
 };
 

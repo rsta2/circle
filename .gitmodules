@@ -1,0 +1,6 @@
+[submodule "addon/littlevgl/lvgl"]
+	path = addon/littlevgl/lvgl
+	url = https://github.com/littlevgl/lvgl.git
+[submodule "addon/littlevgl/lv_examples"]
+	path = addon/littlevgl/lv_examples
+	url = https://github.com/littlevgl/lv_examples.git

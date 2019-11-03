@@ -2,7 +2,7 @@
 // alloc.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,9 +36,12 @@ struct TBlockHeader
 #define BLOCK_MAGIC	0x424C4D43
 	unsigned int	nSize		PACKED;
 	TBlockHeader	*pNext		PACKED;
+#if AARCH == 32
 	unsigned int	nPadding	PACKED;
+#endif
 	unsigned char	Data[0];
-};
+}
+PACKED;
 
 struct TBlockBucket
 {
@@ -156,7 +159,7 @@ void *malloc (size_t nSize)
 			// C++ exception should be thrown after returning 0
 			CLogger::Get ()->WriteNoAlloc ("alloc", LogWarning, "Out of memory");
 #else
-			CLogger::Get ()->WriteNoAlloc ("alloc", LogPanic, "Out of memory");
+			CLogger::Get ()->Write ("alloc", LogPanic, "Out of memory");
 #endif
 
 			return 0;
@@ -216,11 +219,11 @@ void free (void *pBlock)
 void *calloc (size_t nBlocks, size_t nSize)
 {
 	nSize *= nBlocks;
-	assert (nSize >= nBlocks);
 	if (nSize == 0)
 	{
-		return 0;
+		nSize = 1;
 	}
+	assert (nSize >= nBlocks);
 
 	void *pNewBlock = malloc (nSize);
 	if (pNewBlock != 0)

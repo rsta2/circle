@@ -1,0 +1,7 @@
+README
+
+This sample program is only working on Raspberry Pi models with on-board Ethernet controller.
+
+First blink 5 times to show the image was loaded right. After initializing the USB host controller the USB hub driver detects all attached USB devices and displays its identifiers (vendor, device and interface).
+
+The on-board Ethernet controller will be initialized and after waiting 2 seconds (time for Ethernet PHY to come up) the received frames are dumped. At the moment these can only be broadcast frames. You can force sending broadcasts on your local network by using `ping address` from an other attached computer where address should be an IP-address of a not existing host at your local network (so that an ARP request is generated). For this test you only need to connect your local Ethernet to the Raspberry Pi. No external USB device is required.

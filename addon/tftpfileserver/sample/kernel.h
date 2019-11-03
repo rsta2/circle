@@ -32,7 +32,7 @@
 #include <circle/logger.h>
 #include <SDCard/emmc.h>
 #include <circle/fs/fat/fatfs.h>
-#include <circle/usb/dwhcidevice.h>
+#include <circle/usb/usbhcidevice.h>
 #include <circle/sched/scheduler.h>
 #include <circle/net/netsubsystem.h>
 #include <circle/types.h>
@@ -68,7 +68,7 @@ private:
 	CLogger			m_Logger;
 	CEMMCDevice		m_EMMC;
 	CFATFileSystem		m_FileSystem;
-	CDWHCIDevice		m_DWHCI;
+	CUSBHCIDevice		m_USBHCI;
 	CScheduler		m_Scheduler;
 	CNetSubSystem		m_Net;
 };
