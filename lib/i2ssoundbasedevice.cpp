@@ -71,6 +71,9 @@
 #define TXC_A_CH2POS__SHIFT	4
 #define TXC_A_CH2WID__SHIFT	0
 
+#define DREQ_A_TX__SHIFT	8
+#define DREQ_A_TX__MASK		(0x7F << 8)
+
 //
 // DMA controller
 //
@@ -132,7 +135,7 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
 {
 	assert (m_pInterruptSystem != 0);
-	assert (m_nChunkSize > 0);
+	assert (m_nChunkSize >= 32);
 	assert ((m_nChunkSize & 1) == 0);
 
 	// setup and concatenate DMA buffers and control blocks
@@ -263,7 +266,15 @@ boolean CI2SSoundBaseDevice::Start (void)
 
 	// enable I2S DMA operation
 	PeripheralEntry ();
+
+	if (m_nChunkSize < 64)
+	{
+		write32 (ARM_PCM_DREQ_A,   (read32 (ARM_PCM_DREQ_A) & ~DREQ_A_TX__MASK)
+					 | (0x18 << DREQ_A_TX__SHIFT));
+	}
+
 	write32 (ARM_PCM_CS_A, read32 (ARM_PCM_CS_A) | CS_A_DMAEN);
+
 	PeripheralExit ();
 
 	// start DMA
