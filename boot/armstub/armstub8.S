@@ -1,4 +1,7 @@
 /*
+ * Modified version for the Raspberry Pi 4 which allows using FIQ with Circle
+ */
+/*
  * Copyright (c) 2016 Raspberry Pi (Trading) Ltd.
  * Copyright (c) 2016 Stephen Warren <swarren@wwwdotorg.org>
  * All rights reserved.
@@ -43,7 +46,7 @@
 #define SCR_RES1_4		BIT(4)
 #define SCR_NS			BIT(0)
 #define SCR_VAL \
-    (SCR_RW | SCR_HCE | SCR_SMD | SCR_RES1_5 | SCR_RES1_4 | SCR_NS)
+    (SCR_RW | SCR_HCE | SCR_RES1_5 | SCR_RES1_4 | SCR_NS)
 
 #define CPUECTLR_EL1		S3_1_C15_C2_1
 #define CPUECTLR_EL1_SMPEN	BIT(6)
@@ -64,6 +67,8 @@
 #define IT_NR		0x8	// Number of interrupt enable registers (256 total irqs)
 #define GICD_CTRLR	0x0
 #define GICD_IGROUPR	0x80
+
+#define VECTOR_TABLE_EL3	0x70000
 
 .globl _start
 _start:
@@ -99,6 +104,11 @@ _start:
 	/* Set up SCR */
 	mov x0, #SCR_VAL
 	msr SCR_EL3, x0
+
+	/* Set up secure monitor entry and stack */
+	mov x0, #VECTOR_TABLE_EL3
+	msr VBAR_EL3, x0
+	mov sp, x0
 
 	/* Set SMPEN */
 	mov x0, #CPUECTLR_EL1_SMPEN
@@ -145,6 +155,9 @@ boot_kernel:
 	br x4
 
 .ltorg
+
+.org 0xd4
+	.ascii "FIQS"		/* Circle GIC code checks this for presence */
 
 .org 0xd8
 .globl spin_cpu0
@@ -207,6 +220,8 @@ setup_gic:				// Called from secure mode - set all interrupts to group 1 and ena
 	str	w1, [x2, x0]
 	b.ne	3b
 	ret
+
+.ltorg
 
 #endif
 

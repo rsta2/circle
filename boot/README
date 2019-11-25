@@ -1,0 +1,51 @@
+README
+
+In this directory you can download the Raspberry Pi firmware files, which are
+required to boot a Circle kernel image on a Raspberry Pi computer. For 64-bit
+operation (AArch64) the configuration file config.txt is required, which is
+provided in this directory. If you want to use the FIQ with AArch64 on a
+Raspberry Pi 4, you need an additional Circle-specific ARM stub file, which will
+be loaded by the firmware. This ARM stub can be built in this directory.
+
+FIRMWARE
+
+To download the Raspberry Pi firmware files just enter in this directory:
+
+	make
+
+This will provide the following files:
+
+	bootcode.bin		boot loader (not used on Raspberry Pi 4)
+	start.elf		firmware executable for  Raspberry Pi 1-3
+	start4.elf		firmware executable for  Raspberry Pi 4
+	fixup.dat		relocation information for start.elf
+	fixup4.dat		relocation information for start4.elf
+	bcm2711-rpi-4-b.dtb	device tree binary needed for Raspberry Pi 4
+	LICENCE.broadcom	firmware license
+	COPYING.linux		license for bcm2711-rpi-4-b.dtb
+
+In any case you have to copy these files onto the first FAT partition on a SD
+card along with the kernel*.img file of your Circle application.
+
+For 32-bit operation (AArch32) that's all. You can put the SD card into you
+Raspberry Pi computer and power it on.
+
+AARCH64
+
+For 64-bit operation (AArch64) use have to copy the configuration file
+config.txt from this directory additionally along with the firmware files (see
+above) to the SD card. This file must not be on the SD card for 32-bit operation
+(AArch32)!
+
+AARCH64 ON RASPBERRY PI 4 WITH FIQ
+
+64-bit operation (AArch64) with FIQ (fast interrupt request) on the Raspberry Pi
+4 requires an additional Circle-specific ARM stub file armstub8-rpi4.bin. This
+file will be built when you enter the following command in this directory:
+
+	make armstub64
+
+The build process uses the same toolchain, which is used to build Circle kernel
+images. The toolchain prefix (PREFIX64 =) can be configured in the file
+Config.mk in the Circle root directory. You have to copy the created file
+armstub8-rpi4.bin to the SD card together with the other files (see above).

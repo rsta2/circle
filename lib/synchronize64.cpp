@@ -319,3 +319,14 @@ void CleanAndInvalidateDataCacheRange (u64 nAddress, u64 nLength)
 
 	DataSyncBarrier ();
 }
+
+void SyncDataAndInstructionCache (void)
+{
+	CleanDataCache ();
+	//DataSyncBarrier ();		// included in CleanDataCache()
+
+	InvalidateInstructionCache ();
+	DataSyncBarrier ();
+
+	InstructionSyncBarrier ();
+}

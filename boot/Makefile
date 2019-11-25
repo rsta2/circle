@@ -37,6 +37,11 @@ bootloader64:
 	cp ../tools/bootloader/kernel8.img .
 	cp ../tools/bootloader/kernel8-rpi4.img .
 
+armstub64:
+	make -C armstub
+	cp armstub/armstub8-rpi4.bin .
+
 clean:
-	rm -f bootcode.bin fixup*.dat start*.elf bcm2711-rpi-4-b.dtb kernel*.img LICENCE.broadcom COPYING.linux
+	rm -f bootcode.bin fixup*.dat start*.elf bcm2711-rpi-4-b.dtb kernel*.img armstub*.bin LICENCE.broadcom COPYING.linux
 	make clean -C "../tools/bootloader"
+	make clean -C armstub

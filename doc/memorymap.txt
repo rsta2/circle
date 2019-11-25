@@ -199,6 +199,9 @@ Base		Size		Contents		Remarks
 
 00000100	variable	ATAGS			unused
 ...
+0006F000	4 KByte		EL3 stack
+00070000	2 KByte		Exception vector table EL3
+...
 00080000	max. 2 MByte	Kernel image
 				 .init			startup code
 				 .text

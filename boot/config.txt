@@ -17,4 +17,5 @@ kernel=kernel8.img
 kernel=kernel8.img
 
 [pi4]
+armstub=armstub8-rpi4.bin
 kernel=kernel8-rpi4.img

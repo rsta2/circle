@@ -270,6 +270,18 @@ FIQStub:
 	str	w0, [x1]
 	b	1b
 
+#if RASPPI >= 4
+
+/*
+ * SMC stub
+ */
+	.globl	SMCStub
+SMCStub:
+	bl	SecureMonitorHandler
+	eret
+
+#endif
+
 /*
  * HVC stub
  */
