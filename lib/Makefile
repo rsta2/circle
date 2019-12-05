@@ -26,7 +26,7 @@ OBJS	= actled.o alloc.o assert.o bcmframebuffer.o bcmmailbox.o \
 	  logger.o machineinfo.o multicore.o nulldevice.o ptrarray.o ptrlist.o \
 	  pwmoutput.o pwmsoundbasedevice.o pwmsounddevice.o screen.o serial.o \
 	  soundbasedevice.o spimaster.o spimasteraux.o spimasterdma.o spinlock.o \
-	  string.o sysinit.o time.o timer.o tracer.o util.o \
+	  string.o sysinit.o time.o timer.o tracer.o usertimer.o util.o \
 	  util_fast.o virtualgpiopin.o chainboot.o macaddress.o netdevice.o
 
 OBJS32	= cache-v7.o exceptionhandler.o exceptionstub.o memory.o pagetable.o \
@@ -49,7 +49,7 @@ OBJS	+= $(OBJS64)
 endif
 
 ifneq ($(strip $(RASPPI)),4)
-OBJS	+= bcmrandom.o i2cslave.o interrupt.o usertimer.o
+OBJS	+= bcmrandom.o i2cslave.o interrupt.o
 else
 OBJS	+= bcm54213.o bcmpciehostbridge.o bcmrandom200.o interruptgic.o
 endif
