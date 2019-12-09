@@ -1,5 +1,5 @@
 /*-----------------------------------------------------------------------*/
-/* Low level disk I/O module skeleton for FatFs     (C)ChaN, 2016        */
+/* Low level disk I/O module skeleton for FatFs     (C)ChaN, 2019        */
 /* Implementation for Circle by R. Stange <rsta2@o2online.de>            */
 /*-----------------------------------------------------------------------*/
 /* If a working storage control module is available, it should be        */
@@ -9,7 +9,7 @@
 /*-----------------------------------------------------------------------*/
 
 #include "ff.h"			/* Obtains integer types */
-#include "diskio.h"		/* FatFs lower layer API */
+#include "diskio.h"		/* Declarations of disk functions */
 #include <circle/device.h>
 #include <circle/devicenameservice.h>
 #include <circle/util.h>
@@ -90,7 +90,7 @@ DSTATUS disk_initialize (
 DRESULT disk_read (
 	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
 	BYTE *buff,		/* Data buffer to store read data */
-	DWORD sector,	/* Start sector in LBA */
+	LBA_t sector,	/* Start sector in LBA */
 	UINT count		/* Number of sectors to read */
 )
 {
@@ -146,10 +146,12 @@ DRESULT disk_read (
 /* Write Sector(s)                                                       */
 /*-----------------------------------------------------------------------*/
 
+#if FF_FS_READONLY == 0
+
 DRESULT disk_write (
 	BYTE pdrv,			/* Physical drive nmuber to identify the drive */
 	const BYTE *buff,	/* Data to be written */
-	DWORD sector,		/* Start sector in LBA */
+	LBA_t sector,		/* Start sector in LBA */
 	UINT count			/* Number of sectors to write */
 )
 {
@@ -196,6 +198,7 @@ DRESULT disk_write (
 	return RES_OK;
 }
 
+#endif
 
 
 /*-----------------------------------------------------------------------*/

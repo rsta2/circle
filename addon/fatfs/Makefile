@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= ff.o diskio.o syscall.o ffunicode.o
+OBJS	= ff.o diskio.o ffsystem.o ffunicode.o
 
 libfatfs.a: $(OBJS)
 	@echo "  AR    $@"
