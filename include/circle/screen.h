@@ -110,6 +110,7 @@ public:
 	/// \return Screen height in characters
 	unsigned GetRows (void) const;
 
+#ifndef SCREEN_HEADLESS
 	/// \return Pointer to frame buffer object
 	CBcmFrameBuffer *GetFrameBuffer (void);
 
@@ -118,6 +119,7 @@ public:
 	/// \param Status Screen status previously returned from GetStatus()
 	/// \return FALSE on failure (screen is currently updated and cannot be written)
 	boolean SetStatus (const TScreenStatus &Status);
+#endif
 
 	/// \brief Write characters to screen
 	/// \note Supports several escape sequences (see: doc/screen.txt).
@@ -143,6 +145,7 @@ public:
 	void Rotor (unsigned nIndex, unsigned nCount);
 
 private:
+#ifndef SCREEN_HEADLESS
 	void Write (char chChar);
 
 	void CarriageReturn (void);
@@ -172,19 +175,25 @@ private:
 	void DisplayChar (char chChar, unsigned nPosX, unsigned nPosY, TScreenColor Color);
 	void EraseChar (unsigned nPosX, unsigned nPosY);
 	void InvertCursor (void);
+#endif
 
 private:
 	unsigned	 m_nInitWidth;
 	unsigned	 m_nInitHeight;
+#ifndef SCREEN_HEADLESS
 	boolean		 m_bVirtual;
 	CBcmFrameBuffer	*m_pFrameBuffer;
+#endif
 	CCharGenerator	 m_CharGen;
+#ifndef SCREEN_HEADLESS
 	TScreenColor  	*m_pBuffer;
 	unsigned	 m_nSize;
 	unsigned	 m_nPitch;
+#endif
 	unsigned	 m_nWidth;
 	unsigned	 m_nHeight;
 	unsigned	 m_nUsedHeight;
+#ifndef SCREEN_HEADLESS
 	unsigned	 m_nState;
 	unsigned	 m_nScrollStart;
 	unsigned	 m_nScrollEnd;
@@ -200,6 +209,7 @@ private:
 	CDMAChannel	 m_DMAChannel;
 #endif
 	CSpinLock	 m_SpinLock;
+#endif
 };
 
 #endif
