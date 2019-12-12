@@ -10,6 +10,21 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
+Release 40.1
+------------
+
+This intermediate release mostly adds FIQ support for AArch64 on the Raspberry Pi 4. This has been implemented using an additional ARM stub file *armstub8-rpi4.bin*, which is loaded by the firmware. The configuration file *config.txt*, provided in *boot/*, is required in any case for AArch64 operation now. Please read the file *boot/README* for detailed information on preparing a SD card with the firmware for using it with Circle applications.
+
+*boot/Makefile* downloads a specific firmware revision now. With continuous Raspberry Pi firmware development there may occur compatibility problems between a Circle release and a new firmware revision, which may lead to confusion, if they are not detected and fixed immediately. To overcome this situation a specific tested firmware revision is downloaded by default now. This firmware revision reference will be updated with each new Circle release.
+
+Further news in this release are:
+
+* User timer (class CUserTimer) supported on Raspberry Pi 4
+* LittlevGL support in *addon/littlevgl/* updated to v6.1.1
+* FatFs support in *addon/fatfs/* updated to R0.14
+
+Finally the system option *SCREEN_HEADLESS* has been added to *include/circle/sysconfig.h*. It can be defined to allow headless operation of sample programs especially on the Raspberry Pi 4, which would otherwise fail to start without notice, if there is not a display attached (see the end of next section for a description of the problem).
+
 The 40th Step
 -------------
 
@@ -162,6 +177,8 @@ Installation
 Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the *kernel.img* (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
 
 The *config.txt* file, provided in the boot/ directory, is only needed to enable 64-bit mode and has to be copied on the SD card in this case. It must not be on the SD card otherwise!
+
+FIQ support for AArch64 on the Raspberry Pi 4 requires an additional file *armstub8-rpi4.bin* on the SD card. Please see *boot/README* for information on how to build this file.
 
 Directories
 -----------
