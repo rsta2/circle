@@ -183,6 +183,19 @@
 //
 ///////////////////////////////////////////////////////////////////////
 
+// SCREEN_HEADLESS can be defined, if your Raspberry Pi runs without
+// a display connected. Most Circle sample programs normally expect
+// a display connected to work, but some can be used without a display
+// available. Historically the screen initialization was working even
+// without a display connected, without returning an error, but
+// especially on the Raspberry Pi 4 this is not the case any more. Here
+// it is required to define this option, otherwise the program
+// initialization will fail without notice. In your own headless
+// applications you should just not use the CScreenDevice class instead
+// and direct the logger output to CSerialDevice or CNullDevice.
+
+//#define SCREEN_HEADLESS
+
 // SERIAL_GPIO_SELECT selects the TXD GPIO pin used for the serial
 // device (UART0). The RXD pin is (SERIAL_GPIO_SELECT+1). Modifying
 // this setting can be useful for Compute Modules. Select only one

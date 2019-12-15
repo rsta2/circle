@@ -24,6 +24,8 @@
 
 #define ROTORS		4
 
+#ifndef SCREEN_HEADLESS
+
 enum TScreenState
 {
 	ScreenStateStart,
@@ -838,3 +840,76 @@ void CScreenDevice::Rotor (unsigned nIndex, unsigned nCount)
 
 	DisplayChar (chChars[nCount], nPosX, 0, HIGH_COLOR);
 }
+
+#else	// #ifndef SCREEN_HEADLESS
+
+CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual)
+:	m_nInitWidth (nWidth),
+	m_nInitHeight (nHeight)
+{
+}
+
+CScreenDevice::~CScreenDevice (void)
+{
+}
+
+boolean CScreenDevice::Initialize (void)
+{
+	if (   m_nInitWidth > 0
+	    && m_nInitHeight > 0)
+	{
+		m_nWidth = m_nInitWidth;
+		m_nHeight = m_nInitHeight;
+	}
+	else
+	{
+		m_nWidth = 640;
+		m_nHeight = 480;
+	}
+
+	m_nUsedHeight = m_nHeight / m_CharGen.GetCharHeight () * m_CharGen.GetCharHeight ();
+
+	CDeviceNameService::Get ()->AddDevice ("tty1", this, FALSE);
+
+	return TRUE;
+}
+
+unsigned CScreenDevice::GetWidth (void) const
+{
+	return m_nWidth;
+}
+
+unsigned CScreenDevice::GetHeight (void) const
+{
+	return m_nHeight;
+}
+
+unsigned CScreenDevice::GetColumns (void) const
+{
+	return m_nWidth / m_CharGen.GetCharWidth ();
+}
+
+unsigned CScreenDevice::GetRows (void) const
+{
+	return m_nUsedHeight / m_CharGen.GetCharHeight ();
+}
+
+int CScreenDevice::Write (const void *pBuffer, size_t nCount)
+{
+	return nCount;
+}
+
+void CScreenDevice::SetPixel (unsigned nPosX, unsigned nPosY, TScreenColor Color)
+{
+}
+
+TScreenColor CScreenDevice::GetPixel (unsigned nPosX, unsigned nPosY)
+{
+	return BLACK_COLOR;
+}
+
+void CScreenDevice::Rotor (unsigned nIndex, unsigned nCount)
+{
+}
+
+#endif

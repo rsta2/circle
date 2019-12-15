@@ -34,6 +34,9 @@ STDLIB_SUPPORT ?= 1
 # set this to "softfp" if you want to link specific libraries
 FLOAT_ABI ?= hard
 
+# set this to 1 to enable garbage collection on sections, may cause side effects
+GC_SECTIONS ?= 0
+
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
 AS	= $(CC)
@@ -42,16 +45,16 @@ AR	= $(PREFIX)ar
 
 ifeq ($(strip $(AARCH)),32)
 ifeq ($(strip $(RASPPI)),1)
-ARCH	?= -DAARCH=32 -march=armv6k -mtune=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -mcpu=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
-ARCH	?= -DAARCH=32 -march=armv7-a -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -mcpu=cortex-a7 -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7
 else ifeq ($(strip $(RASPPI)),3)
-ARCH	?= -DAARCH=32 -march=armv8-a -mtune=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -mcpu=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel8-32
 else ifeq ($(strip $(RASPPI)),4)
-ARCH	?= -DAARCH=32 -march=armv8-a -mtune=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCH	?= -DAARCH=32 -mcpu=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7l
 else
 $(error RASPPI must be set to 1, 2, 3 or 4)
@@ -59,10 +62,10 @@ endif
 LOADADDR = 0x8000
 else ifeq ($(strip $(AARCH)),64)
 ifeq ($(strip $(RASPPI)),3)
-ARCH	?= -DAARCH=64 -march=armv8-a -mtune=cortex-a53 -mlittle-endian -mcmodel=small
+ARCH	?= -DAARCH=64 -mcpu=cortex-a53 -mlittle-endian -mcmodel=small
 TARGET	?= kernel8
 else ifeq ($(strip $(RASPPI)),4)
-ARCH	?= -DAARCH=64 -march=armv8-a -mtune=cortex-a72 -mlittle-endian -mcmodel=small
+ARCH	?= -DAARCH=64 -mcpu=cortex-a72 -mlittle-endian -mcmodel=small
 TARGET	?= kernel8-rpi4
 else
 $(error RASPPI must be set to 3 or 4)
@@ -109,6 +112,11 @@ EXTRALIBS += $(LIBM)
 endif
 endif
 
+ifeq ($(strip $(GC_SECTIONS)),1)
+CFLAGS	+= -ffunction-sections -fdata-sections
+LDFLAGS	+= --gc-sections
+endif
+
 OPTIMIZE ?= -O2
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib \
@@ -119,6 +127,7 @@ DEFINE	+= -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
 AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
 CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding $(DEFINE) $(INCLUDE) $(OPTIMIZE) -g
 CPPFLAGS+= $(CFLAGS) -std=c++14
+LDFLAGS	+= --section-start=.init=$(LOADADDR)
 
 %.o: %.S
 	@echo "  AS    $@"
@@ -134,7 +143,7 @@ CPPFLAGS+= $(CFLAGS) -std=c++14
 
 $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@echo "  LD    $(TARGET).elf"
-	@$(LD) -o $(TARGET).elf -Map $(TARGET).map --section-start=.init=$(LOADADDR) \
+	@$(LD) -o $(TARGET).elf -Map $(TARGET).map $(LDFLAGS) \
 		-T $(CIRCLEHOME)/circle.ld $(CRTBEGIN) $(OBJS) \
 		--start-group $(LIBS) $(EXTRALIBS) --end-group $(CRTEND)
 	@echo "  DUMP  $(TARGET).lst"

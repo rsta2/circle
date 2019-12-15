@@ -38,4 +38,7 @@ time.sleep(4)
 
 print("Completed!")
 
+time.sleep(0.2)
+ser.flush()
+time.sleep(0.2)
 ser.close()

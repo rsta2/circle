@@ -1,4 +1,6 @@
-bootcode.bin
-fixup.dat
+*.bin
+fixup*.dat
 LICENCE.broadcom
-start.elf
+start*.elf
+COPYING.linux
+*.dtb

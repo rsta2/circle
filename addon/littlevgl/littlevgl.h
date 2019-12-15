@@ -54,6 +54,9 @@ private:
 	static void TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
 					     unsigned nPosX, unsigned nPosY);
 
+	static void LogPrint (lv_log_level_t Level, const char *pFile, uint32_t nLine,
+			      const char *pDescription);
+
 private:
 	lv_color_t *m_pBuffer1;
 	lv_color_t *m_pBuffer2;

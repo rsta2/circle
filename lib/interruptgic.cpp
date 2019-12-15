@@ -117,6 +117,16 @@ boolean CInterruptSystem::Initialize (void)
 								     SMCStub));
 
 	SyncDataAndInstructionCache ();
+#else
+	TVectorTable *pTable = (TVectorTable *) VECTOR_TABLE_EL3;
+	for (unsigned i = 0; i < 16; i++)
+	{
+		pTable->Vector[i].Branch =
+			AARCH64_OPCODE_BRANCH (AARCH64_DISTANCE (pTable->Vector[i].Branch,
+								 i == 8 ? SMCStub : UnexpectedStub));
+	}
+
+	SyncDataAndInstructionCache ();
 #endif
 
 	// initialize distributor:
@@ -223,27 +233,37 @@ void CInterruptSystem::DisableIRQ (unsigned nIRQ)
 
 void CInterruptSystem::EnableFIQ (unsigned nFIQ)
 {
-#if AARCH == 32
+#if AARCH == 64
+	u32 *pMagic = (u32 *) ARMSTUB_FIQ_MAGIC_ADDR;
+	if (*pMagic != ARMSTUB_FIQ_MAGIC)
+	{
+		CLogger::Get ()->Write ("intgic", LogPanic, "FIQ not supported, ARM stub not found");
+	}
+#endif
+
 	assert (nFIQ >= 16);
 	assert (nFIQ < ARM_MAX_FIQ);
 	FIQData.nFIQNumber = nFIQ;
 
 	CallSecureMonitor (SMCFunctionEnableFIQ, nFIQ);
-#else
-	CLogger::Get ()->Write ("intgic", LogPanic, "FIQ not supported in 64-bit mode");
-#endif
 }
 
 void CInterruptSystem::DisableFIQ (void)	// may be called, when FIQ is not enabled
 {
-#if AARCH == 32
+#if AARCH == 64
+	u32 *pMagic = (u32 *) ARMSTUB_FIQ_MAGIC_ADDR;
+	if (*pMagic != ARMSTUB_FIQ_MAGIC)
+	{
+		return;
+	}
+#endif
+
 	if (FIQData.nFIQNumber != 0)
 	{
 		CallSecureMonitor (SMCFunctionDisableFIQ, FIQData.nFIQNumber);
 
 		FIQData.nFIQNumber = 0;
 	}
-#endif
 }
 
 CInterruptSystem *CInterruptSystem::Get (void)
@@ -340,6 +360,22 @@ void CInterruptSystem::CallSecureMonitor (u32 nFunction, u32 nParam)
 	);
 }
 
+#else
+
+void CInterruptSystem::CallSecureMonitor (u32 nFunction, u32 nParam)
+{
+	asm volatile
+	(
+		"mov	x0, %0\n"
+		"mov	x1, %1\n"
+		"smc	#0\n"
+
+		: : "r" (nFunction), "r" (nParam)
+	);
+}
+
+#endif
+
 void CInterruptSystem::SecureMonitorHandler (u32 nFunction, u32 nParam)
 {
 	u32 nRegOffset = (nParam / 32) * 4;		// for GICD_IGROUPRn, GICD_IxENABLERn
@@ -390,5 +426,3 @@ void SecureMonitorHandler (u32 nFunction, u32 nParam)
 {
 	CInterruptSystem::SecureMonitorHandler (nFunction, nParam);
 }
-
-#endif

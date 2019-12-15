@@ -29,4 +29,4 @@ liblv_examples.a: $(EXOBJS)
 include $(CIRCLEHOME)/Rules.mk
 
 INCLUDE += -I $(LVGL_DIR)
-CFLAGS += -Wno-narrowing
+CFLAGS += -Wno-narrowing -Wno-pointer-to-int-cast

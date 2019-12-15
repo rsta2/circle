@@ -55,10 +55,8 @@ public:
 
 	static void SendIPI (unsigned nCore, unsigned nIPI);
 
-#if AARCH == 32
 	static void CallSecureMonitor (u32 nFunction, u32 nParam);
 	static void SecureMonitorHandler (u32 nFunction, u32 nParam);
-#endif
 #endif
 
 private:

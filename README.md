@@ -10,6 +10,21 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
+Release 40.1
+------------
+
+This intermediate release mostly adds FIQ support for AArch64 on the Raspberry Pi 4. This has been implemented using an additional ARM stub file *armstub8-rpi4.bin*, which is loaded by the firmware. The configuration file *config.txt*, provided in *boot/*, is required in any case for AArch64 operation now. Please read the file *boot/README* for detailed information on preparing a SD card with the firmware for using it with Circle applications.
+
+*boot/Makefile* downloads a specific firmware revision now. With continuous Raspberry Pi firmware development there may occur compatibility problems between a Circle release and a new firmware revision, which may lead to confusion, if they are not detected and fixed immediately. To overcome this situation a specific tested firmware revision is downloaded by default now. This firmware revision reference will be updated with each new Circle release.
+
+Further news in this release are:
+
+* User timer (class CUserTimer) supported on Raspberry Pi 4
+* LittlevGL support in *addon/littlevgl/* updated to v6.1.1
+* FatFs support in *addon/fatfs/* updated to R0.14
+
+Finally the system option *SCREEN_HEADLESS* has been added to *include/circle/sysconfig.h*. It can be defined to allow headless operation of sample programs especially on the Raspberry Pi 4, which would otherwise fail to start without notice, if there is not a display attached (see the end of next section for a description of the problem).
+
 The 40th Step
 -------------
 
@@ -103,7 +118,7 @@ Building
 
 > For building 64-bit applications (AArch64) see the next section.
 
-Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/open-source/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *8.2-2019.01* (gcc-arm-8.2-2019.01-x86_64-arm-eabi.tar.xz) from this website.
+Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *8.3-2019.03* (gcc-arm-8.3-2019.03-x86_64-arm-eabi.tar.xz) from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2, 3 or 4) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -115,7 +130,7 @@ The following table gives support for selecting the right *RASPPI* value:
 | RASPPI | Target         | Models                   | Optimized for |
 | ------ | -------------- | ------------------------ | ------------- |
 |      1 | kernel.img     | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
-|      2 | kernel7.img    | 2, 3, (CM3)              | ARMv7-A       |
+|      2 | kernel7.img    | 2, 3, (CM3)              | Cortex-A7     |
 |      3 | kernel8-32.img | 3, (CM3)                 | Cortex-A53    |
 |      4 | kernel7l.img   | 4                        | Cortex-A72    |
 
@@ -137,7 +152,7 @@ AArch64
 
 Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3 or 4. There are also Raspberry Pi 2 versions, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too.
 
-The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/open-source/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *8.2-2019.01* (gcc-arm-8.2-2019.01-x86_64-aarch64-elf.tar.xz) from this website.
+The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *8.3-2019.03* (gcc-arm-8.3-2019.03-x86_64-aarch64-elf.tar.xz) from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi architecture (*AARCH*, 32 or 64) and the *PREFIX64* of your toolchain commands. The *RASPPI* variable has to be set to 3 or 4 for `AARCH = 64`. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi architecture and the *PREFIX64* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -161,7 +176,9 @@ Installation
 
 Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the *kernel.img* (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
 
-The *config.txt* file, provided in the boot/ directory, is only needed to enable 64-bit mode on the Raspberry Pi 4 and has to be copied on the SD card in this case. It must not be on the SD card otherwise!
+The *config.txt* file, provided in the boot/ directory, is only needed to enable 64-bit mode and has to be copied on the SD card in this case. It must not be on the SD card otherwise!
+
+FIQ support for AArch64 on the Raspberry Pi 4 requires an additional file *armstub8-rpi4.bin* on the SD card. Please see *boot/README* for information on how to build this file.
 
 Directories
 -----------

@@ -20,6 +20,8 @@
 #include <littlevgl/littlevgl.h>
 #include <circle/devicenameservice.h>
 #include <circle/timer.h>
+#include <circle/logger.h>
+#include <circle/string.h>
 
 CLittlevGL *CLittlevGL::s_pThis = 0;
 
@@ -88,6 +90,8 @@ boolean CLittlevGL::Initialize (void)
 	assert (m_pFrameBuffer->GetDepth () == LV_COLOR_DEPTH);
 
 	lv_init ();
+
+	lv_log_register_print_cb (LogPrint);
 
 	m_pBuffer1 = new lv_color_t[LV_HOR_RES_MAX*10];
 	m_pBuffer2 = new lv_color_t[LV_HOR_RES_MAX*10];
@@ -277,4 +281,25 @@ void CLittlevGL::TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
 	default:
 		break;
 	}
+}
+
+void CLittlevGL::LogPrint (lv_log_level_t Level, const char *pFile, uint32_t nLine,
+			   const char *pDescription)
+{
+	TLogSeverity Severity;
+	const char *pPrefix;
+
+	switch (Level)
+	{
+	default:
+	case LV_LOG_LEVEL_ERROR:	Severity = LogError;	pPrefix = "ERROR";	break;
+	case LV_LOG_LEVEL_WARN:		Severity = LogWarning;	pPrefix = "WARNING";	break;
+	case LV_LOG_LEVEL_INFO:		Severity = LogNotice;	pPrefix = "INFO";	break;
+	case LV_LOG_LEVEL_TRACE:	Severity = LogDebug;	pPrefix = "TRACE";	break;
+	}
+
+	CString Source;
+	Source.Format ("%s(%d)", pFile, nLine);
+
+	CLogger::Get ()->Write (Source, Severity, "%s: %s", pPrefix, pDescription);
 }
