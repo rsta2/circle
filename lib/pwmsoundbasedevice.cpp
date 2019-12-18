@@ -32,15 +32,15 @@
 #include <circle/util.h>
 #include <assert.h>
 
-#define CLOCK_RATE		250000000
-
 //
 // PWM device selection
 //
 #if RASPPI <= 3
+	#define CLOCK_RATE	250000000
 	#define PWM_BASE	ARM_PWM_BASE
 	#define DREQ_SOURCE	DREQSourcePWM
 #else
+	#define CLOCK_RATE	125000000
 	#define PWM_BASE	ARM_PWM1_BASE
 	#define DREQ_SOURCE	DREQSourcePWM1
 #endif
