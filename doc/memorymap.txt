@@ -183,7 +183,7 @@ Base		Size		Contents		Remarks
 ????????	4 MByte		Page allocator		palloc()
 
 ????????	variable	GPU memory
-40000000	variable	High memory		currently unused
+40000000	variable	High memory		unused above 0xC0000000
 ...
 FA000000	2 MByte		xHCI controller		mapped from 0x600000000
 ...
@@ -229,7 +229,7 @@ Base		Size		Contents		Remarks
 ????????	16 MByte	Page allocator		palloc()
 
 ????????	variable	GPU memory
-40000000	variable	High memory		currently unused
+40000000	variable	High memory		unused above 0xC0000000
 ...
 FC000000	64 MByte	Peripherals
 ...

@@ -1,9 +1,9 @@
 //
-// alloc.h
+// new.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,27 +17,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_alloc_h
-#define _circle_alloc_h
+#ifndef _circle_new_h
+#define _circle_new_h
 
+#include <circle/memory.h>
 #include <circle/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void *operator new (size_t nSize, int nType);
 
-void *malloc (size_t nSize);		// resulting block is always 16 bytes aligned
-void *malloc_dma30 (size_t nSize);	// returns 30-bit DMA-able memory block
-void free (void *pBlock);
-
-void *calloc (size_t nBlocks, size_t nSize);
-void *realloc (void *pBlock, size_t nSize);
-
-void *palloc (void);			// returns aligned page (AArch32: 4K, AArch64: 64K)
-void pfree (void *pPage);
-
-#ifdef __cplusplus
-}
-#endif
+void *operator new[] (size_t nSize, int nType);
 
 #endif

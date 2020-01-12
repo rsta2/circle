@@ -2,7 +2,7 @@
 // new.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,35 +17,48 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/alloc.h>
-#include <circle/types.h>
+#include <circle/new.h>
+
+void *operator new (size_t nSize, int nType)
+{
+	return CMemorySystem::HeapAllocate (nSize, nType);
+}
+
+void *operator new[] (size_t nSize, int nType)
+{
+	return CMemorySystem::HeapAllocate (nSize, nType);
+}
+
+#if STDLIB_SUPPORT != 3
 
 void *operator new (size_t nSize)
 {
-	return malloc (nSize);
+	return CMemorySystem::HeapAllocate (nSize, HEAP_ANY);
 }
 
 void *operator new[] (size_t nSize)
 {
-	return malloc (nSize);
+	return CMemorySystem::HeapAllocate (nSize, HEAP_ANY);
 }
 
 void operator delete (void *pBlock) noexcept
 {
-	free (pBlock);
+	CMemorySystem::HeapFree (pBlock);
 }
 
 void operator delete[] (void *pBlock) noexcept
 {
-	free (pBlock);
+	CMemorySystem::HeapFree (pBlock);
 }
 
 void operator delete (void *pBlock, size_t nSize) noexcept
 {
-	free (pBlock);
+	CMemorySystem::HeapFree (pBlock);
 }
 
 void operator delete[] (void *pBlock, size_t nSize) noexcept
 {
-	free (pBlock);
+	CMemorySystem::HeapFree (pBlock);
 }
+
+#endif
