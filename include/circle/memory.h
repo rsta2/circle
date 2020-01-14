@@ -80,7 +80,12 @@ public:
 		default:	return 0;
 		}
 #else
-		return nType <= HEAP_ANY ? s_pThis->m_HeapLow.Allocate (nSize) : 0;
+		switch (nType)
+		{
+		case HEAP_LOW:
+		case HEAP_ANY:	return s_pThis->m_HeapLow.Allocate (nSize);
+		default:	return 0;
+		}
 #endif
 	}
 
