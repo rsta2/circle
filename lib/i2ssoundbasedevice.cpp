@@ -11,7 +11,7 @@
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 #include <circle/synchronize.h>
 #include <circle/machineinfo.h>
 #include <circle/util.h>
+#include <circle/new.h>
 #include <assert.h>
 
 #define CHANS			2			// 2 I2S stereo channels
@@ -486,10 +487,10 @@ void CI2SSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 {
 	assert (nID <= 1);
 
-	m_pDMABuffer[nID] = new u32[m_nChunkSize];
+	m_pDMABuffer[nID] = new (HEAP_DMA30) u32[m_nChunkSize];
 	assert (m_pDMABuffer[nID] != 0);
 
-	m_pControlBlockBuffer[nID] = new u8[sizeof (TDMAControlBlock) + 31];
+	m_pControlBlockBuffer[nID] = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
 	assert (m_pControlBlockBuffer[nID] != 0);
 	m_pControlBlock[nID] = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer[nID] + 31) & ~31);
 
