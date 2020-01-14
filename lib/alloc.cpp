@@ -19,17 +19,13 @@
 //
 #include <circle/alloc.h>
 #include <circle/memory.h>
+#include <circle/sysconfig.h>
 #include <circle/util.h>
 #include <assert.h>
 
 void *malloc (size_t nSize)
 {
-	return CMemorySystem::HeapAllocate (nSize, HEAP_ANY);
-}
-
-void *malloc_dma30 (size_t nSize)
-{
-	return CMemorySystem::HeapAllocate (nSize, HEAP_DMA30);
+	return CMemorySystem::HeapAllocate (nSize, HEAP_DEFAULT_MALLOC);
 }
 
 void free (void *pBlock)
@@ -46,7 +42,7 @@ void *calloc (size_t nBlocks, size_t nSize)
 	}
 	assert (nSize >= nBlocks);
 
-	void *pNewBlock = CMemorySystem::HeapAllocate (nSize, HEAP_ANY);
+	void *pNewBlock = CMemorySystem::HeapAllocate (nSize, HEAP_DEFAULT_MALLOC);
 	if (pNewBlock != 0)
 	{
 		memset (pNewBlock, 0, nSize);

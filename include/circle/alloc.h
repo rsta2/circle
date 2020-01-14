@@ -27,7 +27,6 @@ extern "C" {
 #endif
 
 void *malloc (size_t nSize);		// resulting block is always 16 bytes aligned
-void *malloc_dma30 (size_t nSize);	// returns 30-bit DMA-able memory block
 void free (void *pBlock);
 
 void *calloc (size_t nBlocks, size_t nSize);

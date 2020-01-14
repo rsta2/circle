@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/new.h>
+#include <circle/sysconfig.h>
 
 void *operator new (size_t nSize, int nType)
 {
@@ -33,12 +34,12 @@ void *operator new[] (size_t nSize, int nType)
 
 void *operator new (size_t nSize)
 {
-	return CMemorySystem::HeapAllocate (nSize, HEAP_ANY);
+	return CMemorySystem::HeapAllocate (nSize, HEAP_DEFAULT_NEW);
 }
 
 void *operator new[] (size_t nSize)
 {
-	return CMemorySystem::HeapAllocate (nSize, HEAP_ANY);
+	return CMemorySystem::HeapAllocate (nSize, HEAP_DEFAULT_NEW);
 }
 
 void operator delete (void *pBlock) noexcept
