@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,6 +35,26 @@
 // increase this value. The value must be a multiple of 16 KByte.
 
 #define KERNEL_MAX_SIZE		(2 * MEGABYTE)
+
+// HEAP_DEFAULT_NEW defines the default heap to be used for the "new"
+// operator, if a memory type is not explicitly specified. Possible
+// values are HEAP_LOW (memory below 1 GByte), HEAP_HIGH (memory above
+// 1 GByte) or HEAP_ANY (memory above 1 GB, if available, or memory
+// below 1 GB otherwise). This value can be set to HEAP_ANY for
+// a virtually unified heap, which uses the whole available memory
+// space. Because this may cause problems with some devices, which
+// explicitly need low memory for DMA, this value defaults to HEAP_LOW.
+// This setting is only of importance for the Raspberry Pi 4.
+
+#define HEAP_DEFAULT_NEW	HEAP_LOW
+
+// HEAP_DEFAULT_MALLOC defines the heap to be used for malloc() and
+// calloc() calls. See the description of HEAP_DEFAULT_NEW for details!
+// Modifying this setting is not recommended, because there are device
+// drivers, which require to allocate low memory for DMA purpose using
+// malloc(). This setting is only of importance for the Raspberry Pi 4.
+
+#define HEAP_DEFAULT_MALLOC	HEAP_LOW
 
 ///////////////////////////////////////////////////////////////////////
 //

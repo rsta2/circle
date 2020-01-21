@@ -2,7 +2,7 @@
 // pagetable.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -166,7 +166,9 @@ u64 *CPageTable::CreateLevel2Table (u64 nBaseAddress)
 		{
 			pDesc->PXN = 1;
 
-			if (nBaseAddress >= m_nMemSize)
+			if (   (   nBaseAddress >= m_nMemSize
+			        && nBaseAddress < MEM_HIGHMEM_START)
+			    || nBaseAddress > MEM_HIGHMEM_END)
 			{
 				pDesc->AttrIndx = ATTRINDX_DEVICE;
 				pDesc->SH	= ATTRIB_SH_OUTER_SHAREABLE;

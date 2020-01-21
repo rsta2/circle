@@ -1,0 +1,45 @@
+NEW OPERATOR
+
+The "new" operator can have a parameter, which specifies the type of memory to
+be allocated:
+
+* HEAP_LOW: memory below 1 GByte
+* HEAP_HIGH: memory above 1 GByte (on Raspberry Pi 4 only)
+* HEAP_ANY: memory above 1 GB (if available) or memory below 1 GB (otherwise)
+* HEAP_DMA30: 30-bit DMA-able memory (alias for HEAP_LOW)
+
+This is especially important on the Raspberry Pi 4, which supports different
+SDRAM memory regions. For instance one can specify to allocate a 256 byte memory
+block above 1 GByte:
+
+	#include <circle/new.h>
+
+	unsigned char *p = new (HEAP_HIGH) unsigned char[256];
+
+If "new" is used without a memory type parameter, HEAP_LOW is used as default
+type. This can be changed with the system option HEAP_DEFAULT_NEW in the file
+include/circle/sysconfig.h.
+
+The memory type parameter HEAP_DMA30 has to be selected to allocate memory
+buffers, which will be used for DMA transfers to/from devices, which support
+only 30-bit addressing (e.g. the platform DMA controller). Even if on Raspberry
+Pi models before the Raspberry Pi 4 a memory type parameter is not required, the
+HEAP_DMA30 type should be specified (if needed) to ensure, that the code does
+work on the Raspberry Pi 4 too.
+
+There is a difference in the handling of out-of-memory conditions. If explicitly
+requesting a HEAP_HIGH memory block fails, zero is returned. If requesting any
+other memory type block fails, because the memory is full, the system generates
+an "Out of memory" panic message.
+
+Memory blocks returned by the "new" operator are aligned to a 16 byte address in
+any case.
+
+Circle can currently handle up to 2 GBytes of high memory, which should be
+enough for common bare metal applications. If your Raspberry Pi 4 has 4 GBytes
+SDRAM, the highest 1 GByte memory region is unused. This is necessary, because
+memory above the 3 GByte boundary may require a specific DMA-handling, which is
+not implemented so far.
+
+The C-functions malloc() and calloc() allocate a memory block from HEAP_LOW by
+default.

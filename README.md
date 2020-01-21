@@ -201,6 +201,8 @@ Base library
 
 * CBcm54213Device: Driver for BCM54213PE Gigabit Ethernet Transceiver of Raspberry Pi 4.
 * CBcmPCIeHostBridge: Driver for PCIe Host Bridge of Raspberry Pi 4.
+* CHeapAllocator: Allocates blocks from a flat memory region.
+* CPageAllocator: Allocates aligned pages from a flat memory region.
 
 USB library
 

@@ -20,6 +20,7 @@ Base library
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
 * CGPIOPin: Encapsulates a GPIO pin, can be read, write or inverted. Supports interrupts. Simple initialization.
 * CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
+* CHeapAllocator: Allocates blocks from a flat memory region.
 * CI2CMaster: Driver for I2C master device.
 * CI2CSlave: Driver for I2C slave device.
 * CI2SSoundBaseDevice: Low level access to the I2S sound device.
@@ -32,6 +33,7 @@ Base library
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
 * CNetDevice: Base class (interface) of net devices.
 * CNullDevice: Character device which ignores sent data and returns 0 bytes on read.
+* CPageAllocator: Allocates aligned pages from a flat memory region.
 * CPageTable: Encapsulates a page table to be used by MMU (AArch32).
 * CPtrArray: Container class. Dynamic array of pointers.
 * CPtrList: Container class. List of pointers.

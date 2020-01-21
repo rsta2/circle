@@ -2,7 +2,7 @@
 // dmachannel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/memio.h>
 #include <circle/timer.h>
 #include <circle/synchronize.h>
+#include <circle/new.h>
 #include <assert.h>
 
 #define DMA_CHANNELS			(DMA_CHANNEL_MAX + 1)
@@ -85,7 +86,7 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 	assert (m_nChannel != DMA_CHANNEL_NONE);
 	assert (m_nChannel < DMA_CHANNELS);
 
-	m_pControlBlockBuffer = new u8[sizeof (TDMAControlBlock) + 31];
+	m_pControlBlockBuffer = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
 	assert (m_pControlBlockBuffer != 0);
 
 	m_pControlBlock = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer + 31) & ~31);
