@@ -53,6 +53,7 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 :	m_bEnableMMU (FALSE),
 	m_nMemSize (USE_RPI_STUB_AT),
 #endif
+	m_nMemSizeHigh (0),
 	m_HeapLow ("heaplow"),
 #if RASPPI >= 4
 	m_HeapHigh ("heaphigh"),
@@ -90,6 +91,8 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 		{
 			nHighSize = MEM_HIGHMEM_END+1 - MEM_HIGHMEM_START;
 		}
+
+		m_nMemSizeHigh = (size_t) nHighSize;
 
 		m_HeapHigh.Setup (MEM_HIGHMEM_START, (size_t) nHighSize, 0);
 	}
@@ -155,11 +158,7 @@ void CMemorySystem::InitializeSecondary (void)
 size_t CMemorySystem::GetMemSize (void) const
 {
 	assert (s_pThis != 0);
-	return   s_pThis->m_HeapLow.GetFreeSpace ()
-#if RASPPI >= 4
-	       + s_pThis->m_HeapHigh.GetFreeSpace ()
-#endif
-	       + s_pThis->m_Pager.GetFreeSpace ();
+	return s_pThis->m_nMemSize + s_pThis->m_nMemSizeHigh;
 }
 
 CMemorySystem *CMemorySystem::Get (void)

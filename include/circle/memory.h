@@ -121,6 +121,27 @@ public:
 #endif
 	}
 
+	size_t GetHeapFreeSpace (int nType) const
+	{
+#if RASPPI >= 4
+		switch (nType)
+		{
+		case HEAP_LOW:	return s_pThis->m_HeapLow.GetFreeSpace ();
+		case HEAP_HIGH: return s_pThis->m_HeapHigh.GetFreeSpace ();
+		case HEAP_ANY:	return   s_pThis->m_HeapLow.GetFreeSpace ()
+				       + s_pThis->m_HeapHigh.GetFreeSpace ();
+		default:	return 0;
+		}
+#else
+		switch (nType)
+		{
+		case HEAP_LOW:
+		case HEAP_ANY:	return s_pThis->m_HeapLow.GetFreeSpace ();
+		default:	return 0;
+		}
+#endif
+	}
+
 	static void *PageAllocate (void)	{ return s_pThis->m_Pager.Allocate (); }
 	static void PageFree (void *pPage)	{ s_pThis->m_Pager.Free (pPage); }
 
@@ -144,6 +165,7 @@ private:
 private:
 	boolean m_bEnableMMU;
 	size_t m_nMemSize;
+	size_t m_nMemSizeHigh;
 
 	CHeapAllocator m_HeapLow;
 #if RASPPI >= 4
