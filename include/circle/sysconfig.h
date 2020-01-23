@@ -241,6 +241,13 @@
 
 //#define SAVE_VFP_REGS_ON_FIQ
 
+// LEAVE_QEMU_ON_HALT can be defined to exit QEMU when halt() is
+// called or main() returns EXIT_HALT. QEMU has to be started with the
+// -semihosting option, so that this works. This option must not be
+// defined for Circle images which will run on real Raspberry Pi boards.
+
+//#define LEAVE_QEMU_ON_HALT
+
 // USE_QEMU_USB_FIX fixes an issue when using Circle images inside
 // QEMU. If you encounter Circle freezing when using USB in QEMU
 // you should activate this option. It must not be defined for

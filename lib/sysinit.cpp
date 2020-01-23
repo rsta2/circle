@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -116,7 +116,34 @@ void halt (void)
 #ifndef USE_RPI_STUB_AT
 	DisableFIQs ();
 #endif
-	
+
+#ifdef LEAVE_QEMU_ON_HALT
+#ifdef ARM_ALLOW_MULTI_CORE
+	if (nCore == 0)
+#endif
+	{
+		// exit QEMU using the ARM semihosting (aka "Angel") interface
+#if AARCH == 32
+		asm volatile
+		(
+			"mov r0, #0x18\n"
+			"ldr r1, =0x20026\n"
+			"svc 0x123456\n"
+		);
+#else
+		volatile u64 Data[] = {0x20026, 0};
+		asm volatile
+		(
+			"mov w0, #0x18\n"
+			"mov x1, %0\n"
+			"hlt #0xF000\n"
+
+			: : "r" ((uintptr) &Data)
+		);
+#endif
+	}
+#endif
+
 	for (;;)
 	{
 #if RASPPI != 1
