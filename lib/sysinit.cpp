@@ -134,8 +134,8 @@ void halt (void)
 		volatile u64 Data[] = {0x20026, 0};
 		asm volatile
 		(
-			"mov w0, #0x18\n"
 			"mov x1, %0\n"
+			"mov w0, #0x18\n"
 			"hlt #0xF000\n"
 
 			: : "r" ((uintptr) &Data)
