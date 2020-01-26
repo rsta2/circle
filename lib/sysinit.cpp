@@ -24,6 +24,7 @@
 #include <circle/machineinfo.h>
 #include <circle/memory.h>
 #include <circle/chainboot.h>
+#include <circle/qemu.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/macros.h>
@@ -72,6 +73,13 @@ int *__errno (void)
 }
 
 #endif
+
+static int s_nExitStatus = EXIT_STATUS_SUCCESS;
+
+void set_qemu_exit_status (int nStatus)
+{
+	s_nExitStatus = nStatus;
+}
 
 void halt (void)
 {
@@ -123,24 +131,7 @@ void halt (void)
 #endif
 	{
 		// exit QEMU using the ARM semihosting (aka "Angel") interface
-#if AARCH == 32
-		asm volatile
-		(
-			"mov r0, #0x18\n"
-			"ldr r1, =0x20026\n"
-			"svc 0x123456\n"
-		);
-#else
-		volatile u64 Data[] = {0x20026, 0};
-		asm volatile
-		(
-			"mov x1, %0\n"
-			"mov w0, #0x18\n"
-			"hlt #0xF000\n"
-
-			: : "r" ((uintptr) &Data)
-		);
-#endif
+		SemihostingExit (s_nExitStatus);
 	}
 #endif
 

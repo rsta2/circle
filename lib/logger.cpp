@@ -2,7 +2,7 @@
 // logger.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -156,6 +156,7 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 		}
 
 #ifndef USE_RPI_STUB_AT
+		set_qemu_exit_status (EXIT_STATUS_PANIC);
 #ifndef ARM_ALLOW_MULTI_CORE
 		halt ();
 #else
@@ -200,6 +201,7 @@ void CLogger::WriteNoAlloc (const char *pSource, TLogSeverity Severity, const ch
 	if (Severity == LogPanic)
 	{
 #ifndef USE_RPI_STUB_AT
+		set_qemu_exit_status (EXIT_STATUS_PANIC);
 #ifndef ARM_ALLOW_MULTI_CORE
 		halt ();
 #else
