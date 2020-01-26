@@ -2,7 +2,7 @@
 // xhcidevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,8 +29,9 @@ static const char From[] = "xhci";
 
 CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 :	m_PCIeHostBridge (pInterruptSystem),
-	m_nSharedMemStart (CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_START)),
-	m_nSharedMemEnd (CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_END) + PAGE_SIZE - 1),
+	m_SharedMemAllocator (
+		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_START),
+		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_END) + PAGE_SIZE - 1),
 	m_pMMIO (0),
 	m_pSlotManager (0),
 	m_pEventManager (0),
@@ -40,8 +41,6 @@ CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
 	m_pRootHub (0),
 	m_bShutdown (FALSE)
 {
-	assert (m_nSharedMemStart != 0);
-	assert (m_nSharedMemEnd != 0);
 }
 
 CXHCIDevice::~CXHCIDevice (void)
@@ -70,9 +69,6 @@ CXHCIDevice::~CXHCIDevice (void)
 
 	delete m_pMMIO;
 	m_pMMIO = 0;
-
-	m_nSharedMemStart = 0;
-	m_nSharedMemEnd = 0;
 }
 
 boolean CXHCIDevice::Initialize (void)
@@ -271,50 +267,22 @@ CXHCIRootHub *CXHCIDevice::GetRootHub (void)
 
 void *CXHCIDevice::AllocateSharedMem (size_t nSize, size_t nAlign, size_t nBoundary)
 {
-	assert (nSize > 0);
-	assert (nAlign != 0);
-	assert (nAlign <= nBoundary);
-	assert (m_nSharedMemStart != 0);
-	assert (m_nSharedMemEnd != 0);
-
-	size_t nAlignMask = nAlign - 1;
-	if (m_nSharedMemStart & nAlignMask)
-	{
-		m_nSharedMemStart += nAlignMask;
-		m_nSharedMemStart &= ~nAlignMask;
-	}
-
-	size_t nBoundaryMask = nBoundary - 1;
-	if (   (m_nSharedMemStart & ~nBoundaryMask)
-	    != ((m_nSharedMemStart + nSize-1) & ~nBoundaryMask))
-	{
-		m_nSharedMemStart += nBoundaryMask;
-		m_nSharedMemStart &= ~nBoundaryMask;
-	}
-
-	void *pResult = (void *) m_nSharedMemStart;
-
-	m_nSharedMemStart += nSize;
-	if (m_nSharedMemStart <= m_nSharedMemEnd)
+	void *pResult = m_SharedMemAllocator.Allocate (nSize, nAlign, nBoundary);
+	if (pResult != 0)
 	{
 		memset (pResult, 0, nSize);
 	}
 	else
 	{
 		CLogger::Get ()->Write (From, LogError, "Shared memory space exhausted");
-
-		pResult = 0;
 	}
 
 	return pResult;
 }
 
-void CXHCIDevice::FreeSharedMem (void *pBlock)	// TODO
+void CXHCIDevice::FreeSharedMem (void *pBlock)
 {
-#ifdef XHCI_DEBUG
-	CLogger::Get ()->Write (From, LogWarning,
-				"Trying to free shared memory at 0x%lX", (uintptr) pBlock);
-#endif
+	m_SharedMemAllocator.Free (pBlock);
 }
 
 void CXHCIDevice::InterruptHandler (unsigned nVector)
@@ -390,8 +358,7 @@ void CXHCIDevice::DumpStatus (void)
 	m_PCIeHostBridge.DumpStatus (XHCI_PCIE_SLOT, XHCI_PCIE_FUNC);
 
 	CLogger::Get ()->Write (From, LogDebug, "%u KB shared memory free",
-				  m_nSharedMemEnd > m_nSharedMemStart
-				? (m_nSharedMemEnd - m_nSharedMemStart) / 1024 : 0);
+				(unsigned) (m_SharedMemAllocator.GetFreeSpace () / 1024));
 }
 
 #endif

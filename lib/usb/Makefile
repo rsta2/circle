@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,7 +36,8 @@ OBJS	+= dwhcidevice.o dwhciframeschednper.o dwhciframeschednsplit.o dwhciframesc
 	   dwhciregister.o dwhcirootport.o dwhcixactqueue.o dwhcixferstagedata.o
 else
 OBJS	+= xhcicommandmanager.o xhcidevice.o xhciendpoint.o xhcieventmanager.o xhcimmiospace.o \
-	   xhciring.o xhciroothub.o xhcirootport.o xhcislotmanager.o xhciusbdevice.o
+	   xhciring.o xhciroothub.o xhcirootport.o xhcisharedmemallocator.o xhcislotmanager.o \
+	   xhciusbdevice.o
 endif
 
 libusb.a: $(OBJS)
