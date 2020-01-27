@@ -209,8 +209,10 @@ boolean CXHCIDevice::Initialize (void)
 	return TRUE;
 }
 
-void CXHCIDevice::ReScanDevices (void)	// TODO
+void CXHCIDevice::ReScanDevices (void)
 {
+	assert (m_pRootHub != 0);
+	m_pRootHub->ReScanDevices ();
 }
 
 boolean CXHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
