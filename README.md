@@ -216,6 +216,7 @@ USB library
 * CXHCIRing: Encapsulates a transfer, command or event ring for communication with the xHCI controller.
 * CXHCIRootHub: Initializes the available USB root ports of the xHCI controller.
 * CXHCIRootPort: Encapsulates an USB root port of the xHCI controller.
+* CXHCISharedMemAllocator: Shared memory allocation for the xHCI driver.
 * CXHCISlotManager: Manages the USB device slots of the xHCI controller.
 * CXHCIUSBDevice: Encapsulates a single USB device, attached to the xHCI controller.
 

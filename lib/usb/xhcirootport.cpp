@@ -2,7 +2,7 @@
 // xhcirootport.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -159,14 +159,44 @@ TUSBSpeed CXHCIRootPort::GetPortSpeed (void)
 	return XHCI_PSI_TO_USB_SPEED (uchSpeedID);
 }
 
-boolean CXHCIRootPort::ReScanDevices (void)	// TODO
+boolean CXHCIRootPort::ReScanDevices (void)
 {
+	if (m_pUSBDevice != 0)
+	{
+		return m_pUSBDevice->ReScanDevices ();
+	}
+
+	if (!Initialize ())
+	{
+		return FALSE;
+	}
+
+	if (!Configure ())
+	{
+		return FALSE;
+	}
+
 	return TRUE;
 }
 
-boolean CXHCIRootPort::RemoveDevice (void)	// TODO
+boolean CXHCIRootPort::RemoveDevice (void)
 {
-	return FALSE;
+	assert (m_pMMIO != 0);
+	assert (m_nPortIndex < XHCI_CONFIG_MAX_PORTS);
+
+	m_SpinLock.Acquire ();
+
+	u32 nPortSC = m_pMMIO->pt_read32 (m_nPortIndex, XHCI_REG_OP_PORTS_PORTSC);
+
+	m_pMMIO->pt_write32 (m_nPortIndex, XHCI_REG_OP_PORTS_PORTSC,
+			     nPortSC | XHCI_REG_OP_PORTS_PORTSC_PED);	// disable port
+
+	m_SpinLock.Release ();
+
+	delete m_pUSBDevice;
+	m_pUSBDevice = 0;
+
+	return TRUE;
 }
 
 void CXHCIRootPort::StatusChanged (void)
