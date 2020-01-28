@@ -21,7 +21,7 @@
 #define _qemu_qemuhostfile_h
 
 #include <circle/device.h>
-#include <circle/macros.h>
+#include <circle/qemu.h>
 #include <circle/types.h>
 
 /// \note This class requires QEMU started with the -semihosting option to work!
@@ -49,17 +49,7 @@ public:
 	int Write (const void *pBuffer, size_t nCount);
 
 private:
-#if AARCH == 32
-	typedef u32 value;
-#else
-	typedef u64 value;
-#endif
-
-	static value CallSemihosting (value nOperation, value nParam1 = 0, value nParam2 = 0,
-				      value nParam3 = 0) NOOPT;
-
-private:
-	value m_nHandle;
+	TSemihostingValue m_nHandle;
 };
 
 #endif
