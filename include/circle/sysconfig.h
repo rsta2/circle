@@ -34,7 +34,9 @@
 // If your kernel image contains big data areas it may be required to
 // increase this value. The value must be a multiple of 16 KByte.
 
+#ifndef KERNEL_MAX_SIZE
 #define KERNEL_MAX_SIZE		(2 * MEGABYTE)
+#endif
 
 // HEAP_DEFAULT_NEW defines the default heap to be used for the "new"
 // operator, if a memory type is not explicitly specified. Possible
@@ -46,7 +48,9 @@
 // explicitly need low memory for DMA, this value defaults to HEAP_LOW.
 // This setting is only of importance for the Raspberry Pi 4.
 
+#ifndef HEAP_DEFAULT_NEW
 #define HEAP_DEFAULT_NEW	HEAP_LOW
+#endif
 
 // HEAP_DEFAULT_MALLOC defines the heap to be used for malloc() and
 // calloc() calls. See the description of HEAP_DEFAULT_NEW for details!
@@ -54,7 +58,9 @@
 // drivers, which require to allocate low memory for DMA purpose using
 // malloc(). This setting is only of importance for the Raspberry Pi 4.
 
+#ifndef HEAP_DEFAULT_MALLOC
 #define HEAP_DEFAULT_MALLOC	HEAP_LOW
+#endif
 
 ///////////////////////////////////////////////////////////////////////
 //
@@ -75,7 +81,9 @@
 // is enabled, which is normally the case. Only if you have disabled
 // the L2 cache of the GPU in config.txt this option must be undefined.
 
+#ifndef NO_GPU_L2_CACHE_ENABLED
 #define GPU_L2_CACHE_ENABLED
+#endif
 
 // USE_PWM_AUDIO_ON_ZERO can be defined to use GPIO12/13 for PWM audio
 // output on RPi Zero (W). Some external circuit is needed to use this.
@@ -120,7 +128,9 @@
 // for other older QEMU versions it does not work. On the Raspberry Pi 4
 // setting this option is required.
 
+#ifndef NO_PHYSICAL_COUNTER
 #define USE_PHYSICAL_COUNTER
+#endif
 
 #endif
 
@@ -157,14 +167,18 @@
 // over 2 are normally not useful, because the system bus gets congested
 // with it.
 
+#ifndef SCREEN_DMA_BURST_LENGTH
 #define SCREEN_DMA_BURST_LENGTH	2
+#endif
 
 // CALIBRATE_DELAY activates the calibration of the delay loop. Because
 // this loop is normally not used any more in Circle, the only use of
 // this option is that the "SpeedFactor" of your system is displayed.
 // You can reduce the time needed for booting, if you disable this.
 
+#ifndef NO_CALIBRATE_DELAY
 #define CALIBRATE_DELAY
+#endif
 
 ///////////////////////////////////////////////////////////////////////
 //
@@ -174,11 +188,15 @@
 
 // MAX_TASKS is the maximum number of tasks in the system.
 
+#ifndef MAX_TASKS
 #define MAX_TASKS		20
+#endif
 
 // TASK_STACK_SIZE is the stack size for each task.
 
+#ifndef TASK_STACK_SIZE
 #define TASK_STACK_SIZE		0x8000
+#endif
 
 ///////////////////////////////////////////////////////////////////////
 //
@@ -190,12 +208,16 @@
 // The default keyboard map can be overwritten in with the keymap=
 // option in cmdline.txt.
 
+#ifndef DEFAULT_KEYMAP
+
 #define DEFAULT_KEYMAP		"DE"
 //#define DEFAULT_KEYMAP		"ES"
 //#define DEFAULT_KEYMAP		"FR"
 //#define DEFAULT_KEYMAP		"IT"
 //#define DEFAULT_KEYMAP		"UK"
 //#define DEFAULT_KEYMAP		"US"
+
+#endif
 
 ///////////////////////////////////////////////////////////////////////
 //
@@ -221,9 +243,13 @@
 // this setting can be useful for Compute Modules. Select only one
 // definition.
 
+#ifndef SERIAL_GPIO_SELECT
+
 #define SERIAL_GPIO_SELECT	14	// and 15
 //#define SERIAL_GPIO_SELECT	32	// and 33
 //#define SERIAL_GPIO_SELECT	36	// and 37
+
+#endif
 
 // SAVE_VFP_REGS_ON_IRQ enables saving the floating point registers
 // on entry when an IRQ occurs and will restore these registers on exit
