@@ -1,0 +1,33 @@
+README
+
+Circle does not support USB hot-plugging, but USB mass-storage devices ("UMSD",
+e.g. flash drives) can be attached to a running system and mounted on
+application request. Removing an UMSD from a running system is possible too,
+after the application unmounted the file system and called a function to disable
+the USB device. This sample program demonstrates, how this can be accomplished.
+
+An USB keyboard has to be attached to your Raspberry Pi, before it is started
+with this sample installed. The USB flash drive should not be connected, when
+the Raspberry Pi is started. After system initialization the application prompts
+you, to plug in the USB flash drive and to press the RETURN key. Because you
+need a second USB port now, Raspberry Pi models with only one USB port cannot be
+used without an external USB hub.
+
+Just plug in an USB flash drive, which contains a FAT file system. For safety it
+should not contain important data. After pressing the RETURN key, the USB will
+be re-scanned by Circle (in m_USBHCI.ReScanDevices ()) and the USB flash drive
+should be detected and mounted afterwards. The sample program displays a listing
+of the root directory of the flash drive then, if there are files on the drive.
+
+Next the file system will be unmounted immediately, the USB device will be
+disabled and removed from the system. You will be prompted to remove the USB
+flash drive physically from the USB port. Just do it and press RETURN, when you
+have done. After completion the process is started again. You can plug in the
+same or a different USB flash drive in the next run.
+
+Circle comes with two different implementations of a FAT file system driver
+(with different APIs). By default this sample uses the CFATFileSystem class in
+lib/fs/fat/. If you want to use the FatFs file system module in addon/fatfs/,
+you have to define "USE_FATFS = 1" in the Makefile of the sample. Additionally
+the library in addon/fatfs/ must be built manually, before entering "make" in
+this sample's directory. This is not required in the default case.
