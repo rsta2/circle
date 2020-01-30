@@ -44,3 +44,5 @@ libusb.a: $(OBJS)
 	@echo "  AR    $@"
 	@rm -f $@
 	@$(AR) cr $@ $(OBJS)
+
+-include $(DEPS)

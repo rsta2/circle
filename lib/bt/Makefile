@@ -45,3 +45,5 @@ BCM43430A1.h: converttool
 converttool: converttool.c
 	@echo "  TOOL  $@"
 	@gcc -o converttool converttool.c
+
+-include $(DEPS)

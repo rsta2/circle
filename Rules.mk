@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,6 +30,9 @@ PREFIX64 ?= aarch64-elf-
 
 # see: doc/stdlib-support.txt
 STDLIB_SUPPORT ?= 1
+
+# set this to 0 to globally disable dependency checking
+CHECK_DEPS ?= 1
 
 # set this to "softfp" if you want to link specific libraries
 FLOAT_ABI ?= hard
@@ -129,6 +132,10 @@ CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding $(DEFINE) $(INCLUDE) $(OPTI
 CPPFLAGS+= $(CFLAGS) -std=c++14
 LDFLAGS	+= --section-start=.init=$(LOADADDR)
 
+ifeq ($(strip $(CHECK_DEPS)),1)
+DEPS	= $(OBJS:.o=.d)
+endif
+
 %.o: %.S
 	@echo "  AS    $@"
 	@$(AS) $(AFLAGS) -c -o $@ $<
@@ -140,6 +147,15 @@ LDFLAGS	+= --section-start=.init=$(LOADADDR)
 %.o: %.cpp
 	@echo "  CPP   $@"
 	@$(CPP) $(CPPFLAGS) -c -o $@ $<
+
+%.d: %.S
+	@$(AS) $(AFLAGS) -M -MG -MT $*.o -MT $@ -MF $@ $<
+
+%.d: %.c
+	@$(CC) $(CFLAGS) -M -MG -MT $*.o -MT $@ -MF $@ $<
+
+%.d: %.cpp
+	@$(CPP) $(CPPFLAGS) -M -MG -MT $*.o -MT $@ -MF $@ $<
 
 $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@echo "  LD    $(TARGET).elf"
@@ -154,7 +170,7 @@ $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@wc -c < $(TARGET).img
 
 clean:
-	rm -f *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
+	rm -f *.d *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
 
 ifneq ($(strip $(SDCARD)),)
 install: $(TARGET).img

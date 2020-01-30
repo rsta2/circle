@@ -17,3 +17,5 @@ kernel.o: sound.h
 sound.h: sound.h.gz
 	@echo "  UNZIP $@"
 	@gunzip -c sound.h.gz > sound.h
+
+-include $(DEPS)

@@ -15,3 +15,5 @@ LIBS	= ../libwebconsole.a \
 	  $(CIRCLEHOME)/lib/libcircle.a
 
 include $(CIRCLEHOME)/sample/Rules.mk
+
+-include $(DEPS)
