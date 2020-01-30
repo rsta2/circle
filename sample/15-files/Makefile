@@ -13,3 +13,5 @@ LIBS	= $(CIRCLEHOME)/lib/usb/libusb.a \
 	  $(CIRCLEHOME)/lib/libcircle.a
 
 include ../Rules.mk
+
+-include $(DEPS)

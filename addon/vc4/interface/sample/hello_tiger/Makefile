@@ -18,3 +18,5 @@ LIBS	= $(CIRCLEHOME)/addon/vc4/interface/bcm_host/libbcm_host.a \
 include $(CIRCLEHOME)/Rules.mk
 
 CFLAGS	+= -D__RASPBERRYPI__
+
+-include $(DEPS)
