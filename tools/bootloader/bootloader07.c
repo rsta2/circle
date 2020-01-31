@@ -35,7 +35,7 @@ int notmain ( void )
 {
     unsigned int state;
     unsigned int byte_count;
-    unsigned int digits_read;
+    unsigned int digits_read = 0;
     unsigned int address;
     unsigned int record_type;
     unsigned int segment;
