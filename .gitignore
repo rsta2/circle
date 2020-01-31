@@ -89,3 +89,7 @@ Config2.mk
 doc/html/
 test/
 tmp/
+
+# Other
+# ----------------------------------------------
+/circle.geany
