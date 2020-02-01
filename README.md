@@ -108,10 +108,6 @@ Circle supports the following features:
 |                       | (not on Raspberry Pi 4)                             |
 |                       | uGUI (by Achim Doebler)                             |
 |                       | LittlevGL GUI library (by Gabor Kiss-Vamosi)        |
-|                       |                                                     |
-| Bluetooth             | Device inquiry support only                         |
-| (deprecated)          | USB BR/EDR dongle driver                            |
-|                       | Internal controller of Raspberry Pi 3 B             |
 
 Building
 --------

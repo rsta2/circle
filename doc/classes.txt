@@ -171,14 +171,3 @@ Net library
 * CTFTPDaemon: TFTP server task.
 * CTransportLayer: Encapsulates the TCP/UDP transport layer.
 * CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.
-
-Bluetooth library
-
-* CBTDeviceManager: Manages the local Bluetooth device. Part of the HCI layer.
-* CBTHCILayer: Bluetooth HCI layer. Basic communication with the local Bluetooth controller.
-* CBTInquiryResults: Container for the responses of an Inquiry operation.
-* CBTLogicalLayer: Bluetooth logical layer. Handles Inquiry operation only at the moment.
-* CBTQueue: Encapsulates a queue used for incoming and outgoing command, event and data packets.
-* CBTSubSystem: The main Bluetooth subsystem class. Create an instance of it in the CKernel class.
-* CBTTask: Bluetooth background task. Processes the different Bluetooth layers.
-* CBTUARTTransport: Bluetooth UART HCI transport driver for the internal BT device of the Raspberry Pi 3 B.
