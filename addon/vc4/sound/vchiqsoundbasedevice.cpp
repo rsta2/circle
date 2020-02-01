@@ -247,9 +247,16 @@ void CVCHIQSoundBaseDevice::Cancel (void)
 	}
 
 	m_State = VCHIQSoundCancelled;
-	while (m_State == VCHIQSoundCancelled)
+	if (m_nWritePos - m_nCompletePos > 0)
 	{
-		CScheduler::Get ()->Yield ();
+		while (m_State == VCHIQSoundCancelled)
+		{
+			CScheduler::Get ()->Yield ();
+		}
+	}
+	else
+	{
+		m_State = VCHIQSoundTerminating;
 	}
 
 	assert (m_State == VCHIQSoundTerminating);
