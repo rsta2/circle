@@ -1,5 +1,17 @@
 QEMU
 
+This document mainly describes using QEMU based on Andrew Baumann's fork for the
+Raspberry Pi 2 (32-bit), which has been patched in my own fork:
+
+	https://github.com/rsta2/qemu
+
+Current official QEMU releases (e.g. 4.2.0) can be used for emulating the
+Raspberry Pi 3 in AArch64 mode with Circle programs. Unfortunately USB and
+networking are not supported in this case. QEMU 4.2.0 will be started with:
+
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img
+
+
 A number of Circle samples can run inside the QEMU processor emulator. This
 includes MMU, USB and TCP/IP network support. The following features are
 currently not supported or are not stable with Circle:
@@ -12,23 +24,19 @@ currently not supported or are not stable with Circle:
 * HW random number generator
 
 There is a special fork of QEMU by Andrew Baumann which supports the Raspberry
-Pi 2 and which should be used at the moment. The official QEMU version has
-currently (in 03/2017) no support of the BCM2835 system timer peripheral and
-does not work with Circle because of this. Please note that there is another
-problem in the USB CDC Ethernet/RNDIS driver of Andrew Baumann's fork. This has
-been patched in a third repository.
+Pi 2 and which should be used for 32-bit operation at the moment. Circle
+programs must be build with the system option PHYSICAL_COUNTER undefined (!) in
+include/circle/sysconfig.h to run inside this QEMU version in any case. Please
+note that there is a problem in the USB CDC Ethernet/RNDIS driver of Andrew
+Baumann's fork. This has been patched in a third repository.
 
-* http://git.qemu-project.org		Official QEMU repository
+* https://git.qemu.org/?p=qemu.git	Official QEMU repository
 * https://github.com/0xabu/qemu		Fork of Andrew Baumann for Raspberry Pi 2
 * https://github.com/rsta2/qemu		Fork with patches for Circle
 
 Most of my Circle tests have been done with the version from the third
-repository on a 64-bit Linux host. Other host systems have not been tested with
-Circle by myself so far. There is another QEMU repository which has better
-support for Windows host systems, which is synchronized with the official QEMU
-repository and which has the Circle patches too:
-
-* https://github.com/flypie/flypie-pi-qemu	by flypie@GitHub
+repository on a x86_64 Linux host. Other host systems have not been tested with
+Circle by myself so far.
 
 To get and build the QEMU source code for Circle enter the following commands:
 
@@ -56,6 +64,13 @@ These options enable specific features of QEMU:
 -usbdevice keyboard	(enable USB keyboard support)
 -usbdevice mouse	(enable USB mouse support, but mouse cursor not working)
 -usbdevice disk:filename (enable USB mass storage device access to disk image)
+-semihosting		(enable semihosting support)
+
+With the last option the possibility to automatically exit QEMU, requested by a
+Circle program, is enabled. This requires the system option LEAVE_QEMU_ON_HALT to
+be defined in include/circle/sysconfig.h. Furthermore with this option a Circle
+program can access files in the file system of the host system. This may cause
+security issues, so be careful!
 
 
 USB
@@ -109,5 +124,5 @@ LINKS
 
 Have a look at these URLs for further information:
 
-* http://www.qemu-project.org/documentation/
+* https://www.qemu.org/documentation/
 * https://github.com/0xabu/qemu/wiki/
