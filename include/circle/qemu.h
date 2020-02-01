@@ -94,6 +94,8 @@ boolean SemihostingFeatureSupported (u32 nFeature);
 
 #define SEMIHOSTING_NO_HANDLE		((TSemihostingValue) -1)
 
+#define SEMIHOSTING_STDIO_NAME		":tt"
+
 
 void SemihostingExit (TSemihostingValue nStatusCode);
 

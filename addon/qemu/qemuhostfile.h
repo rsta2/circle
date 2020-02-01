@@ -31,7 +31,7 @@ class CQEMUHostFile : public CDevice	/// Accesses a file using the QEMU semihost
 public:
 	/// \param pFileName File on QEMU host to be opened (default: stdout)
 	/// \param bWrite    TRUE if file is written (default), FALSE if file is read
-	CQEMUHostFile (const char *pFileName = ":tt", boolean bWrite = TRUE);
+	CQEMUHostFile (const char *pFileName = SEMIHOSTING_STDIO_NAME, boolean bWrite = TRUE);
 
 	~CQEMUHostFile (void);
 
