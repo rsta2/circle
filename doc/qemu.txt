@@ -42,7 +42,7 @@ To get and build the QEMU source code for Circle enter the following commands:
 
 	git clone https://github.com/rsta2/qemu.git qemu
 	cd qemu
-	git submodule update --init dtc pixman
+	git submodule update --init dtc
 
 	mkdir build
 	cd build
