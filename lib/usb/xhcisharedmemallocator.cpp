@@ -113,7 +113,7 @@ void *CXHCISharedMemAllocator::Allocate (size_t nSize, size_t nAlign, size_t nBo
 	pBlockHeader->pNext = 0;
 
 	void *pResult = pBlockHeader->Data;
-	assert (((uintptr) pResult & (XHCI_BLOCK_ALIGN-1)) == 0);
+	assert (((uintptr) pResult & (nAlign-1)) == 0);
 
 	return pResult;
 }
