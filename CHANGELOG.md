@@ -5,6 +5,29 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+The 41st Step
+-------------
+
+With this release Circle supports nearly all features on the Raspberry Pi 4, which are known from earlier models. Only OpenGL ES / OpenVG / EGL and the I2C slave support are not available.
+
+On Raspberry Pi 4 models with over 1 GB SDRAM Circle provides a separate *HEAP_HIGH* memory region now. You can use it to dynamically allocate memory blocks with `new` and `malloc()` as known from the low heap. Both heaps can be configured to form a larger unified heap using a system option. Please read the file *doc/new-operator.txt* for details about using and configuring the heaps.
+
+The new *sample/39-umsdplugging* demonstrates how to use `CUSBHCIDevice::RescanDevices()` and `CDevice::RemoveDevice()` to be able to attach USB mass-storage devices (e.g. USB flash drives) and to remove them again on application request without rebooting the system.
+
+Some support for the QEMU semihosting interface has been added, like the possibility to exit QEMU on `halt()`, optionally with a specific exit status (`set_qemu_exit_status()`). This may be used to automate tests. There is a new class `CQEMUHostFile`, which allows reading and writing files (including stdin / stdout) on the host system, where QEMU is running on. See the directory *addon/qemu/*, the new sample in *addon/qemu/hostlogdemo/* and the file file *doc/qemu.txt* for info on using QEMU with Circle with the semihosting API.
+
+The Circle build system checks dependencies of source files with header files now and automatically rebuilds the required object files. You will not need to clean the whole project after editing a header file any more. You have to append the (last) line `-include $(DEPS)` to an existing Makefile to enable this feature in your project. The dependencies check may be globally disabled, by defining `CHECK_DEPS = 0` in Config.mk.
+
+If you want to modify a system option in *include/circle/sysconfig.h*, explicitly changing this file is not required any more, which makes it easier to include Circle as a git submodule. All system options can be defined in *Config.mk* this way:
+
+
+```
+DEFINE += -DARM_ALLOW_MULTI_CORE
+DEFINE += -DNO_CALIBRATE_DELAY
+```
+
+Finally a project file for the Geany IDE is provided in *tools/template/*. The recommended toolchain is based on GNU C 9.2.1 now. As announced the Bluetooth support has been removed for legal reasons.
+
 Release 40.1
 ------------
 
