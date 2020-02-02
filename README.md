@@ -103,8 +103,10 @@ Building is normally done on PC Linux. If building for the Raspberry Pi 1 you ne
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2, 3 or 4) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
-`RASPPI = 1`  
-`PREFIX = arm-none-eabi-`
+```
+RASPPI = 1
+PREFIX = arm-none-eabi-
+```
 
 The following table gives support for selecting the right *RASPPI* value:
 
@@ -119,8 +121,10 @@ For a binary distribution you should do one build with *RASPPI = 1*, one with *R
 
 Then go to the build root of Circle and do:
 
-`./makeall clean`  
-`./makeall`
+```
+./makeall clean
+./makeall
+```
 
 By default only the latest sample (with the highest number) is build. The ready build *kernel.img* file should be in its subdirectory of sample/. If you want to build another sample after `makeall` go to its subdirectory and do `make`.
 
