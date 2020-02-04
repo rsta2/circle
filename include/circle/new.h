@@ -1,9 +1,9 @@
 //
-// btlogicallayer.h
+// new.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,36 +17,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_bt_btlogicallayer_h
-#define _circle_bt_btlogicallayer_h
+#ifndef _circle_new_h
+#define _circle_new_h
 
-#include <circle/bt/bthcilayer.h>
-#include <circle/bt/btinquiryresults.h>
-#include <circle/sched/synchronizationevent.h>
+#include <circle/memory.h>
 #include <circle/types.h>
 
-class CBTLogicalLayer
-{
-public:
-	CBTLogicalLayer (CBTHCILayer *pHCILayer);
-	~CBTLogicalLayer (void);
+void *operator new (size_t nSize, int nType);
 
-	boolean Initialize (void);
-
-	void Process (void);
-
-	// returns 0 on failure, result must be deleted by caller otherwise
-	CBTInquiryResults *Inquiry (unsigned nSeconds);		// 1 <= nSeconds <= 61
-
-private:
-	CBTHCILayer *m_pHCILayer;
-
-	CBTInquiryResults *m_pInquiryResults;
-
-	unsigned m_nNameRequestsPending;
-	CSynchronizationEvent m_Event;
-
-	u8 *m_pBuffer;
-};
+void *operator new[] (size_t nSize, int nType);
 
 #endif

@@ -1,0 +1,51 @@
+[editor]
+line_wrapping=true
+line_break_column=100
+auto_continue_multiline=true
+
+[file_prefs]
+final_new_line=true
+ensure_convert_new_lines=false
+strip_trailing_spaces=false
+replace_tabs=false
+
+[indentation]
+indent_width=8
+indent_type=2
+indent_hard_tab_width=8
+detect_indent=false
+detect_indent_width=false
+indent_mode=2
+
+[project]
+name=Circle
+base_path=.
+description=A C++ bare metal environment for Raspberry Pi
+file_patterns=*.h;*.cpp;*.c;*.S;
+
+[long line marker]
+long_line_behaviour=2
+long_line_column=100
+
+[files]
+current_page=0
+
+[build-menu]
+NF_00_LB=Make Circle libraries
+NF_00_CM=./makeall --nosample -j `nproc`
+NF_00_WD=%p
+NF_01_LB=Make current directory...
+NF_01_CM=make 
+NF_01_WD=%d
+NF_02_LB=Make current file
+NF_02_CM=make %e.o
+NF_02_WD=%d
+NF_03_LB=Clean Circle libraries
+NF_03_CM=./makeall clean
+NF_03_WD=%p
+EX_00_LB=Execute (with bootloader)
+EX_00_CM=make flash
+EX_00_WD=%d
+EX_01_LB=Write to SD card
+EX_01_CM=make install
+EX_01_WD=%d

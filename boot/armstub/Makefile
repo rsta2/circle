@@ -1,7 +1,7 @@
 -include ../../Config.mk
 -include ../../Config2.mk
 
-PREFIX64 ?= aarch64-elf-
+PREFIX64 ?= aarch64-none-elf-
 
 TARGET = armstub8-rpi4
 

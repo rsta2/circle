@@ -77,6 +77,7 @@ $RECYCLE.BIN/
 
 # Circle
 # ----------------------------------------------
+*.d
 *.img
 *.lst
 *.map
@@ -88,3 +89,7 @@ Config2.mk
 doc/html/
 test/
 tmp/
+
+# Other
+# ----------------------------------------------
+/circle.geany

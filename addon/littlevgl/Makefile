@@ -30,3 +30,9 @@ include $(CIRCLEHOME)/Rules.mk
 
 INCLUDE += -I $(LVGL_DIR)
 CFLAGS += -Wno-narrowing -Wno-pointer-to-int-cast
+
+-include $(DEPS)
+
+ifeq ($(strip $(CHECK_DEPS)),1)
+-include $(EXOBJS:.o=.d)
+endif

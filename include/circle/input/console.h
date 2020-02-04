@@ -2,7 +2,7 @@
 // console.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,11 +29,14 @@
 #define CONSOLE_OPTION_ICANON	(1 << 0)	// canonic input using line editor (default)
 #define CONSOLE_OPTION_ECHO	(1 << 1)	// echo input to output (default)
 
-class CConsole : public CDevice		/// Console using screen/USB keyboard or alternate device
+class CConsole : public CDevice		/// Console using screen/USB keyboard or alternate device(s)
 {
 public:
 	/// \param pAlternateDevice Alternate device to be used (if USB keyboard is not attached)
 	CConsole (CDevice *pAlternateDevice = 0);
+	/// \param pInputDevice Device used for input (instead of USB keyboard)
+	/// \param pOutputDevice Device used for output (instead of screen)
+	CConsole (CDevice *pInputDevice, CDevice *pOutputDevice);
 
 	~CConsole (void);
 

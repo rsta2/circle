@@ -31,7 +31,8 @@ libkhrn_client.a: $(OBJS)
 	@rm -f $@
 	@$(AR) cr $@ $(OBJS)
 
-EXTRACLEAN = common/*.o egl/*.o ext/*.o glxx/*.o vg/*.o
+EXTRACLEAN = common/*.o egl/*.o ext/*.o glxx/*.o vg/*.o \
+	     common/*.d egl/*.d ext/*.d glxx/*.d vg/*.d
 
 include $(CIRCLEHOME)/Rules.mk
 
@@ -39,5 +40,11 @@ CFLAGS += -Wno-strict-overflow
 DEFINE += -DEGL_SERVER_DISPMANX
 
 ifeq ($(strip $(AARCH)),64)
-$(error AARCH = 64 is not supported here)
+$(error AARCH = 64 is not supported khronos)
 endif
+
+ifeq ($(strip $(RASPPI)),4)
+$(warning RASPPI = 4 is not supported in khronos)
+endif
+
+-include $(DEPS)

@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <circle/machineinfo.h>
 #include <circle/memory.h>
 #include <circle/chainboot.h>
+#include <circle/qemu.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/macros.h>
@@ -73,6 +74,13 @@ int *__errno (void)
 
 #endif
 
+static int s_nExitStatus = EXIT_STATUS_SUCCESS;
+
+void set_qemu_exit_status (int nStatus)
+{
+	s_nExitStatus = nStatus;
+}
+
 void halt (void)
 {
 #ifdef ARM_ALLOW_MULTI_CORE
@@ -116,7 +124,17 @@ void halt (void)
 #ifndef USE_RPI_STUB_AT
 	DisableFIQs ();
 #endif
-	
+
+#ifdef LEAVE_QEMU_ON_HALT
+#ifdef ARM_ALLOW_MULTI_CORE
+	if (nCore == 0)
+#endif
+	{
+		// exit QEMU using the ARM semihosting (aka "Angel") interface
+		SemihostingExit (s_nExitStatus);
+	}
+#endif
+
 	for (;;)
 	{
 #if RASPPI != 1

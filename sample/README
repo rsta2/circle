@@ -21,7 +21,6 @@ SAMPLES
 19-tasks		Demonstrating the cooperative non-preemtive scheduler
 20-tcpsimple		Simple TCP echo server
 21-webserver		Simple HTTP webserver which controls the Act LED
-22-btsimple		Displaying the visible Bluetooth devices (Bluetooth controller needed)
 23-spisimple		Transfers some data bytes to/from a SPI slave device. Dumps the received bytes.
 24-hwrandom		Demonstrating the hardware random number generator.
 25-spidma		Transfers some data bytes to/from a SPI slave device using DMA.
@@ -38,3 +37,4 @@ SAMPLES
 36-softpwm		Using the class CUserTimer to implement software PWM
 37-showgamepad		Shows a stylised gamepad on screen and the state of an attached USB gamepad.
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
+39-usbplugging		Plug in and remove USB flash drives on application request, list directory

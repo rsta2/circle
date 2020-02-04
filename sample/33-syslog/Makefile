@@ -19,3 +19,5 @@ include ../Rules.mk
 
 syslogserver: syslogserver.c
 	gcc -o syslogserver syslogserver.c
+
+-include $(DEPS)

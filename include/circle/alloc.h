@@ -2,7 +2,7 @@
 // alloc.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,10 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _alloc_h
-#define _alloc_h
-
-//#define MEM_DEBUG
+#ifndef _circle_alloc_h
+#define _circle_alloc_h
 
 #include <circle/types.h>
 
@@ -28,24 +26,14 @@
 extern "C" {
 #endif
 
-void mem_init (unsigned long ulBase, unsigned long ulSize);
-
-unsigned long mem_get_size (void);
-
-void *malloc (size_t nSize);	// resulting block is always 16 bytes aligned
+void *malloc (size_t nSize);		// resulting block is always 16 bytes aligned
 void free (void *pBlock);
 
 void *calloc (size_t nBlocks, size_t nSize);
 void *realloc (void *pBlock, size_t nSize);
 
-void *palloc (void);		// returns 4K page (aligned)
+void *palloc (void);			// returns aligned page (AArch32: 4K, AArch64: 64K)
 void pfree (void *pPage);
-
-#ifdef MEM_DEBUG
-
-void mem_info (void);
-
-#endif
 
 #ifdef __cplusplus
 }

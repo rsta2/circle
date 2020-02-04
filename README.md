@@ -10,43 +10,28 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-Release 40.1
-------------
-
-This intermediate release mostly adds FIQ support for AArch64 on the Raspberry Pi 4. This has been implemented using an additional ARM stub file *armstub8-rpi4.bin*, which is loaded by the firmware. The configuration file *config.txt*, provided in *boot/*, is required in any case for AArch64 operation now. Please read the file *boot/README* for detailed information on preparing a SD card with the firmware for using it with Circle applications.
-
-*boot/Makefile* downloads a specific firmware revision now. With continuous Raspberry Pi firmware development there may occur compatibility problems between a Circle release and a new firmware revision, which may lead to confusion, if they are not detected and fixed immediately. To overcome this situation a specific tested firmware revision is downloaded by default now. This firmware revision reference will be updated with each new Circle release.
-
-Further news in this release are:
-
-* User timer (class CUserTimer) supported on Raspberry Pi 4
-* LittlevGL support in *addon/littlevgl/* updated to v6.1.1
-* FatFs support in *addon/fatfs/* updated to R0.14
-
-Finally the system option *SCREEN_HEADLESS* has been added to *include/circle/sysconfig.h*. It can be defined to allow headless operation of sample programs especially on the Raspberry Pi 4, which would otherwise fail to start without notice, if there is not a display attached (see the end of next section for a description of the problem).
-
-The 40th Step
+The 41st Step
 -------------
 
-This Circle release adds support for the Raspberry Pi 4 Model B. All features supported by previous releases on Raspberry Pi 1-3 should work on Raspberry Pi 4 except:
+With this release Circle supports nearly all features on the Raspberry Pi 4, which are known from earlier models. Only OpenGL ES / OpenVG / EGL and the I2C slave support are not available.
 
-* Accelerated graphics support
-* FIQ on AArch64
-* User timer (class CUserTimer)
-* I2C slave (class CI2CSlave)
-* USB RescanDevices() and RemoveDevice()
+On Raspberry Pi 4 models with over 1 GB SDRAM Circle provides a separate *HEAP_HIGH* memory region now. You can use it to dynamically allocate memory blocks with `new` and `malloc()` as known from the low heap. Both heaps can be configured to form a larger unified heap using a system option. Please read the file *doc/new-operator.txt* for details about using and configuring the heaps.
 
-The Raspberry Pi 4 provides a number of new features. Not all of these are supported yet. Support for the following features is planned to be added later:
+The new *sample/39-umsdplugging* demonstrates how to use `CUSBHCIDevice::RescanDevices()` and `CDevice::RemoveDevice()` to be able to attach USB mass-storage devices (e.g. USB flash drives) and to remove them again on application request without rebooting the system.
 
-* USB 3.0 hubs
-* High memory (over 1 GByte)
-* additional peripherals (SPI, I2C, UART)
+Some support for the QEMU semihosting interface has been added, like the possibility to exit QEMU on `halt()`, optionally with a specific exit status (`set_qemu_exit_status()`). This may be used to automate tests. There is a new class `CQEMUHostFile`, which allows reading and writing files (including stdin / stdout) on the host system, where QEMU is running on. See the directory *addon/qemu/*, the new sample in *addon/qemu/hostlogdemo/* and the file file *doc/qemu.txt* for info on using QEMU with Circle with the semihosting API.
 
-The Raspberry Pi 4 has a new xHCI USB host controller and a non-USB Gigabit Ethernet controller. This requires slight modifications to existing applications. The generic USB host controller class is named `CUSBHCIDevice` and has to be included from `<circle/usb/usbhcidevice.h>` now. The Ethernet controller driver is automatically loaded, if the TCP/IP network library is used, but has to be loaded manually otherwise (see *sample/06-ethernet*).
+The Circle build system checks dependencies of source files with header files now and automatically rebuilds the required object files. You will not need to clean the whole project after editing a header file any more. You have to append the (last) line `-include $(DEPS)` to an existing Makefile to enable this feature in your project. The dependencies check may be globally disabled, by defining `CHECK_DEPS = 0` in Config.mk.
 
-Please note that there is a different behavior regarding headless operation on the Raspberry Pi 4 compared to earlier models, where the frame buffer initialization succeeds, even if there is no display connected. On the Raspberry Pi 4 there must be a display connected, the initialization of the class CBcmFrameBuffer (and following of the class CScreenDevice) will fail otherwise. Most of the Circle samples are not aware of this and may fail to run without a connected display. You have to modify CKernel::Initialize() for headless operation so that `m_Screen.Initialize()` is not called. `m_Serial` (or maybe class `CNullDevice`) can be used as logging target in this case.
+If you want to modify a system option in *include/circle/sysconfig.h*, explicitly changing this file is not required any more, which makes it easier to include Circle as a git submodule. All system options can be defined in *Config.mk* this way:
 
-The options to be used for *cmdline.txt* are described in *doc/cmdline.txt*.
+
+```
+DEFINE += -DARM_ALLOW_MULTI_CORE
+DEFINE += -DNO_CALIBRATE_DELAY
+```
+
+Finally a project file for the Geany IDE is provided in *tools/template/*. The recommended toolchain is based on GNU C 9.2.1 now. As announced the Bluetooth support has been removed for legal reasons.
 
 Features
 --------
@@ -108,22 +93,20 @@ Circle supports the following features:
 |                       | (not on Raspberry Pi 4)                             |
 |                       | uGUI (by Achim Doebler)                             |
 |                       | LittlevGL GUI library (by Gabor Kiss-Vamosi)        |
-|                       |                                                     |
-| Bluetooth             | Device inquiry support only                         |
-| (deprecated)          | USB BR/EDR dongle driver                            |
-|                       | Internal controller of Raspberry Pi 3 B             |
 
 Building
 --------
 
 > For building 64-bit applications (AArch64) see the next section.
 
-Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *8.3-2019.03* (gcc-arm-8.3-2019.03-x86_64-arm-eabi.tar.xz) from this website.
+Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *9.2-2019.12* (gcc-arm-9.2-2019.12-x86_64-arm-none-eabi.tar.xz) from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2, 3 or 4) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
-`RASPPI = 1`  
-`PREFIX = arm-none-eabi-`
+```
+RASPPI = 1
+PREFIX = arm-none-eabi-
+```
 
 The following table gives support for selecting the right *RASPPI* value:
 
@@ -138,28 +121,30 @@ For a binary distribution you should do one build with *RASPPI = 1*, one with *R
 
 Then go to the build root of Circle and do:
 
-`./makeall clean`  
-`./makeall`
+```
+./makeall clean
+./makeall
+```
 
 By default only the latest sample (with the highest number) is build. The ready build *kernel.img* file should be in its subdirectory of sample/. If you want to build another sample after `makeall` go to its subdirectory and do `make`.
 
 You can also build Circle on the Raspberry Pi itself (set `PREFIX =` (empty)) on Raspbian but you need some method to put the *kernel.img* file onto the SD(HC) card. With an external USB card reader on model B+ or Raspberry Pi 2/3/4 model B (4 USB ports) this should be no problem.
 
-Building Circle from a non-Linux host is possible too. Maybe you have to adapt the shell scripts in this case. You need a cross compiler targetting (for example) *arm-none-eabi*. OSDev.org has an [excellent document on the subject](http://wiki.osdev.org/GCC_Cross-Compiler) that you can follow if you have no idea of what a cross compiler is, or how to make one.
+Building Circle from a non-Linux host is possible too. Maybe you have to adapt the shell scripts in this case. You need a cross compiler targetting (for example) *arm-none-eabi*. OSDev.org has an [excellent document on the subject](http://wiki.osdev.org/GCC_Cross-Compiler) that you can follow if you have no idea of what a cross compiler is.
 
 AArch64
 -------
 
 Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3 or 4. There are also Raspberry Pi 2 versions, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too.
 
-The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *8.3-2019.03* (gcc-arm-8.3-2019.03-x86_64-aarch64-elf.tar.xz) from this website.
+The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *9.2-2019.12* (gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf.tar.xz) from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi architecture (*AARCH*, 32 or 64) and the *PREFIX64* of your toolchain commands. The *RASPPI* variable has to be set to 3 or 4 for `AARCH = 64`. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi architecture and the *PREFIX64* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
 ```
 AARCH = 64
 RASPPI = 3
-PREFIX64 = aarch64-elf-
+PREFIX64 = aarch64-none-elf-
 ```
 
 Then go to the build root of Circle and do:
@@ -195,31 +180,16 @@ Directories
 Classes
 -------
 
-The following C++ classes were added to Circle:
+The following C++ classes have been added to Circle:
 
 Base library
 
-* CBcm54213Device: Driver for BCM54213PE Gigabit Ethernet Transceiver of Raspberry Pi 4.
-* CBcmPCIeHostBridge: Driver for PCIe Host Bridge of Raspberry Pi 4.
+* CHeapAllocator: Allocates blocks from a flat memory region.
+* CPageAllocator: Allocates aligned pages from a flat memory region.
 
 USB library
 
-* CUSBHCIDevice: Alias for CDWHCIDevice or CXHCIDevice, depending on Raspberry Pi model.
-* CUSBHCIRootPort: Base class, which represents an USB HCI root port.
-* CXHCICommandManager: Synchronous xHC command execution for the xHCI driver.
-* CXHCIDevice: USB host controller interface (xHCI) driver for Raspberry Pi 4.
-* CXHCIEndpoint: Encapsulates a single endpoint of an USB device for the xHCI driver.
-* CXHCIEventManager: xHC event handling for the xHCI driver.
-* CXHCIMMIOSpace: Provides access to the memory-mapped I/O registers of the xHCI controller.
-* CXHCIRing: Encapsulates a transfer, command or event ring for communication with the xHCI controller.
-* CXHCIRootHub: Initializes the available USB root ports of the xHCI controller.
-* CXHCIRootPort: Encapsulates an USB root port of the xHCI controller.
-* CXHCISlotManager: Manages the USB device slots of the xHCI controller.
-* CXHCIUSBDevice: Encapsulates a single USB device, attached to the xHCI controller.
-
-Net library
-
-* CPHYTask: Background task which continuously updates the PHY of the used net device.
+* CXHCISharedMemAllocator: Shared memory allocation for the xHCI driver.
 
 The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
 

@@ -1,9 +1,9 @@
 //
-// bttransportlayer.h
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
-//
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,16 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_bt_bttransportlayer_h
-#define _circle_bt_bttransportlayer_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-enum TBTTransportType
+int main (void)
 {
-	BTTransportTypeUSB,
-	BTTransportTypeUART,
-	BTTransportTypeUnknown
-};
+	// cannot return here because some destructors used in CKernel are not implemented
 
-typedef void TBTHCIEventHandler (const void *pBuffer, unsigned nLength);
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
+	
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-#endif
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
+
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

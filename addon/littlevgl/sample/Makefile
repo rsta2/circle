@@ -16,3 +16,5 @@ LIBS	= ../liblvgl.a \
 include $(CIRCLEHOME)/Rules.mk
 
 CFLAGS += -Wno-narrowing
+
+-include $(DEPS)

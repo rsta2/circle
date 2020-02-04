@@ -1,0 +1,12 @@
+README
+
+circle.geany
+
+circle.geany is a project file for the Geany IDE. Copy this file to Circle's
+root directory and open it with Geany! For the build targets "Make current
+directory..." and "Make current file" a file must be open for edit in Geany. For
+the menu point "Execute (with bootloader)" see the file doc/eclipse-support.txt!
+For the menu point "Write to SD card" you have to define "SDCARD = /mount_path/"
+in Config.mk, where mount_path is the directory to which a SD card in your
+external SD card reader is mounted in your system. On Raspbian itself this must
+not be the path /boot/! Beware not to overwrite system files in /boot/ here!

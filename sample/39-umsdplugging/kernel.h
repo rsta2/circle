@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,14 +25,19 @@
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
 #include <circle/screen.h>
+#include <circle/serial.h>
 #include <circle/exceptionhandler.h>
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/usbhcidevice.h>
-#include <circle/sched/scheduler.h>
-#include <circle/bt/btsubsystem.h>
 #include <circle/types.h>
+
+#ifdef USE_FATFS
+	#include <fatfs/ff.h>
+#else
+	#include <circle/fs/fat/fatfs.h>
+#endif
 
 enum TShutdownMode
 {
@@ -50,6 +55,11 @@ public:
 	boolean Initialize (void);
 
 	TShutdownMode Run (void);
+	
+private:
+	void WaitForReturnKey (void);
+
+	static void KeyPressedHandler (const char *pString);
 
 private:
 	// do not change this order
@@ -58,14 +68,22 @@ private:
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
 	CScreenDevice		m_Screen;
+	CSerialDevice		m_Serial;
 	CExceptionHandler	m_ExceptionHandler;
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
-	CScheduler		m_Scheduler;
 
-	CBTSubSystem		m_Bluetooth;
+#ifdef USE_FATFS
+	FATFS			m_FileSystem;
+#else
+	CFATFileSystem	       *m_pFileSystem;
+#endif
+
+	volatile char		m_chLastKey;
+
+	static CKernel *s_pThis;
 };
 
 #endif

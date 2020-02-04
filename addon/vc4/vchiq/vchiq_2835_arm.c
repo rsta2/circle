@@ -508,6 +508,7 @@ create_pagelist(char __user *buf, size_t count, unsigned short type,
 
 	/* Group the pages into runs of contiguous pages */
 
+#if RASPPI <= 3
 	base_addr = VCHIQ_ARM_ADDRESS(page_address(pages[0]));
 	next_addr = base_addr + PAGE_SIZE;
 	addridx = 0;
@@ -529,6 +530,31 @@ create_pagelist(char __user *buf, size_t count, unsigned short type,
 
 	addrs[addridx] = (unsigned int)(uintptr_t)base_addr + run;
 	addridx++;
+#else
+	base_addr = page_address(pages[0]);
+	next_addr = base_addr + PAGE_SIZE;
+	addridx = 0;
+	run = 0;
+
+	for (i = 1; i < num_pages; i++) {
+		addr = page_address(pages[i]);
+		if ((addr == next_addr) && (run < 255)) {
+			next_addr += PAGE_SIZE;
+			run++;
+		} else {
+			BUG_ON (((uintptr_t)base_addr & 0xFFF) != 0);
+			addrs[addridx] = (unsigned int)((uintptr_t)base_addr >> 4) + run;
+			addridx++;
+			base_addr = addr;
+			next_addr = addr + PAGE_SIZE;
+			run = 0;
+		}
+	}
+
+	BUG_ON (((uintptr_t)base_addr & 0xFFF) != 0);
+	addrs[addridx] = (unsigned int)((uintptr_t)base_addr >> 4) + run;
+	addridx++;
+#endif
 
 #ifndef __circle__
 	/* Partial cache lines (fragments) require special measures */

@@ -27,3 +27,5 @@ LIBS	= ../libproperties.a \
 endif
 
 include $(CIRCLEHOME)/sample/Rules.mk
+
+-include $(DEPS)

@@ -20,6 +20,7 @@ Base library
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
 * CGPIOPin: Encapsulates a GPIO pin, can be read, write or inverted. Supports interrupts. Simple initialization.
 * CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
+* CHeapAllocator: Allocates blocks from a flat memory region.
 * CI2CMaster: Driver for I2C master device.
 * CI2CSlave: Driver for I2C slave device.
 * CI2SSoundBaseDevice: Low level access to the I2S sound device.
@@ -32,6 +33,7 @@ Base library
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
 * CNetDevice: Base class (interface) of net devices.
 * CNullDevice: Character device which ignores sent data and returns 0 bytes on read.
+* CPageAllocator: Allocates aligned pages from a flat memory region.
 * CPageTable: Encapsulates a page table to be used by MMU (AArch32).
 * CPtrArray: Container class. Dynamic array of pointers.
 * CPtrList: Container class. List of pointers.
@@ -100,6 +102,7 @@ USB library
 * CXHCIRing: Encapsulates a transfer, command or event ring for communication with the xHCI controller.
 * CXHCIRootHub: Initializes the available USB root ports of the xHCI controller.
 * CXHCIRootPort: Encapsulates an USB root port of the xHCI controller.
+* CXHCISharedMemAllocator: Shared memory allocation for the xHCI driver.
 * CXHCISlotManager: Manages the USB device slots of the xHCI controller.
 * CXHCIUSBDevice: Encapsulates a single USB device, attached to the xHCI controller.
 
@@ -168,14 +171,3 @@ Net library
 * CTFTPDaemon: TFTP server task.
 * CTransportLayer: Encapsulates the TCP/UDP transport layer.
 * CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.
-
-Bluetooth library
-
-* CBTDeviceManager: Manages the local Bluetooth device. Part of the HCI layer.
-* CBTHCILayer: Bluetooth HCI layer. Basic communication with the local Bluetooth controller.
-* CBTInquiryResults: Container for the responses of an Inquiry operation.
-* CBTLogicalLayer: Bluetooth logical layer. Handles Inquiry operation only at the moment.
-* CBTQueue: Encapsulates a queue used for incoming and outgoing command, event and data packets.
-* CBTSubSystem: The main Bluetooth subsystem class. Create an instance of it in the CKernel class.
-* CBTTask: Bluetooth background task. Processes the different Bluetooth layers.
-* CBTUARTTransport: Bluetooth UART HCI transport driver for the internal BT device of the Raspberry Pi 3 B.

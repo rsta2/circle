@@ -2,7 +2,7 @@
 // littlevgl.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/string.h>
+#include <circle/new.h>
 
 CLittlevGL *CLittlevGL::s_pThis = 0;
 
@@ -93,8 +94,8 @@ boolean CLittlevGL::Initialize (void)
 
 	lv_log_register_print_cb (LogPrint);
 
-	m_pBuffer1 = new lv_color_t[LV_HOR_RES_MAX*10];
-	m_pBuffer2 = new lv_color_t[LV_HOR_RES_MAX*10];
+	m_pBuffer1 = new (HEAP_DMA30) lv_color_t[LV_HOR_RES_MAX*10];
+	m_pBuffer2 = new (HEAP_DMA30) lv_color_t[LV_HOR_RES_MAX*10];
 	if (   m_pBuffer1 == 0
 	    || m_pBuffer2 == 0)
 	{

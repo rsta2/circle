@@ -2,7 +2,7 @@
 // console.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,6 +34,19 @@ CConsole::CConsole (CDevice *pAlternateDevice)
 {
 }
 
+CConsole::CConsole (CDevice *pInputDevice, CDevice *pOutputDevice)
+:	m_pAlternateDevice (0),
+	m_pInputDevice (pInputDevice),
+	m_pOutputDevice (pOutputDevice),
+	m_bAlternateDeviceUsed (FALSE),
+	m_pKeyboardBuffer (0),
+	m_pLineDiscipline (0),
+	m_nOptions (CONSOLE_OPTION_ICANON | CONSOLE_OPTION_ECHO)
+{
+	assert (m_pInputDevice != 0);
+	assert (m_pOutputDevice != 0);
+}
+
 CConsole::~CConsole (void)
 {
 	delete m_pLineDiscipline;
@@ -48,34 +61,38 @@ CConsole::~CConsole (void)
 
 boolean CConsole::Initialize (void)
 {
-	CUSBKeyboardDevice *pKeyboard =
-		(CUSBKeyboardDevice *) CDeviceNameService::Get ()->GetDevice ("ukbd1", FALSE);
-	if (pKeyboard != 0)
+	if (   m_pInputDevice == 0
+	    && m_pOutputDevice == 0)
 	{
-		assert (m_pOutputDevice == 0);
-		m_pOutputDevice = CDeviceNameService::Get ()->GetDevice ("tty1", FALSE);
-		if (m_pOutputDevice != 0)
+		CUSBKeyboardDevice *pKeyboard =
+			(CUSBKeyboardDevice *) CDeviceNameService::Get ()->GetDevice ("ukbd1", FALSE);
+		if (pKeyboard != 0)
 		{
-			assert (m_pInputDevice == 0);
-			m_pInputDevice = new CKeyboardBuffer (pKeyboard);
-			assert (m_pInputDevice != 0);
-		}
-	}
-
-	if (   m_pInputDevice  == 0
-	    || m_pOutputDevice == 0)
-	{
-		if (m_pAlternateDevice == 0)
-		{
-			CLogger::Get ()->Write ("console", LogError,
-						"Keyboard or screen is not available");
-
-			return FALSE;
+			assert (m_pOutputDevice == 0);
+			m_pOutputDevice = CDeviceNameService::Get ()->GetDevice ("tty1", FALSE);
+			if (m_pOutputDevice != 0)
+			{
+				assert (m_pInputDevice == 0);
+				m_pInputDevice = new CKeyboardBuffer (pKeyboard);
+				assert (m_pInputDevice != 0);
+			}
 		}
 
-		m_pInputDevice = m_pAlternateDevice;
-		m_pOutputDevice = m_pAlternateDevice;
-		m_bAlternateDeviceUsed = TRUE;
+		if (   m_pInputDevice  == 0
+		    || m_pOutputDevice == 0)
+		{
+			if (m_pAlternateDevice == 0)
+			{
+				CLogger::Get ()->Write ("console", LogError,
+							"Keyboard or screen is not available");
+
+				return FALSE;
+			}
+
+			m_pInputDevice = m_pAlternateDevice;
+			m_pOutputDevice = m_pAlternateDevice;
+			m_bAlternateDeviceUsed = TRUE;
+		}
 	}
 
 	assert (m_pLineDiscipline == 0);

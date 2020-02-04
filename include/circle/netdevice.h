@@ -2,7 +2,7 @@
 // netdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,6 +45,11 @@ public:
 
 	/// \return Pointer to a MAC address object, which holds our own address
 	virtual const CMACAddress *GetMACAddress (void) const = 0;
+
+	/// \return TRUE if it is advisable to call SendFrame()
+	/// \note SendFrame() can be called at any time, but may fail when the TX queue is full.\n
+	///	  This method gives a hint, if calling SendFrame() is advisable.
+	virtual boolean IsSendFrameAdvisable (void)	{ return TRUE; }
 
 	/// \brief Send a valid Ethernet frame to the network
 	/// \param pBuffer Pointer to the frame, does not contain FCS

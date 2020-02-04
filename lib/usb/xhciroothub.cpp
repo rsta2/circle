@@ -2,7 +2,7 @@
 // xhciroothub.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,6 +72,22 @@ boolean CXHCIRootHub::Initialize (void)
 	}
 
 	return TRUE;
+}
+
+boolean CXHCIRootHub::ReScanDevices (void)
+{
+	boolean bResult = FALSE;
+
+	for (unsigned nPort = 0; nPort < m_nPorts; nPort++)
+	{
+		assert (m_pRootPort[nPort] != 0);
+		if (m_pRootPort[nPort]->ReScanDevices ())
+		{
+			bResult = TRUE;
+		}
+	}
+
+	return bResult;
 }
 
 void CXHCIRootHub::StatusChanged (u8 uchPortID)
