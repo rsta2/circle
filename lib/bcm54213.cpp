@@ -16,7 +16,7 @@
 //	Licensed under GPLv2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -77,6 +77,8 @@
 						// default queues
 #define GENET_Q16_RX_BD_CNT		(TOTAL_DESC - RX_QUEUES * RX_BDS_PER_Q)
 #define GENET_Q16_TX_BD_CNT		(TOTAL_DESC - TX_QUEUES * TX_BDS_PER_Q)
+
+#define TX_RING_INDEX			1	// using highest TX priority queue
 
 // Tx/Rx DMA register offset, skip 256 descriptors
 #define GENET_TDMA_REG_OFF		(TDMA_OFFSET + TOTAL_DESC * DMA_DESC_SIZE)
@@ -690,6 +692,17 @@ const CMACAddress *CBcm54213Device::GetMACAddress (void) const
 	return &m_MACAddress;
 }
 
+boolean CBcm54213Device::IsSendFrameAdvisable (void)
+{
+	unsigned index = TX_RING_INDEX;			// see SendFrame() for mapping strategy
+	if (index == 0)
+		index = GENET_DESC_INDEX;
+	else
+		index -= 1;
+							// is there room for a frame?
+	return m_tx_rings[index].free_bds >= 2;		// atomic read
+}
+
 boolean CBcm54213Device::SendFrame (const void *pBuffer, unsigned nLength)
 {
 	assert (pBuffer != 0);
@@ -701,7 +714,7 @@ boolean CBcm54213Device::SendFrame (const void *pBuffer, unsigned nLength)
 	// index = 2, goes to ring 1.
 	// index = 3, goes to ring 2.
 	// index = 4, goes to ring 3.
-	unsigned index = 0;	// choosing ring16, because it has more buffers than ring0-3
+	unsigned index = TX_RING_INDEX;
 	if (index == 0)
 		index = GENET_DESC_INDEX;
 	else

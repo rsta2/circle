@@ -2,7 +2,7 @@
 // netdevlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -92,7 +92,8 @@ void CNetDeviceLayer::Process (void)
 
 	u8 Buffer[FRAME_BUFFER_SIZE] ALIGN(4);		// DMA buffer
 	unsigned nLength;
-	while ((nLength = m_TxQueue.Dequeue (Buffer)) > 0)
+	while (   m_pDevice->IsSendFrameAdvisable ()
+	       && (nLength = m_TxQueue.Dequeue (Buffer)) > 0)
 	{
 		if (!m_pDevice->SendFrame (Buffer, nLength))
 		{
