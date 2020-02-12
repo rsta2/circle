@@ -2,7 +2,7 @@
  * exceptionstub.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2020 R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,6 +93,8 @@ IRQStub:
 	vstmdb	sp!, {d16-d31}
 #endif
 #endif
+	ldr	r0, =IRQReturnAddress		/* store return address for profiling */
+	str	lr, [r0]
 	bl	InterruptHandler
 #ifdef SAVE_VFP_REGS_ON_IRQ
 #if RASPPI >= 2 && defined (__FAST_MATH__)
@@ -200,11 +202,17 @@ SMCStub:
 
 	.data
 
+	.align	2
+
 	.globl	FIQData
 FIQData:					/* matches TFIQData: */
 	.word	0				/* pHandler */
 	.word	0				/* pParam */
 	.word	0				/* nFIQNumber */
+
+	.globl	IRQReturnAddress
+IRQReturnAddress:
+	.word	0
 
 #if RASPPI == 4
 
