@@ -2,7 +2,7 @@
 // timer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -127,7 +127,6 @@ public:
 	static void SimpleusDelay (unsigned nMicroSeconds);
 
 	/// \param pHandler Handler which is called on each timer tick (HZ times per second)
-	/// \warning This is normally reserved for system purposes!
 	void RegisterPeriodicHandler (TPeriodicTimerHandler *pHandler);
 
 private:
@@ -162,7 +161,9 @@ private:
 	unsigned		 m_nMsDelay;
 	unsigned		 m_nusDelay;
 
-	TPeriodicTimerHandler	*m_pPeriodicHandler;
+#define TIMER_MAX_PERIODIC_HANDLERS	4
+	TPeriodicTimerHandler	*m_pPeriodicHandler[TIMER_MAX_PERIODIC_HANDLERS];
+	volatile unsigned	 m_nPeriodicHandlers;
 
 	static CTimer *s_pThis;
 
