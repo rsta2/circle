@@ -1,5 +1,7 @@
 README
 
-The frame buffer is initialized (normally with maximum possible size) and a rectangle with a cross inside is drawn on it. Again the Act LED is used to demonstrate the performance boost by using the MMU. Watch the blink frequency without and with the MMU (seems to be continously "on" on Raspberry Pi 2 with MMU). The MMU can be enabled in the constructor of the class CKernel (see sample/kernel.cpp). You can create a file cmdline.txt like this on the SD(HC) card to change the frame buffer size:
+The frame buffer is initialized (normally with maximum possible size) and a
+rectangle with a cross inside is drawn on it. You can create a file cmdline.txt
+like this on the SD(HC) card to change the frame buffer size:
 
 width=640 height=480

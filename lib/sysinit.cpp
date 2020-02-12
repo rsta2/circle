@@ -207,9 +207,7 @@ void sysinit (void)
 
 	CMachineInfo MachineInfo;
 
-#if STDLIB_SUPPORT >= 2
 	CMemorySystem Memory;
-#endif
 
 	// call constructors of static objects
 	extern void (*__init_start) (void);
@@ -224,9 +222,7 @@ void sysinit (void)
 	{
 		if (IsChainBootEnabled ())
 		{
-#if STDLIB_SUPPORT >= 2
 			Memory.Destructor ();
-#endif
 
 			DisableFIQs ();
 
