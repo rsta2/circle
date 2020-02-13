@@ -2,7 +2,7 @@
 // gpiopinfiq.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ CGPIOPinFIQ::~CGPIOPinFIQ (void)
 	m_pInterrupt = 0;
 }
 
-void CGPIOPinFIQ::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam)
+void CGPIOPinFIQ::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam, boolean bAutoAck)
 {
 	assert (   m_Mode == GPIOModeInput
 		|| m_Mode == GPIOModeInputPullUp
@@ -48,6 +48,8 @@ void CGPIOPinFIQ::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pPara
 	m_pHandler = pHandler;
 
 	m_pParam = pParam;
+
+	m_bAutoAck = bAutoAck;
 
 	assert (m_pInterrupt != 0);
 	m_pInterrupt->ConnectFIQ (ARM_FIQ_GPIO3, FIQHandler, this);
@@ -73,9 +75,12 @@ void CGPIOPinFIQ::FIQHandler (void *pParam)
 {
 	CGPIOPinFIQ *pThis = (CGPIOPinFIQ *) pParam;
 
-	PeripheralEntry ();
-	write32 (ARM_GPIO_GPEDS0+pThis->m_nRegOffset, pThis->m_nRegMask);
-	PeripheralExit ();
+	if (pThis->m_bAutoAck)
+	{
+		PeripheralEntry ();
+		write32 (ARM_GPIO_GPEDS0 + pThis->m_nRegOffset, pThis->m_nRegMask);
+		PeripheralExit ();
+	}
 
 	(*pThis->m_pHandler) (pThis->m_pParam);
 }

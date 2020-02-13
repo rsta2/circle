@@ -2,7 +2,7 @@
 // gpiopinfiq.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,10 @@ public:
 
 	/// \param pHandler Pointer to the GPIO interrupt (FIQ) handler
 	/// \param pParam Any parameter, will be handed over to the interrupt handler
-	void ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam);
+	/// \param bAutoAck Automatically acknowledge GPIO event detect status?
+	/// \note If bAutoAck = FALSE, must call AcknowledgeInterrupt() from interrupt handler!
+	void ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam,
+			       boolean bAutoAck = TRUE);
 	void DisconnectInterrupt (void);
 
 private:

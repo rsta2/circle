@@ -2,7 +2,7 @@
 // gpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -183,7 +183,7 @@ void CGPIOPin::Invert (void)
 	Write (m_nValue ^ 1);
 }
 
-void CGPIOPin::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam)
+void CGPIOPin::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam, boolean bAutoAck)
 {
 	assert (   m_Mode == GPIOModeInput
 		|| m_Mode == GPIOModeInputPullUp
@@ -197,6 +197,8 @@ void CGPIOPin::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam)
 	m_pHandler = pHandler;
 
 	m_pParam = pParam;
+
+	m_bAutoAck = bAutoAck;
 
 	assert (m_pManager != 0);
 	m_pManager->ConnectInterrupt (this);
@@ -298,6 +300,18 @@ void CGPIOPin::DisableInterrupt2 (void)
 	s_SpinLock.Release ();
 
 	m_Interrupt2 = GPIOInterruptUnknown;
+}
+
+void CGPIOPin::AcknowledgeInterrupt (void)
+{
+	assert (m_pHandler != 0);
+	assert (!m_bAutoAck);
+
+	PeripheralEntry ();
+
+	write32 (ARM_GPIO_GPEDS0 + m_nRegOffset, m_nRegMask);
+
+	PeripheralExit ();
 }
 
 void CGPIOPin::WriteAll (u32 nValue, u32 nMask)
