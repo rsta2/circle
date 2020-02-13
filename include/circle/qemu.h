@@ -20,7 +20,6 @@
 #ifndef _circle_qemu_h
 #define _circle_qemu_h
 
-#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
@@ -63,11 +62,11 @@ extern "C" {
 	typedef u64 TSemihostingValue;
 #endif
 
-TSemihostingValue CallSemihostingSingle (u32 nOperation, TSemihostingValue nParam = 0) NOOPT;
+TSemihostingValue CallSemihostingSingle (u32 nOperation, TSemihostingValue nParam = 0);
 
 TSemihostingValue CallSemihosting (u32 nOperation,
 				   TSemihostingValue nParam1 = 0, TSemihostingValue nParam2 = 0,
-				   TSemihostingValue nParam3 = 0, TSemihostingValue nParam4 = 0) NOOPT;
+				   TSemihostingValue nParam3 = 0, TSemihostingValue nParam4 = 0);
 
 
 #define SEMIHOSTING_FEATURE(bit)	BIT (bit)	// only byte 0 features are supported

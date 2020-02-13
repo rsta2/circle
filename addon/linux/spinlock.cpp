@@ -26,7 +26,7 @@ void spin_lock (spinlock_t *lock)
 		"bne 1b\n"
 		"dmb\n"
 
-		: : "r" ((uintptr) &lock->lock)
+		: : "r" ((uintptr) &lock->lock) : "r1", "r2", "r3"
 	);
 #else
 	// See: ARMv8-A Architecture Reference Manual, Section K10.3.1
@@ -40,7 +40,7 @@ void spin_lock (spinlock_t *lock)
 		"stxr w3, w2, [x1]\n"
 		"cbnz w3, 1b\n"
 
-		: : "r" ((uintptr) &lock->lock)
+		: : "r" ((uintptr) &lock->lock) : "x1", "x2", "x3"
 	);
 #endif
 }
@@ -60,7 +60,7 @@ void spin_unlock (spinlock_t *lock)
 		"sev\n"
 #endif
 
-		: : "r" ((uintptr) &lock->lock)
+		: : "r" ((uintptr) &lock->lock) : "r1", "r2"
 	);
 #else
 	// See: ARMv8-A Architecture Reference Manual, Section K10.3.2
@@ -69,7 +69,7 @@ void spin_unlock (spinlock_t *lock)
 		"mov x1, %0\n"
 		"stlr wzr, [x1]\n"
 
-		: : "r" ((uintptr) &lock->lock)
+		: : "r" ((uintptr) &lock->lock) : "x1"
 	);
 #endif
 
