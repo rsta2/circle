@@ -191,6 +191,9 @@ unsigned mbox_writeread (unsigned nData)
 //-------------------------------------------------------------------------
 unsigned get_core_clock (void)
 {
+	// does not work without a short delay with newer firmware on RPi 1
+	for (volatile unsigned i = 0; i < 10000; i++);
+
 	unsigned proptag[] __attribute__ ((aligned (16))) =
 	{
 		8*4,
