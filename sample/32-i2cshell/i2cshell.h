@@ -2,7 +2,7 @@
 // i2cshell.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,20 +30,23 @@
 class CI2CShell
 {
 public:
-	CI2CShell (CConsole *pConsole, CI2CMaster *pI2CMaster);
+	CI2CShell (CConsole *pConsole);
 	~CI2CShell (void);
 
 	void Run (void);
 
 private:
+	boolean Master (void);
 	boolean Slave (void);
 	boolean Clock (void);
 	boolean Detect (void);
 	boolean Read (void);
 	boolean Write (void);
 	boolean Delay (void);
+	boolean Help (void);
 
-	unsigned GetNumber (const char *pName, unsigned nMinimum, unsigned nMaximum);
+	unsigned GetNumber (const char *pName, unsigned nMinimum, unsigned nMaximum,
+			    boolean bOptional = FALSE);
 
 	void PrintI2CError (int nStatus);
 
@@ -59,9 +62,12 @@ private:
 
 private:
 	CConsole *m_pConsole;
-	CI2CMaster *m_pI2CMaster;
 
 	boolean m_bContinue;
+
+	CI2CMaster *m_pI2CMaster;
+	unsigned m_nMasterDevice;
+	unsigned m_nMasterConfig;
 
 	unsigned m_nI2CClockHz;
 	u8 m_ucSlaveAddress;
@@ -73,6 +79,7 @@ private:
 	char *m_pSavePtr;
 
 	static const char HelpMsg[];
+	static const char GPIOHelpMsg[];
 };
 
 #endif
