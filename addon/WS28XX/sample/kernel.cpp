@@ -5,7 +5,7 @@
 // Original development by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,9 @@
 //
 #include "kernel.h"
 
-#define WS28XX_TYPE		WS2801		// WS2801, WS2812 or WS2812B
+#define SPI_MASTER_DEVICE	0		// 0, 4, 5, 6 on Raspberry Pi 4; 0 otherwise
+
+#define WS28XX_TYPE		WS2801		// WS2801, WS2812, WS2812B or SK6812
 
 #define LED_COUNT		170		// number of LEDs on the stripe
 
@@ -34,7 +36,7 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_LEDStripe (WS28XX_TYPE, LED_COUNT, WS2801_SPI_SPEED)
+	m_LEDStripe (WS28XX_TYPE, LED_COUNT, WS2801_SPI_SPEED, SPI_MASTER_DEVICE)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }

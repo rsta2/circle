@@ -2,9 +2,11 @@ README
 
 This sample transfers some data bytes (128 bytes by default) via the SPI0 or
 SPI1 master to a SPI slave device and displays the received bytes. See the notes
-in the second part of this file, if you want to use SPI1! You should modify the
-file kernel.cpp for your needs. For a short test you can connect GPIO9 and
-GPIO10 (Broadcom numbering) together. The sent data will then also be received.
+in the second part of this file, if you want to use SPI1! On the Raspberry Pi 4
+there are additional SPI master devices, which can be used too. Please see the
+file include/circle/spimaster.h for their pinout! You should modify the file
+kernel.cpp for your needs. For a quick test you can connect GPIO9 and GPIO10
+(Broadcom numbering) together. The sent data will then also be received.
 
 The pinout of the SPI0 master is as follows:
 
@@ -13,10 +15,6 @@ MOSI	GPIO10
 MISO	GPIO9
 CE0	GPIO8
 CE1	GPIO7
-
-On the Raspberry Pi 2/3 you should disable the #define ARM_ALLOW_MULTI_CORE in
-include/circle/sysconfig.h if you do not use multiple CPU cores. This is done by
-default now.
 
 
 This sample supports the SPI1 master (Auxiliary SPI master) too, which can be
