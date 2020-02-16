@@ -21,7 +21,7 @@ Base library
 * CGPIOPin: Encapsulates a GPIO pin, can be read, write or inverted. Supports interrupts. Simple initialization.
 * CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
 * CHeapAllocator: Allocates blocks from a flat memory region.
-* CI2CMaster: Driver for I2C master device.
+* CI2CMaster: Driver for I2C master devices.
 * CI2CSlave: Driver for I2C slave device.
 * CI2SSoundBaseDevice: Low level access to the I2S sound device.
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
@@ -41,10 +41,10 @@ Base library
 * CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
 * CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
-* CSerialDevice: Driver for PL011 UART0 at GPIO14/15, interrupt or polling mode
+* CSerialDevice: Driver for PL011 UART, interrupt or polling mode
 * CSoundBaseDevice: Base class of sound devices, converts several sound formats.
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
-* CSPIMaster: Driver for SPI0 master device. Synchronous polling operation.
+* CSPIMaster: Driver for (non-AUX) SPI master device. Synchronous polling operation.
 * CSPIMasterAUX: Driver for the auxiliary SPI master (SPI1).
 * CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.
 * CString: Simple string manipulation class, Format() method works like printf() (but has less formating options)

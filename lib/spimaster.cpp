@@ -2,7 +2,7 @@
 // spimaster.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,31 @@
 #include <circle/synchronize.h>
 #include <circle/timer.h>
 #include <assert.h>
+
+#if RASPPI < 4
+	#define DEVICES		1
+#else
+	#define DEVICES		7
+#endif
+
+#define GPIOS		5
+#define GPIO_MISO	0
+#define GPIO_MOSI	1
+#define GPIO_SCLK	2
+#define GPIO_CE0	3
+#define GPIO_CE1	4
+
+#define VALUES		2
+#define VALUE_PIN	0
+#define VALUE_ALT	1
+
+// Registers
+#define ARM_SPI_CS	(m_nBaseAddress + 0x00)
+#define ARM_SPI_FIFO	(m_nBaseAddress + 0x04)
+#define ARM_SPI_CLK	(m_nBaseAddress + 0x08)
+#define ARM_SPI_DLEN	(m_nBaseAddress + 0x0C)
+#define ARM_SPI_LTOH	(m_nBaseAddress + 0x10)
+#define ARM_SPI_DC	(m_nBaseAddress + 0x14)
 
 // CS Register
 #define CS_LEN_LONG	(1 << 25)
@@ -51,36 +76,111 @@
 #define CS_CS		(1 << 0)
 #define CS_CS__SHIFT	0
 
-CSPIMaster::CSPIMaster (unsigned nClockSpeed, unsigned CPOL, unsigned CPHA)
+static uintptr s_BaseAddress[DEVICES] =
+{
+	ARM_IO_BASE + 0x204000,
+#if RASPPI >= 4
+	0,
+	0,
+	ARM_IO_BASE + 0x204600,
+	ARM_IO_BASE + 0x204800,
+	ARM_IO_BASE + 0x204A00,
+	ARM_IO_BASE + 0x204C00
+#endif
+};
+
+#define NONE	{10000, 10000}
+
+static unsigned s_GPIOConfig[DEVICES][GPIOS][VALUES] =
+{
+	// MISO     MOSI      SCLK     CE0      CE1
+	{{ 9,  0}, {10,  0}, {11, 0}, { 8, 0}, { 7, 0}},
+#if RASPPI >= 4
+	{ NONE,     NONE,     NONE,    NONE,    NONE}, // unused
+	{ NONE,     NONE,     NONE,    NONE,    NONE}, // unused
+	{{ 1,  3}, { 2,  3}, { 3, 3}, { 0, 3}, {24, 5}},
+	{{ 5,  3}, { 6,  3}, { 7, 3}, { 4, 3}, {25, 5}},
+	{{13,  3}, {14,  3}, {15, 3}, {12, 3}, {26, 5}},
+	{{19,  3}, {20,  3}, {21, 3}, {18, 3}, {27, 5}}
+#endif
+};
+
+#define ALT_FUNC(device, gpio)	((TGPIOMode) (  s_GPIOConfig[device][gpio][VALUE_ALT] \
+					      + GPIOModeAlternateFunction0))
+
+CSPIMaster::CSPIMaster (unsigned nClockSpeed, unsigned CPOL, unsigned CPHA, unsigned nDevice)
 :	m_nClockSpeed (nClockSpeed),
 	m_CPOL (CPOL),
 	m_CPHA (CPHA),
-	m_SCLK (11, GPIOModeAlternateFunction0),
-	m_MOSI (10, GPIOModeAlternateFunction0),
-	m_MISO ( 9, GPIOModeAlternateFunction0),
-	m_CE0  ( 8, GPIOModeAlternateFunction0),
-	m_CE1  ( 7, GPIOModeAlternateFunction0),
+	m_nDevice (nDevice),
+	m_nBaseAddress (0),
+	m_bValid (FALSE),
 	m_nCoreClockRate (CMachineInfo::Get ()->GetClockRate (CLOCK_ID_CORE)),
 	m_nCSHoldTime (0),
 	m_SpinLock (TASK_LEVEL)
 {
+	if (   m_nDevice >= DEVICES
+	    || s_GPIOConfig[nDevice][0][VALUE_PIN] >= GPIO_PINS)
+	{
+		return;
+	}
+
+	m_nBaseAddress = s_BaseAddress[nDevice];
+	assert (m_nBaseAddress != 0);
+
+	m_MISO.AssignPin (s_GPIOConfig[nDevice][GPIO_MISO][VALUE_PIN]);
+	m_MISO.SetMode (ALT_FUNC (nDevice, GPIO_MISO));
+
+	m_MOSI.AssignPin (s_GPIOConfig[nDevice][GPIO_MOSI][VALUE_PIN]);
+	m_MOSI.SetMode (ALT_FUNC (nDevice, GPIO_MOSI));
+
+	m_SCLK.AssignPin (s_GPIOConfig[nDevice][GPIO_SCLK][VALUE_PIN]);
+	m_SCLK.SetMode (ALT_FUNC (nDevice, GPIO_SCLK));
+
+	m_CE0.AssignPin (s_GPIOConfig[nDevice][GPIO_CE0][VALUE_PIN]);
+	m_CE0.SetMode (ALT_FUNC (nDevice, GPIO_CE0));
+
+	m_CE1.AssignPin (s_GPIOConfig[nDevice][GPIO_CE1][VALUE_PIN]);
+	m_CE1.SetMode (ALT_FUNC (nDevice, GPIO_CE1));
+
 	assert (m_nCoreClockRate > 0);
+
+	m_bValid = TRUE;
 }
 
 CSPIMaster::~CSPIMaster (void)
 {
+	if (m_bValid)
+	{
+		m_MISO.SetMode (GPIOModeInput);
+		m_MOSI.SetMode (GPIOModeInput);
+		m_SCLK.SetMode (GPIOModeInput);
+		m_CE0.SetMode (GPIOModeInput);
+		m_CE1.SetMode (GPIOModeInput);
+
+		m_bValid = FALSE;
+	}
+
+	m_nBaseAddress = 0;
 }
 
 boolean CSPIMaster::Initialize (void)
 {
+	if (!m_bValid)
+	{
+		return FALSE;
+	}
+
+	assert (m_nBaseAddress != 0);
+
 	PeripheralEntry ();
 
 	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
-	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
+	write32 (ARM_SPI_CLK, m_nCoreClockRate / m_nClockSpeed);
 
 	assert (m_CPOL <= 1);
 	assert (m_CPHA <= 1);
-	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
+	write32 (ARM_SPI_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
 
 	PeripheralExit ();
 
@@ -89,18 +189,24 @@ boolean CSPIMaster::Initialize (void)
 
 void CSPIMaster::SetClock (unsigned nClockSpeed)
 {
+	assert (m_bValid);
+	assert (m_nBaseAddress != 0);
+
 	m_nClockSpeed = nClockSpeed;
 
 	PeripheralEntry ();
 
 	assert (4000 <= m_nClockSpeed && m_nClockSpeed <= 125000000);
-	write32 (ARM_SPI0_CLK, m_nCoreClockRate / m_nClockSpeed);
+	write32 (ARM_SPI_CLK, m_nCoreClockRate / m_nClockSpeed);
 
 	PeripheralExit ();
 }
 
 void CSPIMaster::SetMode (unsigned CPOL, unsigned CPHA)
 {
+	assert (m_bValid);
+	assert (m_nBaseAddress != 0);
+
 	m_CPOL = CPOL;
 	m_CPHA = CPHA;
 
@@ -108,13 +214,15 @@ void CSPIMaster::SetMode (unsigned CPOL, unsigned CPHA)
 
 	assert (m_CPOL <= 1);
 	assert (m_CPHA <= 1);
-	write32 (ARM_SPI0_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
+	write32 (ARM_SPI_CS, (m_CPOL << CS_CPOL__SHIFT) | (m_CPHA << CS_CPHA__SHIFT));
 
 	PeripheralExit ();
 }
 
 void CSPIMaster::SetCSHoldTime (unsigned nMicroSeconds)
 {
+	assert (m_bValid);
+
 	assert (nMicroSeconds < 200);
 	m_nCSHoldTime = nMicroSeconds;
 }
@@ -129,8 +237,12 @@ int CSPIMaster::Write (unsigned nChipSelect, const void *pBuffer, unsigned nCoun
 	return WriteRead (nChipSelect, pBuffer, 0, nCount);
 }
 
-int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void *pReadBuffer, unsigned nCount)
+int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void *pReadBuffer,
+			   unsigned nCount)
 {
+	assert (m_bValid);
+	assert (m_nBaseAddress != 0);
+
 	assert (pWriteBuffer != 0 || pReadBuffer != 0);
 	const u8 *pWritePtr = (const u8 *) pWriteBuffer;
 	u8 *pReadPtr = (u8 *) pReadBuffer;
@@ -141,13 +253,13 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 
 	// SCLK stays low for one clock cycle after each byte without this
 	assert (nCount <= 0xFFFF);
-	write32 (ARM_SPI0_DLEN, nCount);
+	write32 (ARM_SPI_DLEN, nCount);
 
 	assert (nChipSelect <= 1);
-	write32 (ARM_SPI0_CS,   (read32 (ARM_SPI0_CS) & ~CS_CS)
-			      | (nChipSelect << CS_CS__SHIFT)
-			      | CS_CLEAR_RX | CS_CLEAR_TX
-			      | CS_TA);
+	write32 (ARM_SPI_CS,   (read32 (ARM_SPI_CS) & ~CS_CS)
+			     | (nChipSelect << CS_CS__SHIFT)
+			     | CS_CLEAR_RX | CS_CLEAR_TX
+			     | CS_TA);
 
 	unsigned nWriteCount = 0;
 	unsigned nReadCount = 0;
@@ -157,7 +269,7 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 	       || nReadCount  < nCount)
 	{
 		while (   nWriteCount < nCount
-		       && (read32 (ARM_SPI0_CS) & CS_TXD))
+		       && (read32 (ARM_SPI_CS) & CS_TXD))
 		{
 			u32 nData = 0;
 			if (pWritePtr != 0)
@@ -165,15 +277,15 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 				nData = *pWritePtr++;
 			}
 
-			write32 (ARM_SPI0_FIFO, nData);
+			write32 (ARM_SPI_FIFO, nData);
 
 			nWriteCount++;
 		}
 
 		while (   nReadCount < nCount
-		       && (read32 (ARM_SPI0_CS) & CS_RXD))
+		       && (read32 (ARM_SPI_CS) & CS_RXD))
 		{
-			u32 nData = read32 (ARM_SPI0_FIFO);
+			u32 nData = read32 (ARM_SPI_FIFO);
 			if (pReadPtr != 0)
 			{
 				*pReadPtr++ = (u8) nData;
@@ -183,11 +295,11 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 		}
 	}
 
-	while (!(read32 (ARM_SPI0_CS) & CS_DONE))
+	while (!(read32 (ARM_SPI_CS) & CS_DONE))
 	{
-		while (read32 (ARM_SPI0_CS) & CS_RXD)
+		while (read32 (ARM_SPI_CS) & CS_RXD)
 		{
-			read32 (ARM_SPI0_FIFO);
+			read32 (ARM_SPI_FIFO);
 		}
 	}
 
@@ -198,7 +310,7 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 		m_nCSHoldTime = 0;
 	}
 
-	write32 (ARM_SPI0_CS, read32 (ARM_SPI0_CS) & ~CS_TA);
+	write32 (ARM_SPI_CS, read32 (ARM_SPI_CS) & ~CS_TA);
 
 	PeripheralExit ();
 

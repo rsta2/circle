@@ -5,7 +5,7 @@
 // Original development by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,14 +30,16 @@ enum TWS28XXType
 {
 	WS2801,
 	WS2812,
-	WS2812B
+	WS2812B,
+	SK6812 = WS2812B
 };
 
 class CWS28XXStripe
 {
 public:
 	// nClockSpeed is only variable on WS2801, otherwise ignored
-	CWS28XXStripe (TWS28XXType Type, unsigned nLEDCount, unsigned nClockSpeed = 4000000);
+	CWS28XXStripe (TWS28XXType Type, unsigned nLEDCount, unsigned nClockSpeed = 4000000,
+		       unsigned nSPIDevice = 0);
 	~CWS28XXStripe (void);
 
 	boolean Initialize (void);
