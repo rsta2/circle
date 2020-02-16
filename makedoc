@@ -2,9 +2,12 @@
 
 if [[ $1 != clean ]]
 then
-	cd include
-	doxygen ../Doxyfile
-	cd ..
+	echo "Generating documentation ..."
+	doxygen Doxyfile
+	if [[ $? == 0 ]]
+	then
+		echo "Open doc/html/index.html in your web browser!"
+	fi
 else
 	rm -rf doc/html/
 fi
