@@ -105,6 +105,7 @@ public:
 	unsigned GetQueueFramesAvail (void);
 
 	/// \param pCallback Callback which is called, when more sound data is needed
+	/// \param pParam User parameter to be handed over to the callback
 	/// \note Is called, when at least half of the queue is empty
 	/// \note Not used, if GetChunk() is overloaded.
 	void RegisterNeedDataCallback (TSoundNeedDataCallback *pCallback, void *pParam);

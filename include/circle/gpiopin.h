@@ -77,6 +77,7 @@ public:
 	CGPIOPin (void);
 
 	/// \param nPin Pin number, can be physical (Broadcom) number or TGPIOVirtualPin
+	/// \param Mode Pin mode to be set
 	/// \param pManager Is only required for using interrupts (IRQ)
 	CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager = 0);
 	virtual ~CGPIOPin (void);

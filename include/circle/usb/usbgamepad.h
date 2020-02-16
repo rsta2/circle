@@ -205,7 +205,7 @@ private:
 	/// \note Overwrite this if you have to do additional checks on received reports!
 	virtual void ReportHandler (const u8 *pReport, unsigned nReportSize);
 
-	/// \param pReport Pointer to report packet received via the USB status reporting endpoint
+	/// \param pReportBuffer Pointer to report packet received via the USB status reporting endpoint
 	/// \note Updates the m_State member variable
 	/// \note m_usReportSize member has to be set here or in Configure() of the subclass.
 	virtual void DecodeReport (const u8 *pReportBuffer) = 0;
