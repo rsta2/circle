@@ -6,7 +6,7 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4 and on Raspberry Pi Zero). It provides several ready-tested C++ classes which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered some samples which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4 and on Raspberry Pi Zero). It provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
@@ -168,7 +168,7 @@ Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get the
 
 The *config.txt* file, provided in the boot/ directory, is only needed to enable 64-bit mode and has to be copied on the SD card in this case. It must not be on the SD card otherwise!
 
-FIQ support for AArch64 on the Raspberry Pi 4 requires an additional file *armstub8-rpi4.bin* on the SD card. Please see *boot/README* for information on how to build this file.
+FIQ support for AArch64 on the Raspberry Pi 4 requires an additional file *armstub8-rpi4.bin* on the SD card. Please see [boot/README](boot/README) for information on how to build this file.
 
 Directories
 -----------
@@ -196,11 +196,27 @@ USB library
 
 * CXHCISharedMemAllocator: Shared memory allocation for the xHCI driver.
 
-The available Circle classes are listed in the file *doc/classes.txt*. If you have doxygen installed on your computer you can build a class documentation in *doc/html/* using:
+The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 
 `./makedoc`
 
-At the moment there are only a few classes described in detail for doxygen.
+At the moment there are only a few classes described in detail for Doxygen.
+
+Additional Topics
+-----------------
+
+* [Standard library support](doc/stdlib-support.txt)
+* [Dynamic memory management and the "new" operator](doc/new-operator.txt)
+* [Bootloader and Eclipse IDE support](doc/eclipse-support.txt)
+* [Multi-core support](doc/multicore.txt)
+* [Debugging support](doc/debug.txt)
+* [QEMU support](doc/qemu.txt)
+* [About real-time applications](doc/realtime.txt)
+* [cmdline.txt options](doc/cmdline.txt)
+* [Screen escape sequences](doc/screen.txt)
+* [Keyboard escape sequences](doc/keyboard.txt)
+* [Memory layout](doc/memorymap.txt)
+* [Known issues](doc/issues.txt)
 
 Trademarks
 ----------
