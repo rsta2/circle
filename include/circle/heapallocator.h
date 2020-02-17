@@ -21,6 +21,7 @@
 #define _circle_heapallocator_h
 
 #include <circle/spinlock.h>
+#include <circle/sysconfig.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -29,8 +30,7 @@
 #define HEAP_BLOCK_ALIGN	16
 #define HEAP_ALIGN_MASK		(HEAP_BLOCK_ALIGN-1)
 
-#define HEAP_BLOCK_BUCKETS	7	// must match with the following value count
-#define HEAP_BLOCK_BUCKET_SIZES	{0x40, 0x400, 0x1000, 0x4000, 0x10000, 0x40000, 0x80000}
+#define HEAP_BLOCK_MAX_BUCKETS	20
 
 struct THeapBlockHeader
 {
@@ -99,7 +99,7 @@ private:
 	u8		*m_pNext;
 	u8		*m_pLimit;
 	size_t	 	 m_nReserve;
-	THeapBlockBucket m_Bucket[HEAP_BLOCK_BUCKETS+1];
+	THeapBlockBucket m_Bucket[HEAP_BLOCK_MAX_BUCKETS+1];
 	CSpinLock	 m_SpinLock;
 
 	static u32 s_nBucketSize[];
