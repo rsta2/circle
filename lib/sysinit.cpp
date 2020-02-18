@@ -201,7 +201,7 @@ void sysinit (void)
 	// clear BSS
 	extern unsigned char __bss_start;
 	extern unsigned char _end;
-	memset (&__bss_start, 0, _end - __bss_start);
+	memset (&__bss_start, 0, &_end - &__bss_start);
 
 	CMachineInfo MachineInfo;
 
