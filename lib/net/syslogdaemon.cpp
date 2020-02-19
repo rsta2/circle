@@ -4,7 +4,7 @@
 // Syslog sender task according to RFC5424 and RFC5426 (UDP transport only)
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -108,10 +108,6 @@ void CSysLogDaemon::Run (void)
 
 	pLogger->RegisterEventNotificationHandler (EventNotificationHandler);
 	pLogger->RegisterPanicHandler (PanicHandler);
-
-	// be sure ARP request has succeeded when first real syslog message is send
-	SendMessage (LogDebug, 0, 0, 0, FromSysLogDaemon, "ARP kicked");
-	CScheduler::Get ()->Sleep (2);
 
 	while (1)
 	{
