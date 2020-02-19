@@ -33,10 +33,6 @@ on your Circle project settings. Some TFTP clients do not allow to specify all
 options on the command line. You may have to specify the "binary" and "put"
 commands manually behind the tftp> prompt.
 
-Please note that there may be a "Transfer timed out" message on your Raspberry
-Pi, before the transfer runs and completes successfully. This is normal and can
-be ignored.
-
 
 SOME NOTES
 

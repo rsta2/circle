@@ -93,9 +93,7 @@ With sample/21-webserver:
 			-net user,hostfwd=tcp::8080-:80
 
 Open http://localhost:8080 in your web browser on your host system! Port 8080 on
-the host will be forwarded to port 80 on the guest system. Please note that the
-very first response may be delayed by up to 20 seconds because of an ARP
-problem.
+the host will be forwarded to port 80 on the guest system.
 
 With sample/18-ntptime:
 
