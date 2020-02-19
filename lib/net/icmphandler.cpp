@@ -2,7 +2,7 @@
 // icmphandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/net/checksumcalculator.h>
 #include <circle/net/in.h>
 #include <circle/logger.h>
+#include <circle/string.h>
 #include <circle/util.h>
 #include <circle/macros.h>
 #include <assert.h>
@@ -224,6 +225,31 @@ void CICMPHandler::Process (void)
 			break;
 		}
 	}
+}
+
+void CICMPHandler::HostUnreachable (const void *pReturnedIPPacket, unsigned nLength)
+{
+	assert (pReturnedIPPacket != 0);
+	assert (nLength > sizeof (TIPHeader));
+	TIPHeader *pIPHeader = (TIPHeader *) pReturnedIPPacket;
+
+	unsigned nIPHeaderLength = pIPHeader->nVersionIHL & 0xF;
+	assert (   nIPHeaderLength >= IP_HEADER_LENGTH_DWORD_MIN
+	        && nIPHeaderLength <= IP_HEADER_LENGTH_DWORD_MAX);
+	nIPHeaderLength *= 4;
+
+	assert ((pIPHeader->nVersionIHL >> 4) == IP_VERSION);
+	assert (*m_pNetConfig->GetIPAddress () == pIPHeader->SourceAddress);
+	assert (nLength >= nIPHeaderLength + sizeof (TICMPDataDatagramHeader));
+	TICMPDataDatagramHeader *pDatagramHeader =
+		(TICMPDataDatagramHeader *) ((u8 *) pIPHeader + nIPHeaderLength);
+
+	CString IPString;
+	CIPAddress DestinationIP (pIPHeader->DestinationAddress);
+	DestinationIP.Format (&IPString);
+	CLogger::Get ()->Write (FromICMP, LogDebug, "Host unreachable: %s", (const char *) IPString);
+
+	EnqueueNotification (ICMPNotificationDestUnreach, pIPHeader, pDatagramHeader);
 }
 
 void CICMPHandler::EnqueueNotification (TICMPNotificationType Type, TIPHeader *pIPHeader,

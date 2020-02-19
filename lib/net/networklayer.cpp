@@ -2,7 +2,7 @@
 // networklayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -288,4 +288,10 @@ const u8 *CNetworkLayer::GetGateway (const u8 *pDestIP) const
 	assert (pDefaultGateway != 0);
 
 	return pDefaultGateway->Get ();
+}
+
+void CNetworkLayer::SendFailed (const void *pReturnedPacket, unsigned nLength)
+{
+	assert (m_pICMPHandler != 0);
+	m_pICMPHandler->HostUnreachable (pReturnedPacket, nLength);
 }

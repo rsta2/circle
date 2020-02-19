@@ -2,7 +2,7 @@
 // linklayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,12 +18,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/linklayer.h>
+#include <circle/net/networklayer.h>
 #include <circle/util.h>
 #include <assert.h>
 
 CLinkLayer::CLinkLayer (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer)
 :	m_pNetConfig (pNetConfig),
 	m_pNetDevLayer (pNetDevLayer),
+	m_pNetworkLayer (0),
 	m_pARPHandler (0)
 {
 	assert (m_pNetConfig != 0);
@@ -35,6 +37,7 @@ CLinkLayer::~CLinkLayer (void)
 	delete m_pARPHandler;
 	m_pARPHandler = 0;
 
+	m_pNetworkLayer = 0;
 	m_pNetDevLayer = 0;
 	m_pNetConfig = 0;
 }
@@ -42,10 +45,17 @@ CLinkLayer::~CLinkLayer (void)
 boolean CLinkLayer::Initialize (void)
 {
 	assert (m_pNetConfig != 0);
-	m_pARPHandler = new CARPHandler (m_pNetConfig, m_pNetDevLayer, &m_ARPRxQueue);
+	m_pARPHandler = new CARPHandler (m_pNetConfig, m_pNetDevLayer, this, &m_ARPRxQueue);
 	assert (m_pARPHandler != 0);
 
 	return TRUE;
+}
+
+void CLinkLayer::AttachLayer (CNetworkLayer *pNetworkLayer)
+{
+	assert (m_pNetworkLayer == 0);
+	m_pNetworkLayer = pNetworkLayer;
+	assert (m_pNetworkLayer != 0);
 }
 
 void CLinkLayer::Process (void)
@@ -94,20 +104,6 @@ void CLinkLayer::Process (void)
 
 boolean CLinkLayer::Send (const CIPAddress &rReceiver, const void *pIPPacket, unsigned nLength)
 {
-	assert (m_pARPHandler != 0);
-	CMACAddress MACAddressReceiver;
-
-	assert (m_pNetConfig != 0);
-	if (   rReceiver.IsBroadcast ()
-	    || rReceiver == *m_pNetConfig->GetBroadcastAddress ())
-	{
-		MACAddressReceiver.SetBroadcast ();
-	}
-	else if (!m_pARPHandler->Resolve (rReceiver, &MACAddressReceiver))
-	{
-		return TRUE;		// ignore packet, will be retransmitted by higher layer
-	}
-
 	unsigned nFrameLength = sizeof (TEthernetHeader) + nLength;	// may wrap
 	if (   nFrameLength <= sizeof (TEthernetHeader)
 	    || nFrameLength > FRAME_BUFFER_SIZE)
@@ -117,8 +113,6 @@ boolean CLinkLayer::Send (const CIPAddress &rReceiver, const void *pIPPacket, un
 
 	u8 FrameBuffer[nFrameLength];
 	TEthernetHeader *pHeader = (TEthernetHeader *) FrameBuffer;
-
-	MACAddressReceiver.CopyTo (pHeader->MACReceiver);
 
 	assert (m_pNetDevLayer != 0);
 	const CMACAddress *pOwnMACAddress = m_pNetDevLayer->GetMACAddress ();
@@ -130,6 +124,22 @@ boolean CLinkLayer::Send (const CIPAddress &rReceiver, const void *pIPPacket, un
 	assert (pIPPacket != 0);
 	assert (nLength > 0);
 	memcpy (FrameBuffer+sizeof (TEthernetHeader), pIPPacket, nLength);
+
+	assert (m_pNetConfig != 0);
+	assert (m_pARPHandler != 0);
+	CMACAddress MACAddressReceiver;
+	if (   rReceiver.IsBroadcast ()
+	    || rReceiver == *m_pNetConfig->GetBroadcastAddress ())
+	{
+		MACAddressReceiver.SetBroadcast ();
+	}
+	else if (!m_pARPHandler->Resolve (rReceiver, &MACAddressReceiver,
+					  FrameBuffer, nFrameLength))
+	{
+		return TRUE;		// packet will be retransmitted by ARP handler
+	}
+
+	MACAddressReceiver.CopyTo (pHeader->MACReceiver);
 
 	m_pNetDevLayer->Send (FrameBuffer, nFrameLength);
 
@@ -143,4 +153,14 @@ boolean CLinkLayer::Receive (void *pBuffer, unsigned *pResultLength)
 	*pResultLength = m_IPRxQueue.Dequeue (pBuffer);
 
 	return *pResultLength != 0 ? TRUE : FALSE;
+}
+
+void CLinkLayer::ResolveFailed (const void *pReturnedFrame, unsigned nLength)
+{
+	assert (pReturnedFrame != 0);
+	assert (nLength > sizeof (TEthernetHeader));
+	assert (m_pNetworkLayer != 0);
+
+	m_pNetworkLayer->SendFailed ((const u8 *) pReturnedFrame + sizeof (TEthernetHeader),
+				     nLength - sizeof (TEthernetHeader));
 }
