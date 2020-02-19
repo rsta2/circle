@@ -30,38 +30,6 @@
 struct TICMPHeader
 {
 	u8	nType;
-#define ICMP_TYPE_ECHO_REPLY	0
-#define ICMP_TYPE_ECHO		8
-	#define ICMP_CODE_ECHO			0
-#define ICMP_TYPE_DEST_UNREACH	3
-	#define ICMP_CODE_DEST_NET_UNREACH	0
-	#define ICMP_CODE_DEST_HOST_UNREACH	1
-	#define ICMP_CODE_DEST_PROTO_UNREACH	2
-	#define ICMP_CODE_DEST_PORT_UNREACH	3
-	#define ICMP_CODE_FRAG_REQUIRED		4
-	#define ICMP_CODE_SRC_ROUTE_FAIL	5
-	#define ICMP_CODE_DEST_NET_UNKNOWN	6
-	#define ICMP_CODE_DEST_HOST_UNKNOWN	7
-	#define ICMP_CODE_SRC_HOST_ISOLATED	8
-	#define ICMP_CODE_NET_ADMIN_PROHIB	9
-	#define ICMP_CODE_HOST_ADMIN_PROHIB	0
-	#define ICMP_CODE_NET_UNREACH_TOS	11
-	#define ICMP_CODE_HOST_UNREACH_TOS	12
-	#define ICMP_CODE_COMM_ADMIN_PROHIB	13
-	#define ICMP_CODE_HOST_PREC_VIOLAT	14
-	#define ICMP_CODE_PREC_CUTOFF_EFFECT	15
-#define ICMP_TYPE_REDIRECT	5
-	#define ICMP_CODE_REDIRECT_NET		0
-	#define ICMP_CODE_REDIRECT_HOST		1
-	#define ICMP_CODE_REDIRECT_TOS_NET	2
-	#define ICMP_CODE_REDIRECT_TOS_HOST	3
-#define ICMP_TYPE_TIME_EXCEED	11
-	#define ICMP_CODE_TTL_EXPIRED		0
-	#define ICMP_CODE_FRAG_REASS_TIME_EXCEED 1
-#define ICMP_TYPE_PARAM_PROBLEM	12
-	#define ICMP_CODE_POINTER		0
-	#define ICMP_CODE_MISSING_OPTION	1
-	#define ICMP_CODE_BAD_LENGTH		2
 	u8	nCode;
 	u16	nChecksum;
 	u8	Parameter[4];		// ICMP_TYPE_REDIRECT: Gateway IP address
@@ -227,7 +195,8 @@ void CICMPHandler::Process (void)
 	}
 }
 
-void CICMPHandler::HostUnreachable (const void *pReturnedIPPacket, unsigned nLength)
+void CICMPHandler::DestinationUnreachable (unsigned nCode, const void *pReturnedIPPacket,
+					   unsigned nLength)
 {
 	assert (pReturnedIPPacket != 0);
 	assert (nLength > sizeof (TIPHeader));
@@ -244,10 +213,19 @@ void CICMPHandler::HostUnreachable (const void *pReturnedIPPacket, unsigned nLen
 	TICMPDataDatagramHeader *pDatagramHeader =
 		(TICMPDataDatagramHeader *) ((u8 *) pIPHeader + nIPHeaderLength);
 
+	const char *pDest;
+	switch (nCode)
+	{
+	case ICMP_CODE_DEST_NET_UNREACH:	pDest = "network ";	break;
+	case ICMP_CODE_DEST_HOST_UNREACH:	pDest = "host ";	break;
+	default:				pDest = "";		break;
+	}
+
 	CString IPString;
 	CIPAddress DestinationIP (pIPHeader->DestinationAddress);
 	DestinationIP.Format (&IPString);
-	CLogger::Get ()->Write (FromICMP, LogDebug, "Host unreachable: %s", (const char *) IPString);
+	CLogger::Get ()->Write (FromICMP, LogDebug, "Destination %sunreachable: %s",
+				pDest, (const char *) IPString);
 
 	EnqueueNotification (ICMPNotificationDestUnreach, pIPHeader, pDatagramHeader);
 }

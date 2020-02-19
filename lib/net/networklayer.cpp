@@ -163,12 +163,6 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	const CIPAddress *pOwnIPAddress = m_pNetConfig->GetIPAddress ();
 	assert (pOwnIPAddress != 0);
 
-	if (   pOwnIPAddress->IsNull ()
-	    && !rReceiver.IsBroadcast ())
-	{
-		return FALSE;
-	}
-
 	pOwnIPAddress->CopyTo (pHeader->SourceAddress);
 
 	rReceiver.CopyTo (pHeader->DestinationAddress);
@@ -179,6 +173,14 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	assert (pPacket != 0);
 	assert (nLength > 0);
 	memcpy (PacketBuffer+sizeof (TIPHeader), pPacket, nLength);
+
+	if (   pOwnIPAddress->IsNull ()
+	    && !rReceiver.IsBroadcast ())
+	{
+		SendFailed (ICMP_CODE_DEST_NET_UNREACH, PacketBuffer, nPacketLength);
+
+		return FALSE;
+	}
 
 	CIPAddress GatewayIP;
 	const CIPAddress *pNextHop = &rReceiver;
@@ -196,6 +198,8 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 			pNextHop = m_pNetConfig->GetDefaultGateway ();
 			if (pNextHop->IsNull ())
 			{
+				SendFailed (ICMP_CODE_DEST_NET_UNREACH, PacketBuffer, nPacketLength);
+
 				return FALSE;
 			}
 		}
@@ -290,8 +294,8 @@ const u8 *CNetworkLayer::GetGateway (const u8 *pDestIP) const
 	return pDefaultGateway->Get ();
 }
 
-void CNetworkLayer::SendFailed (const void *pReturnedPacket, unsigned nLength)
+void CNetworkLayer::SendFailed (unsigned nICMPCode, const void *pReturnedPacket, unsigned nLength)
 {
 	assert (m_pICMPHandler != 0);
-	m_pICMPHandler->HostUnreachable (pReturnedPacket, nLength);
+	m_pICMPHandler->DestinationUnreachable (nICMPCode, pReturnedPacket, nLength);
 }

@@ -90,7 +90,7 @@ private:
 	friend class CICMPHandler;
 
 	// post IP packet to the ICMP handler for notification
-	void SendFailed (const void *pReturnedPacket, unsigned nLength);
+	void SendFailed (unsigned nICMPCode, const void *pReturnedPacket, unsigned nLength);
 	friend class CLinkLayer;
 
 private:

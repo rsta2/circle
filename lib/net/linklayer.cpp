@@ -161,6 +161,7 @@ void CLinkLayer::ResolveFailed (const void *pReturnedFrame, unsigned nLength)
 	assert (nLength > sizeof (TEthernetHeader));
 	assert (m_pNetworkLayer != 0);
 
-	m_pNetworkLayer->SendFailed ((const u8 *) pReturnedFrame + sizeof (TEthernetHeader),
+	m_pNetworkLayer->SendFailed (ICMP_CODE_DEST_HOST_UNREACH,
+				     (const u8 *) pReturnedFrame + sizeof (TEthernetHeader),
 				     nLength - sizeof (TEthernetHeader));
 }
