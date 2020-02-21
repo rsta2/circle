@@ -42,7 +42,7 @@
 /// 4       | GPIO8  | GPIO9  | Raspberry Pi 4 only
 /// 5       | GPIO12 | GPIO13 | Raspberry Pi 4 only
 /// GPIO32/33 and GPIO36/37 can be selected with system option SERIAL_GPIO_SELECT.\n
-/// GPIO0 and GPIO1 are reserved for ID EEPROM and must not be used!\n
+/// GPIO0/1 are normally reserved for ID EEPROM.\n
 /// Handshake lines CTS and RTS are not supported.
 
 #if RASPPI < 4

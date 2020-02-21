@@ -43,7 +43,7 @@
 /// 4       | GPIO5  | GPIO6  | GPIO7  | GPIO4  | GPIO25 | Raspberry Pi 4 only
 /// 5       | GPIO13 | GPIO14 | GPIO15 | GPIO12 | GPIO26 | Raspberry Pi 4 only
 /// 6       | GPIO19 | GPIO20 | GPIO21 | GPIO18 | GPIO27 | Raspberry Pi 4 only
-/// GPIO0 and GPIO1 are reserved for ID EEPROM and must not be used!
+/// GPIO0/1 are normally reserved for ID EEPROM.
 
 class CSPIMaster
 {
