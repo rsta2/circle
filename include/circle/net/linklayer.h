@@ -2,7 +2,7 @@
 // linklayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,6 +39,8 @@ struct TEthernetHeader
 }
 PACKED;
 
+class CNetworkLayer;
+
 class CLinkLayer
 {
 public:
@@ -46,6 +48,9 @@ public:
 	~CLinkLayer (void);
 
 	boolean Initialize (void);
+
+	// we need a back way to the network layer for notification
+	void AttachLayer (CNetworkLayer *pNetworkLayer);
 
 	void Process (void);
 
@@ -55,8 +60,14 @@ public:
 	boolean Receive (void *pBuffer, unsigned *pResultLength);
 
 private:
+	// return IP packet to the network layer for notification
+	void ResolveFailed (const void *pReturnedFrame, unsigned nLength);
+	friend class CARPHandler;
+
+private:
 	CNetConfig *m_pNetConfig;
 	CNetDeviceLayer *m_pNetDevLayer;
+	CNetworkLayer *m_pNetworkLayer;
 	CARPHandler *m_pARPHandler;
 
 	CNetQueue m_ARPRxQueue;

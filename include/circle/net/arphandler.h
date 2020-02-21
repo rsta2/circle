@@ -2,7 +2,7 @@
 // arphandler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@ enum TARPState
 {
 	ARPStateFreeSlot = 0,
 	ARPStateRequestSent,
+	ARPStateRetryRequest,
+	ARPStateSendTxQueue,
 	ARPStateValid,
 	ARPStateUnknown
 };
@@ -45,18 +47,25 @@ struct TARPEntry
 	u8			IPAddress[IP_ADDRESS_SIZE];
 	u8			MACAddress[MAC_ADDRESS_SIZE];
 	TKernelTimerHandle	hTimer;
+	unsigned		nAttempts;
 	unsigned		nTicksLastUsed;
+	CNetQueue		*pTxQueue;		// deferred frames
 };
+
+class CLinkLayer;
 
 class CARPHandler
 {
 public:
-	CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer, CNetQueue *pRxQueue);
+	CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer,
+		     CLinkLayer *pLinkLayer, CNetQueue *pRxQueue);
 	~CARPHandler (void);
 
 	void Process (void);
 
-	boolean Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAddress);
+	// frame is queued, if resolve fails
+	boolean Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAddress,
+			 const void *pFrame, unsigned nFrameLength);
 	
 private:
 	void ReplyReceived (const CIPAddress &rForeignIP, const CMACAddress &rForeignMAC);
@@ -69,10 +78,14 @@ private:
 private:
 	CNetConfig	*m_pNetConfig;
 	CNetDeviceLayer	*m_pNetDevLayer;
+	CLinkLayer	*m_pLinkLayer;
 	CNetQueue	*m_pRxQueue;
 
+	unsigned  m_nEntries;
 	TARPEntry m_Entry[ARP_MAX_ENTRIES];
 	CSpinLock m_SpinLock;
+
+	unsigned m_nTicksLastCleanup;
 };
 
 #endif
