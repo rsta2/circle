@@ -280,7 +280,11 @@ FIQStub:
  */
 	.globl	SMCStub
 SMCStub:
+	ldr	x2, =SMCStack
+	mov	sp, x2
+	str	x30, [sp, #-16]!
 	bl	SecureMonitorHandler
+	ldr	x30, [sp], #16
 	eret
 
 #endif
@@ -311,5 +315,16 @@ FIQData:					/* matches TFIQData: */
 	.globl	IRQReturnAddress
 IRQReturnAddress:
 	.quad	0
+
+#if RASPPI >= 4
+
+	.bss
+
+	.align	4
+
+	.space	128
+SMCStack:
+
+#endif
 
 /* End */
