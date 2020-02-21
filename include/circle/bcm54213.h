@@ -129,7 +129,7 @@ private:
 	void enable_dma(u32 dma_ctrl);
 
 	// Tx queues, rings and buffers
-	void init_tx_queues (void);
+	void init_tx_queues (bool enable);
 	void init_tx_ring(unsigned index, unsigned size, unsigned start_ptr, unsigned end_ptr);
 	TGEnetCB *get_txcb(TGEnetTxRing *ring);
 	unsigned tx_reclaim(TGEnetTxRing *ring);
