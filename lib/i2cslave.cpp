@@ -2,7 +2,7 @@
 // i2cslave.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,8 +68,13 @@
 
 CI2CSlave::CI2CSlave (u8 ucAddress)
 :	m_ucAddress (ucAddress),
+#if RASPPI <= 3
 	m_SDA (18, GPIOModeAlternateFunction3),
 	m_SCL (19, GPIOModeAlternateFunction3)
+#else
+	m_SDA (10, GPIOModeAlternateFunction3),
+	m_SCL (11, GPIOModeAlternateFunction3)
+#endif
 {
 }
 
