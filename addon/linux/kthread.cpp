@@ -60,15 +60,15 @@ void flush_signals (struct task_struct *task)
 static void task_switch_handler (CTask *ctask)
 {
 	current = (struct task_struct *) ctask->GetUserData ();
-	BUG_ON (current == 0);
 }
 
 static void task_termination_handler (CTask *ctask)
 {
 	struct task_struct *task = (struct task_struct *) ctask->GetUserData ();
-	BUG_ON (task == 0);
-
-	task->terminated = 1;
+	if (task != 0)
+	{
+		task->terminated = 1;
+	}
 }
 
 int linuxemu_init_kthread (void)
