@@ -2,7 +2,7 @@
 // ntpdaemon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <circle/sched/task.h>
 #include <circle/net/netsubsystem.h>
+#include <circle/string.h>
 
 class CNTPDaemon : public CTask
 {
@@ -36,7 +37,7 @@ private:
 	unsigned UpdateTime (void);			// returns seconds to next update attempt
 
 private:
-	const char	*m_pNTPServer;
+	CString		 m_NTPServer;
 	CNetSubSystem	*m_pNetSubSystem;
 };
 
