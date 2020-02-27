@@ -2,6 +2,13 @@
 
 make="${MAKE:-make}"
 
+makekhronos=true
+if [[ $1 == "--nokhronos" ]]
+then
+	makekhronos=false
+	shift
+fi
+
 cd vcos
 $make $1 $2 || exit
 cd ..
@@ -10,9 +17,12 @@ cd vmcs_host
 $make $1 $2 || exit
 cd ..
 
-cd khronos
-$make $1 $2 || exit
-cd ..
+if [[ $makekhronos == true ]]
+then
+	cd khronos
+	$make $1 $2 || exit
+	cd ..
+fi
 
 cd bcm_host
 $make $1 $2 || exit
