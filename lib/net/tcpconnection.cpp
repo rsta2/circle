@@ -878,6 +878,8 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 					{
 						SendSegment (TCP_FLAG_RESET, m_nSND_NXT);
 						NEW_STATE (TCPStateClosed);
+						m_nErrno = -1;
+						m_Event.Set ();
 					}
 
 					if (nDataLength > 0)
