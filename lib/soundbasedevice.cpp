@@ -2,7 +2,7 @@
 // soundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,9 +21,11 @@
 #include <circle/util.h>
 #include <assert.h>
 
-CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigned nSampleRate)
+CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigned nSampleRate,
+				    boolean bSwapChannels)
 :	m_HWFormat (HWFormat),
 	m_nSampleRate (nSampleRate),
+	m_bSwapChannels (bSwapChannels),
 	m_nQueueSize (0),
 	m_nNeedDataThreshold (0),
 	m_WriteFormat (SoundFormatUnknown),
@@ -147,7 +149,8 @@ int CSoundBaseDevice::Write (const void *pBuffer, size_t nCount)
 
 	if (   m_HWFormat == SoundFormatSigned16
 	    && m_WriteFormat == SoundFormatSigned16
-	    && m_nWriteChannels == SOUND_HW_CHANNELS)
+	    && m_nWriteChannels == SOUND_HW_CHANNELS
+	    && !m_bSwapChannels)
 	{
 		// fast path for SoundFormatSigned16 Stereo without conversion
 
@@ -172,17 +175,35 @@ int CSoundBaseDevice::Write (const void *pBuffer, size_t nCount)
 		{
 			u8 Frame[SOUND_MAX_FRAME_SIZE];
 
-			ConvertSoundFormat (Frame, pBuffer8);
-			pBuffer8 += m_nWriteSampleSize;
-
-			if (m_nWriteChannels == 2)
+			if (!m_bSwapChannels)
 			{
-				ConvertSoundFormat (Frame+m_nHWSampleSize, pBuffer8);
+				ConvertSoundFormat (Frame, pBuffer8);
 				pBuffer8 += m_nWriteSampleSize;
+
+				if (m_nWriteChannels == 2)
+				{
+					ConvertSoundFormat (Frame+m_nHWSampleSize, pBuffer8);
+					pBuffer8 += m_nWriteSampleSize;
+				}
+				else
+				{
+					memcpy (Frame+m_nHWSampleSize, Frame, m_nHWSampleSize);
+				}
 			}
 			else
 			{
-				memcpy (Frame+m_nHWSampleSize, Frame, m_nHWSampleSize);
+				ConvertSoundFormat (Frame+m_nHWSampleSize, pBuffer8);
+				pBuffer8 += m_nWriteSampleSize;
+
+				if (m_nWriteChannels == 2)
+				{
+					ConvertSoundFormat (Frame, pBuffer8);
+					pBuffer8 += m_nWriteSampleSize;
+				}
+				else
+				{
+					memcpy (Frame, Frame+m_nHWSampleSize, m_nHWSampleSize);
+				}
 			}
 
 			Enqueue (Frame, m_nHWFrameSize);
@@ -223,6 +244,11 @@ void CSoundBaseDevice::RegisterNeedDataCallback (TSoundNeedDataCallback *pCallba
 	assert (m_pCallback != 0);
 
 	m_pCallbackParam = pParam;
+}
+
+boolean CSoundBaseDevice::AreChannelsSwapped (void) const
+{
+	return m_bSwapChannels;
 }
 
 unsigned CSoundBaseDevice::GetChunk (s16 *pBuffer, unsigned nChunkSize)

@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -439,6 +439,13 @@ unsigned CMachineInfo::GetDevice (TDeviceId DeviceId) const
 	}
 
 	return nResult;
+}
+
+boolean CMachineInfo::ArePWMChannelsSwapped (void) const
+{
+	return    m_MachineModel >= MachineModelAPlus
+	       && m_MachineModel != MachineModelZero
+	       && m_MachineModel != MachineModelZeroW;
 }
 
 unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)

@@ -2,7 +2,7 @@
 // soundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,7 +53,9 @@ public:
 	/// \param nRange32    Defines the maximum range value for SoundFormatUnsigned32\n
 	///		       (must be 0 otherwise)
 	/// \param nSampleRate Sample rate in Hz
-	CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigned nSampleRate);
+	/// \param bSwapChannels Swap stereo channels on output?
+	CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigned nSampleRate,
+			  boolean bSwapChannels = FALSE);
 
 	virtual ~CSoundBaseDevice (void);
 
@@ -110,6 +112,9 @@ public:
 	/// \note Not used, if GetChunk() is overloaded.
 	void RegisterNeedDataCallback (TSoundNeedDataCallback *pCallback, void *pParam);
 
+	/// \return TRUE: Have to write right channel first into buffer in GetChunk()
+	boolean AreChannelsSwapped (void) const;
+
 protected:
 	/// \brief May overload this to provide the sound samples
 	/// \param pBuffer    Buffer where the samples have to be placed
@@ -134,6 +139,7 @@ private:
 private:
 	TSoundFormat m_HWFormat;
 	unsigned m_nSampleRate;
+	boolean m_bSwapChannels;
 
 	unsigned m_nHWSampleSize;
 	unsigned m_nHWFrameSize;
