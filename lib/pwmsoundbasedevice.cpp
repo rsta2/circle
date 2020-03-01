@@ -197,6 +197,8 @@ CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
 {
 	assert (m_State == PWMSoundIdle);
 
+	CDeviceNameService::Get ()->RemoveDevice ("sndpwm", FALSE);
+
 	// stop PWM device and clock
 	StopPWM ();
 
