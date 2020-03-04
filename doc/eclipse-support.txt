@@ -3,8 +3,7 @@ ECLIPSE SUPPORT
 Circle provides some support to promote a more comfortable development process
 using the Eclipse IDE (www.eclipse.org). Currently this covers mainly a speed-up
 of the edit/build/test cycle by adapting a serial bootloader (by David Welch),
-which can be used directly from an Eclipse project space. The bootloader can
-also be used without Eclipse (see notes at the at of this file).
+which can be used directly from an Eclipse project space.
 
 To use the bootloader, you have to do the following:
 
@@ -74,9 +73,3 @@ in the "Includes" tab (according to your Circle path):
 
 Make sure to rebuild the C++ index by right clicking on the opened Circle
 project in the project explorer if using included paths.
-
-
-The bootloader starts manually (without Eclipse IDE) when you go to the
-subdirectory of your application (or sample program) in a shell and enter:
-
-	make flash

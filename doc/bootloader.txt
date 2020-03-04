@@ -1,0 +1,53 @@
+BOOTLOADER
+
+The Circle project has an integrated serial bootloader, which can be used to
+speed-up the development process and to make it more comfortable. The bootloader
+has been adapted from the well-known bootloader by David Welch.
+
+To use the bootloader, you have to do the following:
+
+1. You need a serial USB adapter (3.3V level) connected to GPIO14/15 (Broadcom
+numbering) of your Raspberry Pi computer on one side and to your development
+machine on the other.
+
+2. On your development machine there must be a python interpreter (including the
+python-pyserial module) installed. You may also need the terminal program
+"putty".
+
+3. Add the following lines to the file Config.mk in the Circle root directory:
+
+	SERIALPORT = /dev/ttyUSB0	(device of your serial USB adapter)
+	FLASHBAUD = 115200		(baud rate for loading the application)
+	USERBAUD = 115200		(baud rate used by the application)
+
+By increasing FLASHBAUD you can speed-up to loading process very much. It
+depends on your serial adapter, which baud rates are possible. Common values are
+460800, 921600 or higher.
+
+USERBAUD is the baud rate, used by the application itself, if it communicates
+using the serial interface.
+
+4. The Circle project libraries used in your application have to be build
+manually using "./makeall" as described in the main README.md file.
+
+5. You have to prepare a SD card, which starts your Raspberry Pi in bootloader
+mode. Go to the boot/ subdirectory and enter:
+
+	make all
+
+After completion copy the files from boot/ to the SD card (copy the file
+"config.txt" only for AArch64 operation), which must have a FAT partition.
+Please note, that you have to repeat this step, if you change the parameter
+FLASHBAUD in Config.mk. The built bootloader is specific for this baud rate. Put
+the SD card into your Raspberry Pi, which is connected to your development
+machine and power it on.
+
+6. The bootloader starts when you go to the subdirectory of your application (or
+sample program) in a shell and enter:
+
+	make flash
+
+7. If your application uses the serial interface itself, you can start the
+terminal program "putty" directly from the shell. You have to enter "make
+monitor" like you have done for "flash" before and putty should open with the
+right communication parameters.

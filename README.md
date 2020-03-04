@@ -207,10 +207,11 @@ Additional Topics
 
 * [Standard library support](doc/stdlib-support.txt)
 * [Dynamic memory management and the "new" operator](doc/new-operator.txt)
-* [Bootloader and Eclipse IDE support](doc/eclipse-support.txt)
+* [Serial bootloader support](doc/bootloader.txt)
 * [Multi-core support](doc/multicore.txt)
 * [Debugging support](doc/debug.txt)
 * [QEMU support](doc/qemu.txt)
+* [Eclipse IDE support](doc/eclipse-support.txt)
 * [About real-time applications](doc/realtime.txt)
 * [cmdline.txt options](doc/cmdline.txt)
 * [Screen escape sequences](doc/screen.txt)
