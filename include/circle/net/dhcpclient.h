@@ -2,7 +2,7 @@
 // dhcpclient.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/sched/task.h>
 #include <circle/net/netsubsystem.h>
 #include <circle/net/socket.h>
+#include <circle/string.h>
 #include <circle/types.h>
 
 enum TDHCPStatus
@@ -38,7 +39,7 @@ enum TDHCPStatus
 class CDHCPClient : public CTask
 {
 public:
-	CDHCPClient (CNetSubSystem *pNetSubSystem);
+	CDHCPClient (CNetSubSystem *pNetSubSystem, const char *pHostname);
 	~CDHCPClient (void);
 
 	void Run (void);
@@ -71,6 +72,7 @@ private:
 private:
 	CNetSubSystem *m_pNetSubSystem;
 	CNetConfig *m_pNetConfig;
+	CString m_Hostname;
 
 	CSocket m_Socket;
 

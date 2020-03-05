@@ -2,7 +2,7 @@
 // netsubsystem.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <circle/net/linklayer.h>
 #include <circle/net/networklayer.h>
 #include <circle/net/transportlayer.h>
+#include <circle/string.h>
 #include <circle/types.h>
 
 class CDHCPClient;
@@ -35,7 +36,8 @@ public:
 	CNetSubSystem (const u8 *pIPAddress      = 0,	// use DHCP if pIPAddress == 0
 		       const u8 *pNetMask        = 0,
 		       const u8 *pDefaultGateway = 0,
-		       const u8 *pDNSServer      = 0);
+		       const u8 *pDNSServer      = 0,
+		       const char *pHostname	 = "raspberrypi");	// 0 for no hostname
 	~CNetSubSystem (void);
 	
 	boolean Initialize (boolean bWaitForActivate = TRUE);
@@ -51,6 +53,8 @@ public:
 	static CNetSubSystem *Get (void);
 
 private:
+	CString		m_Hostname;
+
 	CNetConfig	m_Config;
 	CNetDeviceLayer	m_NetDevLayer;
 	CLinkLayer	m_LinkLayer;
