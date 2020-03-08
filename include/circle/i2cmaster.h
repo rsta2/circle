@@ -1,8 +1,8 @@
 //
-// i2cmaster.h
+/// \file i2cmaster.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,34 +24,62 @@
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
+/// \class CI2CMaster
+/// \brief Driver for I2C master devices
+///
+/// \details GPIO pin mapping
+/// nDevice   | nConfig 0     | nConfig 1     | Boards
+/// :-------: | :-----------: | :-----------: | :-----
+/// ^         | SDA    SCL    | SDA    SCL    | ^
+/// 0         | GPIO0  GPIO1  |               | Rev. 1
+/// 1         | GPIO2  GPIO3  |               | All other
+/// 2         |               |               | None
+/// 3         | GPIO2  GPIO3  | GPIO4  GPIO5  | Raspberry Pi 4 only
+/// 4         | GPIO6  GPIO7  | GPIO8  GPIO9  | Raspberry Pi 4 only
+/// 5         | GPIO10 GPIO11 | GPIO12 GPIO13 | Raspberry Pi 4 only
+/// 6         | GPIO22 GPIO23 |               | Raspberry Pi 4 only
+
 // returned by Read/Write as negative value
-#define I2C_MASTER_INALID_PARM	1	// Invalid parameter
-#define I2C_MASTER_ERROR_NACK	2	// Received a NACK
-#define I2C_MASTER_ERROR_CLKT	3	// Received clock stretch timeout
-#define I2C_MASTER_DATA_LEFT	4	// Not all data has been sent/received
+#define I2C_MASTER_INALID_PARM	1	///< Invalid parameter
+#define I2C_MASTER_ERROR_NACK	2	///< Received a NACK
+#define I2C_MASTER_ERROR_CLKT	3	///< Received clock stretch timeout
+#define I2C_MASTER_DATA_LEFT	4	///< Not all data has been sent/received
 
 class CI2CMaster
 {
 public:
-	CI2CMaster (unsigned nDevice,			// 0 on Rev. 1 boards, 1 otherwise
-		    boolean bFastMode = FALSE);
+	/// \param nDevice   Device number (see: GPIO pin mapping)
+	/// \param bFastMode Use I2C fast mode (400 KHz) or standard mode (100 KHz) otherwise
+	/// \param nConfig   GPIO mapping configuration (see: GPIO pin mapping)
+	CI2CMaster (unsigned nDevice, boolean bFastMode = FALSE, unsigned nConfig = 0);
+
 	~CI2CMaster (void);
 
+	/// \return Initialization successful?
 	boolean Initialize (void);
 
-	// modify default clock before specific transfer
-	void SetClock (unsigned nClockSpeed);		// in Hz
+	/// \brief Modify default clock before specific transfer
+	/// \param nClockSpeed I2C clock frequency in Hz
+	void SetClock (unsigned nClockSpeed);
 
-	// returns number of read bytes or < 0 on failure
+	/// \param ucAddress I2C slave address of target device
+	/// \param pBuffer   Read data will be stored here
+	/// \param nCount    Number of bytes to be read
+	/// \return Number of read bytes or < 0 on failure
 	int Read (u8 ucAddress, void *pBuffer, unsigned nCount);
 
-	// returns number of written bytes or < 0 on failure
+	/// \param ucAddress I2C slave address of target device
+	/// \param pBuffer   Write data for will be taken from here
+	/// \param nCount    Number of bytes to be written
+	/// \return Number of written bytes or < 0 on failure
 	int Write (u8 ucAddress, const void *pBuffer, unsigned nCount);
 
 private:
 	unsigned m_nDevice;
-	unsigned m_nBaseAddress;
+	uintptr  m_nBaseAddress;
 	boolean  m_bFastMode;
+	unsigned m_nConfig;
+	boolean  m_bValid;
 
 	CGPIOPin m_SDA;
 	CGPIOPin m_SCL;

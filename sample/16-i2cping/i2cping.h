@@ -2,7 +2,7 @@
 // i2cping.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <circle/macros.h>
 
 #define I2C_MASTER_DEVICE	1		// 0 on Raspberry Pi 1 Rev. 1 boards, 1 otherwise
+#define I2C_MASTER_CONFIG	0		// 0 or 1 on Raspberry Pi 4, 0 otherwise
 #define I2C_FAST_MODE		FALSE		// standard mode (100 Kbps) or fast mode (400 Kbps)
 
 #define I2C_SLAVE_ADDRESS	20		// 7 bit slave address

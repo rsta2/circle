@@ -93,6 +93,11 @@ boolean CLogger::Initialize (CDevice *pTarget)
 	return TRUE;
 }
 
+void CLogger::SetNewTarget (CDevice *pTarget)
+{
+	m_pTarget = pTarget;
+}
+
 void CLogger::Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...)
 {
 	va_list var;

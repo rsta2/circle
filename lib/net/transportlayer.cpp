@@ -238,18 +238,16 @@ int CTransportLayer::Connect (CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, i
 		m_SpinLock.Release ();
 		return -1;
 	}
-	assert (m_pConnection[i] != 0);
 
+	m_SpinLock.Release ();
+
+	assert (m_pConnection[i] != 0);
 	int nResult = ((CNetConnection *) m_pConnection[i])->Connect ();
 	if (nResult < 0)
 	{
-		m_SpinLock.Release ();
-
 		return -1;
 	}
 	
-	m_SpinLock.Release ();
-
 	return i;
 }
 

@@ -6,7 +6,7 @@
 //	Licensed under GPLv2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -51,7 +51,9 @@ CVCHIQSoundBaseDevice::CVCHIQSoundBaseDevice (CVCHIQDevice *pVCHIQDevice,
 
 CVCHIQSoundBaseDevice::~CVCHIQSoundBaseDevice (void)
 {
-	assert (0);
+	assert (m_State <= VCHIQSoundIdle);
+
+	CDeviceNameService::Get ()->RemoveDevice ("sndvchiq", FALSE);
 }
 
 int CVCHIQSoundBaseDevice::GetRangeMin (void) const

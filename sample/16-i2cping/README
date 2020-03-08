@@ -1,20 +1,38 @@
 README
 
-The Raspberry Pi 4 does not provide an usable I2C slave device and cannot be used as a slave in this sample!
+For this sample you need two Raspberry Pi computers where one of them must be a
+Model A+ or B+ or a Raspberry Pi 2/3/4 or Zero. One computer is the master the
+other is the slave. The master (echo client) sends a 64-byte data packet each
+second via the I2C bus to the slave (echo server) which sends the packet back to
+the master. There is a small "echo header" sent before each packet which
+contains a PID (request or response), a consecutive number (ID) and the data
+length.
 
-For this sample you need two Raspberry Pi computers where one of them must be a Model A+ or B+ or a Raspberry Pi 2/3 or Zero. One computer is the master the other is the slave. The master (echo client) sends a 64-byte data packet each second via the I2C bus to the slave (echo server) which sends the packet back to the master. There is a small "echo header" sent before each packet which contains a PID (request or response), a consecutive number (ID) and the data length.
+The I2C signals SDA (data) and SCL (clock) of the I2C master device of one
+Raspberry Pi must be connected to SDA and SCL of the I2C slave device of the
+other Raspberry Pi as follows:
 
-The I2C signals SDA (data) and SCL (clock) of the I2C master device of one Raspberry Pi must be connected to SDA and SCL of the I2C slave device of the other Raspberry Pi as follows:
+	    Master		    Slave
+	Rev. 1	Other		RPi 4	Other
 
-	    Master		Slave
-	Rev. 1	Rev. 2
-
-SDA	GPIO0	GPIO2  <----->	GPIO18
-SCL	GPIO1	GPIO3  <----->	GPIO19
+SDA	GPIO0	GPIO2  <----->	GPIO10	GPIO18
+SCL	GPIO1	GPIO3  <----->	GPIO11	GPIO19
 GND		       <----->
 
-GPIO19 is only available on Model A+ or B+ or on the Raspberry Pi 2/3 or Zero. That's why the slave must be one of these models. The Raspberry Pi 4 cannot act as Slave too. Please see http://elinux.org/RPi_Low-level_peripherals to find the signals on the header. Furthermore GND of master and slave must be connected and there must be a 1K8 pullup resistor from the SDA signal to 3.3V of the master and also from SCL to 3.3V. See http://en.wikipedia.org/wiki/I2C for a schematic and for further information about I2C.
+GPIO19 is only available on Model A+ or B+ or on the Raspberry Pi 2/3 or Zero.
+That's why the slave must be one of these models. The Raspberry Pi 4 can act as
+Slave too (GPIO10/11). Please see http://elinux.org/RPi_Low-level_peripherals to
+find the signals on the header. Furthermore GND of master and slave must be
+connected and there must be a 1K8 pullup resistor from the SDA signal to 3.3V of
+the master and also from SCL to 3.3V. See http://en.wikipedia.org/wiki/I2C for a
+schematic and for further information about I2C.
 
-According to http://elinux.org/RPi_Low-level_peripherals the pullup resistors are already on board for SDA and SCL. Thus the pins can be directly connected as shown above.
+According to http://elinux.org/RPi_Low-level_peripherals the pullup resistors
+are already on board for SDA and SCL. Thus the pins can be directly connected as
+shown above.
 
-If you use an old Raspberry Pi 1 Revision 1 board as master you have to change the configuration in i2cping.h before building to use the master device 0 of the Raspberry Pi (normally 1). After building please install the kernel.img file from the "master" directory on the SD(HC) card for the master and the kernel.img from the "slave" directory on the SD(HC) card for the slave computer.
+If you use an old Raspberry Pi 1 Revision 1 board as master you have to change
+the configuration in i2cping.h before building to use the master device 0 of the
+Raspberry Pi (normally 1). After building please install the kernel.img file
+from the "master" directory on the SD(HC) card for the master and the kernel.img
+from the "slave" directory on the SD(HC) card for the slave computer.

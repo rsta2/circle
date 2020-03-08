@@ -39,7 +39,7 @@ TSemihostingValue CallSemihostingSingle (u32 nOperation, TSemihostingValue nPara
 		"svc 0x123456\n"
 		"mov %0, r0\n"
 
-		: "=r" (nResult) : "r" (nOperation), "r" (nParam)
+		: "=r" (nResult) : "r" (nOperation), "r" (nParam) : "r0", "r1"
 	);
 #else
 	asm volatile
@@ -49,7 +49,7 @@ TSemihostingValue CallSemihostingSingle (u32 nOperation, TSemihostingValue nPara
 		"hlt #0xF000\n"
 		"mov %0, x0\n"
 
-		: "=r" (nResult) : "r" (nOperation), "r" (nParam)
+		: "=r" (nResult) : "r" (nOperation), "r" (nParam) : "x0", "x1"
 	);
 #endif
 
@@ -71,7 +71,7 @@ TSemihostingValue CallSemihosting (u32 nOperation,
 		"svc 0x123456\n"
 		"mov %0, r0\n"
 
-		: "=r" (nResult) : "r" (nOperation), "r" ((uintptr) &Data)
+		: "=r" (nResult) : "r" (nOperation), "r" ((uintptr) &Data) : "r0", "r1"
 	);
 #else
 	asm volatile
@@ -81,7 +81,7 @@ TSemihostingValue CallSemihosting (u32 nOperation,
 		"hlt #0xF000\n"
 		"mov %0, x0\n"
 
-		: "=r" (nResult) : "r" (nOperation), "r" ((uintptr) &Data)
+		: "=r" (nResult) : "r" (nOperation), "r" ((uintptr) &Data) : "x0", "x1"
 	);
 #endif
 
@@ -100,7 +100,7 @@ boolean SemihostingFeatureSupported (u32 nFeature)
 
 	boolean bResult = FALSE;
 
-	u8 Buffer[5];
+	u8 Buffer[5] = {0};
 	if (   CallSemihosting (SEMIHOSTING_SYS_READ, nHandle, (uintptr) Buffer, sizeof Buffer) == 0
 	    && Buffer[0] == SHFB_MAGIC_0
 	    && Buffer[1] == SHFB_MAGIC_1

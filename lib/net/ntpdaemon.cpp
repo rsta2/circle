@@ -2,7 +2,7 @@
 // ntpdaemon.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,17 +29,15 @@
 static const char FromNTPDaemon[] = "ntpd";
 
 CNTPDaemon::CNTPDaemon (const char *pNTPServer, CNetSubSystem *pNetSubSystem)
-:	m_pNTPServer (pNTPServer),
+:	m_NTPServer (pNTPServer),
 	m_pNetSubSystem (pNetSubSystem)
 {
-	assert (m_pNTPServer != 0);
 	assert (m_pNetSubSystem != 0);
 }
 
 CNTPDaemon::~CNTPDaemon (void)
 {
 	m_pNetSubSystem = 0;
-	m_pNTPServer = 0;
 }
 
 void CNTPDaemon::Run (void)
@@ -54,14 +52,14 @@ void CNTPDaemon::Run (void)
 
 unsigned CNTPDaemon::UpdateTime (void)
 {
-	assert (m_pNTPServer != 0);
 	assert (m_pNetSubSystem != 0);
 
 	CIPAddress NTPServerIP;
 	CDNSClient DNSClient (m_pNetSubSystem);
-	if (!DNSClient.Resolve (m_pNTPServer, &NTPServerIP))
+	if (!DNSClient.Resolve (m_NTPServer, &NTPServerIP))
 	{
-		CLogger::Get ()->Write (FromNTPDaemon, LogWarning, "Cannot resolve: %s", m_pNTPServer);
+		CLogger::Get ()->Write (FromNTPDaemon, LogWarning, "Cannot resolve: %s",
+					(const char *) m_NTPServer);
 
 		return 300;
 	}
@@ -70,7 +68,8 @@ unsigned CNTPDaemon::UpdateTime (void)
 	unsigned nTime = NTPClient.GetTime (NTPServerIP);
 	if (nTime == 0)
 	{
-		CLogger::Get ()->Write (FromNTPDaemon, LogWarning, "Cannot get time from %s", m_pNTPServer);
+		CLogger::Get ()->Write (FromNTPDaemon, LogWarning, "Cannot get time from %s",
+					(const char *) m_NTPServer);
 
 		return 300;
 	}

@@ -186,6 +186,8 @@ CI2SSoundBaseDevice::~CI2SSoundBaseDevice (void)
 {
 	assert (m_State == I2SSoundIdle);
 
+	CDeviceNameService::Get ()->RemoveDevice ("sndi2s", FALSE);
+
 	// stop I2S device and clock
 	StopI2S ();
 

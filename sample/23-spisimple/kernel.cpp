@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 #include "kernel.h"
 #include <circle/debug.h>
 
+#define SPI_MASTER_DEVICE	0		// 0, 4, 5, 6 on Raspberry Pi 4; 0 otherwise
+
 #define SPI_CLOCK_SPEED		500000		// Hz
 #define SPI_CPOL		0
 #define SPI_CPHA		0
@@ -35,7 +37,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 #ifndef USE_SPI_MASTER_AUX
-	m_SPIMaster (SPI_CLOCK_SPEED, SPI_CPOL, SPI_CPHA)
+	m_SPIMaster (SPI_CLOCK_SPEED, SPI_CPOL, SPI_CPHA, SPI_MASTER_DEVICE)
 #else
 	m_SPIMaster (SPI_CLOCK_SPEED)
 #endif

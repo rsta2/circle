@@ -2,7 +2,7 @@
 // machineinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -94,6 +94,9 @@ public:
 #define GPIO_CLOCK_SOURCE_ID_MAX	15		// source ID is 0-15
 #define GPIO_CLOCK_SOURCE_UNUSED	0		// returned for unused clock sources
 	unsigned GetDevice (TDeviceId DeviceId) const;
+
+	// returns TRUE, if the left PWM audio channel is PWM1 (not PWM0)
+	boolean ArePWMChannelsSwapped (void) const;
 
 	// DMA channel resource management
 #if RASPPI <= 3

@@ -590,6 +590,12 @@ CBcm54213Device::~CBcm54213Device (void)
 {
 	intr_disable ();
 
+	dma_disable ();
+	init_tx_queues (false);
+
+	umac_reset2 ();
+	reset_umac ();
+
 	if (m_bInterruptConnected)
 	{
 		CInterruptSystem::Get ()->DisconnectIRQ (ARM_IRQ_BCM54213_0);
@@ -1183,7 +1189,7 @@ int CBcm54213Device::init_dma(void)
 	tdma_writel(DMA_MAX_BURST_LENGTH, DMA_SCB_BURST_SIZE);
 
 	// Initialize Tx queues
-	init_tx_queues();
+	init_tx_queues(true);
 
 	return 0;
 }
@@ -1219,7 +1225,7 @@ void CBcm54213Device::enable_dma(u32 dma_ctrl)
 	tdma_writel(reg, DMA_CTRL);
 }
 
-// Initialize Tx queues
+// Initialize or reset Tx queues
 //
 // Queues 0-3 are priority-based, each one has 32 descriptors,
 // with queue 0 being the highest priority queue.
@@ -1233,7 +1239,7 @@ void CBcm54213Device::enable_dma(u32 dma_ctrl)
 // - Tx queue 2 uses m_tx_cbs[64..95]
 // - Tx queue 3 uses m_tx_cbs[96..127]
 // - Tx queue 16 uses m_tx_cbs[128..255]
-void CBcm54213Device::init_tx_queues(void)
+void CBcm54213Device::init_tx_queues(bool enable)
 {
 	u32 dma_ctrl = tdma_readl(DMA_CTRL);
 	u32 dma_enable = dma_ctrl & DMA_EN;
@@ -1243,8 +1249,11 @@ void CBcm54213Device::init_tx_queues(void)
 	dma_ctrl = 0;
 	u32 ring_cfg = 0;
 
-	// Enable strict priority arbiter mode
-	tdma_writel(DMA_ARBITER_SP, DMA_ARB_CTRL);
+	if (enable)
+	{
+		// Enable strict priority arbiter mode
+		tdma_writel(DMA_ARBITER_SP, DMA_ARB_CTRL);
+	}
 
 	u32 dma_priority[3] = {0, 0, 0};
 
@@ -1264,18 +1273,29 @@ void CBcm54213Device::init_tx_queues(void)
 	dma_priority[DMA_PRIO_REG_INDEX(GENET_DESC_INDEX)] |=
 		((GENET_Q0_PRIORITY + TX_QUEUES) << DMA_PRIO_REG_SHIFT(GENET_DESC_INDEX));
 
-	// Set Tx queue priorities
-	tdma_writel(dma_priority[0], DMA_PRIORITY_0);
-	tdma_writel(dma_priority[1], DMA_PRIORITY_1);
-	tdma_writel(dma_priority[2], DMA_PRIORITY_2);
+	if (enable)
+	{
+		// Set Tx queue priorities
+		tdma_writel(dma_priority[0], DMA_PRIORITY_0);
+		tdma_writel(dma_priority[1], DMA_PRIORITY_1);
+		tdma_writel(dma_priority[2], DMA_PRIORITY_2);
 
-	// Enable Tx queues
-	tdma_writel(ring_cfg, DMA_RING_CFG);
+		// Enable Tx queues
+		tdma_writel(ring_cfg, DMA_RING_CFG);
 
-	// Enable Tx DMA
-	if (dma_enable)
-		dma_ctrl |= DMA_EN;
-	tdma_writel(dma_ctrl, DMA_CTRL);
+		// Enable Tx DMA
+		if (dma_enable)
+			dma_ctrl |= DMA_EN;
+		tdma_writel(dma_ctrl, DMA_CTRL);
+	}
+	else
+	{
+		// Disable Tx queues
+		tdma_writel(0, DMA_RING_CFG);
+
+		// Disable Tx DMA
+		tdma_writel(0, DMA_CTRL);
+	}
 }
 
 // Initialize a Tx ring along with corresponding hardware registers

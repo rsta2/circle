@@ -114,7 +114,7 @@ public:
 		      const u8 *pWillPayload = 0, size_t nWillPayloadLength = 0);
 
 	/// \brief Close connection to MQTT broker
-	/// \param pForce Force TCP disconnect only (does not send MQTT DISCONNECT packet)
+	/// \param bForce Force TCP disconnect only (does not send MQTT DISCONNECT packet)
 	void Disconnect (boolean bForce = FALSE);
 
 	/// \brief Subscribe to a MQTT topic

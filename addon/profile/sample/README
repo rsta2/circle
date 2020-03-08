@@ -1,0 +1,65 @@
+README
+
+This sample demonstrates how to use software profiling with Circle. It is based
+on sample/15-tasks and has only a few modifications. Please see
+sample/15-tasks/README for information on what the sample does itself.
+
+Software profiling is a method, which helps optimizing a program by identifying
+the code blocks (i.e. functions), which consume most of the time from a
+program's run-time. Optimizing these functions promises the biggest gain for
+program speed. Please see https://en.wikipedia.org/wiki/Software_profiling
+for more general info on software profiling. The library in addon/profile/ uses
+the "gmon" source code taken from the GNU C Library and is compatible with the
+"gprof" call graph profiling tool. Multi-core programs are currently not
+supported by this library!
+
+To prepare a Circle application for software profiling you have to do the
+following:
+
+1. Create an instance of the class CProfiler on entry into CKernel::Run() and
+call CProfiler::SaveResults() before leaving CKernel::Run().
+
+2. Add this line to the Makefile of your application, just before including
+Rules.mk:
+
+	CFLAGS += -pg
+
+3. The same can be done in the make-files of libraries, which are used by your
+program and should be analyzed too. Warning: The Circle base library
+lib/libcircle.a and the profiling library addon/profile/libprofile.a itself
+cannot be analyzed and must not be built with the -pg option!
+
+4. Add the following libraries to the LIB variable in the Makefile of your
+application. Depending on the program, you may need additional libraries.
+
+	$(CIRCLEHOME)/addon/profile/libprofile.a
+	$(CIRCLEHOME)/addon/SDCard/libsdcard.a
+	$(CIRCLEHOME)/addon/fatfs/libfatfs.a
+	$(CIRCLEHOME)/lib/fs/fat/libfatfs.a
+
+5. Build the Circle base libraries and additional required libraries:
+
+	makeall --nosample	# called from Circle root
+	cd addon/SDCard
+	make
+	cd ../fatfs
+	make
+	cd ../profile
+	make
+
+Now you can build the sample program itself using "make", copy it to the SD card
+and start your Raspberry Pi. The sample runs about 30 seconds. After the message
+"Profiling results saved" appeared on the screen, you can switch off the
+Raspberry Pi. You will find a file "GMON.OUT" on the SD card, which should be
+copied to the directory, where the sample's kernel image is located on your host
+computer. Now enter:
+
+	arm-none-eabi-gprof kernel*.elf GMON.OUT > gmon.txt	# for AArch32
+	aarch64-none-elf-gprof kernel*.elf GMON.OUT > gmon.txt	# for AArch64
+
+The "gprof" tool comes with your toolchain and its name prefix may be different.
+The file gmon.txt will contain the profiling report then. Please see the notes
+in the file and the following sources for a description:
+
+	man gprof
+	info gprof

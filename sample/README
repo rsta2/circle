@@ -1,7 +1,7 @@
 SAMPLES
 
 01-gpiosimple		Simple GPIO usage, blinking Act LED
-02-screenpixel		Setting pixels on screen, demonstration of MMU performance boost
+02-screenpixel		Setting pixels on screen
 03-screentext		Writing text to screen, debug_hexdump() and assert usage
 04-timer		Interrupt driven timer, exception handler demonstration
 05-usbsimple		Displaying USB device descriptor of root hub (Model B and B+)

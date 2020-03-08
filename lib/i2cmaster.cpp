@@ -2,7 +2,7 @@
 // i2cmaster.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // Large portions are:
 //	Copyright (C) 2011-2013 Mike McCauley
@@ -27,6 +27,18 @@
 #include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <assert.h>
+
+#if RASPPI < 4
+	#define DEVICES		2
+#else
+	#define DEVICES		7
+#endif
+
+#define CONFIGS			2
+
+#define GPIOS			2
+#define GPIO_SDA		0
+#define GPIO_SCL		1
 
 // Control register
 #define C_I2CEN			(1 << 15)
@@ -54,26 +66,91 @@
 
 #define FIFO_SIZE		16
 
-CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode)
+static uintptr s_BaseAddress[DEVICES] =
+{
+	ARM_IO_BASE + 0x205000,
+	ARM_IO_BASE + 0x804000,
+#if RASPPI >= 4
+	0,
+	ARM_IO_BASE + 0x205600,
+	ARM_IO_BASE + 0x205800,
+	ARM_IO_BASE + 0x205A00,
+	ARM_IO_BASE + 0x205C00
+#endif
+};
+
+#define NONE	{10000, 10000}
+
+static unsigned s_GPIOConfig[DEVICES][CONFIGS][GPIOS] =
+{
+	// SDA, SCL
+	{{ 0,  1},   NONE  }, // ALT0
+	{{ 2,  3},   NONE  }, // ALT0
+#if RASPPI >= 4
+	{  NONE,     NONE  }, // unused
+	{{ 2,  3}, { 4,  5}}, // ALT5
+	{{ 6,  7}, { 8,  9}}, // ALT5
+	{{10, 11}, {12, 13}}, // ALT5
+	{{22, 23},   NONE  }  // ALT5
+#endif
+};
+
+#define ALT_FUNC(device)	(  (device) < 2			\
+				 ? GPIOModeAlternateFunction0	\
+				 : GPIOModeAlternateFunction5)
+
+CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode, unsigned nConfig)
 :	m_nDevice (nDevice),
-	m_nBaseAddress (nDevice == 0 ? ARM_BSC0_BASE : ARM_BSC1_BASE),
+	m_nBaseAddress (0),
 	m_bFastMode (bFastMode),
-	m_SDA (nDevice == 0 ? 0 : 2, GPIOModeAlternateFunction0),
-	m_SCL (nDevice == 0 ? 1 : 3, GPIOModeAlternateFunction0),
+	m_nConfig (nConfig),
+	m_bValid (FALSE),
 	m_nCoreClockRate (CMachineInfo::Get ()->GetClockRate (CLOCK_ID_CORE)),
 	m_SpinLock (TASK_LEVEL)
 {
-	assert (nDevice <= 1);
+	if (   m_nDevice >= DEVICES
+	    || m_nConfig >= CONFIGS
+	    || s_GPIOConfig[nDevice][nConfig][0] >= GPIO_PINS)
+	{
+		return;
+	}
+
+	m_nBaseAddress = s_BaseAddress[nDevice];
+	assert (m_nBaseAddress != 0);
+
+	m_SDA.AssignPin (s_GPIOConfig[nDevice][nConfig][GPIO_SDA]);
+	m_SDA.SetMode (ALT_FUNC (nDevice));
+	m_SDA.SetPullMode (GPIOPullModeUp);
+
+	m_SCL.AssignPin (s_GPIOConfig[nDevice][nConfig][GPIO_SCL]);
+	m_SCL.SetMode (ALT_FUNC (nDevice));
+	m_SCL.SetPullMode (GPIOPullModeUp);
+
 	assert (m_nCoreClockRate > 0);
+
+	m_bValid = TRUE;
 }
 
 CI2CMaster::~CI2CMaster (void)
 {
+	if (m_bValid)
+	{
+		m_SDA.SetMode (GPIOModeInput);
+		m_SCL.SetMode (GPIOModeInput);
+
+		m_bValid = FALSE;
+	}
+
 	m_nBaseAddress = 0;
 }
 
 boolean CI2CMaster::Initialize (void)
 {
+	if (!m_bValid)
+	{
+		return FALSE;
+	}
+
 	SetClock (m_bFastMode ? 400000 : 100000);
 
 	return TRUE;
@@ -81,6 +158,8 @@ boolean CI2CMaster::Initialize (void)
 
 void CI2CMaster::SetClock (unsigned nClockSpeed)
 {
+	assert (m_bValid);
+
 	PeripheralEntry ();
 
 	assert (nClockSpeed > 0);
@@ -92,6 +171,8 @@ void CI2CMaster::SetClock (unsigned nClockSpeed)
 
 int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 {
+	assert (m_bValid);
+
 	if (ucAddress >= 0x80)
 	{
 		return -I2C_MASTER_INALID_PARM;
@@ -170,6 +251,8 @@ int CI2CMaster::Read (u8 ucAddress, void *pBuffer, unsigned nCount)
 
 int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 {
+	assert (m_bValid);
+
 	if (ucAddress >= 0x80)
 	{
 		return -I2C_MASTER_INALID_PARM;

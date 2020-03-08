@@ -151,7 +151,8 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
 					  unsigned	    nChunkSize)
 :	CSoundBaseDevice (SoundFormatUnsigned32,
-			  (CLOCK_RATE + nSampleRate/2) / nSampleRate, nSampleRate),
+			  (CLOCK_RATE + nSampleRate/2) / nSampleRate, nSampleRate,
+			  CMachineInfo::Get ()->ArePWMChannelsSwapped ()),
 	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
 	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
@@ -196,6 +197,8 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
 {
 	assert (m_State == PWMSoundIdle);
+
+	CDeviceNameService::Get ()->RemoveDevice ("sndpwm", FALSE);
 
 	// stop PWM device and clock
 	StopPWM ();

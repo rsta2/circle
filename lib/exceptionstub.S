@@ -2,7 +2,7 @@
  * exceptionstub.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2020 R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,6 @@
 #include <circle/sysconfig.h>
 #include <circle/exception.h>
 #include <circle/bcm2835.h>
-#include <circle/bcm2711.h>
-
-#define GICC_AIAR	(ARM_GICC_BASE + 0x020)
-#define GICC_AEOIR	(ARM_GICC_BASE + 0x024)
 
 	.macro	stub name, exception, pc_offset
 
@@ -93,6 +89,8 @@ IRQStub:
 	vstmdb	sp!, {d16-d31}
 #endif
 #endif
+	ldr	r0, =IRQReturnAddress		/* store return address for profiling */
+	str	lr, [r0]
 	bl	InterruptHandler
 #ifdef SAVE_VFP_REGS_ON_IRQ
 #if RASPPI >= 2 && defined (__FAST_MATH__)
@@ -125,25 +123,12 @@ FIQStub:
 	mov	r3, #0
 	mcr	p15, 0, r3, c7, c10, 5		/* PeripheralExit() */
 #endif
-#if RASPPI == 4
-	ldr	r2, =GICC_AIAR			/* read interrupt ID group 0 */
-	ldr	r3, [r2]
-	tst	r3, #0x300			/* check for spurious interrupt (> 256) */
-	bne	2f
-	push	{r3}
-#endif
 	ldr	r2, =FIQData
 	ldr	r1, [r2]			/* get FIQData.pHandler */
 	cmp	r1, #0				/* is handler set? */
 	beq	1f
 	ldr	r0, [r2, #4]			/* get FIQData.pParam */
 	blx	r1				/* call handler (saves r4-r7) */
-#if RASPPI == 4
-	pop	{r3}
-	ldr	r2, =GICC_AEOIR			/* trigger end of interrupt */
-	str	r3, [r2]
-2:
-#endif
 #if RASPPI == 1
 	mov	r3, #0
 	mcr	p15, 0, r3, c7, c10, 4		/* PeripheralEntry() */
@@ -183,7 +168,7 @@ FIQStub:
 #endif
 	ldmfd	sp!, {r0-r3, r12, pc}^		/* restore registers and return */
 
-#if RASPPI == 4
+#if RASPPI >= 4
 
 /*
  * SMC stub
@@ -200,13 +185,19 @@ SMCStub:
 
 	.data
 
+	.align	2
+
 	.globl	FIQData
 FIQData:					/* matches TFIQData: */
 	.word	0				/* pHandler */
 	.word	0				/* pParam */
 	.word	0				/* nFIQNumber */
 
-#if RASPPI == 4
+	.globl	IRQReturnAddress
+IRQReturnAddress:
+	.word	0
+
+#if RASPPI >= 4
 
 	.bss
 

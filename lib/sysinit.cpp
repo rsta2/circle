@@ -28,6 +28,7 @@
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/macros.h>
+#include <circle/util.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
@@ -200,16 +201,11 @@ void sysinit (void)
 	// clear BSS
 	extern unsigned char __bss_start;
 	extern unsigned char _end;
-	for (unsigned char *pBSS = &__bss_start; pBSS < &_end; pBSS++)
-	{
-		*pBSS = 0;
-	}
+	memset (&__bss_start, 0, &_end - &__bss_start);
 
 	CMachineInfo MachineInfo;
 
-#if STDLIB_SUPPORT >= 2
 	CMemorySystem Memory;
-#endif
 
 	// call constructors of static objects
 	extern void (*__init_start) (void);
@@ -224,9 +220,7 @@ void sysinit (void)
 	{
 		if (IsChainBootEnabled ())
 		{
-#if STDLIB_SUPPORT >= 2
 			Memory.Destructor ();
-#endif
 
 			DisableFIQs ();
 

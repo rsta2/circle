@@ -1,8 +1,8 @@
 //
-// serial.h
+/// \file serial.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,24 +27,50 @@
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
+/// \class CSerialDevice
+/// \brief Driver for PL011 UART
+///
+/// \details GPIO pin mapping (chip numbers)
+/// nDevice | TXD    | RXD    | Support
+/// :-----: | :----: | :----: | :------
+/// 0       | GPIO14 | GPIO15 | All boards
+/// ^       | GPIO32 | GPIO33 | Compute Modules
+/// ^       | GPIO36 | GPIO37 | Compute Modules
+/// 1       |        |        | None (AUX)
+/// 2       | GPIO0  | GPIO1  | Raspberry Pi 4 only
+/// 3       | GPIO4  | GPIO5  | Raspberry Pi 4 only
+/// 4       | GPIO8  | GPIO9  | Raspberry Pi 4 only
+/// 5       | GPIO12 | GPIO13 | Raspberry Pi 4 only
+/// GPIO32/33 and GPIO36/37 can be selected with system option SERIAL_GPIO_SELECT.\n
+/// GPIO0/1 are normally reserved for ID EEPROM.\n
+/// Handshake lines CTS and RTS are not supported.
+
+#if RASPPI < 4
+	#define SERIAL_DEVICES		1
+#else
+	#define SERIAL_DEVICES		6
+#endif
+
 #define SERIAL_BUF_SIZE		2048			// must be a power of 2
 #define SERIAL_BUF_MASK		(SERIAL_BUF_SIZE-1)
 
 // serial options
-#define SERIAL_OPTION_ONLCR	(1 << 0)		// translate NL to NL+CR on output (default)
+#define SERIAL_OPTION_ONLCR	(1 << 0)	///< Translate NL to NL+CR on output (default)
 
 // returned from Read/Write as negative value
 #define SERIAL_ERROR_BREAK	1
 #define SERIAL_ERROR_OVERRUN	2
 #define SERIAL_ERROR_FRAMING	3
 
-class CSerialDevice : public CDevice		/// Driver for PL011 UART0 at GPIO14/15
+class CSerialDevice : public CDevice
 {
 public:
 #ifndef USE_RPI_STUB_AT
 	/// \param pInterruptSystem Pointer to interrupt system object (or 0 for polling driver)
 	/// \param bUseFIQ Use FIQ instead of IRQ
-	CSerialDevice (CInterruptSystem *pInterruptSystem = 0, boolean bUseFIQ = FALSE);
+	/// \param nDevice Device number (see: GPIO pin mapping)
+	CSerialDevice (CInterruptSystem *pInterruptSystem = 0, boolean bUseFIQ = FALSE,
+		       unsigned nDevice = 0);
 
 	~CSerialDevice (void);
 #endif
@@ -99,16 +125,18 @@ private:
 	static void InterruptStub (void *pParam);
 
 private:
+	CInterruptSystem *m_pInterruptSystem;
+	boolean m_bUseFIQ;
+	unsigned m_nDevice;
+	uintptr  m_nBaseAddress;
+	boolean  m_bValid;
+
 #if SERIAL_GPIO_SELECT == 14
 	CGPIOPin m_GPIO32;
 	CGPIOPin m_GPIO33;
 #endif
 	CGPIOPin m_TxDPin;
 	CGPIOPin m_RxDPin;
-
-	CInterruptSystem *m_pInterruptSystem;
-	boolean m_bUseFIQ;
-	boolean m_bInterruptConnected;
 
 	u8 m_RxBuffer[SERIAL_BUF_SIZE];
 	volatile unsigned m_nRxInPtr;
@@ -127,6 +155,12 @@ private:
 
 	CSpinLock m_SpinLock;
 	CSpinLock m_LineSpinLock;
+
+	static unsigned s_nInterruptUseCount;
+	static CInterruptSystem *s_pInterruptSystem;
+	static boolean s_bUseFIQ;
+	static volatile u32 s_nInterruptDeviceMask;
+	static CSerialDevice *s_pThis[SERIAL_DEVICES];
 #endif
 };
 

@@ -2,7 +2,7 @@
 // synchronize.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -123,6 +123,13 @@ void SyncDataAndInstructionCache (void);
 
 #define PeripheralEntry()	((void) 0)	// ignored here
 #define PeripheralExit()	((void) 0)
+
+//
+// Wait for interrupt and event
+//
+#define WaitForInterrupt()	asm volatile ("wfi")
+#define WaitForEvent()		asm volatile ("wfe")
+#define SendEvent()		asm volatile ("sev")
 
 #endif
 

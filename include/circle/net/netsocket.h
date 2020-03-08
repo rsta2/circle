@@ -41,7 +41,7 @@ public:
 
 	/// \brief Connect to foreign host/port (TCP), setup foreign host/port address (UDP)
 	/// \param rForeignIP IP address of host to be connected
-	/// \param nOwnPort   Number of port to be connected
+	/// \param nForeignPort   Number of port to be connected
 	/// \return Status (0 success, < 0 on error)
 	virtual int Connect (CIPAddress &rForeignIP, u16 nForeignPort) = 0;
 

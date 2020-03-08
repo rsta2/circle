@@ -23,7 +23,3 @@ put or get files. The client will be normally executed like this:
 "file" is the name of the file to be send to the Raspberry Pi (e.g. kernel.img).
 Alternatively you can use the "get" command to receive a file from the Raspberry
 Pi and save it to the current working directory on your host computer.
-
-Please note that there may be a "Transfer timed out" message on your Raspberry
-Pi on the first "put" command after boot, before the transfer runs and completes
-successfully. This is normal and can be ignored.

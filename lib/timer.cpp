@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 	m_nMinutesDiff (0),
 	m_nMsDelay (200000),
 	m_nusDelay (m_nMsDelay / 1000),
-	m_pPeriodicHandler (0)
+	m_nPeriodicHandlers (0)
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -535,9 +535,9 @@ void CTimer::InterruptHandler (void)
 
 	PollKernelTimers ();
 
-	if (m_pPeriodicHandler != 0)
+	for (unsigned i = 0; i < m_nPeriodicHandlers; i++)
 	{
-		(*m_pPeriodicHandler) ();
+		(*m_pPeriodicHandler[i]) ();
 	}
 }
 
@@ -566,9 +566,14 @@ void CTimer::TuneMsDelay (void)
 
 void CTimer::RegisterPeriodicHandler (TPeriodicTimerHandler *pHandler)
 {
-	assert (m_pPeriodicHandler == 0);
-	m_pPeriodicHandler = pHandler;
-	assert (m_pPeriodicHandler != 0);
+	assert (pHandler != 0);
+
+	assert (m_nPeriodicHandlers < TIMER_MAX_PERIODIC_HANDLERS);
+	m_pPeriodicHandler[m_nPeriodicHandlers] = pHandler;
+
+	DataSyncBarrier ();
+
+	m_nPeriodicHandlers++;
 }
 
 void CTimer::SimpleMsDelay (unsigned nMilliSeconds)

@@ -5,7 +5,7 @@
 // Original development by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,10 +24,11 @@
 #include <circle/util.h>
 #include <assert.h>
 
-CWS28XXStripe::CWS28XXStripe (TWS28XXType Type, unsigned nLEDCount, unsigned nClockSpeed)
+CWS28XXStripe::CWS28XXStripe (TWS28XXType Type, unsigned nLEDCount, unsigned nClockSpeed,
+			      unsigned nSPIDevice)
 :	m_Type (Type),
 	m_nLEDCount (nLEDCount),
-	m_SPIMaster (m_Type == WS2801 ? nClockSpeed : 6400000, 0, 0)
+	m_SPIMaster (m_Type == WS2801 ? nClockSpeed : 6400000, 0, 0, nSPIDevice)
 {
 	assert (m_Type <= WS2812B);
 	assert (m_nLEDCount > 0);

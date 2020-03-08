@@ -2,7 +2,7 @@
 // arphandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,9 @@
 #include <circle/macros.h>
 #include <assert.h>
 
-#define ARP_TIMEOUT_HZ		MSEC2HZ (500)
+// TCP retransmits after 3 seconds, so we finished before
+#define ARP_TIMEOUT_HZ		MSEC2HZ (800)
+#define ARP_MAX_ATTEMPTS	3
 
 #define ARP_LIFETIME_HZ		(600 * HZ)
 
@@ -52,23 +54,29 @@ struct TARPFrame
 }
 PACKED;
 
-CARPHandler::CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer, CNetQueue *pRxQueue)
+CARPHandler::CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer,
+			  CLinkLayer *pLinkLayer, CNetQueue *pRxQueue)
 :	m_pNetConfig (pNetConfig),
 	m_pNetDevLayer (pNetDevLayer),
-	m_pRxQueue (pRxQueue)
+	m_pLinkLayer (pLinkLayer),
+	m_pRxQueue (pRxQueue),
+	m_nEntries (0),
+	m_nTicksLastCleanup (0)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pNetDevLayer != 0);
+	assert (m_pLinkLayer != 0);
 	assert (m_pRxQueue != 0);
-
-	for (unsigned nEntry = 0; nEntry < ARP_MAX_ENTRIES; nEntry++)
-	{
-		m_Entry[nEntry].State = ARPStateFreeSlot;
-	}
 }
 
 CARPHandler::~CARPHandler (void)
 {
+	for (unsigned nEntry = 0; nEntry < m_nEntries; nEntry++)
+	{
+		delete m_Entry[nEntry].pTxQueue;
+		m_Entry[nEntry].pTxQueue = 0;
+	}
+
 	m_pRxQueue = 0;
 	m_pNetDevLayer = 0;
 	m_pNetConfig = 0;
@@ -125,12 +133,66 @@ void CARPHandler::Process (void)
 		}
 	}
 
-	unsigned nTicks = CTimer::Get ()->GetTicks ();
-	if ((nTicks / HZ) % 60 == 0)
+	assert (m_pLinkLayer != 0);
+	assert (m_pNetDevLayer != 0);
+	for (unsigned nEntry = 0; nEntry < m_nEntries; nEntry++)
 	{
+		TARPEntry *pEntry = &m_Entry[nEntry];
+		switch (pEntry->State)
+		{
+		case ARPStateRetryRequest:
+			if (pEntry->nAttempts++ < ARP_MAX_ATTEMPTS)
+			{
+				CIPAddress ForeignIP (pEntry->IPAddress);
+				CMACAddress BroadcastAddress;
+				BroadcastAddress.SetBroadcast ();
+				SendPacket (TRUE, ForeignIP, BroadcastAddress);
+
+				pEntry->State = ARPStateRequestSent;
+
+				pEntry->hTimer = CTimer::Get ()->StartKernelTimer (
+								ARP_TIMEOUT_HZ, TimerHandler,
+								(void *) (uintptr) nEntry, this);
+			}
+			else
+			{
+				assert (pEntry->pTxQueue != 0);
+				while ((nResultLength = pEntry->pTxQueue->Dequeue (Buffer)) != 0)
+				{
+					m_pLinkLayer->ResolveFailed (Buffer, nResultLength);
+				}
+
+				pEntry->State = ARPStateFreeSlot;
+			}
+			break;
+
+		case  ARPStateSendTxQueue:
+			assert (pEntry->pTxQueue != 0);
+			while ((nResultLength = pEntry->pTxQueue->Dequeue (Buffer)) != 0)
+			{
+				TEthernetHeader *pHeader = (TEthernetHeader *) Buffer;
+				memcpy (pHeader->MACReceiver, pEntry->MACAddress,
+					MAC_ADDRESS_SIZE);
+
+				m_pNetDevLayer->Send (Buffer, nResultLength);
+			}
+
+			pEntry->State = ARPStateValid;
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	unsigned nTicks = CTimer::Get ()->GetTicks ();
+	if (nTicks - m_nTicksLastCleanup >= 60*HZ)
+	{
+		m_nTicksLastCleanup = nTicks;
+
 		m_SpinLock.Acquire ();
 
-		for (unsigned nEntry = 0; nEntry < ARP_MAX_ENTRIES; nEntry++)
+		for (unsigned nEntry = 0; nEntry < m_nEntries; nEntry++)
 		{
 			if (   m_Entry[nEntry].State == ARPStateValid
 			    && m_Entry[nEntry].nTicksLastUsed + ARP_LIFETIME_HZ < nTicks)
@@ -143,7 +205,8 @@ void CARPHandler::Process (void)
 	}
 }
 
-boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAddress)
+boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAddress,
+			      const void *pFrame, unsigned nFrameLength)
 {
 	unsigned nFreeSlot = ARP_MAX_ENTRIES;
 
@@ -153,7 +216,7 @@ boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAdd
 	m_SpinLock.Acquire ();
 
 	unsigned nEntry;
-	for (nEntry = 0; nEntry < ARP_MAX_ENTRIES; nEntry++)
+	for (nEntry = 0; nEntry < m_nEntries; nEntry++)
 	{
 		switch (m_Entry[nEntry].State)
 		{
@@ -165,8 +228,13 @@ boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAdd
 			break;
 
 		case ARPStateRequestSent:
+		case ARPStateRetryRequest:
+		case ARPStateSendTxQueue:
 			if (rIPAddress == m_Entry[nEntry].IPAddress)
 			{
+				assert (m_Entry[nEntry].pTxQueue != 0);
+				m_Entry[nEntry].pTxQueue->Enqueue (pFrame, nFrameLength);
+
 				m_Entry[nEntry].nTicksLastUsed = CTimer::Get ()->GetTicks ();
 
 				m_SpinLock.Release ();
@@ -200,12 +268,25 @@ boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAdd
 		}
 	}
 
-	assert (nEntry == ARP_MAX_ENTRIES);
 	if (nFreeSlot == ARP_MAX_ENTRIES)
 	{
-		assert (nOldestEntry < ARP_MAX_ENTRIES);
-		m_Entry[nOldestEntry].State = ARPStateFreeSlot;
-		nFreeSlot = nOldestEntry;
+		if (m_nEntries < ARP_MAX_ENTRIES)
+		{
+			nFreeSlot = m_nEntries;
+			m_Entry[nFreeSlot].State = ARPStateFreeSlot;
+
+			m_Entry[nFreeSlot].pTxQueue = new CNetQueue;
+			assert (m_Entry[nFreeSlot].pTxQueue != 0);
+
+			m_nEntries++;
+		}
+		else
+		{
+			assert (nOldestEntry < m_nEntries);
+			m_Entry[nOldestEntry].State = ARPStateFreeSlot;
+
+			nFreeSlot = nOldestEntry;
+		}
 	}
 	nEntry = nFreeSlot;
 	TARPEntry *pEntry = &m_Entry[nEntry];
@@ -213,9 +294,15 @@ boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAdd
 	pEntry->State = ARPStateRequestSent;
 	rIPAddress.CopyTo (pEntry->IPAddress);
 
+	assert (pEntry->pTxQueue != 0);
+	pEntry->pTxQueue->Enqueue (pFrame, nFrameLength);
+
 	pEntry->nTicksLastUsed = CTimer::Get ()->GetTicks ();
 
-	pEntry->hTimer = CTimer::Get ()->StartKernelTimer (ARP_TIMEOUT_HZ, TimerHandler, (void *) (uintptr) nEntry, this);
+	pEntry->nAttempts = 1;
+
+	pEntry->hTimer = CTimer::Get ()->StartKernelTimer (ARP_TIMEOUT_HZ, TimerHandler,
+							   (void *) (uintptr) nEntry, this);
 
 	m_SpinLock.Release ();
 
@@ -230,9 +317,10 @@ void CARPHandler::ReplyReceived (const CIPAddress &rForeignIP, const CMACAddress
 {
 	m_SpinLock.Acquire ();
 
-	for (unsigned nEntry = 0; nEntry < ARP_MAX_ENTRIES; nEntry++)
+	for (unsigned nEntry = 0; nEntry < m_nEntries; nEntry++)
 	{
-		if (m_Entry[nEntry].State != ARPStateRequestSent)
+		if (   m_Entry[nEntry].State != ARPStateRequestSent
+		    && m_Entry[nEntry].State != ARPStateRetryRequest)
 		{
 			continue;
 		}
@@ -242,7 +330,7 @@ void CARPHandler::ReplyReceived (const CIPAddress &rForeignIP, const CMACAddress
 			CTimer::Get ()->CancelKernelTimer (m_Entry[nEntry].hTimer);
 
 			rForeignMAC.CopyTo (m_Entry[nEntry].MACAddress);
-			m_Entry[nEntry].State = ARPStateValid;
+			m_Entry[nEntry].State = ARPStateSendTxQueue;
 
 			break;
 		}
@@ -257,7 +345,7 @@ void CARPHandler::RequestReceived (const CIPAddress &rForeignIP, const CMACAddre
 
 	unsigned nFreeSlot = ARP_MAX_ENTRIES;
 	unsigned nEntry;
-	for (nEntry = 0; nEntry < ARP_MAX_ENTRIES; nEntry++)
+	for (nEntry = 0; nEntry < m_nEntries; nEntry++)
 	{
 		if (m_Entry[nEntry].State == ARPStateFreeSlot)
 		{
@@ -272,6 +360,18 @@ void CARPHandler::RequestReceived (const CIPAddress &rForeignIP, const CMACAddre
 
 			return;
 		}
+	}
+
+	if (   nFreeSlot == ARP_MAX_ENTRIES
+	    && m_nEntries < ARP_MAX_ENTRIES)
+	{
+		nFreeSlot = m_nEntries;
+		m_Entry[nFreeSlot].State = ARPStateFreeSlot;
+
+		m_Entry[nFreeSlot].pTxQueue = new CNetQueue;
+		assert (m_Entry[nFreeSlot].pTxQueue != 0);
+
+		m_nEntries++;
 	}
 
 	if (nFreeSlot < ARP_MAX_ENTRIES)
@@ -325,13 +425,13 @@ void CARPHandler::TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *p
 	assert (pThis != 0);
 
 	unsigned nEntry = (unsigned) (uintptr) pParam;
-	assert (nEntry < ARP_MAX_ENTRIES);
+	assert (nEntry < pThis->m_nEntries);
 
 	pThis->m_SpinLock.Acquire ();
 
 	if (pThis->m_Entry[nEntry].State == ARPStateRequestSent)
 	{
-		pThis->m_Entry[nEntry].State = ARPStateFreeSlot;
+		pThis->m_Entry[nEntry].State = ARPStateRetryRequest;
 	}
 
 	pThis->m_SpinLock.Release ();

@@ -2,7 +2,7 @@
 // spinlock.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ void CSpinLock::Acquire (void)
 			"bne 1b\n"
 			"dmb\n"
 
-			: : "r" ((uintptr) &m_nLocked)
+			: : "r" ((uintptr) &m_nLocked) : "r1", "r2", "r3"
 		);
 #else
 		// See: ARMv8-A Architecture Reference Manual, Section K10.3.1
@@ -79,7 +79,7 @@ void CSpinLock::Acquire (void)
 			"stxr w3, w2, [x1]\n"
 			"cbnz w3, 1b\n"
 
-			: : "r" ((uintptr) &m_nLocked)
+			: : "r" ((uintptr) &m_nLocked) : "x1", "x2", "x3"
 		);
 #endif
 	}
@@ -102,7 +102,7 @@ void CSpinLock::Release (void)
 			"sev\n"
 #endif
 
-			: : "r" ((uintptr) &m_nLocked)
+			: : "r" ((uintptr) &m_nLocked) : "r1", "r2"
 		);
 #else
 		// See: ARMv8-A Architecture Reference Manual, Section K10.3.2
@@ -111,7 +111,7 @@ void CSpinLock::Release (void)
 			"mov x1, %0\n"
 			"stlr wzr, [x1]\n"
 
-			: : "r" ((uintptr) &m_nLocked)
+			: : "r" ((uintptr) &m_nLocked) : "x1"
 		);
 #endif
 	}

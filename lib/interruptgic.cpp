@@ -4,7 +4,7 @@
 // Driver for the GIC-400 interrupt controller of the Raspberry Pi 4
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -356,7 +356,7 @@ void CInterruptSystem::CallSecureMonitor (u32 nFunction, u32 nParam)
 		"mov	r1, %1\n"
 		"smc	#0\n"
 
-		: : "r" (nFunction), "r" (nParam)
+		: : "r" (nFunction), "r" (nParam) : "r0", "r1"
 	);
 }
 
@@ -370,7 +370,7 @@ void CInterruptSystem::CallSecureMonitor (u32 nFunction, u32 nParam)
 		"mov	x1, %1\n"
 		"smc	#0\n"
 
-		: : "r" (nFunction), "r" (nParam)
+		: : "r" (nFunction), "r" (nParam) : "x0", "x1"
 	);
 }
 

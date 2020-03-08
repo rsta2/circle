@@ -1,10 +1,38 @@
 #!/bin/bash
 
+if [[ ! -r  README.md ]]
+then
+	echo "makedoc must be called from project root!"
+	exit 1
+fi
+
 if [[ $1 != clean ]]
 then
-	cd include
-	doxygen ../Doxyfile
-	cd ..
+	echo "Generating documentation ..."
+	doxygen Doxyfile
+
+	if [[ $? == 0 ]]
+	then
+		if [[ ! -e doc/html/doc ]]
+		then
+			ln -s .. doc/html/doc
+		fi
+		if [[ ! -e doc/html/addon ]]
+		then
+			ln -s ../../addon doc/html/addon
+		fi
+		if [[ ! -e doc/html/sample ]]
+		then
+			ln -s ../../sample doc/html/sample
+		fi
+		if [[ ! -e doc/html/boot ]]
+		then
+			ln -s ../../boot doc/html/boot
+		fi
+
+		echo "Open doc/html/index.html in your web browser!"
+	fi
 else
+	echo "Removing documentation ..."
 	rm -rf doc/html/
 fi

@@ -22,7 +22,7 @@
 #include <circle/util.h>
 #include <assert.h>
 
-u32 CHeapAllocator::s_nBucketSize[] = HEAP_BLOCK_BUCKET_SIZES;
+u32 CHeapAllocator::s_nBucketSize[] = { HEAP_BLOCK_BUCKET_SIZES };
 
 CHeapAllocator::CHeapAllocator (const char *pHeapName)
 :	m_pHeapName (pHeapName),
@@ -32,7 +32,13 @@ CHeapAllocator::CHeapAllocator (const char *pHeapName)
 {
 	memset (m_Bucket, 0, sizeof m_Bucket);
 
-	for (unsigned i = 0; i < HEAP_BLOCK_BUCKETS; i++)
+	unsigned nBuckets = sizeof s_nBucketSize / sizeof s_nBucketSize[0];
+	if (nBuckets > HEAP_BLOCK_MAX_BUCKETS)
+	{
+		nBuckets = HEAP_BLOCK_MAX_BUCKETS;
+	}
+
+	for (unsigned i = 0; i < nBuckets; i++)
 	{
 		m_Bucket[i].nSize = s_nBucketSize[i];
 	}

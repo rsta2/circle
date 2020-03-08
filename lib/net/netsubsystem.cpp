@@ -2,7 +2,7 @@
 // netsubsystem.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,8 +25,10 @@
 
 CNetSubSystem *CNetSubSystem::s_pThis = 0;
 
-CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8 *pDefaultGateway, const u8 *pDNSServer)
-:	m_NetDevLayer (&m_Config),
+CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8 *pDefaultGateway,
+			      const u8 *pDNSServer, const char *pHostname)
+:	m_Hostname (pHostname != 0 ? pHostname : ""),
+	m_NetDevLayer (&m_Config),
 	m_LinkLayer (&m_Config, &m_NetDevLayer),
 	m_NetworkLayer (&m_Config, &m_LinkLayer),
 	m_TransportLayer (&m_Config, &m_NetworkLayer),
@@ -80,6 +82,8 @@ boolean CNetSubSystem::Initialize (boolean bWaitForActivate)
 		return FALSE;
 	}
 
+	m_LinkLayer.AttachLayer (&m_NetworkLayer);
+
 	if (!m_TransportLayer.Initialize ())
 	{
 		return FALSE;
@@ -90,7 +94,7 @@ boolean CNetSubSystem::Initialize (boolean bWaitForActivate)
 	if (m_bUseDHCP)
 	{
 		assert (m_pDHCPClient == 0);
-		m_pDHCPClient = new CDHCPClient (this);
+		m_pDHCPClient = new CDHCPClient (this, m_Hostname);
 		assert (m_pDHCPClient != 0);
 	}
 
