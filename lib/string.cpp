@@ -2,7 +2,7 @@
 // string.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // ftoa() inspired by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
@@ -233,6 +233,14 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				continue;
 			}
 
+			boolean bAlternate = FALSE;
+			if (*pFormat == '#')
+			{
+				bAlternate = TRUE;
+
+				pFormat++;
+			}
+
 			boolean bLeft = FALSE;
 			if (*pFormat == '-')
 			{
@@ -391,6 +399,10 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				break;
 
 			case 'o':
+				if (bAlternate)
+				{
+					PutChar ('0');
+				}
 				nBase = 8;
 				goto FormatNumber;
 
@@ -422,6 +434,10 @@ void CString::FormatV (const char *pFormat, va_list Args)
 			case 'x':
 			case 'X':
 			case 'p':
+				if (bAlternate)
+				{
+					PutString (*pFormat == 'X' ? "0X" : "0x");
+				}
 				nBase = 16;
 				goto FormatNumber;
 
