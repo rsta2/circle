@@ -12,6 +12,7 @@
 	using ALT3 function to activate the required routing
  */
 
+#ifndef __circle__
 #include "u.h"
 #include "../port/lib.h"
 #include "../port/error.h"
@@ -20,6 +21,9 @@
 #include "fns.h"
 #include "io.h"
 #include "../port/sd.h"
+#else
+#include "p9compat.h"
+#endif
 
 #define EMMCREGS	(VIRTIO+0x300000)
 
@@ -178,9 +182,9 @@ static void mmcinterrupt(Ureg*, void*);
 static void
 WR(int reg, u32int val)
 {
-	u32int *r = (u32int*)EMMCREGS;
+	volatile u32int *r = (u32int*)EMMCREGS;
 
-	if(0)print("WR %2.2ux %ux\n", reg<<2, val);
+	if(0)print("WR %2.2x %x\n", reg<<2, val);
 	microdelay(emmc.fastclock? 2 : 20);
 	coherence();
 	r[reg] = val;
@@ -200,7 +204,7 @@ clkdiv(uint d)
 static void
 emmcclk(uint freq)
 {
-	u32int *r;
+	volatile u32int *r;
 	uint div;
 	int i;
 
@@ -220,21 +224,21 @@ emmcclk(uint freq)
 }
 
 static int
-datadone(void*)
+datadone(void*dummy)
 {
 	int i;
 
-	u32int *r = (u32int*)EMMCREGS;
+	volatile u32int *r = (u32int*)EMMCREGS;
 	i = r[Interrupt];
 	return i & (Datadone|Err);
 }
 
 static int
-cardintready(void*)
+cardintready(void*dummy)
 {
 	int i;
 
-	u32int *r = (u32int*)EMMCREGS;
+	volatile u32int *r = (u32int*)EMMCREGS;
 	i = r[Interrupt];
 	return i & Cardintr;
 }
@@ -242,7 +246,7 @@ cardintready(void*)
 static int
 emmcinit(void)
 {
-	u32int *r;
+	volatile u32int *r;
 	ulong clk;
 
 	clk = getclkrate(ClkEmmc);
@@ -252,7 +256,7 @@ emmcinit(void)
 	}
 	emmc.extclk = clk;
 	r = (u32int*)EMMCREGS;
-	if(0)print("emmc control %8.8ux %8.8ux %8.8ux\n",
+	if(0)print("emmc control %8.8x %8.8x %8.8x\n",
 		r[Control0], r[Control1], r[Control2]);
 	WR(Control1, Srsthc);
 	delay(10);
@@ -267,7 +271,7 @@ emmcinit(void)
 static int
 emmcinquiry(char *inquiry, int inqlen)
 {
-	u32int *r;
+	volatile u32int *r;
 	uint ver;
 
 	r = (u32int*)EMMCREGS;
@@ -290,7 +294,7 @@ emmcenable(void)
 int
 sdiocardintr(int wait)
 {
-	u32int *r;
+	volatile u32int *r;
 	int i;
 
 	r = (u32int*)EMMCREGS;
@@ -308,7 +312,7 @@ sdiocardintr(int wait)
 static int
 emmccmd(u32int cmd, u32int arg, u32int *resp)
 {
-	u32int *r;
+	volatile u32int *r;
 	u32int c;
 	int i;
 	ulong now;
@@ -337,7 +341,7 @@ emmccmd(u32int cmd, u32int arg, u32int *resp)
 		emmcclk(Initfreq);
 	}
 	if(r[Status] & Cmdinhibit){
-		print("emmccmd: need to reset Cmdinhibit intr %ux stat %ux\n",
+		print("emmccmd: need to reset Cmdinhibit intr %x stat %x\n",
 			r[Interrupt], r[Status]);
 		WR(Control1, r[Control1] | Srstcmd);
 		while(r[Control1] & Srstcmd)
@@ -347,7 +351,7 @@ emmccmd(u32int cmd, u32int arg, u32int *resp)
 	}
 	if((r[Status] & Datinhibit) &&
 	   ((c & Isdata) || (c & Respmask) == Resp48busy)){
-		print("emmccmd: need to reset Datinhibit intr %ux stat %ux\n",
+		print("emmccmd: need to reset Datinhibit intr %x stat %x\n",
 			r[Interrupt], r[Status]);
 		WR(Control1, r[Control1] | Srstdata);
 		while(r[Control1] & Srstdata)
@@ -358,7 +362,7 @@ emmccmd(u32int cmd, u32int arg, u32int *resp)
 	WR(Arg1, arg);
 	if((i = (r[Interrupt] & ~Cardintr)) != 0){
 		if(i != Cardinsert)
-			print("emmc: before command, intr was %ux\n", i);
+			print("emmc: before command, intr was %x\n", i);
 		WR(Interrupt, i);
 	}
 	WR(Cmdtm, c);
@@ -368,7 +372,7 @@ emmccmd(u32int cmd, u32int arg, u32int *resp)
 			break;
 	if((i&(Cmddone|Err)) != Cmddone){
 		if((i&~(Err|Cardintr)) != Ctoerr)
-			print("emmc: cmd %ux arg %ux error intr %ux stat %ux\n", c, arg, i, r[Status]);
+			print("emmc: cmd %x arg %x error intr %x stat %x\n", c, arg, i, r[Status]);
 		WR(Interrupt, i);
 		if(r[Status]&Cmdinhibit){
 			WR(Control1, r[Control1]|Srstcmd);
@@ -400,7 +404,7 @@ emmccmd(u32int cmd, u32int arg, u32int *resp)
 		if((i & Datadone) == 0)
 			print("emmcio: no Datadone after CMD%d\n", cmd);
 		if(i & Err)
-			print("emmcio: CMD%d error interrupt %ux\n",
+			print("emmcio: CMD%d error interrupt %x\n",
 				cmd, r[Interrupt]);
 		WR(Interrupt, i);
 	}
@@ -451,7 +455,7 @@ emmccmd(u32int cmd, u32int arg, u32int *resp)
 	return 0;
 }
 
-void
+static void
 emmciosetup(int write, void *buf, int bsize, int bcount)
 {
 	USED(write);
@@ -462,7 +466,7 @@ emmciosetup(int write, void *buf, int bsize, int bcount)
 static void
 emmcio(int write, uchar *buf, int len)
 {
-	u32int *r;
+	volatile u32int *r;
 	int i;
 
 	r = (u32int*)EMMCREGS;
@@ -474,10 +478,10 @@ emmcio(int write, uchar *buf, int len)
 	}
 	if(write)
 		dmastart(DmaChanEmmc, DmaDevEmmc, DmaM2D,
-			buf, &r[Data], len);
+			buf, (void *) &r[Data], len);
 	else
 		dmastart(DmaChanEmmc, DmaDevEmmc, DmaD2M,
-			&r[Data], buf, len);
+			(void *) &r[Data], buf, len);
 	if(dmawait(DmaChanEmmc) < 0)
 		error(Eio);
 	if(!write)
@@ -486,13 +490,13 @@ emmcio(int write, uchar *buf, int len)
 	tsleep(&emmc.r, datadone, 0, 3000);
 	i = r[Interrupt]&~Cardintr;
 	if((i & Datadone) == 0){
-		print("emmcio: %d timeout intr %ux stat %ux\n",
+		print("emmcio: %d timeout intr %x stat %x\n",
 			write, i, r[Status]);
 		WR(Interrupt, i);
 		error(Eio);
 	}
 	if(i & Err){
-		print("emmcio: %d error intr %ux stat %ux\n",
+		print("emmcio: %d error intr %x stat %x\n",
 			write, r[Interrupt], r[Status]);
 		WR(Interrupt, i);
 		error(Eio);
@@ -504,9 +508,9 @@ emmcio(int write, uchar *buf, int len)
 }
 
 static void
-mmcinterrupt(Ureg*, void*)
+mmcinterrupt(Ureg*regs, void*param)
 {
-	u32int *r;
+	volatile u32int *r;
 	int i;
 
 	r = (u32int*)EMMCREGS;
