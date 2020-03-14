@@ -1,0 +1,29 @@
+README
+
+This sample uses the on-board Wi-Fi device of the Raspberry Pi 3, 4 and Zero W
+to connect to a Wi-Fi network and to update the system time from a NTP server.
+Currently only open Wi-Fi networks (without authentication) can be joined. The
+Wi-Fi driver has been ported from the Plan 9 operating system.
+
+You have to update the ESSID of your Wi-Fi network in kernel.cpp before build.
+Beside the main Circle libraries and the wifi library, the library in
+addon/fatfs/ is needed and must be made, before the sample can be built.
+
+You have to provide the following firmware files for the different Wi-Fi
+controllers of the Raspberry Pi:
+
+	brcmfmac43430-sdio.txt
+	brcmfmac43430-sdio.bin
+	brcmfmac43455-sdio.bin
+	brcmfmac43455-sdio.clm_blob
+	brcmfmac43455-sdio.txt
+
+These files can be found in the directory /lib/firmware/brcm of a Raspbian
+distribution and must be copied into the directory /firmware of an USB flash
+drive (with FAT partition). This drive must be connected to your Raspberry Pi,
+which is used for the test. Please note that reading the firmware files from the
+SD card is currently not supported.
+
+This is a development version of the driver and sample, which has known issues.
+For example there is no error recovery. The system may halt with a failed
+assertion in case a Wi-Fi network cannot be joined.
