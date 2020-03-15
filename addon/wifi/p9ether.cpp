@@ -2,17 +2,16 @@
 #include <circle/util.h>
 #include <assert.h>
 
-Block *allocb (size_t size)		// TODO: use single new
+Block *allocb (size_t size)
 {
 	static const size_t maxhdrsize = 64;
 
-	Block *b = new Block;
+	size += sizeof (Block) + maxhdrsize;
+
+	Block *b = (Block *) new uchar[size];
 	assert (b != 0);
 
-	size += maxhdrsize;
-
-	b->buf = new uchar[size];
-	assert (b->buf != 0);
+	b->buf = b->data;
 
 	b->next = 0;
 	b->lim = b->buf + size;
@@ -24,8 +23,8 @@ Block *allocb (size_t size)		// TODO: use single new
 
 void freeb (Block *b)
 {
-	delete b->buf;
-	delete b;
+	uchar *p = (uchar *) b;
+	delete [] p;
 }
 
 Block *copyblock (Block *b, size_t size)

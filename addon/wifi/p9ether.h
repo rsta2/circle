@@ -18,6 +18,7 @@ typedef struct Block
 	uchar *lim;
 	uchar *wp;
 	uchar *rp;
+	uchar data[0];
 #define BLEN(b)		((b)->wp - (b)->rp)
 }
 Block;
