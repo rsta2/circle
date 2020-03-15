@@ -1,6 +1,8 @@
 #ifndef _p9proc_h
 #define _p9proc_h
 
+#include "p9error.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,8 +43,11 @@ extern struct up_t
 	Rendez sleep;
 	const char *errstr;
 	char genbuf[1000];
+	struct error_stack_t errstack;
 }
 *up;
+
+void p9proc_init (void);
 
 #ifdef __cplusplus
 }

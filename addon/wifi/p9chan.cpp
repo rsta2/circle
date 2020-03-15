@@ -11,6 +11,7 @@ Chan *namec (const char *name, unsigned func, unsigned flags, unsigned opt)
 	assert (c != 0);
 
 	c->type = 0;
+	c->open = 0;
 
 	assert (s_pPath != 0);
 	CString Path;

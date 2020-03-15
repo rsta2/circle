@@ -98,12 +98,17 @@ public:
 
 	void Run (void)
 	{
+		m_errstack.stackptr = ERROR_STACK_SIZE;
+		SetUserData (&m_errstack);
+
 		(*m_procfn) (m_param);
 	}
 
 private:
 	void (*m_procfn) (void *param);
 	void *m_param;
+
+	struct error_stack_t m_errstack;
 };
 
 void kproc (const char *name, void (*func) (void *), void *parm)
@@ -113,3 +118,31 @@ void kproc (const char *name, void (*func) (void *), void *parm)
 
 static struct up_t upstruct;
 struct up_t *up = &upstruct;
+
+static struct error_stack_t *current_error_stack = 0;
+
+void task_switch_handler (CTask *pTask)
+{
+	assert (pTask != 0);
+	current_error_stack = (struct error_stack_t *) pTask->GetUserData ();
+	if (current_error_stack == 0)
+	{
+		current_error_stack = &up->errstack;
+	}
+}
+
+void p9proc_init (void)
+{
+	up->errstr = "";
+
+	up->errstack.stackptr = ERROR_STACK_SIZE;
+	current_error_stack = &up->errstack;
+	CScheduler::Get ()->GetCurrentTask ()->SetUserData (&up->errstack);
+
+	CScheduler::Get ()->RegisterTaskSwitchHandler (task_switch_handler);
+}
+
+struct error_stack_t *get_error_stack (void)
+{
+	return current_error_stack;
+}

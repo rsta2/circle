@@ -74,6 +74,7 @@ boolean CBcm4343Device::Initialize (void)
 {
 	p9arch_init ();
 	p9chan_init (m_FirmwarePath);
+	p9proc_init ();
 
 	ether4330link ();
 	assert (s_pEtherPnpHandler != 0);
@@ -81,6 +82,11 @@ boolean CBcm4343Device::Initialize (void)
 
 	s_EtherDevice.oq = new Queue;
 	memset (s_EtherDevice.oq, 0, sizeof *s_EtherDevice.oq);
+
+	if (waserror ())
+	{
+		return FALSE;
+	}
 
 	assert (s_EtherDevice.attach != 0);
 	(*s_EtherDevice.attach) (&s_EtherDevice);
@@ -97,6 +103,8 @@ boolean CBcm4343Device::Initialize (void)
 	(*s_EtherDevice.ctl) (&s_EtherDevice, (const char *) m_ESSIDCmd, m_ESSIDCmd.GetLength ());
 
 	AddNetDevice ();
+
+	poperror ();
 
 	return TRUE;
 }
@@ -121,8 +129,15 @@ boolean CBcm4343Device::SendFrame (const void *pBuffer, unsigned nLength)
 	assert (s_EtherDevice.oq != 0);
 	qpass (s_EtherDevice.oq, pBlock);
 
+	if (waserror ())
+	{
+		return FALSE;
+	}
+
 	assert (s_EtherDevice.transmit != 0);
 	(*s_EtherDevice.transmit) (&s_EtherDevice);
+
+	poperror ();
 
 	return TRUE;
 }
