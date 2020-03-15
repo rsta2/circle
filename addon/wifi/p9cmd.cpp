@@ -3,20 +3,23 @@
 #include <circle/string.h>
 #include <assert.h>
 
-void cmderror (Cmdbuf *cb, const char *err)	// TODO
+void cmderror (Cmdbuf *cb, const char *err)
 {
-	CString Cmd;
-	for (unsigned i = 0; i < cb->argc; i++)
+	if (cb->argc > 0)
 	{
-		if (i > 0)
+		CString Cmd;
+		for (unsigned i = 0; i < cb->argc; i++)
 		{
-			Cmd.Append (" ");
+			if (i > 0)
+			{
+				Cmd.Append (" ");
+			}
+
+			Cmd.Append (cb->f[i]);
 		}
 
-		Cmd.Append (cb->f[i]);
+		print ("%s\n", (const char *) Cmd);
 	}
-
-	print ("%s\n", (const char *) Cmd);
 
 	error (err);
 }
