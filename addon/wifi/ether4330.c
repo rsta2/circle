@@ -1889,7 +1889,7 @@ gettlv(uchar *p, uchar *ep, int tag)
 static void
 addscan(Block *bp, uchar *p, int len)
 {
-	char bssid[24], ssid[20];
+	char bssid[25], ssid[20];
 	char *auth, *auth2;
 	uchar *t, *et;
 	int ielen, ssidlen;
@@ -1903,7 +1903,7 @@ addscan(Block *bp, uchar *p, int len)
 	strncpy(ssid, (const char *) p+19, ssidlen);
 	ssid[ssidlen] = '\0';
 	bp->wp = (uchar*)seprint((char*)bp->wp, (char*)bp->lim,
-		"ssid=%s;signal=%d;noise=%d;chan=%d",
+		"ssid=%s%s;signal=%d;noise=%d;chan=%d",
 		ssid, bssid,
 		(short)get2(p+78), (signed char)p[80],
 		get2(p+72) & 0xF);
