@@ -123,7 +123,35 @@ uint nhgetl (const void *p)
 
 int parseether (uchar *addr, const char *str)
 {
-	assert (0);			// TODO
+	for (unsigned i = 1; i <= 6; i++)
+	{
+		char buf[3], *p = buf;
 
-	return 0;
+		if (*str == '\0')
+		{
+			return -1;
+		}
+		*p++ = *str++;
+
+		if (*str == '\0')
+		{
+			return -1;
+		}
+		*p++ = *str++;
+
+		if (i < 6 && *str == ':')
+		{
+			str++;
+		}
+		*p = '\0';
+
+		char *end = 0;
+		*addr++ = (uchar) strtoul (buf, &end, 16);
+		if (end != 0 && *end != '\0')
+		{
+			return -1;
+		}
+	}
+
+	return *str == '\0' ? 0 : -1;
 }
