@@ -25,5 +25,3 @@ which is used for the test. Please note that reading the firmware files from the
 SD card is currently not supported.
 
 This is a development version of the driver and sample, which has known issues.
-For example there is no error recovery. The system may halt with a failed
-assertion in case a Wi-Fi network cannot be joined.
