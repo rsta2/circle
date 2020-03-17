@@ -34,6 +34,7 @@
 #include <circle/usb/usbhcidevice.h>
 #include <fatfs/ff.h>
 #include <wifi/bcm4343.h>
+#include <wifi/hostap/wpa_supplicant/wpasupplicant.h>
 #include <circle/net/netsubsystem.h>
 #include <circle/types.h>
 
@@ -71,6 +72,7 @@ private:
 	FATFS			m_FileSystem;
 	CBcm4343Device		m_WiFi;
 	CNetSubSystem		m_Net;
+	CWPASupplicant		m_WPASupplicant;
 };
 
 #endif

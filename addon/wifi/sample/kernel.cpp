@@ -20,14 +20,9 @@
 #include "kernel.h"
 #include <circle/net/ntpdaemon.h>
 
-// network to join
-#define ESSID		"TEST"
-#define AUTH_MODE	CBcm4343Device::AuthModeNone
-#define AUTH_KEY	"mykey"
-
-// firmware files must be provided here
-#define FIRMWARE_DRIVE	"USB:"
-#define FIRMWARE_PATH	FIRMWARE_DRIVE "/firmware/"
+#define DRIVE		"USB:"
+#define FIRMWARE_PATH	DRIVE "/firmware/"		// firmware files must be provided here
+#define CONFIG_FILE	DRIVE "/wpa_supplicant.conf"
 
 static const char FromKernel[] = "kernel";
 
@@ -37,7 +32,8 @@ CKernel::CKernel (void)
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer),
 	m_WiFi (FIRMWARE_PATH),
-	m_Net (0, 0, 0, 0, DEFAULT_HOSTNAME, NetDeviceTypeWLAN)
+	m_Net (0, 0, 0, 0, DEFAULT_HOSTNAME, NetDeviceTypeWLAN),
+	m_WPASupplicant (CONFIG_FILE)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -88,10 +84,10 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		if (f_mount (&m_FileSystem, FIRMWARE_DRIVE, 1) != FR_OK)
+		if (f_mount (&m_FileSystem, DRIVE, 1) != FR_OK)
 		{
 			m_Logger.Write (FromKernel, LogError,
-					"Cannot mount drive: %s", FIRMWARE_DRIVE);
+					"Cannot mount drive: %s", DRIVE);
 
 			bOK = FALSE;
 		}
@@ -99,15 +95,17 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		m_WiFi.SetESSID (ESSID);
-		m_WiFi.SetAuth (AUTH_MODE, AUTH_KEY);
-
 		bOK = m_WiFi.Initialize ();
 	}
 
 	if (bOK)
 	{
 		bOK = m_Net.Initialize (FALSE);
+	}
+
+	if (bOK)
+	{
+		bOK = m_WPASupplicant.Initialize ();
 	}
 
 	return bOK;
