@@ -34,16 +34,6 @@ public:
 
 	TNetDeviceType GetType (void)	{ return NetDeviceTypeWLAN; }
 
-	void SetESSID (const char *pESSID);			// network to join
-
-	enum TAuthMode
-	{
-		AuthModeNone,
-		AuthModeWPA,
-		AuthModeWPA2
-	};
-	void SetAuth (TAuthMode Mode, const char *pKey = 0);	// pKey is ASCII, not hex
-
 	boolean Initialize (void);
 
 	const CMACAddress *GetMACAddress (void) const;
@@ -56,6 +46,8 @@ public:
 	// returns TRUE if PHY link is up
 	boolean IsLinkUp (void);
 
+	boolean Control (const char *pCommand);
+
 	void DumpStatus (void);
 
 public:
@@ -63,10 +55,6 @@ public:
 
 private:
 	CString m_FirmwarePath;
-
-	CString m_ESSIDCmd;
-	TAuthMode m_AuthMode;
-	CString m_AuthCmd;
 
 	CMACAddress m_MACAddress;
 

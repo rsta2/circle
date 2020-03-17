@@ -29,45 +29,19 @@ static Ether s_EtherDevice;
 CBcm4343Device *CBcm4343Device::s_pThis = 0;
 
 CBcm4343Device::CBcm4343Device (const char *pFirmwarePath)
-:	m_FirmwarePath (pFirmwarePath),
-	m_AuthMode (AuthModeNone)
+:	m_FirmwarePath (pFirmwarePath)
 {
 	s_pThis = this;
 }
 
 CBcm4343Device::~CBcm4343Device (void)
 {
+	assert (s_EtherDevice.shutdown != 0);
+	(*s_EtherDevice.shutdown) (&s_EtherDevice);
+
 	delete s_EtherDevice.oq;
 
 	s_pThis = 0;
-}
-
-void CBcm4343Device::SetESSID (const char *pESSID)
-{
-	m_ESSIDCmd.Format ("essid %s", pESSID);
-}
-
-void CBcm4343Device::SetAuth (TAuthMode Mode, const char *pKey)
-{
-	m_AuthMode = Mode;
-	if (Mode == AuthModeNone)
-	{
-		return;
-	}
-
-	assert (pKey != 0);
-	size_t nLength = strlen (pKey);
-	assert (8 <= nLength && nLength <= 63);
-
-	m_AuthCmd.Format ("auth %02X%02X", Mode == AuthModeWPA ? 0xDD : 0x30, nLength);
-
-	while (nLength-- > 0)
-	{
-		CString Number;
-		Number.Format ("%02X", (unsigned) *pKey++);
-
-		m_AuthCmd.Append (Number);
-	}
 }
 
 boolean CBcm4343Device::Initialize (void)
@@ -92,15 +66,6 @@ boolean CBcm4343Device::Initialize (void)
 	(*s_EtherDevice.attach) (&s_EtherDevice);
 
 	m_MACAddress.Set (s_EtherDevice.ea);
-
-	assert (s_EtherDevice.ctl != 0);
-	if (m_AuthMode != AuthModeNone)
-	{
-		(*s_EtherDevice.ctl) (&s_EtherDevice, (const char *) m_AuthCmd,
-				      m_AuthCmd.GetLength ());
-	}
-
-	(*s_EtherDevice.ctl) (&s_EtherDevice, (const char *) m_ESSIDCmd, m_ESSIDCmd.GetLength ());
 
 	AddNetDevice ();
 
@@ -161,6 +126,23 @@ boolean CBcm4343Device::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 
 boolean CBcm4343Device::IsLinkUp (void)
 {
+	return TRUE;
+}
+
+boolean CBcm4343Device::Control (const char *pCommand)
+{
+	assert (pCommand != 0);
+
+	if (waserror ())
+	{
+		return FALSE;
+	}
+
+	assert (s_EtherDevice.ctl != 0);
+	(*s_EtherDevice.ctl) (&s_EtherDevice, pCommand, 0);
+
+	poperror ();
+
 	return TRUE;
 }
 

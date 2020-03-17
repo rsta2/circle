@@ -79,6 +79,10 @@ public:
 	/// \return The speed of the PHY link, if it is up
 	virtual TNetDeviceSpeed GetLinkSpeed (void)	{ return NetDeviceSpeedUnknown; }
 
+	/// \param pCommand Device specific control command (0-terminated)
+	/// \return Operation successful?
+	virtual boolean Control (const char *pCommand)	{ return FALSE; }
+
 	/// \brief Update device settings according to PHY status
 	/// \return FALSE if not supported
 	/// \note This is called continuously every 2 seconds by the net PHY task
