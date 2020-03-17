@@ -87,6 +87,8 @@ int return0 (void *param)
 	return 0;
 }
 
+static struct error_stack_t *current_error_stack = 0;
+
 class CKProc : public CTask
 {
 public:
@@ -99,6 +101,7 @@ public:
 	void Run (void)
 	{
 		m_errstack.stackptr = ERROR_STACK_SIZE;
+		current_error_stack = &m_errstack;
 		SetUserData (&m_errstack);
 
 		(*m_procfn) (m_param);
@@ -118,8 +121,6 @@ void kproc (const char *name, void (*func) (void *), void *parm)
 
 static struct up_t upstruct;
 struct up_t *up = &upstruct;
-
-static struct error_stack_t *current_error_stack = 0;
 
 void task_switch_handler (CTask *pTask)
 {
