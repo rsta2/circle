@@ -32,6 +32,8 @@ public:
 	CBcm4343Device (const char *pFirmwarePath);		// e.g. "USB:/firmware/"
 	~CBcm4343Device (void);
 
+	TNetDeviceType GetType (void)	{ return NetDeviceTypeWLAN; }
+
 	void SetESSID (const char *pESSID);			// network to join
 
 	enum TAuthMode

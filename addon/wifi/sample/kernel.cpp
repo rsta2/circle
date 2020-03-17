@@ -36,7 +36,8 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer),
-	m_WiFi (FIRMWARE_PATH)
+	m_WiFi (FIRMWARE_PATH),
+	m_Net (0, 0, 0, 0, DEFAULT_HOSTNAME, NetDeviceTypeWLAN)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }

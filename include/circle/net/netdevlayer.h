@@ -2,7 +2,7 @@
 // netdevlayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@
 class CNetDeviceLayer
 {
 public:
-	CNetDeviceLayer (CNetConfig *pNetConfig);
+	CNetDeviceLayer (CNetConfig *pNetConfig, TNetDeviceType DeviceType);
 	~CNetDeviceLayer (void);
 
 	boolean Initialize (boolean bWaitForActivate);
@@ -42,6 +42,7 @@ public:
 	boolean Receive (void *pBuffer, unsigned *pResultLength);
 
 private:
+	TNetDeviceType m_DeviceType;
 	CNetConfig *m_pNetConfig;
 	CNetDevice *m_pDevice;
 
