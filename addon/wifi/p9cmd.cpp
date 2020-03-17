@@ -24,7 +24,7 @@ void cmderror (Cmdbuf *cb, const char *err)
 	error (err);
 }
 
-Cmdbuf *parsecmd (const void *str, long n)	// TODO: allow "param"
+Cmdbuf *parsecmd (const void *str, long n)
 {
 	Cmdbuf *pCmdbuf = (Cmdbuf *) malloc (sizeof (Cmdbuf));
 	assert (pCmdbuf != 0);
@@ -42,6 +42,12 @@ Cmdbuf *parsecmd (const void *str, long n)	// TODO: allow "param"
 		if (p == 0)
 		{
 			break;
+		}
+
+		CString Arg (p);
+		if (Arg.Replace ("\\x20", " ") > 0)
+		{
+			strcpy (p, Arg);
 		}
 
 		pCmdbuf->argc++;
