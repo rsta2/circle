@@ -1414,13 +1414,16 @@ static void
 linkdown(Ctlr *ctl)
 {
 	Ether *edev;
+#ifndef __circle__
 	Netfile *f;
 	int i;
+#endif
 
 	edev = ctl->edev;
 	if(edev == nil || ctl->status != Connected)
 		return;
 	ctl->status = Disconnected;
+#ifndef __circle__
 	/* send eof to aux/wpa */
 	for(i = 0; i < edev->nfile; i++){
 		f = edev->f[i];
@@ -1428,6 +1431,7 @@ linkdown(Ctlr *ctl)
 			continue;
 		qwrite(f->in, 0, 0);
 	}
+#endif
 }
 
 /*
