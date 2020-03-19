@@ -122,7 +122,7 @@ TShutdownMode CKernel::Run (void)
 	m_Timer.SetTimeZone (0*60);
 	new CNTPDaemon ("pool.ntp.org", &m_Net);
 
-	m_Scheduler.Sleep (20);
+	m_Scheduler.Sleep (120);
 
 	return ShutdownHalt;
 }
