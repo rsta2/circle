@@ -222,6 +222,7 @@ enum{
 	CMtxkey,
 	CMdebug,
 	CMjoin,
+	CMescan,
 };
 
 static Cmdtab cmds[] = {
@@ -241,6 +242,7 @@ static Cmdtab cmds[] = {
 	{CMtxkey,	"txkey", 3},
 	{CMdebug,	"debug", 2},
 	{CMjoin,	"join", 5},
+	{CMescan,	"escan", 2},
 };
 
 typedef struct Sdpcm Sdpcm;
@@ -293,6 +295,7 @@ static void etherbcmintr(void *);
 static void bcmevent(Ctlr*, uchar*, int);
 static void wlscanresult(Ether*, uchar*, int);
 static void wlsetvar(Ctlr*, char*, void*, int);
+static void etherbcmscan(void *a, uint secs);
 
 static uchar*
 put2(uchar *p, short v)
@@ -312,11 +315,15 @@ put4(uchar *p, long v)
 	return p + 4;
 }
 
+#ifndef __circle__
+
 static ushort
 get2(uchar *p)
 {
 	return p[0] | p[1]<<8;
 }
+
+#endif
 
 static ulong
 get4(uchar *p)
@@ -1870,6 +1877,8 @@ wlscanstart(Ctlr *ctl)
 	wlsetvar(ctl, "escan", params, sizeof params);
 }
 
+#ifndef __circle__
+
 static uchar*
 gettlv(uchar *p, uchar *ep, int tag)
 {
@@ -1972,6 +1981,16 @@ wlscanresult(Ether *edev, uchar *p, int len)
 		freeb(bp);
 	ctlr->scanb = nil;
 }
+
+#else
+
+static void
+wlscanresult(Ether *edev, uchar *p, int len)
+{
+	etherscanresult(edev, p, len);
+}
+
+#endif
 
 static void
 lproc(void *a)
@@ -2337,6 +2356,9 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 		if(wpaparsekey(&ctlr->keys[0], &iv, cb->f[2]))
 			cmderror(cb, "bad wpa key");
 		wlwpakey(ctlr, ct->index, iv, ea);
+		break;
+	case CMescan:
+		etherbcmscan(edev, atoi(cb->f[1]));
 		break;
 	case CMdebug:
 		iodebug = atoi(cb->f[1]);

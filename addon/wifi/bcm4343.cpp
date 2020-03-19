@@ -129,9 +129,17 @@ boolean CBcm4343Device::IsLinkUp (void)
 	return TRUE;
 }
 
-boolean CBcm4343Device::Control (const char *pCommand)
+boolean CBcm4343Device::Control (const char *pFormat, ...)
 {
-	assert (pCommand != 0);
+	assert (pFormat != 0);
+
+	va_list var;
+	va_start (var, pFormat);
+
+	CString Command;
+	Command.FormatV (pFormat, var);
+
+	va_end (var);
 
 	if (waserror ())
 	{
@@ -139,9 +147,26 @@ boolean CBcm4343Device::Control (const char *pCommand)
 	}
 
 	assert (s_EtherDevice.ctl != 0);
-	(*s_EtherDevice.ctl) (&s_EtherDevice, pCommand, 0);
+	(*s_EtherDevice.ctl) (&s_EtherDevice, (const char *) Command, 0);
 
 	poperror ();
+
+	return TRUE;
+}
+
+boolean CBcm4343Device::ReceiveScanResult (void *pBuffer, unsigned *pResultLength)
+{
+	assert (pBuffer != 0);
+	unsigned nLength = m_ScanResultQueue.Dequeue (pBuffer);
+	if (nLength == 0)
+	{
+		return FALSE;
+	}
+
+	assert (pResultLength != 0);
+	*pResultLength = nLength;
+
+	//hexdump (pBuffer, nLength, "wifiscan");
 
 	return TRUE;
 }
@@ -157,10 +182,16 @@ void CBcm4343Device::DumpStatus (void)
 	print (Buffer);
 }
 
-void CBcm4343Device::FrameReceived (void *pBuffer, unsigned nLength)
+void CBcm4343Device::FrameReceived (const void *pBuffer, unsigned nLength)
 {
 	assert (s_pThis != 0);
 	s_pThis->m_RxQueue.Enqueue (pBuffer, nLength);
+}
+
+void CBcm4343Device::ScanResultReceived (const void *pBuffer, unsigned nLength)
+{
+	assert (s_pThis != 0);
+	s_pThis->m_ScanResultQueue.Enqueue (pBuffer, nLength);
 }
 
 void etheriq (Ether *pEther, Block *pBlock, unsigned nFlag)
@@ -169,6 +200,12 @@ void etheriq (Ether *pEther, Block *pBlock, unsigned nFlag)
 	CBcm4343Device::FrameReceived (pBlock->rp, BLEN (pBlock));
 
 	freeb (pBlock);
+}
+
+void etherscanresult (Ether *pEther, const void *pBuffer, long nLength)
+{
+	assert (pBuffer != 0);
+	CBcm4343Device::ScanResultReceived (pBuffer, (unsigned) nLength);
 }
 
 void addethercard (const char *pName, ether_pnp_t *pEtherPnpHandler)

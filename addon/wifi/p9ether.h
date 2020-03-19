@@ -77,6 +77,7 @@ uint nhgetl (const void *p);
 int parseether (uchar *addr, const char *str);
 
 void etheriq (Ether *ether, Block *block, unsigned flag);
+void etherscanresult (Ether *ether, const void *buf, long len);
 
 typedef int ether_pnp_t (Ether *edev);
 void addethercard (const char *name, ether_pnp_t *ether_pnp);

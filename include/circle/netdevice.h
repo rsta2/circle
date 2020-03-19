@@ -46,7 +46,7 @@ enum TNetDeviceSpeed
 	NetDeviceSpeedUnknown
 };
 
-class CNetDevice	/// Base class (interface) of (Ethernet) net devices
+class CNetDevice	/// Base class (interface) of net devices
 {
 public:
 	virtual ~CNetDevice (void) {}
@@ -78,10 +78,6 @@ public:
 
 	/// \return The speed of the PHY link, if it is up
 	virtual TNetDeviceSpeed GetLinkSpeed (void)	{ return NetDeviceSpeedUnknown; }
-
-	/// \param pCommand Device specific control command (0-terminated)
-	/// \return Operation successful?
-	virtual boolean Control (const char *pCommand)	{ return FALSE; }
 
 	/// \brief Update device settings according to PHY status
 	/// \return FALSE if not supported

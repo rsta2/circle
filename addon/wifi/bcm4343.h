@@ -46,12 +46,22 @@ public:
 	// returns TRUE if PHY link is up
 	boolean IsLinkUp (void);
 
-	boolean Control (const char *pCommand);
+public:
+	/// \param pFormat Device specific control command (0-terminated)
+	/// \return Operation successful?
+	boolean Control (const char *pFormat, ...);
+
+	/// \brief Poll for a received scan result message
+	/// \param pBuffer Message will be placed here, buffer must have size FRAME_BUFFER_SIZE
+	/// \param pResultLength Pointer to variable, which receives the valid message length
+	/// \return TRUE if a message is returned in buffer, FALSE if nothing has been received
+	boolean ReceiveScanResult (void *pBuffer, unsigned *pResultLength);
 
 	void DumpStatus (void);
 
 public:
-	static void FrameReceived (void *pBuffer, unsigned nLength);
+	static void FrameReceived (const void *pBuffer, unsigned nLength);
+	static void ScanResultReceived (const void *pBuffer, unsigned nLength);
 
 private:
 	CString m_FirmwarePath;
@@ -59,6 +69,7 @@ private:
 	CMACAddress m_MACAddress;
 
 	CNetQueue m_RxQueue;
+	CNetQueue m_ScanResultQueue;
 
 	static CBcm4343Device *s_pThis;
 };
