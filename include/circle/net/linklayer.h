@@ -59,6 +59,15 @@ public:
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	boolean Receive (void *pBuffer, unsigned *pResultLength);
 
+public:
+	boolean SendRaw (const void *pFrame, unsigned nLength);
+
+	// pBuffer must have size FRAME_BUFFER_SIZE
+	boolean ReceiveRaw (void *pBuffer, unsigned *pResultLength, CMACAddress *pSender = 0);
+
+	// nProtocolType is in host byte order
+	boolean EnableReceiveRaw (u16 nProtocolType);
+
 private:
 	// return IP packet to the network layer for notification
 	void ResolveFailed (const void *pReturnedFrame, unsigned nLength);
@@ -72,6 +81,9 @@ private:
 
 	CNetQueue m_ARPRxQueue;
 	CNetQueue m_IPRxQueue;
+
+	CNetQueue m_RawRxQueue;
+	u16 m_nRawProtocolType;
 };
 
 #endif

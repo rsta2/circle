@@ -132,6 +132,11 @@ CNetDeviceLayer *CNetSubSystem::GetNetDeviceLayer (void)
 	return &m_NetDevLayer;
 }
 
+CLinkLayer *CNetSubSystem::GetLinkLayer (void)
+{
+	return &m_LinkLayer;
+}
+
 CTransportLayer *CNetSubSystem::GetTransportLayer (void)
 {
 	return &m_TransportLayer;

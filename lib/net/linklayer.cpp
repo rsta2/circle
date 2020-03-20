@@ -22,11 +22,17 @@
 #include <circle/util.h>
 #include <assert.h>
 
+struct TRawPrivateData
+{
+	u8	MACSender[MAC_ADDRESS_SIZE];
+};
+
 CLinkLayer::CLinkLayer (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer)
 :	m_pNetConfig (pNetConfig),
 	m_pNetDevLayer (pNetDevLayer),
 	m_pNetworkLayer (0),
-	m_pARPHandler (0)
+	m_pARPHandler (0),
+	m_nRawProtocolType (0)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pNetDevLayer != 0);
@@ -95,6 +101,18 @@ void CLinkLayer::Process (void)
 		case BE (ETH_PROT_ARP):
 			m_ARPRxQueue.Enqueue (Buffer+sizeof (TEthernetHeader), nLength);
 			break;
+
+		default:
+			if (pHeader->nProtocolType == m_nRawProtocolType)
+			{
+				TRawPrivateData *pParam = new TRawPrivateData;
+				assert (pParam != 0);
+				memcpy (pParam->MACSender, pHeader->MACSender, MAC_ADDRESS_SIZE);
+
+				m_RawRxQueue.Enqueue (Buffer+sizeof (TEthernetHeader),
+						      nLength, pParam);
+			}
+			break;
 		}
 	}
 
@@ -153,6 +171,53 @@ boolean CLinkLayer::Receive (void *pBuffer, unsigned *pResultLength)
 	*pResultLength = m_IPRxQueue.Dequeue (pBuffer);
 
 	return *pResultLength != 0 ? TRUE : FALSE;
+}
+
+boolean CLinkLayer::SendRaw (const void *pFrame, unsigned nLength)
+{
+	assert (pFrame != 0);
+	assert (nLength > 0);
+	assert (m_pNetDevLayer != 0);
+	m_pNetDevLayer->Send (pFrame, nLength);
+
+	return TRUE;
+}
+
+boolean CLinkLayer::ReceiveRaw (void *pBuffer, unsigned *pResultLength, CMACAddress *pSender)
+{
+	void *pParam;
+	assert (pBuffer != 0);
+	assert (pResultLength != 0);
+	*pResultLength = m_RawRxQueue.Dequeue (pBuffer, &pParam);
+	if (*pResultLength == 0)
+	{
+		return FALSE;
+	}
+
+	TRawPrivateData *pData = (TRawPrivateData *) pParam;
+
+	if (pSender != 0)
+	{
+		assert (pData != 0);
+		pSender->Set (pData->MACSender);
+	}
+
+	delete pData;
+
+	return TRUE;
+}
+
+boolean CLinkLayer::EnableReceiveRaw (u16 nProtocolType)
+{
+	if (m_nRawProtocolType != 0)
+	{
+		return FALSE;
+	}
+
+	assert (nProtocolType != 0);
+	m_nRawProtocolType = le2be16 (nProtocolType);
+
+	return TRUE;
 }
 
 void CLinkLayer::ResolveFailed (const void *pReturnedFrame, unsigned nLength)

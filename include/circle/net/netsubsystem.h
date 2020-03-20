@@ -49,6 +49,7 @@ public:
 
 	CNetConfig *GetConfig (void);
 	CNetDeviceLayer *GetNetDeviceLayer (void);
+	CLinkLayer *GetLinkLayer (void);
 	CTransportLayer *GetTransportLayer (void);
 
 	boolean IsRunning (void) const;			// is DHCP bound if used?
