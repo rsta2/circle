@@ -57,6 +57,8 @@ public:
 	/// \return TRUE if a message is returned in buffer, FALSE if nothing has been received
 	boolean ReceiveScanResult (void *pBuffer, unsigned *pResultLength);
 
+	const CMACAddress *GetBSSID (void);
+
 	void DumpStatus (void);
 
 public:
@@ -67,6 +69,7 @@ private:
 	CString m_FirmwarePath;
 
 	CMACAddress m_MACAddress;
+	CMACAddress m_BSSID;
 
 	CNetQueue m_RxQueue;
 	CNetQueue m_ScanResultQueue;

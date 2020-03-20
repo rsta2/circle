@@ -147,6 +147,7 @@ enum{
 	Wpa		= 1,
 	Wep		= 2,
 	Wpa2		= 3,
+	WBssidLen	= 6,
 	WNameLen	= 32,
 	WNKeys		= 4,
 	WKeyLen		= 32,
@@ -173,6 +174,7 @@ struct Ctlr {
 	int	joinstatus;
 	int	cryptotype;
 	int	chanid;
+	uchar	bssid[WBssidLen];
 	char	essid[WNameLen + 1];
 	WKey	keys[WNKeys];
 	Block	*rsp;
@@ -1423,6 +1425,7 @@ linkdown(Ctlr *ctl)
 	if(edev == nil || ctl->status != Connected)
 		return;
 	ctl->status = Disconnected;
+	memset(ctl->bssid, 0, WBssidLen);
 #ifndef __circle__
 	/* send eof to aux/wpa */
 	for(i = 0; i < edev->nfile; i++){
@@ -1569,6 +1572,7 @@ bcmevent(Ctlr *ctl, uchar *p, int len)
 			break;
 	/* fall through */
 	case 0:		/* E_SET_SSID */
+		memcpy(ctl->bssid, p + 24, WBssidLen);
 		ctl->joinstatus = 1 + status;
 		wakeup(&ctl->joinr);
 		break;
@@ -2110,6 +2114,9 @@ etherbcmifstat(Ether* edev, void* a, long n, ulong offset)
 	l = 0;
 
 	l += snprint(p+l, READSTR-l, "channel: %d\n", ctlr->chanid);
+	l += snprint(p+l, READSTR-l, "bssid: %02x:%02x:%02x:%02x:%02x:%02x\n",
+		     ctlr->bssid[0], ctlr->bssid[1], ctlr->bssid[2],
+		     ctlr->bssid[3], ctlr->bssid[4], ctlr->bssid[5]);
 	l += snprint(p+l, READSTR-l, "essid: %s\n", ctlr->essid);
 	l += snprint(p+l, READSTR-l, "crypt: %s\n", cryptoname[ctlr->cryptotype]);
 	l += snprint(p+l, READSTR-l, "oq: %d\n", qlen(edev->oq));
@@ -2374,6 +2381,15 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 }
 
 static void
+etherbcmgetbssid (struct Ether *edev, void *bssid)
+{
+	Ctlr* ctlr;
+
+	ctlr = edev->ctlr;
+	memcpy(bssid, ctlr->bssid, WBssidLen);
+}
+
+static void
 etherbcmscan(void *a, uint secs)
 {
 	Ether* edev;
@@ -2434,6 +2450,7 @@ etherbcmpnp(Ether* edev)
 	edev->transmit = etherbcmtransmit;
 	edev->ifstat = etherbcmifstat;
 	edev->ctl = etherbcmctl;
+	edev->getbssid = etherbcmgetbssid;
 	edev->scanbs = etherbcmscan;
 	edev->shutdown = etherbcmshutdown;
 	edev->arg = edev;

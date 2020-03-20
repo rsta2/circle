@@ -171,6 +171,17 @@ boolean CBcm4343Device::ReceiveScanResult (void *pBuffer, unsigned *pResultLengt
 	return TRUE;
 }
 
+const CMACAddress *CBcm4343Device::GetBSSID (void)
+{
+	u8 BSSID[MAC_ADDRESS_SIZE];
+	assert (s_EtherDevice.getbssid != 0);
+	(*s_EtherDevice.getbssid) (&s_EtherDevice, BSSID);
+
+	m_BSSID.Set (BSSID);
+
+	return &m_BSSID;
+}
+
 void CBcm4343Device::DumpStatus (void)
 {
 	char Buffer[200];

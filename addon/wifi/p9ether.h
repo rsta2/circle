@@ -75,6 +75,7 @@ typedef struct Ether
 	void (*transmit) (struct Ether *edev);
 	long (*ifstat) (struct Ether *edev, void *buf, long size, ulong offset);
 	long (*ctl) (struct Ether *edev, const void *buf, long n);
+	void (*getbssid) (struct Ether *edev, void *bssid);
 	void (*scanbs) (void *arg, uint secs);
 	void (*shutdown) (struct Ether *edev);
 }
