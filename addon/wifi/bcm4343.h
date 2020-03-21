@@ -25,6 +25,9 @@
 #include <circle/net/netqueue.h>
 #include <circle/string.h>
 #include <circle/types.h>
+#include "etherevent.h"
+
+typedef ether_event_handler_t TBcm4343EventHandler;
 
 class CBcm4343Device : public CNetDevice	/// Driver for BCM4343x Wi-Fi device
 {
@@ -47,6 +50,10 @@ public:
 	boolean IsLinkUp (void);
 
 public:
+	/// \param pHandler Pointer to event handler
+	/// \param pContext Pointer to be handed over to the handler
+	void RegisterEventHandler (TBcm4343EventHandler *pHandler, void *pContext);
+
 	/// \param pFormat Device specific control command (0-terminated)
 	/// \return Operation successful?
 	boolean Control (const char *pFormat, ...);

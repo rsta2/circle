@@ -205,6 +205,8 @@ struct Ctlr {
 	uchar	txwindow;
 	uchar	txseq;
 	uchar	rxseq;
+	ether_event_handler_t *evhndlr;
+	void	*evcontext;
 };
 
 enum{
@@ -298,6 +300,7 @@ static void bcmevent(Ctlr*, uchar*, int);
 static void wlscanresult(Ether*, uchar*, int);
 static void wlsetvar(Ctlr*, char*, void*, int);
 static void etherbcmscan(void *a, uint secs);
+static void callevhndlr(Ctlr*, ether_event_type_t, const void *);
 
 static uchar*
 put2(uchar *p, short v)
@@ -1582,8 +1585,11 @@ bcmevent(Ctlr *ctl, uchar *p, int len)
 	/* fall through */
 	case 5:		/* E_DEAUTH */
 	case 6:		/* E_DEAUTH_IND */
+		linkdown(ctl);
+		break;
 	case 12:	/* E_DISASSOC_IND */
 		linkdown(ctl);
+		callevhndlr(ctl, ether_event_disassociate, 0);
 		break;
 	case 26:	/* E_SCAN_COMPLETE */
 		break;
@@ -2401,6 +2407,23 @@ etherbcmscan(void *a, uint secs)
 }
 
 static void
+callevhndlr(Ctlr* ctlr, ether_event_type_t type, const void *params)
+{
+	if(ctlr->evhndlr != 0)
+		(*ctlr->evhndlr)(type, params, ctlr->evcontext);
+}
+
+static void
+etherbcmsetevhndlr(struct Ether *edev, ether_event_handler_t *hndlr, void *context)
+{
+	Ctlr* ctlr;
+
+	ctlr = edev->ctlr;
+	ctlr->evcontext = context;
+	ctlr->evhndlr = hndlr;
+}
+
+static void
 etherbcmattach(Ether* edev)
 {
 	Ctlr *ctlr;
@@ -2452,6 +2475,7 @@ etherbcmpnp(Ether* edev)
 	edev->ctl = etherbcmctl;
 	edev->getbssid = etherbcmgetbssid;
 	edev->scanbs = etherbcmscan;
+	edev->setevhndlr = etherbcmsetevhndlr;
 	edev->shutdown = etherbcmshutdown;
 	edev->arg = edev;
 

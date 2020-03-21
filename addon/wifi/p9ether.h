@@ -3,6 +3,7 @@
 
 #include "p9util.h"
 #include "p9proc.h"
+#include "etherevent.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,6 +78,7 @@ typedef struct Ether
 	long (*ctl) (struct Ether *edev, const void *buf, long n);
 	void (*getbssid) (struct Ether *edev, void *bssid);
 	void (*scanbs) (void *arg, uint secs);
+	void (*setevhndlr) (struct Ether *edev, ether_event_handler_t *hndlr, void *context);
 	void (*shutdown) (struct Ether *edev);
 }
 Ether;
