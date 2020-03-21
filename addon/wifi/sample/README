@@ -2,12 +2,20 @@ README
 
 This sample uses the on-board Wi-Fi device of the Raspberry Pi 3, 4 and Zero W
 to connect to a Wi-Fi network and to update the system time from a NTP server.
-Currently only open Wi-Fi networks (without authentication) can be joined. The
-Wi-Fi driver has been ported from the Plan 9 operating system.
+Currently only WPA2 enabled Wi-Fi networks can be joined by default. The Wi-Fi
+driver has been ported from the Plan 9 operating system. Furthermore the ported
+"WPA Supplicant" tool is used.
 
-You have to update the ESSID of your Wi-Fi network in kernel.cpp before build.
-Beside the main Circle libraries and the wifi library, the library in
-addon/fatfs/ is needed and must be made, before the sample can be built.
+Before build you have to fetch to submodule addon/wifi/hostap with the following
+command:
+
+	git submodule update --init addon/wifi/hostap
+
+Beside the main Circle libraries the library in addon/fatfs/ is needed and must
+be made, before the wifi libraries and the sample can be built with:
+
+	cd addon/wifi
+	./makeall
 
 You have to provide the following firmware files for the different Wi-Fi
 controllers of the Raspberry Pi:
@@ -18,10 +26,20 @@ controllers of the Raspberry Pi:
 	brcmfmac43455-sdio.clm_blob
 	brcmfmac43455-sdio.txt
 
-These files can be found in the directory /lib/firmware/brcm of a Raspbian
-distribution and must be copied into the directory /firmware of an USB flash
-drive (with FAT partition). This drive must be connected to your Raspberry Pi,
-which is used for the test. Please note that reading the firmware files from the
-SD card is currently not supported.
+These files can be downloaded as follows (uses the "wget" tool):
 
-This is a development version of the driver and sample, which has known issues.
+	cd addon/wifi/firmware
+	make
+
+These files must be copied into the directory /firmware of an USB flash drive
+(with FAT partition). These downloaded firmware files have been tested with
+Circle. This drive must be connected to your Raspberry Pi, which is used for the
+test. Please note that reading the firmware files from the SD card is currently
+not supported.
+
+Furthermore a configuration file "wpa_supplicant.conf" is required in the root
+directory of the USB flash drive. You can modify the template file in this
+sample directory and set the SSID and password of your own WLAN.
+
+Please note that two attempts may be needed to connect a WLAN, which can take up
+to 30 seconds.
