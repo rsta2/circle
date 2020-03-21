@@ -59,6 +59,10 @@ public:
 
 	const CMACAddress *GetBSSID (void);
 
+	/// \param pSSID SSID of open network to be joined
+	/// \return Operation successful?
+	boolean JoinOpenNet (const char *pSSID);
+
 	void DumpStatus (void);
 
 public:

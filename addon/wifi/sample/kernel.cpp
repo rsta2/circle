@@ -20,6 +20,8 @@
 #include "kernel.h"
 #include <circle/net/ntpdaemon.h>
 
+//#define USE_OPEN_NET	"TEST"				// SSID
+
 #define DRIVE		"USB:"
 #define FIRMWARE_PATH	DRIVE "/firmware/"		// firmware files must be provided here
 #define CONFIG_FILE	DRIVE "/wpa_supplicant.conf"
@@ -98,15 +100,24 @@ boolean CKernel::Initialize (void)
 		bOK = m_WiFi.Initialize ();
 	}
 
+#ifdef USE_OPEN_NET
+	if (bOK)
+	{
+		bOK = m_WiFi.JoinOpenNet (USE_OPEN_NET);
+	}
+#endif
+
 	if (bOK)
 	{
 		bOK = m_Net.Initialize (FALSE);
 	}
 
+#ifndef USE_OPEN_NET
 	if (bOK)
 	{
 		bOK = m_WPASupplicant.Initialize ();
 	}
+#endif
 
 	return bOK;
 }
@@ -115,14 +126,20 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	m_WiFi.DumpStatus ();
+	while (!m_Net.IsRunning ())
+	{
+		m_Scheduler.MsSleep (100);
+	}
 
-	m_Scheduler.Sleep (5);
+	m_WiFi.DumpStatus ();
 
 	m_Timer.SetTimeZone (0*60);
 	new CNTPDaemon ("pool.ntp.org", &m_Net);
 
-	m_Scheduler.Sleep (120);
+	while (1)
+	{
+		m_Scheduler.Sleep (10);
+	}
 
 	return ShutdownHalt;
 }
