@@ -39,7 +39,8 @@ not supported.
 
 Furthermore a configuration file "wpa_supplicant.conf" is required in the root
 directory of the USB flash drive. You can modify the template file in this
-sample directory and set the SSID and password of your own WLAN.
+sample directory and set the SSID and password of your own WLAN. The alpha2
+ISO/IEC code of the country, where you are in, must be set too.
 
 Please note that two attempts may be needed to connect a WLAN, which can take up
 to 30 seconds.

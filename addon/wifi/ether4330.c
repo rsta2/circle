@@ -227,6 +227,7 @@ enum{
 	CMdebug,
 	CMjoin,
 	CMescan,
+	CMcountry,
 };
 
 static Cmdtab cmds[] = {
@@ -247,6 +248,7 @@ static Cmdtab cmds[] = {
 	{CMdebug,	"debug", 2},
 	{CMjoin,	"join", 5},
 	{CMescan,	"escan", 2},
+	{CMcountry,	"country", 2},
 };
 
 typedef struct Sdpcm Sdpcm;
@@ -2007,6 +2009,28 @@ wlscanresult(Ether *edev, uchar *p, int len)
 #endif
 
 static void
+wlsetcountry(Ctlr *ctlr, const char *ccode)
+{
+	struct{
+		char country_ie[4];
+		uint revision;
+		char country_code[4];
+	}params;
+
+	if (   !('A' <= ccode[0] && ccode[0] <= 'Z')
+	    || !('A' <= ccode[1] && ccode[1] <= 'Z')
+	    || ccode[2] != '\0'){
+		error("Invalid country code");
+	}
+
+	strcpy (params.country_ie, ccode);
+	strcpy (params.country_code, ccode);
+	params.revision = (uint) -1;
+
+	wlsetvar(ctlr, "country", &params, sizeof params);
+}
+
+static void
 lproc(void *a)
 {
 	Ether *edev;
@@ -2376,6 +2400,9 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 		break;
 	case CMescan:
 		etherbcmscan(edev, atoi(cb->f[1]));
+		break;
+	case CMcountry:
+		wlsetcountry(ctlr, cb->f[1]);
 		break;
 	case CMdebug:
 		iodebug = atoi(cb->f[1]);
