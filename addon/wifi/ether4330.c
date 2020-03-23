@@ -302,7 +302,7 @@ static void bcmevent(Ctlr*, uchar*, int);
 static void wlscanresult(Ether*, uchar*, int);
 static void wlsetvar(Ctlr*, char*, void*, int);
 static void etherbcmscan(void *a, uint secs);
-static void callevhndlr(Ctlr*, ether_event_type_t, const void *);
+static void callevhndlr(Ctlr*, ether_event_type_t, const ether_event_params_t *);
 
 static uchar*
 put2(uchar *p, short v)
@@ -1559,6 +1559,9 @@ bcmevent(Ctlr *ctl, uchar *p, int len)
 {
 	int flags;
 	long event, status, reason;
+	ether_event_params_t params;
+
+	memset (&params, 0, sizeof params);
 
 	if(len < ETHERHDRSIZE + 10 + 46)
 		return;
@@ -1592,6 +1595,11 @@ bcmevent(Ctlr *ctl, uchar *p, int len)
 	case 12:	/* E_DISASSOC_IND */
 		linkdown(ctl);
 		callevhndlr(ctl, ether_event_disassociate, 0);
+		break;
+	case 17:	/* E_MIC_ERROR */
+		params.mic_error.group = !!(flags & 4);
+		memcpy(params.mic_error.addr, p + 24, WBssidLen);
+		callevhndlr(ctl, ether_event_mic_error, &params);
 		break;
 	case 26:	/* E_SCAN_COMPLETE */
 		break;
@@ -2434,7 +2442,7 @@ etherbcmscan(void *a, uint secs)
 }
 
 static void
-callevhndlr(Ctlr* ctlr, ether_event_type_t type, const void *params)
+callevhndlr(Ctlr* ctlr, ether_event_type_t type, const ether_event_params_t *params)
 {
 	if(ctlr->evhndlr != 0)
 		(*ctlr->evhndlr)(type, params, ctlr->evcontext);
