@@ -1584,17 +1584,18 @@ bcmevent(Ctlr *ctl, uchar *p, int len)
 		ctl->joinstatus = 1 + status;
 		wakeup(&ctl->joinr);
 		break;
+	case 5:		/* E_DEAUTH */
+	case 6:		/* E_DEAUTH_IND */
+		linkdown(ctl);
+		callevhndlr(ctl, ether_event_deauth, 0);
+		break;
 	case 16:	/* E_LINK */
 		if(flags&1)	/* link up */
 			break;
 	/* fall through */
-	case 5:		/* E_DEAUTH */
-	case 6:		/* E_DEAUTH_IND */
-		linkdown(ctl);
-		break;
 	case 12:	/* E_DISASSOC_IND */
 		linkdown(ctl);
-		callevhndlr(ctl, ether_event_disassociate, 0);
+		callevhndlr(ctl, ether_event_disassoc, 0);
 		break;
 	case 17:	/* E_MIC_ERROR */
 		params.mic_error.group = !!(flags & 4);
