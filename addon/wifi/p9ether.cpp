@@ -27,24 +27,6 @@ void freeb (Block *b)
 	delete [] p;
 }
 
-Block *copyblock (Block *b, size_t size)
-{
-	assert (0);			// TODO: not tested
-
-	Block *b2 = allocb (size);
-	assert (b2 != 0);
-
-	size_t len = b->wp - b->buf;
-	if (len > 0)
-	{
-		memcpy (b2->buf, b->buf, len);
-
-		b2->wp += len;
-	}
-
-	return b2;
-}
-
 Block *padblock (Block *b, int size)
 {
 	assert (size > 0);
@@ -104,11 +86,6 @@ void qpass (Queue *q, Block *b)
 	q->last = b;
 
 	q->nelem++;
-}
-
-void qwrite (Queue *, unsigned, unsigned)
-{
-	assert (0);			// TODO
 }
 
 ushort nhgets (const void *p)

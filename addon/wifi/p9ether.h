@@ -26,7 +26,6 @@ Block;
 
 Block *allocb (size_t size);
 void freeb (Block *b);
-Block *copyblock (Block *b, size_t size);
 Block *padblock (Block *b, int size);
 
 typedef struct
@@ -41,21 +40,6 @@ unsigned qlen (Queue *q);
 Block *qget (Queue *q);
 void qpass (Queue *q, Block *b);
 
-#if 0
-
-void qwrite (Queue *q, unsigned, unsigned);
-
-typedef struct
-{
-	Queue *in;
-	int inuse;
-	ushort type;
-	int scan;
-}
-Netfile;
-
-#endif
-
 typedef struct Ether
 {
 	void *ctlr;
@@ -63,14 +47,6 @@ typedef struct Ether
 	uchar ea[Eaddrlen];
 	uchar addr[Eaddrlen];
 	Queue *oq;
-
-#if 0
-	int scan;
-
-	unsigned nfile;
-#define Ntypes		10
-	Netfile *f[Ntypes];
-#endif
 
 	void (*attach) (struct Ether *edev);
 	void (*transmit) (struct Ether *edev);
