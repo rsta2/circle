@@ -226,6 +226,7 @@ enum{
 	CMtxkey,
 	CMdebug,
 	CMjoin,
+	CMdisassoc,
 	CMescan,
 	CMcountry,
 };
@@ -247,6 +248,7 @@ static Cmdtab cmds[] = {
 	{CMtxkey,	"txkey", 3},
 	{CMdebug,	"debug", 2},
 	{CMjoin,	"join", 5},
+	{CMdisassoc,	"disassoc", 2},
 	{CMescan,	"escan", 2},
 	{CMcountry,	"country", 2},
 };
@@ -1602,6 +1604,7 @@ bcmevent(Ctlr *ctl, uchar *p, int len)
 		memcpy(params.mic_error.addr, p + 24, WBssidLen);
 		callevhndlr(ctl, ether_event_mic_error, &params);
 		break;
+	case 3:		/* E_AUTH */
 	case 26:	/* E_SCAN_COMPLETE */
 		break;
 	case 69:	/* E_ESCAN_RESULT */
@@ -2407,10 +2410,14 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 			cmderror(cb, "bad wpa key");
 		wlwpakey(ctlr, ct->index, iv, ea);
 		break;
-	case CMescan:
+	case CMdisassoc:	/* disassoc reason */
+		if (ctlr->status != Disconnected)
+			wlcmdint(ctlr, 52, atoi(cb->f[1]));	/* DISASSOC */
+		break;
+	case CMescan:		/* escan seconds */
 		etherbcmscan(edev, atoi(cb->f[1]));
 		break;
-	case CMcountry:
+	case CMcountry:		/* country alpha2 */
 		wlsetcountry(ctlr, cb->f[1]);
 		break;
 	case CMdebug:
@@ -2492,6 +2499,13 @@ etherbcmattach(Ether* edev)
 static void
 etherbcmshutdown(Ether*edev)
 {
+	Ctlr *ctlr;
+
+	ctlr = edev->ctlr;
+	qlock(&ctlr->alock);
+	wlcmdint(ctlr, 3, 0);		/* DOWN */
+	qunlock(&ctlr->alock);
+
 	sdioreset();
 }
 

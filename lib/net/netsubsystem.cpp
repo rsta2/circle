@@ -113,6 +113,11 @@ boolean CNetSubSystem::Initialize (boolean bWaitForActivate)
 
 void CNetSubSystem::Process (void)
 {
+	if (s_pThis == 0)
+	{
+		return;
+	}
+
 	m_NetDevLayer.Process ();
 
 	m_LinkLayer.Process ();
