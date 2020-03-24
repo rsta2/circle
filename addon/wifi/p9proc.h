@@ -1,7 +1,9 @@
 #ifndef _p9proc_h
 #define _p9proc_h
 
+#include "p9util.h"
 #include "p9error.h"
+#include <circle/sysconfig.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,6 +11,9 @@ extern "C" {
 
 typedef struct lock_t
 {
+#ifdef ARM_ALLOW_MULTI_CORE
+	u32int lock;
+#endif
 }
 Lock;
 
