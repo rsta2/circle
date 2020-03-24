@@ -147,7 +147,6 @@ enum{
 	Wpa		= 1,
 	Wep		= 2,
 	Wpa2		= 3,
-	WBssidLen	= 6,
 	WNameLen	= 32,
 	WNKeys		= 4,
 	WKeyLen		= 32,
@@ -174,7 +173,7 @@ struct Ctlr {
 	int	joinstatus;
 	int	cryptotype;
 	int	chanid;
-	uchar	bssid[WBssidLen];
+	uchar	bssid[Eaddrlen];
 	char	essid[WNameLen + 1];
 	WKey	keys[WNKeys];
 	Block	*rsp;
@@ -1432,7 +1431,7 @@ linkdown(Ctlr *ctl)
 	if(edev == nil || ctl->status != Connected)
 		return;
 	ctl->status = Disconnected;
-	memset(ctl->bssid, 0, WBssidLen);
+	memset(ctl->bssid, 0, Eaddrlen);
 #ifndef __circle__
 	/* send eof to aux/wpa */
 	for(i = 0; i < edev->nfile; i++){
@@ -1582,7 +1581,7 @@ bcmevent(Ctlr *ctl, uchar *p, int len)
 			break;
 	/* fall through */
 	case 0:		/* E_SET_SSID */
-		memcpy(ctl->bssid, p + 24, WBssidLen);
+		memcpy(ctl->bssid, p + 24, Eaddrlen);
 		ctl->joinstatus = 1 + status;
 		wakeup(&ctl->joinr);
 		break;
@@ -1601,7 +1600,7 @@ bcmevent(Ctlr *ctl, uchar *p, int len)
 		break;
 	case 17:	/* E_MIC_ERROR */
 		params.mic_error.group = !!(flags & 4);
-		memcpy(params.mic_error.addr, p + 24, WBssidLen);
+		memcpy(params.mic_error.addr, p + 24, Eaddrlen);
 		callevhndlr(ctl, ether_event_mic_error, &params);
 		break;
 	case 3:		/* E_AUTH */
@@ -1817,7 +1816,7 @@ wlwpakey(Ctlr *ctl, int id, uvlong iv, uchar *ea)
 }
 
 static void
-wljoin(Ctlr *ctl, char *ssid, int chan)
+wljoin(Ctlr *ctl, char *ssid, int chan, uchar *bssid)
 {
 	uchar params[72];
 	uchar *p;
@@ -1843,7 +1842,10 @@ wljoin(Ctlr *ctl, char *ssid, int chan)
 		p = put4(p, -1);	/* passive time */
 	}
 	p = put4(p, -1);	/* home time */
-	memset(p, 0xFF, Eaddrlen);	/* bssid */
+	if(bssid != 0)
+		memcpy(p, bssid, Eaddrlen);	/* bssid */
+	else
+		memset(p, 0xFF, Eaddrlen);
 	p += Eaddrlen;
 	p = put2(p, 0);		/* pad */
 	if(chan != 0){
@@ -2343,7 +2345,7 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 	case CMauth:
 		setauth(ctlr, cb, cb->f[1]);
 		if(ctlr->essid[0])
-			wljoin(ctlr, ctlr->essid, ctlr->chanid);
+			wljoin(ctlr, ctlr->essid, ctlr->chanid, 0);
 		break;
 	case CMchannel:
 		if((i = atoi(cb->f[1])) < 0 || i > 16)
@@ -2354,7 +2356,7 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 	case CMcrypt:
 		if(setcrypt(ctlr, cb, cb->f[1])){
 			if(ctlr->essid[0])
-				wljoin(ctlr, ctlr->essid, ctlr->chanid);
+				wljoin(ctlr, ctlr->essid, ctlr->chanid, 0);
 		}else
 			cmderror(cb, "bad crypt type");
 		break;
@@ -2366,11 +2368,11 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 			ctlr->essid[sizeof(ctlr->essid) - 1] = '\0';
 		}
 		if(!waserror()){
-			wljoin(ctlr, ctlr->essid, ctlr->chanid);
+			wljoin(ctlr, ctlr->essid, ctlr->chanid, 0);
 			poperror();
 		}
 		break;
-	case CMjoin:	/* join essid channel wep|on|off|wpakey */
+	case CMjoin:	/* join essid bssid channel wep|on|off|wpakey */
 		if(strcmp(cb->f[1], "") != 0){	/* empty string for no change */
 			if(cistrcmp(cb->f[1], "default") != 0){
 				strncpy(ctlr->essid, cb->f[1], sizeof(ctlr->essid)-1);
@@ -2379,14 +2381,16 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 				memset(ctlr->essid, 0, sizeof(ctlr->essid));
 		}else if(ctlr->essid[0] == 0)
 			cmderror(cb, "essid not set");
-		if((i = atoi(cb->f[2])) >= 0 && i <= 16)
+		if(parseether(ea, cb->f[2]) < 0)
+			cmderror(cb, "bad bssid");
+		if((i = atoi(cb->f[3])) >= 0 && i <= 16)
 			ctlr->chanid = i;
 		else
 			cmderror(cb, "bad channel number");
-		if(!setcrypt(ctlr, cb, cb->f[3]))
-			setauth(ctlr, cb, cb->f[3]);
+		if(!setcrypt(ctlr, cb, cb->f[4]))
+			setauth(ctlr, cb, cb->f[4]);
 		if(ctlr->essid[0])
-			wljoin(ctlr, ctlr->essid, ctlr->chanid);
+			wljoin(ctlr, ctlr->essid, ctlr->chanid, ea);
 		break;
 	case CMkey1:
 	case CMkey2:
@@ -2435,7 +2439,7 @@ etherbcmgetbssid (struct Ether *edev, void *bssid)
 	Ctlr* ctlr;
 
 	ctlr = edev->ctlr;
-	memcpy(bssid, ctlr->bssid, WBssidLen);
+	memcpy(bssid, ctlr->bssid, Eaddrlen);
 }
 
 static void
