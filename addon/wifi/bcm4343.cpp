@@ -124,11 +124,6 @@ boolean CBcm4343Device::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 	return TRUE;
 }
 
-boolean CBcm4343Device::IsLinkUp (void)
-{
-	return TRUE;
-}
-
 void CBcm4343Device::RegisterEventHandler (TBcm4343EventHandler *pHandler, void *pContext)
 {
 	assert (s_EtherDevice.setevhndlr != 0);

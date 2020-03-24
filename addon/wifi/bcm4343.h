@@ -46,11 +46,8 @@ public:
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength);
 
-	// returns TRUE if PHY link is up
-	boolean IsLinkUp (void);
-
 public:
-	/// \param pHandler Pointer to event handler
+	/// \param pHandler Pointer to event handler (0 for unregister)
 	/// \param pContext Pointer to be handed over to the handler
 	void RegisterEventHandler (TBcm4343EventHandler *pHandler, void *pContext);
 
