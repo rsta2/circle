@@ -160,8 +160,6 @@ int return0 (void *param)
 	return 0;
 }
 
-static struct error_stack_t *current_error_stack = 0;
-
 class CKProc : public CTask
 {
 public:
@@ -174,8 +172,7 @@ public:
 	void Run (void)
 	{
 		m_errstack.stackptr = ERROR_STACK_SIZE;
-		current_error_stack = &m_errstack;
-		SetUserData (&m_errstack);
+		SetUserData (&m_errstack, TASK_USER_DATA_ERROR_STACK);
 
 		(*m_procfn) (m_param);
 	}
@@ -195,28 +192,27 @@ void kproc (const char *name, void (*func) (void *), void *parm)
 static struct up_t upstruct;
 struct up_t *up = &upstruct;
 
-void task_switch_handler (CTask *pTask)
-{
-	assert (pTask != 0);
-	current_error_stack = (struct error_stack_t *) pTask->GetUserData ();
-	if (current_error_stack == 0)
-	{
-		current_error_stack = &up->errstack;
-	}
-}
-
 void p9proc_init (void)
 {
 	up->errstr = "";
 
 	up->errstack.stackptr = ERROR_STACK_SIZE;
-	current_error_stack = &up->errstack;
-	CScheduler::Get ()->GetCurrentTask ()->SetUserData (&up->errstack);
-
-	CScheduler::Get ()->RegisterTaskSwitchHandler (task_switch_handler);
+	CTask *pTask = CScheduler::Get ()->GetCurrentTask ();
+	assert (pTask != 0);
+	pTask->SetUserData (&up->errstack, TASK_USER_DATA_ERROR_STACK);
 }
 
 struct error_stack_t *get_error_stack (void)
 {
-	return current_error_stack;
+	CTask *pTask = CScheduler::Get ()->GetCurrentTask ();
+	assert (pTask != 0);
+
+	struct error_stack_t *errstack =
+		(struct error_stack_t *) pTask->GetUserData (TASK_USER_DATA_ERROR_STACK);
+	if (errstack == 0)
+	{
+		errstack = &up->errstack;
+	}
+
+	return errstack;
 }

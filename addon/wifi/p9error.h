@@ -21,7 +21,8 @@ void error (const char *str);
 #define Enomem		"Not enough memory"
 #define Enonexist	"File does not exist"
 
-#define waserror()	setjmp (get_error_stack ()->stack[--get_error_stack ()->stackptr])
+jmp_buf *pusherror (void);
+#define waserror()	setjmp (*pusherror ())
 
 void nexterror (void);
 void poperror (void);
