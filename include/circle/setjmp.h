@@ -20,6 +20,10 @@
 #ifndef _circle_setjmp_h
 #define _circle_setjmp_h
 
+#if STDLIB_SUPPORT >= 2
+	#include <setjmp.h>
+#else
+
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -39,6 +43,8 @@ void longjmp (jmp_buf env, int val) NORETURN;
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif
