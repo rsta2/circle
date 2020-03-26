@@ -59,6 +59,8 @@ typedef struct Ether
 }
 Ether;
 
+#define nhgets	__p9nhgets
+#define nhgetl	__p9nhgetl
 ushort nhgets (const void *p);
 uint nhgetl (const void *p);
 int parseether (uchar *addr, const char *str);

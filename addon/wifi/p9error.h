@@ -16,6 +16,7 @@ struct error_stack_t
 
 struct error_stack_t *get_error_stack (void);
 
+#define error	__p9error
 void error (const char *str);
 #define Eio		"I/O error"
 #define Enomem		"Not enough memory"

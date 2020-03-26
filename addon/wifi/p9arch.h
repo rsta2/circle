@@ -29,6 +29,8 @@ void gpiopullup (unsigned pin);
 unsigned getclkrate (unsigned clk);
 #define ClkEmmc		1
 
+#define delay		__p9delay
+#define microdelay	__p9microdelay
 void delay (unsigned msecs);
 void microdelay (unsigned usecs);
 
@@ -48,6 +50,7 @@ int dmawait (unsigned chan);
 
 void cachedinvse (void *buf, size_t len);
 
+#define m	__p9m
 extern struct machine_t
 {
 	volatile unsigned ticks;

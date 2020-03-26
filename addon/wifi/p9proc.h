@@ -17,6 +17,8 @@ typedef struct lock_t
 }
 Lock;
 
+#define lock	__p9lock
+#define unlock	__p9unlock
 void lock (Lock *lock);
 void unlock (Lock *lock);
 
@@ -35,14 +37,18 @@ typedef struct Rendez
 }
 Rendez;
 
+#define sleep	__p9sleep
+#define wakeup	__p9wakeup
 typedef int sleephandler_t (void *param);
 void sleep (Rendez *rendez, sleephandler_t *handler, void *param);
 void tsleep (Rendez *rendez, sleephandler_t *handler, void *param, unsigned msecs);
 void wakeup (Rendez *rendez);
 int return0 (void *param);
 
+#define kproc	__p9kproc
 void kproc (const char *name, void (*func) (void *param), void *param);
 
+#define up	__p9up
 extern struct up_t
 {
 	Rendez sleep;

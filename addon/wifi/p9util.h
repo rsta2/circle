@@ -34,17 +34,23 @@ typedef u32			u32int;
 #define sdmalloc		malloc
 #define sdfree			free
 
+#define print	__p9print
+#define sprint	__p9sprint
+#define snprint	__p9snprint
+#define seprint	__p9seprint
 int print (const char *fmt, ...);
 int sprint (char *str, const char *fmt, ...);
 int snprint (char *str, size_t len, const char *fmt, ...);
 char *seprint (char *str, char *end, const char *fmt, ...);
 
+#define readstr	__p9readstr
 #define READSTR			1000
 long readstr (ulong offset, void *buf, size_t len, const void *p);
 
 #define cistrcmp		strcasecmp
 #define cistrncmp		strncasecmp
 
+#define hexdump	__p9hexdump
 void hexdump (const void *p, size_t len, const char *from);
 
 #ifdef __cplusplus

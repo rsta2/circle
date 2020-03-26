@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-typedef struct chan_t
+typedef struct
 {
 	unsigned type;
 	int open;
@@ -23,6 +23,7 @@ Chan *namec (const char *name, unsigned func, unsigned flags, unsigned opt);
 
 void cclose (Chan *chan);
 
+#define devtab	__p9devtab
 extern struct device_t
 {
 	int (*read) (Chan *chan, void *buf, size_t len, ulong off);
