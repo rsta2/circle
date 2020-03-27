@@ -186,7 +186,7 @@ const CMACAddress *CBcm4343Device::GetBSSID (void)
 boolean CBcm4343Device::JoinOpenNet (const char *pSSID)
 {
 	assert (pSSID != 0);
-	return Control ("join %s 0 off", pSSID);
+	return Control ("join %s %s 0 off", pSSID, "FFFFFFFFFFFF");
 }
 
 void CBcm4343Device::DumpStatus (void)
