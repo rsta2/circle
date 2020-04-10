@@ -12,15 +12,15 @@ extern "C" {
 typedef struct lock_t
 {
 #ifdef ARM_ALLOW_MULTI_CORE
-	u32int lock;
+	u32int _lock;
 #endif
 }
 Lock;
 
 #define lock	__p9lock
 #define unlock	__p9unlock
-void lock (Lock *lock);
-void unlock (Lock *lock);
+void lock (Lock *l);
+void unlock (Lock *l);
 
 typedef struct qlock_t
 {

@@ -10,7 +10,7 @@
 
 #ifdef ARM_ALLOW_MULTI_CORE
 
-void lock (Lock *lock)
+void lock (Lock *l)
 {
 	EnterCritical (IRQ_LEVEL);
 
@@ -30,7 +30,7 @@ void lock (Lock *lock)
 		"bne 1b\n"
 		"dmb\n"
 
-		: : "r" ((uintptr) &lock->lock) : "r1", "r2", "r3"
+		: : "r" ((uintptr) &l->_lock) : "r1", "r2", "r3"
 	);
 #else
 	// See: ARMv8-A Architecture Reference Manual, Section K10.3.1
@@ -44,12 +44,12 @@ void lock (Lock *lock)
 		"stxr w3, w2, [x1]\n"
 		"cbnz w3, 1b\n"
 
-		: : "r" ((uintptr) &lock->lock) : "x1", "x2", "x3"
+		: : "r" ((uintptr) &l->_lock) : "x1", "x2", "x3"
 	);
 #endif
 }
 
-void unlock (Lock *lock)
+void unlock (Lock *l)
 {
 #if AARCH == 32
 	// See: ARMv7-A Architecture Reference Manual, Section D7.3
@@ -64,7 +64,7 @@ void unlock (Lock *lock)
 		"sev\n"
 #endif
 
-		: : "r" ((uintptr) &lock->lock) : "r1", "r2"
+		: : "r" ((uintptr) &l->_lock) : "r1", "r2"
 	);
 #else
 	// See: ARMv8-A Architecture Reference Manual, Section K10.3.2
@@ -73,7 +73,7 @@ void unlock (Lock *lock)
 		"mov x1, %0\n"
 		"stlr wzr, [x1]\n"
 
-		: : "r" ((uintptr) &lock->lock) : "x1"
+		: : "r" ((uintptr) &l->_lock) : "x1"
 	);
 #endif
 
@@ -82,12 +82,12 @@ void unlock (Lock *lock)
 
 #else
 
-void lock (Lock *lock)
+void lock (Lock *l)
 {
 	EnterCritical (IRQ_LEVEL);
 }
 
-void unlock (Lock *lock)
+void unlock (Lock *l)
 {
 	LeaveCritical ();
 }
