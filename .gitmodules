@@ -4,3 +4,6 @@
 [submodule "addon/littlevgl/lv_examples"]
 	path = addon/littlevgl/lv_examples
 	url = https://github.com/littlevgl/lv_examples.git
+[submodule "addon/wlan/hostap"]
+	path = addon/wlan/hostap
+	url = https://github.com/rsta2/hostap.git
