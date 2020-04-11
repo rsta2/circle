@@ -27,5 +27,5 @@ tftpfileserver	TFTP file server supporting kernel image and firmware updates
 ugui		Digital oscilloscope sample using the uGUI library (by Achim Doebler)
 vc4		HDMI sound and accelerated graphics (EGL, OpenGL ES, OpenVG, Dispmanx) support
 webconsole	Library providing remote access to the system log using a web browser
-wifi		Wi-Fi support (using Plan 9 driver by R. Miller and WPA Supplicant by J. Malinen)
+wlan		WLAN support (using Plan 9 driver by R. Miller and WPA Supplicant by J. Malinen)
 WS28XX		Driver for WS28XX controlled LED stripes (by Arjan van Vught)

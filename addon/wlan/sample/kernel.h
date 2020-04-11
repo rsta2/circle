@@ -33,8 +33,8 @@
 #include <circle/sched/scheduler.h>
 #include <circle/usb/usbhcidevice.h>
 #include <fatfs/ff.h>
-#include <wifi/bcm4343.h>
-#include <wifi/hostap/wpa_supplicant/wpasupplicant.h>
+#include <wlan/bcm4343.h>
+#include <wlan/hostap/wpa_supplicant/wpasupplicant.h>
 #include <circle/net/netsubsystem.h>
 #include <circle/types.h>
 
@@ -70,7 +70,7 @@ private:
 	CScheduler		m_Scheduler;
 	CUSBHCIDevice		m_USBHCI;
 	FATFS			m_FileSystem;
-	CBcm4343Device		m_WiFi;
+	CBcm4343Device		m_WLAN;
 	CNetSubSystem		m_Net;
 	CWPASupplicant		m_WPASupplicant;
 };

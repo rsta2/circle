@@ -33,7 +33,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer),
-	m_WiFi (FIRMWARE_PATH),
+	m_WLAN (FIRMWARE_PATH),
 	m_Net (0, 0, 0, 0, DEFAULT_HOSTNAME, NetDeviceTypeWLAN),
 	m_WPASupplicant (CONFIG_FILE)
 {
@@ -97,13 +97,13 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_WiFi.Initialize ();
+		bOK = m_WLAN.Initialize ();
 	}
 
 #ifdef USE_OPEN_NET
 	if (bOK)
 	{
-		bOK = m_WiFi.JoinOpenNet (USE_OPEN_NET);
+		bOK = m_WLAN.JoinOpenNet (USE_OPEN_NET);
 	}
 #endif
 
@@ -131,7 +131,7 @@ TShutdownMode CKernel::Run (void)
 		m_Scheduler.MsSleep (100);
 	}
 
-	m_WiFi.DumpStatus ();
+	m_WLAN.DumpStatus ();
 
 	m_Timer.SetTimeZone (0*60);
 	new CNTPDaemon ("pool.ntp.org", &m_Net);

@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _wifi_bcm4343_h
-#define _wifi_bcm4343_h
+#ifndef _wlan_bcm4343_h
+#define _wlan_bcm4343_h
 
 #include <circle/netdevice.h>
 #include <circle/macaddress.h>
@@ -29,7 +29,7 @@
 
 typedef ether_event_handler_t TBcm4343EventHandler;
 
-class CBcm4343Device : public CNetDevice	/// Driver for BCM4343x Wi-Fi device
+class CBcm4343Device : public CNetDevice	/// Driver for BCM4343x WLAN device
 {
 public:
 	CBcm4343Device (const char *pFirmwarePath);		// e.g. "USB:/firmware/"

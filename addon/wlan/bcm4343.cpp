@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <wifi/bcm4343.h>
-#include <wifi/p9compat.h>
+#include <wlan/bcm4343.h>
+#include <wlan/p9compat.h>
 #include <assert.h>
 
 extern "C" void ether4330link (void);
@@ -81,7 +81,7 @@ const CMACAddress *CBcm4343Device::GetMACAddress (void) const
 
 boolean CBcm4343Device::SendFrame (const void *pBuffer, unsigned nLength)
 {
-	//hexdump (pBuffer, nLength, "wifitx");
+	//hexdump (pBuffer, nLength, "wlantx");
 
 	Block *pBlock = allocb (nLength);
 	assert (pBlock != 0);
@@ -119,7 +119,7 @@ boolean CBcm4343Device::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 	assert (pResultLength != 0);
 	*pResultLength = nLength;
 
-	//hexdump (pBuffer, nLength, "wifirx");
+	//hexdump (pBuffer, nLength, "wlanrx");
 
 	return TRUE;
 }
@@ -167,7 +167,7 @@ boolean CBcm4343Device::ReceiveScanResult (void *pBuffer, unsigned *pResultLengt
 	assert (pResultLength != 0);
 	*pResultLength = nLength;
 
-	//hexdump (pBuffer, nLength, "wifiscan");
+	//hexdump (pBuffer, nLength, "wlanscan");
 
 	return TRUE;
 }

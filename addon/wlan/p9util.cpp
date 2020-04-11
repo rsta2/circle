@@ -5,7 +5,7 @@
 #include <circle/debug.h>
 #include <assert.h>
 
-static const char From[] = "wifi";
+static const char From[] = "wlan";
 
 int print (const char *fmt, ...)
 {
