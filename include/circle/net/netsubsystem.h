@@ -28,6 +28,8 @@
 #include <circle/string.h>
 #include <circle/types.h>
 
+#define DEFAULT_HOSTNAME	"raspberrypi"
+
 class CDHCPClient;
 
 class CNetSubSystem
@@ -37,7 +39,8 @@ public:
 		       const u8 *pNetMask        = 0,
 		       const u8 *pDefaultGateway = 0,
 		       const u8 *pDNSServer      = 0,
-		       const char *pHostname	 = "raspberrypi");	// 0 for no hostname
+		       const char *pHostname	 = DEFAULT_HOSTNAME,	// 0 for no hostname
+		       TNetDeviceType DeviceType = NetDeviceTypeAny);
 	~CNetSubSystem (void);
 	
 	boolean Initialize (boolean bWaitForActivate = TRUE);
@@ -46,6 +49,7 @@ public:
 
 	CNetConfig *GetConfig (void);
 	CNetDeviceLayer *GetNetDeviceLayer (void);
+	CLinkLayer *GetLinkLayer (void);
 	CTransportLayer *GetTransportLayer (void);
 
 	boolean IsRunning (void) const;			// is DHCP bound if used?

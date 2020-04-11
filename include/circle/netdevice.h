@@ -27,6 +27,14 @@
 
 #define MAX_NET_DEVICES		5
 
+enum TNetDeviceType
+{
+	NetDeviceTypeEthernet,
+	NetDeviceTypeWLAN,
+	NetDeviceTypeAny,
+	NetDeviceTypeUnknown
+};
+
 enum TNetDeviceSpeed
 {
 	NetDeviceSpeed10Half,
@@ -38,10 +46,13 @@ enum TNetDeviceSpeed
 	NetDeviceSpeedUnknown
 };
 
-class CNetDevice	/// Base class (interface) of (Ethernet) net devices
+class CNetDevice	/// Base class (interface) of net devices
 {
 public:
 	virtual ~CNetDevice (void) {}
+
+	/// \return Type of this net device
+	virtual TNetDeviceType GetType (void)		{ return NetDeviceTypeEthernet; }
 
 	/// \return Pointer to a MAC address object, which holds our own address
 	virtual const CMACAddress *GetMACAddress (void) const = 0;
@@ -80,6 +91,10 @@ public:
 	/// \param nDeviceNumber Zero-based number of a net device (normally only 0 is used)
 	/// \return Pointer to the device object
 	static CNetDevice *GetNetDevice (unsigned nDeviceNumber);
+
+	/// \param Type Specific net device type to search for (or NetDeviceTypeAny)
+	/// \return Pointer to the first device object of this type
+	static CNetDevice *GetNetDevice (TNetDeviceType Type);
 
 protected:
 	void AddNetDevice (void);

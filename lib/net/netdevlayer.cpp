@@ -26,8 +26,9 @@
 
 const char FromNetDev[] = "netdev";
 
-CNetDeviceLayer::CNetDeviceLayer (CNetConfig *pNetConfig)
-:	m_pNetConfig (pNetConfig),
+CNetDeviceLayer::CNetDeviceLayer (CNetConfig *pNetConfig, TNetDeviceType DeviceType)
+:	m_DeviceType (DeviceType),
+	m_pNetConfig (pNetConfig),
 	m_pDevice (0)
 {
 }
@@ -48,7 +49,7 @@ boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 #endif
 
 	assert (m_pDevice == 0);
-	m_pDevice = CNetDevice::GetNetDevice (0);	// get "eth0"
+	m_pDevice = CNetDevice::GetNetDevice (m_DeviceType);
 	if (m_pDevice == 0)
 	{
 		CLogger::Get ()->Write (FromNetDev, LogError, "Net device not available");
