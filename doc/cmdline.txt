@@ -22,6 +22,10 @@ usbpowerdelay=510		Delay in milliseconds between powering on an USB device on an
 				USB hub (both internal and external) and accessing the device
 				(default 510, which is sometimes not enough to detect a device)
 
+usbspeed=full			Set speed of the whole USB to full speed (12 Mbps) instead of
+				high speed (480 Mbps) as workaround in case of problems
+				(does work on Raspberry Pi 1-3 only)
+
 sounddev=sndpwm			Set device used for sound output
 				("sndpwm" for PWM (via headphone jack), "sndi2s" for I2S (external
 				 hardware required), "sndvchiq" for VCHIQ (HDMI or headphone jack),

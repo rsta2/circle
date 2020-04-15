@@ -7,7 +7,7 @@
 //	no dynamic attachments
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -348,6 +348,10 @@ boolean CDWHCIDevice::InitCore (void)
 {
 	CDWHCIRegister USBConfig (DWHCI_CORE_USB_CFG);
 	USBConfig.Read ();
+	if (CKernelOptions::Get ()->GetUSBFullSpeed ())
+	{
+		USBConfig.Or (DWHCI_CORE_USB_CFG_PHY_SEL_FS);
+	}
 	USBConfig.And (~DWHCI_CORE_USB_CFG_ULPI_EXT_VBUS_DRV);
 	USBConfig.And (~DWHCI_CORE_USB_CFG_TERM_SEL_DL_PULSE);
 	USBConfig.Write ();

@@ -2,7 +2,7 @@
 // koptions.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ CKernelOptions::CKernelOptions (void)
 	m_nHeight (0),
 	m_nLogLevel (LogDebug),
 	m_nUSBPowerDelay (0),
+	m_bUSBFullSpeed (FALSE),
 	m_nSoundOption (0),
 	m_CPUSpeed (CPUSpeedLow),
 	m_nSoCMaxTemp (60)
@@ -106,6 +107,13 @@ CKernelOptions::CKernelOptions (void)
 				m_nUSBPowerDelay = nValue;
 			}
 		}
+		else if (strcmp (pOption, "usbspeed") == 0)
+		{
+			if (strcmp (pValue, "full") == 0)
+			{
+				m_bUSBFullSpeed = TRUE;
+			}
+		}
 		else if (strcmp (pOption, "sounddev") == 0)
 		{
 			strncpy (m_SoundDevice, pValue, sizeof m_SoundDevice-1);
@@ -172,6 +180,11 @@ const char *CKernelOptions::GetKeyMap (void) const
 unsigned CKernelOptions::GetUSBPowerDelay (void) const
 {
 	return m_nUSBPowerDelay;
+}
+
+boolean CKernelOptions::GetUSBFullSpeed (void) const
+{
+	return m_bUSBFullSpeed;
 }
 
 const char *CKernelOptions::GetSoundDevice (void) const
