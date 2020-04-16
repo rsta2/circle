@@ -279,6 +279,28 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				}
 			}
 
+#if STDLIB_SUPPORT == 1
+			boolean bLong = FALSE;
+			boolean bLongLong = FALSE;
+			unsigned long long ullArg;
+			long long llArg;
+
+			if (*pFormat == 'l')
+			{
+				if (*(pFormat+1) == 'l')
+				{
+					bLongLong = TRUE;
+
+					pFormat++;
+				}
+				else
+				{
+					bLong = TRUE;
+				}
+
+				pFormat++;
+			}
+#else
 			boolean bLong = FALSE;
 			if (*pFormat == 'l')
 			{
@@ -286,7 +308,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 
 				pFormat++;
 			}
-
+#endif
 			char chArg;
 			const char *pArg;
 			unsigned long ulArg;
@@ -321,7 +343,15 @@ void CString::FormatV (const char *pFormat, va_list Args)
 
 			case 'd':
 			case 'i':
+#if STDLIB_SUPPORT == 1
+				if (bLongLong)
+				{
+					llArg = va_arg (Args, long long);
+				}
+				else if (bLong)
+#else
 				if (bLong)
+#endif
 				{
 					lArg = va_arg (Args, long);
 				}
@@ -334,7 +364,19 @@ void CString::FormatV (const char *pFormat, va_list Args)
 					bMinus = TRUE;
 					lArg = -lArg;
 				}
+#if STDLIB_SUPPORT == 1
+				if (llArg < 0)
+				{
+					bMinus = TRUE;
+					llArg = -llArg;
+				}
+				if (bLongLong)
+					lltoa (NumBuf, (unsigned long long) llArg, 10, FALSE);
+				else
+					ntoa (NumBuf, (unsigned long) lArg, 10, FALSE);
+#else
 				ntoa (NumBuf, (unsigned long) lArg, 10, FALSE);
+#endif
 				nLen = strlen (NumBuf) + (bMinus ? 1 : 0);
 				if (bLeft)
 				{
@@ -442,7 +484,15 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				goto FormatNumber;
 
 			FormatNumber:
+#if STDLIB_SUPPORT == 1
+				if (bLongLong)
+				{
+					ullArg = va_arg (Args, unsigned long long);
+				}
+				else if (bLong)
+#else
 				if (bLong)
+#endif
 				{
 					ulArg = va_arg (Args, unsigned long);
 				}
@@ -450,7 +500,14 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				{
 					ulArg = va_arg (Args, unsigned);
 				}
+#if STDLIB_SUPPORT == 1
+				if (bLongLong)
+					lltoa (NumBuf, ullArg, nBase, *pFormat == 'X');
+				else
+					ntoa (NumBuf, ulArg, nBase, *pFormat == 'X');
+#else
 				ntoa (NumBuf, ulArg, nBase, *pFormat == 'X');
+#endif
 				nLen = strlen (NumBuf);
 				if (bLeft)
 				{
@@ -572,6 +629,45 @@ char *CString::ntoa (char *pDest, unsigned long ulNumber, unsigned nBase, boolea
 
 	return pDest;
 }
+
+#if STDLIB_SUPPORT == 1
+char *CString::lltoa (char *pDest, unsigned long long ullNumber, unsigned nBase, boolean bUpcase)
+{
+	unsigned long long ullDigit;
+
+	unsigned long long ullDivisor = 1ULL;
+	while (1)
+	{
+		ullDigit = ullNumber / ullDivisor;
+		if (ullDigit < nBase)
+		{
+			break;
+		}
+
+		ullDivisor *= nBase;
+	}
+
+	char *p = pDest;
+	while (1)
+	{
+		ullNumber %= ullDivisor;
+
+		*p++ = ullDigit < 10 ? '0' + ullDigit : '0' + ullDigit + 7 + (bUpcase ? 0 : 0x20);
+
+		ullDivisor /= nBase;
+		if (ullDivisor == 0)
+		{
+			break;
+		}
+
+		ullDigit = ullNumber / ullDivisor;
+	}
+
+	*p = '\0';
+
+	return pDest;
+}
+#endif
 
 char *CString::ftoa (char *pDest, double fNumber, unsigned nPrecision)
 {
