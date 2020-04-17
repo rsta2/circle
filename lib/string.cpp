@@ -25,7 +25,7 @@
 #define FORMAT_RESERVE		64	// additional bytes to allocate
 
 #if AARCH == 32
-	#define MAX_NUMBER_LEN		11	// 32 bit octal number
+	#define MAX_NUMBER_LEN		22	// 64 bit octal number
 	#define MAX_PRECISION		9	// floor (log10 (ULONG_MAX))
 #else
 	#define MAX_NUMBER_LEN		22	// 64 bit octal number
@@ -279,11 +279,11 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				}
 			}
 
-#if STDLIB_SUPPORT == 1
+#if STDLIB_SUPPORT >= 1
 			boolean bLong = FALSE;
 			boolean bLongLong = FALSE;
 			unsigned long long ullArg;
-			long long llArg;
+			long long llArg = 0;
 
 			if (*pFormat == 'l')
 			{
@@ -316,7 +316,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 			unsigned nBase;
 			char NumBuf[MAX_FLOAT_LEN+1];
 			boolean bMinus = FALSE;
-			long lArg;
+			long lArg = 0;
 			double fArg;
 
 			switch (*pFormat)
@@ -343,7 +343,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 
 			case 'd':
 			case 'i':
-#if STDLIB_SUPPORT == 1
+#if STDLIB_SUPPORT >= 1
 				if (bLongLong)
 				{
 					llArg = va_arg (Args, long long);
@@ -364,7 +364,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 					bMinus = TRUE;
 					lArg = -lArg;
 				}
-#if STDLIB_SUPPORT == 1
+#if STDLIB_SUPPORT >= 1
 				if (llArg < 0)
 				{
 					bMinus = TRUE;
@@ -484,7 +484,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				goto FormatNumber;
 
 			FormatNumber:
-#if STDLIB_SUPPORT == 1
+#if STDLIB_SUPPORT >= 1
 				if (bLongLong)
 				{
 					ullArg = va_arg (Args, unsigned long long);
@@ -500,7 +500,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				{
 					ulArg = va_arg (Args, unsigned);
 				}
-#if STDLIB_SUPPORT == 1
+#if STDLIB_SUPPORT >= 1
 				if (bLongLong)
 					lltoa (NumBuf, ullArg, nBase, *pFormat == 'X');
 				else
@@ -630,7 +630,7 @@ char *CString::ntoa (char *pDest, unsigned long ulNumber, unsigned nBase, boolea
 	return pDest;
 }
 
-#if STDLIB_SUPPORT == 1
+#if STDLIB_SUPPORT >= 1
 char *CString::lltoa (char *pDest, unsigned long long ullNumber, unsigned nBase, boolean bUpcase)
 {
 	unsigned long long ullDigit;

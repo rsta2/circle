@@ -51,7 +51,7 @@ private:
 	void ReserveSpace (size_t nSpace);
 	
 	static char *ntoa (char *pDest, unsigned long ulNumber, unsigned nBase, boolean bUpcase);
-#if STDLIB_SUPPORT == 1
+#if STDLIB_SUPPORT >= 1
 	static char *lltoa (char *pDest, unsigned long long ullNumber, unsigned nBase, boolean bUpcase);
 #endif
 	static char *ftoa (char *pDest, double fNumber, unsigned nPrecision);
