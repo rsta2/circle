@@ -35,6 +35,7 @@
 //
 #include "emmc.h"
 #include <circle/bcm2835.h>
+#include <circle/bcm2711.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
@@ -83,34 +84,40 @@
 // Required for QEMU
 #define EMMC_ALLOW_OLD_SDHCI
 
-#define	EMMC_ARG2		(ARM_EMMC_BASE + 0x00)
-#define EMMC_BLKSIZECNT		(ARM_EMMC_BASE + 0x04)
-#define EMMC_ARG1		(ARM_EMMC_BASE + 0x08)
-#define EMMC_CMDTM		(ARM_EMMC_BASE + 0x0C)
-#define EMMC_RESP0		(ARM_EMMC_BASE + 0x10)
-#define EMMC_RESP1		(ARM_EMMC_BASE + 0x14)
-#define EMMC_RESP2		(ARM_EMMC_BASE + 0x18)
-#define EMMC_RESP3		(ARM_EMMC_BASE + 0x1C)
-#define EMMC_DATA		(ARM_EMMC_BASE + 0x20)
-#define EMMC_STATUS		(ARM_EMMC_BASE + 0x24)
-#define EMMC_CONTROL0		(ARM_EMMC_BASE + 0x28)
-#define EMMC_CONTROL1		(ARM_EMMC_BASE + 0x2C)
-#define EMMC_INTERRUPT		(ARM_EMMC_BASE + 0x30)
-#define EMMC_IRPT_MASK		(ARM_EMMC_BASE + 0x34)
-#define EMMC_IRPT_EN		(ARM_EMMC_BASE + 0x38)
-#define EMMC_CONTROL2		(ARM_EMMC_BASE + 0x3C)
-#define EMMC_CAPABILITIES_0	(ARM_EMMC_BASE + 0x40)
-#define EMMC_CAPABILITIES_1	(ARM_EMMC_BASE + 0x44)
-#define EMMC_FORCE_IRPT		(ARM_EMMC_BASE + 0x50)
-#define EMMC_BOOT_TIMEOUT	(ARM_EMMC_BASE + 0x70)
-#define EMMC_DBG_SEL		(ARM_EMMC_BASE + 0x74)
-#define EMMC_EXRDFIFO_CFG	(ARM_EMMC_BASE + 0x80)
-#define EMMC_EXRDFIFO_EN	(ARM_EMMC_BASE + 0x84)
-#define EMMC_TUNE_STEP		(ARM_EMMC_BASE + 0x88)
-#define EMMC_TUNE_STEPS_STD	(ARM_EMMC_BASE + 0x8C)
-#define EMMC_TUNE_STEPS_DDR	(ARM_EMMC_BASE + 0x90)
-#define EMMC_SPI_INT_SPT	(ARM_EMMC_BASE + 0xF0)
-#define EMMC_SLOTISR_VER	(ARM_EMMC_BASE + 0xFC)
+#if RASPPI <= 3
+	#define EMMC_BASE	ARM_EMMC_BASE
+#else
+	#define EMMC_BASE	ARM_EMMC2_BASE
+#endif
+
+#define EMMC_ARG2		(EMMC_BASE + 0x00)
+#define EMMC_BLKSIZECNT		(EMMC_BASE + 0x04)
+#define EMMC_ARG1		(EMMC_BASE + 0x08)
+#define EMMC_CMDTM		(EMMC_BASE + 0x0C)
+#define EMMC_RESP0		(EMMC_BASE + 0x10)
+#define EMMC_RESP1		(EMMC_BASE + 0x14)
+#define EMMC_RESP2		(EMMC_BASE + 0x18)
+#define EMMC_RESP3		(EMMC_BASE + 0x1C)
+#define EMMC_DATA		(EMMC_BASE + 0x20)
+#define EMMC_STATUS		(EMMC_BASE + 0x24)
+#define EMMC_CONTROL0		(EMMC_BASE + 0x28)
+#define EMMC_CONTROL1		(EMMC_BASE + 0x2C)
+#define EMMC_INTERRUPT		(EMMC_BASE + 0x30)
+#define EMMC_IRPT_MASK		(EMMC_BASE + 0x34)
+#define EMMC_IRPT_EN		(EMMC_BASE + 0x38)
+#define EMMC_CONTROL2		(EMMC_BASE + 0x3C)
+#define EMMC_CAPABILITIES_0	(EMMC_BASE + 0x40)
+#define EMMC_CAPABILITIES_1	(EMMC_BASE + 0x44)
+#define EMMC_FORCE_IRPT		(EMMC_BASE + 0x50)
+#define EMMC_BOOT_TIMEOUT	(EMMC_BASE + 0x70)
+#define EMMC_DBG_SEL		(EMMC_BASE + 0x74)
+#define EMMC_EXRDFIFO_CFG	(EMMC_BASE + 0x80)
+#define EMMC_EXRDFIFO_EN	(EMMC_BASE + 0x84)
+#define EMMC_TUNE_STEP		(EMMC_BASE + 0x88)
+#define EMMC_TUNE_STEPS_STD	(EMMC_BASE + 0x8C)
+#define EMMC_TUNE_STEPS_DDR	(EMMC_BASE + 0x90)
+#define EMMC_SPI_INT_SPT	(EMMC_BASE + 0xF0)
+#define EMMC_SLOTISR_VER	(EMMC_BASE + 0xFC)
 
 #define SD_CMD_INDEX(a)			((a) << 24)
 #define SD_CMD_TYPE_NORMAL		0
@@ -456,20 +463,6 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
 		}
 	}
-#if RASPPI >= 4
-	// Raspberry Pi 4 requires to explicitly set the GPIO and pull modes
-	else if (CMachineInfo::Get ()->GetModelMajor () >= 4)
-	{
-		write32 (ARM_GPIO_GPPINMUXSD, 3);	// select legacy EMMC1 controller
-
-		for (unsigned i = 0; i <= 5; i++)
-		{
-			m_GPIO48_53[i].AssignPin (48+i);
-			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
-			m_GPIO48_53[i].SetPullMode (i == 0 ? GPIOPullModeOff : GPIOPullModeUp);
-		}
-	}
-#endif
 #endif
 }
 
@@ -639,7 +632,11 @@ u32 CEMMCDevice::GetBaseClock (void)
 {
 	CBcmPropertyTags Tags;
 	TPropertyTagClockRate TagClockRate;
+#if RASPPI <= 3
 	TagClockRate.nClockId = CLOCK_ID_EMMC;
+#else
+	TagClockRate.nClockId = CLOCK_ID_EMMC2;
+#endif
 	if (!Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate))
 	{
 		LogWrite (LogError, "Cannot get clock rate");
@@ -1248,6 +1245,14 @@ int CEMMCDevice::CardReset (void)
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "control0: %08x, control1: %08x, control2: %08x", 
 				read32 (EMMC_CONTROL0), read32 (EMMC_CONTROL1), read32 (EMMC_CONTROL2));
+#endif
+
+#if RASPPI >= 4
+	// Enable SD Bus Power VDD1 at 3.3V
+	u32 control0 = read32 (EMMC_CONTROL0);
+	control0 |= 0x0F << 8;
+	write32 (EMMC_CONTROL0, control0);
+	usDelay (2000);
 #endif
 
 	// Check for a valid card

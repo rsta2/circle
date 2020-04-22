@@ -2,7 +2,7 @@
 // bcmpropertytags.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -162,6 +162,7 @@ struct TPropertyTagClockRate
 	#define CLOCK_ID_UART		2
 	#define CLOCK_ID_ARM		3
 	#define CLOCK_ID_CORE		4
+	#define CLOCK_ID_EMMC2		12
 	u32		nRate;			// Hz
 }
 PACKED;
