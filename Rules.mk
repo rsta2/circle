@@ -193,9 +193,9 @@ $(TARGET).hex: $(TARGET).img
 
 flash: $(TARGET).hex
 ifneq ($(strip $(REBOOTMAGIC)),)
-	python $(CIRCLEHOME)/tools/reboottool.py $(REBOOTMAGIC) $(SERIALPORT) $(USERBAUD)
+	python3 $(CIRCLEHOME)/tools/reboottool.py $(REBOOTMAGIC) $(SERIALPORT) $(USERBAUD)
 endif
-	python $(CIRCLEHOME)/tools/flasher.py $(TARGET).hex $(SERIALPORT) $(FLASHBAUD)
+	python3 $(CIRCLEHOME)/tools/flasher.py $(TARGET).hex $(SERIALPORT) $(FLASHBAUD)
 
 monitor:
 	putty -serial $(SERIALPORT) -sercfg $(USERBAUD)
