@@ -37,6 +37,10 @@
 #include <circle/fs/partitionmanager.h>
 #include <circle/logger.h>
 #include <circle/types.h>
+#include <circle/sysconfig.h>
+#ifdef USE_SDHOST
+	#include <SDCard/sdhost.h>
+#endif
 
 struct TSCR			// SD configuration register
 {
@@ -60,9 +64,10 @@ public:
 
 	u64 Seek (u64 ullOffset);
 
-	u32 *GetID (void);
+	const u32 *GetID (void);
 
 private:
+#ifndef USE_SDHOST
 	int PowerOn (void);
 	void PowerOff (void);
 
@@ -72,10 +77,13 @@ private:
 
 	int ResetCmd (void);
 	int ResetDat (void);
+#endif
 
 	void IssueCommandInt (u32 cmd_reg, u32 argument, int timeout);
+#ifndef USE_SDHOST
 	void HandleCardInterrupt (void);
 	void HandleInterrupts (void);
+#endif
 	boolean IssueCommand (u32 command, u32 argument, int timeout = 500000);
 
 	int CardReset (void);
@@ -86,7 +94,9 @@ private:
 	int DoRead (u8 *buf, size_t buf_size, u32 block_no);
 	int DoWrite (u8 *buf, size_t buf_size, u32 block_no);
 
+#ifndef USE_SDHOST
 	int TimeoutWait (unsigned reg, unsigned mask, int value, unsigned usec);
+#endif
 
 	void usDelay (unsigned usec);
 
@@ -97,16 +107,22 @@ private:
 	CTimer		 *m_pTimer;
 	CActLED		 *m_pActLED;
 
+#ifndef USE_SDHOST
 #if RASPPI >= 2
 	CGPIOPin	  m_GPIO34_39[6];	// WiFi
 	CGPIOPin	  m_GPIO48_53[6];	// SD card
+#endif
 #endif
 
 	u64 m_ullOffset;
 
 	CPartitionManager *m_pPartitionManager;
 
+#ifdef USE_SDHOST
+	CSDHOSTDevice m_Host;
+#else
 	u32 m_hci_ver;
+#endif
 
 	// was: struct emmc_block_dev
 	u32 m_device_id[4];
@@ -115,7 +131,9 @@ private:
 	u32 m_card_supports_18v;
 	u32 m_card_ocr;
 	u32 m_card_rca;
+#ifndef USE_SDHOST
 	u32 m_last_interrupt;
+#endif
 	u32 m_last_error;
 
 	TSCR *m_pSCR;
@@ -133,11 +151,15 @@ private:
 	void *m_buf;
 	int m_blocks_to_transfer;
 	size_t m_block_size;
+#ifndef USE_SDHOST
 	int m_card_removal;
 	u32 m_base_clock;
+#endif
 
 	static const char *sd_versions[];
+#ifndef USE_SDHOST
 	static const char *err_irpts[];
+#endif
 	static const u32 sd_commands[];
 	static const u32 sd_acommands[];
 };

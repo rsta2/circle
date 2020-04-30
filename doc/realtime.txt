@@ -21,6 +21,10 @@ in include/circle/sysconfig.h.
 * Writes to the screen or serial device may noticeable raise the interrupt
 latency too. If REALTIME is defined this influence is relatively small.
 
+* If you rely on a small IRQ latency, USE_SDHOST should be disabled in include/
+circle/sysconfig.h. WLAN access is not possible parallel to SD card access then
+on Raspberry Pi 3 and Zero W.
+
 * The GPIO block of the Raspberry Pi is able to output data with up to about 60
 MHz (32-bit words) and to input data with up to about 15 MHz. The exact rates
 depend on the Raspberry Pi model and the system clock.

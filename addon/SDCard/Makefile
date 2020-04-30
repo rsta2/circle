@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= emmc.o
+OBJS	= emmc.o mmchost.o sdhost.o
 
 libsdcard.a: $(OBJS)
 	@echo "  AR    $@"

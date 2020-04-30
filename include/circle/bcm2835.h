@@ -212,6 +212,11 @@
 #define ARM_EMMC_BASE		(ARM_IO_BASE + 0x300000)
 
 //
+// SDHOST Controller (SD Card)
+//
+#define ARM_SDHOST_BASE		(ARM_IO_BASE + 0x202000)
+
+//
 // Power Manager
 //
 #define ARM_PM_BASE		(ARM_IO_BASE + 0x100000)
