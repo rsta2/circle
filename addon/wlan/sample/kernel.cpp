@@ -22,7 +22,7 @@
 
 //#define USE_OPEN_NET	"TEST"				// SSID
 
-#define DRIVE		"USB:"
+#define DRIVE		"SD:"
 #define FIRMWARE_PATH	DRIVE "/firmware/"		// firmware files must be provided here
 #define CONFIG_FILE	DRIVE "/wpa_supplicant.conf"
 
@@ -33,6 +33,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
 	m_WLAN (FIRMWARE_PATH),
 	m_Net (0, 0, 0, 0, DEFAULT_HOSTNAME, NetDeviceTypeWLAN),
 	m_WPASupplicant (CONFIG_FILE)
@@ -82,6 +83,11 @@ boolean CKernel::Initialize (void)
 	if (bOK)
 	{
 		bOK = m_USBHCI.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = m_EMMC.Initialize ();
 	}
 
 	if (bOK)

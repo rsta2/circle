@@ -11,8 +11,9 @@ command:
 
 	git submodule update --init addon/wlan/hostap
 
-Beside the main Circle libraries the library in addon/fatfs/ is needed and must
-be made, before the WLAN libraries and the sample can be built with:
+Beside the main Circle libraries the libraries in addon/fatfs/ and addon/SDCard/
+are needed and must be made, before the WLAN libraries and the sample can be
+built with:
 
 	cd addon/wlan
 	./makeall
@@ -31,13 +32,10 @@ These files can be downloaded as follows (uses the "wget" tool):
 	cd addon/wlan/firmware
 	make
 
-These files must be copied into the directory /firmware of an USB flash drive
-(with FAT partition). These downloaded firmware files have been tested with
-Circle. This drive must be connected to your Raspberry Pi, which is used for the
-test. Please note that reading the firmware files from the SD card is currently
-not supported.
+These files must be copied into the directory /firmware of the SD card, which
+is used for boot. These downloaded firmware files have been tested with Circle.
 
 Furthermore a configuration file "wpa_supplicant.conf" is required in the root
-directory of the USB flash drive. You can modify the template file in this
+directory of the SD card. You can modify the template file in this
 sample directory and set the SSID and password of your own WLAN. The alpha2
 ISO/IEC code of the country, where you are in, must be set too.

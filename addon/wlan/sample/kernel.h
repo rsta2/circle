@@ -32,6 +32,7 @@
 #include <circle/logger.h>
 #include <circle/sched/scheduler.h>
 #include <circle/usb/usbhcidevice.h>
+#include <SDCard/emmc.h>
 #include <fatfs/ff.h>
 #include <wlan/bcm4343.h>
 #include <wlan/hostap/wpa_supplicant/wpasupplicant.h>
@@ -69,6 +70,7 @@ private:
 	CLogger			m_Logger;
 	CScheduler		m_Scheduler;
 	CUSBHCIDevice		m_USBHCI;
+	CEMMCDevice		m_EMMC;
 	FATFS			m_FileSystem;
 	CBcm4343Device		m_WLAN;
 	CNetSubSystem		m_Net;
