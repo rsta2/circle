@@ -1215,7 +1215,7 @@ intwait(Ctlr *ctlr, int wait)
 		sbwindow(ctlr->sdregs);
 		i = sdiord(Fn0, Intpend);
 		if(i == 0){
-			tsleep(&up->sleep, return0, 0, 10);
+			//tsleep(&up->sleep, return0, 0, 10);
 			continue;
 		}
 		ints = cfgreadl(Fn1, ctlr->sdregs + Intstatus);
