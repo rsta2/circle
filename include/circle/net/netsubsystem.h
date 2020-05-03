@@ -40,7 +40,7 @@ public:
 		       const u8 *pDefaultGateway = 0,
 		       const u8 *pDNSServer      = 0,
 		       const char *pHostname	 = DEFAULT_HOSTNAME,	// 0 for no hostname
-		       TNetDeviceType DeviceType = NetDeviceTypeAny);
+		       TNetDeviceType DeviceType = NetDeviceTypeEthernet);
 	~CNetSubSystem (void);
 	
 	boolean Initialize (boolean bWaitForActivate = TRUE);
