@@ -1,7 +1,20 @@
 README
 
-This sample program creates a listing of the files in the root directory of the inserted SD card (WHICH DOES NOT CONTAIN ANY IMPORTANT DATA). The first primary partition of the SD card must be a FAT16 or FAT32 partition. Extended partitions or other file systems are not supported.
+This sample program creates a listing of the files in the root directory of the
+inserted SD card (WHICH DOES NOT CONTAIN ANY IMPORTANT DATA). The first primary
+partition of the SD card must be a FAT16 or FAT32 partition. Extended partitions
+or other file systems are not supported.
 
-After creating the directory listing a file "circle.txt" is created in the root directory and some text is written to it. After closing the file it is re-opened and its contents is read and written to the screen.
+After creating the directory listing a file "circle.txt" is created in the root
+directory and some text is written to it. After closing the file it is re-opened
+and its contents is read and written to the screen.
 
-The EMMC driver was ported from [https://github.com/jncronin/rpi-boot]. See the notices in emmc.cpp!
+Circle uses different interfaces for SD card access, depending on the Raspberry
+Pi model and the system configuration. On Raspberry Pi 1-3 and Zero the SDHOST
+interface is used by default, but not if NO_SDHOST or REALTIME is defined. In
+this case the EMMC interface is used. The Raspberry Pi 4 has an additional EMMC2
+interface for SD card access, which is used in any case.
+
+The EMMC driver was ported from [https://github.com/jncronin/rpi-boot]. See the
+notices in emmc.cpp! The SDHOST driver was ported from Raspbian Linux. See the
+notices in sdhost.cpp!
