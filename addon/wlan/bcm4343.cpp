@@ -19,7 +19,12 @@
 //
 #include <wlan/bcm4343.h>
 #include <wlan/p9compat.h>
+#include <circle/sysconfig.h>
 #include <assert.h>
+
+#if RASPPI <= 3 && !defined (USE_SDHOST)
+	#warning WLAN cannot be used parallel with SD card access in this configuration!
+#endif
 
 extern "C" void ether4330link (void);
 
