@@ -5,8 +5,17 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+The 42nd Step
+-------------
+
+This release adds **Wireless LAN access** support in [addon/wlan](addon/wlan) to Circle. Please read the [README file](addon/wlan/sample/README) of the sample program for details! The WLAN support in Circle is still experimental.
+
+To allow parallel access to WLAN and SD card, a new **SDHOST driver** for SD card access on Raspberry Pi 1-3 and Zero has been added. You can return to the previous EMMC interface in case of problems (e.g. if using QEMU) or for real-time applications by adding `DEFINE += -DNO_SDHOST` to *Config.mk*. WLAN access is not possible then. On Raspberry Pi 4 the **EMMC2 interface** is used for SD card access now.
+
 Release 41.2
 ------------
+
+2020-03-08
 
 This intermediate release comes with some new features, improvements in detail and fixes. For the **Raspberry Pi 4** now the four **additional peripheral devices** each are supported for I2C master, SPI master and UART. The **SPI slave** is supported too on the latest Raspberry Pi model now.
 
