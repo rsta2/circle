@@ -1,0 +1,41 @@
+README
+
+This sample uses the on-board WLAN device of the Raspberry Pi 3, 4 and Zero W to
+connect to a WLAN and to update the system time from a NTP server. Currently
+only WPA[2] enabled WLANs can be joined by default. The WLAN driver has been
+ported from the Plan 9 operating system. Furthermore the ported "WPA Supplicant"
+tool is used.
+
+Before build you have to fetch to submodule addon/wlan/hostap with the following
+command:
+
+	git submodule update --init addon/wlan/hostap
+
+Beside the main Circle libraries the libraries in addon/fatfs/ and addon/SDCard/
+are needed and must be made, before the WLAN libraries and the sample can be
+built with:
+
+	cd addon/wlan
+	./makeall
+
+You have to provide the following firmware files for the different WLAN
+controllers of the Raspberry Pi:
+
+	brcmfmac43430-sdio.txt
+	brcmfmac43430-sdio.bin
+	brcmfmac43455-sdio.bin
+	brcmfmac43455-sdio.clm_blob
+	brcmfmac43455-sdio.txt
+
+These files can be downloaded as follows (uses the "wget" tool):
+
+	cd addon/wlan/firmware
+	make
+
+These files must be copied into the directory /firmware of the SD card, which
+is used for boot. These downloaded firmware files have been tested with Circle.
+
+Furthermore a configuration file "wpa_supplicant.conf" is required in the root
+directory of the SD card. You can modify the template file in this
+sample directory and set the SSID and password of your own WLAN. The alpha2
+ISO/IEC code of the country, where you are in, must be set too.

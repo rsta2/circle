@@ -26,9 +26,9 @@
 CNetSubSystem *CNetSubSystem::s_pThis = 0;
 
 CNetSubSystem::CNetSubSystem (const u8 *pIPAddress, const u8 *pNetMask, const u8 *pDefaultGateway,
-			      const u8 *pDNSServer, const char *pHostname)
+			      const u8 *pDNSServer, const char *pHostname, TNetDeviceType DeviceType)
 :	m_Hostname (pHostname != 0 ? pHostname : ""),
-	m_NetDevLayer (&m_Config),
+	m_NetDevLayer (&m_Config, DeviceType),
 	m_LinkLayer (&m_Config, &m_NetDevLayer),
 	m_NetworkLayer (&m_Config, &m_LinkLayer),
 	m_TransportLayer (&m_Config, &m_NetworkLayer),
@@ -113,6 +113,11 @@ boolean CNetSubSystem::Initialize (boolean bWaitForActivate)
 
 void CNetSubSystem::Process (void)
 {
+	if (s_pThis == 0)
+	{
+		return;
+	}
+
 	m_NetDevLayer.Process ();
 
 	m_LinkLayer.Process ();
@@ -130,6 +135,11 @@ CNetConfig *CNetSubSystem::GetConfig (void)
 CNetDeviceLayer *CNetSubSystem::GetNetDeviceLayer (void)
 {
 	return &m_NetDevLayer;
+}
+
+CLinkLayer *CNetSubSystem::GetLinkLayer (void)
+{
+	return &m_LinkLayer;
 }
 
 CTransportLayer *CNetSubSystem::GetTransportLayer (void)

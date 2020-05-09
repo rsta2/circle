@@ -22,6 +22,7 @@
 
 #include <circle/sysconfig.h>
 #include <circle/spinlock.h>
+#include <circle/macros.h>
 #include <circle/types.h>
 
 //#define PAGE_DEBUG
@@ -41,7 +42,7 @@ public:
 
 	/// \param nBase Base address of memory region
 	/// \param nSize Size of memory region
-	void Setup (uintptr nBase, size_t nSize);
+	void Setup (uintptr nBase, size_t nSize) NOOPT;
 
 	/// \return Free space of the memory region, which is not allocated by pages
 	/// \note Unused pages on the free list do not count here.

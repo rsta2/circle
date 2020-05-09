@@ -34,15 +34,21 @@
 // Broadcom BCM2835 ARM Peripherals Guide
 //
 #include "emmc.h"
-#include <circle/bcm2835.h>
-#include <circle/bcmpropertytags.h>
 #include <circle/devicenameservice.h>
-#include <circle/synchronize.h>
-#include <circle/machineinfo.h>
-#include <circle/memio.h>
 #include <circle/util.h>
 #include <circle/stdarg.h>
 #include <assert.h>
+#ifndef USE_SDHOST
+	#include <circle/bcm2835.h>
+	#include <circle/bcm2711.h>
+	#include <circle/bcmpropertytags.h>
+	#include <circle/synchronize.h>
+	#include <circle/machineinfo.h>
+	#include <circle/memio.h>
+#else
+	#include "mmc.h"
+	#include "mmcerror.h"
+#endif
 
 //
 // Configuration options
@@ -76,6 +82,8 @@
 // Requires 150 mA power so disabled on the RPi for now
 #define SDXC_MAXIMUM_PERFORMANCE
 
+#ifndef USE_SDHOST
+
 // Enable card interrupts
 //#define SD_CARD_INTERRUPTS
 
@@ -83,34 +91,42 @@
 // Required for QEMU
 #define EMMC_ALLOW_OLD_SDHCI
 
-#define	EMMC_ARG2		(ARM_EMMC_BASE + 0x00)
-#define EMMC_BLKSIZECNT		(ARM_EMMC_BASE + 0x04)
-#define EMMC_ARG1		(ARM_EMMC_BASE + 0x08)
-#define EMMC_CMDTM		(ARM_EMMC_BASE + 0x0C)
-#define EMMC_RESP0		(ARM_EMMC_BASE + 0x10)
-#define EMMC_RESP1		(ARM_EMMC_BASE + 0x14)
-#define EMMC_RESP2		(ARM_EMMC_BASE + 0x18)
-#define EMMC_RESP3		(ARM_EMMC_BASE + 0x1C)
-#define EMMC_DATA		(ARM_EMMC_BASE + 0x20)
-#define EMMC_STATUS		(ARM_EMMC_BASE + 0x24)
-#define EMMC_CONTROL0		(ARM_EMMC_BASE + 0x28)
-#define EMMC_CONTROL1		(ARM_EMMC_BASE + 0x2C)
-#define EMMC_INTERRUPT		(ARM_EMMC_BASE + 0x30)
-#define EMMC_IRPT_MASK		(ARM_EMMC_BASE + 0x34)
-#define EMMC_IRPT_EN		(ARM_EMMC_BASE + 0x38)
-#define EMMC_CONTROL2		(ARM_EMMC_BASE + 0x3C)
-#define EMMC_CAPABILITIES_0	(ARM_EMMC_BASE + 0x40)
-#define EMMC_CAPABILITIES_1	(ARM_EMMC_BASE + 0x44)
-#define EMMC_FORCE_IRPT		(ARM_EMMC_BASE + 0x50)
-#define EMMC_BOOT_TIMEOUT	(ARM_EMMC_BASE + 0x70)
-#define EMMC_DBG_SEL		(ARM_EMMC_BASE + 0x74)
-#define EMMC_EXRDFIFO_CFG	(ARM_EMMC_BASE + 0x80)
-#define EMMC_EXRDFIFO_EN	(ARM_EMMC_BASE + 0x84)
-#define EMMC_TUNE_STEP		(ARM_EMMC_BASE + 0x88)
-#define EMMC_TUNE_STEPS_STD	(ARM_EMMC_BASE + 0x8C)
-#define EMMC_TUNE_STEPS_DDR	(ARM_EMMC_BASE + 0x90)
-#define EMMC_SPI_INT_SPT	(ARM_EMMC_BASE + 0xF0)
-#define EMMC_SLOTISR_VER	(ARM_EMMC_BASE + 0xFC)
+#if RASPPI <= 3
+	#define EMMC_BASE	ARM_EMMC_BASE
+#else
+	#define EMMC_BASE	ARM_EMMC2_BASE
+#endif
+
+#define EMMC_ARG2		(EMMC_BASE + 0x00)
+#define EMMC_BLKSIZECNT		(EMMC_BASE + 0x04)
+#define EMMC_ARG1		(EMMC_BASE + 0x08)
+#define EMMC_CMDTM		(EMMC_BASE + 0x0C)
+#define EMMC_RESP0		(EMMC_BASE + 0x10)
+#define EMMC_RESP1		(EMMC_BASE + 0x14)
+#define EMMC_RESP2		(EMMC_BASE + 0x18)
+#define EMMC_RESP3		(EMMC_BASE + 0x1C)
+#define EMMC_DATA		(EMMC_BASE + 0x20)
+#define EMMC_STATUS		(EMMC_BASE + 0x24)
+#define EMMC_CONTROL0		(EMMC_BASE + 0x28)
+#define EMMC_CONTROL1		(EMMC_BASE + 0x2C)
+#define EMMC_INTERRUPT		(EMMC_BASE + 0x30)
+#define EMMC_IRPT_MASK		(EMMC_BASE + 0x34)
+#define EMMC_IRPT_EN		(EMMC_BASE + 0x38)
+#define EMMC_CONTROL2		(EMMC_BASE + 0x3C)
+#define EMMC_CAPABILITIES_0	(EMMC_BASE + 0x40)
+#define EMMC_CAPABILITIES_1	(EMMC_BASE + 0x44)
+#define EMMC_FORCE_IRPT		(EMMC_BASE + 0x50)
+#define EMMC_BOOT_TIMEOUT	(EMMC_BASE + 0x70)
+#define EMMC_DBG_SEL		(EMMC_BASE + 0x74)
+#define EMMC_EXRDFIFO_CFG	(EMMC_BASE + 0x80)
+#define EMMC_EXRDFIFO_EN	(EMMC_BASE + 0x84)
+#define EMMC_TUNE_STEP		(EMMC_BASE + 0x88)
+#define EMMC_TUNE_STEPS_STD	(EMMC_BASE + 0x8C)
+#define EMMC_TUNE_STEPS_DDR	(EMMC_BASE + 0x90)
+#define EMMC_SPI_INT_SPT	(EMMC_BASE + 0xF0)
+#define EMMC_SLOTISR_VER	(EMMC_BASE + 0xFC)
+
+#endif
 
 #define SD_CMD_INDEX(a)			((a) << 24)
 #define SD_CMD_TYPE_NORMAL		0
@@ -134,6 +150,8 @@
 #define SD_CMD_AUTO_CMD_EN_CMD23	(2 << 2)
 #define SD_CMD_BLKCNT_EN		(1 << 1)
 #define SD_CMD_DMA          		1
+
+#ifndef USE_SDHOST
 
 #define SD_ERR_CMD_TIMEOUT	0
 #define SD_ERR_CMD_CRC		1
@@ -170,6 +188,8 @@
 #define SD_CARD_REMOVAL         (1 << 7)
 #define SD_CARD_INTERRUPT       (1 << 8)
 
+#endif
+
 #define SD_RESP_NONE        SD_CMD_RSPNS_TYPE_NONE
 #define SD_RESP_R1          (SD_CMD_RSPNS_TYPE_48 | SD_CMD_CRCCHK_EN)
 #define SD_RESP_R1b         (SD_CMD_RSPNS_TYPE_48B | SD_CMD_CRCCHK_EN)
@@ -188,6 +208,9 @@
 
 #define SUCCESS          (m_last_cmd_success)
 #define FAIL             (m_last_cmd_success == 0)
+
+#ifndef USE_SDHOST
+
 #define TIMEOUT          (FAIL && (m_last_error == 0))
 #define CMD_TIMEOUT      (FAIL && (m_last_error & (1 << 16)))
 #define CMD_CRC          (FAIL && (m_last_error & (1 << 17)))
@@ -200,6 +223,12 @@
 #define ACMD12_ERROR     (FAIL && (m_last_error & (1 << 24)))
 #define ADMA_ERROR       (FAIL && (m_last_error & (1 << 25)))
 #define TUNING_ERROR     (FAIL && (m_last_error & (1 << 26)))
+
+#else
+
+#define TIMEOUT          (FAIL && (m_last_error == ETIMEDOUT))
+
+#endif
 
 #define SD_VER_UNKNOWN      0
 #define SD_VER_1            1
@@ -218,6 +247,8 @@ const char *CEMMCDevice::sd_versions[] =
 	"4.xx"
 };
 
+#ifndef USE_SDHOST
+
 #ifdef EMMC_DEBUG2
 const char *CEMMCDevice::err_irpts[] =
 {
@@ -234,6 +265,8 @@ const char *CEMMCDevice::err_irpts[] =
 	"TUNING",
 	"RSVD"
 };
+#endif
+
 #endif
 
 const u32 CEMMCDevice::sd_commands[] =
@@ -418,11 +451,15 @@ const u32 CEMMCDevice::sd_acommands[] =
 #define SET_CLR_CARD_DETECT     (42 | IS_APP_CMD)
 #define SEND_SCR                (51 | IS_APP_CMD)
 
+#ifndef USE_SDHOST
+
 #define SD_RESET_CMD            (1 << 25)
 #define SD_RESET_DAT            (1 << 26)
 #define SD_RESET_ALL            (1 << 24)
 
 #define SD_GET_CLOCK_DIVIDER_FAIL	0xffffffff
+
+#endif
 
 #define SD_BLOCK_SIZE		512
 
@@ -432,7 +469,11 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 	m_pActLED (pActLED),
 	m_ullOffset (0),
 	m_pPartitionManager (0),
+#ifdef USE_SDHOST
+	m_Host (pInterruptSystem, pTimer),
+#else
 	m_hci_ver (0),
+#endif
 	m_pSCR (0)
 {
 	assert (m_pInterruptSystem != 0);
@@ -440,6 +481,8 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 
 	m_pSCR = new TSCR;
 	assert (m_pSCR != 0);
+
+#ifndef USE_SDHOST
 
 #if RASPPI >= 2
 	// workaround if bootloader does not restore GPIO modes
@@ -456,25 +499,17 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
 		}
 	}
-#if RASPPI >= 4
-	// Raspberry Pi 4 requires to explicitly set the GPIO and pull modes
-	else if (CMachineInfo::Get ()->GetModelMajor () >= 4)
-	{
-		write32 (ARM_GPIO_GPPINMUXSD, 3);	// select legacy EMMC1 controller
-
-		for (unsigned i = 0; i <= 5; i++)
-		{
-			m_GPIO48_53[i].AssignPin (48+i);
-			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
-			m_GPIO48_53[i].SetPullMode (i == 0 ? GPIOPullModeOff : GPIOPullModeUp);
-		}
-	}
 #endif
+
 #endif
 }
 
 CEMMCDevice::~CEMMCDevice (void)
 {
+#ifdef USE_SDHOST
+	m_Host.Reset ();
+#endif
+
 	delete m_pSCR;
 	m_pSCR = 0;
 
@@ -487,6 +522,7 @@ CEMMCDevice::~CEMMCDevice (void)
 
 boolean CEMMCDevice::Initialize (void)
 {
+#ifndef USE_SDHOST
 #if RASPPI >= 4
 	// disable 1.8V supply
 	CBcmPropertyTags Tags;
@@ -499,6 +535,12 @@ boolean CEMMCDevice::Initialize (void)
 	}
 
 	usDelay (5000);
+#endif
+#else
+	if (!m_Host.Initialize ())
+	{
+		return FALSE;
+	}
 #endif
 
 	PeripheralEntry ();
@@ -608,6 +650,8 @@ u64 CEMMCDevice::Seek (u64 ullOffset)
 	return m_ullOffset;
 }
 
+#ifndef USE_SDHOST
+
 int CEMMCDevice::PowerOn (void)
 {
 	CBcmPropertyTags Tags;
@@ -639,7 +683,11 @@ u32 CEMMCDevice::GetBaseClock (void)
 {
 	CBcmPropertyTags Tags;
 	TPropertyTagClockRate TagClockRate;
+#if RASPPI <= 3
 	TagClockRate.nClockId = CLOCK_ID_EMMC;
+#else
+	TagClockRate.nClockId = CLOCK_ID_EMMC2;
+#endif
 	if (!Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate))
 	{
 		LogWrite (LogError, "Cannot get clock rate");
@@ -1139,8 +1187,93 @@ void CEMMCDevice::HandleInterrupts (void)
 	write32 (EMMC_INTERRUPT, reset_mask);
 }
 
+#else	// #ifndef USE_SDHOST
+
+void CEMMCDevice::IssueCommandInt (u32 cmd_reg, u32 argument, int timeout)
+{
+	m_last_cmd_reg = cmd_reg;
+	m_last_cmd_success = 0;
+
+	// Set block size and block count
+	// For now, block size = 512 bytes, block count = 1,
+	if (m_blocks_to_transfer > 0xffff)
+	{
+		LogWrite (LogDebug, "blocks_to_transfer too great (%d)", m_blocks_to_transfer);
+		return;
+	}
+
+	mmc_command Cmd;
+	memset (&Cmd, 0, sizeof Cmd);
+	Cmd.opcode = cmd_reg >> 24;
+	Cmd.arg = argument;
+
+	switch (cmd_reg & SD_CMD_RSPNS_TYPE_MASK)
+	{
+	case SD_CMD_RSPNS_TYPE_48:
+		Cmd.flags |= MMC_RSP_PRESENT;
+		break;
+
+	case SD_CMD_RSPNS_TYPE_48B:
+		Cmd.flags |= MMC_RSP_PRESENT | MMC_RSP_BUSY;
+		break;
+
+	case SD_CMD_RSPNS_TYPE_136:
+		Cmd.flags |= MMC_RSP_PRESENT | MMC_RSP_136;
+		break;
+	}
+
+	if (cmd_reg & SD_CMD_CRCCHK_EN)
+	{
+		Cmd.flags |= MMC_RSP_CRC;
+	}
+
+	mmc_data Data;
+	if (cmd_reg & SD_CMD_ISDATA)
+	{
+		memset (&Data, 0, sizeof Data);
+		Data.flags |= cmd_reg & SD_CMD_DAT_DIR_CH ? MMC_DATA_READ : MMC_DATA_WRITE;
+		Data.blksz = m_block_size;
+		Data.blocks = m_blocks_to_transfer;
+		Data.sg = m_buf;
+		Data.sg_len = m_block_size * m_blocks_to_transfer;
+
+		Cmd.data = &Data;
+	}
+
+	int nError = m_Host.Command (&Cmd, 0);
+	if (nError != 0)
+	{
+		assert (nError < 0);
+		m_last_error = -nError;
+		return;
+	}
+
+	// Get response data
+	switch (cmd_reg & SD_CMD_RSPNS_TYPE_MASK)
+	{
+	case SD_CMD_RSPNS_TYPE_48:
+	case SD_CMD_RSPNS_TYPE_48B:
+		m_last_r0 = Cmd.resp[0];
+		break;
+
+	case SD_CMD_RSPNS_TYPE_136:
+		m_last_r0 = Cmd.resp[3];
+		m_last_r1 = Cmd.resp[2];
+		m_last_r2 = Cmd.resp[1];
+		m_last_r3 = Cmd.resp[0];
+		break;
+	}
+
+	// Return success
+	m_last_cmd_success = 1;
+}
+
+#endif	// #ifndef USE_SDHOST
+
+
 boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 {
+#ifndef USE_SDHOST
 	// First, handle any pending interrupts
 	HandleInterrupts ();
 
@@ -1150,6 +1283,7 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 		m_last_cmd_success = 0;
 		return FALSE;
 	}
+#endif
 
 	// Now run the appropriate commands by calling IssueCommandInt()
 	if (command & IS_APP_CMD)
@@ -1201,6 +1335,7 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 #ifdef EMMC_DEBUG2
 	if (FAIL)
 	{
+#ifndef USE_SDHOST
 		LogWrite (LogWarning, "Error issuing %s%u (intr %08x)", m_last_cmd & IS_APP_CMD ? "ACMD" : "CMD", m_last_cmd & 0xff, m_last_interrupt);
 
 		if (m_last_error == 0)
@@ -1217,6 +1352,21 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 				}
 			}
 		}
+#else
+		LogWrite (LogWarning, "Error issuing %s%u", m_last_cmd & IS_APP_CMD ? "ACMD" : "CMD", m_last_cmd & 0xff);
+
+		const char *pErrMsg;
+		switch (m_last_error)
+		{
+		case EINVAL:	pErrMsg = "INVAL";	break;
+		case ETIMEDOUT:	pErrMsg = "TIMEOUT";	break;
+		case EILSEQ:	pErrMsg = "ILSEQ";	break;
+		case ENOTSUP:	pErrMsg = "NOTSUP";	break;
+		default:	pErrMsg = "UNKNOWN";	break;
+		}
+
+		LogWrite (LogDebug, "%s", pErrMsg);
+#endif
 	}
 	else
 	{
@@ -1229,6 +1379,8 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 
 int CEMMCDevice::CardReset (void)
 {
+#ifndef USE_SDHOST
+
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "Resetting controller");
 #endif
@@ -1248,6 +1400,14 @@ int CEMMCDevice::CardReset (void)
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "control0: %08x, control1: %08x, control2: %08x", 
 				read32 (EMMC_CONTROL0), read32 (EMMC_CONTROL1), read32 (EMMC_CONTROL2));
+#endif
+
+#if RASPPI >= 4
+	// Enable SD Bus Power VDD1 at 3.3V
+	u32 control0 = read32 (EMMC_CONTROL0);
+	control0 |= 0x0F << 8;
+	write32 (EMMC_CONTROL0, control0);
+	usDelay (2000);
 #endif
 
 	// Check for a valid card
@@ -1334,6 +1494,16 @@ int CEMMCDevice::CardReset (void)
 
 	usDelay (2000);
 
+#else	// #ifndef USE_SDHOST
+
+	// Set clock rate to something slow
+#ifdef EMMC_DEBUG2
+	LogWrite (LogDebug, "setting clock rate");
+#endif
+	m_Host.SetClock (SD_CLOCK_ID);
+
+#endif	// #ifndef USE_SDHOST
+
 	// >> Prepare the device structure
 	m_device_id[0] = 0;
 	m_device_id[1] = 0;
@@ -1344,7 +1514,9 @@ int CEMMCDevice::CardReset (void)
 	m_card_supports_18v = 0;
 	m_card_ocr = 0;
 	m_card_rca = 0;
+#ifndef USE_SDHOST
 	m_last_interrupt = 0;
+#endif
 	m_last_error = 0;
 
 	m_failed_voltage_switch = 0;
@@ -1360,11 +1532,15 @@ int CEMMCDevice::CardReset (void)
 	m_buf = 0;
 	m_blocks_to_transfer = 0;
 	m_block_size = 0;
+#ifndef USE_SDHOST
 	m_card_removal = 0;
 	m_base_clock = 0;
+#endif
 	// << Prepare the device structure
 	
+#ifndef USE_SDHOST
 	m_base_clock = base_clock;
+#endif
 
 	// Send CMD0 to the card (reset to idle state)
 	if (!IssueCommand (GO_IDLE_STATE, 0))
@@ -1386,6 +1562,7 @@ int CEMMCDevice::CardReset (void)
 	{
 		v2_later = 0;
 	}
+#ifndef USE_SDHOST
 	else if (CMD_TIMEOUT)
 	{
 		if(ResetCmd() == -1)
@@ -1395,9 +1572,10 @@ int CEMMCDevice::CardReset (void)
 		write32 (EMMC_INTERRUPT, SD_ERR_MASK_CMD_TIMEOUT);
 		v2_later = 0;
 	}
+#endif
 	else if (FAIL)
 	{
-		LogWrite (LogError, "failure sending CMD8 (%08x)", m_last_interrupt);
+		LogWrite (LogError, "failure sending CMD8");
 
 		return -1;
 	}
@@ -1426,6 +1604,7 @@ int CEMMCDevice::CardReset (void)
 	IssueCommand (IO_SET_OP_COND, 0, 10000);
 	if (!TIMEOUT)
 	{
+#ifndef USE_SDHOST
 		if (CMD_TIMEOUT)
 		{
 			if (ResetCmd () == -1)
@@ -1436,6 +1615,7 @@ int CEMMCDevice::CardReset (void)
 			write32 (EMMC_INTERRUPT, SD_ERR_MASK_CMD_TIMEOUT);
 		}
 		else
+#endif
 		{
 			LogWrite (LogError, "SDIO card detected - not currently supported");
 #ifdef EMMC_DEBUG2
@@ -1519,10 +1699,16 @@ int CEMMCDevice::CardReset (void)
 
 	// At this point, we know the card is definitely an SD card, so will definitely
 	//  support SDR12 mode which runs at 25 MHz
+#ifndef USE_SDHOST
 	SwitchClockRate (base_clock, SD_CLOCK_NORMAL);
+#else
+	m_Host.SetClock (SD_CLOCK_NORMAL);
+#endif
 
 	// A small wait before the voltage switch
 	usDelay (5000);
+
+#ifndef USE_SDHOST
 
 	// Switch to 1.8V mode if possible
 	if (m_card_supports_18v)
@@ -1609,6 +1795,8 @@ int CEMMCDevice::CardReset (void)
 		LogWrite (LogDebug, "voltage switch complete");
 #endif
 	}
+
+#endif	// #ifndef USE_SDHOST
 
 	// Send CMD2 to get the cards CID
 	if (!IssueCommand (ALL_SEND_CID, 0))
@@ -1706,10 +1894,13 @@ int CEMMCDevice::CardReset (void)
 			return -1;
 		}
 	}
+
+#ifndef USE_SDHOST
 	u32 controller_block_size = read32 (EMMC_BLKSIZECNT);
 	controller_block_size &= (~0xfff);
 	controller_block_size |= 0x200;
 	write32 (EMMC_BLKSIZECNT, controller_block_size);
+#endif
 
 	// Get the cards SCR register
 	m_buf = &m_pSCR->scr[0];
@@ -1775,10 +1966,12 @@ int CEMMCDevice::CardReset (void)
 		LogWrite (LogDebug, "Switching to 4-bit data mode");
 #endif
 
+#ifndef USE_SDHOST
 		// Disable card interrupt in host
 		u32 old_irpt_mask = read32(EMMC_IRPT_MASK);
 		u32 new_iprt_mask = old_irpt_mask & ~(1 << 8);
 		write32(EMMC_IRPT_MASK, new_iprt_mask);
+#endif
 
 		// Send ACMD6 to change the card's bit mode
 		if (!IssueCommand (SET_BUS_WIDTH, 2))
@@ -1787,6 +1980,7 @@ int CEMMCDevice::CardReset (void)
 		}
 		else
 		{
+#ifndef USE_SDHOST
 			// Change bit mode for Host
 			u32 control0 = read32(EMMC_CONTROL0);
 			control0 |= 0x2;
@@ -1794,6 +1988,10 @@ int CEMMCDevice::CardReset (void)
 
 			// Re-enable card interrupt in host
 			write32(EMMC_IRPT_MASK, old_irpt_mask);
+#else
+			// Change bit mode for Host
+			m_Host.SetBusWidth (4);
+#endif
 
 #ifdef EMMC_DEBUG2
 			LogWrite (LogDebug, "switch to 4-bit complete");
@@ -1807,24 +2005,30 @@ int CEMMCDevice::CardReset (void)
 	LogWrite (LogDebug, "setup successful (status %d)", status);
 #endif
 
+#ifndef USE_SDHOST
 	// Reset interrupt register
 	write32 (EMMC_INTERRUPT, 0xffffffff);
+#endif
 
 	return 0;
 }
 
 int CEMMCDevice::CardInit (void)
 {
+#ifndef USE_SDHOST
 	if(PowerOn () != 0)
 	{
 		LogWrite (LogError, "BCM2708 controller did not power on successfully");
 
 		return -1;
 	}
+#endif
 
 	// Check the sanity of the sd_commands and sd_acommands structures
 	assert (sizeof (sd_commands) == (64 * sizeof(u32)));
 	assert (sizeof (sd_acommands) == (64 * sizeof(u32)));
+
+#ifndef USE_SDHOST
 
 	// Read the controller version
 	u32 ver = read32 (EMMC_SLOTISR_VER);
@@ -1845,6 +2049,8 @@ int CEMMCDevice::CardInit (void)
 		return -1;
 #endif
 	}
+
+#endif	// #ifndef USE_SDHOST
 
 	// The SEND_SCR command may fail with a DATA_TIMEOUT on the Raspberry Pi 4
 	// for unknown reason. As a workaround the whole card reset is retried.
@@ -1914,8 +2120,10 @@ int CEMMCDevice::EnsureDataMode (void)
 			return -1;
 		}
 
+#ifndef USE_SDHOST
 		// Reset the data circuit
 		ResetDat();
+#endif
 	}
 	else if (cur_state != 4)
 	{
@@ -2090,6 +2298,8 @@ int CEMMCDevice::DoWrite (u8 *buf, size_t buf_size, u32 block_no)
 	return buf_size;
 }
 
+#ifndef USE_SDHOST
+
 int CEMMCDevice::TimeoutWait (unsigned reg, unsigned mask, int value, unsigned usec)
 {
 	assert (m_pTimer != 0);
@@ -2107,6 +2317,8 @@ int CEMMCDevice::TimeoutWait (unsigned reg, unsigned mask, int value, unsigned u
 
 	return -1;
 }
+
+#endif
 
 void CEMMCDevice::usDelay (unsigned usec)
 {
@@ -2126,7 +2338,7 @@ void CEMMCDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 	va_end (var);
 }
 
-u32 *CEMMCDevice::GetID (void)
+const u32 *CEMMCDevice::GetID (void)
 {
 	return m_device_id;
 }

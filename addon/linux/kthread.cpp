@@ -37,7 +37,7 @@ struct task_struct *kthread_create (int (*threadfn)(void *data),
 	task->userdata = 0;
 
 	CTask *ctask = new CKThread (threadfn, data);
-	ctask->SetUserData (task);
+	ctask->SetUserData (task, TASK_USER_DATA_KTHREAD);
 	task->taskobj = (void *) ctask;
 
 	return task;
@@ -59,12 +59,13 @@ void flush_signals (struct task_struct *task)
 
 static void task_switch_handler (CTask *ctask)
 {
-	current = (struct task_struct *) ctask->GetUserData ();
+	current = (struct task_struct *) ctask->GetUserData (TASK_USER_DATA_KTHREAD);
 }
 
 static void task_termination_handler (CTask *ctask)
 {
-	struct task_struct *task = (struct task_struct *) ctask->GetUserData ();
+	struct task_struct *task =
+		(struct task_struct *) ctask->GetUserData (TASK_USER_DATA_KTHREAD);
 	if (task != 0)
 	{
 		task->terminated = 1;
@@ -82,7 +83,7 @@ int linuxemu_init_kthread (void)
 	task->userdata = 0;
 
 	CTask *ctask = CScheduler::Get ()->GetCurrentTask ();
-	ctask->SetUserData (task);
+	ctask->SetUserData (task, TASK_USER_DATA_KTHREAD);
 
 	current = task;
 

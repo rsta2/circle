@@ -2,7 +2,7 @@
 // string.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // ftoa() inspired by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
@@ -25,7 +25,7 @@
 #define FORMAT_RESERVE		64	// additional bytes to allocate
 
 #if AARCH == 32
-	#define MAX_NUMBER_LEN		11	// 32 bit octal number
+	#define MAX_NUMBER_LEN		22	// 64 bit octal number
 	#define MAX_PRECISION		9	// floor (log10 (ULONG_MAX))
 #else
 	#define MAX_NUMBER_LEN		22	// 64 bit octal number
@@ -233,6 +233,14 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				continue;
 			}
 
+			boolean bAlternate = FALSE;
+			if (*pFormat == '#')
+			{
+				bAlternate = TRUE;
+
+				pFormat++;
+			}
+
 			boolean bLeft = FALSE;
 			if (*pFormat == '-')
 			{
@@ -271,6 +279,28 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				}
 			}
 
+#if STDLIB_SUPPORT >= 1
+			boolean bLong = FALSE;
+			boolean bLongLong = FALSE;
+			unsigned long long ullArg;
+			long long llArg = 0;
+
+			if (*pFormat == 'l')
+			{
+				if (*(pFormat+1) == 'l')
+				{
+					bLongLong = TRUE;
+
+					pFormat++;
+				}
+				else
+				{
+					bLong = TRUE;
+				}
+
+				pFormat++;
+			}
+#else
 			boolean bLong = FALSE;
 			if (*pFormat == 'l')
 			{
@@ -278,7 +308,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 
 				pFormat++;
 			}
-
+#endif
 			char chArg;
 			const char *pArg;
 			unsigned long ulArg;
@@ -286,7 +316,7 @@ void CString::FormatV (const char *pFormat, va_list Args)
 			unsigned nBase;
 			char NumBuf[MAX_FLOAT_LEN+1];
 			boolean bMinus = FALSE;
-			long lArg;
+			long lArg = 0;
 			double fArg;
 
 			switch (*pFormat)
@@ -313,7 +343,15 @@ void CString::FormatV (const char *pFormat, va_list Args)
 
 			case 'd':
 			case 'i':
+#if STDLIB_SUPPORT >= 1
+				if (bLongLong)
+				{
+					llArg = va_arg (Args, long long);
+				}
+				else if (bLong)
+#else
 				if (bLong)
+#endif
 				{
 					lArg = va_arg (Args, long);
 				}
@@ -326,7 +364,19 @@ void CString::FormatV (const char *pFormat, va_list Args)
 					bMinus = TRUE;
 					lArg = -lArg;
 				}
+#if STDLIB_SUPPORT >= 1
+				if (llArg < 0)
+				{
+					bMinus = TRUE;
+					llArg = -llArg;
+				}
+				if (bLongLong)
+					lltoa (NumBuf, (unsigned long long) llArg, 10, FALSE);
+				else
+					ntoa (NumBuf, (unsigned long) lArg, 10, FALSE);
+#else
 				ntoa (NumBuf, (unsigned long) lArg, 10, FALSE);
+#endif
 				nLen = strlen (NumBuf) + (bMinus ? 1 : 0);
 				if (bLeft)
 				{
@@ -391,6 +441,10 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				break;
 
 			case 'o':
+				if (bAlternate)
+				{
+					PutChar ('0');
+				}
 				nBase = 8;
 				goto FormatNumber;
 
@@ -422,11 +476,23 @@ void CString::FormatV (const char *pFormat, va_list Args)
 			case 'x':
 			case 'X':
 			case 'p':
+				if (bAlternate)
+				{
+					PutString (*pFormat == 'X' ? "0X" : "0x");
+				}
 				nBase = 16;
 				goto FormatNumber;
 
 			FormatNumber:
+#if STDLIB_SUPPORT >= 1
+				if (bLongLong)
+				{
+					ullArg = va_arg (Args, unsigned long long);
+				}
+				else if (bLong)
+#else
 				if (bLong)
+#endif
 				{
 					ulArg = va_arg (Args, unsigned long);
 				}
@@ -434,7 +500,14 @@ void CString::FormatV (const char *pFormat, va_list Args)
 				{
 					ulArg = va_arg (Args, unsigned);
 				}
+#if STDLIB_SUPPORT >= 1
+				if (bLongLong)
+					lltoa (NumBuf, ullArg, nBase, *pFormat == 'X');
+				else
+					ntoa (NumBuf, ulArg, nBase, *pFormat == 'X');
+#else
 				ntoa (NumBuf, ulArg, nBase, *pFormat == 'X');
+#endif
 				nLen = strlen (NumBuf);
 				if (bLeft)
 				{
@@ -556,6 +629,45 @@ char *CString::ntoa (char *pDest, unsigned long ulNumber, unsigned nBase, boolea
 
 	return pDest;
 }
+
+#if STDLIB_SUPPORT >= 1
+char *CString::lltoa (char *pDest, unsigned long long ullNumber, unsigned nBase, boolean bUpcase)
+{
+	unsigned long long ullDigit;
+
+	unsigned long long ullDivisor = 1ULL;
+	while (1)
+	{
+		ullDigit = ullNumber / ullDivisor;
+		if (ullDigit < nBase)
+		{
+			break;
+		}
+
+		ullDivisor *= nBase;
+	}
+
+	char *p = pDest;
+	while (1)
+	{
+		ullNumber %= ullDivisor;
+
+		*p++ = ullDigit < 10 ? '0' + ullDigit : '0' + ullDigit + 7 + (bUpcase ? 0 : 0x20);
+
+		ullDivisor /= nBase;
+		if (ullDivisor == 0)
+		{
+			break;
+		}
+
+		ullDigit = ullNumber / ullDivisor;
+	}
+
+	*p = '\0';
+
+	return pDest;
+}
+#endif
 
 char *CString::ftoa (char *pDest, double fNumber, unsigned nPrecision)
 {

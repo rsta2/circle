@@ -2,7 +2,7 @@
 // koptions.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <circle/bcmpropertytags.h>
 #include <circle/cputhrottle.h>
+#include <circle/types.h>
 
 class CKernelOptions
 {
@@ -38,6 +39,7 @@ public:
 	const char *GetKeyMap (void) const;
 
 	unsigned GetUSBPowerDelay (void) const;
+	boolean GetUSBFullSpeed (void) const;
 
 	const char *GetSoundDevice (void) const;	// defaults to empty string
 	unsigned GetSoundOption (void) const;
@@ -67,6 +69,7 @@ private:
 	char m_KeyMap[3];
 
 	unsigned m_nUSBPowerDelay;
+	boolean m_bUSBFullSpeed;
 
 	char m_SoundDevice[20];
 	unsigned m_nSoundOption;

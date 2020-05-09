@@ -10,8 +10,8 @@ To use the bootloader, you have to do the following:
 numbering) of your Raspberry Pi computer on one side and to your development
 machine on the other.
 
-2. On your development machine there must be a python interpreter (including the
-python-pyserial module) installed. You may also need the terminal program
+2. On your development machine there must be a python3 interpreter (including the
+python3-pyserial module) installed. You may also need the terminal program
 "putty".
 
 3. Add the following lines to the file Config.mk in the Circle root directory:

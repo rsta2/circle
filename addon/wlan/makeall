@@ -1,0 +1,23 @@
+#!/bin/bash
+
+make="${MAKE:-make}"
+
+makesample=true
+if [[ $1 == "--nosample" ]]
+then
+	makesample=false
+	shift
+fi
+
+$make $1 $2 || exit
+
+cd hostap/wpa_supplicant
+$make -f Makefile.circle $1 $2 || exit
+cd ../..
+
+if [[ $makesample == true ]]
+then
+	cd sample
+	$make $1 $2 || exit
+	cd ..
+fi

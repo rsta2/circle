@@ -270,6 +270,20 @@
 
 #endif
 
+// USE_SDHOST selects the SDHOST device as interface for SD card
+// access. Otherwise the EMMC device is used for this purpose. The
+// SDHOST device is supported by Raspberry Pi 1-3 and Zero, but
+// not by QEMU. If you rely on a small IRQ latency, USE_SDHOST should
+// be disabled.
+
+#if RASPPI <= 3 && !defined (REALTIME)
+
+#ifndef NO_SDHOST
+#define USE_SDHOST
+#endif
+
+#endif
+
 // SAVE_VFP_REGS_ON_IRQ enables saving the floating point registers
 // on entry when an IRQ occurs and will restore these registers on exit
 // from the IRQ handler. This has to be defined, if an IRQ handler

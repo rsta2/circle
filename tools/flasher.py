@@ -42,7 +42,7 @@ try:
     while offset < size:
         if sys.stdout.isatty():
             percent = math.trunc(offset * 100 / size)
-            print("\r" + str(percent) + "%"),
+            print("\r" + str(percent) + "%", end='')
             sys.stdout.flush()
         readlen = blocksize
         if size < readlen:
@@ -51,7 +51,7 @@ try:
         ser.write(data)
         offset += readlen
     if sys.stdout.isatty():
-        print("\r"),
+        print("\r", end='')
     print("Completed!\nRunning app...")
     sys.stdout.flush()
     time.sleep(1)
