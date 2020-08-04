@@ -213,6 +213,10 @@ CTCPConnection::~CTCPConnection (void)
 		StopTimer (nTimer);
 	}
 
+	// ensure no task is waiting any more
+	m_Event.Set ();
+	m_TxEvent.Set ();
+
 	assert (s_nConnections > 0);
 	s_nConnections--;
 }
@@ -395,8 +399,8 @@ int CTCPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 
 	if (!(nFlags & MSG_DONTWAIT))
 	{
-		m_Event.Clear ();
-		m_Event.Wait ();
+		m_TxEvent.Clear ();
+		m_TxEvent.Wait ();
 
 		if (m_nErrno < 0)
 		{
@@ -564,6 +568,14 @@ void CTCPConnection::Process (void)
 #endif
 
 		m_RetransmissionQueue.Write (TempBuffer, nLength);
+	}
+
+	// pacing transmit
+	if (   (   m_State == TCPStateEstablished
+		|| m_State == TCPStateCloseWait)
+	    && m_TxQueue.IsEmpty ())
+	{
+		m_TxEvent.Set ();
 	}
 
 	if (m_bRetransmit)
@@ -1057,8 +1069,6 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 
 					// next transmission starts with this count
 					m_nRetransmissionCount = MAX_RETRANSMISSIONS;
-
-					m_Event.Set ();
 				}
 
 				if (   m_State == TCPStateFinWait1
