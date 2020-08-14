@@ -22,7 +22,7 @@
 
 #if RASPPI >= 4
 
-#include <circle/dmachannel.h>
+#include <circle/dmacommon.h>
 #include <circle/interrupt.h>
 #include <circle/macros.h>
 #include <circle/types.h>
@@ -43,6 +43,9 @@ struct TDMA4ControlBlock
 	u32	nReserved;
 }
 PACKED;
+
+/// \note Do not explicitly use this class! Use the class CDMAChannel instead
+///       with nChannel set to DMA_CHANNEL_EXTENDED!
 
 class CDMA4Channel	/// Platform DMA4 "large address" controller support
 {

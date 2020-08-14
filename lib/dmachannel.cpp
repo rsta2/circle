@@ -81,6 +81,20 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 	m_pCompletionParam (0),
 	m_bStatus (FALSE)
 {
+#if RASPPI >= 4
+	m_pDMA4Channel = 0;
+	if (   nChannel == DMA_CHANNEL_EXTENDED
+	    || (   nChannel >= DMA_CHANNEL_EXT_MIN
+		&& nChannel <= DMA_CHANNEL_EXT_MAX))
+	{
+		assert (m_nChannel != DMA_CHANNEL_NONE);
+		m_pDMA4Channel = new CDMA4Channel (m_nChannel, m_pInterruptSystem);
+		assert (m_pDMA4Channel != 0);
+
+		return;
+	}
+#endif
+
 	PeripheralEntry ();
 
 	assert (m_nChannel != DMA_CHANNEL_NONE);
@@ -108,6 +122,20 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 
 CDMAChannel::~CDMAChannel (void)
 {
+#if RASPPI >= 4
+	if (m_pDMA4Channel != 0)
+	{
+		assert (DMA_CHANNEL_EXT_MIN <= m_nChannel && m_nChannel <= DMA_CHANNEL_EXT_MAX);
+
+		delete m_pDMA4Channel;
+		m_pDMA4Channel = 0;
+
+		CMachineInfo::Get ()->FreeDMAChannel (m_nChannel);
+
+		return;
+	}
+#endif
+
 	PeripheralEntry ();
 
 	assert (m_nChannel < DMA_CHANNELS);
@@ -146,6 +174,15 @@ CDMAChannel::~CDMAChannel (void)
 void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t nLength,
 				unsigned nBurstLength, boolean bCached)
 {
+#if RASPPI >= 4
+	if (m_pDMA4Channel != 0)
+	{
+		m_pDMA4Channel->SetupMemCopy (pDestination, pSource, nLength, nBurstLength, bCached);
+
+		return;
+	}
+#endif
+
 	assert (pDestination != 0);
 	assert (pSource != 0);
 	assert (nLength > 0);
@@ -183,6 +220,15 @@ void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t 
 
 void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ)
 {
+#if RASPPI >= 4
+	if (m_pDMA4Channel != 0)
+	{
+		m_pDMA4Channel->SetupIORead (pDestination, nIOAddress, nLength, DREQ);
+
+		return;
+	}
+#endif
+
 	assert (pDestination != 0);
 	assert (nLength > 0);
 	assert (nLength <= TXFR_LEN_MAX);
@@ -214,6 +260,15 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 
 void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
 {
+#if RASPPI >= 4
+	if (m_pDMA4Channel != 0)
+	{
+		m_pDMA4Channel->SetupIOWrite (nIOAddress, pSource, nLength, DREQ);
+
+		return;
+	}
+#endif
+
 	assert (pSource != 0);
 	assert (nLength > 0);
 	assert (nLength <= TXFR_LEN_MAX);
@@ -246,6 +301,16 @@ void CDMAChannel::SetupMemCopy2D (void *pDestination, const void *pSource,
 				  size_t nBlockLength, unsigned nBlockCount, size_t nBlockStride,
 				  unsigned nBurstLength)
 {
+#if RASPPI >= 4
+	if (m_pDMA4Channel != 0)
+	{
+		m_pDMA4Channel->SetupMemCopy2D (pDestination, pSource, nBlockLength,
+						nBlockCount, nBlockStride, nBurstLength);
+
+		return;
+	}
+#endif
+
 	assert (pDestination != 0);
 	assert (pSource != 0);
 	assert (nBlockLength > 0);
@@ -279,7 +344,16 @@ void CDMAChannel::SetupMemCopy2D (void *pDestination, const void *pSource,
 
 void CDMAChannel::SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam)
 {
-	assert (m_nChannel <= 12);
+#if RASPPI >= 4
+	if (m_pDMA4Channel != 0)
+	{
+		m_pDMA4Channel->SetCompletionRoutine (pRoutine, pParam);
+
+		return;
+	}
+#endif
+
+	assert (m_nChannel <= DMA_CHANNELS);
 	assert (m_pInterruptSystem != 0);
 
 	if (!m_bIRQConnected)
@@ -297,6 +371,15 @@ void CDMAChannel::SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *p
 
 void CDMAChannel::Start (void)
 {
+#if RASPPI >= 4
+	if (m_pDMA4Channel != 0)
+	{
+		m_pDMA4Channel->Start ();
+
+		return;
+	}
+#endif
+
 	assert (m_nChannel < DMA_CHANNELS);
 	assert (m_pControlBlock != 0);
 
@@ -326,6 +409,13 @@ void CDMAChannel::Start (void)
 
 boolean CDMAChannel::Wait (void)
 {
+#if RASPPI >= 4
+	if (m_pDMA4Channel != 0)
+	{
+		return m_pDMA4Channel->Wait ();
+	}
+#endif
+
 	assert (m_nChannel < DMA_CHANNELS);
 	assert (m_pCompletionRoutine == 0);
 
@@ -351,6 +441,13 @@ boolean CDMAChannel::Wait (void)
 
 boolean CDMAChannel::GetStatus (void)
 {
+#if RASPPI >= 4
+	if (m_pDMA4Channel != 0)
+	{
+		return m_pDMA4Channel->GetStatus ();
+	}
+#endif
+
 	assert (m_nChannel < DMA_CHANNELS);
 	assert (!(read32 (ARM_DMACHAN_CS (m_nChannel)) & CS_ACTIVE));
 

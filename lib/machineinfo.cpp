@@ -471,7 +471,15 @@ unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)
 	{
 		// arbitrary channel allocation
 		int i = nChannel == DMA_CHANNEL_NORMAL ? 6 : DMA_CHANNEL_MAX;
-		for (; i >= 0; i--)
+		int nMin = 0;
+#if RASPPI >= 4
+		if (nChannel == DMA_CHANNEL_EXTENDED)
+		{
+			i = DMA_CHANNEL_EXT_MAX;
+			nMin = DMA_CHANNEL_EXT_MIN;
+		}
+#endif
+		for (; i >= nMin; i--)
 		{
 			if (m_usDMAChannelMap & (1 << i))
 			{

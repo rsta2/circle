@@ -2,7 +2,7 @@
 // dmachannel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,10 +20,15 @@
 #ifndef _circle_dmachannel_h
 #define _circle_dmachannel_h
 
+#include <circle/dmacommon.h>
 #include <circle/interrupt.h>
 #include <circle/machineinfo.h>
 #include <circle/macros.h>
 #include <circle/types.h>
+
+#if RASPPI >= 4
+	#include <circle/dma4channel.h>
+#endif
 
 // Not all DMA channels are available to the ARM.
 // Channel assignment is made dynamically using the class CMachineInfo.
@@ -40,28 +45,10 @@ struct TDMAControlBlock
 }
 PACKED;
 
-enum TDREQ
-{
-	DREQSourceNone	 = 0,
-#if RASPPI >= 4
-	DREQSourcePWM1	 = 1,
-#endif
-	DREQSourcePCMTX	 = 2,
-	DREQSourcePCMRX	 = 3,
-	DREQSourcePWM	 = 5,
-	DREQSourceSPITX	 = 6,
-	DREQSourceSPIRX	 = 7,
-	DREQSourceEMMC	 = 11,
-	DREQSourceUARTTX = 12,
-	DREQSourceUARTRX = 14
-};
-
-typedef void TDMACompletionRoutine (unsigned nChannel, boolean bStatus, void *pParam);
-
 class CDMAChannel
 {
 public:
-	// nChannel must be DMA_CHANNEL_NORMAL, DMA_CHANNEL_LITE or an explicit channel number
+	// nChannel must be DMA_CHANNEL_NORMAL, _LITE, _EXTENDED or an explicit channel number
 	CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem = 0);
 	~CDMAChannel (void);
 
@@ -105,6 +92,10 @@ private:
 
 	uintptr m_nDestinationAddress;
 	size_t m_nBufferLength;
+
+#if RASPPI >= 4
+	CDMA4Channel *m_pDMA4Channel;
+#endif
 };
 
 #endif
