@@ -5,8 +5,21 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 42.1
+------------
+
+This intermediate release adds support for the **DMA4 "large address" channels** of the Raspberry Pi 4, which is available using the already known `CDMAChannel` class with the channel ID `DMA_CHANNEL_EXTENDED`. Despite the possibility to access more address bits, which is currently not used in Circle, the DMA4 channels provide a higher performance (compared to the legacy DMA channels). All (normally three available) DMA4 channels are free for application usage.
+
+Newer **Raspberry Pi 4 models (with 8 GB RAM)** do not have a dedicated EEPROM for the firmware of the xHCI USB controller. They need an additional property mailbox call for loading the xHCI firmware after PCIe reset. This call has been added.
+
+There has been no possibility for **application TCP flow control** before. An application sending much TCP data very fast was able to overrun the (low) heap, which caused a system halt. Now if `CSocket::Send()` is called with the flags parameter set to 0, the calling task will block until the TX queue is empty. This prevents the heap from overrun, but may slow down the transfer to some degree. If maximum transfer speed is wanted, the flags parameter can be set to `MSG_DONTWAIT`, but heap overrun must be prevented differently then (e.g. by sending less data).
+
+Another fix has been applied to **network name resolution** in the class `CDNSClient`, which might have failed before, if the DNS server was sending uncompressed answer records.
+
 The 42nd Step
 -------------
+
+2020-05-09
 
 This release adds **Wireless LAN access** support in [addon/wlan](addon/wlan) to Circle. Please read the [README file](addon/wlan/sample/README) of the sample program for details! The WLAN support in Circle is still experimental.
 

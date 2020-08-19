@@ -10,6 +10,17 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
+Release 42.1
+------------
+
+This intermediate release adds support for the **DMA4 "large address" channels** of the Raspberry Pi 4, which is available using the already known `CDMAChannel` class with the channel ID `DMA_CHANNEL_EXTENDED`. Despite the possibility to access more address bits, which is currently not used in Circle, the DMA4 channels provide a higher performance (compared to the legacy DMA channels). All (normally three available) DMA4 channels are free for application usage.
+
+Newer **Raspberry Pi 4 models (with 8 GB RAM)** do not have a dedicated EEPROM for the firmware of the xHCI USB controller. They need an additional property mailbox call for loading the xHCI firmware after PCIe reset. This call has been added.
+
+There has been no possibility for **application TCP flow control** before. An application sending much TCP data very fast was able to overrun the (low) heap, which caused a system halt. Now if `CSocket::Send()` is called with the flags parameter set to 0, the calling task will block until the TX queue is empty. This prevents the heap from overrun, but may slow down the transfer to some degree. If maximum transfer speed is wanted, the flags parameter can be set to `MSG_DONTWAIT`, but heap overrun must be prevented differently then (e.g. by sending less data).
+
+Another fix has been applied to **network name resolution** in the class `CDNSClient`, which might have failed before, if the DNS server was sending uncompressed answer records.
+
 The 42nd Step
 -------------
 
@@ -46,6 +57,7 @@ Circle supports the following features:
 |                       | System timer (with kernel timers)                   |
 |                       | Platform DMA controller                             |
 |                       | EMMC SD card interface driver                       |
+|                       | SDHOST SD card interface driver (Raspberry Pi 1-3)  |
 |                       | PWM output (2 channels)                             |
 |                       | PWM sound output (on headphone jack)                |
 |                       | I2C master(s) and slave                             |
@@ -57,6 +69,7 @@ Circle supports the following features:
 |                       | Official Raspberry Pi touch screen                  |
 |                       | VCHIQ interface and audio service drivers           |
 |                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |
+|                       | Wireless LAN access (experimental)                  |
 |                       |                                                     |
 | USB                   | Host controller interface (HCI) drivers             |
 |                       | Standard hub driver (USB 2.0 only)                  |
