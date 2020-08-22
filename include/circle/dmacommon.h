@@ -1,5 +1,5 @@
 //
-// version.h
+/// \file dmacommon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
@@ -17,16 +17,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_version_h
-#define _circle_version_h
+#ifndef _circle_dmacommon_h
+#define _circle_dmacommon_h
 
-#define CIRCLE_NAME			"Circle"
+#include <circle/types.h>
 
-#define CIRCLE_MAJOR_VERSION		42
-#define CIRCLE_MINOR_VERSION		1
-#define CIRCLE_VERSION_STRING		"42.1"
+enum TDREQ
+{
+	DREQSourceNone	 = 0,
+#if RASPPI >= 4
+	DREQSourcePWM1	 = 1,
+#endif
+	DREQSourcePCMTX	 = 2,
+	DREQSourcePCMRX	 = 3,
+	DREQSourcePWM	 = 5,
+	DREQSourceSPITX	 = 6,
+	DREQSourceSPIRX	 = 7,
+	DREQSourceEMMC	 = 11,
+	DREQSourceUARTTX = 12,
+	DREQSourceUARTRX = 14
+};
 
-#define OS_NAME				CIRCLE_NAME
-#define OS_VERSION			CIRCLE_VERSION_STRING
+typedef void TDMACompletionRoutine (unsigned nChannel, boolean bStatus, void *pParam);
 
 #endif

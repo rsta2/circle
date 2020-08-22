@@ -10,6 +10,17 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
+Release 42.1
+------------
+
+This intermediate release adds support for the **DMA4 "large address" channels** of the Raspberry Pi 4, which is available using the already known `CDMAChannel` class with the channel ID `DMA_CHANNEL_EXTENDED`. Despite the possibility to access more address bits, which is currently not used in Circle, the DMA4 channels provide a higher performance (compared to the legacy DMA channels). All (normally three available) DMA4 channels are free for application usage.
+
+Newer **Raspberry Pi 4 models (with 8 GB RAM)** do not have a dedicated EEPROM for the firmware of the xHCI USB controller. They need an additional property mailbox call for loading the xHCI firmware after PCIe reset. This call has been added.
+
+There has been no possibility for **application TCP flow control** before. An application sending much TCP data very fast was able to overrun the (low) heap, which caused a system halt. Now if `CSocket::Send()` is called with the flags parameter set to 0, the calling task will block until the TX queue is empty. This prevents the heap from overrun, but may slow down the transfer to some degree. If maximum transfer speed is wanted, the flags parameter can be set to `MSG_DONTWAIT`, but heap overrun must be prevented differently then (e.g. by sending less data).
+
+Another fix has been applied to **network name resolution** in the class `CDNSClient`, which might have failed before, if the DNS server was sending uncompressed answer records.
+
 The 42nd Step
 -------------
 
@@ -46,6 +57,7 @@ Circle supports the following features:
 |                       | System timer (with kernel timers)                   |
 |                       | Platform DMA controller                             |
 |                       | EMMC SD card interface driver                       |
+|                       | SDHOST SD card interface driver (Raspberry Pi 1-3)  |
 |                       | PWM output (2 channels)                             |
 |                       | PWM sound output (on headphone jack)                |
 |                       | I2C master(s) and slave                             |
@@ -57,6 +69,7 @@ Circle supports the following features:
 |                       | Official Raspberry Pi touch screen                  |
 |                       | VCHIQ interface and audio service drivers           |
 |                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |
+|                       | Wireless LAN access (experimental)                  |
 |                       |                                                     |
 | USB                   | Host controller interface (HCI) drivers             |
 |                       | Standard hub driver (USB 2.0 only)                  |
@@ -125,6 +138,8 @@ Circle supports building 64-bit applications, which can be run on the Raspberry 
 
 The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *9.2-2019.12* (gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf.tar.xz) from this website.
 
+There are distro-provided toolchains on certain Linux platforms (e.g. *g++-aarch64-linux-gnu* on Ubuntu or *gcc-c++-aarch64-linux-gnu* on Fedora), which may work with Circle and can be a quick way to use it, but you have to test this by yourself. If you encounter problems (e.g. no reaction at all, link failure with external library) using a distro-provided toolchain, please try the recommended toolchain (see above) first, before reporting an issue.
+
 First edit the file *Rules.mk* and set the Raspberry Pi architecture (*AARCH*, 32 or 64) and the *PREFIX64* of your toolchain commands. The *RASPPI* variable has to be set to 3 or 4 for `AARCH = 64`. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi architecture and the *PREFIX64* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
 ```
@@ -165,6 +180,12 @@ Directories
 
 Classes
 -------
+
+The following C++ classes were added to Circle:
+
+Base library
+
+* CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 

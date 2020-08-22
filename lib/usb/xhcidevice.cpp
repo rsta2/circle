@@ -23,6 +23,7 @@
 #include <circle/logger.h>
 #include <circle/memory.h>
 #include <circle/util.h>
+#include <circle/bcmpropertytags.h>
 #include <assert.h>
 
 static const char From[] = "xhci";
@@ -83,6 +84,14 @@ boolean CXHCIDevice::Initialize (void)
 
 		return FALSE;
 	}
+
+	// load VIA VL805 firmware after PCIe reset
+	CBcmPropertyTags Tags;
+	TPropertyTagSimple NotifyXHCIReset;
+	NotifyXHCIReset.nValue =   XHCI_PCIE_BUS  << 20
+				 | XHCI_PCIE_SLOT << 15
+				 | XHCI_PCIE_FUNC << 12;
+	Tags.GetTag (PROPTAG_NOTIFY_XHCI_RESET, &NotifyXHCIReset, sizeof NotifyXHCIReset, 4);
 
 	if (!m_PCIeHostBridge.ConnectMSI (InterruptStub, this))
 	{

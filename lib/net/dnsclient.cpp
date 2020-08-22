@@ -2,7 +2,7 @@
 // dnsclient.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -234,12 +234,7 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 		}
 		else
 		{
-			if (pResponse-RecvBuffer >= nRecvSize)
-			{
-				return FALSE;
-			}
-
-			while ((nLength = *pResponse++) > 0)
+			do
 			{
 				pResponse += nLength;
 				if (pResponse-RecvBuffer >= nRecvSize)
@@ -247,6 +242,7 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 					return FALSE;
 				}
 			}
+			while ((nLength = *pResponse++) > 0);
 		}
 
 		if (pResponse-RecvBuffer > (int) (nRecvSize-sizeof RRTrailer))

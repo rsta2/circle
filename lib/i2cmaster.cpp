@@ -74,7 +74,7 @@ static uintptr s_BaseAddress[DEVICES] =
 	0,
 	ARM_IO_BASE + 0x205600,
 	ARM_IO_BASE + 0x205800,
-	ARM_IO_BASE + 0x205A00,
+	ARM_IO_BASE + 0x205A80,
 	ARM_IO_BASE + 0x205C00
 #endif
 };
