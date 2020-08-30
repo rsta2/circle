@@ -2,7 +2,7 @@
 // usbstandardhub.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,19 +28,22 @@
 #include <circle/macros.h>
 #include <assert.h>
 
-unsigned CUSBStandardHub::s_nDeviceNumber = 1;
+CNumberPool CUSBStandardHub::s_DeviceNumberPool (1);
 
 static const char FromHub[] = "usbhub";
+static const char DevicePrefix[] = "uhub";
 
 CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_pHubDesc (0),
 	m_pInterruptEndpoint (0),
+	m_pStatusChangeBuffer (0),
 	m_nPorts (0),
 	m_bPowerIsOn (FALSE)
 #if RASPPI >= 4
 	, m_pHubInfo (0)
 #endif
+	, m_nDeviceNumber (0)		// not assigned
 {
 	for (unsigned nPort = 0; nPort < USB_HUB_MAX_PORTS; nPort++)
 	{
@@ -52,6 +55,13 @@ CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
 
 CUSBStandardHub::~CUSBStandardHub (void)
 {
+	if (m_nDeviceNumber != 0)
+	{
+		CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
+
+		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
+	}
+
 #if RASPPI >= 4
 	delete m_pHubInfo;
 	m_pHubInfo = 0;
@@ -67,6 +77,9 @@ CUSBStandardHub::~CUSBStandardHub (void)
 	}
 
 	m_nPorts = 0;
+
+	delete [] m_pStatusChangeBuffer;
+	m_pStatusChangeBuffer = 0;
 
 	delete m_pInterruptEndpoint;
 	m_pInterruptEndpoint = 0;
@@ -162,13 +175,20 @@ boolean CUSBStandardHub::Configure (void)
 		return FALSE;
 	}
 
-	CString DeviceName;
-	DeviceName.Format ("uhub%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	m_nDeviceNumber = s_DeviceNumberPool.AllocateNumber (TRUE, FromHub);
+	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
 	if (!EnumeratePorts ())
 	{
 		CLogger::Get ()->Write (FromHub, LogError, "Port enumeration failed");
+
+		return FALSE;
+	}
+
+	if (   GetHost ()->IsPlugAndPlay ()
+	    && !StartStatusChangeRequest ())
+	{
+		CLogger::Get ()->Write (FromHub, LogError, "Cannot start request");
 
 		return FALSE;
 	}
@@ -455,4 +475,139 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 	}
 
 	return bResult;
+}
+
+boolean CUSBStandardHub::StartStatusChangeRequest (void)
+{
+	assert (m_nPorts > 0);
+	size_t nBufSize = (m_nPorts + 8) / 8;
+
+	if (m_pStatusChangeBuffer == 0)
+	{
+		m_pStatusChangeBuffer = new u8[nBufSize];
+		assert (m_pStatusChangeBuffer != 0);
+	}
+
+	assert (m_pInterruptEndpoint != 0);
+	CUSBRequest *pURB = new CUSBRequest (m_pInterruptEndpoint, m_pStatusChangeBuffer, nBufSize);
+	assert (pURB != 0);
+	pURB->SetCompletionRoutine (CompletionStub, 0, this);
+
+	return GetHost ()->SubmitAsyncRequest (pURB);
+}
+
+void CUSBStandardHub::CompletionRoutine (CUSBRequest *pURB)
+{
+	assert (pURB != 0);
+
+	if (pURB->GetStatus () != 0)
+	{
+		assert (pURB->GetResultLength () > 0);
+
+		GetHost ()->PortStatusChanged (this);
+	}
+
+	delete pURB;
+}
+
+void CUSBStandardHub::CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext)
+{
+	CUSBStandardHub *pThis = (CUSBStandardHub *) pContext;
+	assert (pThis != 0);
+
+	pThis->CompletionRoutine (pURB);
+}
+
+void CUSBStandardHub::HandlePortStatusChange (void)
+{
+	assert (m_pStatusChangeBuffer != 0);
+	u16 usStatusBitmap = m_pStatusChangeBuffer[0];
+	if (m_nPorts > 7)
+	{
+		assert (m_nPorts <= 15);
+		usStatusBitmap |= (u16) m_pStatusChangeBuffer[1] << 8;
+	}
+
+	//CLogger::Get ()->Write (FromHub, LogDebug, "Status change (0x%04X)",
+	//			(unsigned) usStatusBitmap);
+
+	if (usStatusBitmap & 1)
+	{
+		CLogger::Get ()->Write (FromHub, LogPanic, "Hub status change not handled");
+	}
+
+	for (unsigned nPort = 0; nPort < m_nPorts; nPort++)
+	{
+		if (!(usStatusBitmap & (1 << (nPort+1))))
+		{
+			continue;
+		}
+
+		if (GetHost ()->ControlMessage (GetEndpoint0 (),
+			REQUEST_IN | REQUEST_CLASS | REQUEST_TO_OTHER,
+			GET_STATUS, 0, nPort+1, m_pStatus[nPort], 4) != 4)
+		{
+			CLogger::Get ()->Write (FromHub, LogPanic,
+						"Cannot get port status (port %u)", nPort+1);
+		}
+
+		u16 usChangeStatus = m_pStatus[nPort]->wChangeStatus;
+
+		//CLogger::Get ()->Write (FromHub, LogDebug, "Change status is 0x%04X (port %u)",
+		//			(unsigned) usChangeStatus, nPort+1);
+
+		assert (!(usChangeStatus & C_PORT_ENABLE__MASK));	// TODO
+		assert (!(usChangeStatus & C_PORT_SUSPEND__MASK));	// TODO
+		assert (!(usChangeStatus & C_PORT_OVER_CURRENT__MASK));	// TODO
+
+		if (usChangeStatus & C_PORT_RESET__MASK)
+		{
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+				REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_OTHER,
+				CLEAR_FEATURE, C_PORT_RESET, nPort+1, 0, 0) < 0)
+			{
+				CLogger::Get ()->Write (FromHub, LogPanic,
+							"Cannot clear C_PORT_RESET (port %u)",
+							nPort+1);
+			}
+		}
+
+		if (usChangeStatus & C_PORT_CONNECTION__MASK)
+		{
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+				REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_OTHER,
+				CLEAR_FEATURE, C_PORT_CONNECTION, nPort+1, 0, 0) < 0)
+			{
+				CLogger::Get ()->Write (FromHub, LogPanic,
+							"Cannot clear C_PORT_CONNECTION (port %u)",
+							nPort+1);
+			}
+
+			if (m_pStatus[nPort]->wPortStatus & PORT_CONNECTION__MASK)
+			{
+				//CLogger::Get ()->Write (FromHub, LogDebug,
+				//			"Device connected (port %u)", nPort+1);
+
+				if (m_pDevice[nPort] == 0)
+				{
+					ReScanDevices ();
+				}
+			}
+			else
+			{
+				//CLogger::Get ()->Write (FromHub, LogDebug,
+				//			"Device disconnected (port %u)", nPort+1);
+
+				if (m_pDevice[nPort] != 0)
+				{
+					RemoveDevice (nPort);
+				}
+			}
+		}
+	}
+
+	if (!StartStatusChangeRequest ())
+	{
+		CLogger::Get ()->Write (FromHub, LogError, "Cannot restart request");
+	}
 }

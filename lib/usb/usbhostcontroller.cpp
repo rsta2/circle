@@ -2,7 +2,7 @@
 // usbhostcontroller.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,10 +18,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/usbhostcontroller.h>
+#include <circle/usb/usbstandardhub.h>
 #include <circle/timer.h>
 #include <assert.h>
 
-CUSBHostController::CUSBHostController (void)
+CUSBHostController::CUSBHostController (boolean bPlugAndPlay)
+:	m_bPlugAndPlay (bPlugAndPlay)
 {
 }
 
@@ -106,4 +108,58 @@ int CUSBHostController::Transfer (CUSBEndpoint *pEndpoint, void *pBuffer, unsign
 	}
 
 	return URB.GetResultLength ();
+}
+
+boolean CUSBHostController::IsPlugAndPlay (void) const
+{
+	return m_bPlugAndPlay;
+}
+
+void CUSBHostController::UpdatePlugAndPlay (void)
+{
+	if (!m_bPlugAndPlay)
+	{
+		return;
+	}
+
+	m_SpinLock.Acquire ();
+
+	TPtrListElement *pElement = m_HubList.GetFirst ();
+	while (pElement != 0)
+	{
+		CUSBStandardHub *pHub = (CUSBStandardHub *) m_HubList.GetPtr (pElement);
+
+		TPtrListElement *pNextElement = m_HubList.GetNext (pElement);
+		m_HubList.Remove (pElement);
+		pElement = pNextElement;
+
+		m_SpinLock.Release ();
+
+		assert (pHub != 0);
+		pHub->HandlePortStatusChange ();
+
+		m_SpinLock.Acquire ();
+	}
+
+	m_SpinLock.Release ();
+}
+
+void CUSBHostController::PortStatusChanged (CUSBStandardHub *pHub)
+{
+	assert (m_bPlugAndPlay);
+	assert (pHub != 0);
+
+	m_SpinLock.Acquire ();
+
+	TPtrListElement *pPrevElement = 0;
+	TPtrListElement *pElement = m_HubList.GetFirst ();
+	while (pElement != 0)					// find last element
+	{
+		pPrevElement = pElement;
+		pElement = m_HubList.GetNext (pElement);
+	}
+
+	m_HubList.InsertAfter (pPrevElement, pHub);		// append to list
+
+	m_SpinLock.Release ();
 }

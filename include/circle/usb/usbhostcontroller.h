@@ -2,7 +2,7 @@
 // usbhostcontroller.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,16 +23,20 @@
 #include <circle/usb/usb.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
+#include <circle/ptrlist.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
 // Timeouts are supported on interrupt endpoints only!
 
 #define USB_TIMEOUT_NONE	0	// Wait forever
 
+class CUSBStandardHub;
+
 class CUSBHostController
 {
 public:
-	CUSBHostController (void);
+	CUSBHostController (boolean bPlugAndPlay);
 	virtual ~CUSBHostController (void);
 	
 	// returns resulting length or < 0 on failure
@@ -61,6 +65,21 @@ public:
 
 	virtual boolean SubmitAsyncRequest (CUSBRequest *pURB,
 					    unsigned nTimeoutMs = USB_TIMEOUT_NONE) = 0;
+
+public:
+	boolean IsPlugAndPlay (void) const;
+
+	// must be called from TASK_LEVEL, if Plug-and-Play is enabled
+	void UpdatePlugAndPlay (void);
+
+private:
+	void PortStatusChanged (CUSBStandardHub *pHub);
+	friend class CUSBStandardHub;
+
+private:
+	boolean   m_bPlugAndPlay;
+	CPtrList  m_HubList;
+	CSpinLock m_SpinLock;
 };
 
 #endif

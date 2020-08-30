@@ -61,8 +61,9 @@ enum TStageSubState
 
 static const char FromDWHCI[] = "dwhci";
 
-CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
-:	m_pInterruptSystem (pInterruptSystem),
+CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, boolean bPlugAndPlay)
+:	CUSBHostController (bPlugAndPlay),
+	m_pInterruptSystem (pInterruptSystem),
 	m_pTimer (pTimer),
 	m_nChannels (0),
 	m_nChannelAllocated (0),
