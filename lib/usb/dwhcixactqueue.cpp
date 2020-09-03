@@ -2,7 +2,7 @@
 // dwhcixactqueue.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,6 +56,30 @@ CDWHCITransactionQueue::CDWHCITransactionQueue (void)
 
 CDWHCITransactionQueue::~CDWHCITransactionQueue (void)
 {
+}
+
+void CDWHCITransactionQueue::Flush (void)
+{
+	m_SpinLock.Acquire ();
+
+	TPtrListElement *pElement = m_List.GetFirst ();
+	while (pElement != 0)
+	{
+		TQueueEntry *pEntry = (TQueueEntry *) m_List.GetPtr (pElement);
+		assert (pEntry != 0);
+		assert (pEntry->nMagic == XACT_QUEUE_MAGIC);
+
+		m_List.Remove (pElement);
+
+#ifndef NDEBUG
+		pEntry->nMagic = 0;
+#endif
+		delete pEntry;
+
+		pElement = m_List.GetFirst ();
+	}
+
+	m_SpinLock.Release ();
 }
 
 void CDWHCITransactionQueue::Enqueue (CDWHCITransferStageData *pStageData, u16 usFrameNumber)

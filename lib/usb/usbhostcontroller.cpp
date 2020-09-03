@@ -18,13 +18,27 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/usbhostcontroller.h>
+#include <circle/usb/usbhcirootport.h>
 #include <circle/usb/usbstandardhub.h>
 #include <circle/timer.h>
 #include <assert.h>
 
-CUSBHostController::CUSBHostController (boolean bPlugAndPlay)
-:	m_bPlugAndPlay (bPlugAndPlay)
+struct TPortStatusEvent
 {
+	boolean	bFromRootPort;			// from hub otherwise
+
+	union
+	{
+		CUSBHCIRootPort	*pRootPort;
+		CUSBStandardHub *pHub;
+	};
+};
+
+boolean CUSBHostController::s_bPlugAndPlay;
+
+CUSBHostController::CUSBHostController (boolean bPlugAndPlay)
+{
+	s_bPlugAndPlay = bPlugAndPlay;
 }
 
 CUSBHostController::~CUSBHostController (void)
@@ -110,33 +124,42 @@ int CUSBHostController::Transfer (CUSBEndpoint *pEndpoint, void *pBuffer, unsign
 	return URB.GetResultLength ();
 }
 
-boolean CUSBHostController::IsPlugAndPlay (void) const
+boolean CUSBHostController::IsPlugAndPlay (void)
 {
-	return m_bPlugAndPlay;
+	return s_bPlugAndPlay;
 }
 
 void CUSBHostController::UpdatePlugAndPlay (void)
 {
-	if (!m_bPlugAndPlay)
+	if (!s_bPlugAndPlay)
 	{
 		return;
 	}
 
 	m_SpinLock.Acquire ();
 
-	TPtrListElement *pElement = m_HubList.GetFirst ();
-	while (pElement != 0)
+	TPtrListElement *pElement;
+	while ((pElement  = m_HubList.GetFirst ()) != 0)
 	{
-		CUSBStandardHub *pHub = (CUSBStandardHub *) m_HubList.GetPtr (pElement);
+		TPortStatusEvent *pEvent = (TPortStatusEvent *) m_HubList.GetPtr (pElement);
 
-		TPtrListElement *pNextElement = m_HubList.GetNext (pElement);
 		m_HubList.Remove (pElement);
-		pElement = pNextElement;
 
 		m_SpinLock.Release ();
 
-		assert (pHub != 0);
-		pHub->HandlePortStatusChange ();
+		assert (pEvent != 0);
+		if (pEvent->bFromRootPort)
+		{
+			assert (pEvent->pRootPort != 0);
+			pEvent->pRootPort->HandlePortStatusChange ();
+		}
+		else
+		{
+			assert (pEvent->pHub != 0);
+			pEvent->pHub->HandlePortStatusChange ();
+		}
+
+		delete pEvent;
 
 		m_SpinLock.Acquire ();
 	}
@@ -144,10 +167,15 @@ void CUSBHostController::UpdatePlugAndPlay (void)
 	m_SpinLock.Release ();
 }
 
-void CUSBHostController::PortStatusChanged (CUSBStandardHub *pHub)
+void CUSBHostController::PortStatusChanged (CUSBHCIRootPort *pRootPort)
 {
-	assert (m_bPlugAndPlay);
-	assert (pHub != 0);
+	assert (s_bPlugAndPlay);
+	assert (pRootPort != 0);
+
+	TPortStatusEvent *pEvent = new TPortStatusEvent;
+	assert (pEvent != 0);
+	pEvent->bFromRootPort = TRUE;
+	pEvent->pRootPort = pRootPort;
 
 	m_SpinLock.Acquire ();
 
@@ -159,7 +187,32 @@ void CUSBHostController::PortStatusChanged (CUSBStandardHub *pHub)
 		pElement = m_HubList.GetNext (pElement);
 	}
 
-	m_HubList.InsertAfter (pPrevElement, pHub);		// append to list
+	m_HubList.InsertAfter (pPrevElement, pEvent);		// append to list
+
+	m_SpinLock.Release ();
+}
+
+void CUSBHostController::PortStatusChanged (CUSBStandardHub *pHub)
+{
+	assert (s_bPlugAndPlay);
+	assert (pHub != 0);
+
+	TPortStatusEvent *pEvent = new TPortStatusEvent;
+	assert (pEvent != 0);
+	pEvent->bFromRootPort = FALSE;
+	pEvent->pHub = pHub;
+
+	m_SpinLock.Acquire ();
+
+	TPtrListElement *pPrevElement = 0;
+	TPtrListElement *pElement = m_HubList.GetFirst ();
+	while (pElement != 0)					// find last element
+	{
+		pPrevElement = pElement;
+		pElement = m_HubList.GetNext (pElement);
+	}
+
+	m_HubList.InsertAfter (pPrevElement, pEvent);		// append to list
 
 	m_SpinLock.Release ();
 }

@@ -199,6 +199,11 @@ boolean CXHCIRootPort::RemoveDevice (void)
 	return TRUE;
 }
 
+void CXHCIRootPort::HandlePortStatusChange (void)
+{
+	// TODO
+}
+
 void CXHCIRootPort::StatusChanged (void)
 {
 	assert (m_pMMIO != 0);

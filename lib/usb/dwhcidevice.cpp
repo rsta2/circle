@@ -4,7 +4,6 @@
 // Supports:
 //	internal DMA only,
 //	no ISO transfers
-//	no dynamic attachments
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
@@ -111,6 +110,15 @@ CDWHCIDevice::~CDWHCIDevice (void)
 
 boolean CDWHCIDevice::Initialize (void)
 {
+#ifndef USE_USB_SOF_INTR
+	if (IsPlugAndPlay ())
+	{
+		CLogger::Get ()->Write (FromDWHCI, LogWarning,
+					"Using plug-and-play without USE_USB_SOF_INTR "
+					"is not recommended");
+	}
+#endif
+
 	// init class-specific allocators in USB library
 	INIT_PROTECTED_CLASS_ALLOCATOR (CUSBRequest, DWHCI_MAX_CHANNELS*2, IRQ_LEVEL);
 	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCITransferStageData, DWHCI_MAX_CHANNELS, IRQ_LEVEL);
@@ -289,6 +297,13 @@ boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs
 	return bOK;
 }
 
+boolean CDWHCIDevice::DeviceConnected (void)
+{
+	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
+
+	return HostPort.Read () & DWHCI_HOST_PORT_CONNECT ? TRUE : FALSE;
+}
+
 TUSBSpeed CDWHCIDevice::GetPortSpeed (void)
 {
 	TUSBSpeed Result = USBSpeedUnknown;
@@ -343,6 +358,10 @@ void CDWHCIDevice::DisableRootPort (boolean bPowerOff)
 	}
 
 	HostPort.Write ();
+
+#ifdef USE_USB_SOF_INTR
+	m_TransactionQueue.Flush ();
+#endif
 }
 
 boolean CDWHCIDevice::InitCore (void)
@@ -583,9 +602,12 @@ void CDWHCIDevice::EnableHostInterrupts (void)
 #ifdef USE_USB_SOF_INTR
 		    | DWHCI_CORE_INT_MASK_SOF_INTR
 #endif
-		    //| DWHCI_CORE_INT_MASK_PORT_INTR
-		    //| DWHCI_CORE_INT_MASK_DISCONNECT
 		   );
+	if (IsPlugAndPlay ())
+	{
+		IntMask.Or (  DWHCI_CORE_INT_MASK_PORT_INTR
+			    | DWHCI_CORE_INT_MASK_DISCONNECT);
+	}
 	IntMask.Write ();
 }
 
@@ -963,6 +985,22 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 	CUSBRequest *pURB = pStageData->GetURB ();
 	assert (pURB != 0);
 
+	if (!m_bRootPortEnabled)
+	{
+		DisableChannelInterrupt (nChannel);
+
+		pURB->SetStatus (0);
+
+		delete pStageData;
+		m_pStageData[nChannel] = 0;
+
+		FreeChannel (nChannel);
+
+		pURB->CallCompletionRoutine ();
+
+		return;
+	}
+
 	switch (pStageData->GetSubState ())
 	{
 	case StageSubStateWaitForChannelDisable:
@@ -1004,7 +1042,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		assert (0);
 		break;
 	}
-	
+
 	unsigned nStatus;
 	
 	switch (pStageData->GetState ())
@@ -1303,23 +1341,36 @@ void CDWHCIDevice::InterruptHandler (void)
 	}
 #endif
 
-#if 0
-	if (IntStatus.Get () & DWHCI_CORE_INT_STAT_PORT_INTR)
+	if (IsPlugAndPlay ())
 	{
-		CDWHCIRegister HostPort (DWHCI_HOST_PORT);
-		HostPort.Read ();
-		
-		CLogger::Get ()->Write (FromDWHCI, LogDebug, "Port interrupt (status 0x%08X)", HostPort.Get ());
-		
-		HostPort.And (~DWHCI_HOST_PORT_ENABLE);
-		HostPort.Or (  DWHCI_HOST_PORT_CONNECT_CHANGED
-			     | DWHCI_HOST_PORT_ENABLE_CHANGED
-			     | DWHCI_HOST_PORT_OVERCURRENT_CHANGED);
-		HostPort.Write ();
-		
-		IntStatus.Or (DWHCI_CORE_INT_STAT_PORT_INTR);
+		if (IntStatus.Get () & DWHCI_CORE_INT_STAT_PORT_INTR)
+		{
+			CDWHCIRegister HostPort (DWHCI_HOST_PORT);
+			HostPort.Read ();
+
+			//CLogger::Get ()->Write (FromDWHCI, LogDebug,
+			//			"Port interrupt (status 0x%08X)", HostPort.Get ());
+
+			if (HostPort.Get () & DWHCI_HOST_PORT_CONNECT_CHANGED)
+			{
+				PortStatusChanged (&m_RootPort);
+			}
+
+			HostPort.And (~DWHCI_HOST_PORT_ENABLE);
+			HostPort.Or (  DWHCI_HOST_PORT_CONNECT_CHANGED
+				     | DWHCI_HOST_PORT_ENABLE_CHANGED
+				     | DWHCI_HOST_PORT_OVERCURRENT_CHANGED);
+			HostPort.Write ();
+		}
+
+		if (IntStatus.Get () & DWHCI_CORE_INT_MASK_DISCONNECT)
+		{
+			//CLogger::Get ()->Write (FromDWHCI, LogDebug, "Disconnect interrupt");
+
+			PortStatusChanged (&m_RootPort);
+		}
 	}
-#endif
+
 	IntStatus.Write ();
 
 	PeripheralExit ();
@@ -1340,6 +1391,30 @@ void CDWHCIDevice::TimerHandler (CDWHCITransferStageData *pStageData)
 	PeripheralEntry ();
 
 	assert (pStageData != 0);
+
+	if (!m_bRootPortEnabled)
+	{
+		unsigned nChannel = pStageData->GetChannelNumber ();
+		assert (nChannel < m_nChannels);
+		CUSBRequest *pURB = pStageData->GetURB ();
+		assert (pURB != 0);
+
+		DisableChannelInterrupt (nChannel);
+
+		pURB->SetStatus (0);
+
+		delete pStageData;
+		m_pStageData[nChannel] = 0;
+
+		FreeChannel (nChannel);
+
+		PeripheralExit ();
+
+		pURB->CallCompletionRoutine ();
+
+		return;
+	}
+
 	assert (pStageData->GetState () == StageStatePeriodicDelay);
 
 	if (pStageData->IsSplit ())

@@ -52,6 +52,7 @@ public:
 	boolean SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
 private:
+	boolean DeviceConnected (void);
 	TUSBSpeed GetPortSpeed (void);
 	boolean OvercurrentDetected (void);
 	void DisableRootPort (boolean bPowerOff = TRUE);
@@ -139,7 +140,7 @@ private:
 	CSpinLock m_WaitBlockSpinLock;
 
 	CDWHCIRootPort m_RootPort;
-	boolean m_bRootPortEnabled;
+	volatile boolean m_bRootPortEnabled;
 
 	volatile boolean m_bShutdown;			// USB driver will shutdown
 };

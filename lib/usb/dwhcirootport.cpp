@@ -2,7 +2,7 @@
 // dwhcirootport.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -113,4 +113,24 @@ boolean CDWHCIRootPort::RemoveDevice (void)
 	m_pDevice = 0;
 
 	return TRUE;
+}
+
+void CDWHCIRootPort::HandlePortStatusChange (void)
+{
+	assert (m_pHost != 0);
+
+	if (m_pHost->DeviceConnected ())
+	{
+		if (m_pDevice == 0)
+		{
+			m_pHost->ReScanDevices ();
+		}
+	}
+	else
+	{
+		if (m_pDevice != 0)
+		{
+			RemoveDevice ();
+		}
+	}
 }

@@ -31,6 +31,7 @@
 
 #define USB_TIMEOUT_NONE	0	// Wait forever
 
+class CUSBHCIRootPort;
 class CUSBStandardHub;
 
 class CUSBHostController
@@ -67,17 +68,21 @@ public:
 					    unsigned nTimeoutMs = USB_TIMEOUT_NONE) = 0;
 
 public:
-	boolean IsPlugAndPlay (void) const;
+	static boolean IsPlugAndPlay (void);
 
 	// must be called from TASK_LEVEL, if Plug-and-Play is enabled
 	void UpdatePlugAndPlay (void);
+
+protected:
+	void PortStatusChanged (CUSBHCIRootPort *pRootPort);
 
 private:
 	void PortStatusChanged (CUSBStandardHub *pHub);
 	friend class CUSBStandardHub;
 
 private:
-	boolean   m_bPlugAndPlay;
+	static boolean s_bPlugAndPlay;
+
 	CPtrList  m_HubList;
 	CSpinLock m_SpinLock;
 };
