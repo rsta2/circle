@@ -23,6 +23,7 @@
 #include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
+#include <circle/numberpool.h>
 #include <circle/types.h>
 
 typedef void TBTHCIEventHandler (const void *pBuffer, unsigned nLength);
@@ -55,7 +56,8 @@ private:
 
 	TBTHCIEventHandler *m_pEventHandler;
 
-	static unsigned s_nDeviceNumber;
+	unsigned m_nDeviceNumber;
+	static CNumberPool s_DeviceNumberPool;
 };
 
 #endif
