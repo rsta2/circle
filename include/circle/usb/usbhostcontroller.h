@@ -75,6 +75,7 @@ public:
 
 protected:
 	void PortStatusChanged (CUSBHCIRootPort *pRootPort);
+	friend class CXHCIRootPort;
 
 private:
 	void PortStatusChanged (CUSBStandardHub *pHub);

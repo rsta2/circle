@@ -181,18 +181,6 @@ boolean CXHCIRootPort::ReScanDevices (void)
 
 boolean CXHCIRootPort::RemoveDevice (void)
 {
-	assert (m_pMMIO != 0);
-	assert (m_nPortIndex < XHCI_CONFIG_MAX_PORTS);
-
-	m_SpinLock.Acquire ();
-
-	u32 nPortSC = m_pMMIO->pt_read32 (m_nPortIndex, XHCI_REG_OP_PORTS_PORTSC);
-
-	m_pMMIO->pt_write32 (m_nPortIndex, XHCI_REG_OP_PORTS_PORTSC,
-			     nPortSC | XHCI_REG_OP_PORTS_PORTSC_PED);	// disable port
-
-	m_SpinLock.Release ();
-
 	delete m_pUSBDevice;
 	m_pUSBDevice = 0;
 
@@ -201,7 +189,20 @@ boolean CXHCIRootPort::RemoveDevice (void)
 
 void CXHCIRootPort::HandlePortStatusChange (void)
 {
-	// TODO
+	if (IsConnected ())
+	{
+		if (m_pUSBDevice == 0)
+		{
+			ReScanDevices ();
+		}
+	}
+	else
+	{
+		if (m_pUSBDevice != 0)
+		{
+			RemoveDevice ();
+		}
+	}
 }
 
 void CXHCIRootPort::StatusChanged (void)
@@ -221,6 +222,13 @@ void CXHCIRootPort::StatusChanged (void)
 			     nPortSC & ~XHCI_REG_OP_PORTS_PORTSC_PED);	// do not disable port
 
 	m_SpinLock.Release ();
+
+	assert (m_pXHCIDevice != 0);
+	if (   m_pXHCIDevice->IsPlugAndPlay ()
+	    && (nPortSC & XHCI_REG_OP_PORTS_PORTSC_CSC))
+	{
+		m_pXHCIDevice->PortStatusChanged (this);
+	}
 }
 
 #ifndef NDEBUG
