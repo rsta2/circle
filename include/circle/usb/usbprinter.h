@@ -2,7 +2,7 @@
 // usbprinter.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
+#include <circle/numberpool.h>
 #include <circle/types.h>
 
 enum TUSBPrinterProtocol
@@ -47,7 +48,8 @@ private:
 	CUSBEndpoint *m_pEndpointIn;
 	CUSBEndpoint *m_pEndpointOut;
 
-	static unsigned s_nDeviceNumber;
+	unsigned m_nDeviceNumber;
+	static CNumberPool s_DeviceNumberPool;
 };
 
 #endif
