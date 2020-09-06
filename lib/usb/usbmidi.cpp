@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,8 +33,9 @@
 #define EVENT_PACKET_SIZE	4
 
 static const char FromMIDI[] = "umidi";
+static const char DevicePrefix[] = "umidi";
 
-unsigned CUSBMIDIDevice::s_nDeviceNumber = 1;
+CNumberPool CUSBMIDIDevice::s_DeviceNumberPool (1);
 
 // This handy table from the Linux driver encodes the mapping between MIDI
 // packet Code Index Number values and encapsulated packet lengths.
@@ -48,12 +49,26 @@ CUSBMIDIDevice::CUSBMIDIDevice (CUSBFunction *pFunction)
 	m_pPacketHandler (0),
 	m_pURB (0),
 	m_pPacketBuffer (0),
-	m_hTimer (0)
+	m_hTimer (0),
+	m_nDeviceNumber (0)
 {
 }
 
 CUSBMIDIDevice::~CUSBMIDIDevice (void)
 {
+	if (m_hTimer != 0)
+	{
+		CTimer::Get ()->CancelKernelTimer (m_hTimer);
+		m_hTimer = 0;
+	}
+
+	if (m_nDeviceNumber != 0)
+	{
+		CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
+
+		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
+	}
+
 	if (m_pPacketBuffer != 0)
 	{
 		delete [] m_pPacketBuffer;
@@ -141,9 +156,10 @@ boolean CUSBMIDIDevice::Configure (void)
 		return FALSE;
 	}
 
-	CString DeviceName;
-	DeviceName.Format ("umidi%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	assert (m_nDeviceNumber == 0);
+	m_nDeviceNumber = s_DeviceNumberPool.AllocateNumber (TRUE, FromMIDI);
+
+	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
 	return StartRequest ();
 }
@@ -175,6 +191,14 @@ void CUSBMIDIDevice::CompletionRoutine (CUSBRequest *pURB)
 {
 	assert (pURB != 0);
 	assert (m_pURB == pURB);
+
+	if (pURB->GetStatus () == 0)
+	{
+		delete m_pURB;
+		m_pURB = 0;
+
+		return;
+	}
 
 	boolean bRestart = FALSE;
 
