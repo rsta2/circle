@@ -130,6 +130,16 @@ CUSBDevice::~CUSBDevice (void)
 		m_pFunction[nFunction] = 0;
 	}
 
+	if (m_pDeviceDesc != 0)
+	{
+		CString *pNames = GetNames ();
+		assert (pNames != 0);
+
+		LogWrite (LogNotice, "Device %s removed", (const char *) *pNames);
+
+		delete pNames;
+	}
+
 #if RASPPI <= 3
 	if (m_ucAddress != USB_DEFAULT_ADDRESS)
 	{
