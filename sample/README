@@ -4,10 +4,10 @@ SAMPLES
 02-screenpixel		Setting pixels on screen
 03-screentext		Writing text to screen, debug_hexdump() and assert usage
 04-timer		Interrupt driven timer, exception handler demonstration
-05-usbsimple		Displaying USB device descriptor of root hub (Model B and B+)
+05-usbsimple		Displaying USB device descriptor of root hub
 06-ethernet		Receiving broadcasts from Ethernet
 07-usbstorage		Displaying partition table from master boot record (MBR)
-08-usbkeyboard		Echoing typed characters to screen, or keyboard raw mode
+08-usbkeyboard	[PnP]	Echoing typed characters to screen, or keyboard raw mode
 09-softserial		GPIO interrupt demonstration, serial interface via non-UART GPIO-pins
 10-usbmouse		Little painting program with USB mouse support
 11-gpioclock		Using GPIO clock 0 to generate a square wave signal and sampling this signal to display it
@@ -37,4 +37,6 @@ SAMPLES
 36-softpwm		Using the class CUserTimer to implement software PWM
 37-showgamepad		Shows a stylised gamepad on screen and the state of an attached USB gamepad.
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
-39-usbplugging		Plug in and remove USB flash drives on application request, list directory
+39-umsdplugging		Plug in and remove USB flash drives on application request, list directory
+
+Samples marked with [PnP] are enabled for USB plug-and-play.
