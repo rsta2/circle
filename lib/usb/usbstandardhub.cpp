@@ -506,6 +506,13 @@ void CUSBStandardHub::CompletionRoutine (CUSBRequest *pURB)
 
 		GetHost ()->PortStatusChanged (this);
 	}
+	else
+	{
+		if (pURB->GetUSBError () == USBErrorFrameOverrun)
+		{
+			StartStatusChangeRequest ();
+		}
+	}
 
 	delete pURB;
 }

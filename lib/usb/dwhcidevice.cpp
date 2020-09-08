@@ -990,6 +990,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		DisableChannelInterrupt (nChannel);
 
 		pURB->SetStatus (0);
+		pURB->SetUSBError (USBErrorAborted);
 
 		delete pStageData;
 		m_pStageData[nChannel] = 0;
@@ -1055,6 +1056,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 						"Transaction failed (status 0x%X)", nStatus);
 
 			pURB->SetStatus (0);
+			pURB->SetUSBError (pStageData->GetUSBError ());
 		}
 		else if (   (nStatus & (DWHCI_HOST_CHAN_INT_NAK | DWHCI_HOST_CHAN_INT_NYET))
 			 && pStageData->IsPeriodic ())
@@ -1062,6 +1064,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			if (pStageData->IsTimeout ())
 			{
 				pURB->SetStatus (0);
+				pURB->SetUSBError (USBErrorTimeout);
 			}
 			else
 			{
@@ -1112,6 +1115,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 						"Transaction failed (status 0x%X)", nStatus);
 
 			pURB->SetStatus (0);
+			pURB->SetUSBError (pStageData->GetUSBError ());
 
 			DisableChannelInterrupt (nChannel);
 
@@ -1152,6 +1156,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 						"Transaction failed (status 0x%X)", nStatus);
 
 			pURB->SetStatus (0);
+			pURB->SetUSBError (pStageData->GetUSBError ());
 
 			DisableChannelInterrupt (nChannel);
 
@@ -1185,6 +1190,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			if (!pStageData->BeginSplitCycle ())
 			{
 				pURB->SetStatus (0);
+				pURB->SetUSBError (USBErrorSplit);
 
 				DisableChannelInterrupt (nChannel);
 
@@ -1219,6 +1225,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 					DisableChannelInterrupt (nChannel);
 
 					pURB->SetStatus (0);
+					pURB->SetUSBError (USBErrorTimeout);
 
 					delete pStageData;
 					m_pStageData[nChannel] = 0;
@@ -1402,6 +1409,7 @@ void CDWHCIDevice::TimerHandler (CDWHCITransferStageData *pStageData)
 		DisableChannelInterrupt (nChannel);
 
 		pURB->SetStatus (0);
+		pURB->SetUSBError (USBErrorAborted);
 
 		delete pStageData;
 		m_pStageData[nChannel] = 0;
