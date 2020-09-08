@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -57,6 +57,8 @@ private:
 
 	void DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenColor Color);
 
+	static void MouseRemovedHandler (CDevice *pDevice, void *pContext);
+
 private:
 	// do not change this order
 	CMemorySystem		m_Memory;
@@ -70,6 +72,8 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
+
+	CMouseDevice * volatile m_pMouse;
 
 	unsigned m_nPosX;
 	unsigned m_nPosY;

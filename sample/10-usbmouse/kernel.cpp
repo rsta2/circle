@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,8 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),		// TRUE: enable plug-and-play
+	m_pMouse (0),
 	m_nPosX (0),
 	m_nPosY (0),
 	m_ShutdownMode (ShutdownNone)
@@ -92,30 +93,40 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CMouseDevice *pMouse = (CMouseDevice *) m_DeviceNameService.GetDevice ("mouse1", FALSE);
-	if (pMouse == 0)
-	{
-		m_Logger.Write (FromKernel, LogPanic, "Mouse not found");
-	}
-
-	m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
-
-	if (!pMouse->Setup (m_Screen.GetWidth (), m_Screen.GetHeight ()))
-	{
-		m_Logger.Write (FromKernel, LogPanic, "Cannot setup mouse");
-	}
-
-	m_nPosX = m_Screen.GetWidth () / 2;
-	m_nPosY = m_Screen.GetHeight () / 2;
-
-	pMouse->SetCursor (m_nPosX, m_nPosY);
-	pMouse->ShowCursor (TRUE);
-
-	pMouse->RegisterEventHandler (MouseEventStub);
+	m_Logger.Write (FromKernel, LogNotice, "Please attach an USB mouse, if not already done!");
 
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
 	{
-		pMouse->UpdateCursor ();
+		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
+		m_USBHCI.UpdatePlugAndPlay ();
+
+		if (m_pMouse == 0)
+		{
+			m_pMouse = (CMouseDevice *) m_DeviceNameService.GetDevice ("mouse1", FALSE);
+			if (m_pMouse != 0)
+			{
+				m_pMouse->RegisterRemovedHandler (MouseRemovedHandler);
+
+				m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
+
+				if (!m_pMouse->Setup (m_Screen.GetWidth (), m_Screen.GetHeight ()))
+				{
+					m_Logger.Write (FromKernel, LogPanic, "Cannot setup mouse");
+				}
+
+				m_nPosX = m_Screen.GetWidth () / 2;
+				m_nPosY = m_Screen.GetHeight () / 2;
+
+				m_pMouse->SetCursor (m_nPosX, m_nPosY);
+				m_pMouse->ShowCursor (TRUE);
+
+				m_pMouse->RegisterEventHandler (MouseEventStub);
+			}
+		}
+		else
+		{
+			m_pMouse->UpdateCursor ();
+		}
 
 		m_Screen.Rotor (0, nCount);
 	}
@@ -192,4 +203,18 @@ void CKernel::DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenC
 			nPosY1 += nSignY;
 		}
 	}
+}
+
+void CKernel::MouseRemovedHandler (CDevice *pDevice, void *pContext)
+{
+	assert (s_pThis != 0);
+
+	static const char ClearScreen[] = "\x1b[H\x1b[J\x1b[?25h";
+	s_pThis->m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
+
+	CLogger::Get ()->Write (FromKernel, LogDebug, "Mouse removed");
+
+	s_pThis->m_pMouse = 0;
+
+	CLogger::Get ()->Write (FromKernel, LogNotice, "Please attach an USB mouse!");
 }
