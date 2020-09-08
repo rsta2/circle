@@ -35,7 +35,7 @@ SAMPLES
 34-sounddevices		Integrating multiple sound devices in one application
 35-mqttclient		Demonstrating the MQTT client
 36-softpwm		Using the class CUserTimer to implement software PWM
-37-showgamepad		Shows a stylised gamepad on screen and the state of an attached USB gamepad.
+37-showgamepad	[PnP]	Shows a stylised gamepad on screen and the state of an attached USB gamepad.
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
 39-umsdplugging		Plug in and remove USB flash drives on application request, list directory
 
