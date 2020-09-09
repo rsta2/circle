@@ -2,7 +2,7 @@
 // miniorgan.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,6 +33,8 @@
 #endif
 
 #include <circle/interrupt.h>
+#include <circle/usb/usbmidi.h>
+#include <circle/usb/usbkeyboard.h>
 #include <circle/serial.h>
 #include <circle/types.h>
 
@@ -59,7 +61,12 @@ private:
 
 	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
 
+	static void USBDeviceRemovedHandler (CDevice *pDevice, void *pContext);
+
 private:
+	CUSBMIDIDevice     * volatile m_pMIDIDevice;
+	CUSBKeyboardDevice * volatile m_pKeyboard;
+
 	CSerialDevice m_Serial;
 	boolean m_bUseSerial;
 	unsigned m_nSerialState;
