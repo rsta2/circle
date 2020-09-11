@@ -83,9 +83,9 @@ TShutdownMode CKernel::Run (void)
 	for (unsigned nCount = 0; m_MiniOrgan.IsActive (); nCount++)
 	{
 		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
-		m_USBHCI.UpdatePlugAndPlay ();
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
 
-		m_MiniOrgan.Process ();
+		m_MiniOrgan.Process (bUpdated);
 
 		m_Screen.Rotor (0, nCount);
 	}

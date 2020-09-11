@@ -52,7 +52,7 @@ public:
 
 	boolean Initialize (void);
 
-	void Process (void);
+	void Process (boolean bPlugAndPlayUpdated);
 
 	unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 

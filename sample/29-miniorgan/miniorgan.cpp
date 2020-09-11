@@ -108,21 +108,24 @@ boolean CMiniOrgan::Initialize (void)
 	return FALSE;
 }
 
-void CMiniOrgan::Process (void)
+void CMiniOrgan::Process (boolean bPlugAndPlayUpdated)
 {
 	if (m_pMIDIDevice != 0)
 	{
 		return;
 	}
 
-	m_pMIDIDevice =
-		(CUSBMIDIDevice *) CDeviceNameService::Get ()->GetDevice ("umidi1", FALSE);
-	if (m_pMIDIDevice != 0)
+	if (bPlugAndPlayUpdated)
 	{
-		m_pMIDIDevice->RegisterRemovedHandler (USBDeviceRemovedHandler);
-		m_pMIDIDevice->RegisterPacketHandler (MIDIPacketHandler);
+		m_pMIDIDevice =
+			(CUSBMIDIDevice *) CDeviceNameService::Get ()->GetDevice ("umidi1", FALSE);
+		if (m_pMIDIDevice != 0)
+		{
+			m_pMIDIDevice->RegisterRemovedHandler (USBDeviceRemovedHandler);
+			m_pMIDIDevice->RegisterPacketHandler (MIDIPacketHandler);
 
-		return;
+			return;
+		}
 	}
 
 	if (m_pKeyboard != 0)
@@ -130,14 +133,17 @@ void CMiniOrgan::Process (void)
 		return;
 	}
 
-	m_pKeyboard =
-		(CUSBKeyboardDevice *) CDeviceNameService::Get ()->GetDevice ("ukbd1", FALSE);
-	if (m_pKeyboard != 0)
+	if (bPlugAndPlayUpdated)
 	{
-		m_pKeyboard->RegisterRemovedHandler (USBDeviceRemovedHandler);
-		m_pKeyboard->RegisterKeyStatusHandlerRaw (KeyStatusHandlerRaw);
+		m_pKeyboard =
+			(CUSBKeyboardDevice *) CDeviceNameService::Get ()->GetDevice ("ukbd1", FALSE);
+		if (m_pKeyboard != 0)
+		{
+			m_pKeyboard->RegisterRemovedHandler (USBDeviceRemovedHandler);
+			m_pKeyboard->RegisterKeyStatusHandlerRaw (KeyStatusHandlerRaw);
 
-		return;
+			return;
+		}
 	}
 
 	if (!m_bUseSerial)

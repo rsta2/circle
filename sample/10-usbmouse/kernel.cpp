@@ -98,9 +98,10 @@ TShutdownMode CKernel::Run (void)
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
 	{
 		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
-		m_USBHCI.UpdatePlugAndPlay ();
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
 
-		if (m_pMouse == 0)
+		if (   bUpdated
+		    && m_pMouse == 0)
 		{
 			m_pMouse = (CMouseDevice *) m_DeviceNameService.GetDevice ("mouse1", FALSE);
 			if (m_pMouse != 0)
@@ -123,7 +124,8 @@ TShutdownMode CKernel::Run (void)
 				m_pMouse->RegisterEventHandler (MouseEventStub);
 			}
 		}
-		else
+
+		if (m_pMouse != 0)
 		{
 			m_pMouse->UpdateCursor ();
 		}

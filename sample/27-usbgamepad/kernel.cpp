@@ -93,9 +93,9 @@ TShutdownMode CKernel::Run (void)
 	for (unsigned nCount = 0; 1; nCount++)
 	{
 		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
-		m_USBHCI.UpdatePlugAndPlay ();
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
 
-		for (unsigned nDevice = 1; nDevice <= MAX_GAMEPADS; nDevice++)
+		for (unsigned nDevice = 1; bUpdated && nDevice <= MAX_GAMEPADS; nDevice++)
 		{
 			if (m_pGamePad[nDevice-1] != 0)
 			{

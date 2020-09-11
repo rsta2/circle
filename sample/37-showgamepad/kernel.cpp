@@ -100,10 +100,15 @@ TShutdownMode CKernel::Run (void)
 		m_Timer.MsDelay (20);
 
 		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
-		m_USBHCI.UpdatePlugAndPlay ();
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
 
 		if (m_pGamePad == 0)
 		{
+			if (!bUpdated)
+			{
+				continue;
+			}
+
 			m_bGamePadKnown = FALSE;
 
 			// get pointer to gamepad device and check if it is supported

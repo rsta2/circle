@@ -96,9 +96,10 @@ TShutdownMode CKernel::Run (void)
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
 	{
 		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
-		m_USBHCI.UpdatePlugAndPlay ();
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
 
-		if (m_pKeyboard == 0)
+		if (   bUpdated
+		    && m_pKeyboard == 0)
 		{
 			m_pKeyboard = (CUSBKeyboardDevice *) m_DeviceNameService.GetDevice ("ukbd1", FALSE);
 			if (m_pKeyboard != 0)
@@ -115,7 +116,8 @@ TShutdownMode CKernel::Run (void)
 				m_Logger.Write (FromKernel, LogNotice, "Just type something!");
 			}
 		}
-		else
+
+		if (m_pKeyboard != 0)
 		{
 			// CUSBKeyboardDevice::UpdateLEDs() must not be called in interrupt context,
 			// that's why this must be done here. This does nothing in raw mode.

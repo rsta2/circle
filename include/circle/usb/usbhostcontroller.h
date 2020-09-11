@@ -71,7 +71,8 @@ public:
 	static boolean IsPlugAndPlay (void);
 
 	// must be called from TASK_LEVEL, if Plug-and-Play is enabled
-	void UpdatePlugAndPlay (void);
+	// returns TRUE if device tree might have been updated (always TRUE on first call)
+	boolean UpdatePlugAndPlay (void);
 
 protected:
 	void PortStatusChanged (CUSBHCIRootPort *pRootPort);
@@ -83,6 +84,7 @@ private:
 
 private:
 	static boolean s_bPlugAndPlay;
+	boolean m_bFirstUpdateCall;
 
 	CPtrList  m_HubList;
 	CSpinLock m_SpinLock;

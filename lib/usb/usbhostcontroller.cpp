@@ -37,6 +37,7 @@ struct TPortStatusEvent
 boolean CUSBHostController::s_bPlugAndPlay;
 
 CUSBHostController::CUSBHostController (boolean bPlugAndPlay)
+:	m_bFirstUpdateCall (TRUE)
 {
 	s_bPlugAndPlay = bPlugAndPlay;
 }
@@ -129,12 +130,12 @@ boolean CUSBHostController::IsPlugAndPlay (void)
 	return s_bPlugAndPlay;
 }
 
-void CUSBHostController::UpdatePlugAndPlay (void)
+boolean CUSBHostController::UpdatePlugAndPlay (void)
 {
-	if (!s_bPlugAndPlay)
-	{
-		return;
-	}
+	assert (s_bPlugAndPlay);
+
+	boolean bResult = m_bFirstUpdateCall;
+	m_bFirstUpdateCall = FALSE;
 
 	m_SpinLock.Acquire ();
 
@@ -161,10 +162,14 @@ void CUSBHostController::UpdatePlugAndPlay (void)
 
 		delete pEvent;
 
+		bResult = TRUE;
+
 		m_SpinLock.Acquire ();
 	}
 
 	m_SpinLock.Release ();
+
+	return bResult;
 }
 
 void CUSBHostController::PortStatusChanged (CUSBHCIRootPort *pRootPort)
