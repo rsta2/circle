@@ -37,6 +37,6 @@ SAMPLES
 36-softpwm		Using the class CUserTimer to implement software PWM
 37-showgamepad	[PnP]	Shows a stylised gamepad on screen and the state of an attached USB gamepad.
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
-39-umsdplugging		Plug in and remove USB flash drives on application request, list directory
+39-umsdplugging	[PnP]	Plug in and remove USB flash drives, list directory
 
 Samples marked with [PnP] are enabled for USB plug-and-play.
