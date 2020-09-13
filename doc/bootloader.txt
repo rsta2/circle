@@ -51,3 +51,6 @@ sample program) in a shell and enter:
 terminal program "putty" directly from the shell. You have to enter "make
 monitor" like you have done for "flash" before and putty should open with the
 right communication parameters.
+
+8. To start another development cycle, power off and on the Raspberry Pi, and
+after rebuilding do again "make flash".
