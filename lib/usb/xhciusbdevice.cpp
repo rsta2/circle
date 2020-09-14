@@ -2,7 +2,7 @@
 // xhciusbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -95,12 +95,7 @@ CXHCIUSBDevice::~CXHCIUSBDevice (void)
 		m_pDeviceContext = 0;
 	}
 
-	if (m_pHub != 0)
-	{
-		m_pHub->DisablePort (m_nHubPortIndex);
-
-		m_pHub = 0;
-	}
+	m_pHub = 0;
 
 	for (unsigned i = 0; i < XHCI_MAX_ENDPOINTS; i++)
 	{

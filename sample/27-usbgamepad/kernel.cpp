@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/usb/usbgamepad.h>
 #include <circle/string.h>
 #include <assert.h>
 
@@ -28,8 +27,13 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer)
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE)			// TRUE: enable plug-and-play
 {
+	for (unsigned i = 0; i < MAX_GAMEPADS; i++)
+	{
+		m_pGamePad[i] = 0;
+	}
+
 	m_ActLED.Blink (5);	// show we are alive
 }
 
@@ -84,47 +88,47 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	boolean bFound = FALSE;
+	m_Logger.Write (FromKernel, LogNotice, "Please attach an USB gamepad, if not already done!");
 
-	for (unsigned nDevice = 1; 1; nDevice++)
-	{
-		CString DeviceName;
-		DeviceName.Format ("upad%u", nDevice);
-
-		CUSBGamePadDevice *pGamePad =
-			(CUSBGamePadDevice *) m_DeviceNameService.GetDevice (DeviceName, FALSE);
-		if (pGamePad == 0)
-		{
-			break;
-		}
-
-		const TGamePadState *pState = pGamePad->GetInitialState ();
-		assert (pState != 0);
-
-		m_Logger.Write (FromKernel, LogNotice, "Gamepad %u: %d Button(s) %d Hat(s)",
-				nDevice, pState->nbuttons, pState->nhats);
-
-		for (int i = 0; i < pState->naxes; i++)
-		{
-			m_Logger.Write (FromKernel, LogNotice, "Gamepad %u: Axis %d: Minimum %d Maximum %d",
-					nDevice, i+1, pState->axes[i].minimum, pState->axes[i].maximum);
-		}
-
-		pGamePad->RegisterStatusHandler (GamePadStatusHandler);
-
-		bFound = TRUE;
-	}
-
-	if (!bFound)
-	{
-		m_Logger.Write (FromKernel, LogPanic, "Gamepad not found");
-	}
-
-	m_Logger.Write (FromKernel, LogNotice, "Use your gamepad controls!");
-
-	// just wait and turn the rotor
 	for (unsigned nCount = 0; 1; nCount++)
 	{
+		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
+
+		for (unsigned nDevice = 1; bUpdated && nDevice <= MAX_GAMEPADS; nDevice++)
+		{
+			if (m_pGamePad[nDevice-1] != 0)
+			{
+				continue;
+			}
+
+			m_pGamePad[nDevice-1] = (CUSBGamePadDevice *)
+				m_DeviceNameService.GetDevice ("upad", nDevice, FALSE);
+			if (m_pGamePad[nDevice-1] == 0)
+			{
+				continue;
+			}
+
+			const TGamePadState *pState = m_pGamePad[nDevice-1]->GetInitialState ();
+			assert (pState != 0);
+
+			m_Logger.Write (FromKernel, LogNotice, "Gamepad %u: %d Button(s) %d Hat(s)",
+					nDevice, pState->nbuttons, pState->nhats);
+
+			for (int i = 0; i < pState->naxes; i++)
+			{
+				m_Logger.Write (FromKernel, LogNotice,
+						"Gamepad %u: Axis %d: Minimum %d Maximum %d",
+						nDevice, i+1, pState->axes[i].minimum,
+						pState->axes[i].maximum);
+			}
+
+			m_pGamePad[nDevice-1]->RegisterRemovedHandler (GamePadRemovedHandler, this);
+			m_pGamePad[nDevice-1]->RegisterStatusHandler (GamePadStatusHandler);
+
+			m_Logger.Write (FromKernel, LogNotice, "Use your gamepad controls!");
+		}
+
 		m_Screen.Rotor (0, nCount);
 		m_Timer.MsDelay (100);
 	}
@@ -162,4 +166,22 @@ void CKernel::GamePadStatusHandler (unsigned nDeviceIndex, const TGamePadState *
 	}
 
 	CLogger::Get ()->Write (FromKernel, LogNotice, Msg);
+}
+
+void CKernel::GamePadRemovedHandler (CDevice *pDevice, void *pContext)
+{
+	CKernel *pThis = (CKernel *) pContext;
+	assert (pThis != 0);
+
+	for (unsigned i = 0; i < MAX_GAMEPADS; i++)
+	{
+		if (pThis->m_pGamePad[i] == (CUSBGamePadDevice *) pDevice)
+		{
+			CLogger::Get ()->Write (FromKernel, LogDebug, "Gamepad %u removed", i+1);
+
+			pThis->m_pGamePad[i] = 0;
+
+			break;
+		}
+	}
 }

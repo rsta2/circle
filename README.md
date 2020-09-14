@@ -186,6 +186,7 @@ The following C++ classes were added to Circle:
 Base library
 
 * CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
+* CNumberPool: Allocation pool for (device) numbers.
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 
@@ -200,6 +201,7 @@ Additional Topics
 * [Dynamic memory management and the "new" operator](doc/new-operator.txt)
 * [Serial bootloader support](doc/bootloader.txt)
 * [Multi-core support](doc/multicore.txt)
+* [USB plug-and-play](doc/usb-plug-and-play.txt)
 * [Debugging support](doc/debug.txt)
 * [QEMU support](doc/qemu.txt)
 * [Eclipse IDE support](doc/eclipse-support.txt)

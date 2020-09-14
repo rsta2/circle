@@ -2,7 +2,7 @@
 // usbprinter.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,20 +23,29 @@
 #include <circle/logger.h>
 #include <assert.h>
 
-unsigned CUSBPrinterDevice::s_nDeviceNumber = 1;
+CNumberPool CUSBPrinterDevice::s_DeviceNumberPool (1);
 
 static const char FromPrinter[] = "uprn";
+static const char DevicePrefix[] = "uprn";
 
 CUSBPrinterDevice::CUSBPrinterDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_Protocol (USBPrinterProtocolUnknown),
 	m_pEndpointIn (0),
-	m_pEndpointOut (0)
+	m_pEndpointOut (0),
+	m_nDeviceNumber (0)
 {
 }
 
 CUSBPrinterDevice::~CUSBPrinterDevice (void)
 {
+	if (m_nDeviceNumber != 0)
+	{
+		CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
+
+		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
+	}
+
 	delete m_pEndpointOut;
 	m_pEndpointOut =  0;
 	
@@ -114,9 +123,10 @@ boolean CUSBPrinterDevice::Configure (void)
 		return FALSE;
 	}
 
-	CString DeviceName;
-	DeviceName.Format ("uprn%u", s_nDeviceNumber++);
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	assert (m_nDeviceNumber == 0);
+	m_nDeviceNumber = s_DeviceNumberPool.AllocateNumber (TRUE, FromPrinter);
+
+	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
 	return TRUE;
 }

@@ -2,7 +2,7 @@
 // device.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,11 +20,18 @@
 #include <circle/device.h>
 
 CDevice::CDevice (void)
+:	m_pRemovedHandler (0)
 {
 }
 
 CDevice::~CDevice (void)
 {
+	if (m_pRemovedHandler != 0)
+	{
+		(*m_pRemovedHandler) (this, m_pRemovedContext);
+
+		m_pRemovedHandler = 0;
+	}
 }
 
 int CDevice::Read (void *pBuffer, size_t nCount)
@@ -45,4 +52,10 @@ u64 CDevice::Seek (u64 ullOffset)
 boolean CDevice::RemoveDevice (void)
 {
 	return FALSE;
+}
+
+void CDevice::RegisterRemovedHandler (TDeviceRemovedHandler *pHandler, void *pContext)
+{
+	m_pRemovedContext = pContext;
+	m_pRemovedHandler = pHandler;
 }

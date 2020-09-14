@@ -2,9 +2,9 @@ ISSUES
 
 Known issues of Circle are:
 
-* There are known issues with the included USB library (e.g. no dynamic
-  attachments, no error recovery, limited split support, no isochronous support).
-  You should only attach the USB devices, which are needed for your application!
+* There are known issues with the included USB library (e.g. no error recovery,
+  limited split support, no isochronous support). You should only attach the USB
+  devices, which are needed for your application!
 
 * Circle is not a real-time OS. That means different simultaneous operations may
   interfere in respect of its timing behaviour. The provided samples are tested to

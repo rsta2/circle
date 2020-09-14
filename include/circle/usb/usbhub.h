@@ -4,7 +4,7 @@
 // Definitions for USB hubs
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,6 +41,11 @@
 #define PORT_ENABLE			1
 #define PORT_RESET			4
 #define PORT_POWER			8
+#define C_PORT_CONNECTION		16
+#define C_PORT_ENABLE			17
+#define C_PORT_SUSPEND			18
+#define C_PORT_OVER_CURRENT		19
+#define C_PORT_RESET			20
 
 // Hub Descriptor
 struct TUSBHubDescriptor
@@ -82,6 +87,11 @@ struct TUSBPortStatus
 		#define PORT_LOW_SPEED__MASK		(1 << 9)
 		#define PORT_HIGH_SPEED__MASK		(1 << 10)
 	unsigned short	wChangeStatus;
+		#define C_PORT_CONNECTION__MASK		(1 << 0)
+		#define C_PORT_ENABLE__MASK		(1 << 1)
+		#define C_PORT_SUSPEND__MASK		(1 << 2)
+		#define C_PORT_OVER_CURRENT__MASK	(1 << 3)
+		#define C_PORT_RESET__MASK		(1 << 4)
 }
 PACKED;
 

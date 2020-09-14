@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/timer.h>
+#include <circle/numberpool.h>
 #include <circle/types.h>
 
 typedef void TMIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength);
@@ -61,7 +62,8 @@ private:
 
 	TKernelTimerHandle m_hTimer;
 
-	static unsigned s_nDeviceNumber;
+	unsigned m_nDeviceNumber;
+	static CNumberPool s_DeviceNumberPool;
 };
 
 #endif

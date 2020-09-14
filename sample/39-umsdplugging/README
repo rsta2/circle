@@ -1,29 +1,22 @@
 README
 
-Circle does not support USB hot-plugging, but USB mass-storage devices ("UMSD",
-e.g. flash drives) can be attached to a running system and mounted on
-application request. Removing an UMSD from a running system is possible too,
-after the application unmounted the file system and called a function to disable
-the USB device. This sample program demonstrates, how this can be accomplished.
+This sample demonstrates USB plug-and-play with USB mass-storage devices
+("UMSD", e.g. flash drives). The former application controlled
+semi-plug-and-play for UMSD is not needed any more. On the Raspberry Pi 1-3 and
+Zero the system option USE_USB_SOF_INTR should be defined in the file
+include/circle/sysconfig.h before building this sample program.
 
-An USB keyboard has to be attached to your Raspberry Pi, before it is started
-with this sample installed. The USB flash drive should not be connected, when
-the Raspberry Pi is started. After system initialization the application prompts
-you, to plug in the USB flash drive and to press the RETURN key. Because you
-need a second USB port now, Raspberry Pi models with only one USB port cannot be
-used without an external USB hub.
+After boot the sample prompts you to attach an USB flash drive. Just plug in an
+USB flash drive, which contains a FAT file system. For safety it should not
+contain important data. After plug-in the flash drive will be detected
+automatically and mounted afterwards. The sample program displays a listing of
+the root directory of the flash drive then, if there are files on the drive.
 
-Just plug in an USB flash drive, which contains a FAT file system. For safety it
-should not contain important data. After pressing the RETURN key, the USB will
-be re-scanned by Circle (in m_USBHCI.ReScanDevices ()) and the USB flash drive
-should be detected and mounted afterwards. The sample program displays a listing
-of the root directory of the flash drive then, if there are files on the drive.
-
-Next the file system will be unmounted immediately, the USB device will be
-disabled and removed from the system. You will be prompted to remove the USB
-flash drive physically from the USB port. Just do it and press RETURN, when you
-have done. After completion the process is started again. You can plug in the
-same or a different USB flash drive in the next run.
+Next the file system will be unmounted immediately by the sample application and
+you will be prompted to remove the USB flash drive from the USB connector. When
+this has been done, the USB device will be automatically unregistered in the
+system. After completion the process is started again. You can plug in the same
+or a different USB flash drive in the next run.
 
 Circle comes with two different implementations of a FAT file system driver
 (with different APIs). By default this sample uses the CFATFileSystem class in

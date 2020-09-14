@@ -18,20 +18,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/usb/usbkeyboard.h>
+#include <circle/device.h>
 #include <circle/string.h>
 #include <circle/util.h>
 #include <assert.h>
 
 #ifdef USE_FATFS
-	#include <fatfs/diskio.h>
-#else
-	#include <circle/device.h>
-#endif
-
-#ifdef USE_FATFS
-	#define DRIVE		"USB:"
-	#define DRIVE_NUMBER	1		// 2 for "USB2:", 3 for "USB3:"
+	#define DRIVE		"USB:"		// "USB2:", "USB3:"
+	#define DEVICE		"umsd1"		// "umsd2", "umsd3"
 #else
 	#define DRIVE		"umsd1"
 	#define PARTITION	"umsd1-1"
@@ -39,26 +33,21 @@
 
 static const char FromKernel[] = "kernel";
 
-CKernel *CKernel::s_pThis = 0;
-
 CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),		// TRUE: enable plug-and-play
+	m_bStorageAttached (FALSE)
 #ifndef USE_FATFS
-	m_pFileSystem (0),
+	, m_pFileSystem (0)
 #endif
-	m_chLastKey ('\0')
 {
-	s_pThis = this;
-
 	m_ActLED.Blink (5);	// show we are alive
 }
 
 CKernel::~CKernel (void)
 {
-	s_pThis = 0;
 }
 
 boolean CKernel::Initialize (void)
@@ -108,88 +97,92 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CUSBKeyboardDevice *pKeyboard =
-		(CUSBKeyboardDevice *) m_DeviceNameService.GetDevice ("ukbd1", FALSE);
-	if (pKeyboard == 0)
-	{
-		m_Logger.Write (FromKernel, LogPanic, "Keyboard not found");
-	}
-
-	pKeyboard->RegisterKeyPressedHandler (KeyPressedHandler);
-
 	while (1)
 	{
 		// USB device detection
-		m_Logger.Write (FromKernel, LogNotice, "Plug in USB flash drive and press RETURN!");
-
-		WaitForReturnKey ();
-
-		m_USBHCI.ReScanDevices ();
+		m_Logger.Write (FromKernel, LogNotice, "Plug in an USB flash drive!");
 
 #ifdef USE_FATFS
-		// Mount file system
-		if (f_mount (&m_FileSystem, DRIVE, 1) == FR_OK)
+		while (1)
 		{
-			// Show contents of root directory
-			DIR Directory;
-			FILINFO FileInfo;
-			FRESULT Result = f_findfirst (&Directory, &FileInfo, DRIVE "/", "*");
-			for (unsigned i = 0; Result == FR_OK && FileInfo.fname[0]; i++)
+			// Update the tree of connected USB devices
+			if (m_USBHCI.UpdatePlugAndPlay ())
 			{
-				if (!(FileInfo.fattrib & (AM_HID | AM_SYS)))
+				// Try to mount file system
+				FRESULT Result = f_mount (&m_FileSystem, DRIVE, 1);
+				if (Result == FR_OK)
 				{
-					// cut too long file names
-					if (strlen (FileInfo.fname) > 18)
-					{
-						strcpy (FileInfo.fname + 15, "...");
-					}
+					break;
+				}
+				else if (Result != FR_NOT_READY)
+				{
+					m_Logger.Write (FromKernel, LogError,
+							"Mount error (%u)", Result);
+				}
+			}
+		}
 
-					CString FileName;
-					FileName.Format ("%-19s", FileInfo.fname);
+		assert (!m_bStorageAttached);
+		m_bStorageAttached = TRUE;
 
-					m_Screen.Write ((const char *) FileName, FileName.GetLength ());
+		CDevice *pDevice = m_DeviceNameService.GetDevice (DEVICE, TRUE);
+		assert (pDevice != 0);
+		pDevice->RegisterRemovedHandler (StorageRemovedHandler, this);
 
-					if (i % 4 == 3)
-					{
-						m_Screen.Write ("\n", 1);
-					}
+		// Show contents of root directory
+		DIR Directory;
+		FILINFO FileInfo;
+		FRESULT Result = f_findfirst (&Directory, &FileInfo, DRIVE "/", "*");
+		for (unsigned i = 0; Result == FR_OK && FileInfo.fname[0]; i++)
+		{
+			if (!(FileInfo.fattrib & (AM_HID | AM_SYS)))
+			{
+				// cut too long file names
+				if (strlen (FileInfo.fname) > 18)
+				{
+					strcpy (FileInfo.fname + 15, "...");
 				}
 
-				Result = f_findnext (&Directory, &FileInfo);
+				CString FileName;
+				FileName.Format ("%-19s", FileInfo.fname);
+
+				m_Screen.Write ((const char *) FileName, FileName.GetLength ());
+
+				if (i % 4 == 3)
+				{
+					m_Screen.Write ("\n", 1);
+				}
 			}
-			m_Screen.Write ("\n", 1);
 
-			// Unmount file system
-			if (f_mount (0, DRIVE, 0) != FR_OK)
-			{
-				m_Logger.Write (FromKernel, LogPanic,
-						"Cannot unmount drive: %s", DRIVE);
-			}
+			Result = f_findnext (&Directory, &FileInfo);
 		}
-		else
+		m_Screen.Write ("\n", 1);
+
+		// Unmount file system
+		if (f_mount (0, DRIVE, 0) != FR_OK)
 		{
-			m_Logger.Write (FromKernel, LogError, "Cannot mount drive: %s", DRIVE);
-		}
-
-		// USB device removal
-		DRESULT Result = disk_ioctl (DRIVE_NUMBER, CTRL_EJECT, 0);
-		switch (Result)
-		{
-		case RES_NOTRDY:	// device not found
-			break;
-
-		case RES_OK:
-			m_Logger.Write (FromKernel, LogNotice,
-					"Remove USB flash drive and press RETURN!");
-			WaitForReturnKey ();
-			break;
-
-		default:
 			m_Logger.Write (FromKernel, LogPanic,
-					"Cannot remove device (%u)", (unsigned) Result);
-			break;
+					"Cannot unmount drive: %s", DRIVE);
 		}
 #else
+		while (1)
+		{
+			// Update the tree of connected USB devices
+			if (m_USBHCI.UpdatePlugAndPlay ())
+			{
+				CDevice *pDevice = m_DeviceNameService.GetDevice (DRIVE, TRUE);
+				if (pDevice != 0)
+				{
+					assert (!m_bStorageAttached);
+					m_bStorageAttached = TRUE;
+
+					pDevice->RegisterRemovedHandler (StorageRemovedHandler, this);
+
+					break;
+				}
+			}
+		}
+
 		// Mount file system
 		CDevice *pPartition = m_DeviceNameService.GetDevice (PARTITION, TRUE);
 		if (   pPartition != 0
@@ -229,42 +222,31 @@ TShutdownMode CKernel::Run (void)
 			m_Logger.Write (FromKernel, LogError,
 					"Cannot mount partition: %s", PARTITION);
 		}
+#endif
 
-		// USB device removal
-		CDevice *pDrive = m_DeviceNameService.GetDevice (DRIVE, TRUE);
-		if (pDrive != 0)
+		m_Logger.Write (FromKernel, LogNotice, "Remove USB flash drive!");
+
+		while (1)
 		{
-			if (pDrive->RemoveDevice ())
+			// Update the tree of connected USB devices
+			if (m_USBHCI.UpdatePlugAndPlay ())
 			{
-				m_Logger.Write (FromKernel, LogNotice,
-						"Remove USB flash drive and press RETURN!");
-
-				WaitForReturnKey ();
-			}
-			else
-			{
-				m_Logger.Write (FromKernel, LogPanic, "Cannot remove device");
+				if (!m_bStorageAttached)
+				{
+					break;
+				}
 			}
 		}
-#endif
 	}
 
 	return ShutdownHalt;
 }
 
-void CKernel::WaitForReturnKey (void)
+void CKernel::StorageRemovedHandler (CDevice *pDevice, void *pContext)
 {
-	while (m_chLastKey != '\n')
-	{
-		// just wait
-	}
+	CKernel *pThis = (CKernel *) pContext;
+	assert (pThis != 0);
 
-	m_chLastKey = '\0';
-}
-
-void CKernel::KeyPressedHandler (const char *pString)
-{
-	assert (s_pThis != 0);
-	assert (pString != 0);
-	s_pThis->m_chLastKey = pString[0];
+	assert (pThis->m_bStorageAttached);
+	pThis->m_bStorageAttached = FALSE;
 }

@@ -5,6 +5,12 @@ information about the available controls (buttons, axes and hats) is shown and
 later, when you push a button or move an axis or hat, the current state of all
 controls is displayed.
 
+Because this sample is enabled for USB plug-and-play, the USB gamepad can be
+attached or removed at any time while or before the system is running. It will
+be detected automatically and can be used, if it is attached. On the Raspberry
+Pi 1-3 and Zero the system option USE_USB_SOF_INTR should be defined in the file
+include/circle/sysconfig.h to use this sample program.
+
 Circle supports gamepads with standard USB HID class report interface (3-0-0)
 and some widespread branded gamepads with proprietary USB interfaces. This
 simple sample works with all of these supported gamepads, while

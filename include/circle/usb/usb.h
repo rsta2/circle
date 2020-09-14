@@ -2,7 +2,7 @@
 // usb.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,6 +46,21 @@ enum TUSBSpeed
 	USBSpeedHigh,
 	USBSpeedSuper,
 	USBSpeedUnknown
+};
+
+// Errors
+enum TUSBError
+{
+	USBErrorStall,
+	USBErrorTransaction,
+	USBErrorBabble,
+	USBErrorFrameOverrun,
+	USBErrorDataToggle,
+	USBErrorHostBus,
+	USBErrorSplit,
+	USBErrorTimeout,
+	USBErrorAborted,
+	USBErrorUnknown
 };
 
 // Setup Data

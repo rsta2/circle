@@ -28,8 +28,9 @@
 
 static const char From[] = "xhci";
 
-CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer)
-:	m_PCIeHostBridge (pInterruptSystem),
+CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, boolean bPlugAndPlay)
+:	CUSBHostController (bPlugAndPlay),
+	m_PCIeHostBridge (pInterruptSystem),
 	m_SharedMemAllocator (
 		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_START),
 		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_END) + PAGE_SIZE - 1),

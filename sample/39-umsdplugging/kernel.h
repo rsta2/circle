@@ -57,9 +57,7 @@ public:
 	TShutdownMode Run (void);
 	
 private:
-	void WaitForReturnKey (void);
-
-	static void KeyPressedHandler (const char *pString);
+	static void StorageRemovedHandler (CDevice *pDevice, void *pContext);
 
 private:
 	// do not change this order
@@ -75,15 +73,13 @@ private:
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
 
+	volatile boolean	m_bStorageAttached;
+
 #ifdef USE_FATFS
 	FATFS			m_FileSystem;
 #else
 	CFATFileSystem	       *m_pFileSystem;
 #endif
-
-	volatile char		m_chLastKey;
-
-	static CKernel *s_pThis;
 };
 
 #endif

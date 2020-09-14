@@ -34,6 +34,7 @@ Base library
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
 * CNetDevice: Base class (interface) of net devices.
 * CNullDevice: Character device which ignores sent data and returns 0 bytes on read.
+* CNumberPool: Allocation pool for (device) numbers.
 * CPageAllocator: Allocates aligned pages from a flat memory region.
 * CPageTable: Encapsulates a page table to be used by MMU (AArch32).
 * CPtrArray: Container class. Dynamic array of pointers.

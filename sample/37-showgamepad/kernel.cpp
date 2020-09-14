@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ CKernel::CKernel (void)
 :	m_Screen (640, 480),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),		// TRUE: enable plug-and-play
 	m_pGamePad (0)
 {
 	s_pThis = this;
@@ -92,54 +92,85 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	// get pointer to gamepad device and check if it is supported
-	m_pGamePad = (CUSBGamePadDevice *) m_DeviceNameService.GetDevice ("upad", DEVICE_INDEX, FALSE);
-	if (m_pGamePad == 0)
-	{
-		m_Logger.Write (FromKernel, LogPanic, "Gamepad not found");
-	}
+	m_Logger.Write (FromKernel, LogNotice, "Please attach an USB gamepad, if not already done!");
 
-	if (!(m_pGamePad->GetProperties () & GamePadPropertyIsKnown))
-	{
-		m_Logger.Write (FromKernel, LogPanic, "Gamepad mapping is not known");
-	}
-
-	// get initial state from gamepad and register status handler
-	const TGamePadState *pState = m_pGamePad->GetInitialState ();
-	assert (pState != 0);
-	GamePadStatusHandler (DEVICE_INDEX-1, pState);
-
-	m_pGamePad->RegisterStatusHandler (GamePadStatusHandler);
-
-	// make some rumble, if it is supported
-	if (m_pGamePad->GetProperties () & GamePadPropertyHasRumble)
-	{
-		if (m_pGamePad->SetRumbleMode (GamePadRumbleModeLow))
-		{
-			m_Timer.MsDelay (250);
-			m_pGamePad->SetRumbleMode (GamePadRumbleModeOff);
-		}
-	}
-
-	// display stylised gamepad on screen
-	static const char ClearScreen[] = "\x1b[H\x1b[J\x1b[?25l";
-	m_Screen.Write (ClearScreen, sizeof ClearScreen);
-
-	MoveTo (50, 429);
-	LineTo (170, 429);
-	LineTo (200, 279);
-	LineTo (439, 279);
-	LineTo (469, 429);
-	LineTo (589, 429);
-	LineTo (539, 50);
-	LineTo (100, 50);
-	LineTo (50, 429);
-	MoveTo (92, 119);
-	LineTo (547, 119);
-
-	// continuously display status of gamepad controls
 	for (unsigned nCount = 0; 1; nCount++)
 	{
+		m_Screen.Rotor (0, nCount);
+		m_Timer.MsDelay (20);
+
+		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
+
+		if (m_pGamePad == 0)
+		{
+			if (!bUpdated)
+			{
+				continue;
+			}
+
+			m_bGamePadKnown = FALSE;
+
+			// get pointer to gamepad device and check if it is supported
+			m_pGamePad = (CUSBGamePadDevice *)
+				m_DeviceNameService.GetDevice ("upad", DEVICE_INDEX, FALSE);
+			if (m_pGamePad == 0)
+			{
+				continue;
+			}
+
+			m_pGamePad->RegisterRemovedHandler (GamePadRemovedHandler);
+
+			if (!(m_pGamePad->GetProperties () & GamePadPropertyIsKnown))
+			{
+				m_Logger.Write (FromKernel, LogWarning,
+						"Gamepad mapping is not known");
+
+				continue;
+			}
+
+			m_bGamePadKnown = TRUE;
+
+			// get initial state from gamepad and register status handler
+			const TGamePadState *pState = m_pGamePad->GetInitialState ();
+			assert (pState != 0);
+			GamePadStatusHandler (DEVICE_INDEX-1, pState);
+
+			m_pGamePad->RegisterStatusHandler (GamePadStatusHandler);
+
+			// make some rumble, if it is supported
+			if (m_pGamePad->GetProperties () & GamePadPropertyHasRumble)
+			{
+				if (m_pGamePad->SetRumbleMode (GamePadRumbleModeLow))
+				{
+					m_Timer.MsDelay (250);
+					m_pGamePad->SetRumbleMode (GamePadRumbleModeOff);
+				}
+			}
+
+			// display stylised gamepad on screen
+			static const char ClearScreen[] = "\x1b[H\x1b[J\x1b[?25l";
+			m_Screen.Write (ClearScreen, sizeof ClearScreen);
+
+			MoveTo (50, 429);
+			LineTo (170, 429);
+			LineTo (200, 279);
+			LineTo (439, 279);
+			LineTo (469, 429);
+			LineTo (589, 429);
+			LineTo (539, 50);
+			LineTo (100, 50);
+			LineTo (50, 429);
+			MoveTo (92, 119);
+			LineTo (547, 119);
+		}
+
+		if (!m_bGamePadKnown)
+		{
+			continue;
+		}
+
+		// display status of gamepad controls
 		ShowAxisButton (140, 60, GamePadButtonL2, GamePadAxisButtonL2);
 		ShowAxisButton (140, 110, GamePadButtonL1, GamePadAxisButtonL1);
 		ShowAxisButton (477, 60, GamePadButtonR2, GamePadAxisButtonR2);
@@ -182,9 +213,6 @@ TShutdownMode CKernel::Run (void)
 			ShowGyroscopeData (240, 323, m_GamePadState.acceleration, "ACCEL");
 			ShowGyroscopeData (352, 323, m_GamePadState.gyroscope, "GYRO");
 		}
-
-		m_Screen.Rotor (0, nCount);
-		m_Timer.MsDelay (20);
 	}
 
 	return ShutdownHalt;
@@ -329,4 +357,18 @@ void CKernel::GamePadStatusHandler (unsigned nDeviceIndex, const TGamePadState *
 	assert (s_pThis != 0);
 	assert (pState != 0);
 	memcpy (&s_pThis->m_GamePadState, pState, sizeof *pState);
+}
+
+void CKernel::GamePadRemovedHandler (CDevice *pDevice, void *pContext)
+{
+	assert (s_pThis != 0);
+
+	static const char ClearScreen[] = "\x1b[H\x1b[J\x1b[?25h";
+	s_pThis->m_Screen.Write (ClearScreen, sizeof ClearScreen);
+
+	CLogger::Get ()->Write (FromKernel, LogDebug, "Gamepad removed");
+
+	s_pThis->m_pGamePad = 0;
+
+	CLogger::Get ()->Write (FromKernel, LogNotice, "Please attach an USB gamepad!");
 }

@@ -2,7 +2,7 @@
 // usbgamepad.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // Ported from the USPi driver which is:
 // 	Copyright (C) 2014  M. Maccaferri <macca@maccasoft.com>
@@ -24,6 +24,7 @@
 #define _circle_usb_usbgamepad_h
 
 #include <circle/usb/usbhiddevice.h>
+#include <circle/numberpool.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -217,7 +218,7 @@ protected:
 	u16 m_usReportSize;
 
 	unsigned m_nDeviceNumber;
-	static unsigned s_nDeviceNumber;
+	static CNumberPool s_DeviceNumberPool;
 };
 
 #endif

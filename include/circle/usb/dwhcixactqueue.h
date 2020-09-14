@@ -2,7 +2,7 @@
 // dwhcixactqueue.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,6 +33,9 @@ class CDWHCITransactionQueue		// Queues coming USB transactions (FIFO)
 public:
 	CDWHCITransactionQueue (void);
 	~CDWHCITransactionQueue (void);
+
+	// remove all entries
+	void Flush (void);
 
 	// enqueue transaction to be processed at usFrameNumber
 	void Enqueue (CDWHCITransferStageData *pStageData, u16 usFrameNumber);

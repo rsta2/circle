@@ -2,7 +2,7 @@
 // usbmassdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -187,7 +187,7 @@ struct TSCSIWrite10
 }
 PACKED;
 
-unsigned CUSBBulkOnlyMassStorageDevice::s_nDeviceNumberMap = 0;
+CNumberPool CUSBBulkOnlyMassStorageDevice::s_DeviceNumberPool (1);
 
 static const char FromUmsd[] = "umsd";
 
@@ -209,8 +209,7 @@ CUSBBulkOnlyMassStorageDevice::~CUSBBulkOnlyMassStorageDevice (void)
 	{
 		CDeviceNameService::Get ()->RemoveDevice ("umsd", m_nDeviceNumber, TRUE);
 
-		assert (s_nDeviceNumberMap & (1 << m_nDeviceNumber));
-		s_nDeviceNumberMap &= ~(1 << m_nDeviceNumber);
+		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 
 		m_nDeviceNumber = 0;
 	}
@@ -385,27 +384,16 @@ boolean CUSBBulkOnlyMassStorageDevice::Configure (void)
 
 	CLogger::Get ()->Write (FromUmsd, LogDebug, "Capacity is %u MByte", m_nBlockCount / (0x100000 / UMSD_BLOCK_SIZE));
 
-	// find and allocate first free device number
-	unsigned i;
-	for (i = 1; i <= 31; i++)
-	{
-		if (!(s_nDeviceNumberMap & (1 << i)))
-		{
-			break;
-		}
-	}
-
-	if (i > 31)
+	unsigned nDeviceNumber = s_DeviceNumberPool.AllocateNumber (FALSE);
+	if (nDeviceNumber == CNumberPool::Invalid)
 	{
 		CLogger::Get ()->Write (FromUmsd, LogError, "Too many devices");
 
 		return FALSE;
 	}
 
-	s_nDeviceNumberMap |= 1 << i;
-
 	assert (m_nDeviceNumber == 0);
-	m_nDeviceNumber = i;
+	m_nDeviceNumber = nDeviceNumber;
 
 	CString DeviceName;
 	DeviceName.Format ("umsd%u", m_nDeviceNumber);
@@ -415,7 +403,7 @@ boolean CUSBBulkOnlyMassStorageDevice::Configure (void)
 	assert (m_pPartitionManager != 0);
 	if (!m_pPartitionManager->Initialize ())
 	{
-		s_nDeviceNumberMap &= ~(1 << m_nDeviceNumber);
+		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 		m_nDeviceNumber = 0;
 
 		return FALSE;
