@@ -2,7 +2,7 @@
 // usbgamepadxbox360.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2020  R. Stange <rsta2@o2online.de>
 //
 // Information to implement this was taken from:
 //	https://github.com/felis/USB_Host_Shield_2.0/blob/master/XBOXUSB.cpp
@@ -24,6 +24,7 @@
 //
 #include <circle/usb/usbgamepadxbox360.h>
 #include <circle/usb/usbhostcontroller.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/util.h>
 #include <circle/macros.h>
@@ -198,18 +199,18 @@ boolean CUSBGamePadXbox360Device::SetLEDMode (TGamePadLEDMode Mode)
 		return FALSE;
 	}
 
-	u8 Command[3] ALIGN (4);	// DMA buffer
+	DMA_BUFFER (u8, Command, 3);
 	Command[0] = 0x01;
 	Command[1] = 0x03;
 	Command[2] = LEDMode[Mode];
 
-	return SendToEndpointOut (Command, sizeof Command);
+	return SendToEndpointOut (Command, 3);
 }
 
 boolean CUSBGamePadXbox360Device::SetRumbleMode (TGamePadRumbleMode Mode)
 {
-	u8 Command[8] ALIGN (4);	// DMA buffer
-	memset (Command, 0, sizeof Command);
+	DMA_BUFFER (u8, Command, 8);
+	memset (Command, 0, 8);
 	Command[1] = 0x08;
 
 	switch (Mode)
@@ -230,5 +231,5 @@ boolean CUSBGamePadXbox360Device::SetRumbleMode (TGamePadRumbleMode Mode)
 		return FALSE;
 	}
 
-	return SendToEndpointOut (Command, sizeof Command);
+	return SendToEndpointOut (Command, 8);
 }

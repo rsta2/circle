@@ -2,7 +2,7 @@
 // usbgamepadswitchpro.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // This driver was developed by:
 //	Jose Luis Sanchez, jspeccy@gmail.com, jsanchezv@github.com
@@ -23,6 +23,7 @@
 #include <circle/usb/usbgamepadswitchpro.h>
 #include <circle/usb/usbhid.h>
 #include <circle/usb/usbhostcontroller.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
 #include <circle/debug.h>
@@ -120,7 +121,7 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 		m_State.axes[axis].maximum = REPORT_AXES_MAXIMUM;
 	}
 
-        u8 ReportBuffer[m_usReportSize];
+        DMA_BUFFER (u8, ReportBuffer, m_usReportSize);
 
 	// When Pro Controller starts to work, a first report is enqueued carrying
         // 6 bytes with the Bluetooth MAC, starting at byte 4, in reverse order
@@ -131,8 +132,8 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 	}
 
 	// This command switches "something" in the controller
-        u8 switch_baudrate[2] ALIGN (4) = { 0x80, 0x03 };	// DMA buffer
-        if (!SendToEndpointOut(switch_baudrate, sizeof(switch_baudrate))) {
+        DMA_BUFFER (u8, switch_baudrate, 2) = { 0x80, 0x03 };
+        if (!SendToEndpointOut(switch_baudrate, 2)) {
                 CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "switch_baudrate command failed!");
                 return FALSE;
         }
@@ -153,8 +154,8 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 	}
 
 	// This command switches "another something" in the controller
-        u8 handshake[2] ALIGN (4) = { 0x80, 0x02 };	// DMA buffer
-        if (!SendToEndpointOut(handshake, sizeof(handshake))) {
+        DMA_BUFFER (u8, handshake, 2) = { 0x80, 0x02 };
+        if (!SendToEndpointOut(handshake, 2)) {
                 CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "handshake command failed!");
                 return FALSE;
         }
@@ -176,8 +177,8 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 
 	// This command switches the controller to a HID mode, from here all works
 	// like a "standard" controller (ehem!). No ACK to this command.
-        u8 hid_only_mode[2] ALIGN (4) = { 0x80, 0x04 };		// DMA buffer
-        if (!SendToEndpointOut(hid_only_mode, sizeof(hid_only_mode))) {
+        DMA_BUFFER (u8, hid_only_mode, 2) = { 0x80, 0x04 };		// DMA buffer
+        if (!SendToEndpointOut(hid_only_mode, 2)) {
                 CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "hid_only_mode command failed!");
                 return FALSE;
         }
@@ -260,14 +261,15 @@ void CUSBGamePadSwitchProDevice::DecodeReport (const u8 *pReportBuffer)
 
 boolean CUSBGamePadSwitchProDevice::SetLEDMode(TGamePadLEDMode Mode)
 {
-        u8 led_command_calibrated[] = { 0x01, 0x00, 0x00, 0x01, 0x40, 0x40, 0x00, 0x01,
-    	                                0x40, 0x40, 0x30, 0xff };
+        DMA_BUFFER (u8, led_command_calibrated, 12) = { 0x01, 0x00, 0x00, 0x01,
+							0x40, 0x40, 0x00, 0x01,
+							0x40, 0x40, 0x30, 0xff };
 
 	// This command changes the leds, with a bit per LED, low nibble from position 19
 	// bit0 == LED1, bit1 == LED2, bit2 == LED3, bit3 = LED4
 	led_command_calibrated[11] = static_cast<u8>(Mode);
 	led_command_calibrated[1] = rumbleCounter++ & 0x0f;
-	if (!SendToEndpointOut(led_command_calibrated, sizeof(led_command_calibrated))) {
+	if (!SendToEndpointOut(led_command_calibrated, 12)) {
 		CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "led_command failed!");
                 return FALSE;
 	}
@@ -276,8 +278,8 @@ boolean CUSBGamePadSwitchProDevice::SetLEDMode(TGamePadLEDMode Mode)
 
 boolean CUSBGamePadSwitchProDevice::SetRumbleMode (TGamePadRumbleMode Mode)
 {
-        u8 rumble_command[] = { 0x10, 0x00, 0x80, 0x00, 0x00, 0x00,
-                                            0x80, 0x00, 0x00, 0x00 };
+        DMA_BUFFER (u8, rumble_command, 10) = { 0x10, 0x00, 0x80, 0x00, 0x00, 0x00,
+						0x80, 0x00, 0x00, 0x00 };
 
         switch (Mode) {
     	        case GamePadRumbleModeOff:
@@ -300,7 +302,7 @@ boolean CUSBGamePadSwitchProDevice::SetRumbleMode (TGamePadRumbleMode Mode)
         }
         rumble_command[1] = rumbleCounter++ & 0x0f;
 
-        if (!SendToEndpointOut(rumble_command, sizeof(rumble_command))) {
+        if (!SendToEndpointOut(rumble_command, 10)) {
 		CLogger::Get ()->Write (FromUSBPadSwitchPro, LogError, "rumble_command failed!");
                 return FALSE;
 	}

@@ -2,7 +2,7 @@
 // usbgamepadps3.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // Information to implement this was taken from:
 //	https://github.com/felis/USB_Host_Shield_2.0/blob/master/PS3USB.cpp
@@ -193,12 +193,12 @@ void CUSBGamePadPS3Device::DecodeReport (const u8 *pReportBuffer)
 boolean CUSBGamePadPS3Device::PS3Enable (void)
 {
 	/* Special PS3 Controller enable commands */
-	u8 Enable[] ALIGN (4) = {0x42, 0x0C, 0x00, 0x00};	// DMA buffer
+	DMA_BUFFER (u8, Enable, 4) = {0x42, 0x0C, 0x00, 0x00};
 
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					SET_REPORT, (REPORT_TYPE_FEATURE << 8) | 0xF4,
-					GetInterfaceNumber (), Enable, sizeof Enable) < 0)
+					GetInterfaceNumber (), Enable, 4) < 0)
 	{
 		return FALSE;
 	}
@@ -234,14 +234,14 @@ boolean CUSBGamePadPS3Device::SetLEDMode (TGamePadLEDMode Mode)
 					   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					   SET_REPORT, (REPORT_TYPE_OUTPUT << 8) | 0x01,
 					   GetInterfaceNumber (),
-					   m_CommandBuffer, sizeof m_CommandBuffer) >= 0
+					   m_CommandBuffer, USB_GAMEPAD_PS3_COMMAND_LENGTH) >= 0
 					   ? TRUE : FALSE;
 }
 
 boolean CUSBGamePadPS3Device::SetRumbleMode (TGamePadRumbleMode Mode)
 {
-	u8 TempBuffer[USB_GAMEPAD_PS3_COMMAND_LENGTH] ALIGN (4);	// DMA buffer
-	memcpy (TempBuffer, m_CommandBuffer, sizeof m_CommandBuffer);
+	DMA_BUFFER (u8, TempBuffer, USB_GAMEPAD_PS3_COMMAND_LENGTH);
+	memcpy (TempBuffer, m_CommandBuffer, USB_GAMEPAD_PS3_COMMAND_LENGTH);
 
 	switch (Mode)
 	{
@@ -275,6 +275,6 @@ boolean CUSBGamePadPS3Device::SetRumbleMode (TGamePadRumbleMode Mode)
 					   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					   SET_REPORT, (REPORT_TYPE_OUTPUT << 8) | 0x01,
 					   GetInterfaceNumber (),
-					   TempBuffer, sizeof TempBuffer) >= 0
+					   TempBuffer, USB_GAMEPAD_PS3_COMMAND_LENGTH) >= 0
 					   ? TRUE : FALSE;
 }
