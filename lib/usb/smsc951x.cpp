@@ -9,7 +9,7 @@
 // See the file lib/usb/README for details!
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <circle/usb/smsc951x.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/bcmpropertytags.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
 #include <circle/util.h>
@@ -258,7 +259,7 @@ boolean CSMSC951xDevice::SendFrame (const void *pBuffer, unsigned nLength)
 		return FALSE;
 	}
 
-	u8 TxBuffer[FRAME_BUFFER_SIZE+8] ALIGN(4);	// DMA buffer
+	DMA_BUFFER (u8, TxBuffer, FRAME_BUFFER_SIZE+8);
 	assert (pBuffer != 0);
 	memcpy (TxBuffer+8, pBuffer, nLength);
 
