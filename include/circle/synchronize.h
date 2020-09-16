@@ -60,6 +60,9 @@ void LeaveCritical (void);
 //
 // Cache control
 //
+#define DATA_CACHE_LINE_LENGTH_MIN	32	// from CTR
+#define DATA_CACHE_LINE_LENGTH_MAX	32
+
 #define InvalidateInstructionCache()	\
 				asm volatile ("mcr p15, 0, %0, c7, c5,  0" : : "r" (0) : "memory")
 #define FlushPrefetchBuffer()	asm volatile ("mcr p15, 0, %0, c7, c5,  4" : : "r" (0) : "memory")
@@ -96,6 +99,9 @@ void SyncDataAndInstructionCache (void);
 //
 // Cache control
 //
+#define DATA_CACHE_LINE_LENGTH_MIN	64	// from CTR
+#define DATA_CACHE_LINE_LENGTH_MAX	64
+
 #define InvalidateInstructionCache()	\
 				asm volatile ("mcr p15, 0, %0, c7, c5,  0" : : "r" (0) : "memory")
 #define FlushPrefetchBuffer()	asm volatile ("isb" ::: "memory")
@@ -134,6 +140,20 @@ void SyncDataAndInstructionCache (void);
 #endif
 
 #define CompilerBarrier()	asm volatile ("" ::: "memory")
+
+//
+// Cache alignment
+//
+#define CACHE_ALIGN			ALIGN (DATA_CACHE_LINE_LENGTH_MAX)
+
+#define CACHE_ALIGN_SIZE(type, num)	(((  ((num)*sizeof (type) - 1)		\
+					   | (DATA_CACHE_LINE_LENGTH_MAX-1)	\
+					  ) + 1) / sizeof (type))
+
+#define IS_CACHE_ALIGNED(ptr, size)	(   ((uintptr) (ptr) & (DATA_CACHE_LINE_LENGTH_MAX-1)) == 0 \
+					 && ((size) & (DATA_CACHE_LINE_LENGTH_MAX-1)) == 0)
+
+#define DMA_BUFFER(type, name, num)	type name[CACHE_ALIGN_SIZE (type, num)] CACHE_ALIGN
 
 #ifdef __cplusplus
 }

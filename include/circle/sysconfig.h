@@ -75,7 +75,7 @@
 // With this option you can configure the bucket sizes, so that they
 // fit best for your application needs. You have to define a comma
 // separated list of increasing bucket sizes. All sizes must be a
-// multiple of 16. Up to 20 sizes can be defined.
+// multiple of 64. Up to 20 sizes can be defined.
 
 #ifndef HEAP_BLOCK_BUCKET_SIZES
 #define HEAP_BLOCK_BUCKET_SIZES	0x40,0x400,0x1000,0x4000,0x10000,0x40000,0x80000

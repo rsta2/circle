@@ -2,7 +2,7 @@
 // synchronize64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -158,8 +158,6 @@ void LeaveCritical (void)
 #define L2_CACHE_LINE_LENGTH		64
 	#define L2_SETWAY_SET_SHIFT		6	// Log2(L2_CACHE_LINE_LENGTH)
 
-#define DATA_CACHE_LINE_LENGTH_MIN	64		// min(L1_DATA_CACHE_LINE_LENGTH, L2_CACHE_LINE_LENGTH)
-
 #else
 
 #define SETWAY_LEVEL_SHIFT		1
@@ -175,8 +173,6 @@ void LeaveCritical (void)
 	#define L2_SETWAY_WAY_SHIFT		28	// 32-Log2(L2_CACHE_WAYS)
 #define L2_CACHE_LINE_LENGTH		64
 	#define L2_SETWAY_SET_SHIFT		6	// Log2(L2_CACHE_LINE_LENGTH)
-
-#define DATA_CACHE_LINE_LENGTH_MIN	64		// min(L1_DATA_CACHE_LINE_LENGTH, L2_CACHE_LINE_LENGTH)
 
 #endif
 
@@ -262,13 +258,11 @@ void CleanDataCache (void)
 
 void InvalidateDataCacheRange (u64 nAddress, u64 nLength)
 {
-	nLength += DATA_CACHE_LINE_LENGTH_MIN;
-
 	while (1)
 	{
 		asm volatile ("dc ivac, %0" : : "r" (nAddress) : "memory");
 
-		if (nLength < DATA_CACHE_LINE_LENGTH_MIN)
+		if (nLength <= DATA_CACHE_LINE_LENGTH_MIN)
 		{
 			break;
 		}
@@ -282,13 +276,11 @@ void InvalidateDataCacheRange (u64 nAddress, u64 nLength)
 
 void CleanDataCacheRange (u64 nAddress, u64 nLength)
 {
-	nLength += DATA_CACHE_LINE_LENGTH_MIN;
-
 	while (1)
 	{
 		asm volatile ("dc cvac, %0" : : "r" (nAddress) : "memory");
 
-		if (nLength < DATA_CACHE_LINE_LENGTH_MIN)
+		if (nLength <= DATA_CACHE_LINE_LENGTH_MIN)
 		{
 			break;
 		}
@@ -302,13 +294,11 @@ void CleanDataCacheRange (u64 nAddress, u64 nLength)
 
 void CleanAndInvalidateDataCacheRange (u64 nAddress, u64 nLength)
 {
-	nLength += DATA_CACHE_LINE_LENGTH_MIN;
-
 	while (1)
 	{
 		asm volatile ("dc civac, %0" : : "r" (nAddress) : "memory");
 
-		if (nLength < DATA_CACHE_LINE_LENGTH_MIN)
+		if (nLength <= DATA_CACHE_LINE_LENGTH_MIN)
 		{
 			break;
 		}

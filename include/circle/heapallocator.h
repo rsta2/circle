@@ -21,13 +21,17 @@
 #define _circle_heapallocator_h
 
 #include <circle/spinlock.h>
+#include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/macros.h>
 #include <circle/types.h>
+#include <assert.h>
 
 //#define HEAP_DEBUG
 
-#define HEAP_BLOCK_ALIGN	16
+ASSERT_STATIC (DATA_CACHE_LINE_LENGTH_MAX >= 16);
+
+#define HEAP_BLOCK_ALIGN	DATA_CACHE_LINE_LENGTH_MAX
 #define HEAP_ALIGN_MASK		(HEAP_BLOCK_ALIGN-1)
 
 #define HEAP_BLOCK_MAX_BUCKETS	20

@@ -32,8 +32,9 @@ requesting a HEAP_HIGH memory block fails, zero is returned. If requesting any
 other memory type block fails, because the memory is full, the system generates
 an "Out of memory" panic message.
 
-Memory blocks returned by the "new" operator are aligned to a 16 byte address in
-any case.
+Memory blocks returned by the "new" operator are aligned to the maximum line
+size of the data caches in the system in any case, which is always greater or
+equal to 16 bytes.
 
 Circle can currently handle up to 2 GBytes of high memory, which should be
 enough for common bare metal applications. If your Raspberry Pi 4 has 4 GBytes
