@@ -2,7 +2,7 @@
 // fatcache.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/fs/fat/fatcache.h>
-#include <circle/alloc.h>
 #include <circle/logger.h>
+#include <circle/new.h>
 #include <assert.h>
 
 #define BUFFER_MAGIC		0x4641544D
@@ -31,10 +31,11 @@
 
 CFATCache::CFATCache (void)
 :	m_pPartition (0),
-	m_pBufferMem (0),
 	m_BufferListLock (TASK_LEVEL),
 	m_DiskLock (TASK_LEVEL)
 {
+	m_BufferList.pFirst = 0;
+	m_BufferList.pLast = 0;
 }
 
 CFATCache::~CFATCache (void)
@@ -44,26 +45,33 @@ CFATCache::~CFATCache (void)
 int CFATCache::Open (CDevice *pPartition)
 {
 	TFATBuffer *pBuffer;
+	TFATBuffer *pPrevBuffer = 0;
 	int i;
 	
 	assert (m_pPartition == 0);
 	m_pPartition = pPartition;
 	assert (m_pPartition != 0);
 
-	assert (m_pBufferMem == 0);
-	m_pBufferMem = malloc (sizeof (TFATBuffer)*FAT_BUFFERS);
-	if (!m_pBufferMem)
+	for (i = 1; i <= FAT_BUFFERS; i++)
 	{
-		return 0;
-	}
+		pBuffer = new (HEAP_DMA30) TFATBuffer;
+		if (pBuffer == 0)
+		{
+			return 0;
+		}
 
-	for (pBuffer = (TFATBuffer *) m_pBufferMem, i = 1; i <= FAT_BUFFERS; pBuffer++, i++)
-	{
 		pBuffer->nMagic    = BUFFER_MAGIC;
-		pBuffer->pNext     = (i == FAT_BUFFERS ? 0 : pBuffer + 1);
-		pBuffer->pPrev     = (i == 1 ? 0 : pBuffer - 1);
-		pBuffer->nSector    = BUFFER_NOSECTOR;
+		pBuffer->pNext     = 0;
+		pBuffer->pPrev     = pPrevBuffer;
+		pBuffer->nSector   = BUFFER_NOSECTOR;
 		pBuffer->nUseCount = 0;
+
+		if (pPrevBuffer != 0)
+		{
+			pPrevBuffer->pNext = pBuffer;
+		}
+
+		pPrevBuffer = pBuffer;
 		
 		if (i == 1)
 		{
@@ -80,14 +88,24 @@ int CFATCache::Open (CDevice *pPartition)
 
 void CFATCache::Close (void)
 {
+	TFATBuffer *pBuffer;
+	TFATBuffer *pNextBuffer;
+
 	Flush ();
+
+	for (pBuffer = m_BufferList.pFirst; pBuffer != 0; pBuffer = pNextBuffer)
+	{
+		assert (pBuffer->nMagic == BUFFER_MAGIC);
+
+		pNextBuffer = pBuffer->pNext;
+
+		pBuffer->nMagic = 0;
+
+		delete [] pBuffer;
+	}
 
 	m_BufferList.pFirst = 0;
 	m_BufferList.pLast = 0;
-
-	assert (m_pBufferMem != 0);
-	free (m_pBufferMem);
-	m_pBufferMem = 0;
 }
 
 void CFATCache::Flush (void)

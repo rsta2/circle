@@ -23,7 +23,9 @@
 #include <circle/logger.h>
 #include <circle/timer.h>
 #include <circle/util.h>
+#include <circle/synchronize.h>
 #include <circle/macros.h>
+#include <circle/new.h>
 #include <assert.h>
 
 // USB Mass Storage Bulk-Only Transport
@@ -557,22 +559,23 @@ int CUSBBulkOnlyMassStorageDevice::Command (void *pCmdBlk, size_t nCmdBlkLen,
 	assert (6 <= nCmdBlkLen && nCmdBlkLen <= 16);
 	assert (nBufLen == 0 || pBuffer != 0);
 
-	TCBW CBW;
-	memset (&CBW, 0, sizeof CBW);
+	DMA_BUFFER (u8, CBWBuffer, sizeof (TCBW));
+	TCBW *pCBW = (TCBW *) CBWBuffer;
+	memset (pCBW, 0, sizeof *pCBW);
 
-	CBW.dCWBSignature	   = CBWSIGNATURE;
-	CBW.dCWBTag		   = ++m_nCWBTag;
-	CBW.dCBWDataTransferLength = nBufLen;
-	CBW.bmCBWFlags		   = bIn ? CBWFLAGS_DATA_IN : 0;
-	CBW.bCBWLUN		   = CBWLUN;
-	CBW.bCBWCBLength	   = (u8) nCmdBlkLen;
+	pCBW->dCWBSignature	     = CBWSIGNATURE;
+	pCBW->dCWBTag		     = ++m_nCWBTag;
+	pCBW->dCBWDataTransferLength = nBufLen;
+	pCBW->bmCBWFlags	     = bIn ? CBWFLAGS_DATA_IN : 0;
+	pCBW->bCBWLUN		     = CBWLUN;
+	pCBW->bCBWCBLength	     = (u8) nCmdBlkLen;
 
-	memcpy (CBW.CBWCB, pCmdBlk, nCmdBlkLen);
+	memcpy (pCBW->CBWCB, pCmdBlk, nCmdBlkLen);
 
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
-	if (pHost->Transfer (m_pEndpointOut, &CBW, sizeof CBW) < 0)
+	if (pHost->Transfer (m_pEndpointOut, pCBW, sizeof *pCBW) < 0)
 	{
 		CLogger::Get ()->Write (FromUmsd, LogError, "CBW transfer failed");
 
@@ -583,44 +586,72 @@ int CUSBBulkOnlyMassStorageDevice::Command (void *pCmdBlk, size_t nCmdBlkLen,
 	
 	if (nBufLen > 0)
 	{
-		nResult = pHost->Transfer (bIn ? m_pEndpointIn : m_pEndpointOut, pBuffer, nBufLen);
+		assert (pBuffer != 0);
+
+		u8 *pDMABuffer = 0;
+		if (!IS_CACHE_ALIGNED (pBuffer, nBufLen))
+		{
+			pDMABuffer = new (HEAP_DMA30) u8[nBufLen];
+			assert (pDMABuffer != 0);
+
+			if (!bIn)
+			{
+				memcpy (pDMABuffer, pBuffer, nBufLen);
+			}
+		}
+
+		nResult = pHost->Transfer (bIn ? m_pEndpointIn : m_pEndpointOut,
+					   pDMABuffer != 0 ? pDMABuffer : pBuffer, nBufLen);
 		if (nResult < 0)
 		{
 			CLogger::Get ()->Write (FromUmsd, LogError, "Data transfer failed");
 
+			delete [] pDMABuffer;
+
 			return -1;
+		}
+
+		if (pDMABuffer != 0)
+		{
+			if (bIn)
+			{
+				memcpy (pBuffer, pDMABuffer, nBufLen);
+			}
+
+			delete [] pDMABuffer;
 		}
 	}
 
-	TCSW CSW;
+	DMA_BUFFER (u8, CSWBuffer, sizeof (TCSW));
+	TCSW *pCSW = (TCSW *) CSWBuffer;
 
-	if (pHost->Transfer (m_pEndpointIn, &CSW, sizeof CSW) != (int) sizeof CSW)
+	if (pHost->Transfer (m_pEndpointIn, pCSW, sizeof *pCSW) != (int) sizeof *pCSW)
 	{
 		CLogger::Get ()->Write (FromUmsd, LogError, "CSW transfer failed");
 
 		return -1;
 	}
 
-	if (CSW.dCSWSignature != CSWSIGNATURE)
+	if (pCSW->dCSWSignature != CSWSIGNATURE)
 	{
 		CLogger::Get ()->Write (FromUmsd, LogError, "CSW signature is wrong");
 
 		return -1;
 	}
 
-	if (CSW.dCSWTag != m_nCWBTag)
+	if (pCSW->dCSWTag != m_nCWBTag)
 	{
 		CLogger::Get ()->Write (FromUmsd, LogError, "CSW tag is wrong");
 
 		return -1;
 	}
 
-	if (CSW.bCSWStatus != CSWSTATUS_PASSED)
+	if (pCSW->bCSWStatus != CSWSTATUS_PASSED)
 	{
 		return -1;
 	}
 
-	if (CSW.dCSWDataResidue != 0)
+	if (pCSW->dCSWDataResidue != 0)
 	{
 		CLogger::Get ()->Write (FromUmsd, LogError, "Data residue is not 0");
 
