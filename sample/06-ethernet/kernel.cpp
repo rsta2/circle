@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/netdevice.h>
 #include <circle/macaddress.h>
 #include <circle/string.h>
+#include <circle/synchronize.h>
 #include <circle/macros.h>
 #include <circle/debug.h>
 
@@ -108,7 +109,7 @@ TShutdownMode CKernel::Run (void)
 
 	while (1)
 	{
-		unsigned char FrameBuffer[FRAME_BUFFER_SIZE];
+		DMA_BUFFER (u8, FrameBuffer, FRAME_BUFFER_SIZE);
 		unsigned nFrameLength;
 
 		if (pEth0->ReceiveFrame (FrameBuffer, &nFrameLength))

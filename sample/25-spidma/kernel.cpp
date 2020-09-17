@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include <circle/synchronize.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -95,8 +96,8 @@ TShutdownMode CKernel::Run (void)
 
 	// prepare some data
 	assert (TEST_DATA_LENGTH <= 50000);	// will not fit on the stack otherwise
-	u8 TxData[TEST_DATA_LENGTH];
-	u8 RxBuffer[TEST_DATA_LENGTH];
+	DMA_BUFFER (u8, TxData, TEST_DATA_LENGTH);
+	DMA_BUFFER (u8, RxBuffer, TEST_DATA_LENGTH);
 	for (unsigned i = 0; i < TEST_DATA_LENGTH; i++)
 	{
 		TxData[i] = (u8) i;
