@@ -199,6 +199,7 @@ Additional Topics
 
 * [Standard library support](doc/stdlib-support.txt)
 * [Dynamic memory management and the "new" operator](doc/new-operator.txt)
+* [DMA buffer requirements](doc/dma-buffer-requirements.txt)
 * [Serial bootloader support](doc/bootloader.txt)
 * [Multi-core support](doc/multicore.txt)
 * [USB plug-and-play](doc/usb-plug-and-play.txt)
