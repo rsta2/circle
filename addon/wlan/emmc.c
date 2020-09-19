@@ -173,6 +173,14 @@ struct Ctlr {
 	int	fastclock;
 	ulong	extclk;
 	int	appcmd;
+
+	uchar	*dmabuf;
+#define DMABUFSZ	(4096)
+#if RASPPI == 1
+	#define CACHELINESZ	(32)
+#else
+	#define CACHELINESZ	(64)
+#endif
 };
 
 static Ctlr emmc;
@@ -248,6 +256,9 @@ emmcinit(void)
 {
 	volatile u32int *r;
 	ulong clk;
+
+	emmc.dmabuf = malloc(DMABUFSZ);
+	assert(emmc.dmabuf);
 
 	clk = getclkrate(ClkEmmc);
 	if(clk == 0){
@@ -467,6 +478,7 @@ static void
 emmcio(int write, uchar *buf, int len)
 {
 	volatile u32int *r;
+	uchar *dmabuf = 0;
 	int i;
 
 	r = (u32int*)EMMCREGS;
@@ -476,16 +488,26 @@ emmcio(int write, uchar *buf, int len)
 		okay(0);
 		nexterror();
 	}
-	if(write)
+	if(((unsigned long)buf & (CACHELINESZ-1)) ||
+	    (len & (CACHELINESZ-1))){
+		assert(len <= DMABUFSZ);
+		dmabuf = emmc.dmabuf;
+	}
+	if(write){
+		if(dmabuf)
+			memcpy(dmabuf, buf, len);
 		dmastart(DmaChanEmmc, DmaDevEmmc, DmaM2D,
-			buf, (void *) &r[Data], len);
-	else
+			dmabuf ? dmabuf : buf, (void *) &r[Data], len);
+	}else
 		dmastart(DmaChanEmmc, DmaDevEmmc, DmaD2M,
-			(void *) &r[Data], buf, len);
+			(void *) &r[Data], dmabuf ? dmabuf : buf, len);
 	if(dmawait(DmaChanEmmc) < 0)
 		error(Eio);
-	if(!write)
-		cachedinvse(buf, len);
+	if(!write){
+		cachedinvse(dmabuf ? dmabuf : buf, len);
+		if(dmabuf)
+			memcpy(buf, dmabuf, len);
+	}
 	WR(Irpten, r[Irpten]|Datadone|Err);
 	tsleep(&emmc.r, datadone, 0, 3000);
 	i = r[Interrupt]&~Cardintr;
