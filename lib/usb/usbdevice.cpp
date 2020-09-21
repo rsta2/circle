@@ -164,10 +164,11 @@ CUSBDevice::~CUSBDevice (void)
 
 boolean CUSBDevice::Initialize (void)
 {
-#if RASPPI <= 3 && defined (REALTIME)
+#if RASPPI <= 3 && defined (REALTIME) && !defined (USE_USB_SOF_INTR)
 	if (m_Speed != USBSpeedHigh)
 	{
-		LogWrite (LogWarning, "Device speed is not allowed with REALTIME");
+		LogWrite (LogWarning, "Device speed is not allowed with REALTIME"
+				      " without USE_USB_SOF_INTR");
 
 		return FALSE;
 	}

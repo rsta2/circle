@@ -166,8 +166,6 @@
 
 //#define REALTIME
 
-#ifndef REALTIME
-
 // USE_USB_SOF_INTR improves the compatibility with low-/full-speed
 // USB devices. If your application uses such devices, this option
 // should normally be set. Unfortunately this causes a heavily changed
@@ -176,8 +174,6 @@
 // This option has no influence on the Raspberry Pi 4.
 
 //#define USE_USB_SOF_INTR
-
-#endif
 
 // SCREEN_DMA_BURST_LENGTH enables using DMA for scrolling the screen
 // contents and set the burst length parameter for the DMA controller.
