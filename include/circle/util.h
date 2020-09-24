@@ -20,13 +20,14 @@
 #ifndef _circle_util_h
 #define _circle_util_h
 
+#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void *memset (void *pBuffer, int nValue, size_t nLength);
+void *memset (void *pBuffer, int nValue, size_t nLength) STDOPT;
 
 void *memcpy (void *pDest, const void *pSrc, size_t nLength);
 #define memcpyblk memcpy
