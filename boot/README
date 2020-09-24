@@ -23,6 +23,15 @@ This will provide the following files:
 	bcm2711-rpi-4-b.dtb	device tree binary needed for Raspberry Pi 4
 	LICENCE.broadcom	firmware license
 	COPYING.linux		license for bcm2711-rpi-4-b.dtb
+	start_cd.elf		cut-down firmware for Raspberry Pi 1-3 (option)
+	start4cd.elf		cut-down firmware for Raspberry Pi 4 (option)
+	fixup_cd.dat		relocation information for start_cd.elf (option)
+	fixup4cd.dat		relocation information for start4cd.elf (option)
+
+The cut-down version of the firmware is used, when the option "gpu_mem=16" is
+specified in config.txt. It does not support codecs and 3D, but is smaller and
+loads quicker. Without this option specified, the last four files are not
+needed.
 
 In any case you have to copy these files onto the first FAT partition on a SD
 card along with the kernel*.img file of your Circle application.
