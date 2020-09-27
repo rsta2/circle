@@ -28,7 +28,8 @@ OBJS	= actled.o alloc.o assert.o bcmframebuffer.o bcmmailbox.o \
 	  soundbasedevice.o spimaster.o spimasteraux.o spimasterdma.o spinlock.o \
 	  string.o sysinit.o time.o timer.o tracer.o usertimer.o util.o \
 	  util_fast.o virtualgpiopin.o chainboot.o macaddress.o netdevice.o \
-	  new.o heapallocator.o pageallocator.o setjmp.o numberpool.o
+	  new.o heapallocator.o pageallocator.o setjmp.o numberpool.o \
+	  latencytester.o writebuffer.o
 
 OBJS32	= cache-v7.o exceptionhandler.o exceptionstub.o memory.o pagetable.o \
 	  startup.o synchronize.o

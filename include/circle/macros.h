@@ -33,6 +33,8 @@
 
 #define BIT(n)		(1 << (n))
 
+#define IS_POWEROF_2(num) ((num) != 0 && (((num) & ((num) - 1)) == 0))
+
 // big endian (to be used for constants only)
 #define BE(value)	((((value) & 0xFF00) >> 8) | (((value) & 0x00FF) << 8))
 
