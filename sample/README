@@ -38,5 +38,6 @@ SAMPLES
 37-showgamepad	[PnP]	Shows a stylised gamepad on screen and the state of an attached USB gamepad.
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
 39-umsdplugging	[PnP]	Plug in and remove USB flash drives, list directory
+40-irqlatency	[PnP]	Displays the maximum measured IRQ latency
 
 Samples marked with [PnP] are enabled for USB plug-and-play.
