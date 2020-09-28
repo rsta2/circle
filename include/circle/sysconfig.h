@@ -170,10 +170,12 @@
 // USB devices. If your application uses such devices, this option
 // should normally be set. Unfortunately this causes a heavily changed
 // system timing, because it triggers up to 8000 IRQs per second. For
-// compatibility with existing applications it is not set by default.
+// USB plug-and-play operation this option must be set in any case.
 // This option has no influence on the Raspberry Pi 4.
 
-//#define USE_USB_SOF_INTR
+#ifndef NO_USB_SOF_INTR
+#define USE_USB_SOF_INTR
+#endif
 
 // SCREEN_DMA_BURST_LENGTH enables using DMA for scrolling the screen
 // contents and set the burst length parameter for the DMA controller.
