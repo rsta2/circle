@@ -56,6 +56,7 @@ CDWHCITransactionQueue::CDWHCITransactionQueue (void)
 
 CDWHCITransactionQueue::~CDWHCITransactionQueue (void)
 {
+	Flush ();
 }
 
 void CDWHCITransactionQueue::Flush (void)
