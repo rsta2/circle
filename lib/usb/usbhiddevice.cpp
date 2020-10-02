@@ -228,7 +228,10 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 		}
 		else
 		{
-			bRestart = FALSE;
+			if (pURB->GetUSBError () != USBErrorFrameOverrun)
+			{
+				bRestart = FALSE;
+			}
 		}
 	}
 
