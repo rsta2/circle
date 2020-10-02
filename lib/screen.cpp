@@ -214,6 +214,14 @@ boolean CScreenDevice::SetStatus (const TScreenStatus &Status)
 
 int CScreenDevice::Write (const void *pBuffer, size_t nCount)
 {
+#ifdef REALTIME
+	// cannot write from IRQ_LEVEL to prevent deadlock, just ignore it
+	if (CurrentExecutionLevel () > TASK_LEVEL)
+	{
+		return nCount;
+	}
+#endif
+
 	m_SpinLock.Acquire ();
 
 	m_bUpdated = TRUE;

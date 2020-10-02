@@ -4,12 +4,12 @@ SAMPLES
 02-screenpixel		Setting pixels on screen
 03-screentext		Writing text to screen, debug_hexdump() and assert usage
 04-timer		Interrupt driven timer, exception handler demonstration
-05-usbsimple		Displaying USB device descriptor of root hub (Model B and B+)
+05-usbsimple		Displaying USB device descriptor of root hub
 06-ethernet		Receiving broadcasts from Ethernet
 07-usbstorage		Displaying partition table from master boot record (MBR)
-08-usbkeyboard		Echoing typed characters to screen, or keyboard raw mode
+08-usbkeyboard	[PnP]	Echoing typed characters to screen, or keyboard raw mode
 09-softserial		GPIO interrupt demonstration, serial interface via non-UART GPIO-pins
-10-usbmouse		Little painting program with USB mouse support
+10-usbmouse	[PnP]	Little painting program with USB mouse support
 11-gpioclock		Using GPIO clock 0 to generate a square wave signal and sampling this signal to display it
 12-pwmsound		Using PWM device and DMA controller to playback a short sound sample
 13-pwmoutput		Using PWM device to continously change the brightness of a connected LED
@@ -25,9 +25,9 @@ SAMPLES
 24-hwrandom		Demonstrating the hardware random number generator.
 25-spidma		Transfers some data bytes to/from a SPI slave device using DMA.
 26-cpustress		Calculates fractal images to stress the CPU. Displays a SoC temperature chart.
-27-usbgamepad		Displaying information about an attached USB gamepad and its current state.
+27-usbgamepad	[PnP]	Displaying information about an attached USB gamepad and its current state.
 28-touchscreen		Displaying touch events from the official Raspberry Pi touch screen.
-29-miniorgan		Mini organ instrument using PWM or I2S sound, (USB or serial) MIDI or USB keyboard.
+29-miniorgan	[PnP]	Mini organ instrument using PWM or I2S sound, (USB or serial) MIDI or USB keyboard.
 30-gpiofiq		Demonstrating FIQ-driven fast GPIO event capture and a tracing class.
 31-webclient		Fetching a RPi hardware revision list from a HTTP webserver and parsing it.
 32-i2cshell		Command line tool for interactive communication with I2C devices.
@@ -35,6 +35,9 @@ SAMPLES
 34-sounddevices		Integrating multiple sound devices in one application
 35-mqttclient		Demonstrating the MQTT client
 36-softpwm		Using the class CUserTimer to implement software PWM
-37-showgamepad		Shows a stylised gamepad on screen and the state of an attached USB gamepad.
+37-showgamepad	[PnP]	Shows a stylised gamepad on screen and the state of an attached USB gamepad.
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
-39-usbplugging		Plug in and remove USB flash drives on application request, list directory
+39-umsdplugging	[PnP]	Plug in and remove USB flash drives, list directory
+40-irqlatency	[PnP]	Displays the maximum measured IRQ latency
+
+Samples marked with [PnP] are enabled for USB plug-and-play.

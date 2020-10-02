@@ -2,7 +2,7 @@
 // usbgamepadxboxone.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2020  R. Stange <rsta2@o2online.de>
 //
 // This driver was developed by:
 //	Jose Luis Sanchez, jspeccy@gmail.com, jsanchezv@github.com
@@ -27,6 +27,7 @@
 //
 #include <circle/usb/usbgamepadxboxone.h>
 #include <circle/usb/usbhostcontroller.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/util.h>
 #include <circle/macros.h>
@@ -117,8 +118,8 @@ boolean CUSBGamePadXboxOneDevice::Configure (void)
 	m_State.nhats = 0;
 
 	// Send Start controller (with input) command
-	u8 command_start[] = { 0x05, 0x20, 0x00, 0x01, 0x00 };
-	if (!SendToEndpointOut (command_start, sizeof command_start)) {
+	DMA_BUFFER (u8, command_start, 5) = { 0x05, 0x20, 0x00, 0x01, 0x00 };
+	if (!SendToEndpointOut (command_start, 5)) {
 		CLogger::Get ()->Write (FromUSBPadXboxOne, LogError, "command_start failed!");
 		// That's an unrecoverable error
 		return FALSE;
@@ -137,12 +138,12 @@ void CUSBGamePadXboxOneDevice::ReportHandler (const u8 *pReport, unsigned report
 	// Controller sends this packet when XBox button is pressed, and needs ACK
 	// or resends the packet forever
 	if (reportSize == 6 && pReport[0] == 0x07 && pReport[1] == 0x30) {
-		u8 mode_report_ack[] = {
+		DMA_BUFFER (u8, mode_report_ack, 13) = {
 			0x01, 0x20, 0x00, 0x09, 0x00, 0x07, 0x20, 0x02,
 			0x00, 0x00, 0x00, 0x00, 0x00
 		};
 		mode_report_ack[2] = pReport[2];
-		if (!SendToEndpointOutAsync (mode_report_ack, sizeof mode_report_ack))
+		if (!SendToEndpointOutAsync (mode_report_ack, 13))
 		{
 			CLogger::Get ()->Write (FromUSBPadXboxOne, LogError, "ACK send failed!");
 		}
@@ -218,8 +219,8 @@ void CUSBGamePadXboxOneDevice::DecodeReport (const u8 *pReportBuffer)
 boolean CUSBGamePadXboxOneDevice::SetRumbleMode (TGamePadRumbleMode Mode)
 {
 	// Command taken from Linux driver xpad.c
-	u8 Command[13] ALIGN (4) = { 0x09, 0x00, 0x00, 0x09, 0x00, 0x0f, 0x00, 0x00,
-				     0x00, 0x00, 0xFF, 0x00,  0xFF };	// DMA buffer
+	DMA_BUFFER (u8, Command, 13) = { 0x09, 0x00, 0x00, 0x09, 0x00, 0x0f, 0x00, 0x00,
+					 0x00, 0x00, 0xFF, 0x00, 0xFF };
 
 	switch (Mode)
 	{
@@ -240,5 +241,5 @@ boolean CUSBGamePadXboxOneDevice::SetRumbleMode (TGamePadRumbleMode Mode)
 	}
 
 	Command[2] = seqNum++;
-	return SendToEndpointOut (Command, sizeof Command);
+	return SendToEndpointOut (Command, 13);
 }

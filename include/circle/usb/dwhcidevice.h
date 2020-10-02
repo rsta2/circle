@@ -2,7 +2,7 @@
 // dwhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,7 +40,8 @@
 class CDWHCIDevice : public CUSBHostController
 {
 public:
-	CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer);
+	CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer,
+		      boolean bPlugAndPlay = FALSE);
 	~CDWHCIDevice (void);
 
 	boolean Initialize (void);
@@ -51,6 +52,7 @@ public:
 	boolean SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
 private:
+	boolean DeviceConnected (void);
 	TUSBSpeed GetPortSpeed (void);
 	boolean OvercurrentDetected (void);
 	void DisableRootPort (boolean bPowerOff = TRUE);
@@ -138,7 +140,7 @@ private:
 	CSpinLock m_WaitBlockSpinLock;
 
 	CDWHCIRootPort m_RootPort;
-	boolean m_bRootPortEnabled;
+	volatile boolean m_bRootPortEnabled;
 
 	volatile boolean m_bShutdown;			// USB driver will shutdown
 };

@@ -2,7 +2,7 @@
 // miniorgan.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
 //
 #include "miniorgan.h"
 #include <circle/devicenameservice.h>
-#include <circle/usb/usbmidi.h>
-#include <circle/usb/usbkeyboard.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -72,6 +70,8 @@ CMiniOrgan *CMiniOrgan::s_pThis = 0;
 
 CMiniOrgan::CMiniOrgan (CInterruptSystem *pInterrupt)
 :	SOUND_CLASS (pInterrupt, SAMPLE_RATE),
+	m_pMIDIDevice (0),
+	m_pKeyboard (0),
 	m_Serial (pInterrupt, TRUE),
 	m_bUseSerial (FALSE),
 	m_nSerialState (0),
@@ -95,40 +95,57 @@ CMiniOrgan::~CMiniOrgan (void)
 
 boolean CMiniOrgan::Initialize (void)
 {
-	CUSBMIDIDevice *pMIDIDevice =
-		(CUSBMIDIDevice *) CDeviceNameService::Get ()->GetDevice ("umidi1", FALSE);
-	if (pMIDIDevice != 0)
-	{
-		pMIDIDevice->RegisterPacketHandler (MIDIPacketHandler);
-
-		return TRUE;
-	}
-
-	CUSBKeyboardDevice *pKeyboard =
-		(CUSBKeyboardDevice *) CDeviceNameService::Get ()->GetDevice ("ukbd1", FALSE);
-	if (pKeyboard != 0)
-	{
-		pKeyboard->RegisterKeyStatusHandlerRaw (KeyStatusHandlerRaw);
-
-		return TRUE;
-	}
+	CLogger::Get ()->Write (FromMiniOrgan, LogNotice,
+				"Please attach an USB keyboard or use serial MIDI!");
 
 	if (m_Serial.Initialize (31250))
 	{
-		CLogger::Get ()->Write (FromMiniOrgan, LogNotice, "Using serial MIDI interface");
-
 		m_bUseSerial = TRUE;
 
 		return TRUE;
 	}
 
-	CLogger::Get ()->Write (FromMiniOrgan, LogError, "Keyboard not found");
-
 	return FALSE;
 }
 
-void CMiniOrgan::Process (void)
+void CMiniOrgan::Process (boolean bPlugAndPlayUpdated)
 {
+	if (m_pMIDIDevice != 0)
+	{
+		return;
+	}
+
+	if (bPlugAndPlayUpdated)
+	{
+		m_pMIDIDevice =
+			(CUSBMIDIDevice *) CDeviceNameService::Get ()->GetDevice ("umidi1", FALSE);
+		if (m_pMIDIDevice != 0)
+		{
+			m_pMIDIDevice->RegisterRemovedHandler (USBDeviceRemovedHandler);
+			m_pMIDIDevice->RegisterPacketHandler (MIDIPacketHandler);
+
+			return;
+		}
+	}
+
+	if (m_pKeyboard != 0)
+	{
+		return;
+	}
+
+	if (bPlugAndPlayUpdated)
+	{
+		m_pKeyboard =
+			(CUSBKeyboardDevice *) CDeviceNameService::Get ()->GetDevice ("ukbd1", FALSE);
+		if (m_pKeyboard != 0)
+		{
+			m_pKeyboard->RegisterRemovedHandler (USBDeviceRemovedHandler);
+			m_pKeyboard->RegisterKeyStatusHandlerRaw (KeyStatusHandlerRaw);
+
+			return;
+		}
+	}
+
 	if (!m_bUseSerial)
 	{
 		return;
@@ -322,4 +339,22 @@ void CMiniOrgan::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned 
 	}
 
 	s_pThis->m_nFrequency = 0;
+}
+
+void CMiniOrgan::USBDeviceRemovedHandler (CDevice *pDevice, void *pContext)
+{
+	assert (s_pThis != 0);
+
+	if (s_pThis->m_pMIDIDevice == (CUSBMIDIDevice *) pDevice)
+	{
+		CLogger::Get ()->Write (FromMiniOrgan, LogDebug, "USB MIDI keyboard removed");
+
+		s_pThis->m_pMIDIDevice = 0;
+	}
+	else if (s_pThis->m_pKeyboard == (CUSBKeyboardDevice *) pDevice)
+	{
+		CLogger::Get ()->Write (FromMiniOrgan, LogDebug, "USB PC keyboard removed");
+
+		s_pThis->m_pKeyboard = 0;
+	}
 }

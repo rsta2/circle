@@ -2,7 +2,7 @@
 // usbhiddevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -214,19 +214,32 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 	assert (pURB != 0);
 	assert (m_pURB == pURB);
 
+	boolean bRestart = TRUE;
+
 	if (pURB->GetStatus () != 0)
 	{
 		ReportHandler (m_pReportBuffer, pURB->GetResultLength ());
 	}
 	else
 	{
-		ReportHandler (0, 0);
+		if (!CUSBHostController::IsPlugAndPlay ())
+		{
+			ReportHandler (0, 0);
+		}
+		else
+		{
+			if (pURB->GetUSBError () != USBErrorFrameOverrun)
+			{
+				bRestart = FALSE;
+			}
+		}
 	}
 
 	delete m_pURB;
 	m_pURB = 0;
-	
-	if (!StartRequest ())
+
+	if (   bRestart
+	    && !StartRequest ())
 	{
 		CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot restart request");
 	}

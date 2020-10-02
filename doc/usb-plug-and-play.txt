@@ -1,0 +1,98 @@
+USB PLUG-AND-PLAY
+
+Circle supports USB plug-and-play (USB PnP) since release Step43. This file
+gives some hints on how USB PnP can be used. A Circle application must provide
+special support for USB PnP, but this is not mandatory. Applications can work
+without USB PnP too without modification, like it was the case before.
+
+A prerequisite for USB PnP on the Raspberry Pi 1-3 and Zero is, that the system
+option USE_USB_SOF_INTR is defined in the file include/circle/sysconfig.h. USB
+PnP may work without this option, but this may be not reliable and is not
+recommended.
+
+
+ENABLE USB PNP
+
+An existing non-USB-PnP application has to be modified as follows to enable
+USB PnP:
+
+* The member initializer for the USB host controller device m_USBHCI in CKernel
+  gets an additional third parameter, which must be set to TRUE to enable USB PnP.
+  If it is set to FALSE (default value) the application is not USB-PnP-aware.
+
+	CKernel::CKernel (void)
+	:	...
+		m_USBHCI (&m_Interrupt, &m_Timer, TRUE),
+		...
+
+* The application has to continuously call m_USBHCI.UpdatePlugAndPlay() in its
+  main loop on core 0. This allows to update the USB device tree and to detect USB
+  device attachments or removes. This method must not be called from IRQ_LEVEL:
+
+	boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
+
+* m_USBHCI.UpdatePlugAndPlay() returns a boolean, which is TRUE, when the USB
+  device tree might have been updated. In this case the application can expect new
+  USB devices to appear. The application should try to get a pointer to the device
+  object(s), which it wants to control:
+
+	if (bUpdated && m_pDevice == 0)
+	{
+		m_pDevice = m_DeviceNameService.GetDevice ("devname", FALSE or TRUE);
+		if (m_pDevice != 0)
+		{
+			m_pDevice->RegisterRemovedHandler (DeviceRemovedHandler, this);
+			...
+
+  This is only needed, if the device pointer is not already known. To accomplish
+  this, there should be a member variable in CKernel, which holds the device
+  pointer or is 0, if the pointer is not known. This pointer should be defined
+  "volatile":
+
+	class CKernel
+	{
+		...
+		static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
+		...
+		CDevice * volatile m_pDevice;
+		...
+
+* With USB PnP enabled, USB device objects may occasionally be destroyed (inside
+  the UpdatePlugAndPlay() method), when the related device is removed from the USB
+  connector. The application should define a static DeviceRemovedHandler()
+  function, which has to be registered (see above) as handler to be called, when
+  the device object is removed:
+
+	void CKernel::DeviceRemovedHandler (CDevice *pDevice, void *pContext)
+	{
+		CKernel *pThis = (CKernel *) pContext;
+
+		pThis->m_pDevice = 0;
+	}
+
+  The removed handler only resets the m_pDevice pointer to 0 in this case, so that
+  the application knows, that there is no device object available at the moment.
+
+* Now the application can access the controlled device using the m_pDevice
+  pointer (has to be casted to a pointer to the actual device class), if the
+  pointer is not 0.
+
+
+SOME NOTES
+
+* Samples marked with [PnP] in the file sample/README are enabled for USB PnP.
+  Please have a look at these to get more information on how to enable USB PnP in
+  your application!
+
+* Currently processed USB requests may fail, when an USB devices is removed and
+  you may get error messages from the USB driver because of this in that moment.
+  These messages can normally be ignored.
+
+* USB mass storage devices (e.g. flash drives) must be unmounted before the
+  device can be removed to prevent data loss. This may require some user
+  interaction. The user requests the device removal via an user interface, the
+  application unmounts the file system and gives an information to the user, that
+  the device can be physically removed now.
+
+* USB net devices do currently not support USB PnP. This is not needed, because
+  these devices are fixed on-board and cannot be removed.

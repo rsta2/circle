@@ -75,7 +75,7 @@
 // With this option you can configure the bucket sizes, so that they
 // fit best for your application needs. You have to define a comma
 // separated list of increasing bucket sizes. All sizes must be a
-// multiple of 16. Up to 20 sizes can be defined.
+// multiple of 64. Up to 20 sizes can be defined.
 
 #ifndef HEAP_BLOCK_BUCKET_SIZES
 #define HEAP_BLOCK_BUCKET_SIZES	0x40,0x400,0x1000,0x4000,0x10000,0x40000,0x80000
@@ -166,17 +166,15 @@
 
 //#define REALTIME
 
-#ifndef REALTIME
-
 // USE_USB_SOF_INTR improves the compatibility with low-/full-speed
 // USB devices. If your application uses such devices, this option
 // should normally be set. Unfortunately this causes a heavily changed
 // system timing, because it triggers up to 8000 IRQs per second. For
-// compatibility with existing applications it is not set by default.
+// USB plug-and-play operation this option must be set in any case.
 // This option has no influence on the Raspberry Pi 4.
 
-//#define USE_USB_SOF_INTR
-
+#ifndef NO_USB_SOF_INTR
+#define USE_USB_SOF_INTR
 #endif
 
 // SCREEN_DMA_BURST_LENGTH enables using DMA for scrolling the screen

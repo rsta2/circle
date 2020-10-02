@@ -2,7 +2,7 @@
 // usbkeyboard.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,12 +20,13 @@
 #include <circle/usb/usbkeyboard.h>
 #include <circle/devicenameservice.h>
 #include <circle/usb/usbhostcontroller.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/util.h>
 #include <circle/macros.h>
 #include <assert.h>
 
-unsigned CUSBKeyboardDevice::s_nDeviceNumber = 1;
+CNumberPool CUSBKeyboardDevice::s_DeviceNumberPool (1);
 
 static const char FromUSBKbd[] = "usbkbd";
 static const char DevicePrefix[] = "ukbd";
@@ -43,7 +44,12 @@ CUSBKeyboardDevice::~CUSBKeyboardDevice (void)
 {
 	m_pKeyStatusHandlerRaw = 0;
 
-	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
+	if (m_nDeviceNumber != 0)
+	{
+		CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
+
+		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
+	}
 }
 
 boolean CUSBKeyboardDevice::Configure (void)
@@ -58,7 +64,7 @@ boolean CUSBKeyboardDevice::Configure (void)
 	// setting the LED status forces some keyboard adapters to work
 	SetLEDs (m_ucLastLEDStatus);
 
-	m_nDeviceNumber = s_nDeviceNumber++;
+	m_nDeviceNumber = s_DeviceNumberPool.AllocateNumber (TRUE, FromUSBKbd);
 
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
@@ -128,12 +134,12 @@ void CUSBKeyboardDevice::RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKey
 
 boolean CUSBKeyboardDevice::SetLEDs (u8 ucStatus)
 {
-	u8 Buffer[1] ALIGN (4) = {ucStatus};		// DMA buffer
+	DMA_BUFFER (u8, Buffer, 1) = {ucStatus};
 
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 					SET_REPORT, REPORT_TYPE_OUTPUT << 8,
-					GetInterfaceNumber (), Buffer, sizeof Buffer) < 0)
+					GetInterfaceNumber (), Buffer, 1) < 0)
 	{
 		return FALSE;
 	}

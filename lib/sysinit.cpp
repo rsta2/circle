@@ -181,6 +181,7 @@ static void vfpinit (void)
 void sysinit (void)
 {
 	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
+	EnableIRQs ();		// go to TASK_LEVEL
 
 #if AARCH == 32
 #if RASPPI != 1
@@ -238,6 +239,7 @@ void sysinit (void)
 void sysinit_secondary (void)
 {
 	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
+	EnableIRQs ();		// go to TASK_LEVEL
 
 #if AARCH == 32
 	// L1 data cache may contain random entries after reset, delete them

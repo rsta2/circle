@@ -2,7 +2,7 @@
 // usbgamepad.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // Ported from the USPi driver which is:
 // 	Copyright (C) 2014  M. Maccaferri <macca@maccasoft.com>
@@ -27,7 +27,7 @@
 #include <circle/debug.h>
 #include <assert.h>
 
-unsigned CUSBGamePadDevice::s_nDeviceNumber = 1;
+CNumberPool CUSBGamePadDevice::s_DeviceNumberPool (1);
 
 static const char FromUSBPad[] = "usbpad";
 static const char DevicePrefix[] = "upad";
@@ -45,7 +45,12 @@ CUSBGamePadDevice::~CUSBGamePadDevice (void)
 {
 	m_pStatusHandler = 0;
 
-	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
+	if (m_nDeviceNumber != 0)
+	{
+		CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
+
+		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
+	}
 }
 
 boolean CUSBGamePadDevice::Configure (void)
@@ -58,7 +63,8 @@ boolean CUSBGamePadDevice::Configure (void)
 		return FALSE;
 	}
 
-	m_nDeviceNumber = s_nDeviceNumber++;
+	assert (m_nDeviceNumber == 0);
+	m_nDeviceNumber = s_DeviceNumberPool.AllocateNumber (TRUE, FromUSBPad);
 
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 

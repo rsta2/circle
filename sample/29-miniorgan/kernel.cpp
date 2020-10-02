@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),		// TRUE: enable plug-and-play
 	m_MiniOrgan (&m_Interrupt)
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -82,7 +82,10 @@ TShutdownMode CKernel::Run (void)
 
 	for (unsigned nCount = 0; m_MiniOrgan.IsActive (); nCount++)
 	{
-		m_MiniOrgan.Process ();
+		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
+
+		m_MiniOrgan.Process (bUpdated);
 
 		m_Screen.Rotor (0, nCount);
 	}

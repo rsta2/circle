@@ -2,7 +2,7 @@
 // fatcache.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/fs/fat/fatfsdef.h>
 #include <circle/device.h>
 #include <circle/spinlock.h>
+#include <circle/synchronize.h>
 
 struct TFATBuffer
 {
@@ -32,7 +33,8 @@ struct TFATBuffer
 	unsigned	 nSector;
 	unsigned	 nUseCount;
 	int		 bDirty;
-	unsigned char	 Data[FAT_SECTOR_SIZE];
+
+	DMA_BUFFER (unsigned char, Data, FAT_SECTOR_SIZE);
 };
 
 struct TFATBufferList
@@ -106,7 +108,6 @@ private:
 
 private:
 	CDevice		*m_pPartition;
-	void		*m_pBufferMem;
 	TFATBufferList	 m_BufferList;
 
 	CSpinLock m_BufferListLock;

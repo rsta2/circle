@@ -2,7 +2,7 @@
 // synchronize.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -140,27 +140,20 @@ void LeaveCritical (void)
 // NOTE: The following functions should hold all variables in CPU registers. Currently this will be
 //	 ensured using maximum optimation (see circle/synchronize.h).
 //
-//	 The following numbers can be determined (dynamically) using CTR.
-//	 As long we use the ARM1176JZF-S implementation in the BCM2835 these static values will work:
-//
-
-#define DATA_CACHE_LINE_LENGTH		32
 
 void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength)
 {
-	nLength += DATA_CACHE_LINE_LENGTH;
-
 	while (1)
 	{
 		asm volatile ("mcr p15, 0, %0, c7, c14,  1" : : "r" (nAddress) : "memory");
 
-		if (nLength < DATA_CACHE_LINE_LENGTH)
+		if (nLength <= DATA_CACHE_LINE_LENGTH_MIN)
 		{
 			break;
 		}
 
-		nAddress += DATA_CACHE_LINE_LENGTH;
-		nLength  -= DATA_CACHE_LINE_LENGTH;
+		nAddress += DATA_CACHE_LINE_LENGTH_MIN;
+		nLength  -= DATA_CACHE_LINE_LENGTH_MIN;
 	}
 
 	DataSyncBarrier ();

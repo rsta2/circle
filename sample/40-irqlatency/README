@@ -1,0 +1,40 @@
+README
+
+This sample displays the maximum measured IRQ latency, while different actions
+will be executed in the program and by the user. The measurement uses a system
+timer, which by default generates 25000 IRQs per second. On each IRQ the delay
+between the moment, the IRQ has been triggered, and the time, when the IRQ
+handler starts execution is calculated. Then the minimum, maximum and average
+value of this delay will be determined. This is implemented in the class
+CLatencyTester. The sample program does only work with a screen without
+modification.
+
+You can configure the following options, before building the program:
+
+* System option REALTIME in include/circle/sysconfig.h:
+
+  Modifies the spin lock handling in CScreenDevice::Write() and
+  CSerialDevice::Write(), so that the IRQ latency should decrease radically.
+  Disables the detection of low- and full-speed USB devices without
+  USE_USB_SOF_INTR enabled, because they would increase the IRQ latency very much.
+
+* System option USE_USB_SOF_INTR in include/circle/sysconfig.h:
+
+  Should be enabled on Raspberry Pi 1-3 and Zero in any case for USB PnP
+  operation, which is activated in the program. Without this option low- and
+  full-speed USB devices cannot be used, when REALTIME is enabled too. Has no
+  influence on Raspberry Pi 4.
+
+* Option USE_BUFFERED_SCREEN in file kernel.h of the sample program:
+
+  Messages won't be directly written to screen with this option. Instead they will
+  be written to a ring buffer and displayed later, when
+  CWriteBufferDevice::Update() is called at TASK_LEVEL. This allows displaying
+  messages from IRQ_LEVEL, even when REALTIME is defined. Otherwise these messages
+  are silently ignored.
+
+While the sample is running, watch the displayed logger messages. The "Timer
+elapsed" message is generated at IRQ_LEVEL every second and is only visible
+without REALTIME or with both REALTIME and USE_BUFFERED_SCREEN enabled.
+
+You can plugin or remove USB devices at any time to influence system operation.

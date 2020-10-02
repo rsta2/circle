@@ -21,6 +21,7 @@
 #include <circle/net/phytask.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
+#include <circle/synchronize.h>
 #include <circle/macros.h>
 #include <assert.h>
 
@@ -91,7 +92,7 @@ void CNetDeviceLayer::Process (void)
 {
 	assert (m_pDevice != 0);
 
-	u8 Buffer[FRAME_BUFFER_SIZE] ALIGN(4);		// DMA buffer
+	DMA_BUFFER (u8, Buffer, FRAME_BUFFER_SIZE);
 	unsigned nLength;
 	while (   m_pDevice->IsSendFrameAdvisable ()
 	       && (nLength = m_TxQueue.Dequeue (Buffer)) > 0)

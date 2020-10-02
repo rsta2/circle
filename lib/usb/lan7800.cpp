@@ -7,7 +7,7 @@
 //	Licensed under GPLv2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <circle/usb/lan7800.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/bcmpropertytags.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/util.h>
 #include <assert.h>
@@ -430,7 +431,7 @@ boolean CLAN7800Device::SendFrame (const void *pBuffer, unsigned nLength)
 		return FALSE;
 	}
 
-	u8 TxBuffer[FRAME_BUFFER_SIZE+TX_HEADER_SIZE] ALIGN(4);		// DMA buffer
+	DMA_BUFFER (u8, TxBuffer, FRAME_BUFFER_SIZE+TX_HEADER_SIZE);
 	assert (pBuffer != 0);
 	memcpy (TxBuffer+TX_HEADER_SIZE, pBuffer, nLength);
 

@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 static const char FromDevice[] = "usbdev";
 
 #if RASPPI <= 3
-u64 CUSBDevice::s_nDeviceAddressMap = 0;
+CNumberPool CUSBDevice::s_DeviceAddressPool (USB_FIRST_DEDICATED_ADDRESS, USB_MAX_ADDRESS);
 #endif
 
 CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CUSBHCIRootPort *pRootPort)
@@ -130,11 +130,20 @@ CUSBDevice::~CUSBDevice (void)
 		m_pFunction[nFunction] = 0;
 	}
 
+	if (m_pDeviceDesc != 0)
+	{
+		CString *pNames = GetNames ();
+		assert (pNames != 0);
+
+		LogWrite (LogNotice, "Device %s removed", (const char *) *pNames);
+
+		delete pNames;
+	}
+
 #if RASPPI <= 3
 	if (m_ucAddress != USB_DEFAULT_ADDRESS)
 	{
-		assert (s_nDeviceAddressMap & ((u64) 1 << m_ucAddress));
-		s_nDeviceAddressMap &= ~((u64) 1 << m_ucAddress);
+		s_DeviceAddressPool.FreeNumber (m_ucAddress);
 	}
 #endif
 
@@ -155,10 +164,11 @@ CUSBDevice::~CUSBDevice (void)
 
 boolean CUSBDevice::Initialize (void)
 {
-#if RASPPI <= 3 && defined (REALTIME)
+#if RASPPI <= 3 && defined (REALTIME) && !defined (USE_USB_SOF_INTR)
 	if (m_Speed != USBSpeedHigh)
 	{
-		LogWrite (LogWarning, "Device speed is not allowed with REALTIME");
+		LogWrite (LogWarning, "Device speed is not allowed with REALTIME"
+				      " without USE_USB_SOF_INTR");
 
 		return FALSE;
 	}
@@ -224,33 +234,24 @@ boolean CUSBDevice::Initialize (void)
 #endif
 
 #if RASPPI <= 3
-	// find and allocate first free device address
-	u8 ucAddress;
-	for (ucAddress = USB_FIRST_DEDICATED_ADDRESS; ucAddress <= USB_MAX_ADDRESS; ucAddress++)
-	{
-		if (!(s_nDeviceAddressMap & ((u64) 1 << ucAddress)))
-		{
-			break;
-		}
-	}
-
-	if (ucAddress > USB_MAX_ADDRESS)
+	unsigned nAddress = s_DeviceAddressPool.AllocateNumber (FALSE);
+	if (nAddress == CNumberPool::Invalid)
 	{
 		LogWrite (LogError, "Too many devices");
 
 		return FALSE;
 	}
 
-	s_nDeviceAddressMap |= (u64) 1 << ucAddress;
-
-	if (!m_pHost->SetAddress (m_pEndpoint0, ucAddress))
+	if (!m_pHost->SetAddress (m_pEndpoint0, (u8) nAddress))
 	{
-		LogWrite (LogError, "Cannot set address %u", (unsigned) ucAddress);
+		LogWrite (LogError, "Cannot set address %u", nAddress);
+
+		s_DeviceAddressPool.FreeNumber (nAddress);
 
 		return FALSE;
 	}
 	
-	SetAddress (ucAddress);
+	SetAddress ((u8) nAddress);
 #endif
 
 	assert (m_pConfigDesc == 0);

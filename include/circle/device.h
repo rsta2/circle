@@ -2,7 +2,7 @@
 // device.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,10 @@
 
 #include <circle/types.h>
 
+class CDevice;
+
+typedef void TDeviceRemovedHandler (CDevice *pDevice, void *pContext);
+
 class CDevice
 {
 public:
@@ -39,6 +43,15 @@ public:
 
 	// returns TRUE on successful removal
 	virtual boolean RemoveDevice (void);
+
+public:
+	/// \param pHandler Handler gets called, when device is destroyed (0 to unregister)
+	/// \param pContext Context pointer handed over to the handler
+	void RegisterRemovedHandler (TDeviceRemovedHandler *pHandler, void *pContext = 0);
+
+private:
+	TDeviceRemovedHandler *m_pRemovedHandler;
+	void *m_pRemovedContext;
 };
 
 #endif

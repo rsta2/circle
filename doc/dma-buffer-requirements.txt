@@ -1,0 +1,99 @@
+DMA BUFFER REQUIREMENTS
+
+Circle has drivers for several devices, which use DMA and uses the CPU data
+cache to speed up operation. Managing data coherency in such a system requires
+special support by the device drivers, which have to ensure, that data buffers
+are written out from data cache to the SDRAM before a DMA transfer is started
+and/or that data buffers will be loaded into data cache after a DMA transfer is
+completed.
+
+This is performed using system control operations, which require, that the data
+buffers used for DMA transfers are aligned to the size of a data cache line in
+the system (32 bytes for Raspberry Pi 1 and Zero, 64 bytes for Raspberry Pi
+2-4). Alignment must be applied to the base address of such buffer and to its
+size. If this requirement is not met, the Circle application may still work, but
+under certain conditions data, which is stored near to an unaligned DMA buffer,
+may be corrupted. Such issues may be difficult to detect.
+
+That's why it is important to cache-align data buffers used for DMA in a device
+driver. Because for performance reasons some Circle device drivers directly use
+data buffers passed from an application to a device driver for DMA operations,
+this requirement may be VALID FOR APPLICATION BUFFERS too! This file explains,
+under which circumstances this is required in applications and how cache-aligned
+data buffers can be defined.
+
+
+WHERE TO DEFINE A DMA BUFFER
+
+Data buffers used for DMA operations must be defined cache-aligned as a DMA
+buffer. This applies to device drivers in many cases, but writing a device
+driver is seldom. For performance reasons this may apply to Circle applications
+too under the following conditions:
+
+* Buffers handed over to CDMAChannel methods must be cache-aligned DMA buffers.
+
+* Buffers handed over to CSPIMasterDMA methods must be cache-aligned DMA
+  buffers.
+
+* If you directly access the USB host controller for low-level USB transfers,
+  buffers handed over to the following methods must be cache-aligned DMA buffers:
+  ControlMessage, GetDescriptor, Transfer, SubmitBlockingRequest,
+  SubmitAsyncRequest.
+
+* If you use your own network stack, which directly sends and receives frames
+  from a network device, buffers handed over to the network device must be
+  cache-aligned DMA buffers. This does not apply for buffers handed over to the
+  CSocket class.
+
+* Buffers handed over to CUSBBulkOnlyMassStorageDevice methods should be
+  cache-aligned DMA buffers for performance reasons. If they are not
+  cache-aligned, the driver will detect it and will provide a cache-aligned DMA
+  buffer on its own. This requires a memcpy() operation, which decreases
+  performance. The SD card device driver CEMMCDevice does not use DMA and does not
+  need cache-aligned DMA buffers.
+
+
+DEFINING A DMA BUFFER
+
+Data buffers used for DMA transfers can be stored in different locations:
+
+* on stack,
+* on heap (using the "new" operator or malloc()),
+* in static data segments (.data, .bss).
+
+1. The recommended way to define a cache-aligned DMA buffer on stack is:
+
+	#include <circle/synchronize.h>
+
+	some_function()
+	{
+		...
+		DMA_BUFFER (unsigned char, MyBuffer, 100);
+		...
+
+   The DMA_BUFFER() macro will produce the following array definition on Raspberry
+   Pi 2-4 (with cache line size 64 bytes):
+
+	unsigned char MyBuffer[128] __attribute__ ((aligned (64)));
+
+   Please note that you should not use the "sizeof" operator on an array, which is
+   defined that way, because there may be padding bytes in the array for
+   cache-alignment.
+
+2. Data buffers allocated from the heap are always cache-aligned:
+
+	unsigned char *pDMABuffer = new unsigned char[100];
+
+   pDMABuffer can be used directly for DMA. If a C++ object is created using the
+   "new" operator, its class definition can contain cache-aligned data buffer
+   member variables:
+
+	class CSomeClass
+	{
+		...
+		DMA_BUFFER (unsigned char, m_MyBuffer, 100);
+		...
+
+3. DMA buffers can be defined static outside of a function or with the
+   additional "static" keyword inside of a function or class definition using the
+   DMA_BUFFER() macro as shown before.

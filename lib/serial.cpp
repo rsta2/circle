@@ -332,6 +332,14 @@ int CSerialDevice::Write (const void *pBuffer, size_t nCount)
 {
 	assert (m_bValid);
 
+#ifdef REALTIME
+	// cannot write from IRQ_LEVEL to prevent deadlock, just ignore it
+	if (CurrentExecutionLevel () > TASK_LEVEL)
+	{
+		return nCount;
+	}
+#endif
+
 	m_LineSpinLock.Acquire ();
 
 	u8 *pChar = (u8 *) pBuffer;

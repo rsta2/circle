@@ -18,9 +18,13 @@ firmware: clean
 	wget -q -O COPYING.linux $(BASEURL)/COPYING.linux?raw=true
 	wget -q -O bootcode.bin $(BASEURL)/bootcode.bin?raw=true
 	wget -q -O fixup.dat $(BASEURL)/fixup.dat?raw=true
+	wget -q -O fixup_cd.dat $(BASEURL)/fixup_cd.dat?raw=true
 	wget -q -O start.elf $(BASEURL)/start.elf?raw=true
+	wget -q -O start_cd.elf $(BASEURL)/start_cd.elf?raw=true
 	wget -q -O fixup4.dat $(BASEURL)/fixup4.dat?raw=true
+	wget -q -O fixup4cd.dat $(BASEURL)/fixup4cd.dat?raw=true
 	wget -q -O start4.elf $(BASEURL)/start4.elf?raw=true
+	wget -q -O start4cd.elf $(BASEURL)/start4cd.elf?raw=true
 	wget -q -O bcm2711-rpi-4-b.dtb $(BASEURL)/bcm2711-rpi-4-b.dtb?raw=true
 
 all: firmware bootloader

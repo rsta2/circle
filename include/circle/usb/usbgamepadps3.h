@@ -2,7 +2,7 @@
 // usbgamepadps3.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_usb_usbgamepadps3_h
 
 #include <circle/usb/usbgamepadstandard.h>
+#include <circle/synchronize.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -53,7 +54,7 @@ private:
 private:
 	boolean m_bInterfaceOK;
 
-	u8 m_CommandBuffer[USB_GAMEPAD_PS3_COMMAND_LENGTH] ALIGN (4);	// DMA buffer
+	DMA_BUFFER (u8, m_CommandBuffer, USB_GAMEPAD_PS3_COMMAND_LENGTH);
 
 	static const u8 s_CommandDefault[];
 };

@@ -2,7 +2,7 @@
 // usbdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/usb/usb.h>
 #include <circle/usb/usbconfigparser.h>
 #include <circle/usb/usbfunction.h>
+#include <circle/numberpool.h>
 #include <circle/logger.h>
 #include <circle/string.h>
 #include <circle/types.h>
@@ -127,7 +128,7 @@ private:
 #endif
 
 #if RASPPI <= 3
-	static u64 s_nDeviceAddressMap;
+	static CNumberPool s_DeviceAddressPool;
 #endif
 };
 

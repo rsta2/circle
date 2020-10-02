@@ -16,7 +16,9 @@ attention to the following things:
 Because of the way their support is implemented, the interrupt latency is raised
 very much when such a device is used. To ensure that those devices will be
 ignored if they are occasionally attached you should enable the #define REALTIME
-in include/circle/sysconfig.h.
+in include/circle/sysconfig.h. If using USB low- or full-speed devices is
+required for your application on the Raspberry Pi 1-3, you should enable the
+#define USE_USB_SOF_INTR together with REALTIME.
 
 * Writes to the screen or serial device may noticeable raise the interrupt
 latency too. If REALTIME is defined this influence is relatively small.
