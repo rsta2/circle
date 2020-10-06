@@ -27,9 +27,9 @@ CKernel::CKernel (void)
 	m_Serial (&m_Interrupt, TRUE),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer),
-	m_Console (&m_Serial),
-	m_I2CShell (&m_Console)
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),
+	m_Console (&m_Serial, TRUE),
+	m_I2CShell (&m_Console, &m_USBHCI)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }

@@ -11,6 +11,12 @@ map using the file cmdline.txt (e.g. keymap=UK). There are six of these
 language-depended maps at the moment (UK English (UK), Spanish (ES), French
 (FR), Italian (IT), US International (US) and German (DE)).
 
+Because this sample is enabled for USB plug-and-play, the USB keyboard can be
+attached or removed at any time while or before the system is running. It will
+be detected automatically and can be used, if it is attached. On the Raspberry
+Pi 1-3 and Zero the system option USE_USB_SOF_INTR should be defined in the file
+include/circle/sysconfig.h to use this sample program.
+
 The I2C signals SDA (data) and SCL (clock) of the I2C master device of your
 Raspberry Pi must be connected to SDA and SCL of the I2C slave device(s) to be
 used as follows:
