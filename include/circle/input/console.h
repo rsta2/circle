@@ -33,7 +33,9 @@ class CConsole : public CDevice		/// Console using screen/USB keyboard or altern
 {
 public:
 	/// \param pAlternateDevice Alternate device to be used (if USB keyboard is not attached)
-	CConsole (CDevice *pAlternateDevice = 0);
+	/// \param bPlugAndPlay Enable USB plug-and-play?
+	/// \note This constructor is mandatory for USB plug-and-play operation.
+	CConsole (CDevice *pAlternateDevice = 0, boolean bPlugAndPlay = FALSE);
 	/// \param pInputDevice Device used for input (instead of USB keyboard)
 	/// \param pOutputDevice Device used for output (instead of screen)
 	CConsole (CDevice *pInputDevice, CDevice *pOutputDevice);
@@ -42,6 +44,10 @@ public:
 
 	/// \return Operation successful?
 	boolean Initialize (void);
+
+	/// \brief Update USB plug-and-play configuration
+	/// \note Must call this continuously for USB-plug-and-play operation only!
+	void UpdatePlugAndPlay (void);
 
 	/// \return Is alternate device used instead of screen/USB keyboard?
 	boolean IsAlternateDeviceUsed (void) const;
@@ -63,6 +69,10 @@ public:
 	void SetOptions (unsigned nOptions);
 
 private:
+	static void KeyboardRemovedHandler (CDevice *pDevice, void *pContext);
+
+private:
+	boolean  m_bPlugAndPlay;
 	CDevice *m_pAlternateDevice;
 	CDevice *m_pInputDevice;
 	CDevice *m_pOutputDevice;
