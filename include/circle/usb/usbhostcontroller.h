@@ -74,6 +74,13 @@ public:
 	// returns TRUE if device tree might have been updated (always TRUE on first call)
 	boolean UpdatePlugAndPlay (void);
 
+	static boolean IsActive (void)
+	{
+		return s_pThis != 0 ? TRUE : FALSE;
+	}
+
+	static CUSBHostController *Get (void);
+
 protected:
 	void PortStatusChanged (CUSBHCIRootPort *pRootPort);
 	friend class CXHCIRootPort;
@@ -88,6 +95,8 @@ private:
 
 	CPtrList  m_HubList;
 	CSpinLock m_SpinLock;
+
+	static CUSBHostController *s_pThis;
 };
 
 #endif
