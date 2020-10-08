@@ -51,6 +51,8 @@ public:
 	boolean SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	boolean SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
+	void CancelDeviceTransactions (CUSBDevice *pUSBDevice);
+
 private:
 	boolean DeviceConnected (void);
 	TUSBSpeed GetPortSpeed (void);

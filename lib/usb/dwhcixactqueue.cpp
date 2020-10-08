@@ -83,6 +83,38 @@ void CDWHCITransactionQueue::Flush (void)
 	m_SpinLock.Release ();
 }
 
+void CDWHCITransactionQueue::FlushDevice (CUSBDevice *pUSBDevice)
+{
+	assert (pUSBDevice != 0);
+
+	m_SpinLock.Acquire ();
+
+	TPtrListElement *pElement = m_List.GetFirst ();
+	while (pElement != 0)
+	{
+		TQueueEntry *pEntry = (TQueueEntry *) m_List.GetPtr (pElement);
+		assert (pEntry != 0);
+		assert (pEntry->nMagic == XACT_QUEUE_MAGIC);
+
+		TPtrListElement *pNextElement = m_List.GetNext (pElement);
+
+		assert (pEntry->pStageData != 0);
+		if (pEntry->pStageData->GetDevice () == pUSBDevice)
+		{
+			m_List.Remove (pElement);
+
+#ifndef NDEBUG
+			pEntry->nMagic = 0;
+#endif
+			delete pEntry;
+		}
+
+		pElement = pNextElement;
+	}
+
+	m_SpinLock.Release ();
+}
+
 void CDWHCITransactionQueue::Enqueue (CDWHCITransferStageData *pStageData, u16 usFrameNumber)
 {
 	assert (pStageData != 0);

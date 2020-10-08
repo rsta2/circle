@@ -33,6 +33,7 @@
 
 class CUSBHCIRootPort;
 class CUSBStandardHub;
+class CUSBDevice;
 
 class CUSBHostController
 {
@@ -66,6 +67,8 @@ public:
 
 	virtual boolean SubmitAsyncRequest (CUSBRequest *pURB,
 					    unsigned nTimeoutMs = USB_TIMEOUT_NONE) = 0;
+
+	virtual void CancelDeviceTransactions (CUSBDevice *pUSBDevice) {}
 
 public:
 	static boolean IsPlugAndPlay (void);

@@ -301,6 +301,13 @@ boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs
 	return bOK;
 }
 
+void CDWHCIDevice::CancelDeviceTransactions (CUSBDevice *pUSBDevice)
+{
+#ifdef USE_USB_SOF_INTR
+	m_TransactionQueue.FlushDevice (pUSBDevice);
+#endif
+}
+
 boolean CDWHCIDevice::DeviceConnected (void)
 {
 	CDWHCIRegister HostPort (DWHCI_HOST_PORT);
