@@ -49,6 +49,11 @@ boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 	}
 #endif
 
+	if (!bWaitForActivate)
+	{
+		return TRUE;
+	}
+
 	assert (m_pDevice == 0);
 	m_pDevice = CNetDevice::GetNetDevice (m_DeviceType);
 	if (m_pDevice == 0)
@@ -59,11 +64,6 @@ boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 	}
 
 	new CPHYTask (m_pDevice);
-
-	if (!bWaitForActivate)
-	{
-		return TRUE;
-	}
 
 	// wait for Ethernet PHY to come up
 	unsigned nStartTicks = CTimer::Get ()->GetTicks ();
@@ -90,7 +90,16 @@ boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 
 void CNetDeviceLayer::Process (void)
 {
-	assert (m_pDevice != 0);
+	if (m_pDevice == 0)
+	{
+		m_pDevice = CNetDevice::GetNetDevice (m_DeviceType);
+		if (m_pDevice == 0)
+		{
+			return;
+		}
+
+		new CPHYTask (m_pDevice);
+	}
 
 	DMA_BUFFER (u8, Buffer, FRAME_BUFFER_SIZE);
 	unsigned nLength;
@@ -135,4 +144,9 @@ boolean CNetDeviceLayer::Receive (void *pBuffer, unsigned *pResultLength)
 	*pResultLength = nLength;
 
 	return TRUE;
+}
+
+boolean CNetDeviceLayer::IsRunning (void) const
+{
+	return m_pDevice != 0;
 }

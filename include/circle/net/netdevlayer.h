@@ -41,6 +41,8 @@ public:
 	void Send (const void *pBuffer, unsigned nLength);
 	boolean Receive (void *pBuffer, unsigned *pResultLength);
 
+	boolean IsRunning (void) const;			// is net device available?
+
 private:
 	TNetDeviceType m_DeviceType;
 	CNetConfig *m_pNetConfig;
