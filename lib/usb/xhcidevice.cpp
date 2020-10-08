@@ -73,7 +73,7 @@ CXHCIDevice::~CXHCIDevice (void)
 	m_pMMIO = 0;
 }
 
-boolean CXHCIDevice::Initialize (void)
+boolean CXHCIDevice::Initialize (boolean bScanDevices)
 {
 	// init class-specific allocators in USB library
 	INIT_PROTECTED_CLASS_ALLOCATOR (CUSBRequest, XHCI_CONFIG_MAX_REQUESTS, IRQ_LEVEL);
@@ -205,11 +205,15 @@ boolean CXHCIDevice::Initialize (void)
 						 | XHCI_REG_OP_USBCMD_RUN_STOP);
 
 	// init root hub
-	if (!m_pRootHub->Initialize ())
+	if (   !IsPlugAndPlay ()
+	    || bScanDevices)
 	{
-		CLogger::Get ()->Write (From, LogError, "Cannot init root hub");
+		if (!m_pRootHub->Initialize ())
+		{
+			CLogger::Get ()->Write (From, LogError, "Cannot init root hub");
 
-		return FALSE;
+			return FALSE;
+		}
 	}
 
 #if !defined (NDEBUG) && defined (XHCI_DEBUG2)

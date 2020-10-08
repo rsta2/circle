@@ -44,7 +44,7 @@ public:
 		      boolean bPlugAndPlay = FALSE);
 	~CDWHCIDevice (void);
 
-	boolean Initialize (void);
+	boolean Initialize (boolean bScanDevices = TRUE);
 
 	void ReScanDevices (void);
 
