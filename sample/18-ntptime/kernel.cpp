@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer)
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE)		// TRUE: enable plug-and-play
 #ifndef USE_DHCP
 	, m_Net (IPAddress, NetMask, DefaultGateway, DNSServer)
 #endif
@@ -90,12 +90,12 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_USBHCI.Initialize ();
+		bOK = m_USBHCI.Initialize (FALSE);	// FALSE: defer USB device scan
 	}
 
 	if (bOK)
 	{
-		bOK = m_Net.Initialize ();
+		bOK = m_Net.Initialize (FALSE);		// FALSE: do not wait for network to appear
 	}
 
 	return bOK;
@@ -104,6 +104,13 @@ boolean CKernel::Initialize (void)
 TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
+
+	while (!m_Net.IsRunning ())			// wait for network to appear
+	{
+		m_USBHCI.UpdatePlugAndPlay ();
+
+		m_Scheduler.Yield ();
+	}
 
 	CString IPString;
 	m_Net.GetConfig ()->GetIPAddress ()->Format (&IPString);
@@ -116,6 +123,8 @@ TShutdownMode CKernel::Run (void)
 
 	for (unsigned nCount = 0; 1; nCount++)
 	{
+		m_USBHCI.UpdatePlugAndPlay ();
+
 		m_Scheduler.Yield ();
 
 		m_Screen.Rotor (0, nCount);
