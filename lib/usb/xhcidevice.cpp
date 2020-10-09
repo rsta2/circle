@@ -324,10 +324,25 @@ void CXHCIDevice::InterruptHandler (unsigned nVector)
 		return;
 	}
 
+	TXHCITRB *pEventTRB = 0;
+	TXHCITRB *pNextEventTRB;
 	assert (m_pEventManager != 0);
-	while (m_pEventManager->HandleEvents ())
+	while ((pNextEventTRB = m_pEventManager->HandleEvents ()) != 0)
 	{
-		// just loop
+		pEventTRB = pNextEventTRB;
+	}
+
+	if (pEventTRB != 0)
+	{
+		m_pMMIO->rt_write64 (0, XHCI_REG_RT_IR_ERDP_LO,   XHCI_TO_DMA (pEventTRB)
+								| XHCI_REG_RT_IR_ERDP_LO_EHB);
+	}
+	else
+	{
+		m_pMMIO->rt_write64 (0, XHCI_REG_RT_IR_ERDP_LO,
+				       (  m_pMMIO->rt_read64 (0, XHCI_REG_RT_IR_ERDP_LO)
+				        & XHCI_REG_RT_IR_ERDP__MASK)
+				     | XHCI_REG_RT_IR_ERDP_LO_EHB);
 	}
 }
 
