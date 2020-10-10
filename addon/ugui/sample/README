@@ -54,9 +54,17 @@ the ground (GND). See http://elinux.org/RPi_Low-level_peripherals for wiring!
 Remember that all input signals must be in a range from 0 to 3.3 Volts!
 
 TinyScope Pi is controlled using an USB mouse or the official Raspberry Pi touch
-screen. If an USB mouse is used, it must be connected before the system is
-started. The screen resolution is fixed to 800x480 pixels. Your display has to
-support this.
+screen. If an USB mouse is used, it can be connected before the system is
+started or while it is running. The screen resolution is fixed to 800x480
+pixels. Your display has to support this.
+
+Please note that the system generates log messages on screen, when an USB mouse
+is connected, while the program is running. This destroys the displayed GUI. To
+prevent this, you should add the following option to the file cmdline.txt too to
+direct the log output to the serial interface (see above, put a space between
+multiple options):
+
+	logdev=ttyS1
 
 When the Raspberry Pi is powered on, the sample recorder is calibrated. This
 takes some seconds. After that the TinyScope Pi GUI appears. The oscilloscope

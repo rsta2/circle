@@ -496,6 +496,12 @@ CUSBRequest *CDWHCITransferStageData::GetURB (void) const
 	return m_pURB;
 }
 
+CUSBDevice *CDWHCITransferStageData::GetDevice (void) const
+{
+	assert (m_pDevice != 0);
+	return m_pDevice;
+}
+
 CDWHCIFrameScheduler *CDWHCITransferStageData::GetFrameScheduler (void) const
 {
 	return m_pFrameScheduler;

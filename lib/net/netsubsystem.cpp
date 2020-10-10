@@ -149,6 +149,11 @@ CTransportLayer *CNetSubSystem::GetTransportLayer (void)
 
 boolean CNetSubSystem::IsRunning (void) const
 {
+	if (!m_NetDevLayer.IsRunning ())
+	{
+		return FALSE;
+	}
+
 	if (!m_bUseDHCP)
 	{
 		return TRUE;

@@ -36,14 +36,19 @@ struct TPortStatusEvent
 
 boolean CUSBHostController::s_bPlugAndPlay;
 
+CUSBHostController *CUSBHostController::s_pThis = 0;
+
 CUSBHostController::CUSBHostController (boolean bPlugAndPlay)
 :	m_bFirstUpdateCall (TRUE)
 {
+	s_pThis = this;
+
 	s_bPlugAndPlay = bPlugAndPlay;
 }
 
 CUSBHostController::~CUSBHostController (void)
 {
+	s_pThis = 0;
 }
 	
 int CUSBHostController::GetDescriptor (CUSBEndpoint	*pEndpoint, 
@@ -220,4 +225,10 @@ void CUSBHostController::PortStatusChanged (CUSBStandardHub *pHub)
 	m_HubList.InsertAfter (pPrevElement, pEvent);		// append to list
 
 	m_SpinLock.Release ();
+}
+
+CUSBHostController *CUSBHostController::Get (void)
+{
+	assert (s_pThis != 0);
+	return s_pThis;
 }

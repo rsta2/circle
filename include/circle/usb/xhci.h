@@ -2,7 +2,7 @@
 // xhci.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -235,6 +235,7 @@
 	#define XHCI_REG_RT_IR_ERDP_LO_DESI__MASK		7
 	#define XHCI_REG_RT_IR_ERDP_LO_EHB			(1 << 3)
 	#define XHCI_REG_RT_IR_ERDP_LO__MASK			0xFFFFFFF0
+	#define XHCI_REG_RT_IR_ERDP__MASK			(~(u64) 0xF)
 #define XHCI_REG_RT_IR_ERDP_HI		0x1C
 #define XHCI_REG_RT_IR__SIZE		0x20
 

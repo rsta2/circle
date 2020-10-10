@@ -108,7 +108,7 @@ CDWHCIDevice::~CDWHCIDevice (void)
 	m_pTimer = 0;
 }
 
-boolean CDWHCIDevice::Initialize (void)
+boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 {
 #ifndef USE_USB_SOF_INTR
 	if (IsPlugAndPlay ())
@@ -169,7 +169,11 @@ boolean CDWHCIDevice::Initialize (void)
 
 	PeripheralExit ();
 
-	ReScanDevices ();
+	if (   !IsPlugAndPlay ()
+	    || bScanDevices)
+	{
+		ReScanDevices ();
+	}
 
 	return TRUE;
 }
@@ -295,6 +299,13 @@ boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs
 	PeripheralExit ();
 
 	return bOK;
+}
+
+void CDWHCIDevice::CancelDeviceTransactions (CUSBDevice *pUSBDevice)
+{
+#ifdef USE_USB_SOF_INTR
+	m_TransactionQueue.FlushDevice (pUSBDevice);
+#endif
 }
 
 boolean CDWHCIDevice::DeviceConnected (void)

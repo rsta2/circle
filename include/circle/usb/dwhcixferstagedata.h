@@ -82,6 +82,7 @@ public:
 	boolean IsTimeout (void) const;
 
 	CUSBRequest *GetURB (void) const;
+	CUSBDevice *GetDevice (void) const;
 	CDWHCIFrameScheduler *GetFrameScheduler (void) const;
 
 private:

@@ -44,12 +44,14 @@ public:
 		      boolean bPlugAndPlay = FALSE);
 	~CDWHCIDevice (void);
 
-	boolean Initialize (void);
+	boolean Initialize (boolean bScanDevices = TRUE);
 
 	void ReScanDevices (void);
 
 	boolean SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	boolean SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
+
+	void CancelDeviceTransactions (CUSBDevice *pUSBDevice);
 
 private:
 	boolean DeviceConnected (void);

@@ -88,8 +88,9 @@ const char CI2CShell::GPIOHelpMsg[] =
 	"GPIO# are chip numbers, not the position on the header!\n"
 	"\n";
 
-CI2CShell::CI2CShell (CConsole *pConsole)
+CI2CShell::CI2CShell (CConsole *pConsole, CUSBHCIDevice *pUSBHCI)
 :	m_pConsole (pConsole),
+	m_pUSBHCI (pUSBHCI),
 	m_bContinue (TRUE),
 	m_pI2CMaster (0),
 	m_nI2CClockHz (CLOCK_KHZ_DEFAULT * 1000),
@@ -100,6 +101,7 @@ CI2CShell::CI2CShell (CConsole *pConsole)
 CI2CShell::~CI2CShell (void)
 {
 	m_pConsole = 0;
+	m_pUSBHCI = 0;
 
 	delete m_pI2CMaster;
 	m_pI2CMaster = 0;
@@ -592,7 +594,15 @@ void CI2CShell::ReadLine (void)
 		assert (m_pConsole != 0);
 		while ((nResult = m_pConsole->Read (m_LineBuffer, sizeof m_LineBuffer-1)) <= 0)
 		{
-			// just repeat
+			if (m_pUSBHCI != 0)
+			{
+				boolean bUpdated = m_pUSBHCI->UpdatePlugAndPlay ();
+
+				if (bUpdated)
+				{
+					m_pConsole->UpdatePlugAndPlay ();
+				}
+			}
 		}
 
 		assert (nResult < (int) sizeof m_LineBuffer);

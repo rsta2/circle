@@ -28,6 +28,8 @@
 
 #ifdef USE_USB_SOF_INTR
 
+class CUSBDevice;
+
 class CDWHCITransactionQueue		// Queues coming USB transactions (FIFO)
 {
 public:
@@ -36,6 +38,9 @@ public:
 
 	// remove all entries
 	void Flush (void);
+
+	// remove entries for device
+	void FlushDevice (CUSBDevice *pUSBDevice);
 
 	// enqueue transaction to be processed at usFrameNumber
 	void Enqueue (CDWHCITransferStageData *pStageData, u16 usFrameNumber);

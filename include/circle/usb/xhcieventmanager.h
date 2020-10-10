@@ -2,7 +2,7 @@
 // xhcieventmanager.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,7 +35,8 @@ public:
 
 	boolean IsValid (void);
 
-	boolean HandleEvents (void);
+	// returns next event dequeue TRB or 0 if event ring is empty
+	TXHCITRB *HandleEvents (void);
 
 #ifndef NDEBUG
 	void DumpStatus (void);

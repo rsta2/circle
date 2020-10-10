@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_Recorder (8, 9, 10, 11, &m_Config),
-	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),
 	m_Clock0 (GPIOClock0),
 	m_ClockPin (4, GPIOModeAlternateFunction0),
 	m_GUI (&m_Screen)
@@ -110,7 +110,9 @@ TShutdownMode CKernel::Run (void)
 
 	while (1)
 	{
-		m_GUI.Update ();
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
+
+		m_GUI.Update (bUpdated);
 
 		unsigned nTicks = m_Timer.GetClockTicks ();
 		if (nTicks - nLastTicks >= 4*CLOCKHZ)

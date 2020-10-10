@@ -124,6 +124,9 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
 
 CUSBDevice::~CUSBDevice (void)
 {
+	assert (m_pHost != 0);
+	m_pHost->CancelDeviceTransactions (this);
+
 	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
 	{
 		delete (m_pFunction[nFunction]);

@@ -21,6 +21,7 @@
 #define _i2cshell_h
 
 #include <circle/input/console.h>
+#include <circle/usb/usbhcidevice.h>
 #include <circle/i2cmaster.h>
 #include <circle/string.h>
 #include <circle/types.h>
@@ -30,7 +31,7 @@
 class CI2CShell
 {
 public:
-	CI2CShell (CConsole *pConsole);
+	CI2CShell (CConsole *pConsole, CUSBHCIDevice *pUSBHCI = 0);
 	~CI2CShell (void);
 
 	void Run (void);
@@ -62,6 +63,7 @@ private:
 
 private:
 	CConsole *m_pConsole;
+	CUSBHCIDevice *m_pUSBHCI;
 
 	boolean m_bContinue;
 

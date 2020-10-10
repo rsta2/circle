@@ -17,7 +17,7 @@ SAMPLES
 15-files		Root directory listing of a connected USB drive, writing and reading the file "circle.txt"
 16-i2cping		Transfering data blocks between two Raspberry Pis connected via I2C
 17-fractal		Displaying a fractal image from a Mandelbrot set (may be build for single- or multi-core)
-18-ntptime		Setting the system time from an Internet time (NTP) server
+18-ntptime	[PnP]	Setting the system time from an Internet time (NTP) server, reducing boot time
 19-tasks		Demonstrating the cooperative non-preemtive scheduler
 20-tcpsimple		Simple TCP echo server
 21-webserver		Simple HTTP webserver which controls the Act LED
@@ -30,7 +30,7 @@ SAMPLES
 29-miniorgan	[PnP]	Mini organ instrument using PWM or I2S sound, (USB or serial) MIDI or USB keyboard.
 30-gpiofiq		Demonstrating FIQ-driven fast GPIO event capture and a tracing class.
 31-webclient		Fetching a RPi hardware revision list from a HTTP webserver and parsing it.
-32-i2cshell		Command line tool for interactive communication with I2C devices.
+32-i2cshell	[PnP]	Command line tool for interactive communication with I2C devices.
 33-syslog		Demonstrating how to send log messages to a syslog server using UDP.
 34-sounddevices		Integrating multiple sound devices in one application
 35-mqttclient		Demonstrating the MQTT client

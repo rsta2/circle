@@ -178,6 +178,11 @@ install: $(TARGET).img
 	sync
 endif
 
+ifneq ($(strip $(TFTPHOST)),)
+tftpboot: $(TARGET).img
+	tftp -m binary $(TFTPHOST) -c put $(TARGET).img
+endif
+
 #
 # Eclipse support
 #

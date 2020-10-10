@@ -2,7 +2,7 @@
 // xhcimmiospace.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -78,6 +78,19 @@ u32 CXHCIMMIOSpace::rt_read32 (unsigned nInterrupter, u32 nOffset)
 	assert (m_nBase != 0);
 
 	return read32 (m_nRtBase + XHCI_REG_RT_IR0 + nInterrupter * XHCI_REG_RT_IR__SIZE + nOffset);
+}
+
+u64 CXHCIMMIOSpace::rt_read64 (unsigned nInterrupter, u32 nOffset)
+{
+	assert (m_nBase != 0);
+
+	uintptr nAddress =
+		m_nRtBase + XHCI_REG_RT_IR0 + nInterrupter * XHCI_REG_RT_IR__SIZE + nOffset;
+
+	u64 nValue = read32 (nAddress);
+	nValue |= (u64) read32 (nAddress+4) << 32;
+
+	return nValue;
 }
 
 void CXHCIMMIOSpace::op_write32 (u32 nOffset, u32 nValue)
