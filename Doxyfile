@@ -825,7 +825,7 @@ RECURSIVE              = YES
 EXCLUDE                = \
 			 addon/fatfs \
 			 addon/linux \
-			 addon/littlevgl \
+			 addon/lvgl \
 			 addon/Spectrum \
 			 addon/ugui \
 			 addon/vc4/interface \
