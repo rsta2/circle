@@ -1,9 +1,9 @@
-[submodule "addon/littlevgl/lvgl"]
-	path = addon/littlevgl/lvgl
-	url = https://github.com/littlevgl/lvgl.git
-[submodule "addon/littlevgl/lv_examples"]
-	path = addon/littlevgl/lv_examples
-	url = https://github.com/littlevgl/lv_examples.git
 [submodule "addon/wlan/hostap"]
 	path = addon/wlan/hostap
 	url = https://github.com/rsta2/hostap.git
+[submodule "addon/lvgl/lvgl"]
+	path = addon/lvgl/lvgl
+	url = https://github.com/lvgl/lvgl.git
+[submodule "addon/lvgl/lv_examples"]
+	path = addon/lvgl/lv_examples
+	url = https://github.com/lvgl/lv_examples.git

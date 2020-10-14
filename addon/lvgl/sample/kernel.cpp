@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include "../lv_examples/lv_apps/demo/demo.h"
+#include "../lv_examples/lv_examples.h"
 
 static const char FromKernel[] = "kernel";
 
@@ -26,7 +26,7 @@ CKernel::CKernel (void)
 :	m_Screen (LV_HOR_RES_MAX, LV_VER_RES_MAX),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),
 	m_GUI (&m_Screen, &m_Interrupt)
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -90,11 +90,13 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	demo_create ();
+	lv_demo_widgets ();
 
 	while (1)
 	{
-		m_GUI.Update ();
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
+
+		m_GUI.Update (bUpdated);
 	}
 
 	return ShutdownHalt;

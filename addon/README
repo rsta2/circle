@@ -17,7 +17,7 @@ OneWire		Support library for 1-wire devices (by Paul Stoffregen)
 Properties	Library providing access to configuration properties saved in a file
 qemu		Support library and demos for using Circle with QEMU
 linux		Linux kernel device driver emulation (used by HDMI sound and accelerated graphics)
-littlevgl	LittlevGL embedded GUI library (by Gabor Kiss-Vamosi)
+lvgl		LVGL embedded GUI library (by LVGL LLC)
 profile		Software profiling library for performance analysis
 rtc		Library providing drivers for real-time clocks (RTC)
 SDCard		Driver for SD card access using the internal EMMC controller (by John Cronin)
