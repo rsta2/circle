@@ -119,6 +119,8 @@ boolean CLVGL::Initialize (void)
 			m_pMouseDevice->ShowCursor (TRUE);
 
 			m_pMouseDevice->RegisterEventHandler (MouseEventHandler);
+
+			m_pMouseDevice->RegisterRemovedHandler (MouseRemovedHandler);
 		}
 		else
 		{
@@ -135,21 +137,37 @@ boolean CLVGL::Initialize (void)
 		}
 	}
 
-	if (   m_pMouseDevice != 0
-	    || m_pTouchScreen != 0)
-	{
-		lv_indev_drv_t indev_drv;
-		lv_indev_drv_init (&indev_drv);
-		indev_drv.type = LV_INDEV_TYPE_POINTER;
-		indev_drv.read_cb = PointerRead;
-		lv_indev_drv_register (&indev_drv);
-	}
+	lv_indev_drv_t indev_drv;
+	lv_indev_drv_init (&indev_drv);
+	indev_drv.type = LV_INDEV_TYPE_POINTER;
+	indev_drv.read_cb = PointerRead;
+	lv_indev_drv_register (&indev_drv);
 
 	return TRUE;
 }
 
-void CLVGL::Update (void)
+void CLVGL::Update (boolean bPlugAndPlayUpdated)
 {
+	if (   bPlugAndPlayUpdated
+	    && m_pMouseDevice == 0)
+	{
+		m_pMouseDevice =
+			(CMouseDevice *) CDeviceNameService::Get ()->GetDevice ("mouse1", FALSE);
+		if (m_pMouseDevice != 0)
+		{
+			assert (m_pFrameBuffer != 0);
+			if (m_pMouseDevice->Setup (m_pFrameBuffer->GetWidth (),
+						   m_pFrameBuffer->GetHeight ()))
+			{
+				m_pMouseDevice->ShowCursor (TRUE);
+
+				m_pMouseDevice->RegisterEventHandler (MouseEventHandler);
+
+				m_pMouseDevice->RegisterRemovedHandler (MouseRemovedHandler);
+			}
+		}
+	}
+
 	lv_task_handler ();
 
 	unsigned nTicks = CTimer::Get ()->GetClockTicks ();
@@ -303,4 +321,10 @@ void CLVGL::LogPrint (lv_log_level_t Level, const char *pFile, uint32_t nLine,
 	Source.Format ("%s(%d)", pFile, nLine);
 
 	CLogger::Get ()->Write (Source, Severity, "%s: %s: %s", pPrefix, pFunction, pDescription);
+}
+
+void CLVGL::MouseRemovedHandler (CDevice *pDevice, void *pContext)
+{
+	assert (s_pThis != 0);
+	s_pThis->m_pMouseDevice = 0;
 }

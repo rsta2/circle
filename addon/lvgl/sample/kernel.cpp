@@ -26,7 +26,7 @@ CKernel::CKernel (void)
 :	m_Screen (LV_HOR_RES_MAX, LV_VER_RES_MAX),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),
 	m_GUI (&m_Screen, &m_Interrupt)
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -94,7 +94,9 @@ TShutdownMode CKernel::Run (void)
 
 	while (1)
 	{
-		m_GUI.Update ();
+		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
+
+		m_GUI.Update (bUpdated);
 	}
 
 	return ShutdownHalt;

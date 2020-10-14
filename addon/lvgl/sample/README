@@ -25,3 +25,10 @@ lv_conf.h. Search for LV_HOR_RES_MAX and LV_VER_RES_MAX in this file.
 First build the Circle libraries from Circle project root, then the LVGL
 and lv_examples libraries by entering "make" in the addon/lvgl/ directory.
 Finally the sample can be built with "make" in addon/lvgl/sample/.
+
+Please note that the system generates log messages on screen, when an USB mouse
+is connected, while the program is running. This destroys the displayed GUI. To
+prevent this, you should add the following option to the file cmdline.txt to
+direct the log output to the serial interface:
+
+	logdev=ttyS1

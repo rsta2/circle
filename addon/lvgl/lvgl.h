@@ -41,7 +41,7 @@ public:
 
 	boolean Initialize (void);
 
-	void Update (void);
+	void Update (boolean bPlugAndPlayUpdated = FALSE);
 
 private:
 	static void DisplayFlush (lv_disp_drv_t *pDriver, const lv_area_t *pArea,
@@ -57,6 +57,8 @@ private:
 	static void LogPrint (lv_log_level_t Level, const char *pFile, uint32_t nLine,
 			      const char *pFunction, const char *pDescription);
 
+	static void MouseRemovedHandler (CDevice *pDevice, void *pContext);
+
 private:
 	lv_color_t *m_pBuffer1;
 	lv_color_t *m_pBuffer2;
@@ -66,7 +68,7 @@ private:
 	CDMAChannel m_DMAChannel;
 	unsigned m_nLastUpdate;
 
-	CMouseDevice *m_pMouseDevice;
+	CMouseDevice * volatile m_pMouseDevice;
 	CTouchScreenDevice *m_pTouchScreen;
 	unsigned m_nLastTouchUpdate;
 	lv_indev_data_t m_PointerData;
