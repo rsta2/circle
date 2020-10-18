@@ -170,7 +170,8 @@ $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@wc -c < $(TARGET).img
 
 clean:
-	rm -f *.d *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
+	@echo "  CLEAN " `pwd`
+	@rm -f *.d *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
 
 ifneq ($(strip $(SDCARD)),)
 install: $(TARGET).img
