@@ -34,6 +34,7 @@ CKernel::CKernel (void)
 	m_pMouse (0),
 	m_nPosX (0),
 	m_nPosY (0),
+	m_Color (COLOR16 (0, 0, 31)),
 	m_ShutdownMode (ShutdownNone)
 {
 	s_pThis = this;
@@ -136,7 +137,7 @@ TShutdownMode CKernel::Run (void)
 	return m_ShutdownMode;
 }
 
-void CKernel::MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY)
+void CKernel::MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY, int nWheelMove)
 {
 	switch (Event)
 	{
@@ -144,7 +145,7 @@ void CKernel::MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned 
 		if (nButtons & (MOUSE_BUTTON_LEFT | MOUSE_BUTTON_RIGHT))
 		{
 			DrawLine (m_nPosX, m_nPosY, nPosX, nPosY,
-				  nButtons & MOUSE_BUTTON_LEFT ? NORMAL_COLOR : HIGH_COLOR);
+				  nButtons & MOUSE_BUTTON_LEFT ? NORMAL_COLOR : m_Color);
 		}
 
 		m_nPosX = nPosX;
@@ -158,15 +159,19 @@ void CKernel::MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned 
 		}
 		break;
 
+	case MouseEventMouseWheel:
+		m_Color += nWheelMove * 16;
+		break;
+
 	default:
 		break;
 	}
 }
 
-void CKernel::MouseEventStub (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY)
+void CKernel::MouseEventStub (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY, int nWheelMove)
 {
 	assert (s_pThis != 0);
-	s_pThis->MouseEventHandler (Event, nButtons, nPosX, nPosY);
+	s_pThis->MouseEventHandler (Event, nButtons, nPosX, nPosY, nWheelMove);
 }
 
 void CKernel::DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenColor Color)

@@ -28,7 +28,7 @@
 #define MOUSE_DISPLACEMENT_MIN	-127
 #define MOUSE_DISPLACEMENT_MAX	127
 
-typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY);
+typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove);
 
 class CMouseDevice : public CDevice	/// Generic mouse interface device ("mouse1")
 {
@@ -65,7 +65,7 @@ public:
 
 public:
 	/// \warning Do not call this from application!
-	void ReportHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY);
+	void ReportHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove);
 
 private:
 	CMouseBehaviour m_Behaviour;

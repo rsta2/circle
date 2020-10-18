@@ -346,7 +346,7 @@ void CUSBGamePadPS4Device::HandleTouchpad (const u8 *pReportBuffer)
 			assert (m_pMouseDevice != 0);
 			m_pMouseDevice->ReportHandler (  m_Touchpad.bButtonPressed
 						       ? MOUSE_BUTTON_LEFT : 0,
-						       nDisplacementX, nDisplacementY);
+						       nDisplacementX, nDisplacementY, 0);
 
 			bButtonChanged = FALSE;
 			nDisplacementX = 0;

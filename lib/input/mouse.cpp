@@ -77,12 +77,12 @@ void CMouseDevice::RegisterStatusHandler (TMouseStatusHandler *pStatusHandler)
 	assert (m_pStatusHandler != 0);
 }
 
-void CMouseDevice::ReportHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY)
+void CMouseDevice::ReportHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove)
 {
-	m_Behaviour.MouseStatusChanged (nButtons, nDisplacementX, nDisplacementY);
+	m_Behaviour.MouseStatusChanged (nButtons, nDisplacementX, nDisplacementY, nWheelMove);
 
 	if (m_pStatusHandler != 0)
 	{
-		(*m_pStatusHandler) (nButtons, nDisplacementX, nDisplacementY);
+		(*m_pStatusHandler) (nButtons, nDisplacementX, nDisplacementY, nWheelMove);
 	}
 }
