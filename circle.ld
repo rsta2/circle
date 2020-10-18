@@ -23,7 +23,7 @@ SECTIONS
 	.init_array : {
 		__init_start = .;
 
-		*(.init_array*)
+		KEEP(*(.init_array*))
 
 		__init_end = .;
 	}
