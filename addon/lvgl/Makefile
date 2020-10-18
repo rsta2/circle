@@ -12,7 +12,7 @@ include $(LVGL_DIR)/lvgl/lvgl.mk
 OBJS := lvgl.o $(CSRCS:.c=.o)
 
 CSRCS :=
-include $(LVGL_DIR)/lv_examples/lv_examples.mk
+-include $(LVGL_DIR)/lv_examples/lv_examples.mk
 EXOBJS := $(CSRCS:.c=.o)
 
 EXTRACLEAN += $(EXOBJS) $(EXOBJS:.o=.d)
