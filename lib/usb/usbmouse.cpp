@@ -118,8 +118,8 @@ boolean CUSBMouseDevice::Configure (void)
 
 		return FALSE;
 	}
-    CLogger::Get ()->Write (FromUSBMouse, LogDebug, "Report descriptor");
-    debug_hexdump (m_pHIDReportDescriptor, m_usReportDescriptorLength, FromUSBMouse);
+	CLogger::Get ()->Write (FromUSBMouse, LogDebug, "Report descriptor");
+	debug_hexdump (m_pHIDReportDescriptor, m_usReportDescriptorLength, FromUSBMouse);
 
 	DecodeReport ();
 
@@ -144,103 +144,112 @@ boolean CUSBMouseDevice::Configure (void)
 
 void CUSBMouseDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
-//    debug_hexdump (pReport, nReportSize, FromUSBMouse);
-    if (   pReport != 0
+	//debug_hexdump (pReport, nReportSize, FromUSBMouse);
+	if (   pReport != 0
 	    && nReportSize == m_ReportItems.size)
 	{
-        // in boot protocol the 3 bytes are:
-        // 0   1 - left button, 2 - right button, 4 - middle button
-        // 1   X displacement (+/- 127 max)
-        // 2   Y displacement (+/- 127 max)
-        // in report protocol the 5 bytes are:
-        // 0   report ID (from report descriptor)
-        // 1   1 - left button, 2 - right button, 4 - middle button
-        // 2   X displacement (+/- 127 max)
-        // 3   Y displacement (+/- 127 max)
-        // 4   1 - wheel up, -1 wheel down
+		// in boot protocol the 3 bytes are:
+		// 0   1 - left button, 2 - right button, 4 - middle button
+		// 1   X displacement (+/- 127 max)
+		// 2   Y displacement (+/- 127 max)
+		// in report protocol the 5 bytes are:
+		// 0   report ID (from report descriptor)
+		// 1   1 - left button, 2 - right button, 4 - middle button
+		// 2   X displacement (+/- 127 max)
+		// 3   Y displacement (+/- 127 max)
+		// 4   1 - wheel up, -1 wheel down
 
-        if (m_pMouseDevice != 0)
-        {
-            u32 ucHIDButtons = 0;
-            s32 xMove = 0;
-            s32 yMove = 0;
-            s32 wheelMove = 0;
-            for (u32 index = 0; index < m_ReportItems.nItems; index++) {
-                TMouseReportItem *item = &m_ReportItems.items[index];
-                switch (item->type) {
-                case MouseItemButtons:
-                    ucHIDButtons = ExtractUnsigned(pReport, item->offset, item->count);
-                    break;
-                case MouseItemXAxis:
-                    xMove = ExtractSigned(pReport, item->offset, item->count);
-                    break;
-                case MouseItemYAxis:
-                    yMove = ExtractSigned(pReport, item->offset, item->count);
-                    break;
-                case MouseItemWheel:
-                    wheelMove = ExtractSigned(pReport, item->offset, item->count);
-                    break;
-                }
-            }
+		if (m_pMouseDevice != 0)
+		{
+			u32 ucHIDButtons = 0;
+			s32 xMove = 0;
+			s32 yMove = 0;
+			s32 wheelMove = 0;
+			for (u32 index = 0; index < m_ReportItems.nItems; index++)
+			{
+				TMouseReportItem *item = &m_ReportItems.items[index];
+				switch (item->type)
+				{
+				case MouseItemButtons:
+					ucHIDButtons = ExtractUnsigned(pReport, item->offset, item->count);
+					break;
+				case MouseItemXAxis:
+					xMove = ExtractSigned(pReport, item->offset, item->count);
+					break;
+				case MouseItemYAxis:
+					yMove = ExtractSigned(pReport, item->offset, item->count);
+					break;
+				case MouseItemWheel:
+					wheelMove = ExtractSigned(pReport, item->offset, item->count);
+					break;
+				}
+			}
 
-            u32 nButtons = 0;
-            if (ucHIDButtons & USBHID_BUTTON1)
-            {
-                nButtons |= MOUSE_BUTTON_LEFT;
-            }
-            if (ucHIDButtons & USBHID_BUTTON2)
-            {
-                nButtons |= MOUSE_BUTTON_RIGHT;
-            }
-            if (ucHIDButtons & USBHID_BUTTON3)
-            {
-                nButtons |= MOUSE_BUTTON_MIDDLE;
-            }
+			u32 nButtons = 0;
+			if (ucHIDButtons & USBHID_BUTTON1)
+			{
+				nButtons |= MOUSE_BUTTON_LEFT;
+			}
+			if (ucHIDButtons & USBHID_BUTTON2)
+			{
+				nButtons |= MOUSE_BUTTON_RIGHT;
+			}
+			if (ucHIDButtons & USBHID_BUTTON3)
+			{
+				nButtons |= MOUSE_BUTTON_MIDDLE;
+			}
 
-            //CLogger::Get ()->Write (FromUSBMouse, LogDebug, "2: %02X %2d %3d %3d %3d", pReport[0], nButtons, xMove, yMove, wheelMove);
-            m_pMouseDevice->ReportHandler (nButtons, xMove, yMove, wheelMove);
+			//CLogger::Get ()->Write (FromUSBMouse, LogDebug, "%02X %2d %3d %3d %3d",
+			//    pReport[0], nButtons, xMove, yMove, wheelMove);
+			m_pMouseDevice->ReportHandler (nButtons, xMove, yMove, wheelMove);
 		}
 	}
 }
 
-u32 CUSBMouseDevice::ExtractUnsigned(const void *buffer, u32 offset, u32 length) {
-    assert(buffer != 0);
-    assert(length <= 32);
+u32 CUSBMouseDevice::ExtractUnsigned(const void *buffer, u32 offset, u32 length)
+{
+	assert(buffer != 0);
+	assert(length <= 32);
 
-    u8 *bits = (u8 *)buffer;
-    unsigned shift = offset % 8;
-    offset = offset / 8;
-    bits = bits + offset;
-    unsigned number = *(unsigned *)bits;
-    offset = shift;
+	u8 *bits = (u8 *)buffer;
+	unsigned shift = offset % 8;
+	offset = offset / 8;
+	bits = bits + offset;
+	unsigned number = *(unsigned *)bits;
+	offset = shift;
 
-    unsigned result = 0;
-    if (length > 24) {
-        result = (((1 << 24) - 1) & (number >> offset));
-        bits = bits + 3;
-        number = *(unsigned *)bits;
-        length = length - 24;
-        unsigned result2 = (((1 << length) - 1) & (number >> offset));
-        result = (result2 << 24) | result;
-    } else {
-        result = (((1 << length) - 1) & (number >> offset));
+	unsigned result = 0;
+	if (length > 24) {
+		result = (((1 << 24) - 1) & (number >> offset));
+		bits = bits + 3;
+		number = *(unsigned *)bits;
+		length = length - 24;
+		unsigned result2 = (((1 << length) - 1) & (number >> offset));
+		result = (result2 << 24) | result;
+	} else {
+		result = (((1 << length) - 1) & (number >> offset));
+	}
 
-    }
-    return result;
+	return result;
 }
 
-s32 CUSBMouseDevice::ExtractSigned(const void *buffer, u32 offset, u32 length) {
-    assert(buffer != 0);
-    assert(length <= 32);
+s32 CUSBMouseDevice::ExtractSigned(const void *buffer, u32 offset, u32 length)
+{
+	assert(buffer != 0);
+	assert(length <= 32);
 
-    unsigned result = ExtractUnsigned(buffer, offset, length);
-    if (length == 32) {
-        return result;
-    }
-    if (result & (1 << (length - 1))) {
+	unsigned result = ExtractUnsigned(buffer, offset, length);
+	if (length == 32)
+	{
+		return result;
+	}
+
+	if (result & (1 << (length - 1)))
+	{
 		result |= 0xffffffff - ((1 << length) - 1);
 	}
-    return result;
+
+	return result;
 }
 
 void CUSBMouseDevice::DecodeReport ()
@@ -248,10 +257,10 @@ void CUSBMouseDevice::DecodeReport ()
 	s32 item, arg;
 	u32 offset = 0, size = 0, count = 0;
 	u32 id = 0;
-    u32 nCollections = 0;
-    u32 itemIndex = 0;
-    u32 reportIndex = 0;
-    boolean parse = FALSE;
+	u32 nCollections = 0;
+	u32 itemIndex = 0;
+	u32 reportIndex = 0;
+	boolean parse = FALSE;
 
 	assert (m_pHIDReportDescriptor != 0);
 	s8 *pHIDReportDescriptor = (s8 *) m_pHIDReportDescriptor;
@@ -283,49 +292,46 @@ void CUSBMouseDevice::DecodeReport ()
 			usReportDescriptorLength -= 4;
 			break;
 		}
-        //fprintf(stderr, "item, arg %02X %04X\n", item, arg);
 
-        switch(item & 0xFC)
+		switch(item & 0xFC)
 		{
-        case HID_COLLECTION:
-            nCollections++;
-            break;
-        case HID_END_COLLECTION:
-            nCollections--;
-            if (nCollections == 0)
-                parse = FALSE;
-            break;
+		case HID_COLLECTION:
+			nCollections++;
+			break;
+		case HID_END_COLLECTION:
+			nCollections--;
+			if (nCollections == 0)
+				parse = FALSE;
+			break;
 		case HID_USAGE_PAGE:
 			switch(arg)
 			{
-            case HID_USAGE_PAGE_GENERIC_DESKTOP:
-                //fprintf(stderr, "Generic Desktop Controls\n");
-                break;
+			case HID_USAGE_PAGE_GENERIC_DESKTOP:
+				break;
 			}
 			break;
 		case HID_USAGE:
 			switch(arg)
 			{
-            case HID_USAGE_MOUSE:
-                parse = TRUE;
-                //fprintf(stderr, "state: Mouse\n");
-                break;
-            }
-            break;
-        }
+			case HID_USAGE_MOUSE:
+				parse = TRUE;
+				break;
+			}
+			break;
+		}
 
-        if (! parse)
-            continue;
+		if (! parse)
+			continue;
 
 		if ((item & 0xFC) == HID_REPORT_ID)
 		{
-            assert(id == 0);
-            if (id != 0){
-                break;
-            }
+			assert(id == 0);
+			if (id != 0)
+			{
+				break;
+			}
 			id = arg;
 			offset = 8;
-            //fprintf(stderr, "report ID %d\n", id);
 		}
 
 		switch(item & 0xFC)
@@ -334,9 +340,8 @@ void CUSBMouseDevice::DecodeReport ()
 			switch(arg)
 			{
 			case HID_USAGE_PAGE_BUTTONS:
-                //fprintf(stderr, "state: Mouse Buttons index %d\n", itemIndex);
-                m_ReportItems.items[itemIndex].type = MouseItemButtons;
-                itemIndex++;
+				m_ReportItems.items[itemIndex].type = MouseItemButtons;
+				itemIndex++;
 				break;
 			}
 			break;
@@ -344,20 +349,17 @@ void CUSBMouseDevice::DecodeReport ()
 			switch(arg)
 			{
 			case HID_USAGE_X:
-                //fprintf(stderr, "state: Mouse X Axis index %d\n", itemIndex);
-                m_ReportItems.items[itemIndex].type = MouseItemXAxis;
-                itemIndex++;
-                break;
+				m_ReportItems.items[itemIndex].type = MouseItemXAxis;
+				itemIndex++;
+				break;
 			case HID_USAGE_Y:
-                //fprintf(stderr, "state: Mouse Y Axis index %d\n", itemIndex);
-                m_ReportItems.items[itemIndex].type = MouseItemYAxis;
-                itemIndex++;
-                break;
-            case HID_USAGE_WHEEL:
-                //fprintf(stderr, "state: Mouse Wheel index %d\n", itemIndex);
-                m_ReportItems.items[itemIndex].type = MouseItemWheel;
-                itemIndex++;
-                break;
+				m_ReportItems.items[itemIndex].type = MouseItemYAxis;
+				itemIndex++;
+				break;
+			case HID_USAGE_WHEEL:
+				m_ReportItems.items[itemIndex].type = MouseItemWheel;
+				itemIndex++;
+				break;
 			}
 			break;
 		case HID_REPORT_SIZE:
@@ -369,40 +371,41 @@ void CUSBMouseDevice::DecodeReport ()
 		case HID_INPUT:
 			if ((arg & 0x03) == 0x02)
 			{
-                //fprintf(stderr, "item index %d, report index %d\n", itemIndex, reportIndex);
-                u32 tmp = offset;
-                while (reportIndex < itemIndex)
-                {
-                    TMouseReportItem *item = &m_ReportItems.items[reportIndex];
-                    switch (item->type)
-                    {
-                    case MouseItemButtons:
-                        item->count = count * size;
-                        item->offset = tmp;
-                        break;
-                    case MouseItemXAxis:
-                    case MouseItemYAxis:
-                    case MouseItemWheel:
-                        item->count = size;
-                        item->offset = tmp;
-                        break;
-                    }
-                    tmp += item->count;
-                    reportIndex++;
-                }
-            }
-            offset += count * size;
+				u32 tmp = offset;
+				while (reportIndex < itemIndex)
+				{
+					TMouseReportItem *item = &m_ReportItems.items[reportIndex];
+					switch (item->type)
+					{
+					case MouseItemButtons:
+						item->count = count * size;
+						item->offset = tmp;
+						break;
+					case MouseItemXAxis:
+					case MouseItemYAxis:
+					case MouseItemWheel:
+						item->count = size;
+						item->offset = tmp;
+						break;
+					}
+					tmp += item->count;
+					reportIndex++;
+				}
+			}
+
+			offset += count * size;
 			break;
 		}
 	}
 
-    m_ReportItems.id = id;
-    m_ReportItems.size = (offset + 7) / 8;
-    m_ReportItems.nItems = itemIndex;
-    CLogger::Get ()->Write (FromUSBMouse, LogDebug, "Report ID %d, size %d bytes, item count %d",
-                            m_ReportItems.id, m_ReportItems.size, m_ReportItems.nItems);
-    for (u32 i = 0; i < itemIndex; i++) {
-        CLogger::Get ()->Write (FromUSBMouse, LogDebug, "[%d] item ID %d offset %d, count %d",
-                                i, m_ReportItems.items[i].type, m_ReportItems.items[i].offset, m_ReportItems.items[i].count);
-    }
+	m_ReportItems.id = id;
+	m_ReportItems.size = (offset + 7) / 8;
+	m_ReportItems.nItems = itemIndex;
+	CLogger::Get ()->Write (FromUSBMouse, LogDebug, "Report ID %d, size %d bytes, n item %d",
+	    m_ReportItems.id, m_ReportItems.size, m_ReportItems.nItems);
+	for (u32 i = 0; i < itemIndex; i++) {
+	CLogger::Get ()->Write (FromUSBMouse, LogDebug, "[%d] item ID %d offset %d, count %d",
+	    i, m_ReportItems.items[i].type, m_ReportItems.items[i].offset,
+	    m_ReportItems.items[i].count);
+	}
 }

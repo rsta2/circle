@@ -218,12 +218,12 @@ void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX,
 		}
 	}
 
-    if (nWheelMove != 0) {
-        if (m_pEventHandler != 0)
+	if (nWheelMove != 0) {
+		if (m_pEventHandler != 0)
 		{
 			(*m_pEventHandler) (MouseEventMouseWheel, nButtons, m_nPosX, m_nPosY, nWheelMove);
 		}
-    }
+	}
 
 	m_nButtons = nButtons;
 }

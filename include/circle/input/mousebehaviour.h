@@ -29,7 +29,7 @@ enum TMouseEvent
 	MouseEventMouseUp,
 	//MouseEventClick,
 	//MouseEventDoubleClick,
-    MouseEventMouseWheel,
+	MouseEventMouseWheel,
 	MouseEventUnknown
 };
 
