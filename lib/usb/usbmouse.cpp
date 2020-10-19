@@ -20,7 +20,6 @@
 #include <circle/usb/usbmouse.h>
 #include <circle/usb/usbhid.h>
 #include <circle/logger.h>
-#include <circle/debug.h>
 #include <assert.h>
 
 // HID Report Items from HID 1.11 Section 6.2.2
@@ -30,50 +29,17 @@
 #define HID_END_COLLECTION  0xC0
 #define HID_REPORT_COUNT    0x94
 #define HID_REPORT_SIZE     0x74
-#define HID_USAGE_MIN       0x18
-#define HID_USAGE_MAX       0x28
-#define HID_LOGICAL_MIN     0x14
-#define HID_LOGICAL_MAX     0x24
-#define HID_PHYSICAL_MIN    0x34
-#define HID_PHYSICAL_MAX    0x44
 #define HID_INPUT           0x80
 #define HID_REPORT_ID       0x84
-#define HID_OUTPUT          0x90
 
 // HID Report Usage Pages from HID Usage Tables 1.12 Section 3, Table 1
-#define HID_USAGE_PAGE_GENERIC_DESKTOP 0x01
-#define HID_USAGE_PAGE_KEY_CODES       0x07
-#define HID_USAGE_PAGE_LEDS            0x08
 #define HID_USAGE_PAGE_BUTTONS         0x09
 
 // HID Report Usages from HID Usage Tables 1.12 Section 4, Table 6
-#define HID_USAGE_POINTER   0x01
 #define HID_USAGE_MOUSE     0x02
-#define HID_USAGE_JOYSTICK  0x04
-#define HID_USAGE_GAMEPAD   0x05
-#define HID_USAGE_KEYBOARD  0x06
 #define HID_USAGE_X         0x30
 #define HID_USAGE_Y         0x31
-#define HID_USAGE_Z         0x32
-#define HID_USAGE_RX        0x33
-#define HID_USAGE_RY        0x34
-#define HID_USAGE_RZ        0x35
-#define HID_USAGE_SLIDER    0x36
 #define HID_USAGE_WHEEL     0x38
-#define HID_USAGE_HATSWITCH 0x39
-
-// HID Report Collection Types from HID 1.12 6.2.2.6
-#define HID_COLLECTION_PHYSICAL    0
-#define HID_COLLECTION_APPLICATION 1
-
-// HID Input/Output/Feature Item Data (attributes) from HID 1.11 6.2.2.5
-#define HID_ITEM_CONSTANT 0x1
-#define HID_ITEM_VARIABLE 0x2
-#define HID_ITEM_RELATIVE 0x4
-
-// in boot protocol 3 bytes are received, in report protocol 5 bytes are received
-//#define REPORT_SIZE 3
-//#define REPORT_SIZE 5
 
 static const char FromUSBMouse[] = "umouse";
 
@@ -118,8 +84,6 @@ boolean CUSBMouseDevice::Configure (void)
 
 		return FALSE;
 	}
-	CLogger::Get ()->Write (FromUSBMouse, LogDebug, "Report descriptor");
-	debug_hexdump (m_pHIDReportDescriptor, m_usReportDescriptorLength, FromUSBMouse);
 
 	DecodeReport ();
 
@@ -144,21 +108,9 @@ boolean CUSBMouseDevice::Configure (void)
 
 void CUSBMouseDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
-	//debug_hexdump (pReport, nReportSize, FromUSBMouse);
 	if (   pReport != 0
 	    && nReportSize == m_ReportItems.size)
 	{
-		// in boot protocol the 3 bytes are:
-		// 0   1 - left button, 2 - right button, 4 - middle button
-		// 1   X displacement (+/- 127 max)
-		// 2   Y displacement (+/- 127 max)
-		// in report protocol the 5 bytes are:
-		// 0   report ID (from report descriptor)
-		// 1   1 - left button, 2 - right button, 4 - middle button
-		// 2   X displacement (+/- 127 max)
-		// 3   Y displacement (+/- 127 max)
-		// 4   1 - wheel up, -1 wheel down
-
 		if (m_pMouseDevice != 0)
 		{
 			u32 ucHIDButtons = 0;
@@ -199,8 +151,6 @@ void CUSBMouseDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 				nButtons |= MOUSE_BUTTON_MIDDLE;
 			}
 
-			//CLogger::Get ()->Write (FromUSBMouse, LogDebug, "%02X %2d %3d %3d %3d",
-			//    pReport[0], nButtons, xMove, yMove, wheelMove);
 			m_pMouseDevice->ReportHandler (nButtons, xMove, yMove, wheelMove);
 		}
 	}
@@ -303,20 +253,9 @@ void CUSBMouseDevice::DecodeReport ()
 			if (nCollections == 0)
 				parse = FALSE;
 			break;
-		case HID_USAGE_PAGE:
-			switch(arg)
-			{
-			case HID_USAGE_PAGE_GENERIC_DESKTOP:
-				break;
-			}
-			break;
 		case HID_USAGE:
-			switch(arg)
-			{
-			case HID_USAGE_MOUSE:
+			if (arg == HID_USAGE_MOUSE)
 				parse = TRUE;
-				break;
-			}
 			break;
 		}
 
@@ -326,10 +265,6 @@ void CUSBMouseDevice::DecodeReport ()
 		if ((item & 0xFC) == HID_REPORT_ID)
 		{
 			assert(id == 0);
-			if (id != 0)
-			{
-				break;
-			}
 			id = arg;
 			offset = 8;
 		}
@@ -401,11 +336,4 @@ void CUSBMouseDevice::DecodeReport ()
 	m_ReportItems.id = id;
 	m_ReportItems.size = (offset + 7) / 8;
 	m_ReportItems.nItems = itemIndex;
-	CLogger::Get ()->Write (FromUSBMouse, LogDebug, "Report ID %d, size %d bytes, n item %d",
-	    m_ReportItems.id, m_ReportItems.size, m_ReportItems.nItems);
-	for (u32 i = 0; i < itemIndex; i++) {
-	CLogger::Get ()->Write (FromUSBMouse, LogDebug, "[%d] item ID %d offset %d, count %d",
-	    i, m_ReportItems.items[i].type, m_ReportItems.items[i].offset,
-	    m_ReportItems.items[i].count);
-	}
 }
