@@ -159,7 +159,7 @@ boolean CUSBGamePadPS4Device::Configure (void)
 
 	if (s_bTouchpadEnabled)
 	{
-		m_pMouseDevice = new CMouseDevice;
+		m_pMouseDevice = new CMouseDevice(1);
 		assert (m_pMouseDevice != 0);
 	}
 

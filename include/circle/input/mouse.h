@@ -33,7 +33,10 @@ typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDi
 class CMouseDevice : public CDevice	/// Generic mouse interface device ("mouse1")
 {
 public:
-	CMouseDevice (void);
+	/// \brief Construct a mouse device instance
+	/// \param nButtons Number of buttons
+	/// \param bHasWheel Wheel presence
+	CMouseDevice (unsigned nButtons, boolean bHasWheel = FALSE);
 	~CMouseDevice (void);
 
 	/// \brief Setup mouse device in cooked mode
@@ -63,6 +66,12 @@ public:
 	/// \param pStatusHandler Pointer to the mouse status handler
 	void RegisterStatusHandler (TMouseStatusHandler *pStatusHandler);
 
+	/// \return Number of supported mouse buttons
+	unsigned GetButtonCount (void) const;
+
+	/// \return Does the mouse support a mouse wheel?
+	boolean HasWheel (void) const;
+
 public:
 	/// \warning Do not call this from application!
 	void ReportHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove);
@@ -74,6 +83,9 @@ private:
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;
+
+	unsigned m_nButtons;
+	boolean m_bHasWheel;
 };
 
 #endif

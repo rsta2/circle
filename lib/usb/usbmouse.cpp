@@ -85,7 +85,9 @@ boolean CUSBMouseDevice::Configure (void)
 		return FALSE;
 	}
 
-	DecodeReport ();
+	unsigned nButtons = 0;
+	boolean bHasWheel = FALSE;
+	DecodeReport (&nButtons, &bHasWheel);
 
 	// ignoring unsupported HID interface
 	if (m_MouseReport.nItems == 0)
@@ -100,7 +102,7 @@ boolean CUSBMouseDevice::Configure (void)
 		return FALSE;
 	}
 
-	m_pMouseDevice = new CMouseDevice;
+	m_pMouseDevice = new CMouseDevice(nButtons, bHasWheel);
 	assert (m_pMouseDevice != 0);
 
 	return StartRequest ();
@@ -210,7 +212,7 @@ s32 CUSBMouseDevice::ExtractSigned(const void *buffer, u32 offset, u32 length)
 	return result;
 }
 
-void CUSBMouseDevice::DecodeReport ()
+void CUSBMouseDevice::DecodeReport (unsigned *nButtons, boolean *bHasWheel)
 {
 	s32 item, arg;
 	u32 offset = 0, size = 0, count = 0;
@@ -323,10 +325,13 @@ void CUSBMouseDevice::DecodeReport ()
 					case MouseItemButtons:
 						item->count = count * size;
 						item->offset = tmp;
+						*nButtons = item->count;
 						break;
+					case MouseItemWheel:
+						*bHasWheel = TRUE;
+						// fall thru
 					case MouseItemXAxis:
 					case MouseItemYAxis:
-					case MouseItemWheel:
 						item->count = size;
 						item->offset = tmp;
 						break;

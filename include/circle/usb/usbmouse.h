@@ -58,7 +58,7 @@ public:
 
 private:
 	void ReportHandler (const u8 *pReport, unsigned nReportSize);
-	void DecodeReport (void);
+	void DecodeReport (unsigned *nButtons, boolean *bHasWheel);
 	u32 ExtractUnsigned (const void *buffer, u32 offset, u32 length);
 	s32 ExtractSigned (const void *buffer, u32 offset, u32 length);
 

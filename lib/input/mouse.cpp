@@ -26,9 +26,11 @@ CNumberPool CMouseDevice::s_DeviceNumberPool (1);
 static const char FromMouse[] = "mouse";
 static const char DevicePrefix[] = "mouse";
 
-CMouseDevice::CMouseDevice (void)
+CMouseDevice::CMouseDevice (unsigned nButtons, boolean bHasWheel)
 :	m_pStatusHandler (0),
-	m_nDeviceNumber (s_DeviceNumberPool.AllocateNumber (TRUE, FromMouse))
+	m_nDeviceNumber (s_DeviceNumberPool.AllocateNumber (TRUE, FromMouse)),
+	m_nButtons (nButtons),
+	m_bHasWheel (bHasWheel)
 {
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 }
@@ -85,4 +87,14 @@ void CMouseDevice::ReportHandler (unsigned nButtons, int nDisplacementX, int nDi
 	{
 		(*m_pStatusHandler) (nButtons, nDisplacementX, nDisplacementY, nWheelMove);
 	}
+}
+
+unsigned CMouseDevice::GetButtonCount (void) const
+{
+	return m_nButtons;
+}
+
+boolean CMouseDevice::HasWheel (void) const
+{
+	return m_bHasWheel;
 }
