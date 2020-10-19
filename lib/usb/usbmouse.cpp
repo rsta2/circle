@@ -127,9 +127,17 @@ void CUSBMouseDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 					break;
 				case MouseItemXAxis:
 					xMove = ExtractSigned(pReport, item->offset, item->count);
+					if (xMove > 127)
+						xMove = 127;
+					if (xMove < -127)
+						xMove = -127;
 					break;
 				case MouseItemYAxis:
 					yMove = ExtractSigned(pReport, item->offset, item->count);
+					if (yMove > 127)
+						yMove = 127;
+					if (yMove < -127)
+						yMove = -127;
 					break;
 				case MouseItemWheel:
 					wheelMove = ExtractSigned(pReport, item->offset, item->count);
