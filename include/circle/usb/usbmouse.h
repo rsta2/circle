@@ -37,7 +37,7 @@ struct TMouseReportItem {
 	unsigned count;
 	unsigned offset;
 };
-#define MAX_ITEMS    16
+#define MAX_MOUSE_REPORT_ITEMS    16
 
 struct TMouseReport
 {
@@ -45,7 +45,7 @@ struct TMouseReport
 	unsigned size;
 
 	unsigned nItems;
-	TMouseReportItem items[MAX_ITEMS];
+	TMouseReportItem items[MAX_MOUSE_REPORT_ITEMS];
 };
 
 class CUSBMouseDevice : public CUSBHIDDevice
@@ -68,7 +68,7 @@ private:
 	u8 *m_pHIDReportDescriptor;
 	u16 m_usReportDescriptorLength;
 
-	TMouseReport m_ReportItems;
+	TMouseReport m_MouseReport;
 };
 
 #endif

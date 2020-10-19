@@ -88,12 +88,12 @@ boolean CUSBMouseDevice::Configure (void)
 	DecodeReport ();
 
 	// ignoring unsupported HID interface
-	if (m_ReportItems.nItems == 0)
+	if (m_MouseReport.nItems == 0)
 	{
 		return FALSE;
 	}
 
-	if (!CUSBHIDDevice::Configure (m_ReportItems.size))
+	if (!CUSBHIDDevice::Configure (m_MouseReport.size))
 	{
 		CLogger::Get ()->Write (FromUSBMouse, LogError, "Cannot configure HID device");
 
@@ -109,7 +109,7 @@ boolean CUSBMouseDevice::Configure (void)
 void CUSBMouseDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
 	if (   pReport != 0
-	    && nReportSize == m_ReportItems.size)
+	    && nReportSize == m_MouseReport.size)
 	{
 		if (m_pMouseDevice != 0)
 		{
@@ -117,9 +117,9 @@ void CUSBMouseDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 			s32 xMove = 0;
 			s32 yMove = 0;
 			s32 wheelMove = 0;
-			for (u32 index = 0; index < m_ReportItems.nItems; index++)
+			for (u32 index = 0; index < m_MouseReport.nItems; index++)
 			{
-				TMouseReportItem *item = &m_ReportItems.items[index];
+				TMouseReportItem *item = &m_MouseReport.items[index];
 				switch (item->type)
 				{
 				case MouseItemButtons:
@@ -275,7 +275,7 @@ void CUSBMouseDevice::DecodeReport ()
 			switch(arg)
 			{
 			case HID_USAGE_PAGE_BUTTONS:
-				m_ReportItems.items[itemIndex].type = MouseItemButtons;
+				m_MouseReport.items[itemIndex].type = MouseItemButtons;
 				itemIndex++;
 				break;
 			}
@@ -284,15 +284,15 @@ void CUSBMouseDevice::DecodeReport ()
 			switch(arg)
 			{
 			case HID_USAGE_X:
-				m_ReportItems.items[itemIndex].type = MouseItemXAxis;
+				m_MouseReport.items[itemIndex].type = MouseItemXAxis;
 				itemIndex++;
 				break;
 			case HID_USAGE_Y:
-				m_ReportItems.items[itemIndex].type = MouseItemYAxis;
+				m_MouseReport.items[itemIndex].type = MouseItemYAxis;
 				itemIndex++;
 				break;
 			case HID_USAGE_WHEEL:
-				m_ReportItems.items[itemIndex].type = MouseItemWheel;
+				m_MouseReport.items[itemIndex].type = MouseItemWheel;
 				itemIndex++;
 				break;
 			}
@@ -309,7 +309,7 @@ void CUSBMouseDevice::DecodeReport ()
 				u32 tmp = offset;
 				while (reportIndex < itemIndex)
 				{
-					TMouseReportItem *item = &m_ReportItems.items[reportIndex];
+					TMouseReportItem *item = &m_MouseReport.items[reportIndex];
 					switch (item->type)
 					{
 					case MouseItemButtons:
@@ -333,7 +333,7 @@ void CUSBMouseDevice::DecodeReport ()
 		}
 	}
 
-	m_ReportItems.id = id;
-	m_ReportItems.size = (offset + 7) / 8;
-	m_ReportItems.nItems = itemIndex;
+	m_MouseReport.id = id;
+	m_MouseReport.size = (offset + 7) / 8;
+	m_MouseReport.nItems = itemIndex;
 }
