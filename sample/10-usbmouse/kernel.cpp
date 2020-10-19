@@ -34,7 +34,7 @@ CKernel::CKernel (void)
 	m_pMouse (0),
 	m_nPosX (0),
 	m_nPosY (0),
-	m_Color (COLOR16 (0, 0, 31)),
+	m_Color (HIGH_COLOR),
 	m_ShutdownMode (ShutdownNone)
 {
 	s_pThis = this;
@@ -116,6 +116,11 @@ TShutdownMode CKernel::Run (void)
 					m_Logger.Write (FromKernel, LogPanic, "Cannot setup mouse");
 				}
 
+				m_Logger.Write (FromKernel, LogNotice, "USB mouse has %d buttons",
+						m_pMouse->GetButtonCount());
+				m_Logger.Write (FromKernel, LogNotice, "USB mouse has %s wheel",
+						m_pMouse->HasWheel() ? "a" : "no");
+
 				m_nPosX = m_Screen.GetWidth () / 2;
 				m_nPosY = m_Screen.GetHeight () / 2;
 
@@ -160,7 +165,10 @@ void CKernel::MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned 
 		break;
 
 	case MouseEventMouseWheel:
-		m_Color += nWheelMove * 16;
+		if (m_Color == HIGH_COLOR)
+			m_Color = HALF_COLOR;
+		else
+			m_Color = HIGH_COLOR;
 		break;
 
 	default:
