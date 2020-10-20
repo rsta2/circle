@@ -221,6 +221,7 @@ void CUSBMouseDevice::DecodeReport (unsigned *nButtons, boolean *bHasWheel)
 	u32 itemIndex = 0;
 	u32 reportIndex = 0;
 	boolean parse = FALSE;
+	boolean foundMouseUsage = FALSE;
 
 	assert (m_pHIDReportDescriptor != 0);
 	s8 *pHIDReportDescriptor = (s8 *) m_pHIDReportDescriptor;
@@ -265,19 +266,27 @@ void CUSBMouseDevice::DecodeReport (unsigned *nButtons, boolean *bHasWheel)
 			break;
 		case HID_USAGE:
 			if (arg == HID_USAGE_MOUSE)
-				parse = TRUE;
+				foundMouseUsage = TRUE;
+			break;
+		case HID_REPORT_ID:
+			if (foundMouseUsage) {
+				if (id == 0) {
+					id = arg;
+					offset += 8;
+					parse = TRUE;
+				} else {
+					if ((u32)arg != id) {
+						parse = FALSE;
+					} else {
+						parse = TRUE;
+					}
+				}
+			}
 			break;
 		}
 
 		if (! parse)
 			continue;
-
-		if ((item & 0xFC) == HID_REPORT_ID)
-		{
-			assert(id == 0);
-			id = arg;
-			offset = 8;
-		}
 
 		switch(item & 0xFC)
 		{
