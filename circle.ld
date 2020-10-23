@@ -48,7 +48,6 @@ SECTIONS
 		__bss_start = .;
 
 		*(.bss*)
-		*(.tbss*)
 		*(COMMON)
 
 		_end = .;
