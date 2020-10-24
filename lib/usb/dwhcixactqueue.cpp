@@ -72,6 +72,8 @@ void CDWHCITransactionQueue::Flush (void)
 
 		m_List.Remove (pElement);
 
+		delete pEntry->pStageData;
+
 #ifndef NDEBUG
 		pEntry->nMagic = 0;
 #endif
@@ -102,6 +104,8 @@ void CDWHCITransactionQueue::FlushDevice (CUSBDevice *pUSBDevice)
 		if (pEntry->pStageData->GetDevice () == pUSBDevice)
 		{
 			m_List.Remove (pElement);
+
+			delete pEntry->pStageData;
 
 #ifndef NDEBUG
 			pEntry->nMagic = 0;
