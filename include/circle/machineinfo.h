@@ -43,6 +43,7 @@ enum TMachineModel
 	MachineModelCM3,
 	MachineModelCM3Plus,
 	MachineModel4B,
+	MachineModelCM4,
 	MachineModelUnknown
 };
 
