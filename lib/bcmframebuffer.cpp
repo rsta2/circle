@@ -2,7 +2,7 @@
 // bcmframebuffer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #include <circle/bcmframebuffer.h>
 #include <circle/util.h>
 
-TBcmFrameBufferInitTags CBcmFrameBuffer::s_InitTags =
+const TBcmFrameBufferInitTags CBcmFrameBuffer::s_InitTags =
 {
 	{{PROPTAG_SET_PHYS_WIDTH_HEIGHT, 8, 8}},
 	{{PROPTAG_SET_VIRT_WIDTH_HEIGHT, 8, 8}},
@@ -30,21 +30,38 @@ TBcmFrameBufferInitTags CBcmFrameBuffer::s_InitTags =
 	{{PROPTAG_GET_PITCH,		 4, 0}}
 };
 
+#if RASPPI >= 4
+
+unsigned CBcmFrameBuffer::s_nDisplays = 0;
+
+unsigned CBcmFrameBuffer::s_nCurrentDisplay = (unsigned) -1;
+
+#endif
+
 CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nDepth,
-				  unsigned nVirtualWidth, unsigned nVirtualHeight)
+				  unsigned nVirtualWidth, unsigned nVirtualHeight,
+				  unsigned nDisplay)
 :	m_nWidth (nWidth),
 	m_nHeight (nHeight),
 	m_nVirtualWidth (nVirtualWidth),
 	m_nVirtualHeight (nVirtualHeight),
 	m_nDepth (nDepth),
+	m_nDisplay (nDisplay),
 	m_nBufferPtr (0),
 	m_nBufferSize (0),
 	m_nPitch (0),
 	m_pTagSetPalette (0)
 {
+	if (m_nDisplay >= GetNumDisplays ())
+	{
+		return;
+	}
+
 	if (   m_nWidth  == 0
 	    || m_nHeight == 0)
 	{
+		SetDisplay ();
+
 		// detect optimal display size (if not configured)
 		CBcmPropertyTags Tags;
 		TPropertyTagDisplayDimensions Dimensions;
@@ -54,9 +71,9 @@ CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nD
 			m_nHeight = Dimensions.nHeight;
 
 			if (   m_nWidth  < 640
-			    || m_nWidth  > 1920
+			    || m_nWidth  > 4096
 			    || m_nHeight < 480
-			    || m_nHeight > 1080)
+			    || m_nHeight > 2160)
 			{
 				m_nWidth  = 640;
 				m_nHeight = 480;
@@ -123,6 +140,13 @@ void CBcmFrameBuffer::SetPalette32 (u8 nIndex, u32 nRGBA)
 
 boolean CBcmFrameBuffer::Initialize (void)
 {
+	if (m_nDisplay >= GetNumDisplays ())
+	{
+		return FALSE;
+	}
+
+	SetDisplay ();
+
 	CBcmPropertyTags Tags;
 	if (!Tags.GetTags (&m_InitTags, sizeof m_InitTags))
 	{
@@ -190,6 +214,8 @@ boolean CBcmFrameBuffer::UpdatePalette (void)
 {
 	if (m_nDepth <= 8)
 	{
+		SetDisplay ();
+
 		m_pTagSetPalette->nOffset = 0;
 		m_pTagSetPalette->nLength = PALETTE_ENTRIES;
 
@@ -212,6 +238,8 @@ boolean CBcmFrameBuffer::UpdatePalette (void)
 
 boolean CBcmFrameBuffer::SetVirtualOffset (u32 nOffsetX, u32 nOffsetY)
 {
+	SetDisplay ();
+
 	CBcmPropertyTags Tags;
 	TPropertyTagVirtualOffset VirtualOffset;
 	VirtualOffset.nOffsetX = nOffsetX;
@@ -228,6 +256,8 @@ boolean CBcmFrameBuffer::SetVirtualOffset (u32 nOffsetX, u32 nOffsetY)
 
 boolean CBcmFrameBuffer::WaitForVerticalSync (void)
 {
+	SetDisplay ();
+
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple Dummy;
 	return Tags.GetTag (PROPTAG_WAIT_FOR_VSYNC, &Dummy, sizeof Dummy);
@@ -235,8 +265,53 @@ boolean CBcmFrameBuffer::WaitForVerticalSync (void)
 
 boolean CBcmFrameBuffer::SetBacklightBrightness(unsigned nBrightness)
 {
+	SetDisplay ();
+
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple TagBrightness;
 	TagBrightness.nValue = nBrightness;
 	return Tags.GetTag (PROPTAG_SET_BACKLIGHT, &TagBrightness, sizeof TagBrightness, 4);
+}
+
+void CBcmFrameBuffer::SetDisplay (void)
+{
+#if RASPPI >= 4
+	if (m_nDisplay == s_nCurrentDisplay)
+	{
+		return;
+	}
+
+	CBcmPropertyTags Tags;
+	TPropertyTagSimple TagDisplayNum;
+	TagDisplayNum.nValue = m_nDisplay;
+	if (Tags.GetTag (PROPTAG_SET_DISPLAY_NUM, &TagDisplayNum, sizeof TagDisplayNum, 4))
+	{
+		s_nCurrentDisplay = m_nDisplay;
+	}
+#endif
+}
+
+unsigned CBcmFrameBuffer::GetNumDisplays (void)
+{
+#if RASPPI >= 4
+	if (s_nDisplays > 0)
+	{
+		return s_nDisplays;
+	}
+
+	CBcmPropertyTags Tags;
+	TPropertyTagSimple TagGetNumDisplays;
+	if (Tags.GetTag (PROPTAG_GET_NUM_DISPLAYS, &TagGetNumDisplays, sizeof TagGetNumDisplays))
+	{
+		s_nDisplays = TagGetNumDisplays.nValue;
+	}
+	else
+	{
+		s_nDisplays = 1;
+	}
+
+	return s_nDisplays;
+#else
+	return 1;
+#endif
 }

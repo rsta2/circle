@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,10 +38,11 @@ enum TScreenState
 	ScreenStateNumber3
 };
 
-CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual)
+CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual, unsigned nDisplay)
 :	m_nInitWidth (nWidth),
 	m_nInitHeight (nHeight),
 	m_bVirtual (bVirtual),
+	m_nDisplay (nDisplay),
 	m_pFrameBuffer (0),
 	m_pBuffer (0),
 	m_nState (ScreenStateStart),
@@ -77,7 +78,8 @@ boolean CScreenDevice::Initialize (void)
 {
 	if (!m_bVirtual)
 	{
-		m_pFrameBuffer = new CBcmFrameBuffer (m_nInitWidth, m_nInitHeight, DEPTH);
+		m_pFrameBuffer = new CBcmFrameBuffer (m_nInitWidth, m_nInitHeight, DEPTH,
+						      0, 0, m_nDisplay);
 #if DEPTH == 8
 		m_pFrameBuffer->SetPalette (NORMAL_COLOR, NORMAL_COLOR16);
 		m_pFrameBuffer->SetPalette (HIGH_COLOR,   HIGH_COLOR16);
@@ -123,7 +125,7 @@ boolean CScreenDevice::Initialize (void)
 	ClearDisplayEnd ();
 	InvertCursor ();
 
-	CDeviceNameService::Get ()->AddDevice ("tty1", this, FALSE);
+	CDeviceNameService::Get ()->AddDevice ("tty", m_nDisplay+1, this, FALSE);
 
 	return TRUE;
 }
@@ -851,7 +853,7 @@ void CScreenDevice::Rotor (unsigned nIndex, unsigned nCount)
 
 #else	// #ifndef SCREEN_HEADLESS
 
-CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual)
+CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual, unsigned nDisplay)
 :	m_nInitWidth (nWidth),
 	m_nInitHeight (nHeight)
 {

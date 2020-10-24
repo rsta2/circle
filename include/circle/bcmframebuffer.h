@@ -2,7 +2,7 @@
 // bcmframebuffer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +39,8 @@ class CBcmFrameBuffer
 {
 public:
 	CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nDepth,
-			 unsigned nVirtualWidth = 0, unsigned nVirtualHeight = 0);
+			 unsigned nVirtualWidth = 0, unsigned nVirtualHeight = 0,
+			 unsigned nDisplay = 0);
 	~CBcmFrameBuffer (void);
 
 	void SetPalette (u8 nIndex, u16 nRGB565);	// with Depth <= 8 only
@@ -68,12 +69,18 @@ public:
 	/// \note Tested with the Official Touchscreen only (level can be about 0..180)
 	boolean SetBacklightBrightness(unsigned nBrightness);
 
+	static unsigned GetNumDisplays (void);
+
+private:
+	void SetDisplay (void);
+
 private:
 	u32 m_nWidth;
 	u32 m_nHeight;
 	u32 m_nVirtualWidth;
 	u32 m_nVirtualHeight;
 	u32 m_nDepth;
+	u32 m_nDisplay;
 
 	u32 m_nBufferPtr;
 	u32 m_nBufferSize;
@@ -82,7 +89,12 @@ private:
 	TPropertyTagSetPalette *m_pTagSetPalette;	// with Depth <= 8 only (256 entries)
 
 	TBcmFrameBufferInitTags m_InitTags;
-	static TBcmFrameBufferInitTags s_InitTags;
+	static const TBcmFrameBufferInitTags s_InitTags;
+
+#if RASPPI >= 4
+	static unsigned s_nDisplays;
+	static unsigned s_nCurrentDisplay;
+#endif
 };
 
 #endif

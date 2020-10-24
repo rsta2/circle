@@ -2,7 +2,7 @@
 // screen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -93,7 +93,9 @@ public:
 	/// \param nWidth   Screen width in pixels (0 for default resolution)
 	/// \param nHeight  Screen height in pixels (0 for default resolution)
 	/// \param bVirtual FALSE for physical screen, TRUE for virtual screen buffer
-	CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual = FALSE);
+	/// \param nDisplay Zero-based display number (for Raspberry Pi 4)
+	CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual = FALSE,
+		       unsigned nDisplay = 0);
 
 	~CScreenDevice (void);
 
@@ -182,6 +184,7 @@ private:
 	unsigned	 m_nInitHeight;
 #ifndef SCREEN_HEADLESS
 	boolean		 m_bVirtual;
+	unsigned	 m_nDisplay;
 	CBcmFrameBuffer	*m_pFrameBuffer;
 #endif
 	CCharGenerator	 m_CharGen;
