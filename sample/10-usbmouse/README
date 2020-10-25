@@ -4,7 +4,8 @@ For this sample program you need to attach an USB mouse. First blink 5 times to
 show the image was loaded right. After initializing the screen is blank. Press
 the left or right mouse button and move the mouse to draw something onto the
 screen. If you have a mouse button in the middle you can press it to clear the
-screen.
+screen. If you have a wheel you can change the color of the pixels when drawing
+with the right mouse button.
 
 Because this sample is enabled for USB plug-and-play, the USB mouse can be
 attached or removed at any time while or before the system is running. It will
