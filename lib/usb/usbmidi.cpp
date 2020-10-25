@@ -70,6 +70,9 @@ CUSBMIDIDevice::~CUSBMIDIDevice (void)
 		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 	}
 
+	delete m_pURB;
+	m_pURB = 0;
+
 	if (m_pPacketBuffer != 0)
 	{
 		delete [] m_pPacketBuffer;
