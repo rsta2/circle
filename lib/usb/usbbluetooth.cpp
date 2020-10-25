@@ -36,6 +36,7 @@ CUSBBluetoothDevice::CUSBBluetoothDevice (CUSBFunction *pFunction)
 	m_pEndpointBulkOut (0),
 	m_pURB (0),
 	m_pEventBuffer (0),
+	m_bShutdown (FALSE),
 	m_pEventHandler (0),
 	m_nDeviceNumber (0)
 {
@@ -149,6 +150,13 @@ boolean CUSBBluetoothDevice::Configure (void)
 	return TRUE;
 }
 
+boolean CUSBBluetoothDevice::ShutdownFunction (void)
+{
+	m_bShutdown = TRUE;
+
+	return m_pURB == 0;
+}
+
 boolean CUSBBluetoothDevice::SendHCICommand (const void *pBuffer, unsigned nLength)
 {
 	if (GetHost ()->ControlMessage (GetEndpoint0 (), REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_DEVICE,
@@ -170,6 +178,11 @@ void CUSBBluetoothDevice::RegisterHCIEventHandler (TBTHCIEventHandler *pHandler)
 
 boolean CUSBBluetoothDevice::StartRequest (void)
 {
+	if (m_bShutdown)
+	{
+		return TRUE;
+	}
+
 	assert (m_pEndpointInterrupt != 0);
 	assert (m_pEventBuffer != 0);
 

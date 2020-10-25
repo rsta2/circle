@@ -2,7 +2,7 @@
 // usbfunction.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -95,6 +95,11 @@ boolean CUSBFunction::Configure (void)
 boolean CUSBFunction::ReScanDevices (void)
 {
 	return FALSE;
+}
+
+boolean CUSBFunction::ShutdownFunction (void)
+{
+	return TRUE;
 }
 
 boolean CUSBFunction::RemoveDevice (void)

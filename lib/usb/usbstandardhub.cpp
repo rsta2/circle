@@ -38,6 +38,8 @@ CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
 	m_pHubDesc (0),
 	m_pInterruptEndpoint (0),
 	m_pStatusChangeBuffer (0),
+	m_pURB (0),
+	m_bShutdown (FALSE),
 	m_nPorts (0),
 	m_bPowerIsOn (FALSE)
 #if RASPPI >= 4
@@ -201,6 +203,13 @@ boolean CUSBStandardHub::ReScanDevices (void)
 	return EnumeratePorts ();
 }
 
+boolean CUSBStandardHub::ShutdownFunction (void)
+{
+	m_bShutdown = TRUE;
+
+	return m_pURB == 0;
+}
+
 boolean CUSBStandardHub::RemoveDevice (unsigned nPortIndex)
 {
 	if (!DisablePort (nPortIndex))
@@ -208,7 +217,7 @@ boolean CUSBStandardHub::RemoveDevice (unsigned nPortIndex)
 		return FALSE;
 	}
 
-	delete m_pDevice[nPortIndex];
+	GetHost ()->RemoveDevice (m_pDevice[nPortIndex]);
 	m_pDevice[nPortIndex] = 0;
 
 	return TRUE;
@@ -479,6 +488,11 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 
 boolean CUSBStandardHub::StartStatusChangeRequest (void)
 {
+	if (m_bShutdown)
+	{
+		return TRUE;
+	}
+
 	assert (m_nPorts > 0);
 	size_t nBufSize = (m_nPorts + 8) / 8;
 
@@ -489,16 +503,20 @@ boolean CUSBStandardHub::StartStatusChangeRequest (void)
 	}
 
 	assert (m_pInterruptEndpoint != 0);
-	CUSBRequest *pURB = new CUSBRequest (m_pInterruptEndpoint, m_pStatusChangeBuffer, nBufSize);
-	assert (pURB != 0);
-	pURB->SetCompletionRoutine (CompletionStub, 0, this);
+	assert (m_pURB == 0);
+	m_pURB = new CUSBRequest (m_pInterruptEndpoint, m_pStatusChangeBuffer, nBufSize);
+	assert (m_pURB != 0);
+	m_pURB->SetCompletionRoutine (CompletionStub, 0, this);
 
-	return GetHost ()->SubmitAsyncRequest (pURB);
+	return GetHost ()->SubmitAsyncRequest (m_pURB);
 }
 
 void CUSBStandardHub::CompletionRoutine (CUSBRequest *pURB)
 {
 	assert (pURB != 0);
+	assert (pURB == m_pURB);
+
+	boolean bRestart = FALSE;
 
 	if (pURB->GetStatus () != 0)
 	{
@@ -510,11 +528,17 @@ void CUSBStandardHub::CompletionRoutine (CUSBRequest *pURB)
 	{
 		if (pURB->GetUSBError () == USBErrorFrameOverrun)
 		{
-			StartStatusChangeRequest ();
+			bRestart = TRUE;
 		}
 	}
 
-	delete pURB;
+	delete m_pURB;
+	m_pURB = 0;
+
+	if (bRestart)
+	{
+		StartStatusChangeRequest ();
+	}
 }
 
 void CUSBStandardHub::CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext)

@@ -2,7 +2,7 @@
 // usbhiddevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,6 +34,8 @@ public:
 	~CUSBHIDDevice (void);
 
 	boolean Configure (unsigned nMaxReportSize = 0);
+
+	boolean ShutdownFunction (void);
 
 protected:
 	// has to be called from Configure() in derived class, when initialization is done
@@ -68,6 +70,8 @@ private:
 	CUSBRequest *m_pURB;
 
 	u8 *m_pReportBuffer;
+
+	boolean m_bShutdown;
 };
 
 #endif

@@ -20,18 +20,29 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/usb/usbhcirootport.h>
 #include <circle/usb/usbstandardhub.h>
+#include <circle/usb/usbdevice.h>
 #include <circle/timer.h>
 #include <assert.h>
 
+enum TPortStatusEventType
+{
+	PortStatusEventFromRootPort,
+	PortStatusEventFromHub,
+	PortStatusEventDeviceRemoved
+};
+
 struct TPortStatusEvent
 {
-	boolean	bFromRootPort;			// from hub otherwise
+	TPortStatusEventType Type;
 
 	union
 	{
 		CUSBHCIRootPort	*pRootPort;
 		CUSBStandardHub *pHub;
+		CUSBDevice	*pDevice;
 	};
+
+	unsigned nCreatedTicks;		// for PortStatusEventDeviceRemoved only
 };
 
 boolean CUSBHostController::s_bPlugAndPlay;
@@ -144,32 +155,59 @@ boolean CUSBHostController::UpdatePlugAndPlay (void)
 
 	m_SpinLock.Acquire ();
 
-	TPtrListElement *pElement;
-	while ((pElement  = m_HubList.GetFirst ()) != 0)
+	TPtrListElement *pElement = m_EventList.GetFirst ();
+	while (pElement != 0)
 	{
-		TPortStatusEvent *pEvent = (TPortStatusEvent *) m_HubList.GetPtr (pElement);
+		TPortStatusEvent *pEvent = (TPortStatusEvent *) m_EventList.GetPtr (pElement);
 
-		m_HubList.Remove (pElement);
+		boolean bEventHandled = FALSE;
 
 		m_SpinLock.Release ();
 
 		assert (pEvent != 0);
-		if (pEvent->bFromRootPort)
+		switch (pEvent->Type)
 		{
+		case PortStatusEventFromRootPort:
 			assert (pEvent->pRootPort != 0);
 			pEvent->pRootPort->HandlePortStatusChange ();
-		}
-		else
-		{
+			bEventHandled = TRUE;
+			break;
+
+		case PortStatusEventFromHub:
 			assert (pEvent->pHub != 0);
 			pEvent->pHub->HandlePortStatusChange ();
+			bEventHandled = TRUE;
+			break;
+
+		case PortStatusEventDeviceRemoved:
+			assert (pEvent->pDevice != 0);
+			if (   pEvent->pDevice->ShutdownDevice ()
+			    || CTimer::Get ()->GetTicks () - pEvent->nCreatedTicks >= MSEC2HZ (150))
+			{
+				delete pEvent->pDevice;
+				bEventHandled = TRUE;
+			}
+			break;
+
+		default:
+			assert (0);
+			break;
 		}
 
-		delete pEvent;
-
-		bResult = TRUE;
-
 		m_SpinLock.Acquire ();
+
+		TPtrListElement *pNextElement = m_EventList.GetNext (pElement);
+
+		if (bEventHandled)
+		{
+			m_EventList.Remove (pElement);
+
+			delete pEvent;
+
+			bResult = TRUE;
+		}
+
+		pElement = pNextElement;
 	}
 
 	m_SpinLock.Release ();
@@ -184,20 +222,20 @@ void CUSBHostController::PortStatusChanged (CUSBHCIRootPort *pRootPort)
 
 	TPortStatusEvent *pEvent = new TPortStatusEvent;
 	assert (pEvent != 0);
-	pEvent->bFromRootPort = TRUE;
+	pEvent->Type = PortStatusEventFromRootPort;
 	pEvent->pRootPort = pRootPort;
 
 	m_SpinLock.Acquire ();
 
 	TPtrListElement *pPrevElement = 0;
-	TPtrListElement *pElement = m_HubList.GetFirst ();
+	TPtrListElement *pElement = m_EventList.GetFirst ();
 	while (pElement != 0)					// find last element
 	{
 		pPrevElement = pElement;
-		pElement = m_HubList.GetNext (pElement);
+		pElement = m_EventList.GetNext (pElement);
 	}
 
-	m_HubList.InsertAfter (pPrevElement, pEvent);		// append to list
+	m_EventList.InsertAfter (pPrevElement, pEvent);		// append to list
 
 	m_SpinLock.Release ();
 }
@@ -209,20 +247,20 @@ void CUSBHostController::PortStatusChanged (CUSBStandardHub *pHub)
 
 	TPortStatusEvent *pEvent = new TPortStatusEvent;
 	assert (pEvent != 0);
-	pEvent->bFromRootPort = FALSE;
+	pEvent->Type = PortStatusEventFromHub;
 	pEvent->pHub = pHub;
 
 	m_SpinLock.Acquire ();
 
 	TPtrListElement *pPrevElement = 0;
-	TPtrListElement *pElement = m_HubList.GetFirst ();
+	TPtrListElement *pElement = m_EventList.GetFirst ();
 	while (pElement != 0)					// find last element
 	{
 		pPrevElement = pElement;
-		pElement = m_HubList.GetNext (pElement);
+		pElement = m_EventList.GetNext (pElement);
 	}
 
-	m_HubList.InsertAfter (pPrevElement, pEvent);		// append to list
+	m_EventList.InsertAfter (pPrevElement, pEvent);		// append to list
 
 	m_SpinLock.Release ();
 }
@@ -231,4 +269,39 @@ CUSBHostController *CUSBHostController::Get (void)
 {
 	assert (s_pThis != 0);
 	return s_pThis;
+}
+
+void CUSBHostController::RemoveDevice (CUSBDevice *pDevice)
+{
+	assert (pDevice != 0);
+
+	// immediately remove device, if possible
+	if (   !IsPlugAndPlay ()
+	    || pDevice->ShutdownDevice ())
+	{
+		delete pDevice;
+
+		return;
+	}
+
+	// otherwise queue event
+	TPortStatusEvent *pEvent = new TPortStatusEvent;
+	assert (pEvent != 0);
+	pEvent->Type = PortStatusEventDeviceRemoved;
+	pEvent->pDevice = pDevice;
+	pEvent->nCreatedTicks = CTimer::Get ()->GetTicks ();
+
+	m_SpinLock.Acquire ();
+
+	TPtrListElement *pPrevElement = 0;
+	TPtrListElement *pElement = m_EventList.GetFirst ();
+	while (pElement != 0)					// find last element
+	{
+		pPrevElement = pElement;
+		pElement = m_EventList.GetNext (pElement);
+	}
+
+	m_EventList.InsertAfter (pPrevElement, pEvent);		// append to list
+
+	m_SpinLock.Release ();
 }

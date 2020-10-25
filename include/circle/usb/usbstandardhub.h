@@ -24,6 +24,7 @@
 #include <circle/usb/usbhub.h>
 #include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
+#include <circle/usb/usbrequest.h>
 #include <circle/usb/usbdevice.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/numberpool.h>
@@ -39,6 +40,7 @@ public:
 	boolean Configure (void);
 
 	boolean ReScanDevices (void);
+	boolean ShutdownFunction (void);
 	boolean RemoveDevice (unsigned nPortIndex);	// nPortIndex is 0-based
 
 	boolean DisablePort (unsigned nPortIndex);	// nPortIndex is 0-based
@@ -61,6 +63,8 @@ private:
 
 	CUSBEndpoint *m_pInterruptEndpoint;
 	u8 *m_pStatusChangeBuffer;
+	CUSBRequest *m_pURB;
+	boolean m_bShutdown;
 
 	unsigned m_nPorts;
 	boolean m_bPowerIsOn;

@@ -31,7 +31,8 @@ CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize)
 	m_pReportEndpoint (0),
 	m_pEndpointOut (0),
 	m_pURB (0),
-	m_pReportBuffer (0)
+	m_pReportBuffer (0),
+	m_bShutdown (FALSE)
 {
 	if (m_nMaxReportSize > 0)
 	{
@@ -132,6 +133,13 @@ boolean CUSBHIDDevice::Configure (unsigned nMaxReportSize)
 	return TRUE;
 }
 
+boolean CUSBHIDDevice::ShutdownFunction (void)
+{
+	m_bShutdown = TRUE;
+
+	return m_pURB == 0;
+}
+
 boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
 {
 	if (m_pEndpointOut == 0)
@@ -214,7 +222,7 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 	assert (pURB != 0);
 	assert (m_pURB == pURB);
 
-	boolean bRestart = TRUE;
+	boolean bRestart = !m_bShutdown;
 
 	if (pURB->GetStatus () != 0)
 	{

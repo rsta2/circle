@@ -498,6 +498,24 @@ boolean CUSBDevice::ReScanDevices (void)
 	return bResult;
 }
 
+boolean CUSBDevice::ShutdownDevice (void)
+{
+	boolean bResult = TRUE;
+
+	for (unsigned nFunction = 0; nFunction < USBDEV_MAX_FUNCTIONS; nFunction++)
+	{
+		if (m_pFunction[nFunction] != 0)
+		{
+			if (!m_pFunction[nFunction]->ShutdownFunction ())
+			{
+				bResult = FALSE;
+			}
+		}
+	}
+
+	return bResult;
+}
+
 boolean CUSBDevice::RemoveDevice (void)
 {
 	if (m_pRootPort != 0)

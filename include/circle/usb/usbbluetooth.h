@@ -36,6 +36,8 @@ public:
 
 	boolean Configure (void);
 
+	boolean ShutdownFunction (void);
+
 	boolean SendHCICommand (const void *pBuffer, unsigned nLength);
 
 	void RegisterHCIEventHandler (TBTHCIEventHandler *pHandler);
@@ -53,6 +55,7 @@ private:
 
 	CUSBRequest *m_pURB;
 	u8 *m_pEventBuffer;
+	boolean m_bShutdown;
 
 	TBTHCIEventHandler *m_pEventHandler;
 

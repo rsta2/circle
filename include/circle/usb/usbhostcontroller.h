@@ -86,17 +86,17 @@ public:
 
 protected:
 	void PortStatusChanged (CUSBHCIRootPort *pRootPort);
-	friend class CXHCIRootPort;
-
-private:
 	void PortStatusChanged (CUSBStandardHub *pHub);
+	void RemoveDevice (CUSBDevice *pDevice);
+	friend class CXHCIRootPort;
+	friend class CDWHCIRootPort;
 	friend class CUSBStandardHub;
 
 private:
 	static boolean s_bPlugAndPlay;
 	boolean m_bFirstUpdateCall;
 
-	CPtrList  m_HubList;
+	CPtrList  m_EventList;
 	CSpinLock m_SpinLock;
 
 	static CUSBHostController *s_pThis;
