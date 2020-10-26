@@ -55,3 +55,6 @@ Adding utility functions for Official Touchscreen and SD card
 
 Steve Maynard
 Patches and testing for Compute Module 3(+)
+
+Hinko Kocevar
+Adding USB mouse wheel support
