@@ -50,7 +50,6 @@ CUSBMIDIDevice::CUSBMIDIDevice (CUSBFunction *pFunction)
 	m_pURB (0),
 	m_pPacketBuffer (0),
 	m_hTimer (0),
-	m_bShutdown (FALSE),
 	m_nDeviceNumber (0)
 {
 }
@@ -168,13 +167,6 @@ boolean CUSBMIDIDevice::Configure (void)
 	return StartRequest ();
 }
 
-boolean CUSBMIDIDevice::ShutdownFunction (void)
-{
-	m_bShutdown = TRUE;
-
-	return m_pURB == 0 && m_hTimer == 0;
-}
-
 void CUSBMIDIDevice::RegisterPacketHandler (TMIDIPacketHandler *pPacketHandler)
 {
 	assert (m_pPacketHandler == 0);
@@ -184,11 +176,6 @@ void CUSBMIDIDevice::RegisterPacketHandler (TMIDIPacketHandler *pPacketHandler)
 
 boolean CUSBMIDIDevice::StartRequest (void)
 {
-	if (m_bShutdown)
-	{
-		return TRUE;
-	}
-
 	assert (m_pEndpointIn != 0);
 	assert (m_pPacketBuffer != 0);
 
@@ -208,8 +195,7 @@ void CUSBMIDIDevice::CompletionRoutine (CUSBRequest *pURB)
 	assert (pURB != 0);
 	assert (m_pURB == pURB);
 
-	if (   pURB->GetStatus () == 0
-	    || m_bShutdown)
+	if (pURB->GetStatus () == 0)
 	{
 		delete m_pURB;
 		m_pURB = 0;
