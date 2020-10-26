@@ -42,9 +42,6 @@ CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize)
 
 CUSBHIDDevice::~CUSBHIDDevice (void)
 {
-	delete m_pURB;
-	m_pURB = 0;
-
 	delete [] m_pReportBuffer;
 	m_pReportBuffer = 0;
 

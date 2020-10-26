@@ -78,9 +78,6 @@ CUSBStandardHub::~CUSBStandardHub (void)
 
 	m_nPorts = 0;
 
-	delete m_pURB;
-	m_pURB = 0;
-
 	delete [] m_pStatusChangeBuffer;
 	m_pStatusChangeBuffer = 0;
 
