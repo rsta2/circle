@@ -118,7 +118,7 @@ boolean CUSBHIDDevice::Configure (unsigned nMaxReportSize)
 							      ? REPORT_PROTOCOL : BOOT_PROTOCOL,
 						GetInterfaceNumber (), 0, 0) < 0)
 		{
-			CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set boot protocol");
+			CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set protocol");
 
 			return FALSE;
 		}
