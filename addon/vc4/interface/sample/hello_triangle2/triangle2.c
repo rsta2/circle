@@ -456,13 +456,13 @@ static void draw_triangles(CUBE_STATE_T *state, GLfloat cx, GLfloat cy, GLfloat 
 static DEFINE_SPINLOCK (mouse_lock);
 static int mouse_buttons = 0, mouse_dx = 0, mouse_dy = 0;
 
-void mouse_callback (unsigned buttons, int dx, int dy)
+void mouse_callback (unsigned buttons, int dx, int dy, int wheelmove)
 {
    spin_lock (&mouse_lock);
 
    mouse_buttons = (int) buttons;
    mouse_dx += dx;
-   mouse_dy += dy;
+   mouse_dy += dy - wheelmove*10;
 
    spin_unlock (&mouse_lock);
 }

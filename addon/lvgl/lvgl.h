@@ -50,7 +50,7 @@ private:
 
 	static bool PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData);
 	static void MouseEventHandler (TMouseEvent Event, unsigned nButtons,
-				       unsigned nPosX, unsigned nPosY);
+				       unsigned nPosX, unsigned nPosY, int nWheelMove);
 	static void TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
 					     unsigned nPosX, unsigned nPosY);
 
