@@ -20,7 +20,8 @@
 #include "kernel.h"
 
 extern "C" int _main (void);
-extern "C" void mouse_callback (unsigned nButtons, int nDisplacementX, int nDisplacementY);
+extern "C" void mouse_callback (unsigned nButtons, int nDisplacementX, int nDisplacementY,
+				int nWheelMove);
 
 static const char FromKernel[] = "kernel";
 

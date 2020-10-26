@@ -245,7 +245,7 @@ bool CLVGL::PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData)
 }
 
 void CLVGL::MouseEventHandler (TMouseEvent Event, unsigned nButtons,
-				    unsigned nPosX, unsigned nPosY)
+			       unsigned nPosX, unsigned nPosY, int nWheelMove)
 {
 	assert (s_pThis != 0);
 
