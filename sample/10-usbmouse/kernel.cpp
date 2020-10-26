@@ -20,6 +20,51 @@
 #include "kernel.h"
 #include <assert.h>
 
+#if DEPTH == 8
+
+#define NUM_COLORS	3
+
+TScreenColor CKernel::s_Colors[NUM_COLORS] =
+{
+	HIGH_COLOR,
+	HALF_COLOR,
+	NORMAL_COLOR
+};
+
+#elif DEPTH == 16
+
+#define NUM_COLORS	7
+
+TScreenColor CKernel::s_Colors[NUM_COLORS] =
+{
+	COLOR16 (31, 0, 0),
+	COLOR16 (0, 31, 0),
+	COLOR16 (0, 0, 31),
+	COLOR16 (31, 31, 0),
+	COLOR16 (0, 31, 31),
+	COLOR16 (31, 0, 31),
+	COLOR16 (31, 31, 31)
+};
+
+#elif DEPTH == 32
+
+#define NUM_COLORS	7
+
+TScreenColor CKernel::s_Colors[NUM_COLORS] =
+{
+	COLOR32 (255U, 0, 0, 255U),
+	COLOR32 (0, 255U, 0, 255U),
+	COLOR32 (0, 0, 255U, 255U),
+	COLOR32 (255U, 255U, 0, 255U),
+	COLOR32 (0, 255U, 255U, 255U),
+	COLOR32 (255U, 0, 255U, 255U),
+	COLOR32 (255U, 255U, 255U, 255U)
+};
+
+#else
+	#error DEPTH must be 8, 16 or 32
+#endif
+
 static const char ClearScreen[] = "\x1b[H\x1b[J\x1b[?25l";
 
 static const char FromKernel[] = "kernel";
@@ -34,7 +79,8 @@ CKernel::CKernel (void)
 	m_pMouse (0),
 	m_nPosX (0),
 	m_nPosY (0),
-	m_Color (HIGH_COLOR),
+	m_nColorIndex (0),
+	m_Color (s_Colors[m_nColorIndex]),
 	m_ShutdownMode (ShutdownNone)
 {
 	s_pThis = this;
@@ -109,17 +155,17 @@ TShutdownMode CKernel::Run (void)
 			{
 				m_pMouse->RegisterRemovedHandler (MouseRemovedHandler);
 
+				m_Logger.Write (FromKernel, LogNotice, "USB mouse has %d buttons",
+						m_pMouse->GetButtonCount());
+				m_Logger.Write (FromKernel, LogNotice, "USB mouse has %s wheel",
+						m_pMouse->HasWheel() ? "a" : "no");
+
 				m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
 
 				if (!m_pMouse->Setup (m_Screen.GetWidth (), m_Screen.GetHeight ()))
 				{
 					m_Logger.Write (FromKernel, LogPanic, "Cannot setup mouse");
 				}
-
-				m_Logger.Write (FromKernel, LogNotice, "USB mouse has %d buttons",
-						m_pMouse->GetButtonCount());
-				m_Logger.Write (FromKernel, LogNotice, "USB mouse has %s wheel",
-						m_pMouse->HasWheel() ? "a" : "no");
 
 				m_nPosX = m_Screen.GetWidth () / 2;
 				m_nPosY = m_Screen.GetHeight () / 2;
@@ -165,10 +211,17 @@ void CKernel::MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned 
 		break;
 
 	case MouseEventMouseWheel:
-		if (m_Color == HIGH_COLOR)
-			m_Color = HALF_COLOR;
-		else
-			m_Color = HIGH_COLOR;
+		m_nColorIndex += nWheelMove;
+		if (m_nColorIndex < 0)
+		{
+			m_nColorIndex = 0;
+		}
+		else if (m_nColorIndex >= NUM_COLORS)
+		{
+			m_nColorIndex = NUM_COLORS-1;
+		}
+
+		m_Color = s_Colors[m_nColorIndex];
 		break;
 
 	default:
