@@ -47,7 +47,6 @@ CUSBMIDIDevice::CUSBMIDIDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_pEndpointIn (0),
 	m_pPacketHandler (0),
-	m_pURB (0),
 	m_pPacketBuffer (0),
 	m_hTimer (0),
 	m_nDeviceNumber (0)
@@ -176,26 +175,23 @@ boolean CUSBMIDIDevice::StartRequest (void)
 	assert (m_pEndpointIn != 0);
 	assert (m_pPacketBuffer != 0);
 
-	assert (m_pURB == 0);
 	assert (m_usBufferSize > 0);
-	m_pURB = new CUSBRequest (m_pEndpointIn, m_pPacketBuffer, m_usBufferSize);
-	assert (m_pURB != 0);
-	m_pURB->SetCompletionRoutine (CompletionStub, 0, this);
+	CUSBRequest *pURB = new CUSBRequest (m_pEndpointIn, m_pPacketBuffer, m_usBufferSize);
+	assert (pURB != 0);
+	pURB->SetCompletionRoutine (CompletionStub, 0, this);
 
-	m_pURB->SetCompleteOnNAK ();	// do not retry if request cannot be served immediately
+	pURB->SetCompleteOnNAK ();	// do not retry if request cannot be served immediately
 
-	return GetHost ()->SubmitAsyncRequest (m_pURB);
+	return GetHost ()->SubmitAsyncRequest (pURB);
 }
 
 void CUSBMIDIDevice::CompletionRoutine (CUSBRequest *pURB)
 {
 	assert (pURB != 0);
-	assert (m_pURB == pURB);
 
 	if (pURB->GetStatus () == 0)
 	{
-		delete m_pURB;
-		m_pURB = 0;
+		delete pURB;
 
 		return;
 	}
@@ -227,8 +223,7 @@ void CUSBMIDIDevice::CompletionRoutine (CUSBRequest *pURB)
 		}
 	}
 
-	delete m_pURB;
-	m_pURB = 0;
+	delete pURB;
 
 	if (bRestart)
 	{

@@ -56,7 +56,6 @@ private:
 
 	TMIDIPacketHandler *m_pPacketHandler;
 
-	CUSBRequest *m_pURB;
 	u16 m_usBufferSize;
 	u8 *m_pPacketBuffer;
 
