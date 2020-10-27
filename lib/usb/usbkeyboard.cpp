@@ -34,6 +34,7 @@ static const char DevicePrefix[] = "ukbd";
 CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBFunction *pFunction)
 :	CUSBHIDDevice (pFunction, USBKEYB_REPORT_SIZE),
 	m_pKeyStatusHandlerRaw (0),
+	m_bMixedMode (FALSE),
 	m_ucLastLEDStatus (0),
 	m_nDeviceNumber (0)		// not assigned
 {
@@ -88,7 +89,8 @@ void CUSBKeyboardDevice::RegisterShutdownHandler (TShutdownHandler *pShutdownHan
 
 void CUSBKeyboardDevice::UpdateLEDs (void)
 {
-	if (m_pKeyStatusHandlerRaw == 0)
+	if (   m_pKeyStatusHandlerRaw == 0
+	    || m_bMixedMode)
 	{
 		u8 ucLEDStatus = GetLEDStatus ();
 		if (ucLEDStatus != m_ucLastLEDStatus)
@@ -126,10 +128,13 @@ u8 CUSBKeyboardDevice::GetLEDStatus (void) const
 	return ucResult;
 }
 
-void CUSBKeyboardDevice::RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw)
+void CUSBKeyboardDevice::RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw,
+						      boolean bMixedMode)
 {
 	assert (pKeyStatusHandlerRaw != 0);
 	m_pKeyStatusHandlerRaw = pKeyStatusHandlerRaw;
+
+	m_bMixedMode = bMixedMode;
 }
 
 boolean CUSBKeyboardDevice::SetLEDs (u8 ucStatus)
@@ -159,7 +164,10 @@ void CUSBKeyboardDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 	{
 		(*m_pKeyStatusHandlerRaw) (pReport[0], pReport+2);
 
-		return;
+		if (!m_bMixedMode)
+		{
+			return;
+		}
 	}
 
 	// report modifier keys
