@@ -54,7 +54,6 @@ public:
 	virtual boolean Configure (void);	// onto configured state (phase 2)
 
 	boolean ReScanDevices (void);
-	boolean ShutdownDevice (void);
 	boolean RemoveDevice (void);
 
 	CString *GetName (TDeviceNameSelector Selector) const;	// string deleted by caller

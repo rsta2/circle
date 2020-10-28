@@ -30,9 +30,7 @@ CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize)
 	m_nMaxReportSize (nMaxReportSize),
 	m_pReportEndpoint (0),
 	m_pEndpointOut (0),
-	m_pURB (0),
-	m_pReportBuffer (0),
-	m_bShutdown (FALSE)
+	m_pReportBuffer (0)
 {
 	if (m_nMaxReportSize > 0)
 	{
@@ -43,9 +41,6 @@ CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize)
 
 CUSBHIDDevice::~CUSBHIDDevice (void)
 {
-	delete m_pURB;
-	m_pURB = 0;
-
 	delete [] m_pReportBuffer;
 	m_pReportBuffer = 0;
 
@@ -137,13 +132,6 @@ boolean CUSBHIDDevice::Configure (unsigned nMaxReportSize)
 	return TRUE;
 }
 
-boolean CUSBHIDDevice::ShutdownFunction (void)
-{
-	m_bShutdown = TRUE;
-
-	return m_pURB == 0;
-}
-
 boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
 {
 	if (m_pEndpointOut == 0)
@@ -199,8 +187,6 @@ void CUSBHIDDevice::SendCompletionRoutine (CUSBRequest *pURB, void *pParam, void
 
 int CUSBHIDDevice::ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
 {
-	assert (m_pURB == 0);
-
 	assert (m_pReportEndpoint != 0);
 	assert (pBuffer != 0);
 	assert (nBufSize > 0);
@@ -212,21 +198,19 @@ boolean CUSBHIDDevice::StartRequest (void)
 	assert (m_pReportEndpoint != 0);
 	assert (m_pReportBuffer != 0);
 	
-	assert (m_pURB == 0);
 	assert (m_nMaxReportSize > 0);
-	m_pURB = new CUSBRequest (m_pReportEndpoint, m_pReportBuffer, m_nMaxReportSize);
-	assert (m_pURB != 0);
-	m_pURB->SetCompletionRoutine (CompletionStub, 0, this);
+	CUSBRequest *pURB = new CUSBRequest (m_pReportEndpoint, m_pReportBuffer, m_nMaxReportSize);
+	assert (pURB != 0);
+	pURB->SetCompletionRoutine (CompletionStub, 0, this);
 	
-	return GetHost ()->SubmitAsyncRequest (m_pURB);
+	return GetHost ()->SubmitAsyncRequest (pURB);
 }
 
 void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 {
 	assert (pURB != 0);
-	assert (m_pURB == pURB);
 
-	boolean bRestart = !m_bShutdown;
+	boolean bRestart = TRUE;
 
 	if (pURB->GetStatus () != 0)
 	{
@@ -247,8 +231,7 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 		}
 	}
 
-	delete m_pURB;
-	m_pURB = 0;
+	delete pURB;
 
 	if (   bRestart
 	    && !StartRequest ())

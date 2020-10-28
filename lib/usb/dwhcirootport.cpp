@@ -109,7 +109,7 @@ boolean CDWHCIRootPort::RemoveDevice (void)
 	assert (m_pHost != 0);
 	m_pHost->DisableRootPort (FALSE);
 
-	m_pHost->RemoveDevice (m_pDevice);
+	delete m_pDevice;
 	m_pDevice = 0;
 
 	return TRUE;
