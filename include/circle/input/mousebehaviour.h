@@ -36,6 +36,8 @@ enum TMouseEvent
 #define MOUSE_BUTTON_LEFT	(1 << 0)
 #define MOUSE_BUTTON_RIGHT	(1 << 1)
 #define MOUSE_BUTTON_MIDDLE	(1 << 2)
+#define MOUSE_BUTTON_SIDE1	(1 << 3)
+#define MOUSE_BUTTON_SIDE2	(1 << 4)
 
 typedef void TMouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY, int nWheelMove);
 

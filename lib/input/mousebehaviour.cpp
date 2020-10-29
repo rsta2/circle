@@ -22,7 +22,7 @@
 #include <circle/bcm2835.h>
 #include <assert.h>
 
-#define MOUSE_BUTTONS		3
+#define MOUSE_BUTTONS		5
 
 #define ACCELERATION		18		// 1/10
 
