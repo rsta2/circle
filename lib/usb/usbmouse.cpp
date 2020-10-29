@@ -153,11 +153,11 @@ void CUSBMouseDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 			{
 				nButtons |= MOUSE_BUTTON_MIDDLE;
 			}
-            if (ucHIDButtons & USBHID_BUTTON4)
+			if (ucHIDButtons & USBHID_BUTTON4)
 			{
 				nButtons |= MOUSE_BUTTON_SIDE1;
 			}
-            if (ucHIDButtons & USBHID_BUTTON5)
+			if (ucHIDButtons & USBHID_BUTTON5)
 			{
 				nButtons |= MOUSE_BUTTON_SIDE2;
 			}
