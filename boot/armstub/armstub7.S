@@ -1,4 +1,7 @@
 /*
+ * Modified version for the Raspberry Pi 4 which allows using FIQ with Circle
+ */
+/*
 Copyright (c) 2016-2020 Raspberry Pi (Trading) Ltd.
 All rights reserved.
 
@@ -79,7 +82,7 @@ _secure_monitor:
 #if BCM2710
 	mcr	p15, 0, r1, c1, c0, 1		@ Write ACTLR (Secure)
 #endif
-	mov	ip, #0x1b1			@ Set NS, AW, FW, SCD, HVC
+	mov	ip, #0x131			@ Set NS, AW, FW, HVC
 	mcr	p15, 0, ip, c1, c1, 0		@ Write SCR (which sets the NS bit)
 	mov	ip, #0x1fa			@ Set HYP_MODE | T_BIT | F_BIT | I_BIT | A_BIT
 	msr     spsr_cxfs, ip                   @ Set full SPSR
@@ -187,6 +190,9 @@ _main:
 
 @ Assembler generated constant pool goes here
 .pool
+
+.org 0xd4
+	.ascii "FIQS"	@ Circle GIC code checks this for presence
 
 .org 0xf0
 .word 0x5afe570b	@ magic value to indicate firmware should overwrite atags and kernel
