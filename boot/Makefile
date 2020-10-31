@@ -8,8 +8,8 @@
 # Use most recent firmware test revision
 #FIRMWARE = master
 
-# Use firmware revision built/committed on: Aug 06 2020
-FIRMWARE ?= b571a3cfbb3198d445727f4a0057847fedce410b
+# Use firmware revision built/committed on: Oct 22 2020
+FIRMWARE ?= 5f95dfda0edaac1a353400915a92bcc61008c780
 
 BASEURL = https://github.com/raspberrypi/firmware/blob/$(FIRMWARE)/boot
 
@@ -26,6 +26,7 @@ firmware: clean
 	wget -q -O start4.elf $(BASEURL)/start4.elf?raw=true
 	wget -q -O start4cd.elf $(BASEURL)/start4cd.elf?raw=true
 	wget -q -O bcm2711-rpi-4-b.dtb $(BASEURL)/bcm2711-rpi-4-b.dtb?raw=true
+	wget -q -O bcm2711-rpi-cm4.dtb $(BASEURL)/bcm2711-rpi-cm4.dtb?raw=true
 
 all: firmware bootloader
 
@@ -41,11 +42,16 @@ bootloader64:
 	cp ../tools/bootloader/kernel8.img .
 	cp ../tools/bootloader/kernel8-rpi4.img .
 
+.PHONY: armstub
+armstub:
+	make -C armstub armstub7-rpi4.bin
+	cp armstub/armstub7-rpi4.bin .
+
 armstub64:
-	make -C armstub
+	make -C armstub armstub8-rpi4.bin
 	cp armstub/armstub8-rpi4.bin .
 
 clean:
-	rm -f bootcode.bin fixup*.dat start*.elf bcm2711-rpi-4-b.dtb kernel*.img armstub*.bin LICENCE.broadcom COPYING.linux
+	rm -f bootcode.bin fixup*.dat start*.elf bcm*.dtb kernel*.img armstub*.bin LICENCE.broadcom COPYING.linux
 	make clean -C "../tools/bootloader"
 	make clean -C armstub
