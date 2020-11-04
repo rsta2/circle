@@ -72,6 +72,7 @@ s_NewInfo[]
 	{14, MachineModel3APlus,	3},
 	{16, MachineModelCM3Plus,	3},
 	{17, MachineModel4B,		4},
+	{19, MachineModel400,		4},
 	{20, MachineModelCM4,		4}
 };
 
@@ -93,6 +94,7 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Compute Module 3",
 	"Compute Module 3+",
 	"Raspberry Pi 4 Model B",
+	"Raspberry Pi 400",
 	"Compute Module 4",
 	"Unknown"
 };
@@ -124,7 +126,8 @@ static unsigned s_ActLEDInfo[] =		// must match TMachineModel
 	0 | ACTLED_VIRTUAL_PIN,		// CM3
 	0 | ACTLED_VIRTUAL_PIN,		// CM3+
 	42,				// 4B
-	0 | ACTLED_VIRTUAL_PIN,		// CM4
+	42,				// 400
+	42,				// CM4
 
 	ACTLED_UNKNOWN			// Unknown
 };

@@ -40,8 +40,6 @@ public:
 
 	boolean Configure (void);
 
-	boolean ShutdownFunction (void);
-
 	void RegisterPacketHandler (TMIDIPacketHandler *pPacketHandler);
 
 private:
@@ -58,13 +56,10 @@ private:
 
 	TMIDIPacketHandler *m_pPacketHandler;
 
-	CUSBRequest *m_pURB;
 	u16 m_usBufferSize;
 	u8 *m_pPacketBuffer;
 
 	TKernelTimerHandle m_hTimer;
-
-	boolean m_bShutdown;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

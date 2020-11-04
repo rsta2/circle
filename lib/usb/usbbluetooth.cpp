@@ -34,9 +34,7 @@ CUSBBluetoothDevice::CUSBBluetoothDevice (CUSBFunction *pFunction)
 	m_pEndpointInterrupt (0),
 	m_pEndpointBulkIn (0),
 	m_pEndpointBulkOut (0),
-	m_pURB (0),
 	m_pEventBuffer (0),
-	m_bShutdown (FALSE),
 	m_pEventHandler (0),
 	m_nDeviceNumber (0)
 {
@@ -150,13 +148,6 @@ boolean CUSBBluetoothDevice::Configure (void)
 	return TRUE;
 }
 
-boolean CUSBBluetoothDevice::ShutdownFunction (void)
-{
-	m_bShutdown = TRUE;
-
-	return m_pURB == 0;
-}
-
 boolean CUSBBluetoothDevice::SendHCICommand (const void *pBuffer, unsigned nLength)
 {
 	if (GetHost ()->ControlMessage (GetEndpoint0 (), REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_DEVICE,
@@ -178,35 +169,28 @@ void CUSBBluetoothDevice::RegisterHCIEventHandler (TBTHCIEventHandler *pHandler)
 
 boolean CUSBBluetoothDevice::StartRequest (void)
 {
-	if (m_bShutdown)
-	{
-		return TRUE;
-	}
-
 	assert (m_pEndpointInterrupt != 0);
 	assert (m_pEventBuffer != 0);
 
-	assert (m_pURB == 0);
-	m_pURB = new CUSBRequest (m_pEndpointInterrupt, m_pEventBuffer,
-				  m_pEndpointInterrupt->GetMaxPacketSize ());
-	assert (m_pURB != 0);
+	CUSBRequest *pURB = new CUSBRequest (m_pEndpointInterrupt, m_pEventBuffer,
+					     m_pEndpointInterrupt->GetMaxPacketSize ());
+	assert (pURB != 0);
 
-	m_pURB->SetCompletionRoutine (CompletionStub, 0, this);
+	pURB->SetCompletionRoutine (CompletionStub, 0, this);
 	
-	return GetHost ()->SubmitAsyncRequest (m_pURB);
+	return GetHost ()->SubmitAsyncRequest (pURB);
 }
 
 void CUSBBluetoothDevice::CompletionRoutine (CUSBRequest *pURB)
 {
 	assert (pURB != 0);
-	assert (m_pURB == pURB);
-	assert (m_pEventBuffer != 0);
 
 	boolean bRestart = TRUE;
 
 	if (pURB->GetStatus () != 0)
 	{
 		assert (m_pEventHandler != 0);
+		assert (m_pEventBuffer != 0);
 		(*m_pEventHandler) (m_pEventBuffer, pURB->GetResultLength ());
 	}
 	else
@@ -216,8 +200,7 @@ void CUSBBluetoothDevice::CompletionRoutine (CUSBRequest *pURB)
 		bRestart = FALSE;
 	}
 
-	delete m_pURB;
-	m_pURB = 0;
+	delete pURB;
 
 	if (   bRestart
 	    && !StartRequest ())

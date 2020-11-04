@@ -181,9 +181,7 @@ boolean CXHCIRootPort::ReScanDevices (void)
 
 boolean CXHCIRootPort::RemoveDevice (void)
 {
-	assert (m_pXHCIDevice != 0);
-
-	m_pXHCIDevice->RemoveDevice (m_pUSBDevice);
+	delete m_pUSBDevice;
 	m_pUSBDevice = 0;
 
 	return TRUE;

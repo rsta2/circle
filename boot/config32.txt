@@ -1,0 +1,9 @@
+#
+# Allow FIQ use in 32-bit mode on Raspberry Pi 4
+#
+# This file must be copied along with the generated kernel7l.img
+# onto a SDHC card with FAT file system, if the FIQ is used in 32-bit mode.
+#
+
+[pi4]
+armstub=armstub7-rpi4.bin
