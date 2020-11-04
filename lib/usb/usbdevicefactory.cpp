@@ -37,6 +37,7 @@
 #include <circle/usb/usbbluetooth.h>
 #include <circle/usb/usbmidi.h>
 #include <circle/usb/usbcdcethernet.h>
+#include <circle/usb/usbserialch341.h>
 
 CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
 {
@@ -117,6 +118,10 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (pName->Compare ("int2-6-0") == 0)
 	{
 		pResult = new CUSBCDCEthernetDevice (pParent);
+	}
+	else if (pName->Compare ("ven1a86-7523") == 0)
+	{
+		pResult = new CUSBSerialCH341Device (pParent);
 	}
 	// new devices follow
 
