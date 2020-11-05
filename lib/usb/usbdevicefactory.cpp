@@ -134,3 +134,23 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 
 	return pResult;
 }
+
+boolean CUSBDeviceFactory::FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable)
+{
+	while (   pIDTable->usVendorID != 0
+	       || pIDTable->usDeviceID != 0)
+	{
+		CString String;
+		String.Format ("ven%x-%x", (unsigned) pIDTable->usVendorID,
+					   (unsigned) pIDTable->usDeviceID);
+
+		if (pName->Compare (String) == 0)
+		{
+			return TRUE;
+		}
+
+		pIDTable++;
+	}
+
+	return FALSE;
+}
