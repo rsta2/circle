@@ -153,7 +153,7 @@ boolean CUSBSerialCH341Device::SetBaudRate (unsigned nBaudRate)
 	}
 
 	m_nBaudRate = nBaudRate;
-	CLogger::Get ()->Write (FromCh341, LogNotice, "Baud rate %d", m_nBaudRate);
+	//CLogger::Get ()->Write (FromCh341, LogDebug, "Baud rate %d", m_nBaudRate);
 
 	return TRUE;
 }
@@ -248,7 +248,7 @@ boolean CUSBSerialCH341Device::SetLineProperties (TUSBSerialDataBits nDataBits, 
 	m_nParity = nParity;
 	m_nStopBits = nStopBits;
 
-	CLogger::Get ()->Write (FromCh341, LogNotice, "Framing %s", (const char *)framing);
+	//CLogger::Get ()->Write (FromCh341, LogDebug, "Framing %s", (const char *)framing);
 
 	return TRUE;
 }
