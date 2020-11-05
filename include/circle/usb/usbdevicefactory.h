@@ -2,7 +2,7 @@
 // usbdevicefactory.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,16 +17,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _usbdevicefactory_h
-#define _usbdevicefactory_h
+#ifndef _circle_usb_usbdevicefactory_h
+#define _circle_usb_usbdevicefactory_h
 
 #include <circle/usb/usbfunction.h>
 #include <circle/string.h>
+#include <circle/types.h>
+
+#define USB_DEVICE(vendorid, deviceid)		vendorid, deviceid
+
+struct TUSBDeviceID
+{
+	u16	usVendorID;
+	u16	usDeviceID;
+};
 
 class CUSBDeviceFactory
 {
 public:
 	static CUSBFunction *GetDevice (CUSBFunction *pParent, CString *pName);
+
+private:
+	static boolean FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable);
 };
 
 #endif

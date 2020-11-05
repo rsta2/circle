@@ -20,6 +20,7 @@
 #include <circle/usb/usbserialch341.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -72,7 +73,7 @@ boolean CUSBSerialCH341Device::Configure (void)
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
-	u8 rxData[2] ={0};
+	DMA_BUFFER (u8, rxData, 2) = {0};
 	if (pHost->ControlMessage (GetEndpoint0 (),
 				   REQUEST_IN | REQUEST_VENDOR | REQUEST_TO_DEVICE,
 				   CH341_REQ_READ_VERSION,
@@ -152,7 +153,7 @@ boolean CUSBSerialCH341Device::SetBaudRate (unsigned nBaudRate)
 	}
 
 	m_nBaudRate = nBaudRate;
-	CLogger::Get ()->Write (FromCh341, LogNotice, "Baud rate %d", m_nBaudRate);
+	//CLogger::Get ()->Write (FromCh341, LogDebug, "Baud rate %d", m_nBaudRate);
 
 	return TRUE;
 }
@@ -247,7 +248,21 @@ boolean CUSBSerialCH341Device::SetLineProperties (TUSBSerialDataBits nDataBits, 
 	m_nParity = nParity;
 	m_nStopBits = nStopBits;
 
-	CLogger::Get ()->Write (FromCh341, LogNotice, "Framing %s", (const char *)framing);
+	//CLogger::Get ()->Write (FromCh341, LogDebug, "Framing %s", (const char *)framing);
 
 	return TRUE;
+}
+
+const TUSBDeviceID *CUSBSerialCH341Device::GetDeviceIDTable (void)
+{
+	static const TUSBDeviceID DeviceIDTable[] =
+	{
+		{ USB_DEVICE (0x4348, 0x5523) },
+		{ USB_DEVICE (0x1A86, 0x7522) },
+		{ USB_DEVICE (0x1A86, 0x7523) },
+		{ USB_DEVICE (0x1A86, 0x5523) },
+		{ }
+	};
+
+	return DeviceIDTable;
 }

@@ -1,8 +1,8 @@
 //
-// usbserialch341.h
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020  H. Kocevar <hinxx@protonmail.com>
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,24 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbserialch341_h
-#define _circle_usb_usbserialch341_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-#include <circle/usb/usbserial.h>
-#include <circle/usb/usbdevicefactory.h>
-#include <circle/types.h>
-
-class CUSBSerialCH341Device : public CUSBSerialDevice
+int main (void)
 {
-public:
-	CUSBSerialCH341Device (CUSBFunction *pFunction);
-	~CUSBSerialCH341Device (void);
+	// cannot return here because some destructors used in CKernel are not implemented
 
-	boolean Configure (void);
-	boolean SetBaudRate (unsigned nBaudRate);
-	boolean SetLineProperties (TUSBSerialDataBits nDataBits, TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
+	
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-	static const TUSBDeviceID *GetDeviceIDTable (void);
-};
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
 
-#endif
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

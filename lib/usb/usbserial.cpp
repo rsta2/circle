@@ -26,7 +26,7 @@
 CNumberPool CUSBSerialDevice::s_DeviceNumberPool (1);
 
 static const char FromSerial[] = "userial";
-static const char DevicePrefix[] = "userial";
+static const char DevicePrefix[] = "utty";
 
 CUSBSerialDevice::CUSBSerialDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
@@ -88,7 +88,8 @@ boolean CUSBSerialDevice::Configure (void)
 		}
 	}
 
-	if (m_pEndpointOut == 0)
+	if (   m_pEndpointIn == 0
+	    || m_pEndpointOut == 0)
 	{
 		ConfigurationError (FromSerial);
 
