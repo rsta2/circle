@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -119,7 +119,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBCDCEthernetDevice (pParent);
 	}
-	else if (pName->Compare ("ven1a86-7523") == 0)
+	else if (FindDeviceID (pName, CUSBSerialCH341Device::GetDeviceIDTable ()))
 	{
 		pResult = new CUSBSerialCH341Device (pParent);
 	}
@@ -133,4 +133,24 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	delete pName;
 
 	return pResult;
+}
+
+boolean CUSBDeviceFactory::FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable)
+{
+	while (   pIDTable->usVendorID != 0
+	       || pIDTable->usDeviceID != 0)
+	{
+		CString String;
+		String.Format ("ven%x-%x", (unsigned) pIDTable->usVendorID,
+					   (unsigned) pIDTable->usDeviceID);
+
+		if (pName->Compare (String) == 0)
+		{
+			return TRUE;
+		}
+
+		pIDTable++;
+	}
+
+	return FALSE;
 }

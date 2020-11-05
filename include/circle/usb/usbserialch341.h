@@ -21,6 +21,7 @@
 #define _circle_usb_usbserialch341_h
 
 #include <circle/usb/usbserial.h>
+#include <circle/usb/usbdevicefactory.h>
 #include <circle/types.h>
 
 class CUSBSerialCH341Device : public CUSBSerialDevice
@@ -32,6 +33,8 @@ public:
 	boolean Configure (void);
 	boolean SetBaudRate (unsigned nBaudRate);
 	boolean SetLineProperties (TUSBSerialDataBits nDataBits, TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
+
+	static const TUSBDeviceID *GetDeviceIDTable (void);
 };
 
 #endif
