@@ -20,6 +20,7 @@
 #include <circle/usb/usbserialch341.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -72,7 +73,7 @@ boolean CUSBSerialCH341Device::Configure (void)
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
-	u8 rxData[2] ={0};
+	DMA_BUFFER (u8, rxData, 2) = {0};
 	if (pHost->ControlMessage (GetEndpoint0 (),
 				   REQUEST_IN | REQUEST_VENDOR | REQUEST_TO_DEVICE,
 				   CH341_REQ_READ_VERSION,
