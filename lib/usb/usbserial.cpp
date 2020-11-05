@@ -26,7 +26,7 @@
 CNumberPool CUSBSerialDevice::s_DeviceNumberPool (1);
 
 static const char FromSerial[] = "userial";
-static const char DevicePrefix[] = "userial";
+static const char DevicePrefix[] = "utty";
 
 CUSBSerialDevice::CUSBSerialDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),

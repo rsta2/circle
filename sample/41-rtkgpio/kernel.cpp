@@ -84,7 +84,7 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CUSBSerialCH341Device *pUSerial1 = reinterpret_cast<CUSBSerialCH341Device *>(m_DeviceNameService.GetDevice ("userial1", FALSE));
+	CUSBSerialCH341Device *pUSerial1 = reinterpret_cast<CUSBSerialCH341Device *>(m_DeviceNameService.GetDevice ("utty1", FALSE));
 	if (pUSerial1 == 0)
 	{
 		m_Logger.Write (FromKernel, LogPanic, "USB serial device not found");
