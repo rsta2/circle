@@ -2,7 +2,7 @@
 # Makefile
 #
 
-CIRCLEHOME = ../..
+CIRCLEHOME = ../../../..
 
 OBJS	= main.o kernel.o
 
@@ -11,6 +11,6 @@ LIBS	= $(CIRCLEHOME)/lib/usb/libusb.a \
 	  $(CIRCLEHOME)/lib/fs/libfs.a \
 	  $(CIRCLEHOME)/lib/libcircle.a
 
-include ../Rules.mk
+include $(CIRCLEHOME)/Rules.mk
 
 -include $(DEPS)
