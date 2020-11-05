@@ -88,7 +88,8 @@ boolean CUSBSerialDevice::Configure (void)
 		}
 	}
 
-	if (m_pEndpointOut == 0)
+	if (   m_pEndpointIn == 0
+	    || m_pEndpointOut == 0)
 	{
 		ConfigurationError (FromSerial);
 
