@@ -147,12 +147,11 @@ int CSoundBaseDevice::Write (const void *pBuffer, size_t nCount)
 
 	m_SpinLock.Acquire ();
 
-	if (   m_HWFormat == SoundFormatSigned16
-	    && m_WriteFormat == SoundFormatSigned16
+	if (   m_HWFormat == m_WriteFormat
 	    && m_nWriteChannels == SOUND_HW_CHANNELS
 	    && !m_bSwapChannels)
 	{
-		// fast path for SoundFormatSigned16 Stereo without conversion
+		// fast path for Stereo samples without bit depth conversion or channel swapping
 
 		unsigned nBytes = GetQueueBytesFree ();
 		if (nBytes > nCount)
