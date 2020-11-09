@@ -33,17 +33,11 @@ static const char FromCh341[] = "ch341";
 
 #define CH341_REQ_READ_VERSION 0x5F
 #define CH341_REQ_WRITE_REG    0x9A
-#define CH341_REQ_READ_REG     0x95
 #define CH341_REQ_SERIAL_INIT  0xA1
 #define CH341_REQ_MODEM_CTRL   0xA4
 
-#define CH341_REG_BREAK        0x05
-#define CH341_REG_LCR          0x18
-#define CH341_NBREAK_BITS      0x01
-
 #define CH341_LCR_ENABLE_RX    0x80
 #define CH341_LCR_ENABLE_TX    0x40
-#define CH341_LCR_MARK_SPACE   0x20
 #define CH341_LCR_PAR_EVEN     0x10
 #define CH341_LCR_ENABLE_PAR   0x08
 #define CH341_LCR_STOP_BITS_2  0x04
@@ -147,7 +141,7 @@ boolean CUSBSerialCH341Device::SetBaudRate (unsigned nBaudRate)
 				   a,
 				   0, 0) < 0)
 	{
-		CLogger::Get ()->Write (FromCh341, LogError, "Cannot init serial port factor/divisor");
+		CLogger::Get ()->Write (FromCh341, LogError, "Cannot setup baud rate");
 
 		return FALSE;
 	}
@@ -158,7 +152,9 @@ boolean CUSBSerialCH341Device::SetBaudRate (unsigned nBaudRate)
 	return TRUE;
 }
 
-boolean CUSBSerialCH341Device::SetLineProperties (TUSBSerialDataBits nDataBits, TUSBSerialParity nParity, TUSBSerialStopBits nStopBits)
+boolean CUSBSerialCH341Device::SetLineProperties (TUSBSerialDataBits nDataBits,
+						  TUSBSerialParity nParity,
+						  TUSBSerialStopBits nStopBits)
 {
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);

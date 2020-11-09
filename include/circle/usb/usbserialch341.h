@@ -32,7 +32,8 @@ public:
 
 	boolean Configure (void);
 	boolean SetBaudRate (unsigned nBaudRate);
-	boolean SetLineProperties (TUSBSerialDataBits nDataBits, TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
+	boolean SetLineProperties (TUSBSerialDataBits nDataBits,
+				   TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
 
 	static const TUSBDeviceID *GetDeviceIDTable (void);
 };
