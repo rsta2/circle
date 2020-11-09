@@ -31,8 +31,6 @@ static const char FromCp2102[] = "cp2102";
 // Config request codes
 #define CP210X_IFC_ENABLE	0x00
 #define CP210X_SET_LINE_CTL	0x03
-#define CP210X_GET_LINE_CTL	0x04
-#define CP210X_GET_BAUDRATE	0x1D
 #define CP210X_SET_BAUDRATE	0x1E
 #define CP210X_VENDOR_SPECIFIC	0xFF
 
@@ -41,23 +39,16 @@ static const char FromCp2102[] = "cp2102";
 #define UART_DISABLE		0x0000
 
 // CP210X_(SET|GET)_LINE_CTL
-#define BITS_DATA_MASK		0X0f00
 #define BITS_DATA_5		0X0500
 #define BITS_DATA_6		0X0600
 #define BITS_DATA_7		0X0700
 #define BITS_DATA_8		0X0800
-#define BITS_DATA_9		0X0900
 
-#define BITS_PARITY_MASK	0x00f0
 #define BITS_PARITY_NONE	0x0000
 #define BITS_PARITY_ODD		0x0010
 #define BITS_PARITY_EVEN	0x0020
-#define BITS_PARITY_MARK	0x0030
-#define BITS_PARITY_SPACE	0x0040
 
-#define BITS_STOP_MASK		0x000f
 #define BITS_STOP_1		0x0000
-#define BITS_STOP_1_5		0x0001
 #define BITS_STOP_2		0x0002
 
 // CP210X_VENDOR_SPECIFIC values
@@ -156,7 +147,9 @@ boolean CUSBSerialCP2102Device::SetBaudRate (unsigned nBaudRate)
 	return TRUE;
 }
 
-boolean CUSBSerialCP2102Device::SetLineProperties (TUSBSerialDataBits nDataBits, TUSBSerialParity nParity, TUSBSerialStopBits nStopBits)
+boolean CUSBSerialCP2102Device::SetLineProperties (TUSBSerialDataBits nDataBits,
+						   TUSBSerialParity nParity,
+						   TUSBSerialStopBits nStopBits)
 {
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
