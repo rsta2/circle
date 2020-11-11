@@ -193,14 +193,15 @@ int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 	return nActual;
 }
 
-
 boolean CUSBSerialDevice::SetBaudRate (unsigned nBaudRate)
 {
 	(void)nBaudRate;
 	return TRUE;
 }
 
-boolean CUSBSerialDevice::SetLineProperties (TUSBSerialDataBits nDataBits, TUSBSerialParity nParity, TUSBSerialStopBits nStopBits)
+boolean CUSBSerialDevice::SetLineProperties (TUSBSerialDataBits nDataBits,
+					     TUSBSerialParity nParity,
+					     TUSBSerialStopBits nStopBits)
 {
 	(void)nDataBits;
 	(void)nParity;

@@ -53,8 +53,8 @@ boolean CUSBSerialPL2303Device::Configure (void)
 		return FALSE;
 	}
 
-	CUSBDevice *device = GetDevice();
-	const TUSBDeviceDescriptor *deviceDesc = device->GetDeviceDescriptor();
+	CUSBDevice *device = GetDevice ();
+	const TUSBDeviceDescriptor *deviceDesc = device->GetDeviceDescriptor ();
 	CString type = "0";
 	if (deviceDesc->bDeviceClass == 0x02)
 	{
@@ -249,7 +249,7 @@ boolean CUSBSerialPL2303Device::SetBaudRate (unsigned nBaudRate)
 		return FALSE;
 	}
 
-	memcpy(rxData, (u8 *)&nBaudRate, 4);
+	memcpy (rxData, (u8 *) &nBaudRate, 4);
 	if (pHost->ControlMessage (GetEndpoint0 (),
 				   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
 				   SET_LINE_REQUEST,
@@ -309,20 +309,20 @@ boolean CUSBSerialPL2303Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 		return FALSE;
 		break;
 	}
-	framing.Format("%d", nDataBits);
+	framing.Format ("%d", nDataBits);
 
 	switch (nParity) {
 	case USBSerialParityNone:
 		rxData[5] = 0;
-		framing.Append("N");
+		framing.Append ("N");
 		break;
 	case USBSerialParityOdd:
 		rxData[5] = 1;
-		framing.Append("O");
+		framing.Append ("O");
 		break;
 	case USBSerialParityEven:
 		rxData[5] = 2;
-		framing.Append("E");
+		framing.Append ("E");
 		break;
 	default:
 		CLogger::Get ()->Write (FromPl2303, LogError, "Invalid parity %d", nParity);
@@ -333,11 +333,11 @@ boolean CUSBSerialPL2303Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 	switch (nStopBits) {
 	case USBSerialStopBits1:
 		rxData[4] = 0;
-		framing.Append("1");
+		framing.Append ("1");
 		break;
 	case USBSerialStopBits2:
 		rxData[4] = 2;
-		framing.Append("2");
+		framing.Append ("2");
 		break;
 	default:
 		CLogger::Get ()->Write (FromPl2303, LogError, "Invalid stop bits %d", nStopBits);

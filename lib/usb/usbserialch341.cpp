@@ -181,19 +181,19 @@ boolean CUSBSerialCH341Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 		return FALSE;
 		break;
 	}
-	framing.Format("%d", nDataBits);
+	framing.Format ("%d", nDataBits);
 
 	switch (nParity) {
 	case USBSerialParityNone:
-		framing.Append("N");
+		framing.Append ("N");
 		break;
 	case USBSerialParityOdd:
 		lcr |= CH341_LCR_ENABLE_PAR;
-		framing.Append("O");
+		framing.Append ("O");
 		break;
 	case USBSerialParityEven:
 		lcr |= CH341_LCR_ENABLE_PAR | CH341_LCR_PAR_EVEN;
-		framing.Append("E");
+		framing.Append ("E");
 		break;
 	default:
 		CLogger::Get ()->Write (FromCh341, LogError, "Invalid parity %d", nParity);
@@ -203,11 +203,11 @@ boolean CUSBSerialCH341Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 
 	switch (nStopBits) {
 	case USBSerialStopBits1:
-		framing.Append("1");
+		framing.Append ("1");
 		break;
 	case USBSerialStopBits2:
 		lcr |= CH341_LCR_STOP_BITS_2;
-		framing.Append("2");
+		framing.Append ("2");
 		break;
 	default:
 		CLogger::Get ()->Write (FromCh341, LogError, "Invalid stop bits %d", nStopBits);

@@ -84,7 +84,7 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CUSBSerialCH341Device *pUSerial1 = (CUSBSerialCH341Device *)(m_DeviceNameService.GetDevice ("utty1", FALSE));
+	CUSBSerialCH341Device *pUSerial1 = (CUSBSerialCH341Device *) (m_DeviceNameService.GetDevice ("utty1", FALSE));
 	if (pUSerial1 == 0)
 	{
 		m_Logger.Write (FromKernel, LogPanic, "USB serial device not found");
@@ -96,8 +96,8 @@ TShutdownMode CKernel::Run (void)
 		pTarget = &m_Screen;
 	}
 
-	CRTKGpioDevice rtkgpio(pUSerial1);
-	rtkgpio.Initialize();
+	CRTKGpioDevice rtkgpio (pUSerial1);
+	rtkgpio.Initialize ();
 
 	for (unsigned i = 22; i < 26; i++)
 	{
@@ -116,38 +116,38 @@ TShutdownMode CKernel::Run (void)
 
 	for (unsigned i = 0; i < 256; i++)
 	{
-		status.Append("\routputs:");
+		status.Append ("\routputs:");
 		for (unsigned b = 0; b < 8; b++)
 		{
 			if (!(i & (1 << b)))
 			{
 				rtkgpio.SetPinLevelHigh (b);
-				status.Append(" H");
+				status.Append (" H");
 			}
 			else
 			{
 				rtkgpio.SetPinLevelLow (b);
-				status.Append(" L");
+				status.Append (" L");
 			}
 		}
-		status.Append("\tinputs:");
+		status.Append ("\tinputs:");
 		for (unsigned b = 22; b < 26; b++)
 		{
 			if (rtkgpio.GetPinLevel (b) == RtkGpioLevelLow)
 			{
-				status.Append(" L");
+				status.Append (" L");
 			}
 			else
 			{
-				status.Append(" H");
+				status.Append (" H");
 			}
 		}
-		CTimer::SimpleMsDelay (100);
 
-		pTarget->Write (status, status.GetLength());
+		pTarget->Write (status, status.GetLength ());
+		CTimer::SimpleMsDelay (500);
 	}
 
-	m_Logger.Write(FromKernel, LogNotice, "\nDone!");
+	m_Logger.Write (FromKernel, LogNotice, "\nDone!");
 
 	return ShutdownReboot;
 }
