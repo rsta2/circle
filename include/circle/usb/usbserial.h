@@ -65,14 +65,14 @@ protected:
 	TUSBSerialDataBits m_nDataBits;
 	TUSBSerialParity m_nParity;
 	TUSBSerialStopBits m_nStopBits;
-	u8 *m_pBufferIn;
-	size_t m_nBufferInSize;
-	u8 *m_pBufferOut;
-	size_t m_nBufferOutSize;
 
 private:
 	CUSBEndpoint *m_pEndpointIn;
 	CUSBEndpoint *m_pEndpointOut;
+	u8 *m_pBufferIn;
+	size_t m_nBufferInSize;
+	u8 *m_pBufferOut;
+	size_t m_nBufferOutSize;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;
