@@ -180,7 +180,7 @@ int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 		m_nBufferInSize = count;
 	}
 
-	int nActual = pHost->Transfer (m_pEndpointIn, (void *) m_pBufferIn, m_nBufferInSize);
+	int nActual = pHost->Transfer (m_pEndpointIn, (void *) m_pBufferIn, count);
 	if (nActual < 0)
 	{
 		CLogger::Get ()->Write (FromSerial, LogError, "USB read failed");
