@@ -263,7 +263,8 @@ boolean CUSBSerialPL2303Device::SetBaudRate (unsigned nBaudRate)
 	}
 
 	m_nBaudRate = nBaudRate;
-	CLogger::Get ()->Write (FromPl2303, LogDebug, "Baud rate %d", m_nBaudRate);
+
+	//CLogger::Get ()->Write (FromPl2303, LogDebug, "Baud rate %d", m_nBaudRate);
 
 	return TRUE;
 }
@@ -360,7 +361,7 @@ boolean CUSBSerialPL2303Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 	m_nParity = nParity;
 	m_nStopBits = nStopBits;
 
-	CLogger::Get ()->Write (FromPl2303, LogDebug, "Framing %s", (const char *)framing);
+	//CLogger::Get ()->Write (FromPl2303, LogDebug, "Framing %s", (const char *)framing);
 
 	return TRUE;
 }
