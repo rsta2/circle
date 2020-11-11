@@ -119,12 +119,15 @@ int CUSBSerialDevice::Write (const void *pBuffer, size_t nCount)
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
-	if (pHost->Transfer (m_pEndpointOut, (void *) pBuffer, nCount) < 0)
+	int nActual = pHost->Transfer (m_pEndpointOut, (void *) pBuffer, nCount);
+	if (nActual < 0)
 	{
+		CLogger::Get ()->Write (FromSerial, LogError, "USB write failed");
+
 		return -1;
 	}
 
-	return nCount;
+	return nActual;
 }
 
 int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
@@ -135,12 +138,15 @@ int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
-	if (pHost->Transfer (m_pEndpointIn, (void *) pBuffer, nCount) < 0)
+	int nActual = pHost->Transfer (m_pEndpointIn, (void *) pBuffer, nCount);
+	if (nActual < 0)
 	{
+		CLogger::Get ()->Write (FromSerial, LogError, "USB read failed");
+
 		return -1;
 	}
 
-	return nCount;
+	return nActual;
 }
 
 
