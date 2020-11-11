@@ -17,6 +17,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+#include <circle/synchronize.h>
+#include <circle/util.h>
+#include <circle/alloc.h>
 #include <circle/usb/usbserial.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
@@ -54,6 +57,20 @@ CUSBSerialDevice::~CUSBSerialDevice (void)
 	
 	delete m_pEndpointIn;
 	m_pEndpointIn = 0;
+
+	if (m_pBufferIn)
+	{
+		free (m_pBufferIn);
+		m_pBufferIn = 0;
+		m_nBufferInSize = 0;
+	}
+
+	if (m_pBufferOut)
+	{
+		free (m_pBufferOut);
+		m_pBufferOut = 0;
+		m_nBufferOutSize = 0;
+	}
 }
 
 boolean CUSBSerialDevice::Configure (void)
@@ -108,6 +125,13 @@ boolean CUSBSerialDevice::Configure (void)
 
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
+	m_nBufferInSize = m_pEndpointIn->GetMaxPacketSize ();
+	m_pBufferIn = (u8 *) malloc (m_nBufferInSize);
+	assert (m_pBufferIn != 0);
+	m_nBufferOutSize = m_pEndpointOut->GetMaxPacketSize ();
+	m_pBufferOut = (u8 *) malloc (m_nBufferOutSize);
+	assert (m_pBufferOut != 0);
+
 	return TRUE;
 }
 
@@ -119,7 +143,17 @@ int CUSBSerialDevice::Write (const void *pBuffer, size_t nCount)
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
-	int nActual = pHost->Transfer (m_pEndpointOut, (void *) pBuffer, nCount);
+	size_t count = (nCount < m_pEndpointOut->GetMaxPacketSize ()) ?
+			m_pEndpointOut->GetMaxPacketSize () : nCount;
+	if (m_nBufferOutSize < count)
+	{
+		m_pBufferOut = (u8 *) realloc (m_pBufferOut, count);
+		m_nBufferOutSize = count;
+	}
+
+	memcpy (m_pBufferOut, pBuffer, nCount);
+
+	int nActual = pHost->Transfer (m_pEndpointOut, (void *) m_pBufferOut, nCount);
 	if (nActual < 0)
 	{
 		CLogger::Get ()->Write (FromSerial, LogError, "USB write failed");
@@ -138,13 +172,23 @@ int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
-	int nActual = pHost->Transfer (m_pEndpointIn, (void *) pBuffer, nCount);
+	size_t count = (nCount < m_pEndpointIn->GetMaxPacketSize ()) ?
+			m_pEndpointIn->GetMaxPacketSize () : nCount;
+	if (m_nBufferInSize < count)
+	{
+		m_pBufferIn = (u8 *) realloc (m_pBufferIn, count);
+		m_nBufferInSize = count;
+	}
+
+	int nActual = pHost->Transfer (m_pEndpointIn, (void *) m_pBufferIn, m_nBufferInSize);
 	if (nActual < 0)
 	{
 		CLogger::Get ()->Write (FromSerial, LogError, "USB read failed");
 
 		return -1;
 	}
+
+	memcpy (pBuffer, m_pBufferIn, nActual);
 
 	return nActual;
 }
