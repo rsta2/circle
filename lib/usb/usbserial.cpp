@@ -188,6 +188,11 @@ int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 		return -1;
 	}
 
+	if (nCount < (size_t) nActual)
+	{
+		nActual = nCount;
+	}
+
 	memcpy (pBuffer, m_pBufferIn, nActual);
 
 	return nActual;
