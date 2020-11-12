@@ -38,6 +38,9 @@
 #include <circle/usb/usbmidi.h>
 #include <circle/usb/usbcdcethernet.h>
 #include <circle/usb/usbserialch341.h>
+#include <circle/usb/usbserialcp2102.h>
+#include <circle/usb/usbserialpl2303.h>
+#include <circle/usb/usbserialft231x.h>
 
 CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
 {
@@ -122,6 +125,18 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (FindDeviceID (pName, CUSBSerialCH341Device::GetDeviceIDTable ()))
 	{
 		pResult = new CUSBSerialCH341Device (pParent);
+	}
+	else if (FindDeviceID (pName, CUSBSerialCP2102Device::GetDeviceIDTable ()))
+	{
+		pResult = new CUSBSerialCP2102Device (pParent);
+	}
+	else if (FindDeviceID (pName, CUSBSerialPL2303Device::GetDeviceIDTable ()))
+	{
+		pResult = new CUSBSerialPL2303Device (pParent);
+	}
+	else if (FindDeviceID (pName, CUSBSerialFT231XDevice::GetDeviceIDTable ()))
+	{
+		pResult = new CUSBSerialFT231XDevice (pParent);
 	}
 	// new devices follow
 

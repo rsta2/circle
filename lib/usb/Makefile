@@ -29,7 +29,8 @@ OBJS	= lan7800.o smsc951x.o usbbluetooth.o usbcdcethernet.o \
 	  usbgamepad.o usbgamepadps3.o usbgamepadps4.o usbgamepadstandard.o usbgamepadswitchpro.o \
 	  usbgamepadxbox360.o usbgamepadxboxone.o usbhiddevice.o usbhostcontroller.o \
 	  usbkeyboard.o usbmassdevice.o usbmidi.o usbmouse.o usbprinter.o usbrequest.o \
-	  usbstandardhub.o usbstring.o usbserial.o usbserialch341.o
+	  usbstandardhub.o usbstring.o usbserial.o usbserialch341.o usbserialcp2102.o \
+	  usbserialpl2303.o usbserialft231x.o
 
 ifneq ($(strip $(RASPPI)),4)
 OBJS	+= dwhcidevice.o dwhciframeschednper.o dwhciframeschednsplit.o dwhciframeschedper.o \

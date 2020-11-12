@@ -18,8 +18,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/usb/usbserialch341.h>
 #include <circle/string.h>
+#include <circle/usb/usbserialch341.h>
+#include <gpio/rtkgpio.h>
 
 static const char FromKernel[] = "kernel";
 
@@ -83,70 +84,70 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	CUSBSerialCH341Device *pUSerial1 = reinterpret_cast<CUSBSerialCH341Device *>(m_DeviceNameService.GetDevice ("utty1", FALSE));
+	CUSBSerialCH341Device *pUSerial1 = (CUSBSerialCH341Device *) (m_DeviceNameService.GetDevice ("utty1", FALSE));
 	if (pUSerial1 == 0)
 	{
 		m_Logger.Write (FromKernel, LogPanic, "USB serial device not found");
 	}
 
-	pUSerial1->SetBaudRate(230400);
-
-	if (pUSerial1->Write ("vO", 2) < 0)
+	CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
+	if (pTarget == 0)
 	{
-		m_Logger.Write (FromKernel, LogError, "Write error vO");
-	}
-	m_Logger.Write (FromKernel, LogDebug, "Write vO");
-	if (pUSerial1->Write ("vN", 2) < 0)
-	{
-		m_Logger.Write (FromKernel, LogError, "Write error vN");
-	}
-	m_Logger.Write (FromKernel, LogDebug, "Write vN");
-
-	int iter = 20;
-	while (iter--)
-	{
-		if (pUSerial1->Write ("v0", 2) < 0)
-		{
-			m_Logger.Write (FromKernel, LogError, "Write error v0");
-		}
-		m_Logger.Write (FromKernel, LogDebug, "Write v0");
-		m_Timer.SimpleMsDelay(500);
-		if (pUSerial1->Write ("v1", 2) < 0)
-		{
-			m_Logger.Write (FromKernel, LogError, "Write error v1");
-		}
-		m_Logger.Write (FromKernel, LogDebug, "Write v1");
-		m_Timer.SimpleMsDelay(500);
+		pTarget = &m_Screen;
 	}
 
-	if (pUSerial1->Write ("uI", 2) < 0)
-	{
-		m_Logger.Write (FromKernel, LogError, "Write error uI");
-	}
-	m_Logger.Write (FromKernel, LogDebug, "Write uI");
-	if (pUSerial1->Write ("uN", 2) < 0)
-	{
-		m_Logger.Write (FromKernel, LogError, "Write error uN");
-	}
-	m_Logger.Write (FromKernel, LogDebug, "Write uN");
+	CRTKGpioDevice rtkgpio (pUSerial1);
+	rtkgpio.Initialize ();
 
-	u8 rxData[5];
-	iter = 20;
-	while (iter--)
+	for (unsigned i = 22; i < 26; i++)
 	{
-		if (pUSerial1->Write ("u?", 2) < 0)
-		{
-			m_Logger.Write (FromKernel, LogError, "Write error u?");
-		}
-		m_Logger.Write (FromKernel, LogDebug, "Write u?");
-		m_Timer.SimpleMsDelay(500);
-		if (pUSerial1->Read (rxData, 4) < 0)
-		{
-			m_Logger.Write (FromKernel, LogError, "Read error");
-		}
-		m_Logger.Write (FromKernel, LogDebug, "Read u? %2X %2X %2X %2X", rxData[0], rxData[1], rxData[2], rxData[3]);
-		m_Timer.SimpleMsDelay(500);
+		rtkgpio.SetPinDirectionInput (i);
+		rtkgpio.SetPinPullNone (i);
 	}
+
+	for (unsigned i = 0; i < 8; i++)
+	{
+		rtkgpio.SetPinDirectionOutput (i);
+		rtkgpio.SetPinPullNone (i);
+		rtkgpio.SetPinLevelHigh (i);
+	}
+
+	CString status;
+
+	for (unsigned i = 0; i < 256; i++)
+	{
+		status.Append ("\routputs:");
+		for (unsigned b = 0; b < 8; b++)
+		{
+			if (!(i & (1 << b)))
+			{
+				rtkgpio.SetPinLevelHigh (b);
+				status.Append (" H");
+			}
+			else
+			{
+				rtkgpio.SetPinLevelLow (b);
+				status.Append (" L");
+			}
+		}
+		status.Append ("\tinputs:");
+		for (unsigned b = 22; b < 26; b++)
+		{
+			if (rtkgpio.GetPinLevel (b) == RtkGpioLevelLow)
+			{
+				status.Append (" L");
+			}
+			else
+			{
+				status.Append (" H");
+			}
+		}
+
+		pTarget->Write (status, status.GetLength ());
+		CTimer::SimpleMsDelay (500);
+	}
+
+	m_Logger.Write (FromKernel, LogNotice, "\nDone!");
 
 	return ShutdownReboot;
 }

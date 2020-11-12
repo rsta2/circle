@@ -1,5 +1,5 @@
 //
-// usbserialch341.h
+// usbserialft231x.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2020  H. Kocevar <hinxx@protonmail.com>
@@ -17,23 +17,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbserialch341_h
-#define _circle_usb_usbserialch341_h
+#ifndef _circle_usb_usbserialft231x_h
+#define _circle_usb_usbserialft231x_h
 
 #include <circle/usb/usbserial.h>
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/types.h>
 
-class CUSBSerialCH341Device : public CUSBSerialDevice
+class CUSBSerialFT231XDevice : public CUSBSerialDevice
 {
 public:
-	CUSBSerialCH341Device (CUSBFunction *pFunction);
-	~CUSBSerialCH341Device (void);
+	CUSBSerialFT231XDevice (CUSBFunction *pFunction);
+	~CUSBSerialFT231XDevice (void);
 
 	boolean Configure (void);
 	boolean SetBaudRate (unsigned nBaudRate);
 	boolean SetLineProperties (TUSBSerialDataBits nDataBits,
 				   TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
+
+	int Read (void *pBuffer, size_t nCount);
 
 	static const TUSBDeviceID *GetDeviceIDTable (void);
 };
