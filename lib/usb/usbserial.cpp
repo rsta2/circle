@@ -19,9 +19,9 @@
 //
 #include <circle/synchronize.h>
 #include <circle/util.h>
-#include <circle/alloc.h>
 #include <circle/usb/usbserial.h>
 #include <circle/usb/usbhostcontroller.h>
+#include <circle/usb/usbrequest.h>
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
 #include <assert.h>
@@ -31,14 +31,19 @@ CNumberPool CUSBSerialDevice::s_DeviceNumberPool (1);
 static const char FromSerial[] = "userial";
 static const char DevicePrefix[] = "utty";
 
-CUSBSerialDevice::CUSBSerialDevice (CUSBFunction *pFunction)
+CUSBSerialDevice::CUSBSerialDevice (CUSBFunction *pFunction, size_t nReadHeaderBytes)
 :	CUSBFunction (pFunction),
 	m_nBaudRate (9600),
 	m_nDataBits (USBSerialDataBits8),
 	m_nParity (USBSerialParityNone),
 	m_nStopBits (USBSerialStopBits1),
+	m_nReadHeaderBytes (nReadHeaderBytes),
 	m_pEndpointIn (0),
 	m_pEndpointOut (0),
+	m_pBufferIn (0),
+	m_nBufferInSize (0),
+	m_nBufferInValid (0),
+	m_nBufferInPtr (0),
 	m_nDeviceNumber (0)
 {
 }
@@ -58,19 +63,9 @@ CUSBSerialDevice::~CUSBSerialDevice (void)
 	delete m_pEndpointIn;
 	m_pEndpointIn = 0;
 
-	if (m_pBufferIn)
-	{
-		free (m_pBufferIn);
-		m_pBufferIn = 0;
-		m_nBufferInSize = 0;
-	}
-
-	if (m_pBufferOut)
-	{
-		free (m_pBufferOut);
-		m_pBufferOut = 0;
-		m_nBufferOutSize = 0;
-	}
+	delete [] m_pBufferIn;
+	m_pBufferIn = 0;
+	m_nBufferInSize = 0;
 }
 
 boolean CUSBSerialDevice::Configure (void)
@@ -113,6 +108,10 @@ boolean CUSBSerialDevice::Configure (void)
 		return FALSE;
 	}
 
+	m_nBufferInSize = m_pEndpointIn->GetMaxPacketSize ();
+	m_pBufferIn = new u8[m_nBufferInSize];
+	assert (m_pBufferIn != 0);
+
 	if (!CUSBFunction::Configure ())
 	{
 		CLogger::Get ()->Write (FromSerial, LogError, "Cannot set interface");
@@ -125,13 +124,6 @@ boolean CUSBSerialDevice::Configure (void)
 
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
-	m_nBufferInSize = m_pEndpointIn->GetMaxPacketSize ();
-	m_pBufferIn = (u8 *) malloc (m_nBufferInSize);
-	assert (m_pBufferIn != 0);
-	m_nBufferOutSize = m_pEndpointOut->GetMaxPacketSize ();
-	m_pBufferOut = (u8 *) malloc (m_nBufferOutSize);
-	assert (m_pBufferOut != 0);
-
 	return TRUE;
 }
 
@@ -143,22 +135,14 @@ int CUSBSerialDevice::Write (const void *pBuffer, size_t nCount)
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
-	size_t count = (nCount < m_pEndpointOut->GetMaxPacketSize ()) ?
-			m_pEndpointOut->GetMaxPacketSize () : nCount;
-	if (m_nBufferOutSize < count)
-	{
-		m_pBufferOut = (u8 *) realloc (m_pBufferOut, count);
-		m_nBufferOutSize = count;
-	}
+	DMA_BUFFER (u8, BufferOut, nCount);
+	memcpy (BufferOut, pBuffer, nCount);
 
-	memcpy (m_pBufferOut, pBuffer, nCount);
-
-	int nActual = pHost->Transfer (m_pEndpointOut, (void *) m_pBufferOut, nCount);
+	assert (m_pEndpointOut != 0);
+	int nActual = pHost->Transfer (m_pEndpointOut, BufferOut, nCount);
 	if (nActual < 0)
 	{
-		CLogger::Get ()->Write (FromSerial, LogError, "USB write failed");
-
-		return -1;
+		CLogger::Get ()->Write (FromSerial, LogWarning, "USB write failed");
 	}
 
 	return nActual;
@@ -169,33 +153,63 @@ int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 	assert (pBuffer != 0);
 	assert (nCount > 0);
 
-	CUSBHostController *pHost = GetHost ();
-	assert (pHost != 0);
+	assert (m_pBufferIn != 0);
+	assert (m_nBufferInSize > 0);
+	assert (m_nBufferInValid <= m_nBufferInSize);
+	assert (m_nBufferInPtr <= m_nBufferInValid);
 
-	size_t count = (nCount < m_pEndpointIn->GetMaxPacketSize ()) ?
-			m_pEndpointIn->GetMaxPacketSize () : nCount;
-	if (m_nBufferInSize < count)
+	if (m_nBufferInPtr == m_nBufferInValid)		// buffer empty?
 	{
-		m_pBufferIn = (u8 *) realloc (m_pBufferIn, count);
-		m_nBufferInSize = count;
+		CUSBHostController *pHost = GetHost ();
+		assert (pHost != 0);
+
+		assert (m_pEndpointIn != 0);
+		CUSBRequest URB (m_pEndpointIn, m_pBufferIn, m_nBufferInSize);
+
+		// do not retry if request cannot be served immediately
+		URB.SetCompleteOnNAK ();
+
+		if (!pHost->SubmitBlockingRequest (&URB))
+		{
+			CLogger::Get ()->Write (FromSerial, LogWarning, "USB read failed");
+
+			return -1;
+		}
+
+		m_nBufferInValid = URB.GetResultLength ();
+		m_nBufferInPtr = m_nReadHeaderBytes;
+
+		if (   m_nBufferInValid == 0
+		    || m_nBufferInValid == m_nBufferInPtr)
+		{
+			m_nBufferInValid = 0;
+			m_nBufferInPtr = 0;
+
+			return 0;
+		}
+
+		if (m_nBufferInValid < m_nBufferInPtr)
+		{
+			CLogger::Get ()->Write (FromSerial, LogWarning, "Missing read header");
+
+			m_nBufferInValid = 0;
+			m_nBufferInPtr = 0;
+
+			return -1;
+		}
 	}
 
-	int nActual = pHost->Transfer (m_pEndpointIn, (void *) m_pBufferIn, count);
-	if (nActual < 0)
+	size_t nRemain = m_nBufferInValid - m_nBufferInPtr;
+	if (nRemain < nCount)
 	{
-		CLogger::Get ()->Write (FromSerial, LogError, "USB read failed");
-
-		return -1;
+		nCount = nRemain;
 	}
 
-	if (nCount < (size_t) nActual)
-	{
-		nActual = nCount;
-	}
+	assert (nCount > 0);
+	memcpy (pBuffer, m_pBufferIn + m_nBufferInPtr, nCount);
+	m_nBufferInPtr += nCount;
 
-	memcpy (pBuffer, m_pBufferIn, nActual);
-
-	return nActual;
+	return nCount;
 }
 
 boolean CUSBSerialDevice::SetBaudRate (unsigned nBaudRate)

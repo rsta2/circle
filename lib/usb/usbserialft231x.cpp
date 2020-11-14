@@ -43,7 +43,7 @@ static const char FromFt231x[] = "ft231x";
 #define FTDI_SIO_SET_DATA_STOP_BITS_2	(0x2 << 11)
 
 CUSBSerialFT231XDevice::CUSBSerialFT231XDevice (CUSBFunction *pFunction)
-:	CUSBSerialDevice (pFunction)
+:	CUSBSerialDevice (pFunction, 2)
 {
 }
 
@@ -66,6 +66,10 @@ boolean CUSBSerialFT231XDevice::Configure (void)
 	if (deviceDesc->bcdDevice == 0x1000)
 	{
 		type = "FT-X";
+	}
+	else if (deviceDesc->bcdDevice == 0x600)
+	{
+		type = "FT232RL";
 	}
 	CLogger::Get ()->Write (FromFt231x, LogNotice, "Part number: %s", (const char *)type);
 
@@ -229,33 +233,11 @@ boolean CUSBSerialFT231XDevice::SetLineProperties (TUSBSerialDataBits nDataBits,
 	return TRUE;
 }
 
-int CUSBSerialFT231XDevice::Read (void *pBuffer, size_t nCount)
-{
-	assert (pBuffer != 0);
-	assert (nCount > 0);
-
-	int nActual = CUSBSerialDevice::Read (pBuffer, nCount);
-	if (nActual < 0)
-	{
-		return -1;
-	}
-
-	assert (nActual > 0);
-	nActual -= 2;
-	if (nActual > 0)
-	{
-		memmove (pBuffer, (u8 *)pBuffer + 2, nActual);
-	}
-
-	//CLogger::Get ()->Write (FromFt231x, LogDebug, "Read() want %d, returned %d", nCount, nActual);
-
-	return nActual;
-}
-
 const TUSBDeviceID *CUSBSerialFT231XDevice::GetDeviceIDTable (void)
 {
 	static const TUSBDeviceID DeviceIDTable[] =
 	{
+		{ USB_DEVICE (0x0403, 0x6001) },
 		{ USB_DEVICE (0x0403, 0x6015) },
 		{ }
 	};

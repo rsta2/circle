@@ -68,6 +68,9 @@ public:
 	TRtkGpioLevel GetPinLevel (unsigned nPin);
 
 private:
+	int Read (void *pBuffer, size_t nCount);
+
+private:
 	CUSBSerialCH341Device	*m_pCH341;
 };
 

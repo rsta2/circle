@@ -66,7 +66,7 @@ boolean CRTKGpioDevice::GetVersion (void)
 	}
 
 	u8 rxData[32] = {0};
-	if (m_pCH341->Read (rxData, 32) < 0)
+	if (Read (rxData, 32) < 0)
 	{
 		CLogger::Get ()->Write (FromRtkgpio, LogError, "Read error version");
 
@@ -220,7 +220,7 @@ TRtkGpioLevel CRTKGpioDevice::GetPinLevel (unsigned nPin)
 	}
 
 	u8 rxData[4] = {0};
-	if (m_pCH341->Read (rxData, 4) < 0)
+	if (Read (rxData, 4) < 0)
 	{
 		CLogger::Get ()->Write (FromRtkgpio, LogError, "Read error");
 
@@ -242,4 +242,18 @@ TRtkGpioLevel CRTKGpioDevice::GetPinLevel (unsigned nPin)
 
 	CLogger::Get ()->Write (FromRtkgpio, LogError, "Invalid level");
 	return RtkGpioLevelUnknown;
+}
+
+int CRTKGpioDevice::Read (void *pBuffer, size_t nCount)
+{
+	assert (m_pCH341 != 0);
+
+	int nResult;
+	do
+	{
+		nResult = m_pCH341->Read (pBuffer, nCount);
+	}
+	while (nResult == 0);
+
+	return nResult;
 }

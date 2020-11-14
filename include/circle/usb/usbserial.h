@@ -49,7 +49,8 @@ enum TUSBSerialParity
 class CUSBSerialDevice : public CUSBFunction
 {
 public:
-	CUSBSerialDevice (CUSBFunction *pFunction);
+	CUSBSerialDevice (CUSBFunction *pFunction,
+			  size_t nReadHeaderBytes = 0);		// number of bytes to be ignored
 	virtual ~CUSBSerialDevice (void);
 
 	boolean Configure (void);
@@ -67,12 +68,15 @@ protected:
 	TUSBSerialStopBits m_nStopBits;
 
 private:
+	size_t m_nReadHeaderBytes;
+
 	CUSBEndpoint *m_pEndpointIn;
 	CUSBEndpoint *m_pEndpointOut;
+
 	u8 *m_pBufferIn;
 	size_t m_nBufferInSize;
-	u8 *m_pBufferOut;
-	size_t m_nBufferOutSize;
+	size_t m_nBufferInValid;
+	unsigned m_nBufferInPtr;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

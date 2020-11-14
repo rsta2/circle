@@ -35,8 +35,6 @@ public:
 	boolean SetLineProperties (TUSBSerialDataBits nDataBits,
 				   TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
 
-	int Read (void *pBuffer, size_t nCount);
-
 	static const TUSBDeviceID *GetDeviceIDTable (void);
 };
 
