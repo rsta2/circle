@@ -61,6 +61,10 @@ public:
 	virtual boolean SetBaudRate (unsigned nBaudRate);
 	virtual boolean SetLineProperties (TUSBSerialDataBits nDataBits, TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
 
+private:
+	void CompletionRoutine (CUSBRequest *pURB);
+	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);
+
 protected:
 	unsigned m_nBaudRate;
 	TUSBSerialDataBits m_nDataBits;
@@ -77,6 +81,8 @@ private:
 	size_t m_nBufferInSize;
 	size_t m_nBufferInValid;
 	unsigned m_nBufferInPtr;
+
+	volatile boolean m_bInRequestActive;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

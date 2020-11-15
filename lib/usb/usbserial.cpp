@@ -44,6 +44,7 @@ CUSBSerialDevice::CUSBSerialDevice (CUSBFunction *pFunction, size_t nReadHeaderB
 	m_nBufferInSize (0),
 	m_nBufferInValid (0),
 	m_nBufferInPtr (0),
+	m_bInRequestActive (FALSE),
 	m_nDeviceNumber (0)
 {
 }
@@ -153,6 +154,13 @@ int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 	assert (pBuffer != 0);
 	assert (nCount > 0);
 
+	DataMemBarrier ();
+
+	if (m_bInRequestActive)
+	{
+		return 0;
+	}
+
 	assert (m_pBufferIn != 0);
 	assert (m_nBufferInSize > 0);
 	assert (m_nBufferInValid <= m_nBufferInSize);
@@ -164,39 +172,27 @@ int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 		assert (pHost != 0);
 
 		assert (m_pEndpointIn != 0);
-		CUSBRequest URB (m_pEndpointIn, m_pBufferIn, m_nBufferInSize);
+		CUSBRequest *pURB = new CUSBRequest (m_pEndpointIn, m_pBufferIn, m_nBufferInSize);
+		assert (pURB != 0);
 
 		// do not retry if request cannot be served immediately
-		URB.SetCompleteOnNAK ();
+		pURB->SetCompleteOnNAK ();
 
-		if (!pHost->SubmitBlockingRequest (&URB))
+		pURB->SetCompletionRoutine (CompletionStub, 0, this);
+		m_bInRequestActive = TRUE;
+
+		if (!pHost->SubmitAsyncRequest (pURB))
 		{
 			CLogger::Get ()->Write (FromSerial, LogWarning, "USB read failed");
 
-			return -1;
-		}
+			m_bInRequestActive = FALSE;
 
-		m_nBufferInValid = URB.GetResultLength ();
-		m_nBufferInPtr = m_nReadHeaderBytes;
-
-		if (   m_nBufferInValid == 0
-		    || m_nBufferInValid == m_nBufferInPtr)
-		{
-			m_nBufferInValid = 0;
-			m_nBufferInPtr = 0;
-
-			return 0;
-		}
-
-		if (m_nBufferInValid < m_nBufferInPtr)
-		{
-			CLogger::Get ()->Write (FromSerial, LogWarning, "Missing read header");
-
-			m_nBufferInValid = 0;
-			m_nBufferInPtr = 0;
+			delete pURB;
 
 			return -1;
 		}
+
+		return 0;
 	}
 
 	size_t nRemain = m_nBufferInValid - m_nBufferInPtr;
@@ -226,4 +222,44 @@ boolean CUSBSerialDevice::SetLineProperties (TUSBSerialDataBits nDataBits,
 	(void)nParity;
 	(void)nStopBits;
 	return TRUE;
+}
+
+void CUSBSerialDevice::CompletionRoutine (CUSBRequest *pURB)
+{
+	assert (pURB != 0);
+	assert (m_bInRequestActive);
+	assert (m_nBufferInValid == m_nBufferInPtr);
+
+	if (pURB->GetStatus () != 0)
+	{
+		m_nBufferInValid = pURB->GetResultLength ();
+		m_nBufferInPtr = m_nReadHeaderBytes;
+
+		if (   m_nBufferInValid == 0
+		    || m_nBufferInValid == m_nBufferInPtr)
+		{
+			m_nBufferInValid = 0;
+			m_nBufferInPtr = 0;
+		}
+		else if (m_nBufferInValid < m_nBufferInPtr)
+		{
+			CLogger::Get ()->Write (FromSerial, LogWarning, "Missing read header");
+
+			m_nBufferInValid = 0;
+			m_nBufferInPtr = 0;
+		}
+	}
+
+	delete pURB;
+
+	m_bInRequestActive = FALSE;
+	DataSyncBarrier ();
+}
+
+void CUSBSerialDevice::CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext)
+{
+	CUSBSerialDevice *pThis = (CUSBSerialDevice *) pContext;
+	assert (pThis != 0);
+
+	pThis->CompletionRoutine (pURB);
 }
