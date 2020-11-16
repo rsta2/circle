@@ -85,7 +85,7 @@ public:
 	boolean AllocateQueue (unsigned nSizeMsecs);
 
 	/// \brief Allocate the queue used for Write()
-	/// \param nSizeMsecs Size of the queue in frames of audio
+	/// \param nSizeFrames Size of the queue in frames of audio
 	/// \note Not used, if GetChunk() is overloaded.
 	boolean AllocateQueueFrames (unsigned nSizeFrames);
 
