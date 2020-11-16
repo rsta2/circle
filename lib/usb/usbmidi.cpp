@@ -27,7 +27,10 @@
 #include <circle/usb/usb.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
+#include <circle/debug.h>
+#include <circle/util.h>
 #include <assert.h>
 
 #define EVENT_PACKET_SIZE	4
@@ -46,6 +49,7 @@ static const unsigned cin_to_length[] = {
 CUSBMIDIDevice::CUSBMIDIDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_pEndpointIn (0),
+	m_pEndpointOut (0),
 	m_pPacketHandler (0),
 	m_pPacketBuffer (0),
 	m_hTimer (0),
@@ -68,17 +72,14 @@ CUSBMIDIDevice::~CUSBMIDIDevice (void)
 		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 	}
 
-	if (m_pPacketBuffer != 0)
-	{
-		delete [] m_pPacketBuffer;
-		m_pPacketBuffer = 0;
-	}
+	delete [] m_pPacketBuffer;
+	m_pPacketBuffer = 0;
 
-	if (m_pEndpointIn != 0)
-	{
-		delete m_pEndpointIn;
-		m_pEndpointIn = 0;
-	}
+	delete m_pEndpointIn;
+	m_pEndpointIn = 0;
+
+	delete m_pEndpointOut;
+	m_pEndpointOut = 0;
 }
 
 boolean CUSBMIDIDevice::Configure (void)
@@ -106,8 +107,7 @@ boolean CUSBMIDIDevice::Configure (void)
 	TUSBAudioEndpointDescriptor *pEndpointDesc;
 	while ((pEndpointDesc = (TUSBAudioEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT)) != 0)
 	{
-		if (   (pEndpointDesc->bEndpointAddress & 0x80) != 0x80		// Input EP
-		    || (pEndpointDesc->bmAttributes     & 0x3F) != 0x02)	// Bulk EP
+		if ((pEndpointDesc->bmAttributes & 0x3F) != 0x02)	// Bulk EP
 		{
 			continue;
 		}
@@ -123,22 +123,38 @@ boolean CUSBMIDIDevice::Configure (void)
 			}
 		}
 
-		if (m_pEndpointIn != 0)
+		if ((pEndpointDesc->bEndpointAddress & 0x80) == 0x80)	// Input EP
 		{
-			ConfigurationError (FromMIDI);
+			if (m_pEndpointIn != 0)
+			{
+				ConfigurationError (FromMIDI);
 
-			return FALSE;
+				return FALSE;
+			}
+
+			m_pEndpointIn = new CUSBEndpoint (GetDevice (), (TUSBEndpointDescriptor *) pEndpointDesc);
+			assert (m_pEndpointIn != 0);
+
+			m_usBufferSize  = pEndpointDesc->wMaxPacketSize;
+			m_usBufferSize -= pEndpointDesc->wMaxPacketSize % EVENT_PACKET_SIZE;
+
+			assert (m_pPacketBuffer == 0);
+			m_pPacketBuffer = new u8[m_usBufferSize];
+			assert (m_pPacketBuffer != 0);
+		}
+		else							// Output EP
+		{
+			if (m_pEndpointOut != 0)
+			{
+				ConfigurationError (FromMIDI);
+
+				return FALSE;
+			}
+
+			m_pEndpointOut = new CUSBEndpoint (GetDevice (), (TUSBEndpointDescriptor *) pEndpointDesc);
+			assert (m_pEndpointOut != 0);
 		}
 
-		m_pEndpointIn = new CUSBEndpoint (GetDevice (), (TUSBEndpointDescriptor *) pEndpointDesc);
-		assert (m_pEndpointIn != 0);
-
-		m_usBufferSize  = pEndpointDesc->wMaxPacketSize;
-		m_usBufferSize -= pEndpointDesc->wMaxPacketSize % EVENT_PACKET_SIZE;
-
-		assert (m_pPacketBuffer == 0);
-		m_pPacketBuffer = new u8[m_usBufferSize];
-		assert (m_pPacketBuffer != 0);
 	}
 
 	if (m_pEndpointIn == 0)
@@ -168,6 +184,158 @@ void CUSBMIDIDevice::RegisterPacketHandler (TMIDIPacketHandler *pPacketHandler)
 	assert (m_pPacketHandler == 0);
 	m_pPacketHandler = pPacketHandler;
 	assert (m_pPacketHandler != 0);
+}
+
+boolean CUSBMIDIDevice::SendEventPackets (const u8 *pData, unsigned nLength)
+{
+	assert (pData != 0);
+	assert (nLength > 0);
+	assert ((nLength & 3) == 0);
+
+	if (m_pEndpointOut == 0)
+	{
+		return FALSE;
+	}
+
+	DMA_BUFFER (u8, Buffer, nLength);
+	memcpy (Buffer, pData, nLength);
+
+	return GetHost ()->Transfer (m_pEndpointOut, Buffer, nLength) == (int) nLength;
+}
+
+boolean CUSBMIDIDevice::SendPlainMIDI (unsigned nCable, const u8 *pData, unsigned nLength)
+{
+	assert (nCable <= 15);
+	assert (pData != 0);
+	assert (nLength > 0);
+
+	if (m_pEndpointOut == 0)
+	{
+		return FALSE;
+	}
+
+	size_t nBufferSize = nLength * 4;		// worst case
+	size_t nBufferValid = 0;
+	DMA_BUFFER (u8, Buffer, nBufferSize);
+	u8 *pBuffer = Buffer;
+
+	unsigned nState = 0;
+	unsigned nPacketLength;
+	u8 *pSysExStart;
+	while (nLength--)
+	{
+		u8 uchByte = *pData++;
+		switch (nState)
+		{
+		case 0:					// handle MIDI status code
+			if (uchByte < 0xF0)		// channel voice message
+			{
+				*pBuffer++ = (nCable << 4) | (uchByte >> 4);
+				nBufferValid++;
+				nPacketLength = cin_to_length[uchByte >> 4];
+				nState = 1;
+			}
+			else				// system common messages
+			{
+				switch (uchByte)
+				{
+				case 0xF0:		// sysex
+					pSysExStart = pBuffer;
+					*pBuffer++ = (nCable << 4) | 4;
+					nBufferValid++;
+					nPacketLength = 0;
+					nState = 2;
+					goto StateSysEx;
+
+				case 0xF1:		// time code
+				case 0xF3:		// song select
+					*pBuffer++ = (nCable << 4) | 2;
+					nBufferValid++;
+					nPacketLength = 2;
+					nState = 1;
+					break;
+
+				case 0xF2:		// song position pointer
+					*pBuffer++ = (nCable << 4) | 3;
+					nBufferValid++;
+					nPacketLength = 3;
+					nState = 1;
+					break;
+
+				case 0xF6:		// tune request
+				case 0xF8:		// timing clock
+				case 0xFA:		// start
+				case 0xFB:		// continue
+				case 0xFC:		// stop
+				case 0xFE:		// active sensing
+				case 0xFF:		// reset
+					*pBuffer++ = (nCable << 4) | 5;
+					nBufferValid++;
+					nPacketLength = 1;
+					nState = 1;
+					break;
+
+				default:
+					CLogger::Get ()->Write (FromMIDI, LogWarning,
+								"Unsupported MIDI status code (0x%X)",
+								(unsigned) uchByte);
+					return FALSE;
+				}
+			}
+			// fall through
+
+		case 1:					// copy MIDI data bytes
+			*pBuffer++ = uchByte;
+			nBufferValid++;
+			if (--nPacketLength == 0)
+			{
+				while ((nBufferValid & 3) != 0)		// padding
+				{
+					*pBuffer++ = 0;
+					nBufferValid++;
+				}
+
+				nState = 0;
+			}
+			break;
+
+		StateSysEx:				// handle sysex message
+		case 2:
+			if (nPacketLength == 3)		// current event packet full?
+			{
+				pSysExStart = pBuffer;	// start next packet
+				*pBuffer++ = (nCable << 4) | 4;
+				nBufferValid++;
+				nPacketLength = 0;
+			}
+
+			*pBuffer++ = uchByte;		// copy sysex data bytes
+			nBufferValid++;
+			nPacketLength++;
+
+			if (uchByte == 0xF7)		// end of sysex message?
+			{
+				*pSysExStart = (nCable << 4) | (nPacketLength + 4);	// set CIN
+
+				while (nPacketLength++ < 3)	// padding
+				{
+					*pBuffer++ = 0;
+					nBufferValid++;
+				}
+
+				nState = 0;
+			}
+			break;
+
+		default:
+			assert (0);
+			break;
+		}
+	}
+
+	//debug_hexdump (Buffer, nBufferValid, FromMIDI);
+
+	return GetHost ()->Transfer (m_pEndpointOut, Buffer, nBufferValid) == (int) nBufferValid;
 }
 
 boolean CUSBMIDIDevice::StartRequest (void)

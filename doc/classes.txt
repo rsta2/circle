@@ -92,7 +92,7 @@ USB library
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse, gamepad)
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards
-* CUSBMIDIDevice: Driver for USB Audio Class MIDI devices (input only)
+* CUSBMIDIDevice: Driver for USB Audio Class MIDI 1.0 devices
 * CUSBMouseDevice: Driver for USB mice
 * CUSBPrinterDevice: Simple communications driver for USB printers (back-channel is not used).
 * CUSBRequest: A request to an USB device (URB).
