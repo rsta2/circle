@@ -71,6 +71,10 @@ boolean CUSBSerialFT231XDevice::Configure (void)
 	{
 		type = "FT232RL";
 	}
+	else if (deviceDesc->bcdDevice == 0x900)
+	{
+		type = "FT232H";
+	}
 	CLogger::Get ()->Write (FromFt231x, LogNotice, "Part number: %s", (const char *)type);
 
 	CUSBHostController *pHost = GetHost ();
@@ -238,6 +242,7 @@ const TUSBDeviceID *CUSBSerialFT231XDevice::GetDeviceIDTable (void)
 	static const TUSBDeviceID DeviceIDTable[] =
 	{
 		{ USB_DEVICE (0x0403, 0x6001) },
+		{ USB_DEVICE (0x0403, 0x6014) },	// FT232H
 		{ USB_DEVICE (0x0403, 0x6015) },
 		{ }
 	};
