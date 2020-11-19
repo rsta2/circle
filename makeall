@@ -9,6 +9,10 @@ then
 	shift
 fi
 
+cd tools
+$make $1 $2 || exit
+cd ..
+
 cd lib
 $make $1 $2 || exit
 
