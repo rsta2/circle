@@ -333,6 +333,13 @@ boolean CUSBMIDIDevice::SendPlainMIDI (unsigned nCable, const u8 *pData, unsigne
 		}
 	}
 
+	if (nState != 0)
+	{
+		CLogger::Get ()->Write (FromMIDI, LogWarning, "Incomplete MIDI message");
+
+		return FALSE;
+	}
+
 	//debug_hexdump (Buffer, nBufferValid, FromMIDI);
 
 	return GetHost ()->Transfer (m_pEndpointOut, Buffer, nBufferValid) == (int) nBufferValid;
