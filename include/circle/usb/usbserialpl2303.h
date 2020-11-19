@@ -1,8 +1,8 @@
 //
-// usbdevicefactory.h
+// usbserialpl2303.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020  H. Kocevar <hinxx@protonmail.com>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,28 +17,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbdevicefactory_h
-#define _circle_usb_usbdevicefactory_h
+#ifndef _circle_usb_usbserialpl2303_h
+#define _circle_usb_usbserialpl2303_h
 
-#include <circle/usb/usbfunction.h>
-#include <circle/string.h>
+#include <circle/usb/usbserial.h>
+#include <circle/usb/usbdevicefactory.h>
 #include <circle/types.h>
 
-#define USB_DEVICE(vendorid, deviceid)		vendorid, deviceid
-
-struct TUSBDeviceID
-{
-	u16	usVendorID;
-	u16	usDeviceID;
-};
-
-class CUSBDeviceFactory
+class CUSBSerialPL2303Device : public CUSBSerialDevice
 {
 public:
-	static CUSBFunction *GetDevice (CUSBFunction *pParent, CString *pName);
+	CUSBSerialPL2303Device (CUSBFunction *pFunction);
+	~CUSBSerialPL2303Device (void);
 
-private:
-	static boolean FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable);
+	boolean Configure (void);
+	boolean SetBaudRate (unsigned nBaudRate);
+	boolean SetLineProperties (TUSBSerialDataBits nDataBits,
+				   TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
+
+	static const TUSBDeviceID *GetDeviceIDTable (void);
 };
 
 #endif

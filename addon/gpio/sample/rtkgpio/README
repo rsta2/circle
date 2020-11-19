@@ -1,0 +1,9 @@
+README
+
+To use this sample program you need a RTK.GPIO board allowing you to increase the number of GPIO pins.
+RTK.GPIO board uses USB to serial IC Winchiphead CH340 to communicate to Raspberry Pi.
+The board must be connected to an USB port of the Raspberry Pi and ready when the Raspberry Pi is started.
+
+First blink 5 times to show the image was loaded right.
+After initializing the USB driver stack the sample program drives GPIO0 - GPIO7 outputs
+(can be connected to a LED), and polls the level of GPIO22 - GPIO25 inputs (can be connected to a button).

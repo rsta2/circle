@@ -193,6 +193,15 @@ Base library
 * CNumberPool: Allocation pool for (device) numbers.
 * CWriteBufferDevice: Filter for buffered write to (e.g. screen) device.
 
+USB library
+
+* CUSBSerialDevice: Base class and interface for USB serial device drivers
+* CUSBSerialCDCDevice: Driver for USB CDC serial devices (e.g. BBC micro:bit)
+* CUSBSerialCH341Device: Driver for CH341 based USB serial devices
+* CUSBSerialCP2102Device: Driver for CP2102 based USB serial devices
+* CUSBSerialFT231XDevice: Driver for FTDI based USB serial devices
+* CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices
+
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 
 `./makedoc`
