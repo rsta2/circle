@@ -364,13 +364,6 @@ void CUSBMIDIDevice::CompletionRoutine (CUSBRequest *pURB)
 {
 	assert (pURB != 0);
 
-	if (pURB->GetStatus () == 0)
-	{
-		delete pURB;
-
-		return;
-	}
-
 	boolean bRestart = FALSE;
 
 	if (   pURB->GetStatus () != 0
