@@ -15,32 +15,26 @@ LIBS	= $(CIRCLEHOME)/lib/usb/libusb.a \
 
 CONTENT	= index.h style.h ledoff.h ledon.h favicon.h
 
-EXTRACLEAN = $(CONTENT) converttool
+EXTRACLEAN = $(CONTENT)
 
 include ../Rules.mk
 
 %.h: %.html
 	@echo "  GEN   $@"
-	@./converttool $< > $@
+	@$(CIRCLEHOME)/tools/converttool $< > $@
 
 %.h: %.css
 	@echo "  GEN   $@"
-	@./converttool $< > $@
+	@$(CIRCLEHOME)/tools/converttool $< > $@
 
 %.h: %.png
 	@echo "  GEN   $@"
-	@./converttool -b $< > $@
-	
+	@$(CIRCLEHOME)/tools/converttool -b $< > $@
+
 %.h: %.ico
 	@echo "  GEN   $@"
-	@./converttool -b $< > $@
-	
+	@$(CIRCLEHOME)/tools/converttool -b $< > $@
+
 webserver.o: $(CONTENT)
-
-$(CONTENT): converttool
-
-converttool: converttool.c
-	@echo "  TOOL  $@"
-	@gcc -o converttool converttool.c
 
 -include $(DEPS)
