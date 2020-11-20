@@ -218,6 +218,7 @@ Additional Topics
 * [Multi-core support](doc/multicore.txt)
 * [USB plug-and-play](doc/usb-plug-and-play.txt)
 * [Debugging support](doc/debug.txt)
+* [JTAG debugging](doc/debug-jtag.txt)
 * [QEMU support](doc/qemu.txt)
 * [Eclipse IDE support](doc/eclipse-support.txt)
 * [About real-time applications](doc/realtime.txt)

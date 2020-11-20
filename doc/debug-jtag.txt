@@ -1,0 +1,90 @@
+DEBUG WITH JTAG
+
+A comfortable way to source-code debug Circle applications is possible using the
+JTAG (Joint Test Action Group) interface of the Raspberry Pi. This allows
+multi-core debugging too. This has been tested for AArch64 operation on the
+Raspberry Pi 3 and 4, which is described herein. General information about JTAG
+can be found here:
+
+	https://en.wikipedia.org/wiki/JTAG
+
+You need an USB-to-JTAG interface adapter for JTAG debugging. An inexpensive but
+well-working choice are FT232H-based adapters. Search for "JTAG FT232H" in your
+favorite online store, to find one. Be sure that it supports the 3.3V level of
+your Raspberry Pi!
+
+Once you have it, the adapter has to be connected to the GPIO header of your
+Raspberry Pi like that (GPIO numbers are chip numbers, not header positions):
+
+	FT232H	JTAG	GPIO
+
+	ADBUS0	TCK	25
+	ADBUS1	TDI	26
+	ADBUS2	TDO	24
+	ADBUS3	TMS	27
+	ACBUS0	/TRST	22
+	ACBUS1	/SRST	not connected
+		RCLK	not connected
+	GND		GND
+
+This website helps you to find the header positions (ALT4 setting):
+
+	https://pinout.xyz/pinout/jtag
+	
+A configuration file for FT232H-based JTAG interfaces, which we will need later,
+can be found here:
+
+	https://sourceforge.net/p/openocd/code/ci/master/tree/tcl/interface/ftdi/um232h.cfg
+
+If you have an other JTAG interface, it is likely, that you can use it too, but
+you need your own wiring information and configuration file.
+
+Now you need the software. A free on-chip-debugger software is OpenOCD. Normally
+you need to download and build the sources by yourself, because there has been
+no release with the latest features for some time. Please open this website for
+information on how to build OpenOCD and an required configuration file for the
+Raspberry Pi 3 (search for "JTAG Software"):
+
+	https://www.suse.com/c/debugging-raspberry-pi-3-with-jtag/
+	
+Please copy and save the configuration file (starts with "transport select
+jtag") as rpi3.cfg. This file is for the Raspberry Pi 3. For the Raspberry Pi 4
+please copy the file rpi3.cfg to rpi4.cfg and apply the patch in
+tools/template/rpi4.cfg.diff to the new file:
+
+	$ patch rpi4.cfg < rpi4.cfg.diff
+
+Now you have to add the following setting to your config.txt file on the SD
+card, to enable the JTAG GPIO pins:
+
+	enable_jtag_gpio=1
+
+Remember that we are debugging in AArch64 mode here, which is selected by the
+provided configuration files. Thus, we have to enable AArch64 mode too, which
+is done in the template file boot/config64.txt by default.
+
+You need some (dummy) kernel8.img (kernel8-rpi4.img on Raspberry Pi 4) file on
+the SD card for boot. You can use the serial bootloader, which can be built in
+boot/ using "make bootloader64" for that purpose.
+
+Now insert your SD card into the Raspberry Pi, connect the JTAG USB adapter to
+your host PC, reboot the Raspberry Pi and enter in a shell on the host:
+
+	$ openocd -f um232h.cfg -f rpi3.cfg	# or rpi4.cfg
+
+OpenOCD should start and detect the JTAG interface and connected Raspberry Pi.
+Go to your application's source directory and enter:
+
+	$ gdb kernel8.elf
+
+	(gdb) target extended-remote :3333
+	(gdb) load
+	(gdb) tb main
+	(gdb) cont
+
+This will start GDB, connect to the OpenOCD port for core 0, load the program,
+set a temporary breakpoint at "main" and runs the program until this breakpoint
+is hit. Now you can continue to debug as you want.
+
+For multi-core debugging you have start multiple instances of GBD and to connect
+the ports 3334 (core 1), 3335 (core 2) and 3336 (core 3) within GDB.
