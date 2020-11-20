@@ -51,7 +51,7 @@
 {C('ü'),	C('Ü'),		KeyNone,	KeyNone},	// 0x2F
 {'+',		'*',		'~',		KeyNone},	// 0x30
 {'#',		'\'',		KeyNone,	KeyNone},	// 0x31
-{KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x32
+{'#',		'\'',		KeyNone,	KeyNone},	// 0x32
 {C('ö'),	C('Ö'),		KeyNone,	KeyNone},	// 0x33
 {C('ä'),	C('Ä'),		KeyNone,	KeyNone},	// 0x34
 {'^',		C('°'),		KeyNone,	KeyNone},	// 0x35
