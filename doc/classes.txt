@@ -96,7 +96,7 @@ USB library
 * CUSBMouseDevice: Driver for USB mice
 * CUSBPrinterDevice: Simple communications driver for USB printers (back-channel is not used).
 * CUSBRequest: A request to an USB device (URB).
-* CUSBSerialCDCDevice: Driver for USB CDC serial devices (e.g. BBC micro:bit)
+* CUSBSerialCDCDevice: Driver for USB CDC serial devices (e.g. micro:bit)
 * CUSBSerialCH341Device: Driver for CH341 based USB serial devices
 * CUSBSerialCP2102Device: Driver for CP2102 based USB serial devices
 * CUSBSerialDevice: Base class and interface for USB serial device drivers
