@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,6 +37,11 @@
 #include <circle/usb/usbbluetooth.h>
 #include <circle/usb/usbmidi.h>
 #include <circle/usb/usbcdcethernet.h>
+#include <circle/usb/usbserialcdc.h>
+#include <circle/usb/usbserialch341.h>
+#include <circle/usb/usbserialcp2102.h>
+#include <circle/usb/usbserialpl2303.h>
+#include <circle/usb/usbserialft231x.h>
 
 CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
 {
@@ -118,6 +123,26 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBCDCEthernetDevice (pParent);
 	}
+	else if (pName->Compare ("int2-2-1") == 0)
+	{
+		pResult = new CUSBSerialCDCDevice (pParent);
+	}
+	else if (FindDeviceID (pName, CUSBSerialCH341Device::GetDeviceIDTable ()))
+	{
+		pResult = new CUSBSerialCH341Device (pParent);
+	}
+	else if (FindDeviceID (pName, CUSBSerialCP2102Device::GetDeviceIDTable ()))
+	{
+		pResult = new CUSBSerialCP2102Device (pParent);
+	}
+	else if (FindDeviceID (pName, CUSBSerialPL2303Device::GetDeviceIDTable ()))
+	{
+		pResult = new CUSBSerialPL2303Device (pParent);
+	}
+	else if (FindDeviceID (pName, CUSBSerialFT231XDevice::GetDeviceIDTable ()))
+	{
+		pResult = new CUSBSerialFT231XDevice (pParent);
+	}
 	// new devices follow
 
 	if (pResult != 0)
@@ -128,4 +153,24 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	delete pName;
 
 	return pResult;
+}
+
+boolean CUSBDeviceFactory::FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable)
+{
+	while (   pIDTable->usVendorID != 0
+	       || pIDTable->usDeviceID != 0)
+	{
+		CString String;
+		String.Format ("ven%x-%x", (unsigned) pIDTable->usVendorID,
+					   (unsigned) pIDTable->usDeviceID);
+
+		if (pName->Compare (String) == 0)
+		{
+			return TRUE;
+		}
+
+		pIDTable++;
+	}
+
+	return FALSE;
 }

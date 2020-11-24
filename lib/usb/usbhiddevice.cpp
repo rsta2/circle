@@ -30,7 +30,6 @@ CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize)
 	m_nMaxReportSize (nMaxReportSize),
 	m_pReportEndpoint (0),
 	m_pEndpointOut (0),
-	m_pURB (0),
 	m_pReportBuffer (0)
 {
 	if (m_nMaxReportSize > 0)
@@ -110,10 +109,11 @@ boolean CUSBHIDDevice::Configure (unsigned nMaxReportSize)
 	{
 		if (GetHost ()->ControlMessage (GetEndpoint0 (),
 						REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-						SET_PROTOCOL, BOOT_PROTOCOL,
+						SET_PROTOCOL,   GetInterfaceProtocol () == 2
+							      ? REPORT_PROTOCOL : BOOT_PROTOCOL,
 						GetInterfaceNumber (), 0, 0) < 0)
 		{
-			CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set boot protocol");
+			CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set protocol");
 
 			return FALSE;
 		}
@@ -187,8 +187,6 @@ void CUSBHIDDevice::SendCompletionRoutine (CUSBRequest *pURB, void *pParam, void
 
 int CUSBHIDDevice::ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
 {
-	assert (m_pURB == 0);
-
 	assert (m_pReportEndpoint != 0);
 	assert (pBuffer != 0);
 	assert (nBufSize > 0);
@@ -200,19 +198,17 @@ boolean CUSBHIDDevice::StartRequest (void)
 	assert (m_pReportEndpoint != 0);
 	assert (m_pReportBuffer != 0);
 	
-	assert (m_pURB == 0);
 	assert (m_nMaxReportSize > 0);
-	m_pURB = new CUSBRequest (m_pReportEndpoint, m_pReportBuffer, m_nMaxReportSize);
-	assert (m_pURB != 0);
-	m_pURB->SetCompletionRoutine (CompletionStub, 0, this);
+	CUSBRequest *pURB = new CUSBRequest (m_pReportEndpoint, m_pReportBuffer, m_nMaxReportSize);
+	assert (pURB != 0);
+	pURB->SetCompletionRoutine (CompletionStub, 0, this);
 	
-	return GetHost ()->SubmitAsyncRequest (m_pURB);
+	return GetHost ()->SubmitAsyncRequest (pURB);
 }
 
 void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 {
 	assert (pURB != 0);
-	assert (m_pURB == pURB);
 
 	boolean bRestart = TRUE;
 
@@ -235,8 +231,7 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 		}
 	}
 
-	delete m_pURB;
-	m_pURB = 0;
+	delete pURB;
 
 	if (   bRestart
 	    && !StartRequest ())

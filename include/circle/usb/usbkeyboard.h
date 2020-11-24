@@ -50,8 +50,9 @@ public:
 
 	u8 GetLEDStatus (void) const;	// returns USB LED status to be handed-over to SetLEDs()
 
-	// raw mode (if this handler is registered the others are ignored)
-	void RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw);
+	// raw mode (if bMixedMode is FALSE, the cooked handlers are ignored)
+	void RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw,
+					  boolean bMixedMode = FALSE);
 
 	// works in cooked and raw mode
 	boolean SetLEDs (u8 ucStatus);		// must not be called in interrupt context
@@ -65,6 +66,7 @@ private:
 	CKeyboardBehaviour m_Behaviour;
 
 	TKeyStatusHandlerRaw *m_pKeyStatusHandlerRaw;
+	boolean m_bMixedMode;
 
 	u8 m_LastReport[USBKEYB_REPORT_SIZE];
 

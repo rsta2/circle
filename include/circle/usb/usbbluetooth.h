@@ -51,7 +51,6 @@ private:
 	CUSBEndpoint *m_pEndpointBulkIn;
 	CUSBEndpoint *m_pEndpointBulkOut;
 
-	CUSBRequest *m_pURB;
 	u8 *m_pEventBuffer;
 
 	TBTHCIEventHandler *m_pEventHandler;

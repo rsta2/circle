@@ -5,14 +5,17 @@
 CIRCLEHOME = ../..
 
 LVGL_DIR = .
+LVGL_DIR_NAME = lvgl
 
 CSRCS :=
 include $(LVGL_DIR)/lvgl/lvgl.mk
-OBJS := littlevgl.o $(CSRCS:.c=.o)
+OBJS := lvgl.o $(CSRCS:.c=.o)
 
 CSRCS :=
-include $(LVGL_DIR)/lv_examples/lv_examples.mk
+-include $(LVGL_DIR)/lv_examples/lv_examples.mk
 EXOBJS := $(CSRCS:.c=.o)
+
+EXTRACLEAN += $(EXOBJS) $(EXOBJS:.o=.d)
 
 all: liblvgl.a liblv_examples.a
 
@@ -29,7 +32,6 @@ liblv_examples.a: $(EXOBJS)
 include $(CIRCLEHOME)/Rules.mk
 
 INCLUDE += -I $(LVGL_DIR)
-CFLAGS += -Wno-narrowing -Wno-pointer-to-int-cast
 
 -include $(DEPS)
 

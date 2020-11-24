@@ -5,8 +5,31 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 43.2
+------------
+
+This intermediate release comes with new drivers and improvements in detail. First a number of **USB serial adapters** with different chips (CH341, CP2102, PL2303, FTDI) is supported now. These drivers are primarily intended to be used with serial client-server protocols, because a handshake (flow control) is not implemented so far. Only the tested combinations of USB vendor/device ID have been added to the drivers. If you discover, that your adapter with different IDs is working too, please let us know! The USB vendor/device ID combination has to be added in `GetDeviceIDTable()` at the bottom of the respective file *lib/usb/usbserial\*.cpp*.
+
+These new USB serial drivers allow to provide **serial client libraries** and sample programs, which work with the [**RTK.GPIO**](addon/gpio) board and the [**micro:bit**](addon/microbit) computer. Please follow the given links for details.
+
+There is an important change because of the **updated firmware version**, which is recommended for Circle. For **FIQ support on the Raspberry Pi 4 in AArch32 mode** a specific ARM stub file *armstub7-rpi4.bin* is required now. You will need a *config.txt* file for 32-bit operation now too for this configuration, as it already has been the case for 64-bit operation. Please read the file [boot/README](boot/README) for further information.
+
+The USB mouse driver supports a **mouse wheel** and up to five buttons now. [sample/10-usbmouse](sample/10-usbmouse) has been updated to demonstrate this. This required a small modification to the mouse API. If your application uses a mouse, you probably have to add the `nWheelMove` (int) parameter to your mouse handler's prototype.
+
+The Raspberry Pi 4 supports **multiple displays**. This can be used in Circle to provide more than one `CBcmFrameBuffer` and `CScreenDevice` instances now. If you want to use this feature, you have to add the setting `max_framebuffers=2` to your *config.txt* file on the SD card.
+
+The LittlevGL project has been renamed by its authors to **LVGL**. Because the support for this project in Circle has been updated to the **new version 7.6.1**, the respective directory [addon/lvgl](addon/lvgl) and the class `CLGVL` now follows this convention. This support enables USB plug-and-play now.
+
+A **number of fixes** has been applied for USB plug-and-play support on the Raspberry Pi 1-3.
+
+Some time has been spent to provide **build support on Windows**. As described in [doc/windows-build.txt](doc/windows-build.txt), it is possible to build all Circle libraries and samples without modification now on this platform.
+
+Finally some information about **JTAG debugging** in AArch64 mode on the Raspberry 3 and 4 have been added. Please see [doc/debug-jtag.txt](doc/debug-jtag.txt).
+
 Release 43.1
 ------------
+
+2020-10-10
 
 This intermediate release adds **USB plug-and-play** support to the classes `CConsole` and `CUGUI` and related samples (*sample/32-i2cshell* and *addon/ugui/sample*).
 

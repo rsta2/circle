@@ -1,5 +1,5 @@
 //
-// littlevgl.h
+// lvgl.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
@@ -17,16 +17,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <littlevgl/littlevgl.h>
+#include <lvgl/lvgl.h>
 #include <circle/devicenameservice.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/string.h>
 #include <circle/new.h>
 
-CLittlevGL *CLittlevGL::s_pThis = 0;
+CLVGL *CLVGL::s_pThis = 0;
 
-CLittlevGL::CLittlevGL (CScreenDevice *pScreen, CInterruptSystem *pInterrupt)
+CLVGL::CLVGL (CScreenDevice *pScreen, CInterruptSystem *pInterrupt)
 :	m_pBuffer1 (0),
 	m_pBuffer2 (0),
 	m_pScreen (pScreen),
@@ -45,7 +45,7 @@ CLittlevGL::CLittlevGL (CScreenDevice *pScreen, CInterruptSystem *pInterrupt)
 	m_PointerData.point.y = 0;
 }
 
-CLittlevGL::CLittlevGL (CBcmFrameBuffer *pFrameBuffer, CInterruptSystem *pInterrupt)
+CLVGL::CLVGL (CBcmFrameBuffer *pFrameBuffer, CInterruptSystem *pInterrupt)
 :	m_pBuffer1 (0),
 	m_pBuffer2 (0),
 	m_pScreen (0),
@@ -64,7 +64,7 @@ CLittlevGL::CLittlevGL (CBcmFrameBuffer *pFrameBuffer, CInterruptSystem *pInterr
 	m_PointerData.point.y = 0;
 }
 
-CLittlevGL::~CLittlevGL (void)
+CLVGL::~CLVGL (void)
 {
 	s_pThis = 0;
 
@@ -79,7 +79,7 @@ CLittlevGL::~CLittlevGL (void)
 	m_pBuffer2 = 0;
 }
 
-boolean CLittlevGL::Initialize (void)
+boolean CLVGL::Initialize (void)
 {
 	if (m_pFrameBuffer == 0)
 	{
@@ -119,6 +119,8 @@ boolean CLittlevGL::Initialize (void)
 			m_pMouseDevice->ShowCursor (TRUE);
 
 			m_pMouseDevice->RegisterEventHandler (MouseEventHandler);
+
+			m_pMouseDevice->RegisterRemovedHandler (MouseRemovedHandler);
 		}
 		else
 		{
@@ -135,21 +137,37 @@ boolean CLittlevGL::Initialize (void)
 		}
 	}
 
-	if (   m_pMouseDevice != 0
-	    || m_pTouchScreen != 0)
-	{
-		lv_indev_drv_t indev_drv;
-		lv_indev_drv_init (&indev_drv);
-		indev_drv.type = LV_INDEV_TYPE_POINTER;
-		indev_drv.read_cb = PointerRead;
-		lv_indev_drv_register (&indev_drv);
-	}
+	lv_indev_drv_t indev_drv;
+	lv_indev_drv_init (&indev_drv);
+	indev_drv.type = LV_INDEV_TYPE_POINTER;
+	indev_drv.read_cb = PointerRead;
+	lv_indev_drv_register (&indev_drv);
 
 	return TRUE;
 }
 
-void CLittlevGL::Update (void)
+void CLVGL::Update (boolean bPlugAndPlayUpdated)
 {
+	if (   bPlugAndPlayUpdated
+	    && m_pMouseDevice == 0)
+	{
+		m_pMouseDevice =
+			(CMouseDevice *) CDeviceNameService::Get ()->GetDevice ("mouse1", FALSE);
+		if (m_pMouseDevice != 0)
+		{
+			assert (m_pFrameBuffer != 0);
+			if (m_pMouseDevice->Setup (m_pFrameBuffer->GetWidth (),
+						   m_pFrameBuffer->GetHeight ()))
+			{
+				m_pMouseDevice->ShowCursor (TRUE);
+
+				m_pMouseDevice->RegisterEventHandler (MouseEventHandler);
+
+				m_pMouseDevice->RegisterRemovedHandler (MouseRemovedHandler);
+			}
+		}
+	}
+
 	lv_task_handler ();
 
 	unsigned nTicks = CTimer::Get ()->GetClockTicks ();
@@ -175,7 +193,7 @@ void CLittlevGL::Update (void)
 	}
 }
 
-void CLittlevGL::DisplayFlush (lv_disp_drv_t *pDriver, const lv_area_t *pArea, lv_color_t *pBuffer)
+void CLVGL::DisplayFlush (lv_disp_drv_t *pDriver, const lv_area_t *pArea, lv_color_t *pBuffer)
 {
 	assert (s_pThis != 0);
 
@@ -205,7 +223,7 @@ void CLittlevGL::DisplayFlush (lv_disp_drv_t *pDriver, const lv_area_t *pArea, l
 	s_pThis->m_DMAChannel.Start ();
 }
 
-void CLittlevGL::DisplayFlushComplete (unsigned nChannel, boolean bStatus, void *pParam)
+void CLVGL::DisplayFlushComplete (unsigned nChannel, boolean bStatus, void *pParam)
 {
 	assert (bStatus);
 
@@ -215,7 +233,7 @@ void CLittlevGL::DisplayFlushComplete (unsigned nChannel, boolean bStatus, void 
 	lv_disp_flush_ready (pDriver);
 }
 
-bool CLittlevGL::PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData)
+bool CLVGL::PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData)
 {
 	assert (s_pThis != 0);
 
@@ -226,8 +244,8 @@ bool CLittlevGL::PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData)
 	return false;
 }
 
-void CLittlevGL::MouseEventHandler (TMouseEvent Event, unsigned nButtons,
-				    unsigned nPosX, unsigned nPosY)
+void CLVGL::MouseEventHandler (TMouseEvent Event, unsigned nButtons,
+			       unsigned nPosX, unsigned nPosY, int nWheelMove)
 {
 	assert (s_pThis != 0);
 
@@ -255,7 +273,7 @@ void CLittlevGL::MouseEventHandler (TMouseEvent Event, unsigned nButtons,
 	}
 }
 
-void CLittlevGL::TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
+void CLVGL::TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
 					  unsigned nPosX, unsigned nPosY)
 {
 	assert (s_pThis != 0);
@@ -284,8 +302,8 @@ void CLittlevGL::TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
 	}
 }
 
-void CLittlevGL::LogPrint (lv_log_level_t Level, const char *pFile, uint32_t nLine,
-			   const char *pDescription)
+void CLVGL::LogPrint (lv_log_level_t Level, const char *pFile, uint32_t nLine,
+		      const char *pFunction, const char *pDescription)
 {
 	TLogSeverity Severity;
 	const char *pPrefix;
@@ -302,5 +320,11 @@ void CLittlevGL::LogPrint (lv_log_level_t Level, const char *pFile, uint32_t nLi
 	CString Source;
 	Source.Format ("%s(%d)", pFile, nLine);
 
-	CLogger::Get ()->Write (Source, Severity, "%s: %s", pPrefix, pDescription);
+	CLogger::Get ()->Write (Source, Severity, "%s: %s: %s", pPrefix, pFunction, pDescription);
+}
+
+void CLVGL::MouseRemovedHandler (CDevice *pDevice, void *pContext)
+{
+	assert (s_pThis != 0);
+	s_pThis->m_pMouseDevice = 0;
 }

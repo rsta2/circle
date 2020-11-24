@@ -1,0 +1,32 @@
+WINDOWS BUILD
+
+This file describes, how Circle-based applications can be built on Windows.
+First you have to download and install the following software:
+
+* Git for Windows (Complete package, with bash support)
+  from: https://gitforwindows.org
+* GNU make for Windows (Complete package, except sources, Setup)
+  from: http://gnuwin32.sourceforge.net/packages/make.htm
+* Toolchain
+  from: https://developer.arm.com/tools-and-software/open-source-software/ \
+	developer-tools/gnu-toolchain/gnu-rm/downloads
+  (e.g. gcc-arm-none-eabi-9-2020-q2-update-win32.exe, Windows Installer)
+
+Then create a file \Users\Your Name\.bash_profile with this contents:
+
+	export "PATH=$PATH:/c/Program Files (x86)/GnuWin32/bin"
+	export "PATH=$PATH:/c/Program Files (x86)/path/to/toolchain/bin"
+
+Insert the path to the toolchain in the second line. Now open "Git Bash" from
+the Windows start menu and enter:
+
+	cd ~/Documents
+	git clone https://github.com/rsta2/circle.git
+	cd circle
+	echo "RASPPI = 3" > Config.mk
+	./makeall -j
+	cd sample/21-webserver
+	make
+
+This clones the Circle project and builds the sample/21-webserver for the
+Raspberry Pi 3.

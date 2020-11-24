@@ -1,0 +1,34 @@
+README 
+
+This sample program demonstrates some features of the LVGL embedded GUI
+library v7.6.1 ((c) 2020 LVGL LLC):
+
+	https://github.com/lvgl/lvgl
+	https://lvgl.io
+
+The program can be controlled with an USB mouse or with the official Raspberry
+Pi touch screen and is itself only a wrapper, which uses the LVGL widgets demo
+program from this project:
+
+	https://github.com/lvgl/lv_examples
+
+To build the sample you have to clone the LVGL and lv_examples projects
+first, which are included as Git sub-modules into Circle. To do this, just
+enter:
+
+	git submodule update --init addon/lvgl/lvgl
+	git submodule update --init addon/lvgl/lv_examples
+
+Before build you may have to set the wanted screen resolution in the file
+lv_conf.h. Search for LV_HOR_RES_MAX and LV_VER_RES_MAX in this file.
+
+First build the Circle libraries from Circle project root, then the LVGL
+and lv_examples libraries by entering "make" in the addon/lvgl/ directory.
+Finally the sample can be built with "make" in addon/lvgl/sample/.
+
+Please note that the system generates log messages on screen, when an USB mouse
+is connected, while the program is running. This destroys the displayed GUI. To
+prevent this, you should add the following option to the file cmdline.txt to
+direct the log output to the serial interface:
+
+	logdev=ttyS1

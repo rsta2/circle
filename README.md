@@ -6,20 +6,30 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4 and on Raspberry Pi Zero). It provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4 and on Raspberry Pi Zero), except on the Compute Module 4, which is not fully supported. The status of the Raspberry Pi 400 is currently unknown. Circle provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-Release 43.1
+Release 43.2
 ------------
 
-This intermediate release adds **USB plug-and-play** support to the classes `CConsole` and `CUGUI` and related samples (*sample/32-i2cshell* and *addon/ugui/sample*).
+This intermediate release comes with new drivers and improvements in detail. First a number of **USB serial adapters** with different chips (CH341, CP2102, PL2303, FTDI) is supported now. These drivers are primarily intended to be used with serial client-server protocols, because a handshake (flow control) is not implemented so far. Only the tested combinations of USB vendor/device ID have been added to the drivers. If you discover, that your adapter with different IDs is working too, please let us know! The USB vendor/device ID combination has to be added in `GetDeviceIDTable()` at the bottom of the respective file *lib/usb/usbserial\*.cpp*.
 
-Furthermore two **important bug fixes** have been applied. The first one affects the handling of interrupts in the xHCI USB driver for the Raspberry Pi 4, where the interrupts and thus all data transfers might have been stalled after a random amount of time. The second one prevents the access to deleted USB device object, when an USB device is surprise-removed from the Raspberry Pi 1-3 or Zero.
+These new USB serial drivers allow to provide **serial client libraries** and sample programs, which work with the [**RTK.GPIO**](addon/gpio) board and the [**micro:bit**](addon/microbit) computer. Please follow the given links for details.
 
-Some effort have been spent to allow **reducing the boot time**, when using the USB driver and the network subsystem. This is shown in [sample/18-ntptime](sample/18-ntptime). Have a look at the [README file](sample/18-ntptime/README) for details.
+There is an important change because of the **updated firmware version**, which is recommended for Circle. For **FIQ support on the Raspberry Pi 4 in AArch32 mode** a specific ARM stub file *armstub7-rpi4.bin* is required now. You will need a *config.txt* file for 32-bit operation now too for this configuration, as it already has been the case for 64-bit operation. Please read the file [boot/README](boot/README) for further information.
 
-The **make target "tftpboot"** has been added to *Rules.mk*. If you have installed the *sample/38-bootloader* on your Raspberry Pi with Ethernet interface and have configured the host name (e.g. "raspberrypi") or IP address of it as `TFTPHOST=` in the file *Config.mk*, you can build and start a test program in a row using `make tftpboot`.
+The USB mouse driver supports a **mouse wheel** and up to five buttons now. [sample/10-usbmouse](sample/10-usbmouse) has been updated to demonstrate this. This required a small modification to the mouse API. If your application uses a mouse, you probably have to add the `nWheelMove` (int) parameter to your mouse handler's prototype.
+
+The Raspberry Pi 4 supports **multiple displays**. This can be used in Circle to provide more than one `CBcmFrameBuffer` and `CScreenDevice` instances now. If you want to use this feature, you have to add the setting `max_framebuffers=2` to your *config.txt* file on the SD card.
+
+The LittlevGL project has been renamed by its authors to **LVGL**. Because the support for this project in Circle has been updated to the **new version 7.6.1**, the respective directory [addon/lvgl](addon/lvgl) and the class `CLGVL` now follows this convention. This support enables USB plug-and-play now.
+
+A **number of fixes** has been applied for USB plug-and-play support on the Raspberry Pi 1-3.
+
+Some time has been spent to provide **build support on Windows**. As described in [doc/windows-build.txt](doc/windows-build.txt), it is possible to build all Circle libraries and samples without modification now on this platform.
+
+Finally some information about **JTAG debugging** in AArch64 mode on the Raspberry 3 and 4 have been added. Please see [doc/debug-jtag.txt](doc/debug-jtag.txt).
 
 The 43rd Step
 -------------
@@ -83,6 +93,7 @@ Circle supports the following features:
 |                       | Driver for on-board Ethernet device (SMSC951x)      |
 |                       | Driver for on-board Ethernet device (LAN7800)       |
 |                       | Driver for USB mass storage devices (bulk only)     |
+|                       | Drivers for different USB serial devices            |
 |                       | Audio class MIDI input support                      |
 |                       | Printer driver                                      |
 |                       |                                                     |
@@ -97,14 +108,14 @@ Circle supports the following features:
 | Graphics              | OpenGL ES 1.1 and 2.0, OpenVG 1.1, EGL 1.4          |
 |                       | (not on Raspberry Pi 4)                             |
 |                       | uGUI (by Achim Doebler)                             |
-|                       | LittlevGL GUI library (by Gabor Kiss-Vamosi)        |
+|                       | LVGL (by LVGL LLC)                                  |
 
 Building
 --------
 
 > For building 64-bit applications (AArch64) see the next section.
 
-Building is normally done on PC Linux. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *9.2-2019.12* (gcc-arm-9.2-2019.12-x86_64-arm-none-eabi.tar.xz) from this website.
+This describes building on PC Linux. See the file [doc/windows-build.txt](doc/windows-build.txt) for information about building on Windows. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *9.2-2019.12* (gcc-arm-9.2-2019.12-x86_64-arm-none-eabi.tar.xz) from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2, 3 or 4) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -120,7 +131,7 @@ The following table gives support for selecting the right *RASPPI* value:
 |      1 | kernel.img     | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
 |      2 | kernel7.img    | 2, 3, (CM3)              | Cortex-A7     |
 |      3 | kernel8-32.img | 3, (CM3)                 | Cortex-A53    |
-|      4 | kernel7l.img   | 4                        | Cortex-A72    |
+|      4 | kernel7l.img   | 4B                       | Cortex-A72    |
 
 For a binary distribution you should do one build with *RASPPI = 1*, one with *RASPPI = 2* and one build with *RASPPI = 4* and include the created files *kernel.img*, *kernel7.img* and *kernel7l.img*. Optionally you can do a build with *RASPPI = 3* and add the created file *kernel8-32.img* to provide an optimized version for the Raspberry Pi 3.
 
@@ -134,8 +145,6 @@ Then go to the build root of Circle and do:
 By default only the latest sample (with the highest number) is build. The ready build *kernel.img* file should be in its subdirectory of sample/. If you want to build another sample after `makeall` go to its subdirectory and do `make`.
 
 You can also build Circle on the Raspberry Pi itself (set `PREFIX =` (empty)) on Raspbian but you need some method to put the *kernel.img* file onto the SD(HC) card. With an external USB card reader on model B+ or Raspberry Pi 2/3/4 model B (4 USB ports) this should be no problem.
-
-Building Circle from a non-Linux host is possible too. Maybe you have to adapt the shell scripts in this case. You need a cross compiler targetting (for example) *arm-none-eabi*. OSDev.org has an [excellent document on the subject](http://wiki.osdev.org/GCC_Cross-Compiler) that you can follow if you have no idea of what a cross compiler is.
 
 AArch64
 -------
@@ -168,9 +177,9 @@ Installation
 
 Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the *kernel.img* (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
 
-The *config.txt* file, provided in the boot/ directory, is only needed to enable 64-bit mode and has to be copied on the SD card in this case. It must not be on the SD card otherwise!
+The *config32.txt* file, provided in the boot/ directory, is needed to enable FIQ use in 32-bit mode on the Raspberry Pi 4 and has to be copied to the SD card in this case (rename it to config.txt). Furthermore the additional file *armstub7-rpi4.bin* is required on the SD card then. Please see [boot/README](boot/README) for information on how to build this file.
 
-FIQ support for AArch64 on the Raspberry Pi 4 requires an additional file *armstub8-rpi4.bin* on the SD card. Please see [boot/README](boot/README) for information on how to build this file.
+The *config64.txt* file, provided in the boot/ directory, is needed to enable 64-bit mode and has to be copied to the SD card in this case (rename it to config.txt). FIQ support for AArch64 on the Raspberry Pi 4 requires an additional file *armstub8-rpi4.bin* on the SD card. Please see [boot/README](boot/README) for information on how to build this file.
 
 Directories
 -----------
@@ -182,18 +191,21 @@ Directories
 * app: Place your own applications here. If you have own libraries put them into app/lib/.
 * boot: Do *make* in this directory to get the Raspberry Pi firmware files required to boot.
 * doc: Additional documentation files.
-* tools: Some tools for using Circle more comfortable (e.g. a serial bootloader).
+* tools: Tools for building Circle and for using Circle more comfortable (e.g. a serial bootloader).
 
 Classes
 -------
 
 The following C++ classes were added to Circle:
 
-Base library
+USB library
 
-* CLatencyTester: Measures the IRQ latency of the running code.
-* CNumberPool: Allocation pool for (device) numbers.
-* CWriteBufferDevice: Filter for buffered write to (e.g. screen) device.
+* CUSBSerialDevice: Base class and interface for USB serial device drivers
+* CUSBSerialCDCDevice: Driver for USB CDC serial devices (e.g. micro:bit)
+* CUSBSerialCH341Device: Driver for CH341 based USB serial devices
+* CUSBSerialCP2102Device: Driver for CP2102 based USB serial devices
+* CUSBSerialFT231XDevice: Driver for FTDI based USB serial devices
+* CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 
@@ -211,6 +223,7 @@ Additional Topics
 * [Multi-core support](doc/multicore.txt)
 * [USB plug-and-play](doc/usb-plug-and-play.txt)
 * [Debugging support](doc/debug.txt)
+* [JTAG debugging](doc/debug-jtag.txt)
 * [QEMU support](doc/qemu.txt)
 * [Eclipse IDE support](doc/eclipse-support.txt)
 * [About real-time applications](doc/realtime.txt)
@@ -229,10 +242,12 @@ Linux is a trademark of Linus Torvalds.
 
 PS3 and PS4 are registered trademarks of Sony Computer Entertainment Inc.
 
-Xbox 360 and Xbox One are trademarks of the Microsoft group of companies.
+Windows, Xbox 360 and Xbox One are trademarks of the Microsoft group of companies.
 
 Nintendo Switch is a trademark of Nintendo.
 
 Khronos and OpenVG are trademarks of The Khronos Group Inc.
 
 OpenGL ES is a trademark of Silicon Graphics Inc.
+
+The micro:bit brand belongs to the Micro:bit Educational Foundation.

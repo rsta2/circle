@@ -106,6 +106,25 @@ boolean CSoundBaseDevice::AllocateQueue (unsigned nSizeMsecs)
 	return TRUE;
 }
 
+boolean CSoundBaseDevice::AllocateQueueFrames (unsigned nSizeFrames)
+{
+	assert (m_pQueue == 0);
+	assert (1 <= nSizeFrames && nSizeFrames <= m_nSampleRate);
+
+	// 1 byte remains free
+	m_nQueueSize = m_nHWFrameSize*nSizeFrames + 1;
+
+	m_pQueue = new u8[m_nQueueSize];
+	if (m_pQueue == 0)
+	{
+		return FALSE;
+	}
+
+	m_nNeedDataThreshold = m_nQueueSize / 2;
+
+	return TRUE;
+}
+
 void CSoundBaseDevice::SetWriteFormat (TSoundFormat Format, unsigned nChannels)
 {
 	assert (Format < SoundFormatUnknown);
@@ -147,12 +166,11 @@ int CSoundBaseDevice::Write (const void *pBuffer, size_t nCount)
 
 	m_SpinLock.Acquire ();
 
-	if (   m_HWFormat == SoundFormatSigned16
-	    && m_WriteFormat == SoundFormatSigned16
+	if (   m_HWFormat == m_WriteFormat
 	    && m_nWriteChannels == SOUND_HW_CHANNELS
 	    && !m_bSwapChannels)
 	{
-		// fast path for SoundFormatSigned16 Stereo without conversion
+		// fast path for Stereo samples without bit depth conversion or channel swapping
 
 		unsigned nBytes = GetQueueBytesFree ();
 		if (nBytes > nCount)

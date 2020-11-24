@@ -1,0 +1,33 @@
+README
+
+This sample program controls some features of the micro:bit computer from
+a Raspberry Pi using a Circle client library. The micro:bit has to be
+connected to an USB port of the Raspberry Pi for this purpose.
+
+Before you can start, the program ../microbit-server.py has to be installed on
+your micro:bit, which has to be connected to your host computer for that
+purpose. A drive "MICROBIT" should appear. Open https://python.microbit.org/ in
+your web browser, load the program into the edit window and click the download
+button. The downloaded .hex file has to be copied onto the MICROBIT drive to
+install the program. Wait until the yellow LED stops blinking.
+
+Now install the sample program on your SD card for the Raspberry Pi. You should
+also create a file cmdline.txt with this first line on the SD card:
+
+usbpowerdelay=2000
+
+This will give Circle more time to detect the USB devices, which is required for
+this sample program.
+
+The program scrolls a text on the LED display of the micro:bit, sets all
+pixels on the display (one after another) and shows the current gesture and
+light level from the micro:bit in a loop on the Raspberry Pi screen, until
+the button A is pressed. Finally the compass sensor will be calibrated and the
+current compass heading will be shown on the Raspberry Pi screen in a loop. You
+have to move the micro:bit around for calibration, to fill the LED screen
+with dots. This takes some time.
+
+If you want to modify the sample program to use more features, please look into
+the file microbitclient.h for the supported functions. Have a look at
+https://python.microbit.org/ (click "Help" and then "Documentation") for a
+description of the different features of the micro:bit!

@@ -52,8 +52,8 @@ public:
 	TShutdownMode Run (void);
 
 private:
-	void MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY);
-	static void MouseEventStub (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY);
+	void MouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY, int nWheelMove);
+	static void MouseEventStub (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY, int nWheelMove);
 
 	void DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenColor Color);
 
@@ -77,10 +77,14 @@ private:
 
 	unsigned m_nPosX;
 	unsigned m_nPosY;
+	int m_nColorIndex;
+	TScreenColor m_Color;
 
 	volatile TShutdownMode m_ShutdownMode;
 
 	static CKernel *s_pThis;
+
+	static TScreenColor s_Colors[];
 };
 
 #endif

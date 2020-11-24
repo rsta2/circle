@@ -79,23 +79,16 @@ else
 $(error AARCH must be set to 32 or 64)
 endif
 
-ifneq ($(strip $(STDLIB_SUPPORT)),0)
-MAKE_VERSION_MAJOR := $(firstword $(subst ., ,$(MAKE_VERSION)))
-ifneq ($(filter 0 1 2 3,$(MAKE_VERSION_MAJOR)),)
-$(error STDLIB_SUPPORT > 0 requires GNU make 4.0 or newer)
-endif
-endif
-
 ifeq ($(strip $(STDLIB_SUPPORT)),3)
-LIBSTDCPP != $(CPP) $(ARCH) -print-file-name=libstdc++.a
+LIBSTDCPP = "$(shell $(CPP) $(ARCH) -print-file-name=libstdc++.a)"
 EXTRALIBS += $(LIBSTDCPP)
-LIBGCC_EH != $(CPP) $(ARCH) -print-file-name=libgcc_eh.a
-ifneq ($(strip $(LIBGCC_EH)),libgcc_eh.a)
+LIBGCC_EH = "$(shell $(CPP) $(ARCH) -print-file-name=libgcc_eh.a)"
+ifneq ($(strip $(LIBGCC_EH)),"libgcc_eh.a")
 EXTRALIBS += $(LIBGCC_EH)
 endif
 ifeq ($(strip $(AARCH)),64)
-CRTBEGIN != $(CPP) $(ARCH) -print-file-name=crtbegin.o
-CRTEND   != $(CPP) $(ARCH) -print-file-name=crtend.o
+CRTBEGIN = "$(shell $(CPP) $(ARCH) -print-file-name=crtbegin.o)"
+CRTEND   = "$(shell $(CPP) $(ARCH) -print-file-name=crtend.o)"
 endif
 else
 CPPFLAGS  += -fno-exceptions -fno-rtti -nostdinc++
@@ -104,13 +97,13 @@ endif
 ifeq ($(strip $(STDLIB_SUPPORT)),0)
 CFLAGS	  += -nostdinc
 else
-LIBGCC	  != $(CPP) $(ARCH) -print-file-name=libgcc.a
+LIBGCC	  = "$(shell $(CPP) $(ARCH) -print-file-name=libgcc.a)"
 EXTRALIBS += $(LIBGCC)
 endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),1)
-LIBM	  != $(CPP) $(ARCH) -print-file-name=libm.a
-ifneq ($(strip $(LIBM)),libm.a)
+LIBM	  = "$(shell $(CPP) $(ARCH) -print-file-name=libm.a)"
+ifneq ($(strip $(LIBM)),"libm.a")
 EXTRALIBS += $(LIBM)
 endif
 endif
@@ -170,7 +163,8 @@ $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@wc -c < $(TARGET).img
 
 clean:
-	rm -f *.d *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
+	@echo "  CLEAN " `pwd`
+	@rm -f *.d *.o *.a *.elf *.lst *.img *.hex *.cir *.map *~ $(EXTRACLEAN)
 
 ifneq ($(strip $(SDCARD)),)
 install: $(TARGET).img

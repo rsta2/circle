@@ -71,5 +71,7 @@ PACKED;
 #define USBHID_BUTTON1	(1 << 0)
 #define USBHID_BUTTON2	(1 << 1)
 #define USBHID_BUTTON3	(1 << 2)
+#define USBHID_BUTTON4	(1 << 3)
+#define USBHID_BUTTON5	(1 << 4)
 
 #endif

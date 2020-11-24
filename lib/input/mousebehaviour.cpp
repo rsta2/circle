@@ -22,7 +22,7 @@
 #include <circle/bcm2835.h>
 #include <assert.h>
 
-#define MOUSE_BUTTONS		3
+#define MOUSE_BUTTONS		5
 
 #define ACCELERATION		18		// 1/10
 
@@ -35,7 +35,7 @@ static const u32 CursorSymbol[CURSOR_HEIGHT][CURSOR_WIDTH] =
 {
 #define B	0
 #define G	0xFF7F7F7FU
-#define W	0xFFFFFFFFU
+#define W	0xFF2F2F2FU
 	{G,G,B,B,B,B,B,B,B,B,B,B,B,B,B,B},
 	{G,W,G,B,B,B,B,B,B,B,B,B,B,B,B,B},
 	{G,W,W,G,B,B,B,B,B,B,B,B,B,B,B,B},
@@ -161,7 +161,7 @@ void CMouseBehaviour::UpdateCursor (void)
 	}
 }
 
-void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX, int nDisplacementY)
+void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove)
 {
 	if (   m_nScreenWidth == 0		// not setup?
 	    || m_nScreenHeight == 0)
@@ -194,7 +194,7 @@ void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX,
 
 		if (m_pEventHandler != 0)
 		{
-			(*m_pEventHandler) (MouseEventMouseMove, nButtons, m_nPosX, m_nPosY);
+			(*m_pEventHandler) (MouseEventMouseMove, nButtons, m_nPosX, m_nPosY, nWheelMove);
 		}
 	}
 
@@ -208,13 +208,20 @@ void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX,
 			if (   !(m_nButtons & nMask)
 			    &&  (nButtons & nMask))
 			{
-				(*m_pEventHandler) (MouseEventMouseDown, nMask, m_nPosX, m_nPosY);
+				(*m_pEventHandler) (MouseEventMouseDown, nMask, m_nPosX, m_nPosY, nWheelMove);
 			}
 			else if (   (m_nButtons & nMask)
 				 && !(nButtons & nMask))
 			{
-				(*m_pEventHandler) (MouseEventMouseUp, nMask, m_nPosX, m_nPosY);
+				(*m_pEventHandler) (MouseEventMouseUp, nMask, m_nPosX, m_nPosY, nWheelMove);
 			}
+		}
+	}
+
+	if (nWheelMove != 0) {
+		if (m_pEventHandler != 0)
+		{
+			(*m_pEventHandler) (MouseEventMouseWheel, nButtons, m_nPosX, m_nPosY, nWheelMove);
 		}
 	}
 

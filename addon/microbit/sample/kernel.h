@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,8 +31,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/usbhcidevice.h>
-#include <circle/input/touchscreen.h>
-#include <littlevgl/littlevgl.h>
+#include <microbit/microbitclient.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -51,7 +50,7 @@ public:
 	boolean Initialize (void);
 
 	TShutdownMode Run (void);
-
+	
 private:
 	// do not change this order
 	CMemorySystem		m_Memory;
@@ -66,8 +65,7 @@ private:
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
 
-	CTouchScreenDevice	m_TouchScreen;
-	CLittlevGL		m_GUI;
+	CMicrobitClient		m_Microbit;
 };
 
 #endif

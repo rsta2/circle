@@ -17,20 +17,14 @@ LIBS	= $(CIRCLEHOME)/addon/vc4/interface/bcm_host/libbcm_host.a \
 
 IMAGES	= Djenne_128_128.h Gaudi_128_128.h Lucca_128_128.h
 
-EXTRACLEAN = $(IMAGES) converttool
+EXTRACLEAN = $(IMAGES)
 
 include $(CIRCLEHOME)/Rules.mk
 
 %.h: %.raw
 	@echo "  GEN   $@"
-	@./converttool -b $< > $@
+	@$(CIRCLEHOME)/tools/converttool -b $< > $@
 
 triangle.o: $(IMAGES)
-
-$(IMAGES): converttool
-
-converttool: converttool.c
-	@echo "  TOOL  $@"
-	@gcc -o converttool converttool.c
 
 -include $(DEPS)

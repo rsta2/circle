@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/dwhcixactqueue.h>
+#include <circle/usb/usbrequest.h>
 #include <circle/usb/dwhci.h>
 #include <assert.h>
 
@@ -72,6 +73,12 @@ void CDWHCITransactionQueue::Flush (void)
 
 		m_List.Remove (pElement);
 
+		assert (pEntry->pStageData != 0);
+		CUSBRequest *pURB = pEntry->pStageData->GetURB ();
+		delete pURB;
+
+		delete pEntry->pStageData;
+
 #ifndef NDEBUG
 		pEntry->nMagic = 0;
 #endif
@@ -102,6 +109,12 @@ void CDWHCITransactionQueue::FlushDevice (CUSBDevice *pUSBDevice)
 		if (pEntry->pStageData->GetDevice () == pUSBDevice)
 		{
 			m_List.Remove (pElement);
+
+			assert (pEntry->pStageData != 0);
+			CUSBRequest *pURB = pEntry->pStageData->GetURB ();
+			delete pURB;
+
+			delete pEntry->pStageData;
 
 #ifndef NDEBUG
 			pEntry->nMagic = 0;

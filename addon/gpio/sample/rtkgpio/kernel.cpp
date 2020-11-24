@@ -2,8 +2,8 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2020  H. Kocevar <hinxx@protonmail.com>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -18,16 +18,17 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include "../lv_examples/lv_apps/demo/demo.h"
+#include <circle/string.h>
+#include <circle/usb/usbserialch341.h>
+#include <gpio/rtkgpio.h>
 
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
-:	m_Screen (LV_HOR_RES_MAX, LV_VER_RES_MAX),
+:	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer),
-	m_GUI (&m_Screen, &m_Interrupt)
+	m_USBHCI (&m_Interrupt, &m_Timer)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -76,13 +77,6 @@ boolean CKernel::Initialize (void)
 		bOK = m_USBHCI.Initialize ();
 	}
 
-	if (bOK)
-	{
-		m_TouchScreen.Initialize ();
-
-		bOK = m_GUI.Initialize ();
-	}
-
 	return bOK;
 }
 
@@ -90,12 +84,70 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	demo_create ();
-
-	while (1)
+	CUSBSerialCH341Device *pUSerial1 = (CUSBSerialCH341Device *) (m_DeviceNameService.GetDevice ("utty1", FALSE));
+	if (pUSerial1 == 0)
 	{
-		m_GUI.Update ();
+		m_Logger.Write (FromKernel, LogPanic, "USB serial device not found");
 	}
 
-	return ShutdownHalt;
+	CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
+	if (pTarget == 0)
+	{
+		pTarget = &m_Screen;
+	}
+
+	CRTKGpioDevice rtkgpio (pUSerial1);
+	rtkgpio.Initialize ();
+
+	for (unsigned i = 22; i < 26; i++)
+	{
+		rtkgpio.SetPinDirectionInput (i);
+		rtkgpio.SetPinPullNone (i);
+	}
+
+	for (unsigned i = 0; i < 8; i++)
+	{
+		rtkgpio.SetPinDirectionOutput (i);
+		rtkgpio.SetPinPullNone (i);
+		rtkgpio.SetPinLevelHigh (i);
+	}
+
+	CString status;
+
+	for (unsigned i = 0; i < 256; i++)
+	{
+		status.Append ("\routputs:");
+		for (unsigned b = 0; b < 8; b++)
+		{
+			if (!(i & (1 << b)))
+			{
+				rtkgpio.SetPinLevelHigh (b);
+				status.Append (" H");
+			}
+			else
+			{
+				rtkgpio.SetPinLevelLow (b);
+				status.Append (" L");
+			}
+		}
+		status.Append ("\tinputs:");
+		for (unsigned b = 22; b < 26; b++)
+		{
+			if (rtkgpio.GetPinLevel (b) == RtkGpioLevelLow)
+			{
+				status.Append (" L");
+			}
+			else
+			{
+				status.Append (" H");
+			}
+		}
+
+		pTarget->Write (status, status.GetLength ());
+		CTimer::SimpleMsDelay (500);
+	}
+
+	m_Logger.Write (FromKernel, LogNotice, "\nDone!");
+
+	return ShutdownReboot;
 }

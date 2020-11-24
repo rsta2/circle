@@ -65,8 +65,6 @@ private:
 	CUSBEndpoint *m_pReportEndpoint;
 	CUSBEndpoint *m_pEndpointOut;		// interrupt out EP (optional)
 
-	CUSBRequest *m_pURB;
-
 	u8 *m_pReportBuffer;
 };
 

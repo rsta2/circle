@@ -29,14 +29,17 @@ enum TMouseEvent
 	MouseEventMouseUp,
 	//MouseEventClick,
 	//MouseEventDoubleClick,
+	MouseEventMouseWheel,
 	MouseEventUnknown
 };
 
 #define MOUSE_BUTTON_LEFT	(1 << 0)
 #define MOUSE_BUTTON_RIGHT	(1 << 1)
 #define MOUSE_BUTTON_MIDDLE	(1 << 2)
+#define MOUSE_BUTTON_SIDE1	(1 << 3)
+#define MOUSE_BUTTON_SIDE2	(1 << 4)
 
-typedef void TMouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY);
+typedef void TMouseEventHandler (TMouseEvent Event, unsigned nButtons, unsigned nPosX, unsigned nPosY, int nWheelMove);
 
 class CMouseBehaviour
 {
@@ -54,7 +57,7 @@ public:
 	void UpdateCursor (void);	// call this frequently from TASK_LEVEL
 
 public:
-	void MouseStatusChanged (unsigned nButtons, int nDisplacementX, int nDisplacementY);
+	void MouseStatusChanged (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove);
 
 private:
 	static boolean SetCursorState (unsigned nPosX, unsigned nPosY, boolean bVisible);
