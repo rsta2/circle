@@ -45,9 +45,11 @@ public:
 	/// \param nSampleRate	sample rate in Hz
 	/// \param nChunkSize	twice the number of samples (words) to be handled\n
 	///			with one call to GetChunk() (one word per stereo channel)
+	/// \param bSlave		enable slave mode (PCM clock and FS clock are inputs)
 	CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 			     unsigned	       nSampleRate = 192000,
-			     unsigned	       nChunkSize  = 8192);
+			     unsigned	       nChunkSize  = 8192,
+			     bool		       bSlave      = FALSE);
 
 	virtual ~CI2SSoundBaseDevice (void);
 
@@ -90,6 +92,7 @@ private:
 private:
 	CInterruptSystem *m_pInterruptSystem;
 	unsigned m_nChunkSize;
+	bool     m_bSlave;
 
 	CGPIOPin   m_PCMCLKPin;
 	CGPIOPin   m_PCMFSPin;
