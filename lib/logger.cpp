@@ -220,6 +220,11 @@ void CLogger::WriteNoAlloc (const char *pSource, TLogSeverity Severity, const ch
 
 CLogger *CLogger::Get (void)
 {
+	if (s_pThis == 0)
+	{
+		new CLogger (LogPanic);
+	}
+
 	return s_pThis;
 }
 
@@ -227,7 +232,10 @@ void CLogger::Write (const char *pString)
 {
 	unsigned long nLength = strlen (pString);
 
-	m_pTarget->Write (pString, nLength);
+	if (m_pTarget != 0)
+	{
+		m_pTarget->Write (pString, nLength);
+	}
 
 	m_SpinLock.Acquire ();
 
