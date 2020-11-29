@@ -392,10 +392,10 @@ void CI2SSoundBaseDevice::RunI2S (void)
 				| ((CHANLEN+1) << TXC_A_CH2POS__SHIFT)
 				| (0 << TXC_A_CH2WID__SHIFT));
 
-	u32 nModeA = MODE_A_CLKI
-				| MODE_A_FSI
-				| ((CHANS*CHANLEN-1) << MODE_A_FLEN__SHIFT)
-				| (CHANLEN << MODE_A_FSLEN__SHIFT);
+	u32 nModeA =   MODE_A_CLKI
+		     | MODE_A_FSI
+		     | ((CHANS*CHANLEN-1) << MODE_A_FLEN__SHIFT)
+		     | (CHANLEN << MODE_A_FSLEN__SHIFT);
 
 	// set PCM clock and frame sync as inputs if in slave mode
 	if (m_bSlave)
