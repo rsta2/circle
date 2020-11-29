@@ -59,7 +59,9 @@
 #define CS_A_EN			(1 << 0)
 
 #define MODE_A_CLKI		(1 << 22)
+#define MODE_A_CLKM		(1 << 23)
 #define MODE_A_FSI		(1 << 20)
+#define MODE_A_FSM		(1 << 21)
 #define MODE_A_FLEN__SHIFT	10
 #define MODE_A_FSLEN__SHIFT	0
 
@@ -123,10 +125,12 @@
 
 CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
-					  unsigned	    nChunkSize)
+					  unsigned	    nChunkSize,
+					  bool		    bSlave)
 :	CSoundBaseDevice (SoundFormatSigned24, 0, nSampleRate),
 	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
+	m_bSlave (bSlave),
 	m_PCMCLKPin (18, GPIOModeAlternateFunction0),
 	m_PCMFSPin (19, GPIOModeAlternateFunction0),
 	m_PCMDOUTPin (21, GPIOModeAlternateFunction0),
@@ -387,10 +391,19 @@ void CI2SSoundBaseDevice::RunI2S (void)
 				| TXC_A_CH2EN
 				| ((CHANLEN+1) << TXC_A_CH2POS__SHIFT)
 				| (0 << TXC_A_CH2WID__SHIFT));
-	write32 (ARM_PCM_MODE_A,   MODE_A_CLKI
-				 | MODE_A_FSI
-				 | ((CHANS*CHANLEN-1) << MODE_A_FLEN__SHIFT)
-				 | (CHANLEN << MODE_A_FSLEN__SHIFT));
+
+	u32 nModeA = MODE_A_CLKI
+				| MODE_A_FSI
+				| ((CHANS*CHANLEN-1) << MODE_A_FLEN__SHIFT)
+				| (CHANLEN << MODE_A_FSLEN__SHIFT);
+
+	// set PCM clock and frame sync as inputs if in slave mode
+	if (m_bSlave)
+	{
+		nModeA |= MODE_A_CLKM | MODE_A_FSM;
+	}
+
+	write32 (ARM_PCM_MODE_A, nModeA);
 
 	// disable standby
 	write32 (ARM_PCM_CS_A, read32 (ARM_PCM_CS_A) | CS_A_STBY);
