@@ -53,7 +53,8 @@ endif
 ifneq ($(strip $(RASPPI)),4)
 OBJS	+= bcmrandom.o interrupt.o
 else
-OBJS	+= bcm54213.o bcmpciehostbridge.o bcmrandom200.o interruptgic.o dma4channel.o
+OBJS	+= bcm54213.o bcmpciehostbridge.o bcmrandom200.o interruptgic.o dma4channel.o \
+	   devicetreeblob.o
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),3)
