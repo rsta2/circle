@@ -21,6 +21,7 @@
 #define _circle_usb_xhci_h
 
 #include <circle/usb/xhciconfig.h>
+#include <circle/bcmpciehostbridge.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 #include <assert.h>
@@ -34,11 +35,11 @@
 //
 // Macros
 //
-#define XHCI_TO_DMA(ptr)		((u64) (uintptr) (ptr))
+#define XHCI_TO_DMA(ptr)		((u64) (uintptr) (ptr) | CBcmPCIeHostBridge::GetDMAAddress ())
 #define XHCI_TO_DMA_LO(ptr)		((u32) XHCI_TO_DMA (ptr))
 #define XHCI_TO_DMA_HI(ptr)		((u32) (XHCI_TO_DMA (ptr) >> 32))
 
-#define XHCI_FROM_DMA(addr)		((void *) (uintptr) (addr))
+#define XHCI_FROM_DMA(addr)		((void *) ((uintptr) (addr) & 0xFFFFFFFFU))
 
 #define XHCI_IS_SLOTID(num)		(1 <= (num) && (num) <= XHCI_CONFIG_MAX_SLOTS)
 #define XHCI_IS_PORTID(num)		(1 <= (num) && (num) <= XHCI_CONFIG_MAX_PORTS)
