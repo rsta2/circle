@@ -208,6 +208,10 @@ void sysinit (void)
 
 	CMemorySystem Memory;
 
+#if RASPPI >= 4
+	MachineInfo.FetchDTB ();
+#endif
+
 	// call constructors of static objects
 	extern void (*__init_start) (void);
 	extern void (*__init_end) (void);
