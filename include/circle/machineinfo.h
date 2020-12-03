@@ -21,6 +21,7 @@
 #define _circle_machineinfo_h
 
 #include <circle/bcmpropertytags.h>
+#include <circle/devicetreeblob.h>
 #include <circle/gpiopin.h>
 #include <circle/macros.h>
 #include <circle/types.h>
@@ -61,6 +62,13 @@ enum TDeviceId
 {
 	DeviceI2CMaster,
 	DeviceUnkown
+};
+
+struct TMemoryWindow
+{
+	u64	BusAddress;
+	u64	CPUAddress;
+	u64	Size;
 };
 
 class CMachineInfo
@@ -120,6 +128,13 @@ public:
 	unsigned AllocateDMAChannel (unsigned nChannel);
 	void FreeDMAChannel (unsigned nChannel);
 
+#if RASPPI >= 4
+	// Devicetree blob handling
+	void FetchDTB (void);
+
+	TMemoryWindow GetPCIeDMAMemory (void) const;
+#endif
+
 	static CMachineInfo *Get (void);
 
 private:
@@ -131,6 +146,10 @@ private:
 	unsigned	m_nRAMSize;
 
 	u16		m_usDMAChannelMap;		// channel bit set if channel is free
+
+#if RASPPI >= 4
+	CDeviceTreeBlob	*m_pDTB;
+#endif
 
 	static CMachineInfo *s_pThis;
 };

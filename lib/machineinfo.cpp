@@ -20,6 +20,7 @@
 #include <circle/machineinfo.h>
 #include <circle/gpioclock.h>
 #include <circle/sysconfig.h>
+#include <circle/startup.h>
 #include <assert.h>
 
 static struct
@@ -144,7 +145,8 @@ CMachineInfo::CMachineInfo (void)
 #if RASPPI <= 3
 	m_usDMAChannelMap (0x1F35)	// default mapping
 #else
-	m_usDMAChannelMap (0x71F5)	// default mapping
+	m_usDMAChannelMap (0x71F5),	// default mapping
+	m_pDTB (0)
 #endif
 {
 	if (s_pThis != 0)
@@ -237,6 +239,11 @@ CMachineInfo::CMachineInfo (void)
 CMachineInfo::~CMachineInfo (void)
 {
 	m_MachineModel = MachineModelUnknown;
+
+#if RASPPI >= 4
+	delete m_pDTB;
+	m_pDTB = 0;
+#endif
 
 	if (s_pThis == this)
 	{
@@ -513,6 +520,76 @@ void CMachineInfo::FreeDMAChannel (unsigned nChannel)
 	assert (!(m_usDMAChannelMap & (1 << nChannel)));
 	m_usDMAChannelMap |= 1 << nChannel;
 }
+
+#if RASPPI >= 4
+
+void CMachineInfo::FetchDTB (void)
+{
+	const void *pDTB = (const void *) (uintptr) ARM_DTB_PTR32;
+	if (pDTB != 0)
+	{
+		assert (m_pDTB == 0);
+		m_pDTB = new CDeviceTreeBlob (pDTB);
+		assert (m_pDTB != 0);
+
+		ARM_DTB_PTR32 = 0;	// does not work with chain boot, disable it
+	}
+}
+
+TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
+{
+	assert (s_pThis != 0);
+	if (s_pThis != this)
+	{
+		return s_pThis->GetPCIeDMAMemory ();
+	}
+
+	TMemoryWindow Result;
+
+	if (m_pDTB != 0)
+	{
+		const TDeviceTreeNode *pPCIe = m_pDTB->FindNode ("/scb/pcie@7d500000");
+		if (pPCIe != 0)
+		{
+			const TDeviceTreeProperty *pDMA = m_pDTB->FindProperty (pPCIe, "dma-ranges");
+			if (   pDMA != 0
+			    && m_pDTB->GetPropertyValueLength (pDMA) == sizeof (u32)*7)
+			{
+				Result.BusAddress = (u64) m_pDTB->GetPropertyValueWord (pDMA, 1) << 32
+							| m_pDTB->GetPropertyValueWord (pDMA, 2);
+				Result.CPUAddress = (u64) m_pDTB->GetPropertyValueWord (pDMA, 3) << 32
+							| m_pDTB->GetPropertyValueWord (pDMA, 4);
+				Result.Size	  = (u64) m_pDTB->GetPropertyValueWord (pDMA, 5) << 32
+							| m_pDTB->GetPropertyValueWord (pDMA, 6);
+
+				return Result;
+			}
+		}
+	}
+
+	// use default setting, if DTB is not available
+	Result.BusAddress = MEM_PCIE_DMA_RANGE_PCIE_START;
+	Result.CPUAddress = MEM_PCIE_DMA_RANGE_START;
+	Result.Size = (u64) m_nRAMSize * MEGABYTE;
+
+	if (   m_MachineModel != MachineModel4B			// not for BCM2711B0
+	    || m_nModelRevision >= 5)
+	{
+		// TODO: may change in newer firmware
+		if (m_nRAMSize > 4096)
+		{
+			Result.BusAddress = 0x200000000ULL;
+		}
+		else if (m_nRAMSize == 4096)
+		{
+			Result.BusAddress = 0x100000000ULL;
+		}
+	}
+
+	return Result;
+}
+
+#endif
 
 CMachineInfo *CMachineInfo::Get (void)
 {
