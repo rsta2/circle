@@ -8,8 +8,8 @@
 # Use most recent firmware test revision
 #FIRMWARE = master
 
-# Use firmware revision built/committed on: Oct 22 2020
-FIRMWARE ?= 5f95dfda0edaac1a353400915a92bcc61008c780
+# Use firmware revision built/committed on: Nov 25 2020
+FIRMWARE ?= e15ef4e4fe8be99cd816cec901d977224a1eb07e
 
 BASEURL = https://github.com/raspberrypi/firmware/blob/$(FIRMWARE)/boot
 
@@ -25,6 +25,7 @@ firmware: clean
 	wget -q -O fixup4cd.dat $(BASEURL)/fixup4cd.dat?raw=true
 	wget -q -O start4.elf $(BASEURL)/start4.elf?raw=true
 	wget -q -O start4cd.elf $(BASEURL)/start4cd.elf?raw=true
+	wget -q -O bcm2711-rpi-400.dtb $(BASEURL)/bcm2711-rpi-400.dtb?raw=true
 	wget -q -O bcm2711-rpi-4-b.dtb $(BASEURL)/bcm2711-rpi-4-b.dtb?raw=true
 	wget -q -O bcm2711-rpi-cm4.dtb $(BASEURL)/bcm2711-rpi-cm4.dtb?raw=true
 

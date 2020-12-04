@@ -575,14 +575,9 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
 	if (   m_MachineModel != MachineModel4B			// not for BCM2711B0
 	    || m_nModelRevision >= 5)
 	{
-		// TODO: may change in newer firmware
-		if (m_nRAMSize > 4096)
+		if (m_nRAMSize >= 4096)
 		{
 			Result.BusAddress = 0x200000000ULL;
-		}
-		else if (m_nRAMSize == 4096)
-		{
-			Result.BusAddress = 0x100000000ULL;
 		}
 	}
 
