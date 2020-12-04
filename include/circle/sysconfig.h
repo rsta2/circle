@@ -153,6 +153,23 @@
 
 #endif
 
+#if RASPPI >= 4
+
+// USE_XHCI_INTERNAL enables the xHCI controller, which is integrated
+// into the BCM2711 SoC. The Raspberry Pi 4 provides two independent
+// xHCI USB host controllers, an external controller, which is connected
+// to the four USB-A sockets (USB 3.0 and 2.0) and an internal controller,
+// which is connected to the USB-C power socket (USB 2.0 only). By default
+// Circle uses the external xHCI controller. If you want to use the
+// internal controller instead, this option has to be defined. Enabling
+// this option is the only possibility to use USB on the Compute Module 4
+// with Circle. This setting requires the option "otg_mode=1" set in the
+// config.txt file too!
+
+//#define USE_XHCI_INTERNAL
+
+#endif
+
 ///////////////////////////////////////////////////////////////////////
 //
 // Timing

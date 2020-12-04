@@ -32,6 +32,7 @@
 #include <circle/usb/xhcicommandmanager.h>
 #include <circle/usb/xhciroothub.h>
 #include <circle/usb/xhci.h>
+#include <circle/sysconfig.h>
 #include <circle/types.h>
 
 class CXHCIDevice : public CUSBHostController	/// USB host controller interface (xHCI) driver
@@ -64,13 +65,23 @@ public:
 #endif
 
 private:
+#ifdef USE_XHCI_INTERNAL
+	void InterruptHandler (void);
+	static void InterruptStub (void *pParam);
+#else
 	void InterruptHandler (unsigned nVector);
 	static void InterruptStub (unsigned nVector, void *pParam);
+#endif
 
 	boolean HWReset (void);
 
 private:
+#ifdef USE_XHCI_INTERNAL
+	CInterruptSystem *m_pInterruptSystem;
+	boolean m_bInterruptConnected;
+#else
 	CBcmPCIeHostBridge m_PCIeHostBridge;
+#endif
 
 	CXHCISharedMemAllocator m_SharedMemAllocator;
 

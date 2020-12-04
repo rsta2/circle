@@ -22,6 +22,7 @@
 
 #include <circle/usb/xhciconfig.h>
 #include <circle/bcmpciehostbridge.h>
+#include <circle/sysconfig.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 #include <assert.h>
@@ -35,7 +36,11 @@
 //
 // Macros
 //
-#define XHCI_TO_DMA(ptr)		((u64) (uintptr) (ptr) | CBcmPCIeHostBridge::GetDMAAddress ())
+#ifdef USE_XHCI_INTERNAL
+	#define XHCI_TO_DMA(ptr)	((u64) (uintptr) (ptr))
+#else
+	#define XHCI_TO_DMA(ptr)	((u64) (uintptr) (ptr) | CBcmPCIeHostBridge::GetDMAAddress ())
+#endif
 #define XHCI_TO_DMA_LO(ptr)		((u32) XHCI_TO_DMA (ptr))
 #define XHCI_TO_DMA_HI(ptr)		((u32) (XHCI_TO_DMA (ptr) >> 32))
 
@@ -55,7 +60,11 @@
 //
 #define XHCI_REG_CAP_CAPLENGTH		0x00
 #define XHCI_REG_CAP_HCIVERSION		0x02
+#ifdef USE_XHCI_INTERNAL
+	#define XHCI_SUPPORTED_VERSION				0x110
+#else
 	#define XHCI_SUPPORTED_VERSION				0x100
+#endif
 #define XHCI_REG_CAP_HCSPARAMS1		0x04
 	#define XHCI_REG_CAP_HCSPARAMS1_MAX_SLOTS__MASK		0xFF
 	#define XHCI_REG_CAP_HCSPARAMS1_MAX_INTRS__SHIFT	8
@@ -416,10 +425,18 @@ struct TXHCISlotContext
 		SlotState		: 5;
 
 	u32	RsvdO[4];
+
+#ifdef USE_XHCI_INTERNAL
+	u32	RsvdO1[8];
+#endif
 }
 PACKED;
 
+#ifdef USE_XHCI_INTERNAL
+ASSERT_STATIC (sizeof (TXHCISlotContext) == 0x40);
+#else
 ASSERT_STATIC (sizeof (TXHCISlotContext) == 0x20);
+#endif
 
 struct TXHCIEndpointContext
 {
@@ -454,11 +471,17 @@ struct TXHCIEndpointContext
 
 	u32	RsvdO[3];
 
-
+#ifdef USE_XHCI_INTERNAL
+	u32	RsvdO1[8];
+#endif
 }
 PACKED;
 
+#ifdef USE_XHCI_INTERNAL
+ASSERT_STATIC (sizeof (TXHCIEndpointContext) == 0x40);
+#else
 ASSERT_STATIC (sizeof (TXHCIEndpointContext) == 0x20);
+#endif
 
 struct TXHCIDeviceContext
 {
@@ -468,17 +491,29 @@ struct TXHCIDeviceContext
 }
 PACKED;
 
+#ifdef USE_XHCI_INTERNAL
+ASSERT_STATIC (sizeof (TXHCIDeviceContext) == 0x800);
+#else
 ASSERT_STATIC (sizeof (TXHCIDeviceContext) == 0x400);
+#endif
 
 struct TXHCIInputControlContext
 {
-	u32	AddContextFlags;
 	u32	DropContextFlags;
+	u32	AddContextFlags;
 	u32	RsvdZ[6];
+
+#ifdef USE_XHCI_INTERNAL
+	u32	RsvdZ1[8];
+#endif
 }
 PACKED;
 
+#ifdef USE_XHCI_INTERNAL
+ASSERT_STATIC (sizeof (TXHCIInputControlContext) == 0x40);
+#else
 ASSERT_STATIC (sizeof (TXHCIInputControlContext) == 0x20);
+#endif
 
 struct TXHCIInputContext
 {
@@ -487,6 +522,10 @@ struct TXHCIInputContext
 }
 PACKED;
 
+#ifdef USE_XHCI_INTERNAL
+ASSERT_STATIC (sizeof (TXHCIInputContext) == 0x840);
+#else
 ASSERT_STATIC (sizeof (TXHCIInputContext) == 0x420);
+#endif
 
 #endif

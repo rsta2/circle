@@ -52,7 +52,7 @@ boolean CXHCIRootPort::Initialize (void)
 	assert (m_nPortIndex < XHCI_CONFIG_MAX_PORTS);
 	if (XHCI_IS_USB2_PORT (m_nPortIndex+1))
 	{
-		if (!Reset (50000))
+		if (!Reset (100000))
 		{
 			CLogger::Get ()->Write (From, LogWarning,
 						"Port %u: Reset failed", m_nPortIndex+1);
