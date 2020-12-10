@@ -172,8 +172,9 @@ static void vfpinit (void)
 #define VFP_FPEXC_EN	(1 << 30)
 	__asm volatile ("fmxr fpexc, %0" : : "r" (VFP_FPEXC_EN));
 
+#define VFP_FPSCR_FZ	(1 << 24)	// enable Flush-to-zero mode
 #define VFP_FPSCR_DN	(1 << 25)	// enable Default NaN mode
-	__asm volatile ("fmxr fpscr, %0" : : "r" (VFP_FPSCR_DN));
+	__asm volatile ("fmxr fpscr, %0" : : "r" (VFP_FPSCR_FZ | VFP_FPSCR_DN));
 }
 
 #endif
