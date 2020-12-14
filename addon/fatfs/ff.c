@@ -5740,7 +5740,7 @@ static FRESULT create_partition (
 		pi = si = 0;	/* partition table index, size table index */
 		do {
 			if (pi * SZ_GPTE % ss == 0) mem_set(buf, 0, ss);	/* Clean the buffer if needed */
-			if (n_lba64 != 0) {	/* Is the size table not termintated? */
+			if (n_lba64 != 0) {	/* Is the size table not terminated? */
 				s_lba64 = (s_lba64 + align - 1) & ((QWORD)0 - align);	/* Align partition start */
 				n_lba64 = plst[si++];	/* Get a partition size */
 				if (n_lba64 <= 100) {	/* Is the size in percentage? */
