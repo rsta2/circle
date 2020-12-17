@@ -123,7 +123,11 @@ void CNetDeviceLayer::Process (void)
 
 const CMACAddress *CNetDeviceLayer::GetMACAddress (void) const
 {
-	assert (m_pDevice != 0);
+	if (m_pDevice == 0)
+	{
+		return 0;
+	}
+
 	return m_pDevice->GetMACAddress ();
 }
 

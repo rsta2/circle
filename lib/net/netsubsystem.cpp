@@ -91,16 +91,16 @@ boolean CNetSubSystem::Initialize (boolean bWaitForActivate)
 
 	new CNetTask (this);
 
+	if (!bWaitForActivate)
+	{
+		return TRUE;
+	}
+
 	if (m_bUseDHCP)
 	{
 		assert (m_pDHCPClient == 0);
 		m_pDHCPClient = new CDHCPClient (this, m_Hostname);
 		assert (m_pDHCPClient != 0);
-	}
-
-	if (!bWaitForActivate)
-	{
-		return TRUE;
 	}
 
 	while (!IsRunning ())
@@ -116,6 +116,14 @@ void CNetSubSystem::Process (void)
 	if (s_pThis == 0)
 	{
 		return;
+	}
+
+	if (   m_bUseDHCP
+	    && m_pDHCPClient == 0
+	    && m_NetDevLayer.IsRunning ())
+	{
+		m_pDHCPClient = new CDHCPClient (this, m_Hostname);
+		assert (m_pDHCPClient != 0);
 	}
 
 	m_NetDevLayer.Process ();
@@ -159,7 +167,11 @@ boolean CNetSubSystem::IsRunning (void) const
 		return TRUE;
 	}
 
-	assert (m_pDHCPClient != 0);
+	if (m_pDHCPClient == 0)
+	{
+		return FALSE;
+	}
+
 	return m_pDHCPClient->IsBound ();
 }
 

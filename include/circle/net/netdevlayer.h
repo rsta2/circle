@@ -36,6 +36,7 @@ public:
 
 	void Process (void);
 
+	// returns 0, if net device is not available yet
 	const CMACAddress *GetMACAddress (void) const;
 
 	void Send (const void *pBuffer, unsigned nLength);
