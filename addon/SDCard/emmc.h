@@ -128,6 +128,7 @@ private:
 	u32 m_device_id[4];
 
 	u32 m_card_supports_sdhc;
+	u32 m_card_supports_hs;
 	u32 m_card_supports_18v;
 	u32 m_card_ocr;
 	u32 m_card_rca;

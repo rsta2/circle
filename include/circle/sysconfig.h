@@ -299,6 +299,15 @@
 
 #endif
 
+// SD_HIGH_SPEED enables the high-speed extensions of the SD card
+// driver, which should result in a better performance with modern SD
+// cards. This is not tested that widely like the standard driver, why
+// it is presented as an option here, but is enabled by default.
+
+#ifndef NO_SD_HIGH_SPEED
+#define SD_HIGH_SPEED
+#endif
+
 // SAVE_VFP_REGS_ON_IRQ enables saving the floating point registers
 // on entry when an IRQ occurs and will restore these registers on exit
 // from the IRQ handler. This has to be defined, if an IRQ handler
