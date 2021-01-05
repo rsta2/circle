@@ -17,9 +17,9 @@ python3-pyserial module) installed. You may also need the terminal program
 
 3. Add the following lines to the file Config.mk in the Circle root directory:
 
-	SERIALPORT = /dev/ttyUSB0	# (device of your serial USB adapter)
-	FLASHBAUD = 115200		    # (baud rate for loading the application)
-	USERBAUD = 115200		    # (baud rate used by the application)
+    SERIALPORT = /dev/ttyUSB0   # (device of your serial USB adapter)
+    FLASHBAUD = 115200          # (baud rate for loading the application)
+    USERBAUD = 115200           # (baud rate used by the application)
 
 By increasing FLASHBAUD you can speed-up to loading process very much. It
 depends on your serial adapter, which baud rates are possible. Common values are
@@ -61,7 +61,6 @@ script to run `make flash` and then immediately open the monitor.  On linux, you
 can just `cat` the serial port if you just want to see the log:
 
 	#!/bin/bash -e
-
 	make flash
 	stty -F /dev/ttyUSB0 115200
 	cat /dev/ttyUSB0
@@ -69,5 +68,5 @@ can just `cat` the serial port if you just want to see the log:
 8. To start another development cycle, power off and on the Raspberry Pi, and
 after rebuilding do again "make flash".
 
-If you're doing this a lot, a [reset button](https://www.instructables.com/Rasberry-Pi-2-Reset-Button/) 
-makes things easier.
+If you're doing this a lot, a reset button makes things easier.  eg: see
+here: https://www.instructables.com/Rasberry-Pi-2-Reset-Button/
