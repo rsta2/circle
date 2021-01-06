@@ -4,7 +4,7 @@ This file describes, how Circle-based applications can be built on Windows.  The
 ways to do this:
 
 1. Using Windows based toolchains
-2. Using "Windows SubSystem for Linux"
+2. Using the "Windows SubSystem for Linux"
 
 
 Windows Based Toolchains
@@ -66,7 +66,7 @@ it to v1 as described here:
 	https://github.com/MicrosoftDocs/WSL/issues/590
 
 To access the serial ports from within the Linux machine use the device name `/dev/ttyS<n>` where
-`<n>` is the COM port number.  eg: COM3 is available as /dev/ttsS3
+`<n>` is the COM port number.  eg: COM3 is available as `/dev/ttsS3`.  
 
 To access an SD card attached to the Windows machine (ie: to copy kernel images to it), from the 
 Linux machine first create a mount point for it:
@@ -78,6 +78,11 @@ You can then mount the card and copy to it: (replace d: with the Windows drive l
 	sudo mount -t drvfs d: /mnt/sdcard
 	cp kernel7.img /mnt/sdcard
 	sudo umount /mnt/sdcard
+
+Alternatively instead of accessing Windows from the Linux side you can do the reverse.  Files on 
+the Linux machine are accessible via a network share `\\wsl$\<machinename>` so you can pick up 
+built kernel images from there and copy to the SD Card using Windows, or flash to the bootloader
+using flasher.py on Windows.  If you take this approach you can use WSL v2.
 
 For code editing, VS Code can run on Windows and directly edit files on the Linux machine.  See here 
 for instructions on setting it up:
