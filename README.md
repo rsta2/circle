@@ -124,6 +124,14 @@ RASPPI = 1
 PREFIX = arm-none-eabi-
 ```
 
+If you're new to this, and not sure how to setup the toolchains mentioned above all you need to 
+do is download and extract the .xz file (`tar -xvf file.tar.xz`) and include the extracted location in the PREFIX variable:
+
+```
+PREFIX = /home/myusername/Downloads/gcc-arm-9.2-2019.12-x86_64-arm-none-eabi/bin/arm-none-eabi-
+
+```
+
 The following table gives support for selecting the right *RASPPI* value:
 
 | RASPPI | Target         | Models                   | Optimized for |
@@ -172,6 +180,14 @@ Then go to the build root of Circle and do:
 
 By default only the latest sample (with the highest number) is build. The ready build *kernel8.img* or *kernel8-rpi4.img* file should be in its subdirectory of sample/. If you want to build another sample after `makeall` go to its subdirectory and do `make`.
 
+If you're using any of the [add-on libraries](addon/README) you'll also need to build them (and possibly their dependencies). For example to use the vc4 addon:
+
+```
+(cd addon/linux; make)
+(cd addon/vc4/interface; ./makeall)
+(cd addon/vc4; ./makeall)
+```
+
 Installation
 ------------
 
@@ -192,6 +208,36 @@ Directories
 * boot: Do *make* in this directory to get the Raspberry Pi firmware files required to boot.
 * doc: Additional documentation files.
 * tools: Tools for building Circle and for using Circle more comfortable (e.g. a serial bootloader).
+
+Keeping Your Project Separate
+-----------------------------
+
+You'll probably want to keep your own project separate from the circle code base.  To do this, just
+have your makefile refer to the circle project through the `CIRCLEHOME` variable.
+
+```
+#
+# Makefile
+#
+
+CIRCLEHOME = ../circle              # Update this to point to circle directory
+
+OBJS = \
+	main.o \
+	kernel.o \
+    etc.o
+
+LIBS = \
+	$(CIRCLEHOME)/lib/libcircle.a \
+	$(CIRCLEHOME)/lib/etc.a
+
+include $(CIRCLEHOME)/Rules.mk      # The samples don't do this, but probably should
+
+-include $(DEPS)
+```
+
+Note that your Config.mk file still needs to reside in the circle directory.
+
 
 Classes
 -------
