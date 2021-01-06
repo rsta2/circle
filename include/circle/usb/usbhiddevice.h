@@ -53,6 +53,9 @@ protected:
 	int ReceiveFromEndpointIn (void *pBuffer, unsigned nBufSize,
 				   unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
+	u32 ExtractUnsigned (const void *buffer, u32 offset, u32 length);
+	s32 ExtractSigned (const void *buffer, u32 offset, u32 length);
+
 private:
 	void CompletionRoutine (CUSBRequest *pURB);
 	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);

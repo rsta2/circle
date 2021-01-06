@@ -194,7 +194,7 @@ void CUSBGamePadStandardDevice::DecodeReport (const u8 *pReportBuffer)
 		{
 			if (id != 0)
 				break;
-			id = BitGetUnsigned(pReportBuffer, 0, 8);
+			id = ExtractUnsigned(pReportBuffer, 0, 8);
 			if (id != 0 && (int) id != arg)
 				return;
 			id = arg;
@@ -264,8 +264,8 @@ void CUSBGamePadStandardDevice::DecodeReport (const u8 *pReportBuffer)
 						m_State.axes[naxes].maximum = lmax != UNDEFINED ? lmax : pmax;
 
 						int value = (m_State.axes[naxes].minimum < 0) ?
-							BitGetSigned(pReportBuffer, offset + i * size, size) :
-							BitGetUnsigned(pReportBuffer, offset + i * size, size);
+							ExtractSigned(pReportBuffer, offset + i * size, size) :
+							ExtractUnsigned(pReportBuffer, offset + i * size, size);
 
 						m_State.axes[naxes++].value = value;
 					}
@@ -276,7 +276,7 @@ void CUSBGamePadStandardDevice::DecodeReport (const u8 *pReportBuffer)
 				{
 					for (unsigned i = 0; i < count && i < MAX_HATS; i++)
 					{
-						int value = BitGetUnsigned(pReportBuffer, offset + i * size, size);
+						int value = ExtractUnsigned(pReportBuffer, offset + i * size, size);
 						m_State.hats[nhats++] = value;
 					}
 					state = GamePad;
@@ -284,7 +284,7 @@ void CUSBGamePadStandardDevice::DecodeReport (const u8 *pReportBuffer)
 				else if (state == GamePadButton)
 				{
 					m_State.nbuttons = count;
-					m_State.buttons = BitGetUnsigned(pReportBuffer, offset, size * count);
+					m_State.buttons = ExtractUnsigned(pReportBuffer, offset, size * count);
 					state = GamePad;
 				}
 			}
@@ -299,50 +299,4 @@ void CUSBGamePadStandardDevice::DecodeReport (const u8 *pReportBuffer)
 	m_State.nhats = nhats;
 
 	m_usReportSize = (offset + 7) / 8;
-}
-
-u32 CUSBGamePadStandardDevice::BitGetUnsigned (const void *buffer, u32 offset, u32 length)
-{
-	u8 *bitBuffer = (u8 *) buffer;
-	u32 result = 0;
-	u8 mask;
-
-	for (u32 i = offset / 8, j = 0; i < (offset + length + 7) / 8; i++)
-	{
-		if (offset / 8 == (offset + length - 1) / 8)
-		{
-			mask = (1 << ((offset % 8) + length)) - (1 << (offset % 8));
-			result = (bitBuffer[i] & mask) >> (offset % 8);
-		}
-		else if (i == offset / 8)
-		{
-			mask = 0x100 - (1 << (offset % 8));
-			j += 8 - (offset % 8);
-			result = ((bitBuffer[i] & mask) >> (offset % 8)) << (length - j);
-		}
-		else if (i == (offset + length - 1) / 8)
-		{
-			mask = (1 << ((offset % 8) + length)) - 1;
-			result |= bitBuffer[i] & mask;
-		}
-		else
-		{
-			j += 8;
-			result |= bitBuffer[i] << (length - j);
-		}
-	}
-
-	return result;
-}
-
-s32 CUSBGamePadStandardDevice::BitGetSigned (const void *buffer, u32 offset, u32 length)
-{
-	u32 result = BitGetUnsigned(buffer, offset, length);
-
-	if (result & (1 << (length - 1)))
-	{
-		result |= 0xffffffff - ((1 << length) - 1);
-	}
-
-	return result;
 }

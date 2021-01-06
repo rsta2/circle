@@ -247,3 +247,58 @@ void CUSBHIDDevice::CompletionStub (CUSBRequest *pURB, void *pParam, void *pCont
 	
 	pThis->CompletionRoutine (pURB);
 }
+
+
+u32 CUSBHIDDevice::ExtractUnsigned(const void *buffer, u32 offset, u32 length)
+{
+	assert(buffer != 0);
+	assert(length <= 32);
+
+	if (length == 0)
+	{
+		return 0;
+	}
+
+	u8 *bits = (u8 *)buffer;
+	unsigned shift = offset % 8;
+	offset = offset / 8;
+	bits = bits + offset;
+	unsigned number = *(unsigned *)bits;
+	offset = shift;
+
+	unsigned result = 0;
+	if (length > 24)
+	{
+		result = (((1 << 24) - 1) & (number >> offset));
+		bits = bits + 3;
+		number = *(unsigned *)bits;
+		length = length - 24;
+		unsigned result2 = (((1 << length) - 1) & (number >> offset));
+		result = (result2 << 24) | result;
+	}
+	else
+	{
+		result = (((1 << length) - 1) & (number >> offset));
+	}
+
+	return result;
+}
+
+s32 CUSBHIDDevice::ExtractSigned(const void *buffer, u32 offset, u32 length)
+{
+	assert(buffer != 0);
+	assert(length <= 32);
+
+	unsigned result = ExtractUnsigned(buffer, offset, length);
+	if ((length == 0) || (length == 32))
+	{
+		return result;
+	}
+
+	if (result & (1 << (length - 1)))
+	{
+		result |= 0xffffffff - ((1 << length) - 1);
+	}
+
+	return result;
+}
