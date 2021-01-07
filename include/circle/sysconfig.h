@@ -236,6 +236,18 @@
 
 #endif
 
+
+// Enable keyboard repeat and set repeat rates
+
+#ifndef NO_KEY_REPEAT_ENABLE
+
+//#define KEY_REPEAT_ENABLE
+#define KEY_REPEAT_DELAY    400
+#define KEY_REPEAT_RATE     80
+
+#endif
+
+
 ///////////////////////////////////////////////////////////////////////
 //
 // Other

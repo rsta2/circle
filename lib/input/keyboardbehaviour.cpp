@@ -20,11 +20,6 @@
 #include <circle/input/keyboardbehaviour.h>
 #include <assert.h>
 
-//#define REPEAT_ENABLE
-
-#define REPEAT_DELAY		MSEC2HZ (400)
-#define REPEAT_RATE		MSEC2HZ (80)
-
 CKeyboardBehaviour::CKeyboardBehaviour (void)
 :	m_pKeyPressedHandler (0),
 	m_pSelectConsoleHandler (0),
@@ -135,13 +130,13 @@ void CKeyboardBehaviour::KeyPressed (u8 ucKeyCode)
 
 			GenerateKeyEvent (ucKeyCode);
 
-#ifdef REPEAT_ENABLE
+#ifdef KEY_REPEAT_ENABLE
 			if (m_hTimer != 0)
 			{
 				CTimer::Get ()->CancelKernelTimer (m_hTimer);
 			}
 
-			m_hTimer = CTimer::Get ()->StartKernelTimer (REPEAT_DELAY, TimerStub, 0, this);
+			m_hTimer = CTimer::Get ()->StartKernelTimer (MSEC2HZ(KEY_REPEAT_DELAY), TimerStub, 0, this);
 			assert (m_hTimer != 0);
 #endif
 		}
@@ -179,7 +174,7 @@ void CKeyboardBehaviour::TimerHandler (TKernelTimerHandle hTimer)
 	{
 		GenerateKeyEvent (m_ucLastKeyCode);
 
-		m_hTimer = CTimer::Get ()->StartKernelTimer (REPEAT_RATE, TimerStub, 0, this);
+		m_hTimer = CTimer::Get ()->StartKernelTimer (MSEC2HZ(KEY_REPEAT_RATE), TimerStub, 0, this);
 		assert (m_hTimer != 0);
 	}
 }
