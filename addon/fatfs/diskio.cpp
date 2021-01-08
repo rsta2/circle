@@ -41,6 +41,20 @@ static unsigned s_nBufferSize = 0;
 
 
 /*-----------------------------------------------------------------------*/
+/* Callbacks                                                             */
+/*-----------------------------------------------------------------------*/
+
+static void disk_removed (
+	CDevice *pDevice,	/* device removed */
+	void *pContext
+)
+{
+	*((CDevice **) pContext) = 0;
+}
+
+
+
+/*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
 /*-----------------------------------------------------------------------*/
 
@@ -75,6 +89,8 @@ DSTATUS disk_initialize (
 	s_pVolume[pdrv] = CDeviceNameService::Get ()->GetDevice (s_pVolumeName[pdrv], TRUE);
 	if (s_pVolume[pdrv] != 0)
 	{
+		s_pVolume[pdrv]->RegisterRemovedHandler (disk_removed, &s_pVolume[pdrv]);
+
 		return 0;
 	}
 
