@@ -303,33 +303,34 @@ void CUSBGamePadStandardDevice::DecodeReport (const u8 *pReportBuffer)
 
 u32 CUSBGamePadStandardDevice::BitGetUnsigned (const void *buffer, u32 offset, u32 length)
 {
-	u8 *bitBuffer = (u8 *) buffer;
-	u32 result = 0;
-	u8 mask;
+	assert(buffer != 0);
+	assert(length <= 32);
 
-	for (u32 i = offset / 8, j = 0; i < (offset + length + 7) / 8; i++)
+	if (length == 0)
 	{
-		if (offset / 8 == (offset + length - 1) / 8)
-		{
-			mask = (1 << ((offset % 8) + length)) - (1 << (offset % 8));
-			result = (bitBuffer[i] & mask) >> (offset % 8);
-		}
-		else if (i == offset / 8)
-		{
-			mask = 0x100 - (1 << (offset % 8));
-			j += 8 - (offset % 8);
-			result = ((bitBuffer[i] & mask) >> (offset % 8)) << (length - j);
-		}
-		else if (i == (offset + length - 1) / 8)
-		{
-			mask = (1 << ((offset % 8) + length)) - 1;
-			result |= bitBuffer[i] & mask;
-		}
-		else
-		{
-			j += 8;
-			result |= bitBuffer[i] << (length - j);
-		}
+		return 0;
+	}
+
+	u8 *bits = (u8 *)buffer;
+	unsigned shift = offset % 8;
+	offset = offset / 8;
+	bits = bits + offset;
+	unsigned number = *(unsigned *)bits;
+	offset = shift;
+
+	unsigned result = 0;
+	if (length > 24)
+	{
+		result = (((1 << 24) - 1) & (number >> offset));
+		bits = bits + 3;
+		number = *(unsigned *)bits;
+		length = length - 24;
+		unsigned result2 = (((1 << length) - 1) & (number >> offset));
+		result = (result2 << 24) | result;
+	}
+	else
+	{
+		result = (((1 << length) - 1) & (number >> offset));
 	}
 
 	return result;
@@ -337,7 +338,14 @@ u32 CUSBGamePadStandardDevice::BitGetUnsigned (const void *buffer, u32 offset, u
 
 s32 CUSBGamePadStandardDevice::BitGetSigned (const void *buffer, u32 offset, u32 length)
 {
-	u32 result = BitGetUnsigned(buffer, offset, length);
+	assert(buffer != 0);
+	assert(length <= 32);
+
+	unsigned result = BitGetUnsigned(buffer, offset, length);
+	if ((length == 0) || (length == 32))
+	{
+		return result;
+	}
 
 	if (result & (1 << (length - 1)))
 	{
