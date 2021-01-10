@@ -22,8 +22,8 @@
 #include <circle/util.h>
 #include <assert.h>
 
-CTask::CTask (unsigned nStackSize)
-:	m_State (TaskStateReady),
+CTask::CTask (unsigned nStackSize, bool createSuspended)
+:	m_State (createSuspended ? TaskStateNew : TaskStateReady),
 	m_nStackSize (nStackSize),
 	m_pStack (0)
 {
@@ -56,6 +56,12 @@ CTask::~CTask (void)
 
 	delete [] m_pStack;
 	m_pStack = 0;
+}
+
+void CTask::Start (void)
+{
+	assert(m_State == TaskStateNew);
+	m_State = TaskStateReady;
 }
 
 void CTask::Run (void)		// dummy method which is never called

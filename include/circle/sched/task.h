@@ -31,6 +31,7 @@ enum TTaskState
 	TaskStateBlocked,
 	TaskStateSleeping,
 	TaskStateTerminated,
+	TaskStateNew,
 	TaskStateUnknown
 };
 
@@ -39,8 +40,11 @@ class CScheduler;
 class CTask
 {
 public:
-	CTask (unsigned nStackSize = TASK_STACK_SIZE);		// nStackSize = 0 for main task
+	CTask (unsigned nStackSize = TASK_STACK_SIZE, boolean createSuspended = false);		// nStackSize = 0 for main task
 	virtual ~CTask (void);
+
+	// Starts a task that was created in suspended mode
+	void Start (void);
 
 	virtual void Run (void);
 
