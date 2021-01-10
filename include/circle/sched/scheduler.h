@@ -43,6 +43,9 @@ public:
 	void RegisterTaskSwitchHandler (TSchedulerTaskHandler *pHandler);
 	void RegisterTaskTerminationHandler (TSchedulerTaskHandler *pHandler);
 
+	void SuspendNewTasks();
+	void ResumeNewTasks();
+
 	static CScheduler *Get (void);
 
 	static boolean IsActive (void)
@@ -70,6 +73,8 @@ private:
 
 	TSchedulerTaskHandler *m_pTaskSwitchHandler;
 	TSchedulerTaskHandler *m_pTaskTerminationHandler;
+
+	int m_iSuspendNewTasks;
 
 	static CScheduler *s_pThis;
 };
