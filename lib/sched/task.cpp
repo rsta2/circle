@@ -80,6 +80,12 @@ void CTask::Terminate (void)
 
 void CTask::WaitForTermination (void)
 {
+	// Before accessing any of our member variables
+	// make sure this task object hasn't been deleted by 
+	// checking it's still registered with the scheduler
+	if (!CScheduler::Get()->IsValidTask(this))
+		return;
+
 	m_Event.Wait ();
 }
 

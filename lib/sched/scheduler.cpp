@@ -122,6 +122,18 @@ CTask *CScheduler::GetCurrentTask (void)
 	return m_pCurrent;
 }
 
+boolean CScheduler::IsValidTask(CTask* pTask)
+{
+	unsigned i;
+	for (i = 0; i < m_nTasks; i++)
+	{
+		if (m_pTask[i] != 0 && m_pTask[i] == pTask)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 void CScheduler::RegisterTaskSwitchHandler (TSchedulerTaskHandler *pHandler)
 {
 	assert (m_pTaskSwitchHandler == 0);
