@@ -29,8 +29,11 @@
 #define USBKEYB_REPORT_SIZE	8
 
 // The raw handler is called when the keyboard sends a status report (on status change and/or continously).
-typedef void TKeyStatusHandlerRaw (unsigned char	ucModifiers,	// see usbhid.h
-				   const unsigned char	RawKeys[6]);	// key code or 0 in each byte
+typedef void TKeyStatusHandlerRaw (
+					unsigned char	ucModifiers,	// see usbhid.h
+				   	const unsigned char	RawKeys[6],	// key code or 0 in each byte
+					void* arg
+					);	
 
 class CUSBKeyboardDevice : public CUSBHIDDevice
 {
@@ -52,7 +55,7 @@ public:
 
 	// raw mode (if bMixedMode is FALSE, the cooked handlers are ignored)
 	void RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw,
-					  boolean bMixedMode = FALSE);
+					  boolean bMixedMode = FALSE, void* arg = nullptr);
 
 	// works in cooked and raw mode
 	boolean SetLEDs (u8 ucStatus);		// must not be called in interrupt context
@@ -67,6 +70,7 @@ private:
 
 	TKeyStatusHandlerRaw *m_pKeyStatusHandlerRaw;
 	boolean m_bMixedMode;
+	void* m_pRawHandlerArg;
 
 	u8 m_LastReport[USBKEYB_REPORT_SIZE];
 

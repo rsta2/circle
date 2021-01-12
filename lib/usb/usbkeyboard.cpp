@@ -129,10 +129,11 @@ u8 CUSBKeyboardDevice::GetLEDStatus (void) const
 }
 
 void CUSBKeyboardDevice::RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw,
-						      boolean bMixedMode)
+						      boolean bMixedMode, void* arg)
 {
 	assert (pKeyStatusHandlerRaw != 0);
 	m_pKeyStatusHandlerRaw = pKeyStatusHandlerRaw;
+	m_pRawHandlerArg = arg;
 
 	m_bMixedMode = bMixedMode;
 }
@@ -162,7 +163,7 @@ void CUSBKeyboardDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 
 	if (m_pKeyStatusHandlerRaw != 0)
 	{
-		(*m_pKeyStatusHandlerRaw) (pReport[0], pReport+2);
+		(*m_pKeyStatusHandlerRaw) (pReport[0], pReport+2, m_pRawHandlerArg);
 
 		if (!m_bMixedMode)
 		{
