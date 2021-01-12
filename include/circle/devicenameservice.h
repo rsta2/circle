@@ -66,6 +66,15 @@ public:
 	/// \return Pointer to the device object or 0 if not found
 	CDevice *GetDevice (const char *pPrefix, unsigned nIndex, boolean bBlockDevice);
 
+	/// \brief Enumerate all devices, or all devices of a specified prefix
+	/// \param callback A callback to be invoked for each matching device
+	/// \param arg A user define pointer that will back passed to the callback
+	/// \return false if the enumeration was cancelled by the callback returning false
+	boolean EnumerateDevices (
+		boolean (*callback)(CDevice* pDevice, const char* name, boolean bBlockDevice, void* arg), 
+		void* arg
+	);
+
 	/// \brief Generate device listing
 	/// \param pTarget Device to be used for output
 	void ListDevices (CDevice *pTarget);

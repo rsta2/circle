@@ -171,6 +171,31 @@ CDevice *CDeviceNameService::GetDevice (const char *pPrefix, unsigned nIndex, bo
 	return GetDevice (Name, bBlockDevice);
 }
 
+boolean CDeviceNameService::EnumerateDevices (
+	boolean (*callback)(CDevice* pDevice, const char* name, boolean bBlockDevice, void* arg), 
+	void* arg
+	)
+{
+	m_SpinLock.Acquire ();
+
+	boolean result = true;
+	TDeviceInfo *pInfo = m_pList;
+	while (pInfo != 0)
+	{
+		if (!callback(pInfo->pDevice, pInfo->pName, pInfo->bBlockDevice, arg))
+		{
+			result = false;
+			break;
+		}
+		
+		pInfo = pInfo->pNext;
+	}
+
+	m_SpinLock.Release ();
+	return result;
+}
+
+
 void CDeviceNameService::ListDevices (CDevice *pTarget)
 {
 	assert (pTarget != 0);
