@@ -55,7 +55,7 @@ public:
 
 	// raw mode (if bMixedMode is FALSE, the cooked handlers are ignored)
 	void RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKeyStatusHandlerRaw,
-					  boolean bMixedMode = FALSE, void* arg = nullptr);
+					  boolean bMixedMode = FALSE, void* arg = 0);
 
 	// works in cooked and raw mode
 	boolean SetLEDs (u8 ucStatus);		// must not be called in interrupt context
