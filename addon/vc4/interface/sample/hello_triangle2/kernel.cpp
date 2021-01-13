@@ -21,7 +21,7 @@
 
 extern "C" int _main (void);
 extern "C" void mouse_callback (unsigned nButtons, int nDisplacementX, int nDisplacementY,
-				int nWheelMove);
+				int nWheelMove, void* arg);
 
 static const char FromKernel[] = "kernel";
 

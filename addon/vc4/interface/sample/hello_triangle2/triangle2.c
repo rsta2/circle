@@ -456,7 +456,7 @@ static void draw_triangles(CUBE_STATE_T *state, GLfloat cx, GLfloat cy, GLfloat 
 static DEFINE_SPINLOCK (mouse_lock);
 static int mouse_buttons = 0, mouse_dx = 0, mouse_dy = 0;
 
-void mouse_callback (unsigned buttons, int dx, int dy, int wheelmove)
+void mouse_callback (unsigned buttons, int dx, int dy, int wheelmove, void* arg)
 {
    spin_lock (&mouse_lock);
 

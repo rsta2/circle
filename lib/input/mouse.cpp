@@ -72,10 +72,11 @@ void CMouseDevice::UpdateCursor (void)
 	}
 }
 
-void CMouseDevice::RegisterStatusHandler (TMouseStatusHandler *pStatusHandler)
+void CMouseDevice::RegisterStatusHandler (TMouseStatusHandler *pStatusHandler, void* arg)
 {
 	assert (m_pStatusHandler == 0);
 	m_pStatusHandler = pStatusHandler;
+	m_pStatusHandlerArg = arg;
 	assert (m_pStatusHandler != 0);
 }
 
@@ -85,7 +86,7 @@ void CMouseDevice::ReportHandler (unsigned nButtons, int nDisplacementX, int nDi
 
 	if (m_pStatusHandler != 0)
 	{
-		(*m_pStatusHandler) (nButtons, nDisplacementX, nDisplacementY, nWheelMove);
+		(*m_pStatusHandler) (nButtons, nDisplacementX, nDisplacementY, nWheelMove, m_pStatusHandlerArg);
 	}
 }
 
