@@ -32,6 +32,7 @@ enum TTaskState
 	TaskStateSleeping,
 	TaskStateTerminated,
 	TaskStateNew,
+	TaskStateBlockedWithTimeout,
 	TaskStateUnknown
 };
 

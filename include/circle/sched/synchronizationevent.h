@@ -36,6 +36,7 @@ public:
 	void Set (void);	// can be called from interrupt context
 
 	void Wait (void);
+	bool WaitWithTimeout (unsigned nMicroSeconds);
 
 private:
 	volatile boolean m_bState;
