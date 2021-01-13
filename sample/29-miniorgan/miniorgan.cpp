@@ -297,7 +297,7 @@ void CMiniOrgan::MIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLeng
 	}
 }
 
-void CMiniOrgan::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6])
+void CMiniOrgan::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6], void* arg)
 {
 	assert (s_pThis != 0);
 

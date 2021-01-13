@@ -143,7 +143,7 @@ void CKernel::ShutdownHandler (void)
 	s_pThis->m_ShutdownMode = ShutdownReboot;
 }
 
-void CKernel::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6])
+void CKernel::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6], void* arg)
 {
 	assert (s_pThis != 0);
 

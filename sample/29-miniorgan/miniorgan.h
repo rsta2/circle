@@ -59,7 +59,7 @@ public:
 private:
 	static void MIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength);
 
-	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);
+	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6], void* arg);
 
 	static void USBDeviceRemovedHandler (CDevice *pDevice, void *pContext);
 
