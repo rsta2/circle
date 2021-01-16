@@ -44,6 +44,8 @@ int notmain ( void )
     unsigned int ra;
 
     uart_init();
+
+restart:
     hexstring(0x12345678);
     hexstring(GETPC());
 
@@ -94,6 +96,10 @@ int notmain ( void )
 #endif
             state=0;
             break;
+        }
+        if (ra=='R')
+        {
+            goto restart;
         }
         switch(state)
         {

@@ -1,0 +1,15 @@
+{
+  "name": "flasher",
+  "version": "1.0.0",
+  "description": "All-In-One Reboot, Flash and Monitor Tool",
+  "main": "flasher.js",
+  "dependencies": {
+    "serialport": "^9.0.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
