@@ -137,7 +137,7 @@ async function sendRebootMagic()
     }
 }
 
-// Wait for device to be read, flash it and send the go command
+// Flash the device with the hex file
 async function flashDevice()
 {   
     // Open serial port
@@ -198,7 +198,7 @@ async function flashDevice()
 }
 
 
-// Wait for device to be read, flash it and send the go command
+// Send the go command and wait for ack
 async function sendGoCommand()
 {   
     // Open serial port
@@ -235,6 +235,7 @@ async function sendGoCommand()
     }
 }
 
+// Start serial monitor
 async function startMonitor()
 {   
     // Open serial port

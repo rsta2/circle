@@ -70,7 +70,7 @@ improved features.  This tool is written in JavaScript and requires NodeJS to be
 * It can automatically send a magic reboot string and wait for the device to become ready 
   before starting the transfer.  (Faster since pessimistic delay times aren't required)
 
-* Once flashed, it can autoamtically switch into monitor mode (switching baud rates if 
+* Once flashed, it can automatically switch into monitor mode (switching baud rates if 
   necessary) to view the output of the flashed program.
 
 * It can reset the bootloader to recover from a previously cancelled transfer
