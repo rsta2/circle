@@ -90,3 +90,36 @@ for instructions on setting it up:
     https://aka.ms/vscode-remote/download/extension
 
 For build instructions, please refer to the circle documentation for building under Linux.
+
+
+Using WSL 2
+-----------
+
+The main disadvantage of using WSL 1 is often painfully slow performance.  WSL 2 solves this and 
+can generally build C++ projects more that twice as fast. Unfortunately WSL 2 doesn't support serial 
+devices which makes flashing and monitoring difficult.
+
+If you only need to flash the device and monitor its output there's a fairly simple work around - 
+use Windows to run the new [bootloader flash tool](bootloader.txt).
+
+(This approach doesn't work with the Python tool - for some reason Python fails to start from
+inside a WSL machine).
+
+Under WSL, a Windows program can be launched from within the WSL machine and the WSL files accessed
+via a UNC path name.  This functionality can be leveraged so that builds are done under WSL but 
+flashing and serial monitoring done with Windows programs.  Circle's Rules.mk file is already 
+configured for this but it requires a few steps of preparation.
+
+1. Install NodeJS and Putty on the Windows machine and make sure both are in the path.
+
+2. Install the node serial port module from Windows - not from the WSL machine.  eg:
+
+	WindowsCmdPrompt> pushd \\wsl$\yourmachine\home\yourname\Projects\circle\tools\flashy
+	WindowsCmdPrompt> rmdir /S node_modules
+	WindowsCmdPrompt> npm install
+
+To run the flash tool from the command line, use `node.exe` instead of `node`. This forces
+WSL to run node under Windows instead of Linux:
+
+	$ node.exe tools/flashy/flashy.js /dev/ttyS3 kernel7.hex --flashBaud:2000000 --monitor
+

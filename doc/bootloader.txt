@@ -54,3 +54,77 @@ right communication parameters.
 
 8. To start another development cycle, power off and on the Raspberry Pi, and
 after rebuilding do again "make flash".
+
+
+Using the New New Flash Tool "Flashy"
+-------------------------------------
+
+The above procedure describes flashing the device using the traditional python3 based flash
+tool and bootloader.  There is also a new flash tool and bootloader that provide improved 
+features:
+
+* The new flash tool waits for ack messages from the bootloader to ensure it's ready. If 
+  the device isn't ready it will wait until you reset it.
+
+* Improved reliability as the new bootloader now performs checksums and reports any errors 
+  with the transfer.
+
+* A new "fast transfer mode" effectively doubles the transfer rate by sending binary instead
+  of hex encoded data.  RPi 2 can handle 2M Baud in fast mode (equivalent to 4M Baud with 
+  the old flasher) and RPi 3 can handler 3M baud (equivalent to 6M).
+
+* The new flasher tool can send magic reboot strings and wait for the device to become ready 
+  before starting the transfer - which can be faster than pessimistic delays and hoping the
+  device is ready.
+
+* After flashing the new flasher tool can automatically switch into monitor mode (switching 
+  baud rates if necessary) to view the output of the flashed program.
+
+* Ability to reset the bootloader to recover from a previously cancelled or failed transfer.
+
+* Ability to introduce a "go delay" - a delay that the bootloader will stall for between 
+  receiving the go command and launching the user program.  This can be used if you need
+  to see the very start of the debug log and your monitor program takes too long to start.
+
+
+The new flasher tool is written in JavaScript and requires NodeJS to be installed.  To use it:
+
+1. Make sure you have NodeJS installed
+
+2. Go to the `tools/flashy` sub-folder and run `npm install` to install the required 
+   serial port module.
+
+3. If you're currently using an old version of the bootloader, rebuild the latest version and
+   copy it to the SD card. (This is optional as the new flash script works with the old 
+   bootloader but most new features won't work)
+
+4. In your Config.mk set the variable `USEFLASHY`, along with the other serial port settings:
+
+        USEFLASHY = 1
+        REBOOTMAGIC = <magicstring>
+        FLASHYFLAGS = <other command line args for the flashy script>
+        SERIALPORT = /dev/ttyUSB0
+        FLASHBAUD = 115200
+        USERBAUD = 115200
+
+5. Flash the device as per before:
+
+        make flash
+
+6. If the device is ready the transfer will start immediately, otherwise a "waiting for device"
+   message will be displayed until you power cycle or reset the device.
+
+You can also manually launch the flasher tool like so...
+
+    node tools/flashy/flashy.js /dev/ttyUSB0 kernel7.hex --flashBaud:2000000
+
+Or, pass additional args via the make script:
+
+    make flash FLASHYFLAGS=--godelay:500
+
+For a full set of command line args, run the script with --help
+
+    node tools/flashy/flashy.js --help
+
+For details on using this under WSL, see the [Windows build instructions](windows-build.txt)
+

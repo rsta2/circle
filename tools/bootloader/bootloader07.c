@@ -27,194 +27,300 @@ extern void hexstrings ( unsigned int );
 extern void timer_init ( void );
 extern unsigned int timer_tick ( void );
 
-extern void timer_init ( void );
-extern unsigned int timer_tick ( void );
+int nibble_from_hex(int ascii)
+{
+    if (ascii>='0' && ascii<='9')
+        return ascii & 0x0F;
+    if (ascii>='A' && ascii<='F')
+        return (ascii - 7) & 0x0F;
+    return -1;
+}
+
+void uart_send_hex_nibble(int rc)
+{
+    if(rc>9) rc+=0x37; else rc+=0x30;
+    uart_send(rc);
+}
+
+void uart_send_hex_byte(int val)
+{
+    uart_send_hex_nibble((val >> 4) & 0x0f);
+    uart_send_hex_nibble(val & 0x0f);
+}
+
+void uart_send_str(const char* psz)
+{
+    while (*psz)
+    {
+        uart_send(*psz++);
+    }
+}
+
+void delay_micros(unsigned int period)
+{
+    unsigned int start = timer_tick();
+    while (timer_tick() - start < period)
+    {
+    }
+}
+
+// Main receive mode state
+typedef enum 
+{
+    recv_state_ready,
+    recv_state_hex,
+    recv_state_binary,
+    recv_state_eof,
+    recv_state_error,
+} recv_state;
+
+// State within the current ihex record
+typedef enum
+{
+    ihex_state_none,
+    ihex_state_start,
+    ihex_state_addr_hi,
+    ihex_state_addr_lo,
+    ihex_state_rectype,
+    ihex_state_seg_hi,
+    ihex_state_seg_lo,
+    ihex_state_write_bytes,
+    ihex_state_end,
+} ihex_state;
 
 //------------------------------------------------------------------------
 int notmain ( void )
 {
-    unsigned int state;
+    recv_state recvstate;
+    ihex_state datastate;
     unsigned int byte_count;
-    unsigned int digits_read = 0;
     unsigned int address;
     unsigned int record_type;
     unsigned int segment;
-    unsigned int data;
     unsigned int sum;
     unsigned int ra;
+    unsigned int start_delay = 10000;       // 10ms default
 
     uart_init();
-    hexstring(0x12345678);
-    hexstring(GETPC());
+    timer_init();
 
-    uart_send('I');
-    uart_send('H');
-    uart_send('E');
-    uart_send('X');
-    uart_send(0x0D);
-    uart_send(0x0A);
-
-    state=0;
+restart:
+    recvstate = recv_state_ready;
+    datastate = ihex_state_none;
+    byte_count=0;
+    address=0;
+    record_type=0;
     segment=0;
     sum=0;
-    data=0;
-    record_type=0;
-    address=0;
-    byte_count=0;
+
+    // Send ready signal ("-F" indicates fast mode supported)
+    uart_send_str("IHEX-F\r\n");
+
     while(1)
     {
         ra=uart_recv();
-        if(ra==':')
+
+        // Restart command accepted in all states except binary state
+        if (ra=='R' && recvstate != recv_state_binary)
         {
-            state=1;
-            continue;
+            goto restart;
         }
-        if(ra==0x0D)
+
+        switch (recvstate)
         {
-            state=0;
-            continue;
-        }
-        if(ra==0x0A)
-        {
-            state=0;
-            continue;
-        }
-        if((ra=='g')||(ra=='G'))
-        {
-            uart_send(0x0D);
-            uart_send('-');
-            uart_send('-');
-            uart_send(0x0D);
-            uart_send(0x0A);
-            uart_send(0x0A);
-#if AARCH == 32
-            BRANCHTO(0x8000);
-#else
-            BRANCHTO(0x80000);
-#endif
-            state=0;
-            break;
-        }
-        switch(state)
-        {
-            case 0:
+            case recv_state_ready:
+                if(ra==':')
+                {
+                    // Start a hex record
+                    recvstate = recv_state_hex;
+                    datastate = ihex_state_start;
+                    sum = 0;
+                    continue;
+                }
+                if (ra=='=')
+                {
+                    // Start a binary record
+                    recvstate = recv_state_binary;
+                    datastate = ihex_state_start;
+                    sum = 0;
+                    continue;
+                }
+                if(ra==0x0D || ra==0x0A)
+                {
+                    // Ignore whitepsace
+                    continue;
+                }
+                if(ra==0x80)
+                {
+                    // The flush byte 0x80 is sent by the flasher tool on startup 
+                    // to flush the bootloader out of a previously cancelled unknown
+                    // state.  We can safely ignore it here.
+                    continue;
+                }
+                // Format error
+                uart_send_str("#ERR:format\r\n");
+                recvstate = recv_state_error;
+                continue;
+
+            case recv_state_hex:
             {
+                // Read hex byte
+                int hi = nibble_from_hex(ra);
+                int lo = nibble_from_hex(uart_recv()); 
+
+                // Check valid
+                if (hi < 0 || lo < 0)
+                {
+                    uart_send_str("#ERR:hex\r\n");
+                    recvstate = recv_state_error;
+                    continue;
+                }
+
+                ra = (hi << 4) | lo;
                 break;
             }
-            case 1:
-            case 2:
-            {
-                byte_count<<=4;
-                if(ra>0x39) ra-=7;
-                byte_count|=(ra&0xF);
-                byte_count&=0xFF;
-                digits_read=0;
-                state++;
+
+            case recv_state_binary:
+                // In binary record, don't need special handling
                 break;
-            }
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            {
-                address<<=4;
-                if(ra>0x39) ra-=7;
-                address|=(ra&0xF);
-                address&=0xFFFF;
-                address|=segment;
-                state++;
+
+            case recv_state_eof:
+                if (ra=='s')
+                {
+                    // Set a start delay (n hex digits, in micros)
+                    start_delay = 0;
+                    int nibble;
+                    while ((nibble = nibble_from_hex(uart_recv())) >= 0)
+                    {
+                        start_delay = start_delay << 4 | nibble;
+                    }
+                    continue;
+                }
+
+                // Eof record received, wait for go command
+                if (ra=='g' || ra=='G')
+                {
+                    // Send ack
+                    uart_send(0x0D);
+                    uart_send('-');
+                    uart_send('-');
+                    uart_send(0x0D);
+                    uart_send(0x0A);
+                    uart_send(0x0A);
+
+                    // Delay before start
+                    if (start_delay)
+                        delay_micros(start_delay);
+
+                    // Jump to loaded program
+                    #if AARCH == 32
+                    BRANCHTO(0x8000);
+                    #else
+                    BRANCHTO(0x80000);
+                    #endif
+                }
+                continue;
+
+            case recv_state_error:
+                // Error state, ignore everything
+                continue;
+        }
+    
+        // Update checksum
+        sum += ra;
+
+        // Process data byte
+        switch (datastate)
+        {
+            case ihex_state_none:
+                uart_send_str("#ERR:internal\r\n");
+                recvstate = recv_state_error;
                 break;
-            }
-            case 7:
-            {
-                record_type<<=4;
-                if(ra>0x39) ra-=7;
-                record_type|=(ra&0xF);
-                record_type&=0xFF;
-                state++;
+
+            case ihex_state_start:
+                byte_count=ra;
+                datastate = ihex_state_addr_hi;
                 break;
-            }
-            case 8:
-            {
-                record_type<<=4;
-                if(ra>0x39) ra-=7;
-                record_type|=(ra&0xF);
-                record_type&=0xFF;
-                switch(record_type)
+
+            case ihex_state_addr_hi:
+                address = ra << 8;
+                datastate = ihex_state_addr_lo;
+                break;
+
+            case ihex_state_addr_lo:
+                address |= ra;
+                datastate = ihex_state_rectype;
+                break;
+
+            case ihex_state_rectype:
+                record_type = ra;
+                switch (record_type)
                 {
                     case 0x00:
-                    {
-                        state=14;
+                        datastate = ihex_state_write_bytes;
                         break;
-                    }
-                    case 0x01:
-                    {
-                        hexstring(sum);
-                        state=0;
-                        break;
-                    }
+
                     case 0x02:
                     case 0x04:
-                    {
-                        state=9;
+                        datastate = ihex_state_seg_hi;
                         break;
-                    }
+
                     default:
-                    {
-                        state=0;
+                        datastate = ihex_state_end;
                         break;
-                    }
                 }
                 break;
-            }
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-            {
-                segment<<=4;
-                if(ra>0x39) ra-=7;
-                segment|=(ra&0xF);
-                segment&=0xFFFF;
-                state++;
+
+            case ihex_state_write_bytes:
+                PUT8(segment | address, ra);
+                address++;
+                byte_count--;
+                if (byte_count == 0)
+                    datastate = ihex_state_end;
                 break;
-            }
-            case 13:
-            {
-                segment<<=4;
-                if(record_type==0x04)
+
+            case ihex_state_seg_hi:
+                segment = ra << 8;
+                byte_count--;
+                datastate = ihex_state_seg_lo;
+                break;
+
+            case ihex_state_seg_lo:
+                segment |= ra;
+                byte_count--;
+                if (record_type == 0x04)
+                    segment<<=16;
+                else
+                    segment<<=4;
+                datastate = ihex_state_end;
+                break;
+
+            case ihex_state_end:
+                if (byte_count == 0)
                 {
-                    segment<<=12;
+                    // Check checksum
+                    if ((sum & 0xFF) != 0)
+                    {
+                        uart_send_str("#ERR:checksum\r\n");
+                        recvstate = recv_state_error;
+                    }
+                    else if (record_type == 0x01)
+                    {
+                        // EOF record received, can now accept go command
+                        uart_send_str("#EOF:ok\r\n");
+                        recvstate = recv_state_eof;
+                    }
+                    else
+                    {
+                        // Next record
+                        recvstate = recv_state_ready;
+                    }
                 }
-                state=0;
-                break;
-            }
-            case 14:
-            {
-                data<<=4;
-                if(ra>0x39) ra-=7;
-                data|=(ra&0xF);
-                if (++digits_read%8==0||digits_read==byte_count*2)
+                else
                 {
-                    ra=(data>>24)|(data<<24);
-                    ra|=(data>>8)&0x0000FF00;
-                    ra|=(data<<8)&0x00FF0000;
-                    if(digits_read%8!=0)
-                    {
-                        ra>>=(8-digits_read%8)*4;
-                    }
-                    data=ra;
-                    PUT32(address,data);
-                    sum+=address;
-                    sum+=data;
-                    address+=4;
-                    if(digits_read==byte_count*2)
-                    {
-                        state=0;
-                    }
+                    byte_count--;
                 }
                 break;
-            }
         }
     }
     return(0);
