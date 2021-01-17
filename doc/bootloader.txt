@@ -54,3 +54,67 @@ right communication parameters.
 
 8. To start another development cycle, power off and on the Raspberry Pi, and
 after rebuilding do again "make flash".
+
+
+Using the New New Flash Tool "Flashy"
+-------------------------------------
+
+The above procedure describes flashing the device using the traditional python3
+based flash tool.  Circle also includes a new flash tool "flashy" that provides some
+improved features.  This tool is written in JavaScript and requires NodeJS to be installed.
+
+* Unlike the old tool that just blasts at the serial port and hopes the bootloader
+  is listening, the new tool pings the bootloader and waits for a response to ensures it's 
+  ready for the transfer before sending it.
+
+* It can automatically send a magic reboot string and wait for the device to become ready 
+  before starting the transfer.  (Faster since pessimistic delay times aren't required)
+
+* Once flashed, it can automatically switch into monitor mode (switching baud rates if 
+  necessary) to view the output of the flashed program.
+
+* It can reset the bootloader to recover from a previously cancelled transfer
+
+
+
+To use the new flash tool:
+
+1. Make sure you have NodeJS installed
+
+2. Go to the `tools/flashy` sub-folder and run `npm install` to install the required 
+   serial port module.
+
+3. If you're currently using an old version of the bootloader, rebuild the latest
+   version and copy it to the SD card. (Optional, works better with this)
+
+4. In your Config.mk set the variable `USEFLASHY`, along with the other settings 
+   described above:
+
+        USEFLASHY = 1
+        SERIALPORT = /dev/ttyUSB0
+        FLASHBAUD = 115200
+        USERBAUD = 115200
+        REBOOTMAGIC = <magicstring>
+
+5. Flash the device as per before:
+
+        make flash
+
+Here's what will happen:
+
+* If the device is running a program that supports reboot magic, it will automatically
+  reboot and the flash transfer will start when the bootloader is ready.
+
+* If the device is off, or running a program that doesn't support reboot magic, just 
+  power on or reset the device and the transfer will start when the bootloader is ready.
+
+* If the device is on, but the bootloader hasn't loaded anything yet, or a previous
+  flash operation was cancelled, the bootloader will be automatically restarted and a new 
+  transfer initiated.  
+  
+This last point requires the new bootloader. If you're running the old bootloader you'll 
+need to manually reset the device or do the transfer without acknowledgement (ie: use the
+`--noack` switch which will transfer the file and just hope  the bootloader is listening).
+
+For details on using this under WSL, see the [Windows build instructions](windows-build.txt)
+

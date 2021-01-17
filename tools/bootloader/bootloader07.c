@@ -30,12 +30,102 @@ extern unsigned int timer_tick ( void );
 extern void timer_init ( void );
 extern unsigned int timer_tick ( void );
 
+int fast_state;
+int fast_bytes_recv;
+int fast_bytes_done;
+unsigned char fast_pending_byte;
+unsigned char fast_byte_buffer[256];
+
+// Convert a byte value to a hex nibble character
+char to_nibble(int val)
+{
+    val = (val & 0x0f) + 0x30;
+    if (val > 0x39)
+        val += 7;
+    return val;
+}
+
+// Helper to decode the fast flash format. This just watches for the binary
+// chunks and reformats them back to hex to for main routine.
+unsigned int uart_recv2 ( void )
+{
+    unsigned int ra;
+    if (fast_state == 0)
+    {
+        ra = uart_recv();
+        if (ra == '=')
+        {
+            // Start binary chunk...
+
+            // Receive the whole chunk before regenerating the hex
+            fast_bytes_recv = uart_recv();
+            fast_bytes_done = 0;
+            for (int i=0; i<fast_bytes_recv; i++)
+            {
+                fast_byte_buffer[i] = uart_recv();
+            }
+
+            // Next byte must be a CR, LF or Ctrl+Z
+            fast_pending_byte = uart_recv();
+            if (fast_pending_byte != '\r' && fast_pending_byte != '\n' && fast_pending_byte != 26)
+            {
+                // Something bad happened, force a reset
+                return 'R'; 
+            }
+
+            // Start hex generation
+            fast_state = 1;
+            return ':';
+        }
+        else
+        {
+            return ra;
+        }
+    }
+    else if (fast_state == 1)
+    {
+        // Return first nibble of current byte
+        ra = (fast_byte_buffer[fast_bytes_done] >> 4) & 0x0f;
+        fast_state = 2;
+    }
+    else if (fast_state == 2)
+    {
+        // Return second nibble of current byte
+        ra = fast_byte_buffer[fast_bytes_done] & 0x0f;
+
+        // Move to next byte, or switch out of binary mode
+        fast_bytes_done++;
+        if (fast_bytes_done == fast_bytes_recv)
+        {
+            if (fast_pending_byte == 26)
+                fast_state = 0;
+            else
+                fast_state = 3;
+        }
+        else
+        {
+            fast_state = 1;
+        }
+    }
+    else
+    {
+        // Return the terminating CR or LF
+        fast_state = 0;
+        return fast_pending_byte;
+    }
+
+    // Regenerate hex nibble
+    ra += 0x30;
+    if (ra > 0x39) ra+=7;
+    return ra;
+}
+
 //------------------------------------------------------------------------
 int notmain ( void )
 {
     unsigned int state;
     unsigned int byte_count;
-    unsigned int digits_read = 0;
+    unsigned int digits_read;
     unsigned int address;
     unsigned int record_type;
     unsigned int segment;
@@ -43,38 +133,41 @@ int notmain ( void )
     unsigned int sum;
     unsigned int ra;
 
+    fast_state = 0;
+
     uart_init();
+
     hexstring(0x12345678);
     hexstring(GETPC());
+
+restart:
+    state=0;
+    byte_count=0;
+    digits_read=0;
+    address=0;
+    record_type=0;
+    segment=0;
+    data=0;
+    sum=0;
 
     uart_send('I');
     uart_send('H');
     uart_send('E');
     uart_send('X');
+    uart_send('-');     // Indicates to flasher tool that fast transfer supported
+    uart_send('F');
     uart_send(0x0D);
     uart_send(0x0A);
 
-    state=0;
-    segment=0;
-    sum=0;
-    data=0;
-    record_type=0;
-    address=0;
-    byte_count=0;
     while(1)
     {
-        ra=uart_recv();
+        ra=uart_recv2();
         if(ra==':')
         {
             state=1;
             continue;
         }
-        if(ra==0x0D)
-        {
-            state=0;
-            continue;
-        }
-        if(ra==0x0A)
+        if(ra==0x0D || ra==0x0A || ra==0x00)
         {
             state=0;
             continue;
@@ -87,6 +180,8 @@ int notmain ( void )
             uart_send(0x0D);
             uart_send(0x0A);
             uart_send(0x0A);
+            // Small delay to let the response ack be sent
+        	for (volatile unsigned i = 0; i < 10000; i++);
 #if AARCH == 32
             BRANCHTO(0x8000);
 #else
@@ -94,6 +189,10 @@ int notmain ( void )
 #endif
             state=0;
             break;
+        }
+        if (ra=='R')
+        {
+            goto restart;
         }
         switch(state)
         {
