@@ -26,13 +26,13 @@
 
 CSynchronizationEvent::CSynchronizationEvent (boolean bState)
 :	m_bState (bState),
-	m_pWaitTask (0)
+	m_pWaitListHead (0)
 {
 }
 
 CSynchronizationEvent::~CSynchronizationEvent (void)
 {
-	assert (m_pWaitTask == 0);
+	assert (m_pWaitListHead == 0);
 }
 
 boolean CSynchronizationEvent::GetState (void)
@@ -59,21 +59,28 @@ void CSynchronizationEvent::Set (void)
 		DataSyncBarrier ();
 #endif
 
-		if (m_pWaitTask != 0)
-		{
-			CScheduler::Get ()->WakeTask (&m_pWaitTask);
-		}
+		CScheduler::Get ()->WakeTasks (&m_pWaitListHead);
 	}
 }
+
+// Wakes all waiting tasks and immediately resets the event again
+void CSynchronizationEvent::Pulse (void)
+{
+	// Cheaper and same effect as Set() + Clear()
+	m_bState = FALSE;
+	CScheduler::Get ()->WakeTasks (&m_pWaitListHead);
+}
+
 
 void CSynchronizationEvent::Wait (void)
 {
 	if (!m_bState)
 	{
-		assert (m_pWaitTask == 0);
-		CScheduler::Get ()->BlockTask (&m_pWaitTask, 0);
+		CScheduler::Get ()->BlockTask (&m_pWaitListHead, 0);
 
-		assert (m_bState);
+		// Not true if event was pulsed, or otherwise
+		// set and cleared before this task woken.
+		//assert (m_bState);
 	}
 }
 
@@ -90,10 +97,7 @@ bool CSynchronizationEvent::WaitWithTimeout (unsigned nMicroSeconds)
 	}
 	else
 	{
-		assert(m_pWaitTask == 0);
-		bool retv = CScheduler::Get ()->BlockTask (&m_pWaitTask, nMicroSeconds);
-		m_pWaitTask = 0;
-		return retv;
+		return CScheduler::Get ()->BlockTask (&m_pWaitListHead, nMicroSeconds);
 	}
 }
 

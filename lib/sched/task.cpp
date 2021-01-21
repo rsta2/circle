@@ -25,7 +25,8 @@
 CTask::CTask (unsigned nStackSize, bool createSuspended)
 :	m_State (createSuspended ? TaskStateNew : TaskStateReady),
 	m_nStackSize (nStackSize),
-	m_pStack (0)
+	m_pStack (0),
+	m_pWaitListNext (0)
 {
 	for (unsigned i = 0; i < TASK_USER_DATA_SLOTS; i++)
 	{

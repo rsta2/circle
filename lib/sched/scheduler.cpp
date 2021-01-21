@@ -225,13 +225,16 @@ void CScheduler::RemoveTask (CTask *pTask)
 	assert (0);
 }
 
-bool CScheduler::BlockTask (CTask **ppTask, unsigned nMicroSeconds)
+bool CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 {
-	assert (ppTask != 0);
-	*ppTask = m_pCurrent;
-
+	assert (ppWaitListHead != 0);
+	assert (m_pCurrent->m_pWaitListNext == 0);
 	assert (m_pCurrent != 0);
 	assert (m_pCurrent->GetState () == TaskStateReady);
+
+	// Add current task to waiting task list
+	m_pCurrent->m_pWaitListNext = *ppWaitListHead;
+	*ppWaitListHead = m_pCurrent;
 
 	if (nMicroSeconds == 0)
 	{
@@ -249,32 +252,59 @@ bool CScheduler::BlockTask (CTask **ppTask, unsigned nMicroSeconds)
 
 	Yield ();
 
-	// GetWakeTicks Will be zero if timeout expired, non-zero if event signalled
 	assert(GetCurrentTask() == m_pCurrent);
+
+	// Remove this task from the wait list in case was woken by timeout and
+	// not by the event signalling (in which case the list will already be 
+	// cleared and the following is a no-op)
+	CTask* pPrev = 0;
+	CTask* p = *ppWaitListHead;
+	while (p)
+	{
+		if (p == m_pCurrent)
+		{
+			if (pPrev)
+				pPrev->m_pWaitListNext = p->m_pWaitListNext;
+			else
+				*ppWaitListHead = p->m_pWaitListNext;
+		}
+		pPrev = p;
+		p = p->m_pWaitListNext;
+	}
+	m_pCurrent->m_pWaitListNext = nullptr;
+
+	// GetWakeTicks Will be zero if timeout expired, non-zero if event signalled
 	return m_pCurrent->GetWakeTicks() == 0;		
 }
 
-void CScheduler::WakeTask (CTask **ppTask)
+void CScheduler::WakeTasks (CTask **ppWaitListHead)
 {
-	assert (ppTask != 0);
-	CTask *pTask = *ppTask;
+	assert (ppWaitListHead != 0);
 
-	*ppTask = 0;
+	CTask *pTask = *ppWaitListHead;
+	*ppWaitListHead = 0;
 
-#ifdef NDEBUG
-	if (   pTask == 0
-	    || (pTask->GetState () != TaskStateBlocked && 
-			pTask->GetState () != TaskStateBlockedWithTimeout))
+	while (pTask)
 	{
-		CLogger::Get ()->Write (FromScheduler, LogPanic, "Tried to wake non-blocked task");
-	}
+#ifdef NDEBUG
+		if (   pTask == 0
+			|| (pTask->GetState () != TaskStateBlocked && 
+				pTask->GetState () != TaskStateBlockedWithTimeout))
+		{
+			CLogger::Get ()->Write (FromScheduler, LogPanic, "Tried to wake non-blocked task");
+		}
 #else
-	assert (pTask != 0);
-	assert (pTask->GetState () == TaskStateBlocked || 
-			pTask->GetState () == TaskStateBlockedWithTimeout);
+		assert (pTask != 0);
+		assert (pTask->GetState () == TaskStateBlocked || 
+				pTask->GetState () == TaskStateBlockedWithTimeout);
 #endif
 
-	pTask->SetState (TaskStateReady);
+		pTask->SetState (TaskStateReady);
+
+		CTask* pNext = pTask->m_pWaitListNext;
+		pTask->m_pWaitListNext = 0;
+		pTask = pNext;
+	}
 }
 
 unsigned CScheduler::GetNextTask (void)

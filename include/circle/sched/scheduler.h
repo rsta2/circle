@@ -59,8 +59,8 @@ private:
 	void AddTask (CTask *pTask);
 	friend class CTask;
 
-	bool BlockTask (CTask **ppTask, unsigned nMicroSeconds);
-	void WakeTask (CTask **ppTask);		// can be called from interrupt context
+	bool BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds);
+	void WakeTasks (CTask **ppWaitListHead);		// can be called from interrupt context
 	friend class CSynchronizationEvent;
 
 	void RemoveTask (CTask *pTask);

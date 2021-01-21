@@ -82,7 +82,7 @@ private:
 	u8		   *m_pStack;
 	void		   *m_pUserData[TASK_USER_DATA_SLOTS];
 	CSynchronizationEvent m_Event;
-
+	CTask*			m_pWaitListNext;	// next in list of tasks waiting on an event
 };
 
 #endif

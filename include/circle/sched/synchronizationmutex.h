@@ -1,5 +1,5 @@
 //
-// synchronizationevent.h
+// synchronizationmutex.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
@@ -17,32 +17,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_sched_synchronizationevent_h
-#define _circle_sched_synchronizationevent_h
+#ifndef _circle_sched_synchronizationmutex_h
+#define _circle_sched_synchronizationmutex_h
 
 #include <circle/types.h>
+#include <circle/sched/synchronizationevent.h>
 
 class CTask;
 
-class CSynchronizationEvent
+class CSynchronizationMutex
 {
 public:
-	CSynchronizationEvent (boolean bState = FALSE);
-	~CSynchronizationEvent (void);
+	CSynchronizationMutex (void);
+    ~CSynchronizationMutex (void);
 
-	boolean GetState (void);
-
-	void Clear (void);
-	void Set (void);	// can be called from interrupt context
-	void Pulse (void);	// wakes all waiting tasks without actually setting the event
-
-	void Wait (void);
-	bool WaitWithTimeout (unsigned nMicroSeconds);
+	void Acquire (void);
+	void Release (void);
 
 private:
-	volatile boolean m_bState;
-	CTask		*m_pWaitListHead;	// Linked list of waiting tasks
+	CTask* m_pOwningTask;
+	int m_iReentrancyCount;
+	CSynchronizationEvent m_event;
 };
-
 
 #endif
