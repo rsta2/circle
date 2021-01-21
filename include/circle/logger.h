@@ -55,7 +55,8 @@ public:
 
 	void SetNewTarget (CDevice *pTarget);
 
-	void Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...);
+	void Write (const char *pSource, TLogSeverity Severity, const char *pMessage, ...)
+		__attribute__ ((format (printf, 4, 5)));
 	void WriteV (const char *pSource, TLogSeverity Severity, const char *pMessage, va_list Args);
 
 	// does not allocate memory, for critical (low memory) messages

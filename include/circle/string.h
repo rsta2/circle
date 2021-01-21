@@ -42,7 +42,9 @@ public:
 
 	int Replace (const char *pOld, const char *pNew); // returns number of occurrences
 
-	void Format (const char *pFormat, ...);		// supports only a small subset of printf(3)
+	
+	void Format (const char *pFormat, ...) 		// supports only a small subset of printf(3)
+		__attribute__ ((format (printf, 2, 3)));
 	void FormatV (const char *pFormat, va_list Args);
 
 private:
