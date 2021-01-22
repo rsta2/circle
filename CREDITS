@@ -61,5 +61,8 @@ Adding USB mouse wheel support
 Adding USB serial devices support
 Testing fixes for USB plug-and-play issues
 
+@MikeDB
+Providing CM4 and CM4IO hardware
+
 Dale Whinham
 Improving SD card performance
