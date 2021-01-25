@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-void *memset (void *pBuffer, int nValue, size_t nLength);
+void *memset (void *pBuffer, int nValue, size_t nLength) STDOPT;
 
 void *memcpy (void *pDest, const void *pSrc, size_t nLength);
 #define memcpyblk memcpy

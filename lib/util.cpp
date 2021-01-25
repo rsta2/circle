@@ -19,6 +19,38 @@
 //
 #include <circle/util.h>
 
+void *memset (void *pBuffer, int nValue, size_t nLength)
+{
+	u32 *p32 = (u32 *) pBuffer;
+
+	if (   ((uintptr) p32 & 3) == 0
+	    && nLength >= 16)
+	{
+		u32 nValue32 = nValue | nValue << 8;
+		nValue32 |= nValue32 << 16;
+
+		do
+		{
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+			*p32++ = nValue32;
+
+			nLength -= 16;
+		}
+		while (nLength >= 16);
+	}
+
+	char *p = (char *) p32;
+
+	while (nLength--)
+	{
+		*p++ = (char) nValue;
+	}
+
+	return pBuffer;
+}
+
 #if STDLIB_SUPPORT <= 1
 
 void *memmove (void *pDest, const void *pSrc, size_t nLength)
