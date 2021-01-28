@@ -57,9 +57,13 @@
 #define ARM_PCIE_HOST_END	(ARM_PCIE_HOST_BASE + 0x930F)
 
 //
-// xHCI USB Host Controller (external)
+// xHCI USB Host Controller
 //
-#define ARM_XHCI_BASE		MEM_PCIE_RANGE_START_VIRTUAL
+#ifdef USE_XHCI_INTERNAL
+	#define ARM_XHCI_BASE	(ARM_IO_BASE + 0x9C0000)
+#else
+	#define ARM_XHCI_BASE	MEM_PCIE_RANGE_START_VIRTUAL
+#endif
 #define ARM_XHCI_END		(ARM_XHCI_BASE + 0x0FFF)
 
 #endif

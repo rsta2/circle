@@ -185,6 +185,8 @@ private:
 	boolean m_crc_fwd_en;		// has FCS to be removed?
 
 	// PHY status
+	int m_phy_id;			// probed address of this PHY
+
 	int m_link;			// 1: link is up
 	int m_speed;			// 10, 100, 1000
 	int m_duplex;			// 1: full duplex

@@ -563,9 +563,20 @@ void CUSBStandardHub::HandlePortStatusChange (void)
 		//CLogger::Get ()->Write (FromHub, LogDebug, "Change status is 0x%04X (port %u)",
 		//			(unsigned) usChangeStatus, nPort+1);
 
-		assert (!(usChangeStatus & C_PORT_ENABLE__MASK));	// TODO
 		assert (!(usChangeStatus & C_PORT_SUSPEND__MASK));	// TODO
 		assert (!(usChangeStatus & C_PORT_OVER_CURRENT__MASK));	// TODO
+
+		if (usChangeStatus & C_PORT_ENABLE__MASK)
+		{
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+				REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_OTHER,
+				CLEAR_FEATURE, C_PORT_ENABLE, nPort+1, 0, 0) < 0)
+			{
+				CLogger::Get ()->Write (FromHub, LogPanic,
+							"Cannot clear C_PORT_ENABLE (port %u)",
+							nPort+1);
+			}
+		}
 
 		if (usChangeStatus & C_PORT_RESET__MASK)
 		{

@@ -31,7 +31,8 @@ CScheduler::CScheduler (void)
 	m_pCurrent (0),
 	m_nCurrent (0),
 	m_pTaskSwitchHandler (0),
-	m_pTaskTerminationHandler (0)
+	m_pTaskTerminationHandler (0),
+	m_iSuspendNewTasks (0)
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -121,6 +122,18 @@ CTask *CScheduler::GetCurrentTask (void)
 	return m_pCurrent;
 }
 
+boolean CScheduler::IsValidTask(CTask* pTask)
+{
+	unsigned i;
+	for (i = 0; i < m_nTasks; i++)
+	{
+		if (m_pTask[i] != 0 && m_pTask[i] == pTask)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 void CScheduler::RegisterTaskSwitchHandler (TSchedulerTaskHandler *pHandler)
 {
 	assert (m_pTaskSwitchHandler == 0);
@@ -135,9 +148,43 @@ void CScheduler::RegisterTaskTerminationHandler (TSchedulerTaskHandler *pHandler
 	assert (m_pTaskTerminationHandler != 0);
 }
 
+// Causes all new tasks to be created in a suspended state
+// Nested calls to Suspend/ResumeNewTasks are allowed.
+void CScheduler::SuspendNewTasks()
+{
+	m_iSuspendNewTasks++;
+}
+
+// Stops causing new tasks to be created in a suspended state
+// and starts any tasks that were created suspended.
+void CScheduler::ResumeNewTasks()
+{
+	assert(m_iSuspendNewTasks > 0);
+	m_iSuspendNewTasks--;
+	if (m_iSuspendNewTasks == 0)
+	{
+		// Resume all new tasks
+		unsigned i;
+		for (i = 0; i < m_nTasks; i++)
+		{
+			if (m_pTask[i] != 0 && m_pTask[i]->GetState() == TaskStateNew)
+			{
+				m_pTask[i]->Start();
+			}
+		}
+
+	}
+}
+
+
 void CScheduler::AddTask (CTask *pTask)
 {
 	assert (pTask != 0);
+
+	if (m_iSuspendNewTasks)
+	{
+		pTask->SetState(TaskStateNew);
+	}
 
 	unsigned i;
 	for (i = 0; i < m_nTasks; i++)
@@ -236,6 +283,7 @@ unsigned CScheduler::GetNextTask (void)
 			return nTask;
 
 		case TaskStateBlocked:
+		case TaskStateNew:
 			continue;
 
 		case TaskStateSleeping:

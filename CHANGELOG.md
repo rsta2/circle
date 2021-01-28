@@ -5,8 +5,23 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 43.3
+------------
+
+This intermediate release adds support for the **Raspberry Pi 400** and partial support for the **Compute Module 4**. The eMMC memory of the Compute Module 4 cannot be accessed at the moment.
+
+On the Compute Module 4 the **internal xHCI controller** can be used to access the USB. You have to enable the system option `USE_XHCI_INTERNAL` in *include/circle/sysconfig.h* and to add the option `otg_mode=1` to *config.txt* for this purpose. The DWC OTG USB controller is not supported on the CM4.
+
+The **performance of SD card access** has been improved by enabling the High Speed mode of the SD card, if supported. With a suitable uSD XC card, the read performance increased to up to 180%.
+
+**Bug fixes** concerning USB plug-and-play, the deferred start of the network subsystem and some HID class standard gamepads have been applied.
+
+Circle is tested using a GCC 10.2.1 based toolchain now. Be sure to update the used firmware to the files downloadable in the *boot/* subdirectory, when using this Circle release!
+
 Release 43.2
 ------------
+
+2020-11-24
 
 This intermediate release comes with new drivers and improvements in detail. First a number of **USB serial adapters** with different chips (CH341, CP2102, PL2303, FTDI) is supported now. These drivers are primarily intended to be used with serial client-server protocols, because a handshake (flow control) is not implemented so far. Only the tested combinations of USB vendor/device ID have been added to the drivers. If you discover, that your adapter with different IDs is working too, please let us know! The USB vendor/device ID combination has to be added in `GetDeviceIDTable()` at the bottom of the respective file *lib/usb/usbserial\*.cpp*.
 

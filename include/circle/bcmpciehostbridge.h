@@ -7,7 +7,7 @@
 //	Licensed under GPL-2.0
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,6 +60,11 @@ public:
 
 	boolean ConnectMSI (TPCIeMSIHandler *pHandler, void *pParam);
 	void DisconnectMSI (void);
+
+	static u64 GetDMAAddress (void)		// returns base address of the inbound memory window
+	{
+		return s_nDMAAddress;
+	}
 
 #ifndef NDEBUG
 	void DumpStatus (unsigned nSlot, unsigned nFunc);
@@ -125,6 +130,8 @@ private:
 
 	u64			 m_msi_target_addr;
 	TPCIeMSIData		*m_msi;
+
+	static u64		 s_nDMAAddress;
 };
 
 #endif

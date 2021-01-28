@@ -2,7 +2,7 @@
 // keymap.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -115,7 +115,7 @@ const char *CKeyMap::s_MapDirectory[] =		// same (alphabetical) order as in s_De
 
 CKeyMap::CKeyMap (void)
 :	m_bCapsLock (FALSE),
-	m_bNumLock (TRUE),
+	m_bNumLock (FALSE),
 	m_bScrollLock (FALSE)
 {
 	const char *pLocale = CKernelOptions::Get ()->GetKeyMap ();

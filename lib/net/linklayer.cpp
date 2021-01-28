@@ -68,7 +68,10 @@ void CLinkLayer::Process (void)
 {
 	assert (m_pNetDevLayer != 0);
 	const CMACAddress *pOwnMACAddress = m_pNetDevLayer->GetMACAddress ();
-	assert (pOwnMACAddress != 0);
+	if (pOwnMACAddress == 0)
+	{
+		return;
+	}
 
 	assert (m_pNetDevLayer != 0);
 	u8 Buffer[FRAME_BUFFER_SIZE];

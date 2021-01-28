@@ -64,6 +64,8 @@ PACKED;
 
 #endif
 
+#define ARM_DTB_PTR32		(*(u32 *) 0xF8)
+
 #ifdef __cplusplus
 }
 #endif

@@ -22,8 +22,8 @@
 #include <circle/util.h>
 #include <assert.h>
 
-CTask::CTask (unsigned nStackSize)
-:	m_State (TaskStateReady),
+CTask::CTask (unsigned nStackSize, bool createSuspended)
+:	m_State (createSuspended ? TaskStateNew : TaskStateReady),
 	m_nStackSize (nStackSize),
 	m_pStack (0)
 {
@@ -58,6 +58,12 @@ CTask::~CTask (void)
 	m_pStack = 0;
 }
 
+void CTask::Start (void)
+{
+	assert(m_State == TaskStateNew);
+	m_State = TaskStateReady;
+}
+
 void CTask::Run (void)		// dummy method which is never called
 {
 	assert (0);
@@ -74,6 +80,12 @@ void CTask::Terminate (void)
 
 void CTask::WaitForTermination (void)
 {
+	// Before accessing any of our member variables
+	// make sure this task object hasn't been deleted by 
+	// checking it's still registered with the scheduler
+	if (!CScheduler::Get()->IsValidTask(this))
+		return;
+
 	m_Event.Wait ();
 }
 

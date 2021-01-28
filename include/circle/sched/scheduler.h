@@ -39,9 +39,13 @@ public:
 	void usSleep (unsigned nMicroSeconds);
 
 	CTask *GetCurrentTask (void);
+	boolean IsValidTask(CTask* pTask);
 
 	void RegisterTaskSwitchHandler (TSchedulerTaskHandler *pHandler);
 	void RegisterTaskTerminationHandler (TSchedulerTaskHandler *pHandler);
+
+	void SuspendNewTasks();
+	void ResumeNewTasks();
 
 	static CScheduler *Get (void);
 
@@ -49,6 +53,7 @@ public:
 	{
 		return s_pThis != 0 ? TRUE : FALSE;
 	}
+
 
 private:
 	void AddTask (CTask *pTask);
@@ -70,6 +75,8 @@ private:
 
 	TSchedulerTaskHandler *m_pTaskSwitchHandler;
 	TSchedulerTaskHandler *m_pTaskTerminationHandler;
+
+	int m_iSuspendNewTasks;
 
 	static CScheduler *s_pThis;
 };

@@ -14,6 +14,7 @@ Base library
 * CCPUThrottle: Manages CPU clock rate depending on user requirements and SoC temperature.
 * CDevice: Base class for all devices
 * CDeviceNameService: Devices can be registered by name and retrieved later by this name
+* CDeviceTreeBlob: Simple Devicetree blob parser
 * CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
 * CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
 * CExceptionHandler: Generates a stack-trace and a panic message if an abort exception occurs.

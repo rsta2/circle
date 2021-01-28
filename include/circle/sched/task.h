@@ -2,7 +2,7 @@
 // task.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ enum TTaskState
 	TaskStateBlocked,
 	TaskStateSleeping,
 	TaskStateTerminated,
+	TaskStateNew,
 	TaskStateUnknown
 };
 
@@ -39,8 +40,11 @@ class CScheduler;
 class CTask
 {
 public:
-	CTask (unsigned nStackSize = TASK_STACK_SIZE);		// nStackSize = 0 for main task
+	CTask (unsigned nStackSize = TASK_STACK_SIZE, boolean createSuspended = false);		// nStackSize = 0 for main task
 	virtual ~CTask (void);
+
+	// Starts a task that was created in suspended mode
+	void Start (void);
 
 	virtual void Run (void);
 
@@ -49,7 +53,8 @@ public:
 
 #define TASK_USER_DATA_KTHREAD		0	// Linux driver emulation
 #define TASK_USER_DATA_ERROR_STACK	1	// Plan 9 driver emulation
-#define TASK_USER_DATA_SLOTS		2
+#define TASK_USER_DATA_USER		2	// Free for application usage
+#define TASK_USER_DATA_SLOTS		3
 	void SetUserData (void *pData, unsigned nSlot);
 	void *GetUserData (unsigned nSlot);
 

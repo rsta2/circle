@@ -1,6 +1,15 @@
 WINDOWS BUILD
 
-This file describes, how Circle-based applications can be built on Windows.
+This file describes, how Circle-based applications can be built on Windows.  There's two
+ways to do this:
+
+1. Using Windows based toolchains
+2. Using the "Windows SubSystem for Linux"
+
+
+Windows Based Toolchains
+-------------------------
+
 First you have to download and install the following software:
 
 * Git for Windows (Complete package, with bash support)
@@ -30,3 +39,54 @@ the Windows start menu and enter:
 
 This clones the Circle project and builds the sample/21-webserver for the
 Raspberry Pi 3.
+
+
+Windows Sub-System for Linux
+----------------------------
+
+Windows 10 includes support for the Windows Sub-System for Linux (WSL) which lets you run 
+various Linux distributions on top of windows.  
+
+This is similar to using a virtual machine but more efficient and better intergrated. It 
+provides an excellent development environment for Circle-based projects because you can
+use a full Linux environment for building and a Windows based IDE for editing.
+
+This approach is known to work well with WSL v1.0, Ubuntu 20.04 from the Windows Store and 
+the recommended Circle tool chain as per the [main readme file](/readme.md). 
+
+For instructions on installing WSL and a Linux distro, see here: 
+
+	https://docs.microsoft.com/en-us/windows/wsl/install-win10
+
+If you want to use a serial port to communicate with the Pi, you must use WSL v1 as serial 
+ports currently aren't supported with WSL v2. In the above linked article you can ignore 
+everything about installing v2.  If you have a WSL v2 distro installed you can easily revert 
+it to v1 as described here:
+
+	https://github.com/MicrosoftDocs/WSL/issues/590
+
+To access the serial ports from within the Linux machine use the device name `/dev/ttyS<n>` where
+`<n>` is the COM port number.  eg: COM3 is available as `/dev/ttsS3`.  
+
+To access an SD card attached to the Windows machine (ie: to copy kernel images to it), from the 
+Linux machine first create a mount point for it:
+
+	sudo mkdir /mnt/sdcard
+
+You can then mount the card and copy to it: (replace d: with the Windows drive letter of the card)
+
+	sudo mount -t drvfs d: /mnt/sdcard
+	cp kernel7.img /mnt/sdcard
+	sudo umount /mnt/sdcard
+
+Alternatively instead of accessing Windows from the Linux side you can do the reverse.  Files on 
+the Linux machine are accessible via a network share `\\wsl$\<machinename>` so you can pick up 
+built kernel images from there and copy to the SD Card using Windows, or flash to the bootloader
+using flasher.py on Windows.  If you take this approach you can use WSL v2.
+
+For code editing, VS Code can run on Windows and directly edit files on the Linux machine.  See here 
+for instructions on setting it up:
+
+    https://aka.ms/vscode-remote/download/extension
+
+For build instructions, please refer to the circle documentation for building under Linux.

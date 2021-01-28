@@ -68,6 +68,9 @@
 // Enable 1.8V support
 //#define SD_1_8V_SUPPORT
 
+// Enable High Speed/SDR25 mode
+//#define SD_HIGH_SPEED
+
 // Enable 4-bit support
 #define SD_4BIT_DATA
 
@@ -277,7 +280,7 @@ const u32 CEMMCDevice::sd_commands[] =
 	SD_CMD_INDEX(3) | SD_RESP_R6,
 	SD_CMD_INDEX(4),
 	SD_CMD_INDEX(5) | SD_RESP_R4,
-	SD_CMD_INDEX(6) | SD_RESP_R1,
+	SD_CMD_INDEX(6) | SD_RESP_R1 | SD_DATA_READ,
 	SD_CMD_INDEX(7) | SD_RESP_R1b,
 	SD_CMD_INDEX(8) | SD_RESP_R7,
 	SD_CMD_INDEX(9) | SD_RESP_R2,
@@ -1511,6 +1514,7 @@ int CEMMCDevice::CardReset (void)
 	m_device_id[3] = 0;
 
 	m_card_supports_sdhc = 0;
+	m_card_supports_hs = 0;
 	m_card_supports_18v = 0;
 	m_card_ocr = 0;
 	m_card_rca = 0;
@@ -1955,6 +1959,57 @@ int CEMMCDevice::CardReset (void)
 	LogWrite (LogDebug, "SCR[0]: %08x, SCR[1]: %08x", m_pSCR->scr[0], m_pSCR->scr[1]);;
 	LogWrite (LogDebug, "SCR: %08x%08x", be2le32(m_pSCR->scr[0]), be2le32(m_pSCR->scr[1]));
 	LogWrite (LogDebug, "SCR: version %s, bus_widths %01x", sd_versions[m_pSCR->sd_version], m_pSCR->sd_bus_widths);
+#endif
+
+#ifdef SD_HIGH_SPEED
+	// If card supports CMD6, read switch information from card
+	if (m_pSCR->sd_version >= SD_VER_1_1)
+	{
+		// 512 bit response
+		u8 cmd6_resp[64];
+		m_buf = &cmd6_resp[0];
+		m_block_size = 64;
+
+		// CMD6 Mode 0: Check Function (Group 1, Access Mode)
+		if (!IssueCommand (SWITCH_FUNC, 0x00fffff0, 100000))
+		{
+			LogWrite (LogError, "Error sending SWITCH_FUNC (Mode 0)");
+		}
+		else
+		{
+			// Check Group 1, Function 1 (High Speed/SDR25)
+			m_card_supports_hs = (cmd6_resp[13] >> 1) & 0x1;
+
+			// Attempt switch if supported
+			if (m_card_supports_hs)
+			{
+#ifdef EMMC_DEBUG2
+				LogWrite (LogDebug, "Switching to %s mode", m_card_supports_18v ? "SDR25" : "High Speed");
+#endif
+
+				// CMD6 Mode 1: Set Function (Group 1, Access Mode = High Speed/SDR25)
+				if (!IssueCommand (SWITCH_FUNC, 0x80fffff1, 100000))
+				{
+					LogWrite (LogError, "Switch to %s mode failed", m_card_supports_18v ? "SDR25" : "High Speed");
+				}
+				else
+				{
+					// Success; switch clock to 50MHz
+#ifndef USE_SDHOST
+					SwitchClockRate (base_clock, SD_CLOCK_HIGH);
+#else
+					m_Host.SetClock (SD_CLOCK_HIGH);
+#endif
+#ifdef EMMC_DEBUG2
+					LogWrite (LogDebug, "Switch to 50MHz clock complete");
+#endif
+				}
+			}
+		}
+
+		// Restore block size
+		m_block_size = SD_BLOCK_SIZE;
+	}
 #endif
 
 	if (m_pSCR->sd_bus_widths & 4)

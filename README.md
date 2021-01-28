@@ -6,30 +6,22 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4 and on Raspberry Pi Zero), except on the Compute Module 4, which is not fully supported. The status of the Raspberry Pi 400 is currently unknown. Circle provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4, 400 and on Raspberry Pi Zero), except on the Raspberry Pi Pico, which is not supported. Circle provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-Release 43.2
+Release 43.3
 ------------
 
-This intermediate release comes with new drivers and improvements in detail. First a number of **USB serial adapters** with different chips (CH341, CP2102, PL2303, FTDI) is supported now. These drivers are primarily intended to be used with serial client-server protocols, because a handshake (flow control) is not implemented so far. Only the tested combinations of USB vendor/device ID have been added to the drivers. If you discover, that your adapter with different IDs is working too, please let us know! The USB vendor/device ID combination has to be added in `GetDeviceIDTable()` at the bottom of the respective file *lib/usb/usbserial\*.cpp*.
+This intermediate release adds support for the **Raspberry Pi 400** and partial support for the **Compute Module 4**. The eMMC memory of the Compute Module 4 cannot be accessed at the moment.
 
-These new USB serial drivers allow to provide **serial client libraries** and sample programs, which work with the [**RTK.GPIO**](addon/gpio) board and the [**micro:bit**](addon/microbit) computer. Please follow the given links for details.
+On the Compute Module 4 the **internal xHCI controller** can be used to access the USB. You have to enable the system option `USE_XHCI_INTERNAL` in *include/circle/sysconfig.h* and to add the option `otg_mode=1` to *config.txt* for this purpose. The DWC OTG USB controller is not supported on the CM4.
 
-There is an important change because of the **updated firmware version**, which is recommended for Circle. For **FIQ support on the Raspberry Pi 4 in AArch32 mode** a specific ARM stub file *armstub7-rpi4.bin* is required now. You will need a *config.txt* file for 32-bit operation now too for this configuration, as it already has been the case for 64-bit operation. Please read the file [boot/README](boot/README) for further information.
+The **performance of SD card access** has been improved by enabling the High Speed mode of the SD card, if supported. With a suitable uSD XC card, the read performance increased to up to 180%.
 
-The USB mouse driver supports a **mouse wheel** and up to five buttons now. [sample/10-usbmouse](sample/10-usbmouse) has been updated to demonstrate this. This required a small modification to the mouse API. If your application uses a mouse, you probably have to add the `nWheelMove` (int) parameter to your mouse handler's prototype.
+**Bug fixes** concerning USB plug-and-play, the deferred start of the network subsystem and some HID class standard gamepads have been applied.
 
-The Raspberry Pi 4 supports **multiple displays**. This can be used in Circle to provide more than one `CBcmFrameBuffer` and `CScreenDevice` instances now. If you want to use this feature, you have to add the setting `max_framebuffers=2` to your *config.txt* file on the SD card.
-
-The LittlevGL project has been renamed by its authors to **LVGL**. Because the support for this project in Circle has been updated to the **new version 7.6.1**, the respective directory [addon/lvgl](addon/lvgl) and the class `CLGVL` now follows this convention. This support enables USB plug-and-play now.
-
-A **number of fixes** has been applied for USB plug-and-play support on the Raspberry Pi 1-3.
-
-Some time has been spent to provide **build support on Windows**. As described in [doc/windows-build.txt](doc/windows-build.txt), it is possible to build all Circle libraries and samples without modification now on this platform.
-
-Finally some information about **JTAG debugging** in AArch64 mode on the Raspberry 3 and 4 have been added. Please see [doc/debug-jtag.txt](doc/debug-jtag.txt).
+Circle is tested using a GCC 10.2.1 based toolchain now. Be sure to update the used firmware to the files downloadable in the *boot/* subdirectory, when using this Circle release!
 
 The 43rd Step
 -------------
@@ -115,7 +107,7 @@ Building
 
 > For building 64-bit applications (AArch64) see the next section.
 
-This describes building on PC Linux. See the file [doc/windows-build.txt](doc/windows-build.txt) for information about building on Windows. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *9.2-2019.12* (gcc-arm-9.2-2019.12-x86_64-arm-none-eabi.tar.xz) from this website.
+This describes building on PC Linux. See the file [doc/windows-build.txt](doc/windows-build.txt) for information about building on Windows. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *10.2-2020.11* (gcc-arm-10.2-2020.11-x86_64-arm-none-eabi.tar.xz) from this website.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2, 3 or 4) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -131,7 +123,7 @@ The following table gives support for selecting the right *RASPPI* value:
 |      1 | kernel.img     | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
 |      2 | kernel7.img    | 2, 3, (CM3)              | Cortex-A7     |
 |      3 | kernel8-32.img | 3, (CM3)                 | Cortex-A53    |
-|      4 | kernel7l.img   | 4B                       | Cortex-A72    |
+|      4 | kernel7l.img   | 4B, 400, CM4             | Cortex-A72    |
 
 For a binary distribution you should do one build with *RASPPI = 1*, one with *RASPPI = 2* and one build with *RASPPI = 4* and include the created files *kernel.img*, *kernel7.img* and *kernel7l.img*. Optionally you can do a build with *RASPPI = 3* and add the created file *kernel8-32.img* to provide an optimized version for the Raspberry Pi 3.
 
@@ -151,7 +143,7 @@ AArch64
 
 Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3 or 4. There are also Raspberry Pi 2 versions, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too.
 
-The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *9.2-2019.12* (gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf.tar.xz) from this website.
+The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *10.2-2020.11* (gcc-arm-10.2-2020.11-x86_64-aarch64-none-elf.tar.xz) from this website.
 
 There are distro-provided toolchains on certain Linux platforms (e.g. *g++-aarch64-linux-gnu* on Ubuntu or *gcc-c++-aarch64-linux-gnu* on Fedora), which may work with Circle and can be a quick way to use it, but you have to test this by yourself. If you encounter problems (e.g. no reaction at all, link failure with external library) using a distro-provided toolchain, please try the recommended toolchain (see above) first, before reporting an issue.
 
@@ -197,6 +189,10 @@ Classes
 -------
 
 The following C++ classes were added to Circle:
+
+Base library
+
+* CDeviceTreeBlob: Simple Devicetree blob parser
 
 USB library
 

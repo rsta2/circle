@@ -1617,7 +1617,13 @@ int CBcm54213Device::mii_probe(void)
 	m_old_duplex = -1;
 	m_old_pause = -1;
 
+	// probe PHY
+	m_phy_id = 0x01;
 	int ret = mdio_reset();
+	if (ret) {
+		m_phy_id = 0x00;
+		ret = mdio_reset();
+	}
 	if (ret)
 		return ret;
 
@@ -1724,8 +1730,6 @@ int CBcm54213Device::mii_config(bool init)
 // UniMAC MDIO
 //
 
-#define PHY_ID			0x01		// address of this PHY
-
 #define MDIO_CMD		0x00		// same register as UMAC_MDIO_CMD
 
 #define MII_BMSR		0x01
@@ -1773,7 +1777,9 @@ static inline unsigned mdio_busy(void)
 // PHY device for this peripheral.
 int CBcm54213Device::mdio_reset(void)
 {
-	mdio_read(MII_BMSR);
+	int ret = mdio_read(MII_BMSR);
+	if (ret < 0)
+		return ret;
 
 	return 0;
 }
@@ -1782,7 +1788,7 @@ int CBcm54213Device::mdio_read(int reg)
 {
 	// Prepare the read operation
 	u32 cmd =   MDIO_RD
-		  | (PHY_ID << MDIO_PMD_SHIFT)
+		  | (m_phy_id << MDIO_PMD_SHIFT)
 		  | (reg << MDIO_REG_SHIFT);
 	mdio_writel(cmd, MDIO_CMD);
 
@@ -1802,7 +1808,7 @@ void CBcm54213Device::mdio_write(int reg, u16 val)
 {
 	// Prepare the write operation
 	u32 cmd =   MDIO_WR
-		  | (PHY_ID << MDIO_PMD_SHIFT)
+		  | (m_phy_id << MDIO_PMD_SHIFT)
 		  | (reg << MDIO_REG_SHIFT)
 		  | (0xFFFF & val);
 	mdio_writel(cmd, MDIO_CMD);

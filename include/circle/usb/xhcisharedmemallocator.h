@@ -29,14 +29,14 @@
 // 16	64	none	 1		ERST
 // 248	64	4K	 1		Scatchpad Buffer Array
 // 264	64	4K	 1		DCBAA
-// 1024	64	4K	 <=32		Device Context
-// 1024	64	64K	 <=2+32*EPs	TRB Ring (EPs = number of endpoints per device)
+// 1024	64	64K	 <=2+64*EPs	TRB Ring (EPs = number of endpoints per device)
+// 2048	64	4K	 <=64		Device Context
 // 124K	4K	4K	 1		Scatchpad Buffers
 
 // We only maintain blocks with the following specification. Other blocks, which do not
 // fit these specification (blocks with smaller size/alignment/boundary requirements do
 // fit), can be allocated, but are lost, if they are freed (should not happen).
-#define XHCI_BLOCK_SIZE		1024
+#define XHCI_BLOCK_SIZE		2048
 #define XHCI_BLOCK_ALIGN	64
 #define XHCI_BLOCK_BOUNDARY	0x10000
 
