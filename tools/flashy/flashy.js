@@ -85,6 +85,15 @@ async function openSerialPortAsync(baudRate)
     stdout.write(`ok\n`);
 }
 
+function discardOldLines(str)
+{
+    let nlpos = str.lastIndexOf('\n');
+    if (str >= 0)
+        return str.substr(nlpos)
+    else
+        return str;
+}
+
 async function drainSerialPortAsync()
 {
     // Drain port
@@ -308,10 +317,11 @@ async function flashDevice()
 
         // Setup receive listener
         let resolveDeviceReady;
+        let buf = "";
         port.on('data', function(data) {
 
-            let str = data.toString(`utf8`);
-            if (str.includes(`IHEX`))
+            buf += data.toString(`utf8`);
+            if (buf.includes(`IHEX`))
             {
                 stdout.write(`ok\n`);
 
@@ -320,7 +330,7 @@ async function flashDevice()
                     // If the device responds with IHEX-F it's got
                     // the fast bootloader so switch to that mode unless
                     // disabled by command line switch
-                    if (str.includes(`IHEX-F`))
+                    if (buf.includes(`IHEX-F`))
                     {
                         stdout.write("Fast mode enabled\n");
                         fastMode = true;
@@ -330,6 +340,7 @@ async function flashDevice()
                 if (resolveDeviceReady)
                     resolveDeviceReady();
             }
+            buf = discardOldLines(buf);
 
         });
 
@@ -435,15 +446,17 @@ async function sendGoCommand()
     {
         // Setup receive listener
         let resolveAck;
+        let buf = "";
         port.on('data', function(data) {
 
-            let str = data.toString(`utf8`);
-            //stdout.write(str);
-            if (str.includes(`\r--\r\n\n`))
+            buf += data.toString(`utf8`);
+            if (buf.includes(`\r--\r\n\n`))
             {
                 stdout.write(`ok\n`);
                 resolveAck();
             }
+            buf = discardOldLines(buf);
+
 
         });
 
