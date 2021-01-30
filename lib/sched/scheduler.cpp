@@ -2,7 +2,7 @@
 // scheduler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -225,37 +225,86 @@ void CScheduler::RemoveTask (CTask *pTask)
 	assert (0);
 }
 
-void CScheduler::BlockTask (CTask **ppTask)
+bool CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 {
-	assert (ppTask != 0);
-	*ppTask = m_pCurrent;
-
+	assert (ppWaitListHead != 0);
+	assert (m_pCurrent->m_pWaitListNext == 0);
 	assert (m_pCurrent != 0);
 	assert (m_pCurrent->GetState () == TaskStateReady);
-	m_pCurrent->SetState (TaskStateBlocked);
+
+	// Add current task to waiting task list
+	m_pCurrent->m_pWaitListNext = *ppWaitListHead;
+	*ppWaitListHead = m_pCurrent;
+
+	if (nMicroSeconds == 0)
+	{
+		m_pCurrent->SetState (TaskStateBlocked);
+	}
+	else
+	{
+		unsigned nTicks = nMicroSeconds * (CLOCKHZ / 1000000);
+		unsigned nStartTicks = CTimer::Get ()->GetClockTicks ();
+
+		m_pCurrent->SetWakeTicks (nStartTicks + nTicks);
+		m_pCurrent->SetState (TaskStateBlockedWithTimeout);
+	}
+	
 
 	Yield ();
+
+	assert(GetCurrentTask() == m_pCurrent);
+
+	// Remove this task from the wait list in case was woken by timeout and
+	// not by the event signalling (in which case the list will already be 
+	// cleared and the following is a no-op)
+	CTask* pPrev = 0;
+	CTask* p = *ppWaitListHead;
+	while (p)
+	{
+		if (p == m_pCurrent)
+		{
+			if (pPrev)
+				pPrev->m_pWaitListNext = p->m_pWaitListNext;
+			else
+				*ppWaitListHead = p->m_pWaitListNext;
+		}
+		pPrev = p;
+		p = p->m_pWaitListNext;
+	}
+	m_pCurrent->m_pWaitListNext = nullptr;
+
+	// GetWakeTicks Will be zero if timeout expired, non-zero if event signalled
+	return m_pCurrent->GetWakeTicks() == 0;		
 }
 
-void CScheduler::WakeTask (CTask **ppTask)
+void CScheduler::WakeTasks (CTask **ppWaitListHead)
 {
-	assert (ppTask != 0);
-	CTask *pTask = *ppTask;
+	assert (ppWaitListHead != 0);
 
-	*ppTask = 0;
+	CTask *pTask = *ppWaitListHead;
+	*ppWaitListHead = 0;
 
-#ifdef NDEBUG
-	if (   pTask == 0
-	    || pTask->GetState () != TaskStateBlocked)
+	while (pTask)
 	{
-		CLogger::Get ()->Write (FromScheduler, LogPanic, "Tried to wake non-blocked task");
-	}
+#ifdef NDEBUG
+		if (   pTask == 0
+		    ||    (pTask->GetState () != TaskStateBlocked
+		       && pTask->GetState () != TaskStateBlockedWithTimeout))
+		{
+			CLogger::Get ()->Write (FromScheduler, LogPanic, "Tried to wake non-blocked task");
+		}
 #else
-	assert (pTask != 0);
-	assert (pTask->GetState () == TaskStateBlocked);
+		assert (pTask != 0);
+		assert (   pTask->GetState () == TaskStateBlocked
+		        || pTask->GetState () == TaskStateBlockedWithTimeout);
 #endif
 
-	pTask->SetState (TaskStateReady);
+		pTask->SetState (TaskStateReady);
+
+		CTask* pNext = pTask->m_pWaitListNext;
+		pTask->m_pWaitListNext = 0;
+		pTask = pNext;
+	}
 }
 
 unsigned CScheduler::GetNextTask (void)
@@ -285,6 +334,16 @@ unsigned CScheduler::GetNextTask (void)
 		case TaskStateBlocked:
 		case TaskStateNew:
 			continue;
+
+		case TaskStateBlockedWithTimeout:
+			if ((int) (pTask->GetWakeTicks () - nTicks) > 0)
+			{
+				continue;
+			}
+			pTask->SetState (TaskStateReady);
+			pTask->SetWakeTicks(0);		// Use as flag that timeout expired
+			return nTask;
+
 
 		case TaskStateSleeping:
 			if ((int) (pTask->GetWakeTicks () - nTicks) > 0)

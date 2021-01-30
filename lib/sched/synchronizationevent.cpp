@@ -2,7 +2,7 @@
 // synchronizationevent.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,13 +26,13 @@
 
 CSynchronizationEvent::CSynchronizationEvent (boolean bState)
 :	m_bState (bState),
-	m_pWaitTask (0)
+	m_pWaitListHead (0)
 {
 }
 
 CSynchronizationEvent::~CSynchronizationEvent (void)
 {
-	assert (m_pWaitTask == 0);
+	assert (m_pWaitListHead == 0);
 }
 
 boolean CSynchronizationEvent::GetState (void)
@@ -59,20 +59,45 @@ void CSynchronizationEvent::Set (void)
 		DataSyncBarrier ();
 #endif
 
-		if (m_pWaitTask != 0)
-		{
-			CScheduler::Get ()->WakeTask (&m_pWaitTask);
-		}
+		CScheduler::Get ()->WakeTasks (&m_pWaitListHead);
 	}
 }
+
+// Wakes all waiting tasks and immediately resets the event again
+void CSynchronizationEvent::Pulse (void)
+{
+	// Cheaper and same effect as Set() + Clear()
+	m_bState = FALSE;
+
+#ifdef ARM_ALLOW_MULTI_CORE
+	DataSyncBarrier ();
+#endif
+
+	CScheduler::Get ()->WakeTasks (&m_pWaitListHead);
+}
+
 
 void CSynchronizationEvent::Wait (void)
 {
 	if (!m_bState)
 	{
-		assert (m_pWaitTask == 0);
-		CScheduler::Get ()->BlockTask (&m_pWaitTask);
+		CScheduler::Get ()->BlockTask (&m_pWaitListHead, 0);
+	}
+}
 
-		assert (m_bState);
+// Wait for this event to be signalled, or a time period to elapse.
+// To determine what caused the method to return:
+//    - returns true if timed out
+//    - use GetState() to see if event has been signalled
+// Note, it's possible to have timed out and for the event to be set
+bool CSynchronizationEvent::WaitWithTimeout (unsigned nMicroSeconds)
+{
+	if (m_bState)
+	{
+		return nMicroSeconds == 0;
+	}
+	else
+	{
+		return CScheduler::Get ()->BlockTask (&m_pWaitListHead, nMicroSeconds);
 	}
 }

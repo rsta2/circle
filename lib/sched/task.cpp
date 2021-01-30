@@ -2,7 +2,7 @@
 // task.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@
 CTask::CTask (unsigned nStackSize, bool createSuspended)
 :	m_State (createSuspended ? TaskStateNew : TaskStateReady),
 	m_nStackSize (nStackSize),
-	m_pStack (0)
+	m_pStack (0),
+	m_pWaitListNext (0)
 {
 	for (unsigned i = 0; i < TASK_USER_DATA_SLOTS; i++)
 	{

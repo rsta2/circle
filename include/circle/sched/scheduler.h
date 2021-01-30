@@ -2,7 +2,7 @@
 // scheduler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,8 +59,8 @@ private:
 	void AddTask (CTask *pTask);
 	friend class CTask;
 
-	void BlockTask (CTask **ppTask);
-	void WakeTask (CTask **ppTask);		// can be called from interrupt context
+	bool BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds);
+	void WakeTasks (CTask **ppWaitListHead);		// can be called from interrupt context
 	friend class CSynchronizationEvent;
 
 	void RemoveTask (CTask *pTask);
