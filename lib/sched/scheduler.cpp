@@ -2,7 +2,7 @@
 // scheduler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -288,15 +288,15 @@ void CScheduler::WakeTasks (CTask **ppWaitListHead)
 	{
 #ifdef NDEBUG
 		if (   pTask == 0
-			|| (pTask->GetState () != TaskStateBlocked && 
-				pTask->GetState () != TaskStateBlockedWithTimeout))
+		    ||    (pTask->GetState () != TaskStateBlocked
+		       && pTask->GetState () != TaskStateBlockedWithTimeout))
 		{
 			CLogger::Get ()->Write (FromScheduler, LogPanic, "Tried to wake non-blocked task");
 		}
 #else
 		assert (pTask != 0);
-		assert (pTask->GetState () == TaskStateBlocked || 
-				pTask->GetState () == TaskStateBlockedWithTimeout);
+		assert (   pTask->GetState () == TaskStateBlocked
+		        || pTask->GetState () == TaskStateBlockedWithTimeout);
 #endif
 
 		pTask->SetState (TaskStateReady);

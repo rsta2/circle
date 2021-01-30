@@ -2,7 +2,7 @@
 // synchronizationevent.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,6 +68,11 @@ void CSynchronizationEvent::Pulse (void)
 {
 	// Cheaper and same effect as Set() + Clear()
 	m_bState = FALSE;
+
+#ifdef ARM_ALLOW_MULTI_CORE
+	DataSyncBarrier ();
+#endif
+
 	CScheduler::Get ()->WakeTasks (&m_pWaitListHead);
 }
 
@@ -77,10 +82,6 @@ void CSynchronizationEvent::Wait (void)
 	if (!m_bState)
 	{
 		CScheduler::Get ()->BlockTask (&m_pWaitListHead, 0);
-
-		// Not true if event was pulsed, or otherwise
-		// set and cleared before this task woken.
-		//assert (m_bState);
 	}
 }
 
@@ -100,4 +101,3 @@ bool CSynchronizationEvent::WaitWithTimeout (unsigned nMicroSeconds)
 		return CScheduler::Get ()->BlockTask (&m_pWaitListHead, nMicroSeconds);
 	}
 }
-

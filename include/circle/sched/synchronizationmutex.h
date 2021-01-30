@@ -2,8 +2,11 @@
 // synchronizationmutex.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+//
+// This class was developed by:
+//	Brad Robinson <contact@toptensoftware.com>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -29,7 +32,7 @@ class CSynchronizationMutex
 {
 public:
 	CSynchronizationMutex (void);
-    ~CSynchronizationMutex (void);
+	~CSynchronizationMutex (void);
 
 	void Acquire (void);
 	void Release (void);

@@ -27,12 +27,12 @@
 
 enum TTaskState
 {
+	TaskStateNew,
 	TaskStateReady,
 	TaskStateBlocked,
+	TaskStateBlockedWithTimeout,
 	TaskStateSleeping,
 	TaskStateTerminated,
-	TaskStateNew,
-	TaskStateBlockedWithTimeout,
 	TaskStateUnknown
 };
 
@@ -41,7 +41,8 @@ class CScheduler;
 class CTask
 {
 public:
-	CTask (unsigned nStackSize = TASK_STACK_SIZE, boolean createSuspended = false);		// nStackSize = 0 for main task
+	// nStackSize = 0 for main task
+	CTask (unsigned nStackSize = TASK_STACK_SIZE, boolean createSuspended = false);
 	virtual ~CTask (void);
 
 	// Starts a task that was created in suspended mode
@@ -83,7 +84,7 @@ private:
 	u8		   *m_pStack;
 	void		   *m_pUserData[TASK_USER_DATA_SLOTS];
 	CSynchronizationEvent m_Event;
-	CTask*			m_pWaitListNext;	// next in list of tasks waiting on an event
+	CTask		   *m_pWaitListNext;	// next in list of tasks waiting on an event
 };
 
 #endif
