@@ -190,11 +190,50 @@ $(TARGET).hex: $(TARGET).img
 	@echo "  COPY  $(TARGET).hex"
 	@$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
 
+# Command line to run node and python.  
+# Including the '.exe' forces WSL to run the Windows host version
+# of these commands.  If putty and node are available on the windows 
+# machine we can get around WSL's lack of serial port support
+ifeq ($(strip $(WSL_DISTRO_NAME)),)
+NODE=node 
+PUTTY=putty
+PUTTYSERIALPORT=$(SERIALPORT)
+else
+NODE=node.exe
+PUTTY=putty.exe
+PUTTYSERIALPORT=$(subst /dev/ttyS,COM,$(SERIALPORT))		# Remap to windows name
+endif
+
+ifeq ($(strip $(USEFLASHY)),)
+
+# Flash with python
 flash: $(TARGET).hex
 ifneq ($(strip $(REBOOTMAGIC)),)
 	python3 $(CIRCLEHOME)/tools/reboottool.py $(REBOOTMAGIC) $(SERIALPORT) $(USERBAUD)
 endif
 	python3 $(CIRCLEHOME)/tools/flasher.py $(TARGET).hex $(SERIALPORT) $(FLASHBAUD)
 
+else
+
+# Flash with flashy
+flash: $(TARGET).hex
+	$(NODE) $(CIRCLEHOME)/tools/flashy/flashy.js \
+		$(SERIALPORT) \
+		--flashBaud:$(FLASHBAUD) \
+		--userBaud:$(USERBAUD) \
+		--reboot:$(REBOOTMAGIC) \
+		$(FLASHYFLAGS) \
+		$(TARGET).hex
+
+endif
+
+# Monitor in putty
 monitor:
-	putty -serial $(SERIALPORT) -sercfg $(USERBAUD)
+	$(PUTTY) -serial $(PUTTYSERIALPORT) -sercfg $(USERBAUD)
+
+# Monitor in terminal (Linux only)
+cat:
+	stty -F $(SERIALPORT) $(USERBAUD) cs8 -cstopb -parenb -icrnl
+	cat $(SERIALPORT)
+
+
