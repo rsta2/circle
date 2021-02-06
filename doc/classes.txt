@@ -22,6 +22,7 @@ Base library
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
 * CGPIOPin: Encapsulates a GPIO pin, can be read, write or inverted. Supports interrupts. Simple initialization.
 * CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
+* CGenericLock: Locks a resource with or without scheduler.
 * CHeapAllocator: Allocates blocks from a flat memory region.
 * CI2CMaster: Driver for I2C master devices.
 * CI2CSlave: Driver for I2C slave device.

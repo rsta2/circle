@@ -36,9 +36,11 @@
 #include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/bcm2835int.h>
+#include <circle/sysconfig.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
 #include <circle/util.h>
+#include <circle/sched/scheduler.h>
 #include <assert.h>
 
 #define SDHOST_DEBUG		0
@@ -153,8 +155,17 @@
 #define cpu_relax()		DataSyncBarrier()
 #define mmiowb()		DataSyncBarrier()
 
-#define mdelay(ms)		m_pTimer->MsDelay (ms)
-#define udelay(us)		m_pTimer->usDelay (us)
+#ifdef NO_BUSY_WAIT
+	#define mdelay(ms)	(  CurrentExecutionLevel () == TASK_LEVEL	\
+				 ? CScheduler::Get ()->MsSleep (ms)		\
+				 : m_pTimer->MsDelay (ms))
+	#define udelay(us)	(  CurrentExecutionLevel () == TASK_LEVEL	\
+				 ? CScheduler::Get ()->usSleep (us)		\
+				 : m_pTimer->usDelay (us))
+#else
+	#define mdelay(ms)	m_pTimer->MsDelay (ms)
+	#define udelay(us)	m_pTimer->usDelay (us)
+#endif
 #define ndelay(ns)		m_pTimer->usDelay ((ns) / 1000)
 
 #define min(a, b)		((a) < (b) ? (a) : (b))

@@ -193,6 +193,7 @@ The following C++ classes were added to Circle:
 Base library
 
 * CDeviceTreeBlob: Simple Devicetree blob parser
+* CGenericLock: Locks a resource with or without scheduler
 
 USB library
 

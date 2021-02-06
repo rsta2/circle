@@ -45,6 +45,7 @@
 	#include <circle/synchronize.h>
 	#include <circle/machineinfo.h>
 	#include <circle/memio.h>
+	#include <circle/sched/scheduler.h>
 #else
 	#include "mmc.h"
 	#include "mmcerror.h"
@@ -2367,6 +2368,10 @@ int CEMMCDevice::TimeoutWait (unsigned reg, unsigned mask, int value, unsigned u
 		{
 			return 0;
 		}
+
+#ifdef NO_BUSY_WAIT
+		CScheduler::Get ()->Yield ();
+#endif
 	}
 	while (m_pTimer->GetClockTicks () - nStartTicks < nTimeoutTicks);
 

@@ -2,7 +2,7 @@
 // xhciendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/usb/xhciusbdevice.h>
 #include <circle/usb/xhcicommandmanager.h>
 #include <circle/usb/usbrequest.h>
+#include <circle/sched/scheduler.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <circle/logger.h>
@@ -216,6 +217,10 @@ boolean CXHCIEndpoint::Transfer (CUSBRequest *pURB, unsigned nTimeoutMs)
 
 			return FALSE;
 		}
+
+#ifdef NO_BUSY_WAIT
+		CScheduler::Get ()->Yield ();
+#endif
 	}
 
 	DataMemBarrier ();

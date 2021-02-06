@@ -2,7 +2,7 @@
 // fatinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #define _circle_fs_fat_fatinfo_h
 
 #include <circle/fs/fat/fatcache.h>
-#include <circle/spinlock.h>
+#include <circle/genericlock.h>
 #include <circle/types.h>
 
 enum TFATType
@@ -96,7 +96,7 @@ private:
 	unsigned m_nFreeCount;
 	unsigned m_nNextFreeCluster;
 
-	CSpinLock m_Lock;
+	CGenericLock m_Lock;
 };
 
 #endif
