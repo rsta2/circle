@@ -315,6 +315,11 @@
 #define SD_HIGH_SPEED
 #endif
 
+// USE_EMBEDDED_MMC_CM4 enables access to the on-board embedded MMC
+// memory on Compute Module 4. Does not work with SD card on CM4 Lite.
+
+//#define USE_EMBEDDED_MMC_CM4
+
 // SAVE_VFP_REGS_ON_IRQ enables saving the floating point registers
 // on entry when an IRQ occurs and will restore these registers on exit
 // from the IRQ handler. This has to be defined, if an IRQ handler
