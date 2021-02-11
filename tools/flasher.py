@@ -37,6 +37,7 @@ print("Flashing with baudrate of "+ str(flashbaud) + "...")
 sys.stdout.flush()
 
 try:
+    ser.write(b"R")
     blocksize = math.trunc(flashbaud / 5)
     offset = 0
     while offset < size:
