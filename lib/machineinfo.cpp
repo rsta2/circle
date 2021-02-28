@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -577,7 +577,7 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
 	{
 		if (m_nRAMSize >= 4096)
 		{
-			Result.BusAddress = 0x200000000ULL;
+			Result.BusAddress = 0x400000000ULL;
 		}
 	}
 
