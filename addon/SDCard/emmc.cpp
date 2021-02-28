@@ -2440,20 +2440,19 @@ int CEMMCDevice::TimeoutWait (unsigned reg, unsigned mask, int value, unsigned u
 	unsigned nStartTicks = m_pTimer->GetClockTicks ();
 	unsigned nTimeoutTicks = usec * (CLOCKHZ / 1000000);
 
-	do
+	while ((read32 (reg) & mask) ? !value : value)
 	{
-		if ((read32 (reg) & mask) ? value : !value)
+		if (m_pTimer->GetClockTicks () - nStartTicks >= nTimeoutTicks)
 		{
-			return 0;
+			return -1;
 		}
 
 #ifdef NO_BUSY_WAIT
 		CScheduler::Get ()->Yield ();
 #endif
 	}
-	while (m_pTimer->GetClockTicks () - nStartTicks < nTimeoutTicks);
 
-	return -1;
+	return 0;
 }
 
 #endif
