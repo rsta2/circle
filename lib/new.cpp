@@ -2,7 +2,7 @@
 // new.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,16 @@ void *operator new[] (size_t nSize, int nType)
 }
 
 #if STDLIB_SUPPORT != 3
+
+void *operator new (size_t nSize, void *pMem)
+{
+	return pMem;
+}
+
+void *operator new[] (size_t nSize, void *pMem)
+{
+	return pMem;
+}
 
 void *operator new (size_t nSize)
 {
