@@ -2,7 +2,7 @@
 // xhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -65,21 +65,16 @@ public:
 #endif
 
 private:
-#ifdef USE_XHCI_INTERNAL
 	void InterruptHandler (void);
 	static void InterruptStub (void *pParam);
-#else
-	void InterruptHandler (unsigned nVector);
-	static void InterruptStub (unsigned nVector, void *pParam);
-#endif
 
 	boolean HWReset (void);
 
 private:
-#ifdef USE_XHCI_INTERNAL
 	CInterruptSystem *m_pInterruptSystem;
 	boolean m_bInterruptConnected;
-#else
+
+#ifndef USE_XHCI_INTERNAL
 	CBcmPCIeHostBridge m_PCIeHostBridge;
 #endif
 

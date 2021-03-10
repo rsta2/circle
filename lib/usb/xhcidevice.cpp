@@ -2,7 +2,7 @@
 // xhcidevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,14 +27,19 @@
 #include <circle/machineinfo.h>
 #include <assert.h>
 
+#ifdef USE_XHCI_INTERNAL
+	#define ARM_IRQ_XHCI	ARM_IRQ_XHCI_INTERNAL
+#else
+	#define ARM_IRQ_XHCI	ARM_IRQ_PCIE_HOST_INTA
+#endif
+
 static const char From[] = "xhci";
 
 CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, boolean bPlugAndPlay)
 :	CUSBHostController (bPlugAndPlay),
-#ifdef USE_XHCI_INTERNAL
 	m_pInterruptSystem (pInterruptSystem),
 	m_bInterruptConnected (FALSE),
-#else
+#ifndef USE_XHCI_INTERNAL
 	m_PCIeHostBridge (pInterruptSystem),
 #endif
 	m_SharedMemAllocator (
@@ -63,14 +68,12 @@ CXHCIDevice::~CXHCIDevice (void)
 		HWReset ();
 	}
 
-#ifdef USE_XHCI_INTERNAL
 	if (m_bInterruptConnected)
 	{
 		assert (m_pInterruptSystem != 0);
-		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_XHCI_INTERNAL);
+		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_XHCI);
 		m_bInterruptConnected = FALSE;
 	}
-#endif
 
 	m_pScratchpadBufferArray = 0;
 	m_pScratchpadBuffers = 0;
@@ -125,13 +128,6 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 				 | XHCI_PCIE_SLOT << 15
 				 | XHCI_PCIE_FUNC << 12;
 	Tags.GetTag (PROPTAG_NOTIFY_XHCI_RESET, &NotifyXHCIReset, sizeof NotifyXHCIReset, 4);
-
-	if (!m_PCIeHostBridge.ConnectMSI (InterruptStub, this))
-	{
-		CLogger::Get ()->Write (From, LogError, "Cannot connect MSI");
-
-		return FALSE;
-	}
 
 	if (!m_PCIeHostBridge.EnableDevice (XHCI_PCI_CLASS_CODE, XHCI_PCIE_SLOT, XHCI_PCIE_FUNC))
 	{
@@ -236,11 +232,9 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 	m_pRootHub = new CXHCIRootHub (nMaxPorts, this);
 	assert (m_pRootHub != 0);
 
-#ifdef USE_XHCI_INTERNAL
 	assert (m_pInterruptSystem != 0);
-	m_pInterruptSystem->ConnectIRQ (ARM_IRQ_XHCI_INTERNAL, InterruptStub, this);
+	m_pInterruptSystem->ConnectIRQ (ARM_IRQ_XHCI, InterruptStub, this);
 	m_bInterruptConnected = TRUE;
-#endif
 
 	// start controller
 	m_pMMIO->op_write32 (XHCI_REG_OP_USBCMD,   m_pMMIO->op_read32 (XHCI_REG_OP_USBCMD)
@@ -346,31 +340,18 @@ void CXHCIDevice::FreeSharedMem (void *pBlock)
 	m_SharedMemAllocator.Free (pBlock);
 }
 
-#ifdef USE_XHCI_INTERNAL
 void CXHCIDevice::InterruptHandler (void)
-#else
-void CXHCIDevice::InterruptHandler (unsigned nVector)
-#endif
 {
 #ifdef XHCI_DEBUG2
-#ifdef USE_XHCI_INTERNAL
 	CLogger::Get ()->Write (From, LogDebug, "IRQ");
-#else
-	CLogger::Get ()->Write (From, LogDebug, "MSI%u", nVector);
-#endif
-#endif
-#ifndef USE_XHCI_INTERNAL
-	assert (nVector == 0);
 #endif
 
 	// acknowledge interrupt
 	u32 nStatus = m_pMMIO->op_read32 (XHCI_REG_OP_USBSTS);
 	m_pMMIO->op_write32 (XHCI_REG_OP_USBSTS, nStatus | XHCI_REG_OP_USBSTS_EINT);
 
-#ifdef USE_XHCI_INTERNAL
 	m_pMMIO->rt_write32 (0, XHCI_REG_RT_IR_IMAN,   m_pMMIO->rt_read32 (0, XHCI_REG_RT_IR_IMAN)
 						     | XHCI_REG_RT_IR_IMAN_IP);
-#endif
 
 	if (nStatus & XHCI_REG_OP_USBSTS_HCH)
 	{
@@ -406,8 +387,6 @@ void CXHCIDevice::InterruptHandler (unsigned nVector)
 	}
 }
 
-#ifdef USE_XHCI_INTERNAL
-
 void CXHCIDevice::InterruptStub (void *pParam)
 {
 	CXHCIDevice *pThis = (CXHCIDevice *) pParam;
@@ -415,18 +394,6 @@ void CXHCIDevice::InterruptStub (void *pParam)
 
 	pThis->InterruptHandler ();
 }
-
-#else
-
-void CXHCIDevice::InterruptStub (unsigned nVector, void *pParam)
-{
-	CXHCIDevice *pThis = (CXHCIDevice *) pParam;
-	assert (pThis != 0);
-
-	pThis->InterruptHandler (nVector);
-}
-
-#endif
 
 boolean CXHCIDevice::HWReset (void)
 {
