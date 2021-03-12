@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -335,17 +335,32 @@ boolean CUSBDevice::Initialize (void)
 	LogWrite (LogNotice, "Device %s found", (const char *) *pNames);
 	delete pNames;
 
-#if 0
-	if (   m_pDeviceDesc->iProduct != 0
-	    && m_pDeviceDesc->iProduct != 0xFF)
+	CString Product;
+	CUSBString USBString (this);
+
+	if (   m_pDeviceDesc->iManufacturer != 0
+	    && m_pDeviceDesc->iManufacturer != 0xFF
+	    && USBString.GetFromDescriptor (m_pDeviceDesc->iManufacturer, USBString.GetLanguageID ()))
 	{
-		CUSBString Product (this);
-		if (Product.GetFromDescriptor (m_pDeviceDesc->iProduct, Product.GetLanguageID ()))
-		{
-			LogWrite (LogNotice, "Product: %s", Product.Get ());
-		}
+		Product = USBString.Get ();
 	}
-#endif
+
+	if (   m_pDeviceDesc->iProduct != 0
+	    && m_pDeviceDesc->iProduct != 0xFF
+	    && USBString.GetFromDescriptor (m_pDeviceDesc->iProduct, USBString.GetLanguageID ()))
+	{
+		if (Product.GetLength () > 0)
+		{
+			Product.Append (" ");
+		}
+
+		Product.Append (USBString.Get ());
+	}
+
+	if (Product.GetLength () > 0)
+	{
+		LogWrite (LogNotice, "Product: %s", (const char *) Product);
+	}
 
 	unsigned nFunction = 0;
 	u8 ucInterfaceNumber = 0;
