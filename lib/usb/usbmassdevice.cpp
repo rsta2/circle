@@ -2,7 +2,7 @@
 // usbmassdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,7 +28,13 @@
 #include <circle/new.h>
 #include <assert.h>
 
+#define MAX_TRIES	8				// max. read / write attempts
+
 // USB Mass Storage Bulk-Only Transport
+
+// Class-specific requests
+#define GET_MAX_LUN			0xFE
+#define BULK_ONLY_MASS_STORAGE_RESET	0xFF
 
 // Command Block Wrapper
 struct TCBW
@@ -418,7 +424,7 @@ boolean CUSBBulkOnlyMassStorageDevice::Configure (void)
 
 int CUSBBulkOnlyMassStorageDevice::Read (void *pBuffer, size_t nCount)
 {
-	unsigned nTries = 4;
+	unsigned nTries = MAX_TRIES;
 
 	int nResult;
 
@@ -443,7 +449,7 @@ int CUSBBulkOnlyMassStorageDevice::Read (void *pBuffer, size_t nCount)
 
 int CUSBBulkOnlyMassStorageDevice::Write (const void *pBuffer, size_t nCount)
 {
-	unsigned nTries = 4;
+	unsigned nTries = MAX_TRIES;
 
 	int nResult;
 
@@ -629,7 +635,25 @@ int CUSBBulkOnlyMassStorageDevice::Command (void *pCmdBlk, size_t nCmdBlkLen,
 	{
 		CLogger::Get ()->Write (FromUmsd, LogError, "CSW transfer failed");
 
-		return -1;
+		if (pHost->ControlMessage (GetEndpoint0 (),
+					   REQUEST_TO_ENDPOINT | REQUEST_OUT, CLEAR_FEATURE,
+					   ENDPOINT_HALT, m_pEndpointIn->GetNumber () | 0x80,
+					   0, 0) < 0)
+		{
+			CLogger::Get ()->Write (FromUmsd, LogDebug,
+						"Cannot clear halt on endpoint IN");
+
+			return -1;
+		}
+
+		m_pEndpointIn->ResetPID ();
+
+		if (pHost->Transfer (m_pEndpointIn, pCSW, sizeof *pCSW) != (int) sizeof *pCSW)
+		{
+			CLogger::Get ()->Write (FromUmsd, LogError, "CSW transfer failed twice");
+
+			return -1;
+		}
 	}
 
 	if (pCSW->dCSWSignature != CSWSIGNATURE)
@@ -666,23 +690,31 @@ int CUSBBulkOnlyMassStorageDevice::Reset (void)
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 	
-	if (pHost->ControlMessage (GetEndpoint0 (), 0x21, 0xFF, 0, 0x00, 0, 0) < 0)
+	if (pHost->ControlMessage (GetEndpoint0 (),
+				   REQUEST_CLASS | REQUEST_TO_INTERFACE | REQUEST_OUT,
+				   BULK_ONLY_MASS_STORAGE_RESET, 0, GetInterfaceNumber (), 0, 0) < 0)
 	{
 		CLogger::Get ()->Write (FromUmsd, LogDebug, "Cannot reset device");
 
 		return -1;
 	}
 
-	if (pHost->ControlMessage (GetEndpoint0 (), 0x02, 1, 0, 1, 0, 0) < 0)
+	CTimer::Get ()->MsDelay (100);
+
+	if (pHost->ControlMessage (GetEndpoint0 (),
+				   REQUEST_TO_ENDPOINT | REQUEST_OUT, CLEAR_FEATURE,
+				   ENDPOINT_HALT, m_pEndpointIn->GetNumber () | 0x80, 0, 0) < 0)
 	{
-		CLogger::Get ()->Write (FromUmsd, LogDebug, "Cannot clear halt on endpoint 1");
+		CLogger::Get ()->Write (FromUmsd, LogDebug, "Cannot clear halt on endpoint IN");
 
 		return -1;
 	}
 
-	if (pHost->ControlMessage (GetEndpoint0 (), 0x02, 1, 0, 2, 0, 0) < 0)
+	if (pHost->ControlMessage (GetEndpoint0 (),
+				   REQUEST_TO_ENDPOINT | REQUEST_OUT, CLEAR_FEATURE,
+				   ENDPOINT_HALT, m_pEndpointOut->GetNumber (), 0, 0) < 0)
 	{
-		CLogger::Get ()->Write (FromUmsd, LogDebug, "Cannot clear halt on endpoint 2");
+		CLogger::Get ()->Write (FromUmsd, LogDebug, "Cannot clear halt on endpoint OUT");
 
 		return -1;
 	}
