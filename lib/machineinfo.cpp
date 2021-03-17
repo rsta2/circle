@@ -349,7 +349,11 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 		if (   m_MachineModel == MachineModelZero
 		    || m_MachineModel == MachineModelZeroW)
 		{
+#ifdef USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
+			return 18;
+#else
 			return 12;
+#endif // USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
 		}
 #endif
 		if (m_MachineModel <= MachineModelBRelease2MB512)
@@ -374,7 +378,11 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 		if (   m_MachineModel == MachineModelZero
 		    || m_MachineModel == MachineModelZeroW)
 		{
+#ifdef USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
+			return 19;
+#else
 			return 13;
+#endif // USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
 		}
 #endif
 		if (m_MachineModel <= MachineModelBRelease2MB512)

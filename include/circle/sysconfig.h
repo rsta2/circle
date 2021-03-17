@@ -104,12 +104,21 @@
 #define GPU_L2_CACHE_ENABLED
 #endif
 
-// USE_PWM_AUDIO_ON_ZERO can be defined to use GPIO12/13 for PWM audio
-// output on RPi Zero (W). Some external circuit is needed to use this.
+// USE_PWM_AUDIO_ON_ZERO can be defined to use GPIO12/13 (or 18/19) for
+// PWM audio output on RPi Zero (W). Some external circuit is needed to
+// use this.
 // WARNING: Do not feed voltage into these GPIO pins with this option
 //          defined on a RPi Zero, because this may destroy the pins.
 
 //#define USE_PWM_AUDIO_ON_ZERO
+
+// The left PWM audio output pin is by default GPIO12. The following
+// define moves it to GPIO18.
+//#define USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
+
+// The right PWM audio output pin is by default GPIO13. The following
+// define moves it to GPIO19.
+//#define USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
 
 #endif
 
