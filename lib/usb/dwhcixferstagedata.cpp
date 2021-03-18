@@ -2,7 +2,7 @@
 // dwhcixferstagedata.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@
 #include <circle/timer.h>
 #include <assert.h>
 
+#define MAX_BULK_TRIES		8
+
 CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 						  CUSBRequest	*pURB,
 						  boolean	 bIn,
@@ -42,6 +44,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	m_nState (0),
 	m_nSubState (0),
 	m_nTransactionStatus (0),
+	m_nErrorCount (0),
 	m_pTempBuffer (0),
 	m_nStartTicksHZ (0),
 	m_pFrameScheduler (0)
@@ -186,9 +189,17 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 			assert (m_bIn);
 
 			m_nPackets = 0;		// no data is available, complete transfer
+
+			return;
 		}
 
-		return;
+		// bulk transfers with xact error will be retried, return otherwise
+		if (   !(nStatus & DWHCI_HOST_CHAN_INT_XACT_ERROR)
+		    || m_pEndpoint->GetType () != EndpointTypeBulk
+		    || ++m_nErrorCount > MAX_BULK_TRIES)
+		{
+			return;
+		}
 	}
 
 	u32 nPacketsTransfered = m_nPacketsPerTransaction - nPacketsLeft;
@@ -213,6 +224,11 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 
 	assert (nPacketsTransfered <= m_nPackets);
 	m_nPackets -= nPacketsTransfered;
+
+	if (!m_bSplitTransaction)
+	{
+		m_nPacketsPerTransaction = m_nPackets;
+	}
 
 	// if (m_nTotalBytesTransfered > m_nTransferSize) this will be false:
 	if (m_nTransferSize - m_nTotalBytesTransfered < m_nBytesPerTransaction)
@@ -488,6 +504,11 @@ boolean CDWHCITransferStageData::IsTimeout (void) const
 	}
 
 	return CTimer::Get ()->GetTicks ()-m_nStartTicksHZ >= m_nTimeoutHZ ? TRUE : FALSE;
+}
+
+boolean CDWHCITransferStageData::IsRetryOK (void) const
+{
+	return m_nErrorCount <= MAX_BULK_TRIES;
 }
 
 CUSBRequest *CDWHCITransferStageData::GetURB (void) const

@@ -1064,7 +1064,22 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 	{
 	case StageStateNoSplitTransfer:
 		nStatus = pStageData->GetTransactionStatus ();
-		if (nStatus & DWHCI_HOST_CHAN_INT_ERROR_MASK)
+		if (   (nStatus & DWHCI_HOST_CHAN_INT_XACT_ERROR)
+		    && pURB->GetEndpoint ()->GetType () == EndpointTypeBulk
+		    && pStageData->IsRetryOK ())
+		{
+#ifndef USE_USB_SOF_INTR
+			StartTransaction (pStageData);
+#else
+			m_pStageData[nChannel] = 0;
+			FreeChannel (nChannel);
+
+			QueueTransaction (pStageData);
+#endif
+
+			break;
+		}
+		else if (nStatus & DWHCI_HOST_CHAN_INT_ERROR_MASK)
 		{
 			CLogger::Get ()->Write (FromDWHCI, LogError,
 						"Transaction failed (status 0x%X)", nStatus);
