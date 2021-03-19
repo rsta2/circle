@@ -156,8 +156,16 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
 	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
+#ifdef USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
+	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction5),
+#else
 	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction0),
+#endif // USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
+#ifdef USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
+	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction5),
+#else
 	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction0),
+#endif // USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
 	m_Clock (GPIOClockPWM),
 	m_bIRQConnected (FALSE),
 	m_State (PWMSoundIdle),
