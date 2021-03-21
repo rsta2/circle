@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ OBJS	+= bcm54213.o bcmpciehostbridge.o bcmrandom200.o interruptgic.o dma4channel
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),3)
-OBJS	+= purecall.o
+OBJS	+= purecall.o cxa_guard.o
 endif
 
 libcircle.a: $(OBJS)
