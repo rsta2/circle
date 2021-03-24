@@ -100,6 +100,21 @@ CXHCIEndpoint::CXHCIEndpoint (CXHCIUSBDevice *pDevice, const TUSBEndpointDescrip
 		m_uchInterval = 0;
 	}
 
+	// workaround for low-speed devices with bulk endpoints,
+	// which is normally forbidden by the USB spec.
+	if (   m_pDevice->GetSpeed () == USBSpeedLow
+	    && (m_uchAttributes & 3) == 2)
+	{
+		m_uchAttributes = 3;		// fake interrupt endpoint
+
+		if (m_usMaxPacketSize > 8)
+		{
+			m_usMaxPacketSize = 8;
+		}
+
+		m_uchInterval = ConvertInterval (1, USBSpeedLow);
+	}
+
 	// calculate endpoint ID
 	assert ((m_uchEndpointAddress & 0x0F) >= 1);
 	m_uchEndpointID = (m_uchEndpointAddress & 0x0F) * 2;

@@ -185,7 +185,6 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 		if (   (nStatus & DWHCI_HOST_CHAN_INT_NAK)
 		    && m_pURB->IsCompleteOnNAK ())
 		{
-			assert (m_pEndpoint->GetType () == EndpointTypeBulk);
 			assert (m_bIn);
 
 			m_nPackets = 0;		// no data is available, complete transfer
