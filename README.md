@@ -194,6 +194,7 @@ Base library
 
 * CDeviceTreeBlob: Simple Devicetree blob parser
 * CGenericLock: Locks a resource with or without scheduler
+* CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ)
 
 USB library
 

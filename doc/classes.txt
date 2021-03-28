@@ -24,6 +24,7 @@ Base library
 * CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
 * CGenericLock: Locks a resource with or without scheduler.
 * CHeapAllocator: Allocates blocks from a flat memory region.
+* CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ).
 * CI2CMaster: Driver for I2C master devices.
 * CI2CSlave: Driver for I2C slave device.
 * CI2SSoundBaseDevice: Low level access to the I2S sound device.

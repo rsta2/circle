@@ -34,9 +34,15 @@ enum TDREQ
 	DREQSourcePWM	 = 5,
 	DREQSourceSPITX	 = 6,
 	DREQSourceSPIRX	 = 7,
+#if RASPPI >= 4
+	DREQSourceHDMI	 = 10,
+#endif
 	DREQSourceEMMC	 = 11,
 	DREQSourceUARTTX = 12,
-	DREQSourceUARTRX = 14
+	DREQSourceUARTRX = 14,
+#if RASPPI <= 3
+	DREQSourceHDMI	 = 17
+#endif
 };
 
 typedef void TDMACompletionRoutine (unsigned nChannel, boolean bStatus, void *pParam);
