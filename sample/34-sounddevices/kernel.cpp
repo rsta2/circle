@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include "config.h"
 #include <circle/pwmsoundbasedevice.h>
 #include <circle/i2ssoundbasedevice.h>
+#include <circle/hdmisoundbasedevice.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -125,6 +126,10 @@ TShutdownMode CKernel::Run (void)
 	else if (strcmp (pSoundDevice, "sndi2s") == 0)
 	{
 		m_pSound = new CI2SSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
+	}
+	else if (strcmp (pSoundDevice, "sndhdmi") == 0)
+	{
+		m_pSound = new CHDMISoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
 	else
 	{
