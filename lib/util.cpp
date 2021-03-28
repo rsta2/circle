@@ -721,3 +721,20 @@ u32 bswap32 (u32 ulValue)
 }
 
 #endif
+
+#if !defined (__GNUC__) || (AARCH == 32 && STDLIB_SUPPORT == 0)
+
+int parity32 (unsigned nValue)
+{
+	int nResult = 0;
+
+	while (nValue != 0)
+	{
+		nResult ^= (nValue & 1);
+		nValue >>= 1;
+	}
+
+	return nResult;
+}
+
+#endif
