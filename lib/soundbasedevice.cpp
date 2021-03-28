@@ -2,7 +2,7 @@
 // soundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/soundbasedevice.h>
+#include <circle/macros.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -46,6 +47,7 @@ CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigne
 		break;
 
 	case SoundFormatSigned24:
+	case SoundFormatIEC958:
 		m_nHWSampleSize = sizeof (u32);
 		m_nRangeMin = -(1 << 23)+1;
 		m_nRangeMax = (1 << 23)-1;
@@ -67,6 +69,33 @@ CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigne
 	}
 
 	m_nHWFrameSize = SOUND_HW_CHANNELS * m_nHWSampleSize;
+
+	if (m_HWFormat == SoundFormatIEC958)
+	{
+		u8 uchFS, uchOrigFS;
+		switch (m_nSampleRate)
+		{
+		case 22050:	uchFS = 4;	uchOrigFS = 11;	break;
+		case 24000:	uchFS = 6;	uchOrigFS = 9;	break;
+		case 32000:	uchFS = 3;	uchOrigFS = 12;	break;
+		case 44100:	uchFS = 0;	uchOrigFS = 15;	break;
+		case 48000:	uchFS = 2;	uchOrigFS = 13;	break;
+		case 88200:	uchFS = 8;	uchOrigFS = 7;	break;
+		case 96000:	uchFS = 10;	uchOrigFS = 5;	break;
+		case 176400:	uchFS = 12;	uchOrigFS = 3;	break;
+		case 192000:	uchFS = 14;	uchOrigFS = 1;	break;
+
+		default:
+			assert (0);
+			break;
+		}
+
+		m_uchIEC958Status[0] = 0b100;	// consumer, PCM, no copyright, no pre-emphasis
+		m_uchIEC958Status[1] = 0;	// category (general mode)
+		m_uchIEC958Status[2] = 0;	// source number, take no account of channel number
+		m_uchIEC958Status[3] = uchFS;	// sampling frequency
+		m_uchIEC958Status[4] = 0b1011 | (uchOrigFS << 4); // 24 bit samples, original freq.
+	}
 }
 
 CSoundBaseDevice::~CSoundBaseDevice (void)
@@ -279,7 +308,8 @@ unsigned CSoundBaseDevice::GetChunk (s16 *pBuffer, unsigned nChunkSize)
 unsigned CSoundBaseDevice::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 {
 	assert (   m_HWFormat == SoundFormatSigned24
-		|| m_HWFormat == SoundFormatUnsigned32);
+		|| m_HWFormat == SoundFormatUnsigned32
+		|| m_HWFormat == SoundFormatIEC958);
 
 	return GetChunkInternal (pBuffer, nChunkSize);
 }
@@ -340,6 +370,18 @@ void CSoundBaseDevice::ConvertSoundFormat (void *pTo, const void *pFrom)
 		*pValue = (u32) llValue;
 		} break;
 
+	case SoundFormatIEC958: {
+		nValue >>= 4;
+		nValue &= 0xFFFFFF0;
+		if (parity32 (nValue))
+		{
+			nValue |= 0x80000000;
+		}
+
+		s32 *pValue = reinterpret_cast<s32 *> (pTo);
+		*pValue = nValue;
+		} break;
+
 	default:
 		assert (0);
 		break;
@@ -380,6 +422,45 @@ unsigned CSoundBaseDevice::GetChunkInternal (void *pBuffer, unsigned nChunkSize)
 
 		pBuffer8 += m_nHWFrameSize;
 		nBytes += m_nHWFrameSize;
+	}
+
+	// insert control channel and parity bits, and preamble into IEC958 block
+	if (m_HWFormat == SoundFormatIEC958)
+	{
+		u32 *pBuffer32 = static_cast<u32 *> (pBuffer);
+
+		unsigned i;
+		for (i = 0; i < nChunkSize; i += IEC958_SUBFRAMES_PER_BLOCK)
+		{
+			unsigned j;
+			for (j = 0; j < IEC958_STATUS_BYTES * 8 * SOUND_HW_CHANNELS; j++)
+			{
+				u32 *pSubFrame = &pBuffer32[i + j];
+
+				unsigned nFrame = j / SOUND_HW_CHANNELS;
+				if (m_uchIEC958Status[nFrame / 8] & BIT(nFrame % 8))
+				{
+					u32 nValue = *pSubFrame;
+
+					nValue |= 0x40000000;
+
+					nValue &= 0x7FFFFFFF;
+					if (parity32 (nValue))
+					{
+						nValue |= 0x80000000;
+					}
+
+					*pSubFrame = nValue;
+				}
+
+				if (nFrame == 0)
+				{
+					*pSubFrame |= IEC958_B_FRAME_PREAMBLE;
+				}
+			}
+		}
+
+		assert (i == nChunkSize);	// nChunkSize must be a multiple of 384
 	}
 
 	if (   m_pCallback != 0
