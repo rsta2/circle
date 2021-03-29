@@ -40,7 +40,7 @@ public:
 
 private:
 	void Pulse (void);	// wakes all waiting tasks without actually setting the event
-	friend class CSynchronizationMutex;
+	friend class CMutex;
 
 private:
 	volatile boolean m_bState;

@@ -1,5 +1,5 @@
 //
-// synchronizationmutex.cpp
+// mutex.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
@@ -20,25 +20,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/sched/synchronizationmutex.h>
+#include <circle/sched/mutex.h>
 #include <circle/sched/scheduler.h>
 #include <circle/sched/task.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
 
-CSynchronizationMutex::CSynchronizationMutex (void)
+CMutex::CMutex (void)
 :   m_pOwningTask (0),
     m_iReentrancyCount (0)
 {
 }
 
-CSynchronizationMutex::~CSynchronizationMutex (void)
+CMutex::~CMutex (void)
 {
     assert(m_pOwningTask == 0);
 }
 
-void CSynchronizationMutex::Acquire (void)
+void CMutex::Acquire (void)
 {
     CTask* pTask = CScheduler::Get()->GetCurrentTask();
 
@@ -59,7 +59,7 @@ void CSynchronizationMutex::Acquire (void)
     }
 }
 
-void CSynchronizationMutex::Release (void)
+void CMutex::Release (void)
 {
     assert(m_pOwningTask == CScheduler::Get()->GetCurrentTask());
     m_iReentrancyCount--;

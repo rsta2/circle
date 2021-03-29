@@ -1,5 +1,5 @@
 //
-// synchronizationmutex.h
+// mutex.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2021  R. Stange <rsta2@o2online.de>
@@ -20,19 +20,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_sched_synchronizationmutex_h
-#define _circle_sched_synchronizationmutex_h
+#ifndef _circle_sched_mutex_h
+#define _circle_sched_mutex_h
 
 #include <circle/types.h>
 #include <circle/sched/synchronizationevent.h>
 
 class CTask;
 
-class CSynchronizationMutex
+class CMutex
 {
 public:
-	CSynchronizationMutex (void);
-	~CSynchronizationMutex (void);
+	CMutex (void);
+	~CMutex (void);
 
 	void Acquire (void);
 	void Release (void);

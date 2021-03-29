@@ -23,7 +23,7 @@
 #include <circle/sysconfig.h>
 
 #ifdef NO_BUSY_WAIT
-	#include <circle/sched/synchronizationmutex.h>
+	#include <circle/sched/mutex.h>
 #else
 	#include <circle/spinlock.h>
 #endif
@@ -58,7 +58,7 @@ public:
 
 private:
 #ifdef NO_BUSY_WAIT
-	CSynchronizationMutex m_Mutex;
+	CMutex m_Mutex;
 #else
 	CSpinLock m_SpinLock;
 #endif
