@@ -20,7 +20,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= task.o scheduler.o taskswitch.o synchronizationevent.o mutex.o
+OBJS	= task.o scheduler.o taskswitch.o synchronizationevent.o mutex.o semaphore.o
 
 libsched.a: $(OBJS)
 	@echo "  AR    $@"

@@ -195,6 +195,7 @@ Base library
 * CDeviceTreeBlob: Simple Devicetree blob parser
 * CGenericLock: Locks a resource with or without scheduler
 * CMutex: Provides a method to provide mutual exclusion (critical sections) across tasks
+* CSemaphore: Implements a semaphore synchronization class
 
 USB library
 
