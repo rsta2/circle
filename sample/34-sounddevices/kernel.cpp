@@ -21,6 +21,7 @@
 #include "config.h"
 #include <circle/pwmsoundbasedevice.h>
 #include <circle/i2ssoundbasedevice.h>
+#include <circle/memory.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -55,7 +56,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 #ifdef USE_VCHIQ_SOUND
-	m_VCHIQ (&m_Memory, &m_Interrupt),
+	m_VCHIQ (CMemorySystem::Get (), &m_Interrupt),
 #endif
 	m_pSound (0),
 	m_VFO (&m_LFO)		// LFO modulates the VFO

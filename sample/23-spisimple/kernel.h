@@ -22,7 +22,6 @@
 
 //#define USE_SPI_MASTER_AUX		// use SPI1 (Auxiliary SPI master)
 
-#include <circle/memory.h>
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
@@ -59,7 +58,6 @@ public:
 
 private:
 	// do not change this order
-	CMemorySystem		m_Memory;
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;

@@ -19,6 +19,7 @@
 //
 #include "kernel.h"
 #include "temptask.h"
+#include <circle/memory.h>
 
 static const char FromKernel[] = "kernel";
 
@@ -26,7 +27,7 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_Mandelbrot (&m_Screen, &m_Memory)
+	m_Mandelbrot (&m_Screen, CMemorySystem::Get ())
 {
 	m_ActLED.Blink (5);	// show we are alive
 }

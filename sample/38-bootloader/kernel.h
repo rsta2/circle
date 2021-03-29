@@ -20,7 +20,6 @@
 #ifndef _kernel_h
 #define _kernel_h
 
-#include <circle/memory.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
 #include <circle/screen.h>
@@ -53,7 +52,6 @@ public:
 	
 private:
 	// do not change this order
-	CMemorySystem		m_Memory;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
 	CScreenDevice		m_Screen;
