@@ -2,7 +2,7 @@
 // alloc.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,12 @@
 
 void *malloc (size_t nSize)
 {
+	return CMemorySystem::HeapAllocate (nSize, HEAP_DEFAULT_MALLOC);
+}
+
+void *memalign (size_t nAlign, size_t nSize)
+{
+	assert (nAlign <= HEAP_BLOCK_ALIGN);
 	return CMemorySystem::HeapAllocate (nSize, HEAP_DEFAULT_MALLOC);
 }
 

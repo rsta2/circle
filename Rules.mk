@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -114,6 +114,7 @@ LDFLAGS	+= --gc-sections
 endif
 
 OPTIMIZE ?= -O2
+STANDARD ?= -std=c++14 -Wno-aligned-new
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib \
 	   -I $(CIRCLEHOME)/addon/vc4 -I $(CIRCLEHOME)/addon/vc4/interface/khronos/include
@@ -122,7 +123,7 @@ DEFINE	+= -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
 
 AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
 CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding $(DEFINE) $(INCLUDE) $(OPTIMIZE) -g
-CPPFLAGS+= $(CFLAGS) -std=c++14 -Wno-aligned-new
+CPPFLAGS+= $(CFLAGS) $(STANDARD)
 LDFLAGS	+= --section-start=.init=$(LOADADDR)
 
 ifeq ($(strip $(CHECK_DEPS)),1)
@@ -235,5 +236,3 @@ monitor:
 cat:
 	stty -F $(SERIALPORT) $(USERBAUD) cs8 -cstopb -parenb -icrnl
 	cat $(SERIALPORT)
-
-

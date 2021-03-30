@@ -2,7 +2,7 @@
 // alloc.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 void *malloc (size_t nSize);		// resulting block is always 16 bytes aligned
+void *memalign (size_t nAlign, size_t nSize);
 void free (void *pBlock);
 
 void *calloc (size_t nBlocks, size_t nSize);
