@@ -101,6 +101,11 @@ Circle supports the following features:
 |                       | (not on Raspberry Pi 4)                             |
 |                       | uGUI (by Achim Doebler)                             |
 |                       | LVGL (by LVGL LLC)                                  |
+|                       |                                                     |
+| Not supported         | Bluetooth                                           |
+|                       | Camera                                              |
+|                       | USB device (gadget) mode                            |
+|                       | USB isochronous transfers                           |
 
 Building
 --------
