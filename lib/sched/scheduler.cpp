@@ -122,7 +122,7 @@ CTask *CScheduler::GetCurrentTask (void)
 	return m_pCurrent;
 }
 
-boolean CScheduler::IsValidTask(CTask* pTask)
+boolean CScheduler::IsValidTask (CTask *pTask)
 {
 	unsigned i;
 	for (i = 0; i < m_nTasks; i++)
@@ -148,16 +148,12 @@ void CScheduler::RegisterTaskTerminationHandler (TSchedulerTaskHandler *pHandler
 	assert (m_pTaskTerminationHandler != 0);
 }
 
-// Causes all new tasks to be created in a suspended state
-// Nested calls to Suspend/ResumeNewTasks are allowed.
-void CScheduler::SuspendNewTasks()
+void CScheduler::SuspendNewTasks (void)
 {
 	m_iSuspendNewTasks++;
 }
 
-// Stops causing new tasks to be created in a suspended state
-// and starts any tasks that were created suspended.
-void CScheduler::ResumeNewTasks()
+void CScheduler::ResumeNewTasks (void)
 {
 	assert(m_iSuspendNewTasks > 0);
 	m_iSuspendNewTasks--;
@@ -175,7 +171,6 @@ void CScheduler::ResumeNewTasks()
 
 	}
 }
-
 
 void CScheduler::AddTask (CTask *pTask)
 {
@@ -225,7 +220,7 @@ void CScheduler::RemoveTask (CTask *pTask)
 	assert (0);
 }
 
-bool CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
+boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 {
 	assert (ppWaitListHead != 0);
 	assert (m_pCurrent->m_pWaitListNext == 0);

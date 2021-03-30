@@ -85,12 +85,7 @@ void CSynchronizationEvent::Wait (void)
 	}
 }
 
-// Wait for this event to be signalled, or a time period to elapse.
-// To determine what caused the method to return:
-//    - returns true if timed out
-//    - use GetState() to see if event has been signalled
-// Note, it's possible to have timed out and for the event to be set
-bool CSynchronizationEvent::WaitWithTimeout (unsigned nMicroSeconds)
+boolean CSynchronizationEvent::WaitWithTimeout (unsigned nMicroSeconds)
 {
 	if (m_bState)
 	{

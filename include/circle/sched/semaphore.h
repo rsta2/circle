@@ -34,10 +34,11 @@ public:
 	/// \return Current semaphore count
 	unsigned GetState (void) const;
 
-	/// \brief Decrement semaphore count, block task if count is 0
+	/// \brief Decrement semaphore count; block task, if count becomes 0
 	void Down (void);
 
-	/// \brief Increment semaphore count, wake task if count was 0
+	/// \brief Increment semaphore count; wake another waiting task, if count was 0
+	/// \note Can be called from interrupt context.
 	void Up (void);
 
 	/// \brief Try to decrement semaphore count

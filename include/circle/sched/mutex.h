@@ -28,13 +28,17 @@
 
 class CTask;
 
-class CMutex
+class CMutex	/// Provides a method to provide mutual exclusion (critical sections) across tasks
 {
 public:
 	CMutex (void);
 	~CMutex (void);
 
+	/// \brief Acquire the mutex; task blocks, if another task already acquired the mutex
+	/// \note This mutex can be acquired multiple times by the same task.
 	void Acquire (void);
+
+	/// \brief Release the mutex; wake another task, which was waiting for the mutex
 	void Release (void);
 
 private:

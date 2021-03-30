@@ -1,5 +1,5 @@
 //
-// task.h
+/// task.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
@@ -38,26 +38,41 @@ enum TTaskState
 
 class CScheduler;
 
-class CTask
+class CTask	/// Overload this class, define the Run() method, and call new on it to start it.
 {
 public:
-	// nStackSize = 0 for main task
-	CTask (unsigned nStackSize = TASK_STACK_SIZE, boolean createSuspended = false);
+	/// \param nStackSize Stack size for this task (0 used internally for the main task)
+	/// \param bCreateSuspended Set to TRUE, if the task is initially not ready to run
+	CTask (unsigned nStackSize = TASK_STACK_SIZE, boolean bCreateSuspended = FALSE);
+
 	virtual ~CTask (void);
 
-	// Starts a task that was created in suspended mode
-	void Start (void);
-
+	/// \brief Override this method to define the entry point for your class
 	virtual void Run (void);
 
-	void Terminate (void);			// callable from this task only
-	void WaitForTermination (void);		// callable from other task only
+	/// \brief Starts a task that was created with bCreateSuspended = TRUE
+	void Start (void);
+
+	/// \brief Terminate the execution of this task
+	/// \note Callable from this task only
+	/// \note The task terminates on return from Run() too.
+	void Terminate (void);
+	/// \brief Wait for the termination of this task
+	/// \note Callable from other task only
+	void WaitForTermination (void);
 
 #define TASK_USER_DATA_KTHREAD		0	// Linux driver emulation
 #define TASK_USER_DATA_ERROR_STACK	1	// Plan 9 driver emulation
 #define TASK_USER_DATA_USER		2	// Free for application usage
-#define TASK_USER_DATA_SLOTS		3
+#define TASK_USER_DATA_SLOTS		3	// Number of available slots
+	/// \brief Set a user pointer for this task
+	/// \param pData Any user pointer
+	/// \param nSlot The slot to be set
+	/// \note The slot TASK_USER_DATA_USER is free for application use.
 	void SetUserData (void *pData, unsigned nSlot);
+	/// \brief Get user pointer from slot
+	/// \param nSlot The slot to be read
+	/// \return Any user pointer, previously set with SetUserData()
 	void *GetUserData (unsigned nSlot);
 
 private:

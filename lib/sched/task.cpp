@@ -22,8 +22,8 @@
 #include <circle/util.h>
 #include <assert.h>
 
-CTask::CTask (unsigned nStackSize, bool createSuspended)
-:	m_State (createSuspended ? TaskStateNew : TaskStateReady),
+CTask::CTask (unsigned nStackSize, boolean bCreateSuspended)
+:	m_State (bCreateSuspended ? TaskStateNew : TaskStateReady),
 	m_nStackSize (nStackSize),
 	m_pStack (0),
 	m_pWaitListNext (0)
@@ -84,8 +84,10 @@ void CTask::WaitForTermination (void)
 	// Before accessing any of our member variables
 	// make sure this task object hasn't been deleted by 
 	// checking it's still registered with the scheduler
-	if (!CScheduler::Get()->IsValidTask(this))
+	if (!CScheduler::Get()->IsValidTask (this))
+	{
 		return;
+	}
 
 	m_Event.Wait ();
 }
