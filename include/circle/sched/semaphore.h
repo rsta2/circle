@@ -26,7 +26,7 @@
 class CSemaphore	/// Implements a semaphore synchronization class
 {
 public:
-	/// \param nInitialCount Inital count of the semaphore
+	/// \param nInitialCount Initial count of the semaphore
 	CSemaphore (unsigned nInitialCount = 1);
 
 	~CSemaphore (void);
@@ -34,7 +34,7 @@ public:
 	/// \return Current semaphore count
 	unsigned GetState (void) const;
 
-	/// \brief Decrement semaphore count; block task, if count becomes 0
+	/// \brief Decrement semaphore count; block task, if count is already 0
 	void Down (void);
 
 	/// \brief Increment semaphore count; wake another waiting task, if count was 0
