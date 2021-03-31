@@ -227,6 +227,8 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 	assert (m_pCurrent != 0);
 	assert (m_pCurrent->GetState () == TaskStateReady);
 
+	m_SpinLock.Acquire ();
+
 	// Add current task to waiting task list
 	m_pCurrent->m_pWaitListNext = *ppWaitListHead;
 	*ppWaitListHead = m_pCurrent;
@@ -244,10 +246,11 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 		m_pCurrent->SetState (TaskStateBlockedWithTimeout);
 	}
 	
+	m_SpinLock.Release ();
 
 	Yield ();
 
-	assert(GetCurrentTask() == m_pCurrent);
+	m_SpinLock.Acquire ();
 
 	// Remove this task from the wait list in case was woken by timeout and
 	// not by the event signalling (in which case the list will already be 
@@ -268,6 +271,8 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 	}
 	m_pCurrent->m_pWaitListNext = nullptr;
 
+	m_SpinLock.Release ();
+
 	// GetWakeTicks Will be zero if timeout expired, non-zero if event signalled
 	return m_pCurrent->GetWakeTicks() == 0;		
 }
@@ -275,6 +280,8 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 void CScheduler::WakeTasks (CTask **ppWaitListHead)
 {
 	assert (ppWaitListHead != 0);
+
+	m_SpinLock.Acquire ();
 
 	CTask *pTask = *ppWaitListHead;
 	*ppWaitListHead = 0;
@@ -300,6 +307,8 @@ void CScheduler::WakeTasks (CTask **ppWaitListHead)
 		pTask->m_pWaitListNext = 0;
 		pTask = pNext;
 	}
+
+	m_SpinLock.Release ();
 }
 
 unsigned CScheduler::GetNextTask (void)

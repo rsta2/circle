@@ -46,7 +46,7 @@ public:
 	boolean TryDown (void);
 
 private:
-	volatile unsigned m_nCount;
+	volatile int m_nCount;
 
 	CSynchronizationEvent m_Event;
 };

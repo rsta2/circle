@@ -21,6 +21,7 @@
 #define _circle_sched_scheduler_h
 
 #include <circle/sched/task.h>
+#include <circle/spinlock.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
@@ -100,6 +101,8 @@ private:
 	TSchedulerTaskHandler *m_pTaskTerminationHandler;
 
 	int m_iSuspendNewTasks;
+
+	CSpinLock m_SpinLock;
 
 	static CScheduler *s_pThis;
 };

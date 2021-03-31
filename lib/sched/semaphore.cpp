@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/sched/semaphore.h>
+#include <circle/atomic.h>
 #include <assert.h>
 
 CSemaphore::CSemaphore (unsigned nInitialCount)
@@ -34,18 +35,17 @@ CSemaphore::~CSemaphore (void)
 
 unsigned CSemaphore::GetState (void) const
 {
-	return m_nCount;
+	return AtomicGet (&m_nCount);
 }
 
 void CSemaphore::Down (void)
 {
-	while (m_nCount == 0)
+	while (AtomicGet (&m_nCount) == 0)
 	{
-		assert (!m_Event.GetState ());
 		m_Event.Wait ();
 	}
 
-	if (--m_nCount == 0)
+	if (AtomicDecrement (&m_nCount) == 0)
 	{
 		assert (m_Event.GetState ());
 		m_Event.Clear ();
@@ -54,7 +54,7 @@ void CSemaphore::Down (void)
 
 void CSemaphore::Up (void)
 {
-	if (++m_nCount == 1)
+	if (AtomicIncrement (&m_nCount) == 1)
 	{
 		assert (!m_Event.GetState ());
 		m_Event.Set ();
@@ -70,14 +70,12 @@ void CSemaphore::Up (void)
 
 boolean CSemaphore::TryDown (void)
 {
-	if (m_nCount == 0)
+	if (AtomicGet (&m_nCount) == 0)
 	{
-		assert (!m_Event.GetState ());
-
 		return FALSE;
 	}
 
-	if (--m_nCount == 0)
+	if (AtomicDecrement (&m_nCount) == 0)
 	{
 		assert (m_Event.GetState ());
 		m_Event.Clear ();
