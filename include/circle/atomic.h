@@ -33,7 +33,7 @@ extern "C" {
 	#define __CIRCLE_ATOMIC_MEMMODEL	__ATOMIC_RELAXED
 #endif
 
-static inline int AtomicGet (volatile int *pVar)
+static inline int AtomicGet (const volatile int *pVar)
 {
 	return __atomic_load_n (pVar, __CIRCLE_ATOMIC_MEMMODEL);
 }
