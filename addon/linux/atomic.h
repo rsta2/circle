@@ -16,7 +16,7 @@ extern "C" {
 
 typedef struct
 {
-	int counter;
+	volatile int counter;
 }
 atomic_t;
 

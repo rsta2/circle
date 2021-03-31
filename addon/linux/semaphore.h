@@ -1,6 +1,7 @@
 #ifndef _linux_semaphore_h
 #define _linux_semaphore_h
 
+#include <linux/atomic.h>
 #include <linux/compiler.h>
 
 #ifdef __cplusplus
@@ -9,14 +10,14 @@ extern "C" {
 
 struct semaphore
 {
-	volatile int count;
+	atomic_t count;
 };
 
-#define DEFINE_SEMAPHORE(name)	struct semaphore name = {1}
+#define DEFINE_SEMAPHORE(name)	struct semaphore name = {ATOMIC_INIT (1)}
 
 static inline void sema_init (struct semaphore *sem, int val)
 {
-	sem->count = val;
+	atomic_set (&sem->count, val);
 }
 
 void down (struct semaphore *sem);
