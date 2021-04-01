@@ -2,7 +2,7 @@
 // miniorgan.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,12 +20,18 @@
 #ifndef _miniorgan_h
 #define _miniorgan_h
 
+// define only one
 //#define USE_I2S
+#define USE_HDMI
 
 #ifdef USE_I2S
 	#include <circle/i2ssoundbasedevice.h>
 	#define SOUND_CLASS	CI2SSoundBaseDevice
 	#define SAMPLE_RATE	192000
+#elif defined (USE_HDMI)
+	#include <circle/hdmisoundbasedevice.h>
+	#define SOUND_CLASS	CHDMISoundBaseDevice
+	#define SAMPLE_RATE	48000
 #else
 	#include <circle/pwmsoundbasedevice.h>
 	#define SOUND_CLASS	CPWMSoundBaseDevice

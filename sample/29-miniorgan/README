@@ -29,6 +29,11 @@ tested with a PCM5102A DAC. You have to enable the #define USE_I2S in the file
 miniorgan.h before building to use this. The DAC has to be connected to GPIO18
 (BCK), 19 (LRCK) and 21 (DATA, Broadcom numbering)
 
+This sample can be built to be used with a HDMI display with audio support too.
+You have to enable the #define USE_HDMI in the file miniorgan.h before building
+to use this. You may notice a delay between pressing a key and the start of the
+tone. This latency is caused by the hardware and cannot be eliminated.
+
 The PC keyboard mapping is as follows:
 
 +--------+
