@@ -64,6 +64,18 @@ public:
 	/// \return Is HDMI sound and DMA operation running?
 	boolean IsActive (void) const;
 
+protected:
+	/// \brief May overload this to provide the sound samples!
+	/// \param pBuffer	buffer where the samples have to be placed
+	/// \param nChunkSize	size of the buffer in words (same as given to constructor)
+	/// \return Number of words written to the buffer (normally nChunkSize),\n
+	///	    Transfer will stop if 0 is returned
+	/// \note nChunkSize is a multiple of 384 samples (sub-frames).\n
+	///	  Each frame consists of two sub-frames (left/right samples).\n
+	///	  Each sample has to be converted using ConvertIEC958Sample()\n
+	///	  to apply the IEC958 framing, before writing it into the buffer.
+	/// virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
+
 private:
 	boolean GetNextChunk (void);
 

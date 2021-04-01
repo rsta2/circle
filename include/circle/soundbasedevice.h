@@ -138,6 +138,11 @@ protected:
 	virtual unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize);
 	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
+	/// \brief Called from GetChunk() to apply framing on IEC958 samples
+	/// \param nSample 24-bit signed sample value as u32, upper bits don't care
+	/// \param nFrame Number of the IEC958 frame, this sample belongs to (0..191)
+	u32 ConvertIEC958Sample (u32 nSample, unsigned nFrame);
+
 private:
 	void ConvertSoundFormat (void *pTo, const void *pFrom);
 

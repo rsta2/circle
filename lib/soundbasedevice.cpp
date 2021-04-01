@@ -314,6 +314,34 @@ unsigned CSoundBaseDevice::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 	return GetChunkInternal (pBuffer, nChunkSize);
 }
 
+u32 CSoundBaseDevice::ConvertIEC958Sample (u32 nSample, unsigned nFrame)
+{
+	assert (m_HWFormat == SoundFormatIEC958);
+	assert (nFrame < IEC958_FRAMES_PER_BLOCK);
+
+	nSample &= 0xFFFFFF;
+	nSample <<= 4;
+
+	if (   nFrame < IEC958_STATUS_BYTES * 8
+	    && (m_uchIEC958Status[nFrame / 8] & BIT(nFrame % 8)))
+	{
+		nSample |= 0x40000000;
+
+	}
+
+	if (parity32 (nSample))
+	{
+		nSample |= 0x80000000;
+	}
+
+	if (nFrame == 0)
+	{
+		nSample |= IEC958_B_FRAME_PREAMBLE;
+	}
+
+	return nSample;
+}
+
 void CSoundBaseDevice::ConvertSoundFormat (void *pTo, const void *pFrom)
 {
 	s32 nValue = 0;
