@@ -242,6 +242,7 @@ const TUSBDeviceID *CUSBSerialFT231XDevice::GetDeviceIDTable (void)
 	static const TUSBDeviceID DeviceIDTable[] =
 	{
 		{ USB_DEVICE (0x0403, 0x6001) },
+		{ USB_DEVICE (0x0403, 0x6010) },
 		{ USB_DEVICE (0x0403, 0x6014) },	// FT232H
 		{ USB_DEVICE (0x0403, 0x6015) },
 		{ }
