@@ -71,7 +71,7 @@ boolean CUSBSerialFT231XDevice::Configure (void)
 	{
 		type = "FT232RL";
 	}
-	else if (deviceDesc->bcdDevice == 0x900)
+	else if (deviceDesc->bcdDevice == 0x700 || deviceDesc->bcdDevice == 0x900)
 	{
 		type = "FT232H";
 	}
