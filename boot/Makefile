@@ -8,8 +8,8 @@
 # Use most recent firmware test revision
 #FIRMWARE = master
 
-# Use firmware revision built/committed on: Jan 27 2021
-FIRMWARE ?= 496e65477e06172ea20602e365d3790632c3cc06
+# Use firmware revision built/committed on: Feb 25 2021
+FIRMWARE ?= 5985247fb75681985547641d66196c77499f26b9
 
 BASEURL = https://github.com/raspberrypi/firmware/blob/$(FIRMWARE)/boot
 
