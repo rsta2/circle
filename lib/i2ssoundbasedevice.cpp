@@ -5,13 +5,13 @@
 //	BCM283x/BCM2711 I2S output
 //	two 24-bit audio channels
 //	sample rate up to 192 KHz
-//	tested with PCM5102A DAC only
+//	tested with PCM5102A and PCM5122 DACs
 //
 // References:
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -126,15 +126,20 @@
 CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
 					  unsigned	    nChunkSize,
-					  bool		    bSlave)
+					  bool		    bSlave,
+					  CI2CMaster       *pI2CMaster,
+					  u8                ucI2CAddress)
 :	CSoundBaseDevice (SoundFormatSigned24, 0, nSampleRate),
 	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
 	m_bSlave (bSlave),
+	m_pI2CMaster (pI2CMaster),
+	m_ucI2CAddress (ucI2CAddress),
 	m_PCMCLKPin (18, GPIOModeAlternateFunction0),
 	m_PCMFSPin (19, GPIOModeAlternateFunction0),
 	m_PCMDOUTPin (21, GPIOModeAlternateFunction0),
 	m_Clock (GPIOClockPCM, GPIOClockSourcePLLD),
+	m_bI2CInited (FALSE),
 	m_bIRQConnected (FALSE),
 	m_State (I2SSoundIdle),
 	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
@@ -249,6 +254,28 @@ int CI2SSoundBaseDevice::GetRangeMax (void) const
 boolean CI2SSoundBaseDevice::Start (void)
 {
 	assert (m_State == I2SSoundIdle);
+
+	// optional DAC init via I2C
+	if (   m_pI2CMaster != 0
+	    && !m_bI2CInited)
+	{
+		if (m_ucI2CAddress != 0)
+		{
+			if (!InitPCM51xx (m_ucI2CAddress))	// fixed address, must succeed
+			{
+				return FALSE;
+			}
+		}
+		else
+		{
+			if (!InitPCM51xx (0x4C))		// auto probing, ignore failure
+			{
+				InitPCM51xx (0x4D);
+			}
+		}
+
+		m_bI2CInited = TRUE;
+	}
 
 	// fill buffer 0
 	m_nNextBuffer = 0;
@@ -521,4 +548,38 @@ void CI2SSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 	m_pControlBlock[nID]->n2DModeStride            = 0;
 	m_pControlBlock[nID]->nReserved[0]	       = 0;
 	m_pControlBlock[nID]->nReserved[1]	       = 0;
+}
+
+//
+// Taken from the file mt32pi.cpp from this project:
+//
+// mt32-pi - A baremetal MIDI synthesizer for Raspberry Pi
+// Copyright (C) 2020-2021 Dale Whinham <daleyo@gmail.com>
+//
+// Licensed under GPLv3
+//
+boolean CI2SSoundBaseDevice::InitPCM51xx (u8 ucI2CAddress)
+{
+	static const u8 initBytes[][2] =
+	{
+		// Set PLL reference clock to BCK (set SREF to 001b)
+		{ 0x0d, 0x10 },
+
+		// Ignore clock halt detection (set IDCH to 1)
+		{ 0x25, 0x08 },
+
+		// Disable auto mute
+		{ 0x41, 0x04 }
+	};
+
+	for (auto &command : initBytes)
+	{
+		if (   m_pI2CMaster->Write (ucI2CAddress, &command, sizeof (command))
+		    != sizeof (command))
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }

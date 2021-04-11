@@ -4,7 +4,7 @@ This sample plays a modulated 440 Hz tone via one of the following sound
 devices:
 
 * PWM sound device via the 3.5mm headphone jack
-* I2S sound device using external hardware (tested with PCM5102A DAC only)
+* I2S sound device using external hardware (tested with PCM5102A and PCM5122 DACs)
 * VCHIQ sound device via sound-capable HDMI monitor or headphone jack (optional)
 
 By default the sample is built without the VCHIQ option, because this requires
@@ -34,3 +34,7 @@ and write one of the following lines into it:
 By default the sound output is done via the headphone jack (without VCHIQ
 option) or via a sound-capable HDMI monitor (with VCHIQ option). Please have a
 look into the file doc/cmdline.txt for more details.
+
+For I2S operation with a PCM5122-based sound device you may have to set the
+I2C slave address of the DAC in config.h. By default the addresses 0x4C and
+0x4D will be auto-probed.

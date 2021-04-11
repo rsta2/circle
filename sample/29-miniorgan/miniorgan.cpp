@@ -2,7 +2,7 @@
 // miniorgan.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,8 +68,12 @@ const TNoteInfo CMiniOrgan::s_Keys[] =
 
 CMiniOrgan *CMiniOrgan::s_pThis = 0;
 
-CMiniOrgan::CMiniOrgan (CInterruptSystem *pInterrupt)
-:	SOUND_CLASS (pInterrupt, SAMPLE_RATE),
+CMiniOrgan::CMiniOrgan (CInterruptSystem *pInterrupt, CI2CMaster *pI2CMaster)
+:	SOUND_CLASS (pInterrupt, SAMPLE_RATE, CHUNK_SIZE
+#ifdef USE_I2S
+		     , FALSE, pI2CMaster, DAC_I2C_ADDRESS
+#endif
+	),
 	m_pMIDIDevice (0),
 	m_pKeyboard (0),
 	m_Serial (pInterrupt, TRUE),
