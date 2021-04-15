@@ -15,7 +15,7 @@
 #include <circle/logger.h>
 #include <circle/types.h>
 #include <OneWire/OneWire.h>
-#include "ds18x20.h"
+#include <OneWire/ds18x20.h>
 
 enum TShutdownMode
 {

@@ -1,5 +1,13 @@
 README
 
-This sample uses the OneWire library to control a DS18S20 (or DS18B20) temperature sensor via the 1-Wire protocol. The data line (DQ) of the DS18x20 has to be connected to the Raspberry Pi via GPIO pin 24. This sample uses the parasite power mode. The sensor is powered via the GPIO pin. There is only another 4.7K resistor required. See the DS18x20 datasheet for details! When the sample is started it continously displays the current temperature (after 5 blinks of the Act LED).
+This sample uses the OneWire library to control a DS18S20 (or DS18B20)
+temperature sensor via the 1-Wire protocol. The data line (DQ) of the DS18x20
+has to be connected to the Raspberry Pi via GPIO pin 24. This sample
+automatically determines the power mode (parasite / external supply). There is
+only another 4.7K resistor required. See the DS18x20 datasheet for details! When
+the sample is started it continuously displays the current temperature (after 5
+blinks of the Act LED).
 
-The OneWire library was ported from Paul Stoffregen's version [http://www.pjrc.com/teensy/td_libs_OneWire.html]. He maintains this library for several microcontroller platforms. See the notices in OneWire.cpp!
+The OneWire library was ported from Paul Stoffregen's version
+[http://www.pjrc.com/teensy/td_libs_OneWire.html]. He maintains this library for
+several microcontroller platforms. See the notices in OneWire.cpp!

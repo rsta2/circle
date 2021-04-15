@@ -10,7 +10,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_OneWire (24),			// on GPIO pin 24 (a 4.7K resistor is necessary)
-	m_DS18x20 (&m_OneWire)		// with parasite power
+	m_DS18x20 (&m_OneWire)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -68,15 +68,15 @@ TShutdownMode CKernel::Run (void)
 
 	while (1)
 	{
-		if (m_DS18x20.StartConversion ())
+		if (m_DS18x20.DoMeasurement ())
 		{
-			m_Logger.Write (FromKernel, LogNotice, "Temperature is %d.%dC / %d.%dF",
-					m_DS18x20.GetCelsius (),    m_DS18x20.GetCelsiusFract (), 
-					m_DS18x20.GetFahrenheit (), m_DS18x20.GetFahrenheitFract ());
+			m_Logger.Write (FromKernel, LogNotice, "Temperature is %.1fC / %.1fF",
+					(double) m_DS18x20.GetCelsius (),
+					(double) m_DS18x20.GetFahrenheit ());
 		}
 		else
 		{
-			m_Logger.Write (FromKernel, LogWarning, "Conversion failed");
+			m_Logger.Write (FromKernel, LogWarning, "Measurement failed");
 		}
 	}
 

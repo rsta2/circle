@@ -14,7 +14,7 @@ dio		Library providing access to the spi_dio board by BitWizard.nl
 display		Library providing drivers for displays (e.g. LCD dot-matrix)
 fatfs		FatFs - Generic FAT file system module with LFN support (by ChaN)
 gpio		Library providing access to external GPIO expander boards (e.g. RTK.GPIO)
-OneWire		Support library for 1-wire devices (by Paul Stoffregen)
+OneWire		Support library for 1-wire devices (by Paul Stoffregen) and DS18x20 sensors
 Properties	Library providing access to configuration properties saved in a file
 qemu		Support library and demos for using Circle with QEMU
 linux		Linux kernel device driver emulation (used by HDMI sound and accelerated graphics)
