@@ -31,6 +31,8 @@
 #define LOG_MAX_MESSAGE		200
 #define LOG_QUEUE_SIZE		50
 
+#define LOGGER_BUFSIZE		0x4000		///< Size of the text ring buffer
+
 enum TLogSeverity
 {
 	LogPanic,	///< Halt the system after processing this message
@@ -50,7 +52,8 @@ class CLogger		/// Writing logging messages to a target device
 public:
 	/// \param nLogLevel Only messages with (Severity <= nLogLevel) will be logged
 	/// \param pTimer Pointer to system timer object (time is not logged, if this is 0)
-	CLogger (unsigned nLogLevel, CTimer *pTimer = 0);
+	/// \param bOverwriteOldest Overwrite oldest text in text ring buffer, if it is full?
+	CLogger (unsigned nLogLevel, CTimer *pTimer = 0, boolean bOverwriteOldest = TRUE);
 
 	~CLogger (void);
 
@@ -77,8 +80,9 @@ public:
 	/// \brief Read log message text from the log text ring buffer
 	/// \param pBuffer Read text is copied to this buffer
 	/// \param nCount  Size of the buffer
+	/// \param bClear  Remove the returned bytes from buffer
 	/// \return Number of bytes copied to the buffer (0 for none)
-	int Read (void *pBuffer, unsigned nCount);
+	int Read (void *pBuffer, unsigned nCount, boolean bClear = TRUE);
 
 	/// \brief Read the next log event from the log event ring buffer
 	/// \param pSeverity	  Severity is returned here
@@ -108,6 +112,7 @@ private:
 private:
 	unsigned m_nLogLevel;
 	CTimer *m_pTimer;
+	boolean m_bOverwriteOldest;
 
 	CDevice *m_pTarget;
 
