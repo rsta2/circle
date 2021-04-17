@@ -47,10 +47,10 @@ boolean CTFTPFatFsFileServer::FileOpen (const char *pFileName)
 	assert (m_pFileSystem != 0);
 	assert (!m_bFileOpen);
 
-	CString Filename (m_Path);
-	Filename.Append (pFileName);
+	m_Filename = m_Path;
+	m_Filename.Append (pFileName);
 
-	FRESULT Result = f_open (&m_File, Filename, FA_READ | FA_OPEN_EXISTING);
+	FRESULT Result = f_open (&m_File, m_Filename, FA_READ | FA_OPEN_EXISTING);
 	if (Result != FR_OK)
 	{
 		return FALSE;
@@ -67,10 +67,10 @@ boolean CTFTPFatFsFileServer::FileCreate (const char *pFileName)
 	assert (m_pFileSystem != 0);
 	assert (!m_bFileOpen);
 
-	CString Filename (m_Path);
-	Filename.Append (pFileName);
+	m_Filename = m_Path;
+	m_Filename.Append (pFileName);
 
-	FRESULT Result = f_open (&m_File, Filename, FA_WRITE | FA_CREATE_ALWAYS);
+	FRESULT Result = f_open (&m_File, m_Filename, FA_WRITE | FA_CREATE_ALWAYS);
 	if (Result != FR_OK)
 	{
 		return FALSE;

@@ -43,6 +43,7 @@ private:
 	FATFS *m_pFileSystem;
 	CString m_Path;
 
+	CString m_Filename;
 	FIL m_File;
 	boolean m_bFileOpen;
 };
