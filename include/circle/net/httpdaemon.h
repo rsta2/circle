@@ -2,7 +2,7 @@
 // httpdaemon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <circle/net/netsubsystem.h>
 #include <circle/net/http.h>
 #include <circle/net/socket.h>
+#include <circle/net/ipaddress.h>
 #include <circle/types.h>
 
 class CHTTPDaemon : public CTask
@@ -48,6 +49,13 @@ public:
 				        u8	    *pBuffer,	// copy your content here
 				        unsigned    *pLength,	// in: buffer size, out: content length
 				        const char **ppContentType) = 0; // set this if not "text/html"
+
+	// overwrite this to implement your own access logging
+	virtual void WriteAccessLog (const CIPAddress	&rRemoteIP,
+				     THTTPRequestMethod	 RequestMethod,
+				     const char		*pRequestURI,
+				     THTTPStatus 	 Status,
+				     unsigned		 nContentLength);
 
 protected:
 	// returns the next part from multipart form data (TRUE if available)
