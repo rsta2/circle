@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 	m_nMinutesDiff (0),
 	m_nMsDelay (200000),
 	m_nusDelay (m_nMsDelay / 1000),
+	m_pUpdateTimeHandler (0),
 	m_nPeriodicHandlers (0)
 {
 	assert (s_pThis == 0);
@@ -181,9 +182,10 @@ int CTimer::GetTimeZone (void) const
 
 boolean CTimer::SetTime (unsigned nTime, boolean bLocal)
 {
+	int nSecondsDiff = m_nMinutesDiff * 60;
+
 	if (!bLocal)
 	{
-		int nSecondsDiff = m_nMinutesDiff * 60;
 		if (    nSecondsDiff < 0
 		    && -nSecondsDiff > (int) nTime)
 		{
@@ -191,6 +193,12 @@ boolean CTimer::SetTime (unsigned nTime, boolean bLocal)
 		}
 
 		nTime += nSecondsDiff;
+	}
+
+	if (   m_pUpdateTimeHandler != 0
+	    && !(*m_pUpdateTimeHandler) (nTime - nSecondsDiff, GetUniversalTime ()))
+	{
+		return FALSE;
 	}
 
 	m_TimeSpinLock.Acquire ();
@@ -562,6 +570,13 @@ void CTimer::TuneMsDelay (void)
 
 	CLogger::Get ()->Write (FromTimer, LogNotice, "SpeedFactor is %u.%02u",
 				nFactor / 100, nFactor % 100);
+}
+
+void CTimer::RegisterUpdateTimeHandler (TUpdateTimeHandler *pHandler)
+{
+	assert (m_pUpdateTimeHandler == 0);
+	m_pUpdateTimeHandler = pHandler;
+	assert (m_pUpdateTimeHandler != 0);
 }
 
 void CTimer::RegisterPeriodicHandler (TPeriodicTimerHandler *pHandler)

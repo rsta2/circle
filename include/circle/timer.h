@@ -1,8 +1,8 @@
 //
-// timer.h
+/// \file timer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,13 +27,18 @@
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
-#define HZ		100			// ticks per second
+#define HZ		100			///< ticks per second
 
 #define MSEC2HZ(msec)	((msec) * HZ / 1000)
 
 typedef uintptr TKernelTimerHandle;
 
 typedef void TKernelTimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext);
+
+/// \param nNewTime New time to be set in seconds since 1970-01-01 00:00:00 UTC
+/// \param nOldTime Current time in seconds since 1970-01-01 00:00:00 UTC
+/// \return TRUE if new time can be set, FALSE if new time is invalid (do not set)
+typedef boolean TUpdateTimeHandler (unsigned nNewTime, unsigned nOldTime);
 
 typedef void TPeriodicTimerHandler (void);
 
@@ -126,6 +131,9 @@ public:
 	/// \param nMicroSeconds Delay in microseconds
 	static void SimpleusDelay (unsigned nMicroSeconds);
 
+	/// \param pHandler Handler which is called, when SetTime() is invoked to check the time
+	void RegisterUpdateTimeHandler (TUpdateTimeHandler *pHandler);
+
 	/// \param pHandler Handler which is called on each timer tick (HZ times per second)
 	void RegisterPeriodicHandler (TPeriodicTimerHandler *pHandler);
 
@@ -160,6 +168,8 @@ private:
 
 	unsigned		 m_nMsDelay;
 	unsigned		 m_nusDelay;
+
+	TUpdateTimeHandler	*m_pUpdateTimeHandler;
 
 #define TIMER_MAX_PERIODIC_HANDLERS	4
 	TPeriodicTimerHandler	*m_pPeriodicHandler[TIMER_MAX_PERIODIC_HANDLERS];
