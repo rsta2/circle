@@ -2,7 +2,7 @@
 // serial.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -316,7 +316,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate)
 	}
 	else
 	{
-		write32 (ARM_UART_LCRH, LCRH_WLEN8_MASK);	// 8N1
+		write32 (ARM_UART_LCRH, LCRH_WLEN8_MASK | LCRH_FEN_MASK);		// 8N1
 	}
 
 	write32 (ARM_UART_CR, CR_UART_EN_MASK | CR_TXE_MASK | CR_RXE_MASK);
