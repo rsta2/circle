@@ -499,15 +499,14 @@ void CTimer::InterruptHandler (void)
 #ifndef USE_PHYSICAL_COUNTER
 	PeripheralEntry ();
 
-	//assert (read32 (ARM_SYSTIMER_CS) & (1 << 3));
-	
-	u32 nCompare = read32 (ARM_SYSTIMER_C3) + CLOCKHZ / HZ;
-	write32 (ARM_SYSTIMER_C3, nCompare);
-	if (nCompare < read32 (ARM_SYSTIMER_CLO))			// time may drift
+	u32 nCompare = read32 (ARM_SYSTIMER_C3);
+	do
 	{
-		nCompare = read32 (ARM_SYSTIMER_CLO) + CLOCKHZ / HZ;
+		nCompare += CLOCKHZ / HZ;
+
 		write32 (ARM_SYSTIMER_C3, nCompare);
 	}
+	while ((int) (nCompare - read32 (ARM_SYSTIMER_CLO)) < 2);	// time may drift
 
 	write32 (ARM_SYSTIMER_CS, 1 << 3);
 
