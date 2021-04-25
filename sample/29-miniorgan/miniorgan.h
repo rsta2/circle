@@ -22,7 +22,7 @@
 
 // define only one
 //#define USE_I2S
-#define USE_HDMI
+//#define USE_HDMI
 
 #ifdef USE_I2S
 	#include <circle/i2ssoundbasedevice.h>
