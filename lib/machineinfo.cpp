@@ -330,6 +330,9 @@ unsigned CMachineInfo::GetClockRate (u32 nClockId) const
 		}
 		break;
 
+	case CLOCK_ID_PIXEL_BVB:
+		break;
+
 	default:
 		assert (0);
 		break;

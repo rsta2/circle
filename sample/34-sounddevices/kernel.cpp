@@ -21,8 +21,8 @@
 #include "config.h"
 #include <circle/pwmsoundbasedevice.h>
 #include <circle/i2ssoundbasedevice.h>
+#include <circle/hdmisoundbasedevice.h>
 #include <circle/machineinfo.h>
-#include <circle/memory.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -134,6 +134,10 @@ TShutdownMode CKernel::Run (void)
 	{
 		m_pSound = new CI2SSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, FALSE,
 						    &m_I2CMaster, DAC_I2C_ADDRESS);
+	}
+	else if (strcmp (pSoundDevice, "sndhdmi") == 0)
+	{
+		m_pSound = new CHDMISoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
 	else
 	{

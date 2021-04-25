@@ -27,7 +27,7 @@ SAMPLES
 26-cpustress		Calculates fractal images to stress the CPU. Displays a SoC temperature chart.
 27-usbgamepad	[PnP]	Displaying information about an attached USB gamepad and its current state.
 28-touchscreen		Displaying touch events from the official Raspberry Pi touch screen.
-29-miniorgan	[PnP]	Mini organ instrument using PWM or I2S sound, (USB or serial) MIDI or USB keyboard.
+29-miniorgan	[PnP]	Mini organ instrument using PWM, HDMI or I2S sound, (USB or serial) MIDI or USB keyboard.
 30-gpiofiq		Demonstrating FIQ-driven fast GPIO event capture and a tracing class.
 31-webclient		Fetching a RPi hardware revision list from a HTTP webserver and parsing it.
 32-i2cshell	[PnP]	Command line tool for interactive communication with I2C devices.

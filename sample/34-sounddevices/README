@@ -5,6 +5,7 @@ devices:
 
 * PWM sound device via the 3.5mm headphone jack
 * I2S sound device using external hardware (tested with PCM5102A and PCM5122 DACs)
+* HDMI sound device via sound-capable HDMI monitor (without VCHIQ, HDMI0 only)
 * VCHIQ sound device via sound-capable HDMI monitor or headphone jack (optional)
 
 By default the sample is built without the VCHIQ option, because this requires
@@ -28,6 +29,8 @@ and write one of the following lines into it:
 	sounddev=sndpwm			or
 
 	sounddev=sndi2s			or
+
+	sounddev=sndhdmi		or
 
 	sounddev=sndvchiq soundopt=0
 

@@ -2,7 +2,7 @@
 // soundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,12 +28,19 @@
 #define SOUND_MAX_SAMPLE_SIZE	(sizeof (u32))
 #define SOUND_MAX_FRAME_SIZE	(SOUND_HW_CHANNELS * SOUND_MAX_SAMPLE_SIZE)
 
+// IEC958 (S/PDIF)
+#define IEC958_FRAMES_PER_BLOCK		192
+#define IEC958_SUBFRAMES_PER_BLOCK	(SOUND_HW_CHANNELS * IEC958_FRAMES_PER_BLOCK)
+#define IEC958_STATUS_BYTES		5
+#define IEC958_B_FRAME_PREAMBLE		0x0F
+
 enum TSoundFormat			/// All supported formats are interleaved little endian
 {
 	SoundFormatUnsigned8,		/// Not supported as hardware format
 	SoundFormatSigned16,
 	SoundFormatSigned24,
 	SoundFormatUnsigned32,		/// Not supported as write format
+	SoundFormatIEC958,		/// Not supported as write format
 	SoundFormatUnknown
 };
 
@@ -131,6 +138,11 @@ protected:
 	virtual unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize);
 	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
+	/// \brief Called from GetChunk() to apply framing on IEC958 samples
+	/// \param nSample 24-bit signed sample value as u32, upper bits don't care
+	/// \param nFrame Number of the IEC958 frame, this sample belongs to (0..191)
+	u32 ConvertIEC958Sample (u32 nSample, unsigned nFrame);
+
 private:
 	void ConvertSoundFormat (void *pTo, const void *pFrom);
 
@@ -168,6 +180,8 @@ private:
 	void *m_pCallbackParam;
 
 	CSpinLock m_SpinLock;
+
+	u8 m_uchIEC958Status[IEC958_STATUS_BYTES];
 };
 
 #endif

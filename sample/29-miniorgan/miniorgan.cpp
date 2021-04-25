@@ -224,8 +224,13 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 		nSampleDelay = (SAMPLE_RATE/2 + m_nFrequency/2) / m_nFrequency;
 	}
 
+#ifdef USE_HDMI
+	unsigned nFrame = 0;
+#endif
 	for (; nChunkSize > 0; nChunkSize -= 2)		// fill the whole buffer
 	{
+		u32 nSample = (u32) m_nNullLevel;
+
 		if (m_nFrequency != 0)			// key pressed?
 		{
 			// change output level if required to generate a square wave
@@ -243,14 +248,20 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 				}
 			}
 
-			*pBuffer++ = (u32) m_nCurrentLevel;		// 2 stereo channels
-			*pBuffer++ = (u32) m_nCurrentLevel;
+			nSample = (u32) m_nCurrentLevel;
 		}
-		else
+
+#ifdef USE_HDMI
+		nSample = ConvertIEC958Sample (nSample, nFrame);
+
+		if (++nFrame == IEC958_FRAMES_PER_BLOCK)
 		{
-			*pBuffer++ = (u32) m_nNullLevel;
-			*pBuffer++ = (u32) m_nNullLevel;
+			nFrame = 0;
 		}
+#endif
+
+		*pBuffer++ = nSample;		// 2 stereo channels
+		*pBuffer++ = nSample;
 	}
 
 	return nResult;

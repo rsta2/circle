@@ -29,7 +29,7 @@ usbspeed=full			Set speed of the whole USB to full speed (12 Mbps) instead of
 sounddev=sndpwm			Set device used for sound output
 				("sndpwm" for PWM (via headphone jack), "sndi2s" for I2S (external
 				 hardware required), "sndvchiq" for VCHIQ (HDMI or headphone jack),
-				 default depends on application)
+				 "sndhdmi" for HDMI (without VCHIQ), default depends on application)
 
 soundopt=0			Select destination for sound output with "sounddev=sndvchiq"
 				(0: detected automatically (default), 1: headphone jack, 2: HDMI)

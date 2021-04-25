@@ -20,7 +20,9 @@
 #ifndef _miniorgan_h
 #define _miniorgan_h
 
+// define only one
 //#define USE_I2S
+//#define USE_HDMI
 
 #ifdef USE_I2S
 	#include <circle/i2ssoundbasedevice.h>
@@ -28,6 +30,11 @@
 	#define SAMPLE_RATE	192000
 	#define CHUNK_SIZE	8192
 	#define DAC_I2C_ADDRESS	0		// I2C slave address of the DAC (0 for auto probing)
+#elif defined (USE_HDMI)
+	#include <circle/hdmisoundbasedevice.h>
+	#define SOUND_CLASS	CHDMISoundBaseDevice
+	#define SAMPLE_RATE	48000
+	#define CHUNK_SIZE	(384 * 10)
 #else
 	#include <circle/pwmsoundbasedevice.h>
 	#define SOUND_CLASS	CPWMSoundBaseDevice

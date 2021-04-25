@@ -201,8 +201,7 @@ Base library
 
 * CDeviceTreeBlob: Simple Devicetree blob parser
 * CGenericLock: Locks a resource with or without scheduler
-* CMutex: Provides a method to provide mutual exclusion (critical sections) across tasks
-* CSemaphore: Implements a semaphore synchronization class
+* CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ)
 
 USB library
 
@@ -212,6 +211,11 @@ USB library
 * CUSBSerialCP2102Device: Driver for CP2102 based USB serial devices
 * CUSBSerialFT231XDevice: Driver for FTDI based USB serial devices
 * CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices
+
+Scheduler library
+
+* CMutex: Provides a method to provide mutual exclusion (critical sections) across tasks
+* CSemaphore: Implements a semaphore synchronization class
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 

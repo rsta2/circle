@@ -19,6 +19,9 @@ Known issues of Circle are:
 
 * Some modules in the addon/ subdirectory will not build with STDLIB_SUPPORT = 0.
 
+* The class CHDMISoundBaseDevice will not link with STDLIB_SUPPORT = 0
+  and AARCH = 32.
+
 * There may be a few USB devices, which report a transfer error 3 (babble) on the
   Raspberry Pi 4. According to some comments on the Internet, this may be caused
   by incompatibilities of the USB device firmware. These devices cannot be used

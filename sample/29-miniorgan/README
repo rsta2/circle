@@ -31,6 +31,11 @@ GPIO18 (BCK), 19 (LRCK) and 21 (DATA, Broadcom numbering). For I2S operation
 with a PCM5122-based sound device you may have to set the I2C slave address of
 the DAC too. By default the addresses 0x4C and 0x4D will be auto-probed.
 
+This sample can be built to be used with a HDMI display with audio support too.
+You have to enable the #define USE_HDMI in the file miniorgan.h before building
+to use this. You may notice a delay between pressing a key and the start of the
+tone. This latency is caused by the hardware and cannot be eliminated.
+
 The PC keyboard mapping is as follows:
 
 +--------+

@@ -78,6 +78,12 @@ u32 bswap32 (u32 ulValue);
 #define be2le16		bswap16
 #define be2le32		bswap32
 
+#if !defined (__GNUC__) || (AARCH == 32 && STDLIB_SUPPORT == 0)
+	int parity32 (unsigned nValue);		// returns number of ones % 1
+#else
+	#define parity32	__builtin_parity
+#endif
+
 #ifdef __cplusplus
 }
 #endif
