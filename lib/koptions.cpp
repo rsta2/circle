@@ -2,7 +2,7 @@
 // koptions.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -64,8 +64,7 @@ CKernelOptions::CKernelOptions (void)
 		if (strcmp (pOption, "width") == 0)
 		{
 			unsigned nValue;
-			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
-			    && 640 <= nValue && nValue <= 1980)
+			if ((nValue = GetDecimal (pValue)) != INVALID_VALUE)
 			{
 				m_nWidth = nValue;
 			}
@@ -73,8 +72,7 @@ CKernelOptions::CKernelOptions (void)
 		else if (strcmp (pOption, "height") == 0)
 		{
 			unsigned nValue;
-			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
-			    && 480 <= nValue && nValue <= 1080)
+			if ((nValue = GetDecimal (pValue)) != INVALID_VALUE)
 			{
 				m_nHeight = nValue;
 			}
