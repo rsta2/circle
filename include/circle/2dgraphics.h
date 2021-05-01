@@ -1,5 +1,5 @@
 //
-// screen.h
+// 2dgraphics.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
