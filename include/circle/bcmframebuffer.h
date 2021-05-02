@@ -40,7 +40,7 @@ class CBcmFrameBuffer
 public:
 	CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nDepth,
 			 unsigned nVirtualWidth = 0, unsigned nVirtualHeight = 0,
-			 unsigned nDisplay = 0);
+			 unsigned nDisplay = 0, boolean bDoubleBuffered = FALSE);
 	~CBcmFrameBuffer (void);
 
 	void SetPalette (u8 nIndex, u16 nRGB565);	// with Depth <= 8 only

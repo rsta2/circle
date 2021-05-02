@@ -53,6 +53,7 @@ Helping to fix FIQ synchronization issue
 Improving SD card (EMMC) performance
 Adding utility functions for Official Touchscreen and SD card
 Improving CSerialDevice in polling mode
+Adding class C2DGraphics and sample/41-screenanimations
 
 Steve Maynard
 Patches and testing for Compute Module 3(+)

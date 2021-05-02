@@ -2,6 +2,7 @@ CLASSES
 
 Base library
 
+* C2DGraphics: Software graphics library with VSync and hardware-accelerated double buffering.
 * CActLED: Switch the Act LED on and off, checks the Raspberry Pi model to use the right LED pin.
 * CBcm54213Device: Driver for BCM54213PE Gigabit Ethernet Transceiver of Raspberry Pi 4.
 * CBcmFrameBuffer: Frame buffer initialization, setting color palette for 8 bit depth.
