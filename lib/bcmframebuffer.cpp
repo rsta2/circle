@@ -40,7 +40,7 @@ unsigned CBcmFrameBuffer::s_nCurrentDisplay = (unsigned) -1;
 
 CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nDepth,
 				  unsigned nVirtualWidth, unsigned nVirtualHeight,
-				  unsigned nDisplay)
+				  unsigned nDisplay, boolean bDoubleBuffered)
 :	m_nWidth (nWidth),
 	m_nHeight (nHeight),
 	m_nVirtualWidth (nVirtualWidth),
@@ -90,7 +90,7 @@ CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nD
 	    || m_nVirtualHeight == 0)
 	{
 		m_nVirtualWidth  = m_nWidth;
-		m_nVirtualHeight = m_nHeight;
+		m_nVirtualHeight = m_nHeight * (1 + bDoubleBuffered);
 	}
 
 	if (m_nDepth <= 8)
