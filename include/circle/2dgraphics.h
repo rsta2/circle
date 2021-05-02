@@ -1,6 +1,9 @@
 //
 // 2dgraphics.h
 //
+// This file:
+//	Copyright (C) 2021  Stephane Damo
+//
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
@@ -23,18 +26,25 @@
 #include <circle/screen.h>
 
 
-class C2DGraphics // Software graphics library with VSync and hardware-accelerated double buffering
+class C2DGraphics /// Software graphics library with VSync and hardware-accelerated double buffering
 {
 public:
-	/// \param nWidth   Screen width in pixels
-	/// \param nHeight  Screen height in pixels
+	/// \param nWidth   Screen width in pixels (0 to detect)
+	/// \param nHeight  Screen height in pixels (0 to detect)
 	/// \param bVSync   TRUE to enable VSync and HW double buffering
-	C2DGraphics (unsigned nWidth, unsigned nHeight, boolean bVSync = TRUE);
+	/// \param nDisplay Zero-based display number (for Raspberry Pi 4)
+	C2DGraphics (unsigned nWidth, unsigned nHeight, boolean bVSync = TRUE, unsigned nDisplay = 0);
 
 	~C2DGraphics (void);
 
 	/// \return Operation successful?
 	boolean Initialize (void);
+
+	/// \return Screen width in pixels
+	unsigned GetWidth () const;
+
+	/// \return Screen height in pixels
+	unsigned GetHeight () const;
 
 	/// \brief Clears the screen
 	/// \param Color Color used to clear the screen
@@ -123,7 +133,7 @@ public:
 	/// \param nY Pixel Y coordinate
 	/// \param Color Rectangle color
 	void DrawPixel (unsigned nX, unsigned nY, TScreenColor Color);
-	
+
 	/// \brief Gets raw access to the drawing buffer
 	/// \return Pointer to the buffer
 	TScreenColor *GetBuffer ();
@@ -135,6 +145,7 @@ public:
 private:
 	unsigned m_nWidth;
 	unsigned m_nHeight;
+	unsigned m_nDisplay;
 	CBcmFrameBuffer	*m_pFrameBuffer;
 	TScreenColor *m_baseBuffer;
 	TScreenColor *m_Buffer;

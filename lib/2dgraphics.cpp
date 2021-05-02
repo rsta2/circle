@@ -1,8 +1,11 @@
 //
-// screen.cpp
+// 2dgraphics.cpp
+//
+// This file:
+//	Copyright (C) 2021  Stephane Damo
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,13 +25,14 @@
 #include <circle/bcmpropertytags.h>
 #include <circle/util.h>
 
-C2DGraphics::C2DGraphics (unsigned nWidth, unsigned nHeight, boolean bVSync)
+C2DGraphics::C2DGraphics (unsigned nWidth, unsigned nHeight, boolean bVSync, unsigned nDisplay)
 : 	m_nWidth(nWidth),
 	m_nHeight(nHeight),
-	m_bVSync(bVSync),
+	m_nDisplay (nDisplay),
+	m_pFrameBuffer(0),
 	m_Buffer(0),
-	m_bBufferSwapped(FALSE),
-	m_pFrameBuffer(0)
+	m_bVSync(bVSync),
+	m_bBufferSwapped(FALSE)
 {
 
 }
@@ -43,7 +47,8 @@ C2DGraphics::~C2DGraphics (void)
 
 boolean C2DGraphics::Initialize (void)
 {
-	m_pFrameBuffer = new CBcmFrameBuffer (m_nWidth, m_nHeight, DEPTH, m_nWidth, 2*m_nHeight, 0, TRUE);
+	m_pFrameBuffer = new CBcmFrameBuffer (m_nWidth, m_nHeight, DEPTH, m_nWidth, 2*m_nHeight,
+					      m_nDisplay, TRUE);
 	
 	if (!m_pFrameBuffer || !m_pFrameBuffer->Initialize ())
 	{
@@ -56,6 +61,16 @@ boolean C2DGraphics::Initialize (void)
 	m_Buffer = m_baseBuffer + m_nWidth * m_nHeight;
 	
 	return TRUE;
+}
+
+unsigned C2DGraphics::GetWidth () const
+{
+	return m_nWidth;
+}
+
+unsigned C2DGraphics::GetHeight () const
+{
+	return m_nHeight;
 }
 
 void C2DGraphics::ClearScreen(TScreenColor Color)
@@ -148,13 +163,13 @@ void C2DGraphics::DrawCircle (unsigned nX, unsigned nY, unsigned nRadius, TScree
 	}
 	
 	int r2 = nRadius * nRadius;
-	int area = r2 << 2;
-	int rr = nRadius << 1;
+	unsigned area = r2 << 2;
+	unsigned rr = nRadius << 1;
 
-	for (int i = 0; i < area; i++)
+	for (unsigned i = 0; i < area; i++)
 	{
-		int tx = (i % rr) - nRadius;
-		int ty = (i / rr) - nRadius;
+		int tx = (int) (i % rr) - nRadius;
+		int ty = (int) (i / rr) - nRadius;
 
 		if (tx * tx + ty * ty < r2)
 		{
@@ -172,49 +187,48 @@ void C2DGraphics::DrawCircleOutline (unsigned nX, unsigned nY, unsigned nRadius,
 
 	m_Buffer[m_nWidth * (nY) + nRadius + nX] = Color;
 
-    if (nRadius > 0)
-    {
+	if (nRadius > 0)
+	{
 		m_Buffer[m_nWidth * (-nRadius + nY) + nX] = Color;
 		m_Buffer[m_nWidth * (nY) - nRadius + nX] = Color;
 		m_Buffer[m_nWidth * (nRadius + nY) + nX] = Color;
-    }
+	}
       
-    int p = 1 - nRadius;
+	int p = 1 - nRadius;
 	int y = 0;
 	
-    while (nRadius > y)
-    { 
-        y++;
+	while ((int) nRadius > y)
+	{
+		y++;
 
-        if (p <= 0)
+		if (p <= 0)
 		{
-            p = p + 2 * y + 1;
+			p = p + 2 * y + 1;
+		}
+		else
+		{
+			nRadius--;
+			p = p + 2 * y - 2 * nRadius + 1;
 		}
 
-        else
-        {
-            nRadius--;
-            p = p + 2 * y - 2 * nRadius + 1;
-        }
-
-        if (nRadius < y)
+		if ((int) nRadius < y)
 		{
-            break;
+			break;
 		}
-		
+
 		m_Buffer[m_nWidth * (y + nY) + nRadius + nX] = Color;
 		m_Buffer[m_nWidth * (y + nY) - nRadius + nX] = Color;
 		m_Buffer[m_nWidth * (-y + nY) + nRadius + nX] = Color;
 		m_Buffer[m_nWidth * (-y + nY) - nRadius + nX] = Color;
 
-        if (nRadius != y)
-        {
+		if ((int) nRadius != y)
+		{
 			m_Buffer[m_nWidth * (nRadius + nY) + y + nX] = Color;
 			m_Buffer[m_nWidth * (nRadius + nY) - y + nX] = Color;
 			m_Buffer[m_nWidth * (-nRadius + nY) + y + nX] = Color;
 			m_Buffer[m_nWidth * (-nRadius + nY) - y + nX] = Color;
-        }
-    } 
+		}
+	}
 }
 
 void C2DGraphics::DrawImage (unsigned nX, unsigned nY, unsigned nWidth, unsigned nHeight, TScreenColor *PixelBuffer)
