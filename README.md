@@ -199,6 +199,7 @@ The following C++ classes were added to Circle:
 
 Base library
 
+* C2DGraphics: Software graphics library with VSync and hardware-accelerated double buffering
 * CDeviceTreeBlob: Simple Devicetree blob parser
 * CGenericLock: Locks a resource with or without scheduler
 * CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ)

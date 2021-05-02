@@ -39,5 +39,6 @@ SAMPLES
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
 39-umsdplugging	[PnP]	Plug in and remove USB flash drives, list directory
 40-irqlatency	[PnP]	Displays the maximum measured IRQ latency
+41-screenanimations	2D graphical shapes demo on screen without flickering or screen tearing
 
 Samples marked with [PnP] are enabled for USB plug-and-play.
