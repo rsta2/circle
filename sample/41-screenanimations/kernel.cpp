@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 CKernel::CKernel (void)
 : m_2DGraphics(m_Options.GetWidth (), m_Options.GetHeight ())
 {
-
+	m_ActLED.Blink (5);
 }
 
 CKernel::~CKernel (void)
@@ -36,14 +36,18 @@ boolean CKernel::Initialize (void)
 
 TShutdownMode CKernel::Run (void)
 {
+	for (unsigned i = 0; i < nShapes; i++)
+	{
+		m_pShape[i] = new CGraphicShape (m_2DGraphics.GetWidth (), m_2DGraphics.GetHeight ());
+	}
 
 	while (1)
 	{
-		m_2DGraphics.ClearScreen(0);
+		m_2DGraphics.ClearScreen(BLACK_COLOR);
 		
-		for(unsigned i=0; i<32; i++)
+		for(unsigned i=0; i<nShapes; i++)
 		{
-			shapes[i].Draw(&m_2DGraphics);
+			m_pShape[i]->Draw(&m_2DGraphics);
 		}
 		
 		m_2DGraphics.UpdateDisplay();

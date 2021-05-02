@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,10 +20,8 @@
 #ifndef _kernel_h
 #define _kernel_h
 
-#include <circle/memory.h>
 #include <circle/actled.h>
 #include <circle/koptions.h>
-#include <circle/devicenameservice.h>
 #include <circle/2dgraphics.h>
 #include <circle/types.h>
 #include "graphicshape.h"
@@ -37,6 +35,9 @@ enum TShutdownMode
 
 class CKernel
 {
+private:
+	static const unsigned nShapes = 32;
+
 public:
 	CKernel (void);
 	~CKernel (void);
@@ -47,15 +48,11 @@ public:
 
 private:
 	// do not change this order
-	CMemorySystem		m_Memory;
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
-	CDeviceNameService	m_DeviceNameService;
-	unsigned m_sceneWidth;
-	unsigned m_sceneHeight;
+
 	C2DGraphics		m_2DGraphics;
-	CGraphicShape shapes[32];
-	
+	CGraphicShape		*m_pShape[nShapes];
 };
 
 #endif

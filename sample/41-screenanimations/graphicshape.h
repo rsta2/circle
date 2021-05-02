@@ -1,8 +1,11 @@
 //
 // kernel.h
 //
+// This file:
+//	Copyright (C) 2021  Stephane Damo
+//
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,12 +40,14 @@ enum
 class CGraphicShape
 {
 public:
-	CGraphicShape ();
+	CGraphicShape (unsigned nDisplayWidth, unsigned nDisplayHeight);
 	~CGraphicShape (void);
 
 	void Draw(C2DGraphics* renderer);
 
 private:
+	unsigned m_nDisplayWidth;
+	unsigned m_nDisplayHeight;
 	unsigned m_nType;
 	float m_nPosX;
 	float m_nPosY;
