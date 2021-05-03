@@ -41,7 +41,11 @@ static signed char sineTbl[256]=
 static unsigned g_seed;
 static unsigned shapeType;
 
-#if DEPTH == 16
+#if DEPTH == 8
+static const TScreenColor Black = NORMAL_COLOR;
+static const TScreenColor Gray  = HALF_COLOR;
+static const TScreenColor Red   = HIGH_COLOR;
+#elif DEPTH == 16
 static const TScreenColor Black = COLOR16 (0,0,0);
 static const TScreenColor Gray  = COLOR16 (10,10,10);
 static const TScreenColor Red   = COLOR16 (31,10,10);
@@ -50,7 +54,7 @@ static const TScreenColor Black = COLOR32 (0,0,0, 255);
 static const TScreenColor Gray  = COLOR32 (170,170,170, 255);
 static const TScreenColor Red   = COLOR32 (255,170,170, 255);
 #else
-	#error Screen DEPTH must be 16 or 32!
+	#error Screen DEPTH must be 8, 16 or 32!
 #endif
 
 static TScreenColor spriteData[64]=
@@ -94,12 +98,14 @@ CGraphicShape::CGraphicShape (unsigned nDisplayWidth, unsigned nDisplayHeight)
 		m_nParam2 = 2+(randomNumber() % 32);
 	}
 
-#if DEPTH == 16
+#if DEPTH == 8
+	m_Color = randomNumber() % 4;
+#elif DEPTH == 16
 	m_Color = randomNumber();
 #elif DEPTH == 32
 	m_Color = COLOR32 (randomNumber() % 256, randomNumber() % 256, randomNumber() % 256, 255);
 #else
-	#error Screen DEPTH must be 16 or 32!
+	#error Screen DEPTH must be 8, 16 or 32!
 #endif
 	
 	m_nPosX = randomNumber()%m_nDisplayWidth;

@@ -50,6 +50,12 @@ boolean C2DGraphics::Initialize (void)
 	m_pFrameBuffer = new CBcmFrameBuffer (m_nWidth, m_nHeight, DEPTH, m_nWidth, 2*m_nHeight,
 					      m_nDisplay, TRUE);
 	
+#if DEPTH == 8
+	m_pFrameBuffer->SetPalette (NORMAL_COLOR, NORMAL_COLOR16);
+	m_pFrameBuffer->SetPalette (HIGH_COLOR,   HIGH_COLOR16);
+	m_pFrameBuffer->SetPalette (HALF_COLOR,   HALF_COLOR16);
+#endif
+
 	if (!m_pFrameBuffer || !m_pFrameBuffer->Initialize ())
 	{
 		return FALSE;
