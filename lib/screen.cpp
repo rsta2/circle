@@ -51,6 +51,7 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtua
 	m_nCursorY (0),
 	m_bCursorOn (TRUE),
 	m_Color (NORMAL_COLOR),
+	m_BackgroundColor (BLACK_COLOR),
 	m_bInsertOn (FALSE),
 	m_bUpdated (FALSE)
 #ifdef SCREEN_DMA_BURST_LENGTH
@@ -168,6 +169,7 @@ TScreenStatus CScreenDevice::GetStatus (void)
 	Status.nCursorY   = m_nCursorY;
 	Status.bCursorOn  = m_bCursorOn;
 	Status.Color      = m_Color;
+	Status.BackgroundColor      = m_BackgroundColor;
 	Status.bInsertOn  = m_bInsertOn;
 	Status.nParam1    = m_nParam1;
 	Status.nParam2    = m_nParam2;
@@ -203,6 +205,7 @@ boolean CScreenDevice::SetStatus (const TScreenStatus &Status)
 	m_nCursorY   = Status.nCursorY;
 	m_bCursorOn  = Status.bCursorOn;
 	m_Color      = Status.Color;
+	m_BackgroundColor      = Status.BackgroundColor;
 	m_bInsertOn  = Status.bInsertOn;
 	m_nParam1    = Status.nParam1;
 	m_nParam2    = Status.nParam2;
@@ -543,7 +546,7 @@ void CScreenDevice::ClearDisplayEnd (void)
 	
 	while (nSize--)
 	{
-		*pBuffer++ = BLACK_COLOR;
+		*pBuffer++ = m_BackgroundColor;
 	}
 }
 
@@ -723,7 +726,14 @@ void CScreenDevice::SetStandoutMode (unsigned nMode)
 		m_Color = HALF_COLOR;
 		break;
 
-	case 7:				// TODO: reverse mode
+	case 7:
+		TScreenColor    tmp_Color;
+
+		tmp_Color = m_Color;
+		m_Color = m_BackgroundColor;
+		m_BackgroundColor = tmp_Color;
+		break;
+
 	default:
 		break;
 	}
@@ -769,7 +779,7 @@ void CScreenDevice::Scroll (void)
 	nSize = m_nPitch * nLines * sizeof (TScreenColor) / sizeof (u32);
 	while (nSize--)
 	{
-		*pTo++ = BLACK_COLOR;
+		*pTo++ = m_BackgroundColor;
 	}
 }
 
@@ -780,7 +790,7 @@ void CScreenDevice::DisplayChar (char chChar, unsigned nPosX, unsigned nPosY, TS
 		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 		{
 			SetPixel (nPosX + x, nPosY + y,
-				  m_CharGen.GetPixel (chChar, x, y) ? Color : BLACK_COLOR);
+				  m_CharGen.GetPixel (chChar, x, y) ? Color : m_BackgroundColor);
 		}
 	}
 }
@@ -791,7 +801,7 @@ void CScreenDevice::EraseChar (unsigned nPosX, unsigned nPosY)
 	{
 		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 		{
-			SetPixel (nPosX + x, nPosY + y, BLACK_COLOR);
+			SetPixel (nPosX + x, nPosY + y, m_BackgroundColor);
 		}
 	}
 }
@@ -807,13 +817,13 @@ void CScreenDevice::InvertCursor (void)
 	{
 		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 		{
-			if (GetPixel (m_nCursorX + x, m_nCursorY + y) == BLACK_COLOR)
+			if (GetPixel (m_nCursorX + x, m_nCursorY + y) == m_BackgroundColor)
 			{
 				SetPixel (m_nCursorX + x, m_nCursorY + y, m_Color);
 			}
 			else
 			{
-				SetPixel (m_nCursorX + x, m_nCursorY + y, BLACK_COLOR);
+				SetPixel (m_nCursorX + x, m_nCursorY + y, m_BackgroundColor);
 			}
 		}
 	}
@@ -836,7 +846,7 @@ TScreenColor CScreenDevice::GetPixel (unsigned nPosX, unsigned nPosY)
 		return m_pBuffer[m_nPitch * nPosY + nPosX];
 	}
 	
-	return BLACK_COLOR;
+	return m_BackgroundColor;
 }
 
 void CScreenDevice::Rotor (unsigned nIndex, unsigned nCount)
@@ -915,7 +925,7 @@ void CScreenDevice::SetPixel (unsigned nPosX, unsigned nPosY, TScreenColor Color
 
 TScreenColor CScreenDevice::GetPixel (unsigned nPosX, unsigned nPosY)
 {
-	return BLACK_COLOR;
+	return m_BackgroundColor;
 }
 
 void CScreenDevice::Rotor (unsigned nIndex, unsigned nCount)
