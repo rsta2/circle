@@ -93,7 +93,7 @@ case "$RASPPI" in
 esac
 
 CONFIG_FILE="$TOPDIR/Config.mk"
-if [ -e $CONFIG_FILE ]
+if [ -e "$CONFIG_FILE" ]
 then
 	if [ $FORCE -eq 0 ]
 	then
@@ -140,10 +140,10 @@ fi
 	then
 		echo "STANDARD = -std=c++17"
 	fi
-) > $CONFIG_FILE
+) > "$CONFIG_FILE"
 
 echo "Configuration file successfully created:"
 echo
-cat $CONFIG_FILE
+cat "$CONFIG_FILE"
 echo
 echo "Now enter ./makeall to build the Circle libraries and the latest sample!"
