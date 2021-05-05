@@ -811,7 +811,7 @@ void CScreenDevice::EraseChar (unsigned nPosX, unsigned nPosY)
 	{
 		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 		{
-			SetPixel (nPosX + x, nPosY + y, GetTextBackgroundColor ());
+			SetPixel (nPosX + x, nPosY + y, m_BackgroundColor);
 		}
 	}
 }
