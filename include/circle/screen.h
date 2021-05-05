@@ -84,6 +84,7 @@ struct TScreenStatus
 	boolean		bCursorOn;
 	TScreenColor	Color;
 	TScreenColor	BackgroundColor;
+	boolean		ReverseAttribute;
 	boolean		bInsertOn;
 	unsigned	nParam1;
 	unsigned	nParam2;
@@ -137,7 +138,6 @@ public:
 	/// \param nPosX X-Position of the pixel (based on 0)
 	/// \param nPosY Y-Position of the pixel (based on 0)
 	/// \param Color The color to be set (value depends on screen DEPTH)
-	/// \param BackgroundColor The color to be set (value depends on screen DEPTH)
 	void SetPixel (unsigned nPosX, unsigned nPosY, TScreenColor Color);
 	/// \brief Get the color value of a pixel
 	/// \param nPosX X-Position of the pixel (based on 0)
@@ -167,6 +167,8 @@ private:
 	void DeleteLines (unsigned nCount);
 	void DisplayChar (char chChar);
 	void EraseChars (unsigned nCount);
+	TScreenColor GetTextBackgroundColor (void);
+	TScreenColor GetTextColor (void);
 	void InsertLines (unsigned nCount);
 	void InsertMode (boolean bBegin);
 	void NewLine (void);
@@ -209,6 +211,7 @@ private:
 	boolean		 m_bCursorOn;
 	TScreenColor	 m_Color;
 	TScreenColor	 m_BackgroundColor;
+	boolean		 m_ReverseAttribute;
 	boolean		 m_bInsertOn;
 	unsigned	 m_nParam1;
 	unsigned	 m_nParam2;

@@ -52,6 +52,7 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtua
 	m_bCursorOn (TRUE),
 	m_Color (NORMAL_COLOR),
 	m_BackgroundColor (BLACK_COLOR),
+	m_ReverseAttribute (FALSE),
 	m_bInsertOn (FALSE),
 	m_bUpdated (FALSE)
 #ifdef SCREEN_DMA_BURST_LENGTH
@@ -169,7 +170,8 @@ TScreenStatus CScreenDevice::GetStatus (void)
 	Status.nCursorY   = m_nCursorY;
 	Status.bCursorOn  = m_bCursorOn;
 	Status.Color      = m_Color;
-	Status.BackgroundColor      = m_BackgroundColor;
+	Status.BackgroundColor = m_BackgroundColor;
+	Status.ReverseAttribute = m_ReverseAttribute;
 	Status.bInsertOn  = m_bInsertOn;
 	Status.nParam1    = m_nParam1;
 	Status.nParam2    = m_nParam2;
@@ -205,7 +207,8 @@ boolean CScreenDevice::SetStatus (const TScreenStatus &Status)
 	m_nCursorY   = Status.nCursorY;
 	m_bCursorOn  = Status.bCursorOn;
 	m_Color      = Status.Color;
-	m_BackgroundColor      = Status.BackgroundColor;
+	m_BackgroundColor = Status.BackgroundColor;
+	m_ReverseAttribute = Status.ReverseAttribute;
 	m_bInsertOn  = Status.bInsertOn;
 	m_nParam1    = Status.nParam1;
 	m_nParam2    = Status.nParam2;
@@ -636,7 +639,7 @@ void CScreenDevice::DisplayChar (char chChar)
 	
 	if (' ' <= (unsigned char) chChar)
 	{
-		DisplayChar (chChar, m_nCursorX, m_nCursorY, m_Color);
+		DisplayChar (chChar, m_nCursorX, m_nCursorY, GetTextColor ());
 
 		CursorRight ();
 	}
@@ -659,6 +662,16 @@ void CScreenDevice::EraseChars (unsigned nCount)
 	{
 		EraseChar (nPosX, m_nCursorY);
 	}
+}
+
+TScreenColor CScreenDevice::GetTextBackgroundColor (void)
+{
+	return m_ReverseAttribute ? m_Color : m_BackgroundColor;
+}
+
+TScreenColor CScreenDevice::GetTextColor (void)
+{
+	return m_ReverseAttribute ? m_BackgroundColor : m_Color;
 }
 
 void CScreenDevice::InsertLines (unsigned nCount)	// TODO
@@ -715,6 +728,7 @@ void CScreenDevice::SetStandoutMode (unsigned nMode)
 	{
 	case 0:
 	case 27:
+		m_ReverseAttribute = FALSE;
 		m_Color = NORMAL_COLOR;
 		break;
 		
@@ -727,11 +741,7 @@ void CScreenDevice::SetStandoutMode (unsigned nMode)
 		break;
 
 	case 7:
-		TScreenColor    tmp_Color;
-
-		tmp_Color = m_Color;
-		m_Color = m_BackgroundColor;
-		m_BackgroundColor = tmp_Color;
+		m_ReverseAttribute = TRUE;
 		break;
 
 	default:
@@ -789,8 +799,8 @@ void CScreenDevice::DisplayChar (char chChar, unsigned nPosX, unsigned nPosY, TS
 	{
 		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 		{
-			SetPixel (nPosX + x, nPosY + y,
-				  m_CharGen.GetPixel (chChar, x, y) ? Color : m_BackgroundColor);
+			SetPixel (nPosX + x, nPosY + y,  m_CharGen.GetPixel (chChar, x, y) ? 
+								Color : GetTextBackgroundColor ());
 		}
 	}
 }
@@ -801,7 +811,7 @@ void CScreenDevice::EraseChar (unsigned nPosX, unsigned nPosY)
 	{
 		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 		{
-			SetPixel (nPosX + x, nPosY + y, m_BackgroundColor);
+			SetPixel (nPosX + x, nPosY + y, GetTextBackgroundColor ());
 		}
 	}
 }
