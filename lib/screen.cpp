@@ -426,7 +426,7 @@ void CScreenDevice::Write (char chChar)
 				m_nParam1 *= 10;
 				m_nParam1 += chChar - '0';
 
-				if (m_nParam1 > 99)
+				if (m_nParam1 > 199)
 				{
 					m_nState = ScreenStateStart;
 				}
@@ -743,7 +743,106 @@ void CScreenDevice::SetStandoutMode (unsigned nMode)
 	case 7:
 		m_ReverseAttribute = TRUE;
 		break;
+		
+	case 30:
+		m_Color = BLACK_COLOR;
+		break;
+	case 31:
+		m_Color = RED_COLOR;
+		break;
+	case 32:
+		m_Color = GREEN_COLOR;
+		break;
+	case 33:
+		m_Color = YELLOW_COLOR;
+		break;
+	case 34:
+		m_Color = BLUE_COLOR;
+		break;
+	case 35:
+		m_Color = MAGENTA_COLOR;
+		break;
+	case 36:
+		m_Color = CYAN_COLOR;
+		break;
+	case 37:
+		m_Color = WHITE_COLOR;
+		break;
 
+	case 40:
+		m_BackgroundColor = BLACK_COLOR;
+		break;
+	case 41:
+		m_BackgroundColor = RED_COLOR;
+		break;
+	case 42:
+		m_BackgroundColor = GREEN_COLOR;
+		break;
+	case 43:
+		m_BackgroundColor = YELLOW_COLOR;
+		break;
+	case 44:
+		m_BackgroundColor = BLUE_COLOR;
+		break;
+	case 45:
+		m_BackgroundColor = MAGENTA_COLOR;
+		break;
+	case 46:
+		m_BackgroundColor = CYAN_COLOR;
+		break;
+	case 47:
+		m_BackgroundColor = WHITE_COLOR;
+		break;
+		
+	case 90:
+		m_Color = BRIGHT_BLACK_COLOR;
+		break;
+	case 91:
+		m_Color = BRIGHT_RED_COLOR;
+		break;
+	case 92:
+		m_Color = BRIGHT_GREEN_COLOR;
+		break;
+	case 93:
+		m_Color = BRIGHT_YELLOW_COLOR;
+		break;
+	case 94:
+		m_Color = BRIGHT_BLUE_COLOR;
+		break;
+	case 95:
+		m_Color = BRIGHT_MAGENTA_COLOR;
+		break;
+	case 96:
+		m_Color = BRIGHT_CYAN_COLOR;
+		break;
+	case 97:
+		m_Color = BRIGHT_WHITE_COLOR;
+		break;
+		
+	case 100:
+		m_BackgroundColor = BRIGHT_BLACK_COLOR;
+		break;
+	case 101:
+		m_BackgroundColor = BRIGHT_RED_COLOR;
+		break;
+	case 102:
+		m_BackgroundColor = BRIGHT_GREEN_COLOR;
+		break;
+	case 103:
+		m_BackgroundColor = BRIGHT_YELLOW_COLOR;
+		break;
+	case 104:
+		m_BackgroundColor = BRIGHT_BLUE_COLOR;
+		break;
+	case 105:
+		m_BackgroundColor = BRIGHT_MAGENTA_COLOR;
+		break;
+	case 106:
+		m_BackgroundColor = BRIGHT_CYAN_COLOR;
+		break;
+	case 107:
+		m_BackgroundColor = BRIGHT_WHITE_COLOR;
+		break;
 	default:
 		break;
 	}
