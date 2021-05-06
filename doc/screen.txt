@@ -15,6 +15,7 @@ ESCAPE SEQUENCES
 \E[0m		End of bold or half bright mode
 \E[1m		Start bold mode
 \E[2m		Start half bright mode
+\E[7m		Start reverse video mode
 ^I		Move to next hardware tab
 \E[?25h		Normal cursor visible
 \E[?25l		Cursor invisible

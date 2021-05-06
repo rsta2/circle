@@ -935,7 +935,7 @@ void CScreenDevice::SetPixel (unsigned nPosX, unsigned nPosY, TScreenColor Color
 
 TScreenColor CScreenDevice::GetPixel (unsigned nPosX, unsigned nPosY)
 {
-	return m_BackgroundColor;
+	return BLACK_COLOR;
 }
 
 void CScreenDevice::Rotor (unsigned nIndex, unsigned nCount)
