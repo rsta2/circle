@@ -83,6 +83,8 @@ struct TScreenStatus
 	unsigned	nCursorY;
 	boolean		bCursorOn;
 	TScreenColor	Color;
+	TScreenColor	BackgroundColor;
+	boolean		ReverseAttribute;
 	boolean		bInsertOn;
 	unsigned	nParam1;
 	unsigned	nParam2;
@@ -165,6 +167,8 @@ private:
 	void DeleteLines (unsigned nCount);
 	void DisplayChar (char chChar);
 	void EraseChars (unsigned nCount);
+	TScreenColor GetTextBackgroundColor (void);
+	TScreenColor GetTextColor (void);
 	void InsertLines (unsigned nCount);
 	void InsertMode (boolean bBegin);
 	void NewLine (void);
@@ -206,6 +210,8 @@ private:
 	unsigned	 m_nCursorY;
 	boolean		 m_bCursorOn;
 	TScreenColor	 m_Color;
+	TScreenColor	 m_BackgroundColor;
+	boolean		 m_ReverseAttribute;
 	boolean		 m_bInsertOn;
 	unsigned	 m_nParam1;
 	unsigned	 m_nParam2;

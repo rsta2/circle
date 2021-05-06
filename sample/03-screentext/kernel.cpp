@@ -76,7 +76,7 @@ TShutdownMode CKernel::Run (void)
 		}
 
 		CString Message;
-		Message.Format ("%02X: \'%c\' ", (unsigned) chChar, chChar);
+		Message.Format ("%02X: \'\u001b[7m%c\u001b[0m\' ", (unsigned) chChar, chChar);
 		
 		m_Screen.Write ((const char *) Message, Message.GetLength ());
 	}
