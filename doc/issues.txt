@@ -12,6 +12,11 @@ Known issues of Circle are:
   to be tested by yourself. Nevertheless real-time applications based on Circle
   are possible. Have a look at doc/realtime.txt for more information!
 
+* According to tests with the current firmware, 4K display resolutions on a
+  Raspberry Pi 4 with Circle are only possible, if the option "hdmi_enable_4kp60=1"
+  is enabled in the file config.txt and are not possible with the cut-down firmware
+  (start_cd.elf). This may change with future firmware versions.
+
 * sample/31-webclient does not work any more, because of the missing SSL/TLS
   support. SSL/TLS support for Circle is developed here:
 
