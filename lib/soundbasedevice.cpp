@@ -72,7 +72,7 @@ CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigne
 
 	if (m_HWFormat == SoundFormatIEC958)
 	{
-		u8 uchFS, uchOrigFS;
+		u8 uchFS = 0, uchOrigFS = 0;
 		switch (m_nSampleRate)
 		{
 		case 22050:	uchFS = 4;	uchOrigFS = 11;	break;
