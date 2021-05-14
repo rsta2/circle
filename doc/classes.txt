@@ -129,7 +129,8 @@ Input library
 * CLineDiscipline: Implements line editor function
 * CMouseBehaviour: Generic mouse function, handles the mouse cursor
 * CMouseDevice: Generic mouse interface device
-* CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
+* CRPiTouchScreen: Driver for the official Raspberry Pi touch screen
+* CTouchScreenDevice: Generic touch screen interface device
 
 FS library
 

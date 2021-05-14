@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		m_TouchScreen.Initialize ();
+		m_RPiTouchScreen.Initialize ();
 
 		bOK = m_GUI.Initialize ();
 	}
