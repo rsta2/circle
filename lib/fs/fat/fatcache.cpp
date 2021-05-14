@@ -2,7 +2,7 @@
 // fatcache.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,9 +30,7 @@
 #define FAULT_WRITE_ERROR	0x1503
 
 CFATCache::CFATCache (void)
-:	m_pPartition (0),
-	m_BufferListLock (TASK_LEVEL),
-	m_DiskLock (TASK_LEVEL)
+:	m_pPartition (0)
 {
 	m_BufferList.pFirst = 0;
 	m_BufferList.pLast = 0;

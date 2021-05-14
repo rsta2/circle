@@ -2,7 +2,7 @@
 // usbgamepadswitchpro.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // This driver was developed by:
 //	Jose Luis Sanchez, jspeccy@gmail.com, jsanchezv@github.com
@@ -113,7 +113,7 @@ boolean CUSBGamePadSwitchProDevice::Configure (void)
 		return FALSE;
 	}
 
-	m_State.nbuttons = REPORT_BUTTONS;
+	m_State.nbuttons = GAMEPAD_BUTTONS_ALTERNATIVE;
 	m_State.nhats = REPORT_HATS;
 	m_State.naxes = REPORT_AXIS + REPORT_ANALOG_BUTTONS;
 	for (int axis = 0; axis < REPORT_AXIS + REPORT_ANALOG_BUTTONS; axis++) {

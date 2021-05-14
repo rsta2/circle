@@ -2,7 +2,7 @@
 // string.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // ftoa() inspired by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
@@ -49,6 +49,24 @@ CString::CString (const char *pString)
 	strcpy (m_pBuffer, pString);
 }
 
+CString::CString (const CString &rString)
+{
+	m_nSize = strlen (rString)+1;
+
+	m_pBuffer = new char[m_nSize];
+
+	strcpy (m_pBuffer, rString);
+}
+
+CString::CString (CString &&rrString)
+{
+	m_nSize = rrString.m_nSize;
+	m_pBuffer = rrString.m_pBuffer;
+
+	rrString.m_nSize = 0;
+	rrString.m_pBuffer = nullptr;
+}
+
 CString::~CString (void)
 {
 	delete [] m_pBuffer;
@@ -78,7 +96,7 @@ const char *CString::operator = (const char *pString)
 	return m_pBuffer;
 }
 
-const CString &CString::operator = (const CString &rString)
+CString &CString::operator = (const CString &rString)
 {
 	delete [] m_pBuffer;
 
@@ -87,6 +105,19 @@ const CString &CString::operator = (const CString &rString)
 	m_pBuffer = new char[m_nSize];
 
 	strcpy (m_pBuffer, rString);
+
+	return *this;
+}
+
+CString &CString::operator = (CString &&rrString)
+{
+	delete [] m_pBuffer;
+
+	m_nSize = rrString.m_nSize;
+	m_pBuffer = rrString.m_pBuffer;
+
+	rrString.m_nSize = 0;
+	rrString.m_pBuffer = nullptr;
 
 	return *this;
 }

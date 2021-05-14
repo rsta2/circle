@@ -2,7 +2,7 @@
 // fatfs.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include <circle/fs/fat/fat.h>
 #include <circle/fs/fat/fatdir.h>
 #include <circle/device.h>
-#include <circle/spinlock.h>
+#include <circle/genericlock.h>
 #include <circle/types.h>
 
 struct TFile
@@ -161,7 +161,7 @@ private:
 	CFATDirectory	m_Root;
 	TFile		m_Files[FAT_FILES];
 
-	CSpinLock m_FileTableLock;
+	CGenericLock m_FileTableLock;
 };
 
 #endif

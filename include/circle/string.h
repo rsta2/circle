@@ -2,7 +2,7 @@
 // string.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,11 +28,14 @@ class CString
 public:
 	CString (void);
 	CString (const char *pString);
+	CString (const CString &rString);
+	CString (CString &&rrString);
 	virtual ~CString (void);
 
 	operator const char *(void) const;
 	const char *operator = (const char *pString);
-	const CString &operator = (const CString &rString);
+	CString &operator = (const CString &rString);
+	CString &operator = (CString &&rrString);
 
 	size_t GetLength (void) const;
 

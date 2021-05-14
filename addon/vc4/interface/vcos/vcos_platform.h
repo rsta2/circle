@@ -47,6 +47,7 @@ extern "C" {
 #ifdef __circle__
 #include <stdint.h>
 #include <linux/pthread.h>
+#include <linux/atomic.h>
 #include <linux/errno.h>
 #include <linux/sched.h>
 #include <linux/delay.h>
@@ -630,7 +631,7 @@ void vcos_event_signal(VCOS_EVENT_T *event)
    if (vcos_mutex_lock(&event->mutex) != VCOS_SUCCESS)
       goto fail_mtx;
 
-   value = event->sem.count;
+   value = atomic_read (&event->sem.count);
    if (value == 0)
       up (&event->sem);
 

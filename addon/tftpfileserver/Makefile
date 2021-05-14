@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= tftpfileserver.o
+OBJS	= tftpfileserver.o tftpfatfsfileserver.o
 
 libtftpfileserver.a: $(OBJS)
 	@echo "  AR    $@"

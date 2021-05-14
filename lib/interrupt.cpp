@@ -2,7 +2,7 @@
 // interrupt.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -259,7 +259,7 @@ void CInterruptSystem::InterruptHandler (void)
 
 #if RASPPI >= 2
 	u32 nLocalPending = read32 (ARM_LOCAL_IRQ_PENDING0);
-	assert (!(nLocalPending & ~(1 << 1 | 1 << 8)));
+	assert (!(nLocalPending & ~(1 << 1 | 0xF << 4 | 1 << 8)));
 	if (nLocalPending & (1 << 1))		// the only implemented local IRQ so far
 	{
 		s_pThis->CallIRQHandler (ARM_IRQLOCAL0_CNTPNS);

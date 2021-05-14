@@ -2,7 +2,7 @@
 // usbgamepadxboxone.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2021  R. Stange <rsta2@o2online.de>
 //
 // This driver was developed by:
 //	Jose Luis Sanchez, jspeccy@gmail.com, jsanchezv@github.com
@@ -103,7 +103,7 @@ boolean CUSBGamePadXboxOneDevice::Configure (void)
 		return FALSE;
 	}
 
-	m_State.nbuttons = REPORT_BUTTONS+REPORT_ANALOG_BUTTONS;
+	m_State.nbuttons = GAMEPAD_BUTTONS_STANDARD;
 	m_State.naxes = REPORT_AXES+REPORT_ANALOG_BUTTONS;
 	for (unsigned i = 0; i < REPORT_AXES; i++)
 	{

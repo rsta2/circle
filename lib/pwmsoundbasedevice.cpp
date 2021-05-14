@@ -2,7 +2,7 @@
 // pwmsoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 //
 // Information to implement PWM sound is from:
 //	"Bare metal sound" by Joeboy (RPi forum)
@@ -101,52 +101,6 @@
 #define ARM_PWM_DMAC_PANIC__SHIFT	8
 #define ARM_PWM_DMAC_ENAB		(1 << 31)
 
-//
-// DMA controller
-//
-#define ARM_DMACHAN_CS(chan)		(ARM_DMA_BASE + ((chan) * 0x100) + 0x00)
-	#define CS_RESET			(1 << 31)
-	#define CS_ABORT			(1 << 30)
-	#define CS_WAIT_FOR_OUTSTANDING_WRITES	(1 << 28)
-	#define CS_PANIC_PRIORITY_SHIFT		20
-		#define DEFAULT_PANIC_PRIORITY		15
-	#define CS_PRIORITY_SHIFT		16
-		#define DEFAULT_PRIORITY		1
-	#define CS_ERROR			(1 << 8)
-	#define CS_INT				(1 << 2)
-	#define CS_END				(1 << 1)
-	#define CS_ACTIVE			(1 << 0)
-#define ARM_DMACHAN_CONBLK_AD(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x04)
-#define ARM_DMACHAN_TI(chan)		(ARM_DMA_BASE + ((chan) * 0x100) + 0x08)
-	#define TI_PERMAP_SHIFT			16
-	#define TI_BURST_LENGTH_SHIFT		12
-		#define DEFAULT_BURST_LENGTH		0
-	#define TI_SRC_IGNORE			(1 << 11)
-	#define TI_SRC_DREQ			(1 << 10)
-	#define TI_SRC_WIDTH			(1 << 9)
-	#define TI_SRC_INC			(1 << 8)
-	#define TI_DEST_DREQ			(1 << 6)
-	#define TI_DEST_WIDTH			(1 << 5)
-	#define TI_DEST_INC			(1 << 4)
-	#define TI_WAIT_RESP			(1 << 3)
-	#define TI_TDMODE			(1 << 1)
-	#define TI_INTEN			(1 << 0)
-#define ARM_DMACHAN_SOURCE_AD(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x0C)
-#define ARM_DMACHAN_DEST_AD(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x10)
-#define ARM_DMACHAN_TXFR_LEN(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x14)
-	#define TXFR_LEN_XLENGTH_SHIFT		0
-	#define TXFR_LEN_YLENGTH_SHIFT		16
-	#define TXFR_LEN_MAX			0x3FFFFFFF
-	#define TXFR_LEN_MAX_LITE		0xFFFF
-#define ARM_DMACHAN_STRIDE(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x18)
-	#define STRIDE_SRC_SHIFT		0
-	#define STRIDE_DEST_SHIFT		16
-#define ARM_DMACHAN_NEXTCONBK(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x1C)
-#define ARM_DMACHAN_DEBUG(chan)		(ARM_DMA_BASE + ((chan) * 0x100) + 0x20)
-	#define DEBUG_LITE			(1 << 28)
-#define ARM_DMA_INT_STATUS		(ARM_DMA_BASE + 0xFE0)
-#define ARM_DMA_ENABLE			(ARM_DMA_BASE + 0xFF0)
-
 CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
 					  unsigned	    nChunkSize)
@@ -156,8 +110,16 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
 	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
+#ifdef USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
+	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction5),
+#else
 	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction0),
+#endif // USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
+#ifdef USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
+	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction5),
+#else
 	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction0),
+#endif // USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
 	m_Clock (GPIOClockPWM),
 	m_bIRQConnected (FALSE),
 	m_State (PWMSoundIdle),

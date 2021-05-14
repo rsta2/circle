@@ -2,6 +2,7 @@ CLASSES
 
 Base library
 
+* C2DGraphics: Software graphics library with VSync and hardware-accelerated double buffering.
 * CActLED: Switch the Act LED on and off, checks the Raspberry Pi model to use the right LED pin.
 * CBcm54213Device: Driver for BCM54213PE Gigabit Ethernet Transceiver of Raspberry Pi 4.
 * CBcmFrameBuffer: Frame buffer initialization, setting color palette for 8 bit depth.
@@ -22,7 +23,9 @@ Base library
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
 * CGPIOPin: Encapsulates a GPIO pin, can be read, write or inverted. Supports interrupts. Simple initialization.
 * CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
+* CGenericLock: Locks a resource with or without scheduler.
 * CHeapAllocator: Allocates blocks from a flat memory region.
+* CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ).
 * CI2CMaster: Driver for I2C master devices.
 * CI2CSlave: Driver for I2C slave device.
 * CI2SSoundBaseDevice: Low level access to the I2S sound device.
@@ -143,8 +146,10 @@ FAT FS library
 
 Scheduler library
 
+* CMutex: Provides a method to provide mutual exclusion (critical sections) across tasks.
 * CTask: Overload this class, define the Run() method to implement your own task and call new on it to start it.
 * CScheduler: Cooperative non-preemtive scheduler which controls which task runs at a time.
+* CSemaphore: Implements a semaphore synchronization class.
 * CSynchronizationEvent: Provides a method to synchronize the execution of a task with an event.
 
 Net library

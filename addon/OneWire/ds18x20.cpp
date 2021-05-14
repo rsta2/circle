@@ -9,19 +9,29 @@
 // 	The DallasTemperature library can do all this work for you!
 // 	http://milesburton.com/Dallas_Temperature_Control_Library
 //
-#include "ds18x20.h"
+#include <OneWire/ds18x20.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
+#include <circle/string.h>
+#include <circle/util.h>
 #include <assert.h>
 
 static const char FromDS18x20[] = "ds18x20";
 
-CDS18x20::CDS18x20 (OneWire *pOneWire)
+CDS18x20::CDS18x20 (OneWire *pOneWire, const u8 *pAddress)
 :	m_pOneWire (pOneWire),
-	m_nCelsius (-100),
-	m_nFahrenheit (-100)
+	m_bSearch (TRUE),
+	m_fCelsius (-100.0),
+	m_fFahrenheit (-100.0)
 {
 	assert (m_pOneWire != 0);
+
+	if (pAddress != 0)
+	{
+		memcpy (m_Address, pAddress, sizeof m_Address);
+
+		m_bSearch = FALSE;
+	}
 }
 
 CDS18x20::~CDS18x20 (void)
@@ -33,11 +43,14 @@ boolean CDS18x20::Initialize (void)
 {
 	assert (m_pOneWire != 0);
 
-	if (!m_pOneWire->search (m_Address))
+	if (m_bSearch)
 	{
-		CLogger::Get ()->Write (FromDS18x20, LogError, "Sensor not found");
+		if (!m_pOneWire->search (m_Address))
+		{
+			CLogger::Get ()->Write (FromDS18x20, LogError, "Sensor not found");
 
-		return FALSE;
+			return FALSE;
+		}
 	}
 
 	if (OneWire::crc8 (m_Address, 7) != m_Address[7])
@@ -72,19 +85,61 @@ boolean CDS18x20::Initialize (void)
 		return FALSE;
 	}
 
+	// read power supply
+	if (!m_pOneWire->reset ())
+	{
+		CLogger::Get ()->Write (FromDS18x20, LogError, "Device does not respond");
+
+		return FALSE;
+	}
+
+	m_pOneWire->select (m_Address);
+	m_pOneWire->write (0xB4);
+
+	switch (m_pOneWire->read ())
+	{
+	case 0x00:
+		m_bParasitePower = TRUE;
+		break;
+
+	case 0xFF:
+		m_bParasitePower = FALSE;
+		break;
+
+	default:
+		CLogger::Get ()->Write (FromDS18x20, LogError, "Cannot read power supply");
+		return FALSE;
+	}
+
+	CString HexAddress;
+	for (unsigned i = 0; i < 8; i++)
+	{
+		CString Number;
+		Number.Format ("%02X", (unsigned) m_Address[i]);
+		HexAddress.Append (Number);
+	}
+
 	assert (pChip != 0);
-	CLogger::Get ()->Write (FromDS18x20, LogNotice, "%s found", pChip);
+	CLogger::Get ()->Write (FromDS18x20, LogNotice, "%s with %s found (%s)", pChip,
+				m_bParasitePower ? "parasite power" : "external supply",
+				(const char *) HexAddress);
 
 	return TRUE;
 }
 
-boolean CDS18x20::StartConversion (void)
+boolean CDS18x20::DoMeasurement (void)
 {
-	m_pOneWire->reset ();
+	if (!m_pOneWire->reset ())
+	{
+		CLogger::Get ()->Write (FromDS18x20, LogWarning, "Device does not respond");
+
+		return FALSE;
+	}
+
 	m_pOneWire->select (m_Address);
-	m_pOneWire->write (0x44, 1);		// start conversion, with parasite power on at the end
+	m_pOneWire->write (0x44, m_bParasitePower ? 1 : 0);	// start conversion
   
-	CTimer::Get ()->MsDelay (1000);		// maybe 750ms is enough, maybe not
+	CTimer::Get ()->MsDelay (750);		// for 12 bit resolution (default)
 
 	// we might do a m_pOneWire->depower() here, but the reset will take care of it.
 	if (!m_pOneWire->reset ())
@@ -147,34 +202,21 @@ boolean CDS18x20::StartConversion (void)
 		// default is 12 bit resolution, 750 ms conversion time
 	}
 
-	m_nCelsius = nRaw * 10 / 16;
-	m_nFahrenheit = (m_nCelsius * 18) / 10 + 320;
+	int nCelsius = nRaw * 10 / 16;
+	unsigned nFahrenheit = (nCelsius * 18) / 10 + 320;
 
-	m_nCelsiusFract = m_nCelsius % 10;
-	m_nCelsius /= 10;
-
-	m_nFahrenheitFract = m_nFahrenheit % 10;
-	m_nFahrenheit /= 10;
+	m_fCelsius = nCelsius / 10.0;
+	m_fFahrenheit = nFahrenheit / 10.0;
 
 	return TRUE;
 }
 
-int  CDS18x20::GetCelsius (void) const
+float CDS18x20::GetCelsius (void) const
 {
-	return m_nCelsius;
+	return m_fCelsius;
 }
 
-int CDS18x20::GetCelsiusFract (void) const
+float CDS18x20::GetFahrenheit (void) const
 {
-	return m_nCelsiusFract;
-}
-
-int CDS18x20::GetFahrenheit (void) const
-{
-	return m_nFahrenheit;
-}
-
-int CDS18x20::GetFahrenheitFract (void) const
-{
-	return m_nFahrenheitFract;
+	return m_fFahrenheit;
 }

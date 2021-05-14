@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include <circle/machineinfo.h>
 
 static const char FromKernel[] = "kernel";
 
@@ -25,8 +26,9 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+	m_I2CMaster (CMachineInfo::Get ()->GetDevice (DeviceI2CMaster), TRUE),
 	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),		// TRUE: enable plug-and-play
-	m_MiniOrgan (&m_Interrupt)
+	m_MiniOrgan (&m_Interrupt, &m_I2CMaster)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -57,6 +59,11 @@ boolean CKernel::Initialize (void)
 	if (bOK)
 	{
 		bOK = m_Timer.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = m_I2CMaster.Initialize ();
 	}
 
 	if (bOK)

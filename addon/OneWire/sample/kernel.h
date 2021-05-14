@@ -4,7 +4,6 @@
 #ifndef _kernel_h
 #define _kernel_h
 
-#include <circle/memory.h>
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
@@ -16,7 +15,7 @@
 #include <circle/logger.h>
 #include <circle/types.h>
 #include <OneWire/OneWire.h>
-#include "ds18x20.h"
+#include <OneWire/ds18x20.h>
 
 enum TShutdownMode
 {
@@ -37,7 +36,6 @@ public:
 
 private:
 	// do not change this order
-	CMemorySystem		m_Memory;
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;

@@ -2,7 +2,7 @@
 // fatdir.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,8 +26,7 @@ CFATDirectory::CFATDirectory (CFATCache *pCache, CFATInfo *pFATInfo, CFAT *pFAT)
 :	m_pCache (pCache),
 	m_pFATInfo (pFATInfo),
 	m_pFAT (pFAT),
-	m_pBuffer (0),
-	m_Lock (TASK_LEVEL)
+	m_pBuffer (0)
 {
 }
 

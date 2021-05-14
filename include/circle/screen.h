@@ -2,7 +2,7 @@
 // screen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,9 @@
 #include <circle/macros.h>
 #include <circle/types.h>
 
+#ifndef DEPTH
 #define DEPTH	16		// can be: 8, 16 or 32
+#endif
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \
@@ -81,6 +83,8 @@ struct TScreenStatus
 	unsigned	nCursorY;
 	boolean		bCursorOn;
 	TScreenColor	Color;
+	TScreenColor	BackgroundColor;
+	boolean		ReverseAttribute;
 	boolean		bInsertOn;
 	unsigned	nParam1;
 	unsigned	nParam2;
@@ -163,6 +167,8 @@ private:
 	void DeleteLines (unsigned nCount);
 	void DisplayChar (char chChar);
 	void EraseChars (unsigned nCount);
+	TScreenColor GetTextBackgroundColor (void);
+	TScreenColor GetTextColor (void);
 	void InsertLines (unsigned nCount);
 	void InsertMode (boolean bBegin);
 	void NewLine (void);
@@ -204,6 +210,8 @@ private:
 	unsigned	 m_nCursorY;
 	boolean		 m_bCursorOn;
 	TScreenColor	 m_Color;
+	TScreenColor	 m_BackgroundColor;
+	boolean		 m_ReverseAttribute;
 	boolean		 m_bInsertOn;
 	unsigned	 m_nParam1;
 	unsigned	 m_nParam2;

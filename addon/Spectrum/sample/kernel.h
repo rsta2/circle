@@ -20,7 +20,6 @@
 #ifndef _kernel_h
 #define _kernel_h
 
-#include <circle/memory.h>
 #include <circle/actled.h>
 #include <circle/devicenameservice.h>
 #include <circle/serial.h>
@@ -50,7 +49,6 @@ public:
 
 private:
 	// do not change this order
-	CMemorySystem		m_Memory;
 	CActLED			m_ActLED;
 	CDeviceNameService	m_DeviceNameService;
 	CSerialDevice		m_Serial;

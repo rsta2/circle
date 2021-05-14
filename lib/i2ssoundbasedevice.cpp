@@ -5,13 +5,13 @@
 //	BCM283x/BCM2711 I2S output
 //	two 24-bit audio channels
 //	sample rate up to 192 KHz
-//	tested with PCM5102A DAC only
+//	tested with PCM5102A and PCM5122 DACs
 //
 // References:
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -77,64 +77,23 @@
 #define DREQ_A_TX__SHIFT	8
 #define DREQ_A_TX__MASK		(0x7F << 8)
 
-//
-// DMA controller
-//
-#define ARM_DMACHAN_CS(chan)		(ARM_DMA_BASE + ((chan) * 0x100) + 0x00)
-	#define CS_RESET			(1 << 31)
-	#define CS_ABORT			(1 << 30)
-	#define CS_WAIT_FOR_OUTSTANDING_WRITES	(1 << 28)
-	#define CS_PANIC_PRIORITY_SHIFT		20
-		#define DEFAULT_PANIC_PRIORITY		15
-	#define CS_PRIORITY_SHIFT		16
-		#define DEFAULT_PRIORITY		1
-	#define CS_ERROR			(1 << 8)
-	#define CS_INT				(1 << 2)
-	#define CS_END				(1 << 1)
-	#define CS_ACTIVE			(1 << 0)
-#define ARM_DMACHAN_CONBLK_AD(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x04)
-#define ARM_DMACHAN_TI(chan)		(ARM_DMA_BASE + ((chan) * 0x100) + 0x08)
-	#define TI_PERMAP_SHIFT			16
-	#define TI_BURST_LENGTH_SHIFT		12
-		#define DEFAULT_BURST_LENGTH		0
-	#define TI_SRC_IGNORE			(1 << 11)
-	#define TI_SRC_DREQ			(1 << 10)
-	#define TI_SRC_WIDTH			(1 << 9)
-	#define TI_SRC_INC			(1 << 8)
-	#define TI_DEST_DREQ			(1 << 6)
-	#define TI_DEST_WIDTH			(1 << 5)
-	#define TI_DEST_INC			(1 << 4)
-	#define TI_WAIT_RESP			(1 << 3)
-	#define TI_TDMODE			(1 << 1)
-	#define TI_INTEN			(1 << 0)
-#define ARM_DMACHAN_SOURCE_AD(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x0C)
-#define ARM_DMACHAN_DEST_AD(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x10)
-#define ARM_DMACHAN_TXFR_LEN(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x14)
-	#define TXFR_LEN_XLENGTH_SHIFT		0
-	#define TXFR_LEN_YLENGTH_SHIFT		16
-	#define TXFR_LEN_MAX			0x3FFFFFFF
-	#define TXFR_LEN_MAX_LITE		0xFFFF
-#define ARM_DMACHAN_STRIDE(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x18)
-	#define STRIDE_SRC_SHIFT		0
-	#define STRIDE_DEST_SHIFT		16
-#define ARM_DMACHAN_NEXTCONBK(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x1C)
-#define ARM_DMACHAN_DEBUG(chan)		(ARM_DMA_BASE + ((chan) * 0x100) + 0x20)
-	#define DEBUG_LITE			(1 << 28)
-#define ARM_DMA_INT_STATUS		(ARM_DMA_BASE + 0xFE0)
-#define ARM_DMA_ENABLE			(ARM_DMA_BASE + 0xFF0)
-
 CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
 					  unsigned	    nChunkSize,
-					  bool		    bSlave)
+					  bool		    bSlave,
+					  CI2CMaster       *pI2CMaster,
+					  u8                ucI2CAddress)
 :	CSoundBaseDevice (SoundFormatSigned24, 0, nSampleRate),
 	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
 	m_bSlave (bSlave),
+	m_pI2CMaster (pI2CMaster),
+	m_ucI2CAddress (ucI2CAddress),
 	m_PCMCLKPin (18, GPIOModeAlternateFunction0),
 	m_PCMFSPin (19, GPIOModeAlternateFunction0),
 	m_PCMDOUTPin (21, GPIOModeAlternateFunction0),
 	m_Clock (GPIOClockPCM, GPIOClockSourcePLLD),
+	m_bI2CInited (FALSE),
 	m_bIRQConnected (FALSE),
 	m_State (I2SSoundIdle),
 	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
@@ -249,6 +208,28 @@ int CI2SSoundBaseDevice::GetRangeMax (void) const
 boolean CI2SSoundBaseDevice::Start (void)
 {
 	assert (m_State == I2SSoundIdle);
+
+	// optional DAC init via I2C
+	if (   m_pI2CMaster != 0
+	    && !m_bI2CInited)
+	{
+		if (m_ucI2CAddress != 0)
+		{
+			if (!InitPCM51xx (m_ucI2CAddress))	// fixed address, must succeed
+			{
+				return FALSE;
+			}
+		}
+		else
+		{
+			if (!InitPCM51xx (0x4C))		// auto probing, ignore failure
+			{
+				InitPCM51xx (0x4D);
+			}
+		}
+
+		m_bI2CInited = TRUE;
+	}
 
 	// fill buffer 0
 	m_nNextBuffer = 0;
@@ -521,4 +502,38 @@ void CI2SSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
 	m_pControlBlock[nID]->n2DModeStride            = 0;
 	m_pControlBlock[nID]->nReserved[0]	       = 0;
 	m_pControlBlock[nID]->nReserved[1]	       = 0;
+}
+
+//
+// Taken from the file mt32pi.cpp from this project:
+//
+// mt32-pi - A baremetal MIDI synthesizer for Raspberry Pi
+// Copyright (C) 2020-2021 Dale Whinham <daleyo@gmail.com>
+//
+// Licensed under GPLv3
+//
+boolean CI2SSoundBaseDevice::InitPCM51xx (u8 ucI2CAddress)
+{
+	static const u8 initBytes[][2] =
+	{
+		// Set PLL reference clock to BCK (set SREF to 001b)
+		{ 0x0d, 0x10 },
+
+		// Ignore clock halt detection (set IDCH to 1)
+		{ 0x25, 0x08 },
+
+		// Disable auto mute
+		{ 0x41, 0x04 }
+	};
+
+	for (auto &command : initBytes)
+	{
+		if (   m_pI2CMaster->Write (ucI2CAddress, &command, sizeof (command))
+		    != sizeof (command))
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }

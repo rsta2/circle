@@ -2,7 +2,7 @@
 // fatinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,8 +26,7 @@ static const char FromFATInfo[] = "fatinfo";
 
 CFATInfo::CFATInfo (CFATCache *pCache)
 :	m_pCache (pCache),
-	m_FATType (FATUnknown),
-	m_Lock (TASK_LEVEL)
+	m_FATType (FATUnknown)
 {
 }
 

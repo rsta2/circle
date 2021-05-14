@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= task.o scheduler.o taskswitch.o synchronizationevent.o
+OBJS	= task.o scheduler.o taskswitch.o synchronizationevent.o mutex.o semaphore.o
 
 libsched.a: $(OBJS)
 	@echo "  AR    $@"

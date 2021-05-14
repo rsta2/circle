@@ -45,6 +45,7 @@
 	#include <circle/synchronize.h>
 	#include <circle/machineinfo.h>
 	#include <circle/memio.h>
+	#include <circle/sched/scheduler.h>
 #else
 	#include "mmc.h"
 	#include "mmcerror.h"
@@ -275,12 +276,20 @@ const char *CEMMCDevice::err_irpts[] =
 const u32 CEMMCDevice::sd_commands[] =
 {
 	SD_CMD_INDEX(0),
+#ifdef USE_EMBEDDED_MMC_CM4
+	SD_CMD_INDEX(1) | SD_RESP_R3,
+#else
 	SD_CMD_RESERVED(1),
+#endif
 	SD_CMD_INDEX(2) | SD_RESP_R2,
 	SD_CMD_INDEX(3) | SD_RESP_R6,
 	SD_CMD_INDEX(4),
 	SD_CMD_INDEX(5) | SD_RESP_R4,
+#ifdef USE_EMBEDDED_MMC_CM4
+	SD_CMD_INDEX(6) | SD_RESP_R1,
+#else
 	SD_CMD_INDEX(6) | SD_RESP_R1 | SD_DATA_READ,
+#endif
 	SD_CMD_INDEX(7) | SD_RESP_R1b,
 	SD_CMD_INDEX(8) | SD_RESP_R7,
 	SD_CMD_INDEX(9) | SD_RESP_R2,
@@ -410,6 +419,7 @@ const u32 CEMMCDevice::sd_acommands[] =
 
 // The actual command indices
 #define GO_IDLE_STATE           0
+#define SEND_OP_COND            1
 #define ALL_SEND_CID            2
 #define SEND_RELATIVE_ADDR      3
 #define SET_DSR                 4
@@ -1074,7 +1084,7 @@ void CEMMCDevice::HandleCardInterrupt (void)
 #endif
 
 	// Get the card status
-	if(m_card_rca)
+	if(m_card_rca != CARD_RCA_INVALID)
 	{
 		IssueCommandInt (sd_commands[SEND_STATUS], m_card_rca << 16, 500000);
 		if (FAIL)
@@ -1306,7 +1316,7 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 		m_last_cmd = APP_CMD;
 
 		u32 rca = 0;
-		if(m_card_rca)
+		if(m_card_rca != CARD_RCA_INVALID)
 		{
 			rca = m_card_rca << 16;
 		}
@@ -1517,7 +1527,7 @@ int CEMMCDevice::CardReset (void)
 	m_card_supports_hs = 0;
 	m_card_supports_18v = 0;
 	m_card_ocr = 0;
-	m_card_rca = 0;
+	m_card_rca = CARD_RCA_INVALID;
 #ifndef USE_SDHOST
 	m_last_interrupt = 0;
 #endif
@@ -1553,6 +1563,8 @@ int CEMMCDevice::CardReset (void)
 
 		return -1;
 	}
+
+#ifndef USE_EMBEDDED_MMC_CM4
 
 	// Send CMD8 to the card
 	// Voltage supplied = 0x1 = 2.7-3.6V (standard)
@@ -1630,11 +1642,19 @@ int CEMMCDevice::CardReset (void)
 		}
 	}
 
+#else
+	int v2_later = 1;
+#endif	// #ifndef USE_EMBEDDED_MMC_CM4
+
 	// Call an inquiry ACMD41 (voltage window = 0) to get the OCR
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "sending inquiry ACMD41");
 #endif
+#ifdef USE_EMBEDDED_MMC_CM4
+	if (!IssueCommand (SEND_OP_COND, 0))
+#else
 	if (!IssueCommand (ACMD(41), 0))
+#endif
 	{
 		LogWrite (LogError, "Inquiry ACMD41 failed");
 		return -1;
@@ -1666,7 +1686,11 @@ int CEMMCDevice::CardReset (void)
 #endif
 		}
 
+#ifdef USE_EMBEDDED_MMC_CM4
+		if (!IssueCommand (SEND_OP_COND, 0x00ff8000 | v2_flags))
+#else
 		if (!IssueCommand (ACMD(41), 0x00ff8000 | v2_flags))
+#endif
 		{
 			LogWrite (LogError, "Error issuing ACMD41");
 
@@ -1701,6 +1725,7 @@ int CEMMCDevice::CardReset (void)
 	LogWrite (LogDebug, "card identified: OCR: %04x, 1.8v support: %d, SDHC support: %d", m_card_ocr, m_card_supports_18v, m_card_supports_sdhc);
 #endif
 
+#ifndef USE_EMBEDDED_MMC_CM4
 	// At this point, we know the card is definitely an SD card, so will definitely
 	//  support SDR12 mode which runs at 25 MHz
 #ifndef USE_SDHOST
@@ -1711,8 +1736,9 @@ int CEMMCDevice::CardReset (void)
 
 	// A small wait before the voltage switch
 	usDelay (5000);
+#endif
 
-#ifndef USE_SDHOST
+#if !defined (USE_SDHOST) && !defined (USE_EMBEDDED_MMC_CM4)
 
 	// Switch to 1.8V mode if possible
 	if (m_card_supports_18v)
@@ -1800,7 +1826,7 @@ int CEMMCDevice::CardReset (void)
 #endif
 	}
 
-#endif	// #ifndef USE_SDHOST
+#endif	// #if !defined (USE_SDHOST) && !defined (USE_EMBEDDED_MMC_CM4)
 
 	// Send CMD2 to get the cards CID
 	if (!IssueCommand (ALL_SEND_CID, 0))
@@ -1905,6 +1931,8 @@ int CEMMCDevice::CardReset (void)
 	controller_block_size |= 0x200;
 	write32 (EMMC_BLKSIZECNT, controller_block_size);
 #endif
+
+#ifndef USE_EMBEDDED_MMC_CM4
 
 	// Get the cards SCR register
 	m_buf = &m_pSCR->scr[0];
@@ -2012,6 +2040,14 @@ int CEMMCDevice::CardReset (void)
 	}
 #endif
 
+#else
+	m_pSCR->sd_version = SD_VER_4;
+	m_pSCR->sd_bus_widths = 8;
+	m_block_size = SD_BLOCK_SIZE;
+#endif	// #ifndef USE_EMBEDDED_MMC_CM4
+
+#ifndef USE_EMBEDDED_MMC_CM4
+
 	if (m_pSCR->sd_bus_widths & 4)
 	{
 		// Set 4-bit transfer mode (ACMD6)
@@ -2056,6 +2092,49 @@ int CEMMCDevice::CardReset (void)
 	}
 
 	LogWrite (LogNotice, "Found a valid version %s SD card", sd_versions[m_pSCR->sd_version]);
+
+#else	// #ifndef USE_EMBEDDED_MMC_CM4
+
+	if (m_pSCR->sd_bus_widths & 8)
+	{
+		// Set 8-bit transfer mode (CMD6)
+#ifdef EMMC_DEBUG2
+		LogWrite (LogDebug, "Switching to 8-bit data mode");
+#endif
+
+		// Disable card interrupt in host
+		u32 old_irpt_mask = read32(EMMC_IRPT_MASK);
+		u32 new_iprt_mask = old_irpt_mask & ~(1 << 8);
+		write32(EMMC_IRPT_MASK, new_iprt_mask);
+
+		// Send CMD6 to change the card's bit mode
+		if (!IssueCommand (SWITCH_FUNC, 0x3B70200))
+		{
+			LogWrite (LogError, "Switch to 8-bit data mode failed");
+		}
+		else
+		{
+			// Change bit mode for Host
+			u32 control0 = read32(EMMC_CONTROL0);
+			control0 |= 1 << 5;
+			write32(EMMC_CONTROL0, control0);
+
+			// Re-enable card interrupt in host
+			write32(EMMC_IRPT_MASK, old_irpt_mask);
+
+#ifdef EMMC_DEBUG2
+			LogWrite (LogDebug, "switch to 8-bit complete");
+#endif
+		}
+	}
+
+	SwitchClockRate (base_clock, SD_CLOCK_NORMAL);
+	usDelay (5000);
+
+	LogWrite (LogNotice, "Found a valid eMMC chip");
+
+#endif	// #ifndef USE_EMBEDDED_MMC_CM4
+
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "setup successful (status %d)", status);
 #endif
@@ -2126,7 +2205,7 @@ int CEMMCDevice::CardInit (void)
 
 int CEMMCDevice::EnsureDataMode (void)
 {
-	if (m_card_rca == 0)
+	if (m_card_rca == CARD_RCA_INVALID)
 	{
 		// Try again to initialise the card
 		int ret = CardReset ();
@@ -2143,7 +2222,7 @@ int CEMMCDevice::EnsureDataMode (void)
 	if (!IssueCommand (SEND_STATUS, m_card_rca << 16))
 	{
 		LogWrite (LogWarning, "EnsureDataMode() error sending CMD13");
-		m_card_rca = 0;
+		m_card_rca = CARD_RCA_INVALID;
 
 		return -1;
 	}
@@ -2159,7 +2238,7 @@ int CEMMCDevice::EnsureDataMode (void)
 		if (!IssueCommand (SELECT_CARD, m_card_rca << 16))
 		{
 			LogWrite (LogWarning, "EnsureDataMode() no response from CMD17");
-			m_card_rca = 0;
+			m_card_rca = CARD_RCA_INVALID;
 
 			return -1;
 		}
@@ -2170,7 +2249,7 @@ int CEMMCDevice::EnsureDataMode (void)
 		if(!IssueCommand (STOP_TRANSMISSION, 0))
 		{
 			LogWrite (LogWarning, "EnsureDataMode() no response from CMD12");
-			m_card_rca = 0;
+			m_card_rca = CARD_RCA_INVALID;
 
 			return -1;
 		}
@@ -2199,7 +2278,7 @@ int CEMMCDevice::EnsureDataMode (void)
 		if (!IssueCommand (SEND_STATUS, m_card_rca << 16))
 		{
 			LogWrite (LogWarning, "EnsureDataMode() no response from CMD13");
-			m_card_rca = 0;
+			m_card_rca = CARD_RCA_INVALID;
 
 			return -1;
 		}
@@ -2212,7 +2291,7 @@ int CEMMCDevice::EnsureDataMode (void)
 		if(cur_state != 4)
 		{
 			LogWrite (LogWarning, "unable to initialise SD card to data mode (state %d)", cur_state);
-			m_card_rca = 0;
+			m_card_rca = CARD_RCA_INVALID;
 
 			return -1;
 		}
@@ -2297,7 +2376,7 @@ int CEMMCDevice::DoDataCommand (int is_write, u8 *buf, size_t buf_size, u32 bloc
 
 	if (retry_count == max_retries)
 	{
-		m_card_rca = 0;
+		m_card_rca = CARD_RCA_INVALID;
 
 		return -1;
 	}
@@ -2361,16 +2440,19 @@ int CEMMCDevice::TimeoutWait (unsigned reg, unsigned mask, int value, unsigned u
 	unsigned nStartTicks = m_pTimer->GetClockTicks ();
 	unsigned nTimeoutTicks = usec * (CLOCKHZ / 1000000);
 
-	do
+	while ((read32 (reg) & mask) ? !value : value)
 	{
-		if ((read32 (reg) & mask) ? value : !value)
+		if (m_pTimer->GetClockTicks () - nStartTicks >= nTimeoutTicks)
 		{
-			return 0;
+			return -1;
 		}
-	}
-	while (m_pTimer->GetClockTicks () - nStartTicks < nTimeoutTicks);
 
-	return -1;
+#ifdef NO_BUSY_WAIT
+		CScheduler::Get ()->Yield ();
+#endif
+	}
+
+	return 0;
 }
 
 #endif

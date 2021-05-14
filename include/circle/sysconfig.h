@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -104,12 +104,21 @@
 #define GPU_L2_CACHE_ENABLED
 #endif
 
-// USE_PWM_AUDIO_ON_ZERO can be defined to use GPIO12/13 for PWM audio
-// output on RPi Zero (W). Some external circuit is needed to use this.
+// USE_PWM_AUDIO_ON_ZERO can be defined to use GPIO12/13 (or 18/19) for
+// PWM audio output on RPi Zero (W). Some external circuit is needed to
+// use this.
 // WARNING: Do not feed voltage into these GPIO pins with this option
 //          defined on a RPi Zero, because this may destroy the pins.
 
 //#define USE_PWM_AUDIO_ON_ZERO
+
+// The left PWM audio output pin is by default GPIO12. The following
+// define moves it to GPIO18.
+//#define USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
+
+// The right PWM audio output pin is by default GPIO13. The following
+// define moves it to GPIO19.
+//#define USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
 
 #endif
 
@@ -232,6 +241,13 @@
 #define TASK_STACK_SIZE		0x8000
 #endif
 
+// NO_BUSY_WAIT deactivates busy waiting in the EMMC, SDHOST and USB
+// drivers, while waiting for the completion of a synchronous transfer.
+// This requires the scheduler in the system and transfers must not be
+// initiated from a secondary CPU core, when this option is enabled.
+
+//#define NO_BUSY_WAIT
+
 ///////////////////////////////////////////////////////////////////////
 //
 // USB keyboard
@@ -307,6 +323,11 @@
 #ifndef NO_SD_HIGH_SPEED
 #define SD_HIGH_SPEED
 #endif
+
+// USE_EMBEDDED_MMC_CM4 enables access to the on-board embedded MMC
+// memory on Compute Module 4. Does not work with SD card on CM4 Lite.
+
+//#define USE_EMBEDDED_MMC_CM4
 
 // SAVE_VFP_REGS_ON_IRQ enables saving the floating point registers
 // on entry when an IRQ occurs and will restore these registers on exit

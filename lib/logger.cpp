@@ -2,7 +2,7 @@
 // logger.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,8 +28,6 @@
 #include <circle/version.h>
 #include <circle/debug.h>
 
-#define LOGGER_BUFSIZE	0x4000
-
 struct TLogEvent
 {
 	TLogSeverity	Severity;
@@ -42,9 +40,10 @@ struct TLogEvent
 
 CLogger *CLogger::s_pThis = 0;
 
-CLogger::CLogger (unsigned nLogLevel, CTimer *pTimer)
+CLogger::CLogger (unsigned nLogLevel, CTimer *pTimer, boolean bOverwriteOldest)
 :	m_nLogLevel (nLogLevel),
 	m_pTimer (pTimer),
+	m_bOverwriteOldest (bOverwriteOldest),
 	m_pTarget (0),
 	m_pBuffer (0),
 	m_nInPtr (0),
@@ -253,16 +252,23 @@ void CLogger::Write (const char *pString)
 
 		if (m_nInPtr == m_nOutPtr)
 		{
-			m_nInPtr = (m_nInPtr - 1) % LOGGER_BUFSIZE;
+			if (m_bOverwriteOldest)
+			{
+				m_nOutPtr = (m_nOutPtr + 1) % LOGGER_BUFSIZE;
+			}
+			else
+			{
+				m_nInPtr = (m_nInPtr - 1) % LOGGER_BUFSIZE;
 
-			break;
+				break;
+			}
 		}
 	}
 
 	m_SpinLock.Release ();
 }
 
-int CLogger::Read (void *pBuffer, unsigned nCount)
+int CLogger::Read (void *pBuffer, unsigned nCount, boolean bClear)
 {
 	m_SpinLock.Acquire ();
 
@@ -275,19 +281,25 @@ int CLogger::Read (void *pBuffer, unsigned nCount)
 
 	char *pchBuffer = (char *) pBuffer;
 	int nResult = 0;
+	unsigned nOutPtr = m_nOutPtr;
 
 	while (nCount--)
 	{
-		*pchBuffer++ = m_pBuffer[m_nOutPtr];
+		*pchBuffer++ = m_pBuffer[nOutPtr];
 
-		m_nOutPtr = (m_nOutPtr + 1) % LOGGER_BUFSIZE;
+		nOutPtr = (nOutPtr + 1) % LOGGER_BUFSIZE;
 
 		nResult++;
 
-		if (m_nInPtr == m_nOutPtr)
+		if (m_nInPtr == nOutPtr)
 		{
 			break;
 		}
+	}
+
+	if (bClear)
+	{
+		m_nOutPtr = nOutPtr;
 	}
 
 	m_SpinLock.Release ();

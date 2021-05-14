@@ -1,0 +1,149 @@
+#!/bin/bash
+#
+# Portions taken from the circle-stdlib project by Stephan Muehlstrasser
+
+set -e
+
+function usage()
+{
+	echo "Usage: $0 [ <option> ... ]"
+	echo "Writes a build configuration for Circle to the file ./Config.mk."
+	echo
+	echo "Options:"
+	echo "  -r <number>, --raspberrypi <number>"
+	echo "                     Raspberry Pi model number (1, 2, 3, 4, default: 1)"
+	echo "  -p <string>, --prefix <string> "
+	echo "                     Prefix of the toolchain commands (default: arm-none-eabi-)"
+	echo "  --multicore        Allow multi-core applications"
+	echo "  --realtime         Enable real time mode to improve IRQ latency"
+	echo "  --keymap <country> Set default USB keymap (DE, ES, FR, IT, UK, US)"
+	echo "  --qemu             Build for running under QEMU"
+	echo "  -d <option>, --define <option> "
+	echo "                     Define additional system option"
+	echo "  --c++17            Use C++17 standard for compiling (default C++14)"
+	echo "  -f, --force        Overwrite existing Config.mk file"
+	echo "  -h, --help         Show this usage message"
+	echo
+	echo "Note: The architecture is determined from the toolchain."
+}
+
+# From the bash FAQ: How to use pathnames relative to the script
+cd "${BASH_SOURCE%/*}" || exit 1
+TOPDIR="$PWD"
+
+TEMP=$(getopt -o r:p:d:fh \
+	--long raspberrypi:,prefix:,multicore,realtime,keymap:,qemu,define:,c++17,force,help \
+	-n 'configure' -- "$@")
+
+if [ $? != 0 ] ; then usage; exit 1 ; fi
+
+# Note the quotes around `$TEMP': they are essential!
+eval set -- "$TEMP"
+
+RASPPI=1
+PREFIX=arm-none-eabi-
+MULTICORE=0
+REALTIME=0
+KEYMAP=
+QEMU=0
+CPP17=0
+DEFINE=
+FORCE=0
+
+while true ; do
+	case "$1" in
+		-r|--raspberrypi) RASPPI="$2" ; shift 2;;
+		-p|--prefix) PREFIX="$2" ; shift 2;;
+		--multicore) MULTICORE=1 ; shift;;
+		--realtime) REALTIME=1 ; shift;;
+		--keymap) KEYMAP="$2" ; shift 2;;
+		--qemu) QEMU=1 ; shift;;
+		--c++17) CPP17=1 ; shift;;
+		-d|--define) DEFINE="$DEFINE -D$2" ; shift 2;;
+		-f|--force) FORCE=1 ; shift;;
+		-h|--help) usage ; exit 0;;
+		--) shift ; break ;;
+		*) echo "Internal error" ; exit 1;;
+	esac
+done
+
+: ${CC:="$PREFIX"gcc}
+
+if [ ! -x "`which $CC 2> /dev/null`" ]
+then
+	echo "Error: Invalid toolchain prefix: ${PREFIX}" >&2
+	exit 1
+fi
+
+# Try to determine 64-bit build from Target: output of gcc
+AARCH=32
+if [ "$($CC -v 2>&1 | grep '^Target:.*64')" != "" ]
+then
+	AARCH=64
+	if [ $RASPPI -lt 3 ]
+	then
+		echo "Error: AArch64 requires Raspberry Pi 3 or 4!" >&2
+		exit 1
+	fi
+fi
+
+case "$RASPPI" in
+	1|2|3|4) ;;
+	*) echo "Error: Unknown Raspberry Pi target: ${RASPPI}" >&2; exit 1;;
+esac
+
+CONFIG_FILE="$TOPDIR/Config.mk"
+if [ -e "$CONFIG_FILE" ]
+then
+	if [ $FORCE -eq 0 ]
+	then
+		echo "Error: ${CONFIG_FILE} already exists!" >&2
+		echo "You may use the option -f to overwrite it." >&2
+		exit 1
+	fi
+fi
+
+(
+	if [ $AARCH -eq 32 ]
+	then
+		echo "PREFIX = ${PREFIX}"
+	else
+		echo "PREFIX64 = ${PREFIX}"
+	fi
+	echo "AARCH = $AARCH"
+	echo "RASPPI = $RASPPI"
+	if [ $MULTICORE -eq 1 ]
+	then
+		echo "DEFINE += -DARM_ALLOW_MULTI_CORE"
+	fi
+	if [ $REALTIME -eq 1 ]
+	then
+		echo "DEFINE += -DREALTIME"
+	fi
+	if [ "$KEYMAP" != "" ]
+	then
+		echo "DEFINE += -DDEFAULT_KEYMAP=\\\"${KEYMAP}\\\""
+	fi
+	if [ $QEMU -eq 1 ]
+	then
+		echo "DEFINE += -DNO_SDHOST"
+		if [ $AARCH -eq 32 ]
+		then
+			echo "DEFINE += -DNO_PHYSICAL_COUNTER"
+		fi
+	fi
+	if [ "$DEFINE" != "" ]
+	then
+		echo "DEFINE +=$DEFINE"
+	fi
+	if [ $CPP17 -eq 1 ]
+	then
+		echo "STANDARD = -std=c++17"
+	fi
+) > "$CONFIG_FILE"
+
+echo "Configuration file successfully created:"
+echo
+cat "$CONFIG_FILE"
+echo
+echo "Now enter ./makeall to build the Circle libraries and the latest sample!"

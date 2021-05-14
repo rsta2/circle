@@ -132,6 +132,7 @@ private:
 	u32 m_card_supports_18v;
 	u32 m_card_ocr;
 	u32 m_card_rca;
+#define CARD_RCA_INVALID	((u32) 0xFFFF0000)
 #ifndef USE_SDHOST
 	u32 m_last_interrupt;
 #endif

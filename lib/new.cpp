@@ -2,7 +2,7 @@
 // new.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/new.h>
-#include <circle/sysconfig.h>
+#include <assert.h>
 
 void *operator new (size_t nSize, int nType)
 {
@@ -31,6 +31,16 @@ void *operator new[] (size_t nSize, int nType)
 }
 
 #if STDLIB_SUPPORT != 3
+
+void *operator new (size_t nSize, void *pMem)
+{
+	return pMem;
+}
+
+void *operator new[] (size_t nSize, void *pMem)
+{
+	return pMem;
+}
 
 void *operator new (size_t nSize)
 {
@@ -61,5 +71,43 @@ void operator delete[] (void *pBlock, size_t nSize) noexcept
 {
 	CMemorySystem::HeapFree (pBlock);
 }
+
+// Aligned new and delete (C++17):
+
+#if __cplusplus >= 201703L
+
+void *operator new (size_t nSize, std::align_val_t Align)
+{
+	assert ((size_t) Align <= HEAP_BLOCK_ALIGN);
+	return CMemorySystem::HeapAllocate (nSize, HEAP_DEFAULT_NEW);
+}
+
+void *operator new[] (size_t nSize, std::align_val_t Align)
+{
+	assert ((size_t) Align <= HEAP_BLOCK_ALIGN);
+	return CMemorySystem::HeapAllocate (nSize, HEAP_DEFAULT_NEW);
+}
+
+void operator delete (void *pBlock, std::align_val_t Align) noexcept
+{
+	CMemorySystem::HeapFree (pBlock);
+}
+
+void operator delete[](void *pBlock, std::align_val_t Align) noexcept
+{
+	CMemorySystem::HeapFree (pBlock);
+}
+
+void operator delete(void *pBlock, size_t nSize, std::align_val_t Align) noexcept
+{
+	CMemorySystem::HeapFree (pBlock);
+}
+
+void operator delete[](void *pBlock, size_t nSize, std::align_val_t Align) noexcept
+{
+	CMemorySystem::HeapFree (pBlock);
+}
+
+#endif
 
 #endif

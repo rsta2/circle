@@ -2,7 +2,7 @@
 // config.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@
 #define VOLUME		0.5		// [0.0, 1.0]
 
 #define QUEUE_SIZE_MSECS 100		// size of the sound queue in milliseconds duration
-#define CHUNK_SIZE	2000		// number of samples, written to sound device at once
+#define CHUNK_SIZE	(384 * 10)	// number of samples, written to sound device at once
+
+#define DAC_I2C_ADDRESS	0		// I2C slave address of the DAC (0 for auto probing)
 
 #endif

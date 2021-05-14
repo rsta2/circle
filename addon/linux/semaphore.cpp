@@ -9,12 +9,12 @@ void down (struct semaphore *sem)
 	BUG_ON (CMultiCoreSupport::ThisCore () != 0);
 #endif
 
-	while (sem->count == 0)
+	while (atomic_read (&sem->count) == 0)
 	{
 		CScheduler::Get ()->Yield ();
 	}
 
-	sem->count--;
+	atomic_dec (&sem->count);
 }
 
 void up (struct semaphore *sem)
@@ -23,7 +23,7 @@ void up (struct semaphore *sem)
 	BUG_ON (CMultiCoreSupport::ThisCore () != 0);
 #endif
 
-	sem->count++;
+	atomic_inc (&sem->count);
 }
 
 int down_trylock (struct semaphore *sem)
@@ -32,12 +32,12 @@ int down_trylock (struct semaphore *sem)
 	BUG_ON (CMultiCoreSupport::ThisCore () != 0);
 #endif
 
-	if (sem->count == 0)
+	if (atomic_read (&sem->count) == 0)
 	{
 		return 1;
 	}
 
-	sem->count--;
+	atomic_dec (&sem->count);
 
 	return 0;
 }

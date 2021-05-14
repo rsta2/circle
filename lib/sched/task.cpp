@@ -2,7 +2,7 @@
 // task.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,10 +22,11 @@
 #include <circle/util.h>
 #include <assert.h>
 
-CTask::CTask (unsigned nStackSize, bool createSuspended)
-:	m_State (createSuspended ? TaskStateNew : TaskStateReady),
+CTask::CTask (unsigned nStackSize, boolean bCreateSuspended)
+:	m_State (bCreateSuspended ? TaskStateNew : TaskStateReady),
 	m_nStackSize (nStackSize),
-	m_pStack (0)
+	m_pStack (0),
+	m_pWaitListNext (0)
 {
 	for (unsigned i = 0; i < TASK_USER_DATA_SLOTS; i++)
 	{
@@ -83,8 +84,10 @@ void CTask::WaitForTermination (void)
 	// Before accessing any of our member variables
 	// make sure this task object hasn't been deleted by 
 	// checking it's still registered with the scheduler
-	if (!CScheduler::Get()->IsValidTask(this))
+	if (!CScheduler::Get()->IsValidTask (this))
+	{
 		return;
+	}
 
 	m_Event.Wait ();
 }

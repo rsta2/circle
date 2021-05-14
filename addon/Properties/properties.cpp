@@ -2,7 +2,7 @@
 // properties.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -70,8 +70,46 @@ unsigned CProperties::GetNumber (const char *pPropertyName, unsigned nDefault) c
 		return nDefault;
 	}
 
-	assert (ulResult <= (unsigned) -1);
+	if (ulResult > (unsigned) -1)
+	{
+		return nDefault;
+	}
+
 	return (unsigned) ulResult;
+}
+
+int CProperties::GetSignedNumber (const char *pPropertyName, int nDefault) const
+{
+	TPropertyPair *pProperty = Lookup (pPropertyName);
+	if (pProperty == 0)
+	{
+		return nDefault;
+	}
+
+	const char *pValue = pProperty->pValue;
+	assert (pValue != 0);
+
+	boolean bMinus = *pValue == '-';
+	if (bMinus)
+	{
+		pValue++;
+	}
+
+	char *pEndPtr = 0;
+	unsigned long ulResult = strtoul (pValue, &pEndPtr, 0);
+	if (pEndPtr != 0 && *pEndPtr != '\0')
+	{
+		return nDefault;
+	}
+
+	if (ulResult >= 0x80000000)
+	{
+		return nDefault;
+	}
+
+	int nResult = (int) ulResult;
+
+	return bMinus ? -nResult : nResult;
 }
 
 const u8 *CProperties::GetIPAddress (const char *pPropertyName)
@@ -148,7 +186,16 @@ void CProperties::SetNumber (const char *pPropertyName, unsigned nValue, unsigne
 {
 	CString Value;
 	assert (nBase == 10 || nBase == 16);
-	Value.Format (nBase == 10 ? "%d" : "0x%X", nValue);
+	Value.Format (nBase == 10 ? "%u" : "0x%X", nValue);
+
+	assert (pPropertyName != 0);
+	SetString (pPropertyName, Value);
+}
+
+void CProperties::SetSignedNumber (const char *pPropertyName, int nValue)
+{
+	CString Value;
+	Value.Format ("%d", nValue);
 
 	assert (pPropertyName != 0);
 	SetString (pPropertyName, Value);

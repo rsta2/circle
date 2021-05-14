@@ -4,7 +4,7 @@
 // A simple HTTP webserver
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/httpdaemon.h>
-#include <circle/net/ipaddress.h>
 #include <circle/net/in.h>
 #include <circle/netdevice.h>
 #include <circle/sysconfig.h>
@@ -81,6 +80,28 @@ void CHTTPDaemon::Run (void)
 	{
 		Worker ();
 	}
+}
+
+void CHTTPDaemon::WriteAccessLog (const CIPAddress &rRemoteIP, THTTPRequestMethod RequestMethod,
+				  const char *pRequestURI, THTTPStatus Status,
+				  unsigned nContentLength)
+{
+	assert (pRequestURI != 0);
+
+	CString IPString;
+	rRemoteIP.Format (&IPString);
+
+	const char *pMethod;
+	switch (RequestMethod)
+	{
+	case HTTPRequestMethodGet:	pMethod = "GET";	break;
+	case HTTPRequestMethodHead:	pMethod = "HEAD";	break;
+	case HTTPRequestMethodPost:	pMethod = "POST";	break;
+	default:			pMethod = "UNKNOWN";	break;
+	}
+
+	CLogger::Get ()->Write (FromHTTPDaemon, LogDebug, "%s \"%s %s\" %u %u",
+				(const char *) IPString, pMethod, pRequestURI, Status, nContentLength);
 }
 
 void CHTTPDaemon::Listener (void)
@@ -199,7 +220,7 @@ void CHTTPDaemon::Worker (void)
 		pContentType = "text/html";	// may has been changed by GetContent()
 	}
 
-	// write log line
+	// write access log
 	const u8 *pClientIP = m_pSocket->GetForeignIP ();
 	if (pClientIP == 0)			// connection closed in the meantime?
 	{
@@ -210,20 +231,7 @@ void CHTTPDaemon::Worker (void)
 	}
 	CIPAddress ClientIP (pClientIP);
 
-	CString IPString;
-	ClientIP.Format (&IPString);
-
-	const char *pMethod;
-	switch (m_RequestMethod)
-	{
-	case HTTPRequestMethodGet:	pMethod = "GET";	break;
-	case HTTPRequestMethodHead:	pMethod = "HEAD";	break;
-	case HTTPRequestMethodPost:	pMethod = "POST";	break;
-	default:			pMethod = "UNKNOWN";	break;
-	}
-
-	CLogger::Get ()->Write (FromHTTPDaemon, LogDebug, "%s \"%s %s\" %u %u",
-				(const char *) IPString, pMethod, m_RequestURI, Status, nContentLength);
+	WriteAccessLog (ClientIP, m_RequestMethod, m_RequestURI, Status, nContentLength);
 
 	// send HTTP response header
 	CString Header;

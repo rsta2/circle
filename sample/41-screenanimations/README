@@ -1,0 +1,6 @@
+README
+
+This example shows 32 various graphical shapes moving on screen without flickering or screen tearing.
+You can create a file cmdline.txt like this on the SD(HC) card to change the frame buffer size:
+
+width=640 height=480

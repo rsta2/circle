@@ -2,7 +2,7 @@
 // usbgamepadps3.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // Information to implement this was taken from:
 //	https://github.com/felis/USB_Host_Shield_2.0/blob/master/PS3USB.cpp
@@ -108,7 +108,7 @@ boolean CUSBGamePadPS3Device::Configure (void)
 		return FALSE;
 	}
 
-	m_State.nbuttons = REPORT_BUTTONS;
+	m_State.nbuttons = GAMEPAD_BUTTONS_STANDARD;
 	m_State.naxes = REPORT_AXES+REPORT_ANALOG_BUTTONS;
 	for (unsigned i = 0; i < REPORT_AXES+REPORT_ANALOG_BUTTONS; i++)
 	{

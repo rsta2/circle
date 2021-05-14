@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 #ifndef _kernel_h
 #define _kernel_h
 
-#include <circle/memory.h>
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
@@ -31,6 +30,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/sched/scheduler.h>
+#include <circle/i2cmaster.h>
 #include <circle/soundbasedevice.h>
 #include <circle/types.h>
 #include "oscillator.h"
@@ -63,7 +63,6 @@ private:
 
 private:
 	// do not change this order
-	CMemorySystem		m_Memory;
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
@@ -74,6 +73,7 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CScheduler		m_Scheduler;
+	CI2CMaster		m_I2CMaster;
 
 #ifdef USE_VCHIQ_SOUND
 	CVCHIQDevice		m_VCHIQ;

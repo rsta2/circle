@@ -6,7 +6,7 @@
 //	no ISO transfers
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <circle/usb/dwhciframeschednper.h>
 #include <circle/usb/dwhciframeschednsplit.h>
 #include <circle/usb/dwhciframeschedper.h>
+#include <circle/sched/scheduler.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/bcm2835.h>
 #include <circle/synchronize.h>
@@ -703,7 +704,9 @@ boolean CDWHCIDevice::TransferStage (CUSBRequest *pURB, boolean bIn, boolean bSt
 
 	while (m_bWaiting[nWaitBlock])
 	{
-		// do nothing
+#ifdef NO_BUSY_WAIT
+		CScheduler::Get ()->Yield ();
+#endif
 	}
 
 	FreeWaitBlock (nWaitBlock);
@@ -1061,7 +1064,22 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 	{
 	case StageStateNoSplitTransfer:
 		nStatus = pStageData->GetTransactionStatus ();
-		if (nStatus & DWHCI_HOST_CHAN_INT_ERROR_MASK)
+		if (   (nStatus & DWHCI_HOST_CHAN_INT_XACT_ERROR)
+		    && pURB->GetEndpoint ()->GetType () == EndpointTypeBulk
+		    && pStageData->IsRetryOK ())
+		{
+#ifndef USE_USB_SOF_INTR
+			StartTransaction (pStageData);
+#else
+			m_pStageData[nChannel] = 0;
+			FreeChannel (nChannel);
+
+			QueueTransaction (pStageData);
+#endif
+
+			break;
+		}
+		else if (nStatus & DWHCI_HOST_CHAN_INT_ERROR_MASK)
 		{
 			CLogger::Get ()->Write (FromDWHCI, LogError,
 						"Transaction failed (status 0x%X)", nStatus);

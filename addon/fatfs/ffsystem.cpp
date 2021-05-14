@@ -6,7 +6,7 @@
 
 
 #include "ff.h"
-#include <circle/spinlock.h>
+#include <circle/genericlock.h>
 #include <circle/alloc.h>
 #include <circle/timer.h>
 #include <assert.h>
@@ -29,7 +29,7 @@ int ff_cre_syncobj (	/* 1:Function succeeded, 0:Could not create the sync object
 	int ret;
 
 
-	*sobj = new CSpinLock (TASK_LEVEL);		/* Circle */
+	*sobj = new CGenericLock ();		/* Circle */
 	assert (*sobj != 0);
 	ret = 1;
 
@@ -65,8 +65,8 @@ int ff_del_syncobj (	/* 1:Function succeeded, 0:Could not delete due to any erro
 	int ret;
 
 
-	CSpinLock *pSpinLock = (CSpinLock *) sobj;		/* Circle */
-	delete pSpinLock;
+	CGenericLock *pLock = (CGenericLock *) sobj;		/* Circle */
+	delete pLock;
 	ret = 1;
 
 //	ret = CloseHandle(sobj);	/* Win32 */
@@ -97,9 +97,9 @@ int ff_req_grant (	/* 1:Got a grant to access the volume, 0:Could not get a gran
 {
 	int ret;
 
-	CSpinLock *pSpinLock = (CSpinLock *) sobj;		/* Circle */
-	assert (pSpinLock != 0);
-	pSpinLock->Acquire ();
+	CGenericLock *pLock = (CGenericLock *) sobj;		/* Circle */
+	assert (pLock != 0);
+	pLock->Acquire ();
 	ret = 1;
 
 //	ret = (int)(WaitForSingleObject(sobj, _FS_TIMEOUT) == WAIT_OBJECT_0);	/* Win32 */
@@ -126,9 +126,9 @@ void ff_rel_grant (
 	FF_SYNC_t sobj	/* Sync object to be signaled */
 )
 {
-	CSpinLock *pSpinLock = (CSpinLock *) sobj;	/* Circle */
-	assert (pSpinLock != 0);
-	pSpinLock->Release ();
+	CGenericLock *pLock = (CGenericLock *) sobj;	/* Circle */
+	assert (pLock != 0);
+	pLock->Release ();
 
 //	ReleaseMutex(sobj);		/* Win32 */
 

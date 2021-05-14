@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -330,6 +330,9 @@ unsigned CMachineInfo::GetClockRate (u32 nClockId) const
 		}
 		break;
 
+	case CLOCK_ID_PIXEL_BVB:
+		break;
+
 	default:
 		assert (0);
 		break;
@@ -349,7 +352,11 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 		if (   m_MachineModel == MachineModelZero
 		    || m_MachineModel == MachineModelZeroW)
 		{
+#ifdef USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
+			return 18;
+#else
 			return 12;
+#endif // USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
 		}
 #endif
 		if (m_MachineModel <= MachineModelBRelease2MB512)
@@ -374,7 +381,11 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 		if (   m_MachineModel == MachineModelZero
 		    || m_MachineModel == MachineModelZeroW)
 		{
+#ifdef USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
+			return 19;
+#else
 			return 13;
+#endif // USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
 		}
 #endif
 		if (m_MachineModel <= MachineModelBRelease2MB512)
@@ -577,7 +588,7 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
 	{
 		if (m_nRAMSize >= 4096)
 		{
-			Result.BusAddress = 0x200000000ULL;
+			Result.BusAddress = 0x400000000ULL;
 		}
 	}
 

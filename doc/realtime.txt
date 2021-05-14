@@ -21,7 +21,9 @@ required for your application on the Raspberry Pi 1-3, you should enable the
 #define USE_USB_SOF_INTR together with REALTIME.
 
 * Writes to the screen or serial device may noticeable raise the interrupt
-latency too. If REALTIME is defined this influence is relatively small.
+latency too. If REALTIME is defined this influence is relatively small, but
+writes from IRQ_LEVEL will be ignored then. This is the reason, why sample/
+08-usbkeyboard and 27-usbgamepad do not work with the REALTIME option.
 
 * If you rely on a small IRQ latency, USE_SDHOST should be disabled in include/
 circle/sysconfig.h. WLAN access is not possible parallel to SD card access then

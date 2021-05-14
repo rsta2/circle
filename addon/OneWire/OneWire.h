@@ -15,6 +15,7 @@
 #include <circle/timer.h>
 #include <circle/synchronize.h>
 #include <circle/types.h>
+#include <stdint.h>
 
 #endif
 
@@ -117,9 +118,6 @@
 #define DIRECT_WRITE_HIGH(base, mask)   ((*(base+8+2)) = (mask))          //LATXSET + 0x28
 
 #elif defined(__circle__)
-typedef u8  uint8_t;
-typedef u16 uint16_t;
-typedef u32 uint32_t;
 
 #define PROGMEM
 #define pgm_read_byte(addr)             (*(const uint8_t *) (addr))

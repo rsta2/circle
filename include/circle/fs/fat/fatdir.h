@@ -2,7 +2,7 @@
 // fatdir.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include <circle/fs/fat/fatcache.h>
 #include <circle/fs/fat/fatinfo.h>
 #include <circle/fs/fat/fat.h>
-#include <circle/spinlock.h>
+#include <circle/genericlock.h>
 #include <circle/types.h>
  
 class CFATDirectory
@@ -53,7 +53,7 @@ private:
 
 	TFATBuffer *m_pBuffer;
 
-	CSpinLock m_Lock;
+	CGenericLock m_Lock;
 };
 
 #endif

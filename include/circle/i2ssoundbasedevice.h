@@ -2,7 +2,7 @@
 // i2ssoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <circle/soundbasedevice.h>
 #include <circle/interrupt.h>
+#include <circle/i2cmaster.h>
 #include <circle/gpiopin.h>
 #include <circle/gpioclock.h>
 #include <circle/dmachannel.h>
@@ -46,10 +47,14 @@ public:
 	/// \param nChunkSize	twice the number of samples (words) to be handled\n
 	///			with one call to GetChunk() (one word per stereo channel)
 	/// \param bSlave	enable slave mode (PCM clock and FS clock are inputs)
+	/// \param pI2CMaster	pointer to the I2C master object (0 if no I2C DAC init required)
+	/// \param ucI2CAddress I2C slave address of the DAC (0 for auto probing 0x4C and 0x4D)
 	CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 			     unsigned	       nSampleRate = 192000,
 			     unsigned	       nChunkSize  = 8192,
-			     bool	       bSlave      = FALSE);
+			     bool	       bSlave      = FALSE,
+			     CI2CMaster       *pI2CMaster  = 0,
+			     u8		       ucI2CAddress = 0);
 
 	virtual ~CI2SSoundBaseDevice (void);
 
@@ -89,16 +94,21 @@ private:
 
 	void SetupDMAControlBlock (unsigned nID);
 
+	boolean InitPCM51xx (u8 ucI2CAddress);
+
 private:
 	CInterruptSystem *m_pInterruptSystem;
 	unsigned m_nChunkSize;
 	bool     m_bSlave;
+	CI2CMaster *m_pI2CMaster;
+	u8 m_ucI2CAddress;
 
 	CGPIOPin   m_PCMCLKPin;
 	CGPIOPin   m_PCMFSPin;
 	CGPIOPin   m_PCMDOUTPin;
 	CGPIOClock m_Clock;
 
+	boolean m_bI2CInited;
 	boolean m_bIRQConnected;
 	volatile TI2SSoundState m_State;
 

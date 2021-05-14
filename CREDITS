@@ -52,6 +52,8 @@ Stephane Damo
 Helping to fix FIQ synchronization issue
 Improving SD card (EMMC) performance
 Adding utility functions for Official Touchscreen and SD card
+Improving CSerialDevice in polling mode
+Adding class C2DGraphics and sample/41-screenanimations
 
 Steve Maynard
 Patches and testing for Compute Module 3(+)
@@ -66,3 +68,13 @@ Providing CM4 and CM4IO hardware
 
 Dale Whinham
 Improving SD card performance
+Providing RPi 3A+ hardware
+Helping to fix several USB issues
+Testing HDMI sound support and 4K monitors
+
+Brad Robinson
+Improving scheduler library
+Improving bootloader support and tools
+
+D. Rimron
+Adding screen reverse mode
