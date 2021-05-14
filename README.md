@@ -37,6 +37,7 @@ Bug fixes:
 
 * System timer IRQ handling may have stopped working after a while on the Raspberry Pi 1 and Zero before.
 * xHCI USB controller did not work on some Raspberry Pi 4 models.
+* Starting secondary cores 1-3 was not reliable.
 * Access to USB mass-storage devices was not reliable on Raspberry Pi Model A+, 3A+ and Zero before.
 * Add workaround for non-compliant low-speed USB devices with bulk endpoints.
 * Suppress concurrent split IN/OUT requests on Raspberry Pi 1-3 and Zero in USB serial drivers.
