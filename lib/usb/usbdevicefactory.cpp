@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@
 #include <circle/usb/usbserialcp2102.h>
 #include <circle/usb/usbserialpl2303.h>
 #include <circle/usb/usbserialft231x.h>
+#include <circle/usb/usbtouchscreen.h>
 
 CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
 {
@@ -142,6 +143,10 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (FindDeviceID (pName, CUSBSerialFT231XDevice::GetDeviceIDTable ()))
 	{
 		pResult = new CUSBSerialFT231XDevice (pParent);
+	}
+	else if (pName->Compare ("veneef-5") == 0)
+	{
+		pResult = new CUSBTouchScreenDevice (pParent);
 	}
 	// new devices follow
 

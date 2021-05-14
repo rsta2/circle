@@ -26,9 +26,10 @@ static const char FromKernel[] = "kernel";
 CKernel *CKernel::s_pThis = 0;
 
 CKernel::CKernel (void)
-:	m_Screen (800, 480),
+:	m_Screen (0, 0),	// auto-detect size
 	m_Timer (&m_Interrupt),
-	m_Logger (m_Options.GetLogLevel (), &m_Timer)
+	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer)
 {
 	s_pThis = this;
 
@@ -73,6 +74,11 @@ boolean CKernel::Initialize (void)
 	if (bOK)
 	{
 		bOK = m_Timer.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = m_USBHCI.Initialize ();
 	}
 
 	if (bOK)

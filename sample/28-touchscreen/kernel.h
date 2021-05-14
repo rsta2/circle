@@ -29,6 +29,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
+#include <circle/usb/usbhcidevice.h>
 #include <circle/input/rpitouchscreen.h>
 #include <circle/types.h>
 
@@ -64,6 +65,7 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
+	CUSBHCIDevice		m_USBHCI;
 
 	CRPiTouchScreen		m_RPiTouchScreen;
 
