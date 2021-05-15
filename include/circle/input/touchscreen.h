@@ -50,6 +50,12 @@ public:
 
 	void RegisterEventHandler (TTouchScreenEventHandler *pEventHandler);
 
+	/// \param pCoords Usable Touch screen coordinates (min x, max x, min y, max y)
+	/// \param nWidth Physical screen width in number of pixels
+	/// \param nHeight Physical screen height in number of pixels
+	/// \return Calibration data valid?
+	boolean SetCalibration (const unsigned Coords[4], unsigned nWidth, unsigned nHeight);
+
 public:
 	/// \warning Do not call this from application!
 	void ReportHandler (TTouchScreenEvent Event, unsigned nID, unsigned nPosX, unsigned nPosY);
@@ -59,6 +65,13 @@ private:
 	void *m_pUpdateParam;
 
 	TTouchScreenEventHandler *m_pEventHandler;
+
+	unsigned m_nScaleX;	// scale * 1000
+	unsigned m_nScaleY;	// scale * 1000
+	unsigned m_nOffsetX;
+	unsigned m_nOffsetY;
+	unsigned m_nWidth;
+	unsigned m_nHeight;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;
