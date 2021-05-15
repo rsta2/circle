@@ -100,6 +100,16 @@ TShutdownMode CKernel::Run (void)
 		m_Logger.Write (FromKernel, LogPanic, "Touchscreen not found");
 	}
 
+	const unsigned *pCalibration = m_Options.GetTouchScreen ();
+	if (pCalibration != 0)
+	{
+		if (!pTouchScreen->SetCalibration (pCalibration,
+						   m_Screen.GetWidth (), m_Screen.GetHeight ()))
+		{
+			m_Logger.Write (FromKernel, LogPanic, "Invalid calibration info");
+		}
+	}
+
 	pTouchScreen->RegisterEventHandler (TouchScreenEventHandler);
 
 	m_Logger.Write (FromKernel, LogNotice, "Just use your touchscreen!");

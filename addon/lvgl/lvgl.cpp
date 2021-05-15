@@ -1,8 +1,8 @@
 //
-// lvgl.h
+// lvgl.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 //
 #include <lvgl/lvgl.h>
 #include <circle/devicenameservice.h>
+#include <circle/koptions.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/string.h>
@@ -133,6 +134,14 @@ boolean CLVGL::Initialize (void)
 		m_pTouchScreen = (CTouchScreenDevice *) CDeviceNameService::Get ()->GetDevice ("touch1", FALSE);
 		if (m_pTouchScreen != 0)
 		{
+			const unsigned *pCalibration = CKernelOptions::Get ()->GetTouchScreen ();
+			if (pCalibration != 0)
+			{
+				m_pTouchScreen->SetCalibration (pCalibration,
+								m_pFrameBuffer->GetWidth (),
+								m_pFrameBuffer->GetHeight ());
+			}
+
 			m_pTouchScreen->RegisterEventHandler (TouchScreenEventHandler);
 		}
 	}
