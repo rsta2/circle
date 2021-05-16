@@ -10,6 +10,7 @@ Base library
 * CBcmPCIeHostBridge: Driver for PCIe Host Bridge of Raspberry Pi 4.
 * CBcmPropertyTags: Get several information from the GPU side or control something on this side.
 * CBcmRandomNumberGenerator: Driver for the built-in hardware random number generator.
+* CBcmWatchdog: Driver for the BCM2835 watchdog device.
 * CCharGenerator: Gives pixel information for console font
 * CClassAllocator: Support class for the class-specific allocation of objects
 * CCPUThrottle: Manages CPU clock rate depending on user requirements and SoC temperature.
