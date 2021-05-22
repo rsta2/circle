@@ -25,19 +25,8 @@
 #include <circle/i2cmaster.h>
 #include <circle/gpiopin.h>
 #include <circle/gpioclock.h>
-#include <circle/dmachannel.h>
-#include <circle/spinlock.h>
+#include <circle/dmasoundbuffers.h>
 #include <circle/types.h>
-
-enum TI2SSoundState
-{
-	I2SSoundIdle,
-	I2SSoundRunning,
-	I2SSoundCancelled,
-	I2SSoundTerminating,
-	I2SSoundError,
-	I2SSoundUnknown
-};
 
 class CI2SSoundBaseDevice : public CSoundBaseDevice	/// Low level access to the I2S sound device
 {
@@ -84,15 +73,11 @@ protected:
 	/// virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
-	boolean GetNextChunk (boolean bFirstCall = FALSE);
-
 	void RunI2S (void);
 	void StopI2S (void);
 
-	void InterruptHandler (void);
-	static void InterruptStub (void *pParam);
-
-	void SetupDMAControlBlock (unsigned nID);
+	static unsigned ChunkCompletedHandler (boolean bStatus, u32 *pBuffer,
+					       unsigned nChunkSize, void *pParam);
 
 	boolean InitPCM51xx (u8 ucI2CAddress);
 
@@ -109,17 +94,9 @@ private:
 	CGPIOClock m_Clock;
 
 	boolean m_bI2CInited;
-	boolean m_bIRQConnected;
-	volatile TI2SSoundState m_State;
+	volatile boolean m_bError;
 
-	unsigned m_nDMAChannel;
-	u32 *m_pDMABuffer[2];
-	u8 *m_pControlBlockBuffer[2];
-	TDMAControlBlock *m_pControlBlock[2];
-
-	unsigned m_nNextBuffer;			// 0 or 1
-
-	CSpinLock m_SpinLock;
+	CDMASoundBuffers m_DMABuffers;
 };
 
 #endif

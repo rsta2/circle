@@ -19,6 +19,7 @@ Base library
 * CDeviceTreeBlob: Simple Devicetree blob parser
 * CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
 * CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
+* CDMASoundBuffers: Concatenated DMA buffers to be used by sound device drivers.
 * CExceptionHandler: Generates a stack-trace and a panic message if an abort exception occurs.
 * CGPIOClock: Using GPIO clocks, initialize, start and stop it.
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
