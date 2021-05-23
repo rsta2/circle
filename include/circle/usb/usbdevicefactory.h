@@ -2,7 +2,7 @@
 // usbdevicefactory.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,6 +38,9 @@ public:
 	static CUSBFunction *GetDevice (CUSBFunction *pParent, CString *pName);
 
 private:
+	// for "int3-0-0" devices
+	static CUSBFunction *GetGenericHIDDevice (CUSBFunction *pParent);
+
 	static boolean FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable);
 };
 
