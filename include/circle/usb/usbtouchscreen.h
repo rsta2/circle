@@ -24,10 +24,35 @@
 #include <circle/input/touchscreen.h>
 #include <circle/types.h>
 
-#define USBTOUCH_REPORT_SIZE	11
-
-class CUSBTouchScreenDevice : public CUSBHIDDevice
+class CUSBTouchScreenDevice : public CUSBHIDDevice	/// Driver for USB HID-class touchscreens
 {
+private:
+	static const unsigned MaxContactCount = 10;
+
+	struct TReportItem
+	{
+		unsigned	BitOffset;
+		unsigned	BitSize;
+	};
+
+	struct TReportFinger
+	{
+		TReportItem	TipSwitch;
+		TReportItem	ContactIdentifier;
+		TReportItem	TipPressure;
+		TReportItem	X;
+		TReportItem	Y;
+	};
+
+	struct TReport
+	{
+		unsigned	ByteSize;
+		u8		ReportID;
+		unsigned	MaxContactCountActual;
+		TReportItem	ContactCount;
+		TReportFinger	Finger[MaxContactCount];
+	};
+
 public:
 	CUSBTouchScreenDevice (CUSBFunction *pFunction);
 	~CUSBTouchScreenDevice (void);
@@ -37,10 +62,17 @@ public:
 private:
 	void ReportHandler (const u8 *pReport, unsigned nReportSize);
 
+	boolean DecodeReportDescriptor (const u8 *pDesc, unsigned nDescSize);
+
+	static u32 GetValue (const void *pBuffer, const TReportItem &Item, u32 nDefault = 0);
+
 private:
-	boolean m_bFingerIsDown;
-	u16 m_usLastX;
-	u16 m_usLastY;
+	TReport m_Report;
+
+	boolean m_bFingerIsDown[MaxContactCount];
+	u8 m_ucContactID[MaxContactCount];
+	u16 m_usLastX[MaxContactCount];
+	u16 m_usLastY[MaxContactCount];
 
 	CTouchScreenDevice *m_pDevice;
 };
