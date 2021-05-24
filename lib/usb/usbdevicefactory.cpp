@@ -188,11 +188,49 @@ CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 		return 0;
 	}
 
-	if (   usReportDescriptorLength >= 2
-	    && ReportDescriptor[0] == 0x05	// Usage Page (Digitizer)
-	    && ReportDescriptor[1] == 0x0D)
+	// If we find a Usage Page (Digitizer) item anywhere in the HID report descriptor,
+	// then use the touch screen driver, otherwise the gamepad standard driver.
+	const u8 *pDesc = ReportDescriptor;
+	for (u16 nDescSize = usReportDescriptorLength; nDescSize;)
 	{
-		return new CUSBTouchScreenDevice (pParent);
+		u8 ucItem = *pDesc++;
+		nDescSize--;
+
+		u32 nArg;
+
+		switch (ucItem & 0x03)
+		{
+		case 0:
+			nArg = 0;
+			break;
+
+		case 1:
+			nArg = *pDesc++;
+			nDescSize--;
+			break;
+
+		case 2:
+			nArg  = *pDesc++;
+			nArg |= *pDesc++ << 8;
+			nDescSize -= 2;
+			break;
+
+		case 3:
+			nArg  = *pDesc++;
+			nArg |= *pDesc++ << 8;
+			nArg |= *pDesc++ << 16;
+			nArg |= *pDesc++ << 24;
+			nDescSize -= 4;
+			break;
+		}
+
+		ucItem &= 0xFC;
+
+		if (   ucItem == 0x04		// Usage Page (Digitizer)
+		    && nArg == 0x0D)
+		{
+			return new CUSBTouchScreenDevice (pParent);
+		}
 	}
 
 	return new CUSBGamePadStandardDevice (pParent);
