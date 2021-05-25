@@ -2,7 +2,7 @@
 // machineinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -110,7 +110,7 @@ public:
 
 	// DMA channel resource management
 #if RASPPI <= 3
-#define DMA_CHANNEL_MAX		12			// channels 0-12 are supported
+#define DMA_CHANNEL_MAX		11			// channels 0-11 are supported
 #else
 #define DMA_CHANNEL_MAX		7			// legacy channels 0-7 are supported
 #define DMA_CHANNEL_EXT_MIN	11			// DMA4 channels 11-14 are supported
