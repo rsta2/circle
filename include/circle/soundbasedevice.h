@@ -138,6 +138,12 @@ protected:
 	virtual unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize);
 	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
+	/// \brief Overload this to consume the received sound samples
+	/// \param pBuffer    Buffer where the samples have been placed
+	/// \param nChunkSize Size of the buffer in words
+	/// \note Each sample consists of two words (Left channel, right channel)
+	virtual void PutChunk (const u32 *pBuffer, unsigned nChunkSize) {}
+
 	/// \brief Called from GetChunk() to apply framing on IEC958 samples
 	/// \param nSample 24-bit signed sample value as u32, upper bits don't care
 	/// \param nFrame Number of the IEC958 frame, this sample belongs to (0..191)

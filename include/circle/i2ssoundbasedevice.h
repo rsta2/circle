@@ -31,6 +31,15 @@
 class CI2SSoundBaseDevice : public CSoundBaseDevice	/// Low level access to the I2S sound device
 {
 public:
+	enum TDeviceMode
+	{
+		DeviceModeTXOnly,	///< I2S output
+		DeviceModeRXOnly,	///< I2S input
+		DeviceModeTXRX,		///< I2S output and input
+		DeviceModeUnknown
+	};
+
+public:
 	/// \param pInterrupt	pointer to the interrupt system object
 	/// \param nSampleRate	sample rate in Hz
 	/// \param nChunkSize	twice the number of samples (words) to be handled\n
@@ -38,12 +47,14 @@ public:
 	/// \param bSlave	enable slave mode (PCM clock and FS clock are inputs)
 	/// \param pI2CMaster	pointer to the I2C master object (0 if no I2C DAC init required)
 	/// \param ucI2CAddress I2C slave address of the DAC (0 for auto probing 0x4C and 0x4D)
+	/// \param DeviceMode	which transfer direction to use?
 	CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 			     unsigned	       nSampleRate = 192000,
 			     unsigned	       nChunkSize  = 8192,
 			     bool	       bSlave      = FALSE,
 			     CI2CMaster       *pI2CMaster  = 0,
-			     u8		       ucI2CAddress = 0);
+			     u8		       ucI2CAddress = 0,
+			     TDeviceMode       DeviceMode  = DeviceModeTXOnly);
 
 	virtual ~CI2SSoundBaseDevice (void);
 
@@ -72,12 +83,20 @@ protected:
 	///	  Each word must be between GetRangeMin() and GetRangeMax()
 	/// virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
+	/// \brief Overload this to consume the received sound samples
+	/// \param pBuffer    Buffer where the samples have been placed
+	/// \param nChunkSize Size of the buffer in words
+	/// \note Each sample consists of two words (Left channel, right channel)
+	/// virtual void PutChunk (const u32 *pBuffer, unsigned nChunkSize);
+
 private:
 	void RunI2S (void);
 	void StopI2S (void);
 
-	static unsigned ChunkCompletedHandler (boolean bStatus, u32 *pBuffer,
-					       unsigned nChunkSize, void *pParam);
+	static unsigned TXCompletedHandler (boolean bStatus, u32 *pBuffer,
+					    unsigned nChunkSize, void *pParam);
+	static unsigned RXCompletedHandler (boolean bStatus, u32 *pBuffer,
+					    unsigned nChunkSize, void *pParam);
 
 	boolean InitPCM51xx (u8 ucI2CAddress);
 
@@ -87,16 +106,19 @@ private:
 	bool     m_bSlave;
 	CI2CMaster *m_pI2CMaster;
 	u8 m_ucI2CAddress;
+	TDeviceMode m_DeviceMode;
 
 	CGPIOPin   m_PCMCLKPin;
 	CGPIOPin   m_PCMFSPin;
+	CGPIOPin   m_PCMDINPin;
 	CGPIOPin   m_PCMDOUTPin;
 	CGPIOClock m_Clock;
 
 	boolean m_bI2CInited;
 	volatile boolean m_bError;
 
-	CDMASoundBuffers m_DMABuffers;
+	CDMASoundBuffers m_TXBuffers;
+	CDMASoundBuffers m_RXBuffers;
 };
 
 #endif

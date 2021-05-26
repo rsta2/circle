@@ -28,11 +28,13 @@
 #include <circle/new.h>
 #include <assert.h>
 
-CDMASoundBuffers::CDMASoundBuffers (u32		      nIOAddress,
+CDMASoundBuffers::CDMASoundBuffers (boolean	      bDirectionOut,
+				    u32		      nIOAddress,
 				    TDREQ	      DREQ,
 				    unsigned	      nChunkSize,
 				    CInterruptSystem *pInterruptSystem)
-:	m_nIOAddress {nIOAddress},
+:	m_bDirectionOut {bDirectionOut},
+	m_nIOAddress {nIOAddress},
 	m_DREQ {DREQ},
 	m_nChunkSize {nChunkSize},
 	m_pInterruptSystem {pInterruptSystem},
@@ -72,6 +74,8 @@ CDMASoundBuffers::~CDMASoundBuffers (void)
 		PeripheralExit ();
 
 		CMachineInfo::Get ()->FreeDMAChannel (m_nDMAChannel);
+
+		m_nDMAChannel = DMA_CHANNEL_MAX+1;
 	}
 
 	delete m_pControlBlock[0];
@@ -84,6 +88,7 @@ boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)
 {
 	if (m_State == StateCreated)
 	{
+		assert (m_nChunkSize * sizeof (u32) <= TXFR_LEN_MAX_LITE);
 		m_nDMAChannel = CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE);
 		if (m_nDMAChannel > DMA_CHANNEL_MAX)
 		{
@@ -106,6 +111,11 @@ boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)
 		m_pControlBlock[1]->nNextControlBlockAddress =
 			BUS_ADDRESS ((uintptr) m_pControlBlock[0]);
 
+		CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock[0],
+						  sizeof (TDMAControlBlock));
+		CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock[1],
+						  sizeof (TDMAControlBlock));
+
 		// enable and reset DMA channel
 		PeripheralEntry ();
 
@@ -122,15 +132,11 @@ boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)
 		PeripheralExit ();
 
 		// connect IRQ
-		if (!m_bIRQConnected)
-		{
-			assert (m_pInterruptSystem != 0);
-			assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-			m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel,
-							InterruptStub, this);
-
-			m_bIRQConnected = TRUE;
-		}
+		assert (!m_bIRQConnected);
+		assert (m_pInterruptSystem != 0);
+		assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel, InterruptStub, this);
+		m_bIRQConnected = TRUE;
 
 		m_State = StateIdle;
 	}
@@ -144,7 +150,8 @@ boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)
 	// fill buffer 0
 	m_nNextBuffer = 0;
 
-	if (!GetNextChunk (TRUE))
+	if (   m_bDirectionOut
+	    && !GetNextChunk (TRUE))
 	{
 		return FALSE;
 	}
@@ -168,7 +175,8 @@ boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)
 	PeripheralExit ();
 
 	// fill buffer 1
-	if (!GetNextChunk (FALSE))
+	if (   m_bDirectionOut
+	    && !GetNextChunk (FALSE))
 	{
 		m_SpinLock.Acquire ();
 
@@ -244,6 +252,23 @@ boolean CDMASoundBuffers::GetNextChunk (boolean bFirstCall)
 	return TRUE;
 }
 
+boolean CDMASoundBuffers::PutChunk (void)
+{
+	assert (m_nNextBuffer <= 1);
+	assert (m_pDMABuffer[m_nNextBuffer] != 0);
+
+	// TODO: must not write DMA buffer from handler (read-only)
+	CleanAndInvalidateDataCacheRange ((uintptr) m_pDMABuffer[m_nNextBuffer],
+					  m_nChunkSize * sizeof (u32));
+
+	assert (m_pHandler != 0);
+	(*m_pHandler) (TRUE, m_pDMABuffer[m_nNextBuffer], m_nChunkSize, m_pParam);
+
+	m_nNextBuffer ^= 1;
+
+	return TRUE;
+}
+
 void CDMASoundBuffers::InterruptHandler (void)
 {
 	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
@@ -278,9 +303,19 @@ void CDMASoundBuffers::InterruptHandler (void)
 	switch (m_State)
 	{
 	case StateRunning:
-		if (GetNextChunk (FALSE))
+		if (m_bDirectionOut)
 		{
-			break;
+			if (GetNextChunk (FALSE))
+			{
+				break;
+			}
+		}
+		else
+		{
+			if (PutChunk ())
+			{
+				break;
+			}
 		}
 		// fall through
 
@@ -329,18 +364,37 @@ boolean CDMASoundBuffers::SetupDMAControlBlock (unsigned nID)
 		return FALSE;
 	}
 
-	m_pControlBlock[nID]->nTransferInformation     =   (m_DREQ << TI_PERMAP_SHIFT)
-						         | (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
-						         | TI_SRC_WIDTH
-						         | TI_SRC_INC
-						         | TI_DEST_DREQ
-						         | TI_WAIT_RESP
-						         | TI_INTEN;
-	m_pControlBlock[nID]->nSourceAddress           = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
-	m_pControlBlock[nID]->nDestinationAddress      = (m_nIOAddress & 0xFFFFFF) + GPU_IO_BASE;
-	m_pControlBlock[nID]->n2DModeStride            = 0;
-	m_pControlBlock[nID]->nReserved[0]	       = 0;
-	m_pControlBlock[nID]->nReserved[1]	       = 0;
+	if (m_bDirectionOut)
+	{
+		m_pControlBlock[nID]->nTransferInformation =   (m_DREQ << TI_PERMAP_SHIFT)
+							     | (   DEFAULT_BURST_LENGTH
+								 << TI_BURST_LENGTH_SHIFT)
+							     | TI_SRC_WIDTH
+							     | TI_SRC_INC
+							     | TI_DEST_DREQ
+							     | TI_WAIT_RESP
+							     | TI_INTEN;
+		m_pControlBlock[nID]->nSourceAddress = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
+		m_pControlBlock[nID]->nDestinationAddress = (m_nIOAddress & 0xFFFFFF) + GPU_IO_BASE;
+	}
+	else
+	{
+		m_pControlBlock[nID]->nTransferInformation =   (m_DREQ << TI_PERMAP_SHIFT)
+							     | (   DEFAULT_BURST_LENGTH
+								 << TI_BURST_LENGTH_SHIFT)
+							     | TI_DEST_WIDTH
+							     | TI_DEST_INC
+							     | TI_SRC_DREQ
+							     | TI_WAIT_RESP
+							     | TI_INTEN;
+		m_pControlBlock[nID]->nSourceAddress = (m_nIOAddress & 0xFFFFFF) + GPU_IO_BASE;
+		m_pControlBlock[nID]->nDestinationAddress = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
+		m_pControlBlock[nID]->nTransferLength = m_nChunkSize * sizeof (u32);
+	}
+
+	m_pControlBlock[nID]->n2DModeStride = 0;
+	m_pControlBlock[nID]->nReserved[0]  = 0;
+	m_pControlBlock[nID]->nReserved[1]  = 0;
 
 	return TRUE;
 }

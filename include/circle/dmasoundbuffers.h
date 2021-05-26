@@ -39,27 +39,44 @@ public:
 		StateUnknown
 	};
 
+	/// \param bStatus FALSE if an error occurred
+	/// \param pBuffer Pointer to the buffer, which provides (RX) or receives the samples (TX)
+	/// \param nChunkSize Size of the buffer in number of 32-bit words
+	/// \param pParam User parameter, which was handed over to Start()
 	typedef unsigned TChunkCompletedHandler (boolean    bStatus,
 						 u32	   *pBuffer,
 						 unsigned   nChunkSize,
 						 void	   *pParam);
 
 public:
-	CDMASoundBuffers (u32		    nIOAddress,
+	/// \param bDirectionOut TRUE if these buffers are used for sound output
+	/// \param nIOAddress ARM memory address of the target data device register
+	/// \param DREQ DREQ number to be used to pace the transfer
+	/// \param nChunkSize Size of a chunk, DMA transferred at once, in number of 32-bit words
+	/// \param pInterruptSystem Pointer to the interrupt system
+	CDMASoundBuffers (boolean	    bDirectionOut,
+			  u32		    nIOAddress,
 			  TDREQ		    DREQ,
 			  unsigned	    nChunkSize,
 			  CInterruptSystem *pInterruptSystem);
 
 	~CDMASoundBuffers (void);
 
+	/// \brief Start DMA operation
+	/// \param pHandler Callback handler, which gets called, when one chunk was completed
+	/// \param pParam User parameter, which will be handed over to the handler
 	boolean Start (TChunkCompletedHandler *pHandler, void *pParam = 0);
 
+	/// \brief Cancel DMA operation
+	/// \note Does not stop immediately, use IsActive() to check if operation is still running
 	void Cancel (void);
 
+	/// \return Is DMA operation running?
 	boolean IsActive (void) const;
 
 private:
 	boolean GetNextChunk (boolean bFirstCall);
+	boolean PutChunk (void);
 
 	void InterruptHandler (void);
 	static void InterruptStub (void *pParam);
@@ -67,6 +84,7 @@ private:
 	boolean SetupDMAControlBlock (unsigned nID);
 
 private:
+	boolean m_bDirectionOut;
 	u32 m_nIOAddress;
 	TDREQ m_DREQ;
 	unsigned m_nChunkSize;
