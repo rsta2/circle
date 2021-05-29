@@ -10,31 +10,43 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
-Release 43.3
-------------
-
-This intermediate release adds support for the **Raspberry Pi 400** and partial support for the **Compute Module 4**. The eMMC memory of the Compute Module 4 cannot be accessed at the moment.
-
-On the Compute Module 4 the **internal xHCI controller** can be used to access the USB. You have to enable the system option `USE_XHCI_INTERNAL` in *include/circle/sysconfig.h* and to add the option `otg_mode=1` to *config.txt* for this purpose. The DWC OTG USB controller is not supported on the CM4.
-
-The **performance of SD card access** has been improved by enabling the High Speed mode of the SD card, if supported. With a suitable uSD XC card, the read performance increased to up to 180%.
-
-**Bug fixes** concerning USB plug-and-play, the deferred start of the network subsystem and some HID class standard gamepads have been applied.
-
-Circle is tested using a GCC 10.2.1 based toolchain now. Be sure to update the used firmware to the files downloadable in the *boot/* subdirectory, when using this Circle release!
-
-The 43rd Step
+The 44th Step
 -------------
 
-This release adds **USB plug-and-play** (USB PnP) support to Circle. It has been implemented for all USB device drivers, which can be subject of dynamic device attachments or removes, and for a number of sample programs. Existing applications have to be modified to support USB PnP, but this is not mandatory. An existing application can continue to work without USB PnP unmodified. Please see the file [doc/usb-plug-and-play.txt](doc/usb-plug-and-play.txt) for details on USB PnP support and [sample/README](sample/README) for information about which samples are USB PnP aware!
+This release comes with new features, improvements and bug fixes. There is a new HDMI sound driver class `CHDMISoundBaseDevice`, which allows to generate **HDMI sound without VCHIQ** driver, which can be easier to integrate in an application. This is shown by the [sample/29-miniorgan](sample/29-miniorgan) and [sample/34-sounddevices](sample/34-sounddevices). On the Raspberry Pi 4 only the connector HDMI0 is supported. The class `CI2SSoundBaseDevice` now supports the **PCM5122 DAC**.
 
-USB PnP requires the **system option USE_USB_SOF_INTR** to be enabled in [include/circle/sysconfig.h](include/circle/sysconfig.h) on the Raspberry Pi 1-3 and Zero. Because it has proved to be beneficial for most other applications too, it is enabled by default now. Rarely it may be possible, that your application has disadvantages from it. In this case you should disable this option and go back to the previous setting (e.g. if you need the maximum network performance).
+A new class ``C2DGraphics`` has been added to the base library, which provides **2D drawing routines**, which work without flickering or screen tearing. This is demonstrated in the [sample/41-screenanimations](sample/41-screenanimations).
 
-An important issue has been fixed throughout Circle, which affected the **alignment of buffers used for DMA operations**. These buffers must be aligned to the size of a data-cache line (32 bytes on Raspberry 1 and Zero, 64 bytes otherwise) in base address and size. In some cases your application may need to be updated to meet this requirement. For example this applies to the samples *05-usbsimple*, *06-ethernet* and *25-spidma*. Please see the file [doc/dma-buffer-requirements.txt](doc/dma-buffer-requirements.txt) for details!
+The **scheduler library** has been improved and provides the new classes `CMutex` and `CSemaphore`. Multiple tasks can wait for a `CSynchronzationEvent` to be set now.
 
-Another problem in the past was, that the output to screen or serial device affected the **IRQ timing of applications**. There is the system option `REALTIME`, which already improved this timing. Unfortunately it was not possible to use low- or full-speed USB devices (e.g. USB keyboard) on the Raspberry Pi 1-3 and Zero, when this option was enabled. Now this is supported, when the system option `USE_USB_SOF_INTR` is enabled together with `REALTIME`.
+There is a **new serial bootloader and flash tool** (Flashy), which improves the download speed and reliability. Please see the second part of the file [doc/bootloader.txt](doc/bootloader.txt) for more information! You can interrupt the download process with Ctrl-C now and start again, without resetting your Raspberry Pi. You should update your bootloader kernel image(s) on the SD card in any case. The old flash tool is still available.
 
-The new **class CWriteBufferDevice** can be used to buffer the screen or serial output in a way, that writing to these devices is still possible at *IRQ_LEVEL*, even when the option `REALTIME` is defined. Using the new **class CLatencyTester** it is demonstrated in the new [sample/40-irqlatency](sample/40-irqlatency), how this affects the IRQ latency of the system. Please read the [README file](sample/40-irqlatency/README) of this sample for details!
+Circle comes with a **configure script** now, which can be used to create the configuration file `Config.mk` easier. Please enter `configure -h` for a description of its options.
+
+The C++ support has been improved. Now **placement new operators** and **static objects inside of a function** can be used. Furthermore the **C++17 standard** is optionally supported and can be enabled with the option `--c++17` of `configure`, if you have a toolchain version, which supports it.
+
+Further improvements:
+
+* There is a new system option `NO_BUSY_WAIT`. With this option enabled, the EMMC, SDHOST and USB drivers will **not busy wait for the completion of synchronous transfers** any more. This should improve system throughput and network latency, but requires the scheduler in the system.
+* The **embedded MMC memory of the Compute Module 4** can be accessed, when the system option `USE_EMBEDDED_MMC_CM4` has been defined.
+* The class `CTFTPFatFsFileServer` was added to [addon/tftpfileserver](addon/tftpfileserver) to support **TFTP access with the FatFs filesystem module**.
+* The class `CDS18x20` in [addon/OneWire](addon/OneWire) has been improved and is now part of the library, not of the sample as before. It determines the used power mode of the sensor automatically.
+* Functions for **atomic memory access** have been added to `<circle/atomic.h>`.
+
+Bug fixes:
+
+* System timer IRQ handling may have stopped working after a while on the Raspberry Pi 1 and Zero before.
+* xHCI USB controller did not work on some Raspberry Pi 4 models.
+* Starting secondary cores 1-3 was not reliable.
+* Access to USB mass-storage devices was not reliable on Raspberry Pi Model A+, 3A+ and Zero before.
+* Add workaround for non-compliant low-speed USB devices with bulk endpoints.
+* Suppress concurrent split IN/OUT requests on Raspberry Pi 1-3 and Zero in USB serial drivers.
+* Enable serial FIFO in polling mode too.
+* The screen size select-able in *cmdline.txt* was limited to 1920x1080 before.
+* Semaphore implementation in *addon/linux* was not IRQ safe, but used from IRQ handler in VCHIQ driver.
+* Allow received text segment in TCP state SYN-RECEIVED.
+
+Don't forget to update the used firmware to the one downloadable in [boot/](boot/)!
 
 Features
 --------
@@ -73,6 +85,7 @@ Circle supports the following features:
 |                       | SPI1 auxiliary master (Polling)                     |
 |                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          |
 |                       | I2S sound output                                    |
+|                       | HDMI sound output (without VCHIQ)                   |
 |                       | Hardware random number generator                    |
 |                       | Official Raspberry Pi touch screen                  |
 |                       | VCHIQ interface and audio service drivers           |
@@ -101,11 +114,12 @@ Circle supports the following features:
 |                       | (not on Raspberry Pi 4)                             |
 |                       | uGUI (by Achim Doebler)                             |
 |                       | LVGL (by LVGL LLC)                                  |
+|                       | 2D graphics class in base library                   |
 |                       |                                                     |
 | Not supported         | Bluetooth                                           |
 |                       | Camera                                              |
 |                       | USB device (gadget) mode                            |
-|                       | USB isochronous transfers                           |
+|                       | USB isochronous transfers and audio                 |
 
 Building
 --------
@@ -162,6 +176,8 @@ RASPPI = 3
 PREFIX64 = aarch64-none-elf-
 ```
 
+The configuration file *Config.mk* can be created using the `configure` tool too. Please enter `./configure -h` for help on using it!
+
 Then go to the build root of Circle and do:
 
 ```
@@ -200,18 +216,8 @@ The following C++ classes were added to Circle:
 Base library
 
 * C2DGraphics: Software graphics library with VSync and hardware-accelerated double buffering
-* CDeviceTreeBlob: Simple Devicetree blob parser
 * CGenericLock: Locks a resource with or without scheduler
 * CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ)
-
-USB library
-
-* CUSBSerialDevice: Base class and interface for USB serial device drivers
-* CUSBSerialCDCDevice: Driver for USB CDC serial devices (e.g. micro:bit)
-* CUSBSerialCH341Device: Driver for CH341 based USB serial devices
-* CUSBSerialCP2102Device: Driver for CP2102 based USB serial devices
-* CUSBSerialFT231XDevice: Driver for FTDI based USB serial devices
-* CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices
 
 Scheduler library
 
@@ -262,3 +268,5 @@ Khronos and OpenVG are trademarks of The Khronos Group Inc.
 OpenGL ES is a trademark of Silicon Graphics Inc.
 
 The micro:bit brand belongs to the Micro:bit Educational Foundation.
+
+HDMI is a registered trademark of HDMI Licensing Administrator, Inc.

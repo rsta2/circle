@@ -2,8 +2,8 @@
 # Makefile
 #
 
-# From: Nov 27 2020
-FIRMWARE ?= 1f85a05b7ef063291e7a3dd1d735df4cbc441a74
+# From: Jan 25 2021
+FIRMWARE ?= f713a6054746bc61ece1c8696dce91a7b7e22dd9
 
 BASEURL = https://github.com/RPi-Distro/firmware-nonfree/blob/$(FIRMWARE)
 

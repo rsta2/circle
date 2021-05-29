@@ -6,7 +6,7 @@
 //	Licensed under GPL2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -97,15 +97,12 @@ boolean CMultiCoreSupport::Initialize (void)
 		// TODO: CleanDataCacheRange ((u64) pSpinTable, sizeof *pSpinTable);
 		CleanDataCache ();
 #endif
-		asm volatile ("sev");
 
-		nTimeout = 100;
-#if AARCH == 32
-		while (read32 (nMailBoxClear) != 0)
-#else
-		while (pSpinTable->SpinCore[nCore] != 0)
-#endif
+		nTimeout = 500;
+		do
 		{
+			asm volatile ("sev");
+
 			if (--nTimeout == 0)
 			{
 				CLogger::Get ()->Write (FromMultiCore, LogError, "CPU core %u did not start", nCore);
@@ -114,7 +111,14 @@ boolean CMultiCoreSupport::Initialize (void)
 			}
 
 			CTimer::SimpleMsDelay (1);
+
+			DataMemBarrier ();
 		}
+#if AARCH == 32
+		while (read32 (nMailBoxClear) != 0);
+#else
+		while (pSpinTable->SpinCore[nCore] != 0);
+#endif
 	}
 
 	return TRUE;
@@ -219,6 +223,7 @@ void CMultiCoreSupport::EntrySecondary (void)
 #else
 	TSpinTable *pSpinTable = (TSpinTable *) ARM_SPIN_TABLE_BASE;
 	pSpinTable->SpinCore[nCore] = 0;
+	DataSyncBarrier ();
 #endif
 
 #if RASPPI <= 3
