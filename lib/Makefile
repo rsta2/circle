@@ -19,7 +19,7 @@
 #
 
 OBJS	= actled.o alloc.o assert.o bcmframebuffer.o bcmmailbox.o \
-	  bcmpropertytags.o chargenerator.o classallocator.o \
+	  bcmpropertytags.o bcmwatchdog.o chargenerator.o classallocator.o \
 	  cputhrottle.o debug.o delayloop.o device.o devicenameservice.o \
 	  dmachannel.o gpioclock.o gpiomanager.o gpiopin.o gpiopinfiq.o \
 	  i2cmaster.o i2cslave.o hdmisoundbasedevice.o i2ssoundbasedevice.o koptions.o \
