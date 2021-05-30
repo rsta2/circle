@@ -93,7 +93,7 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  CI2CMaster       *pI2CMaster,
 					  u8                ucI2CAddress,
 					  TDeviceMode       DeviceMode)
-:	CSoundBaseDevice (SoundFormatSigned24, 0, nSampleRate),
+:	CSoundBaseDevice (SoundFormatSigned24_32, 0, nSampleRate),
 	m_nChunkSize (nChunkSize),
 	m_bSlave (bSlave),
 	m_pI2CMaster (pI2CMaster),

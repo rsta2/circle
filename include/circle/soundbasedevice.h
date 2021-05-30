@@ -36,19 +36,24 @@
 
 enum TSoundFormat			/// All supported formats are interleaved little endian
 {
-	SoundFormatUnsigned8,		/// Not supported as hardware format
-	SoundFormatSigned16,
-	SoundFormatSigned24,
-	SoundFormatUnsigned32,		/// Not supported as write format
-	SoundFormatIEC958,		/// Not supported as write format
+	SoundFormatUnsigned8,		/// Write/Read, HWFormat none
+	SoundFormatSigned16,		/// Write/Read, HWFormat output only
+	SoundFormatSigned24,		/// Write/Read, HWFormat none (occupies 3 bytes)
+	SoundFormatSigned24_32,		/// Write/Read, HWFormat output/input (occupies 4 bytes)
+	SoundFormatUnsigned32,		/// HWFormat output only
+	SoundFormatIEC958,		/// HWFormat output only
 	SoundFormatUnknown
 };
 
-typedef void TSoundNeedDataCallback (void *pParam);
+typedef void TSoundDataCallback (void *pParam);
 
 /// \note There are two methods to provide the sound samples:\n
 ///	  1. By overloading GetChunk()\n
 ///	  2. By using Write()
+
+/// \note There are two methods to retrieve the sound samples:\n
+///	  1. By overloading PutChunk()\n
+///	  2. By using Read()
 
 /// \note In a multi-core environment all methods, except if otherwise noted,
 ///	  have to be called or will be called (for callbacks) on core 0.
@@ -86,6 +91,8 @@ public:
 	/// \note Can be called on any core.
 	virtual boolean IsActive (void) const = 0;
 
+	// Output /////////////////////////////////////////////////////////////
+
 	/// \brief Allocate the queue used for Write()
 	/// \param nSizeMsecs Size of the queue in milliseconds duration of the stream
 	/// \note Not used, if GetChunk() is overloaded.
@@ -122,10 +129,52 @@ public:
 	/// \param pParam User parameter to be handed over to the callback
 	/// \note Is called, when at least half of the queue is empty
 	/// \note Not used, if GetChunk() is overloaded.
-	void RegisterNeedDataCallback (TSoundNeedDataCallback *pCallback, void *pParam);
+	void RegisterNeedDataCallback (TSoundDataCallback *pCallback, void *pParam);
 
 	/// \return TRUE: Have to write right channel first into buffer in GetChunk()
 	boolean AreChannelsSwapped (void) const;
+
+	// Input //////////////////////////////////////////////////////////////
+
+	/// \brief Allocate the queue used for Read()
+	/// \param nSizeMsecs Size of the queue in milliseconds duration of the stream
+	/// \note Not used, if PutChunk() is overloaded.
+	boolean AllocateReadQueue (unsigned nSizeMsecs);
+
+	/// \brief Allocate the queue used for Read()
+	/// \param nSizeFrames Size of the queue in frames of audio
+	/// \note Not used, if PutChunk() is overloaded.
+	boolean AllocateReadQueueFrames (unsigned nSizeFrames);
+
+	/// \param Format    Format of sound data returned from Read()
+	/// \param nChannels 1 or 2 channels
+	/// \param bLeftChannel Return left channel (for nChannels = 1)
+	/// \note Not used, if PutChunk() is overloaded.
+	void SetReadFormat (TSoundFormat Format, unsigned nChannels = 2,
+			    boolean bLeftChannel = TRUE);
+
+	/// \param pBuffer Receives the samples
+	/// \param nCount  Size of the buffer in bytes (multiple of frame size)
+	/// \return Number of bytes returned
+	/// \note Not used, if PutChunk() is overloaded.
+	/// \note Can be called on any core.
+	int Read (void *pBuffer, size_t nCount);
+
+	/// \return Read queue size in number of frames
+	/// \note Not used, if PutChunk() is overloaded.
+	/// \note Can be called on any core.
+	unsigned GetReadQueueSizeFrames (void);
+
+	/// \return Number of frames available in the read queue
+	/// \note Not used, if PutChunk() is overloaded.
+	/// \note Can be called on any core.
+	unsigned GetReadQueueFramesAvail (void);
+
+	/// \param pCallback Callback which is called, when data is available for Read()
+	/// \param pParam User parameter to be handed over to the callback
+	/// \note Is called, when at least half of the queue is full
+	/// \note Not used, if PutChunk() is overloaded.
+	void RegisterHaveDataCallback (TSoundDataCallback *pCallback, void *pParam);
 
 protected:
 	/// \brief May overload this to provide the sound samples
@@ -142,7 +191,7 @@ protected:
 	/// \param pBuffer    Buffer where the samples have been placed
 	/// \param nChunkSize Size of the buffer in words
 	/// \note Each sample consists of two words (Left channel, right channel)
-	virtual void PutChunk (const u32 *pBuffer, unsigned nChunkSize) {}
+	virtual void PutChunk (const u32 *pBuffer, unsigned nChunkSize);
 
 	/// \brief Called from GetChunk() to apply framing on IEC958 samples
 	/// \param nSample 24-bit signed sample value as u32, upper bits don't care
@@ -150,6 +199,8 @@ protected:
 	u32 ConvertIEC958Sample (u32 nSample, unsigned nFrame);
 
 private:
+	// Output /////////////////////////////////////////////////////////////
+
 	void ConvertSoundFormat (void *pTo, const void *pFrom);
 
 	unsigned GetChunkInternal (void *pBuffer, unsigned nChunkSize);
@@ -158,6 +209,15 @@ private:
 	unsigned GetQueueBytesAvail (void);
 	void Enqueue (const void *pBuffer, unsigned nCount);
 	void Dequeue (void *pBuffer, unsigned nCount);
+
+	// Input //////////////////////////////////////////////////////////////
+
+	void ConvertReadSoundFormat (void *pTo, const void *pFrom);
+
+	unsigned GetReadQueueBytesFree (void);
+	unsigned GetReadQueueBytesAvail (void);
+	void ReadEnqueue (const void *pBuffer, unsigned nCount);
+	void ReadDequeue (void *pBuffer, unsigned nCount);
 
 private:
 	TSoundFormat m_HWFormat;
@@ -182,12 +242,32 @@ private:
 	unsigned m_nInPtr;
 	unsigned m_nOutPtr;
 
-	TSoundNeedDataCallback *m_pCallback;
+	TSoundDataCallback *m_pCallback;
 	void *m_pCallbackParam;
 
 	CSpinLock m_SpinLock;
 
 	u8 m_uchIEC958Status[IEC958_STATUS_BYTES];
+
+	// Input //////////////////////////////////////////////////////////////
+
+	unsigned m_nReadQueueSize;
+	unsigned m_nHaveDataThreshold;
+
+	TSoundFormat m_ReadFormat;
+	unsigned m_nReadChannels;
+	boolean m_bLeftChannel;
+	unsigned m_nReadSampleSize;
+	unsigned m_nReadFrameSize;
+
+	u8 *m_pReadQueue;		// Ring buffer
+	unsigned m_nReadInPtr;
+	unsigned m_nReadOutPtr;
+
+	TSoundDataCallback *m_pReadCallback;
+	void *m_pReadCallbackParam;
+
+	CSpinLock m_ReadSpinLock;
 };
 
 #endif
