@@ -87,7 +87,7 @@ Config2.mk
 # Directories
 # ----------------------------------------------
 doc/html/
-test/
+test2/
 tmp/
 
 # Other
