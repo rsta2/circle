@@ -262,10 +262,7 @@ int CSDHOSTDevice::set_sdhost_clock (u32 msg[3])
 	memcpy (SetSDHOSTClock.msg, msg, sizeof *msg);
 
 	CBcmPropertyTags Tags;
-	if (!Tags.GetTag (PROPTAG_SET_SDHOST_CLOCK, &SetSDHOSTClock, sizeof SetSDHOSTClock, 3*4))
-	{
-		return -ENOTSUP;
-	}
+	Tags.GetTag (PROPTAG_SET_SDHOST_CLOCK, &SetSDHOSTClock, sizeof SetSDHOSTClock, 3*4);
 
 	memcpy (msg, SetSDHOSTClock.msg, sizeof *msg);
 
