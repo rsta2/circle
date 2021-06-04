@@ -1,0 +1,25 @@
+README
+
+The purpose of this tool is to support the calibration of USB touchscreens as a
+preparation for using USB touchscreens with Circle applications. It depends on
+your touchscreen model, if a calibration is required. Some touchscreens directly
+send screen coordinates and do not need to be calibrated. If you are unsure, you
+can run this tool and it will tell you, if a calibration is required.
+
+This tool will be built as any Circle application. First build the Circle
+libraries by entering "makeall" from Circle project root and then do "make" in
+this directory. Install the kernel image on the SD card along with the firmware
+files. Some touchscreens need a special configuration in the config.txt file.
+This information is given in the product information of your touchscreen.
+
+When you start your Raspberry Pi with this tool installed, it will try to detect
+your touchscreen with USB interface first. If this detection fails, a message is
+displayed, and your touchscreen cannot be used with Circle. Otherwise the tool
+will prompt you, to press four specific points on the screen. Afterwards it will
+tell you, if a configuration is required and which values have to be set. If so,
+the file cmdline.txt on the SD card has to be edited and the following option
+has to be added in the first line of the file (example):
+
+touchscreen=140,3960,340,3920
+
+Now you can install the application, which uses the USB touchscreen and run it.

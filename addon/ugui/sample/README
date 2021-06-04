@@ -53,10 +53,11 @@ normally used for the SPI master in other applications. Don't forget to connect
 the ground (GND). See http://elinux.org/RPi_Low-level_peripherals for wiring!
 Remember that all input signals must be in a range from 0 to 3.3 Volts!
 
-TinyScope Pi is controlled using an USB mouse or the official Raspberry Pi touch
-screen. If an USB mouse is used, it can be connected before the system is
-started or while it is running. The screen resolution is fixed to 800x480
-pixels. Your display has to support this.
+TinyScope Pi is controlled using an USB mouse, the official Raspberry Pi touch
+screen and some USB HID-class touch screens, which work in digitizer mode. If an
+USB mouse is used, it can be connected before the system is started or while it
+is running. The screen resolution is fixed to 800x480 pixels. Your display has
+to support this.
 
 Please note that the system generates log messages on screen, when an USB mouse
 is connected, while the program is running. This destroys the displayed GUI. To

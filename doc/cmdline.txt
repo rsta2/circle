@@ -40,3 +40,7 @@ fast=true			Set maximum CPU speed (if class CCPUThrottle is in the system,
 socmaxtemp=60			Set maximum temperature of the SoC (the main chip) to be enforced
 				in degrees Celsius (if class CCPUThrottle is in the system,
 				range 40 to 78, default 60)
+
+touchscreen=140,3960,340,3920	Set calibration coordinates for USB touchscreens
+				(minimum x, maximum x, minimum y, maximum y)
+				Use tools/touchscreen-calibrator to determine the values!

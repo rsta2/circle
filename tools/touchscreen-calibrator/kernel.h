@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,8 +30,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/usbhcidevice.h>
-#include <circle/input/rpitouchscreen.h>
-#include <lvgl/lvgl.h>
+#include <circle/input/touchscreen.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -52,6 +51,21 @@ public:
 	TShutdownMode Run (void);
 
 private:
+	struct TPosition
+	{
+		unsigned x, y;
+	};
+
+	TPosition GetTouchPosition (void);
+	static void TouchScreenEventHandler (TTouchScreenEvent Event,
+					     unsigned nID, unsigned nPosX, unsigned nPosY);
+
+	void Print (const char *pFormat, ...);
+	void DrawLine (int nPosX1, int nPosY1, int nPosX2, int nPosY2, TScreenColor Color);
+
+	int abs (int nValue);
+
+private:
 	// do not change this order
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
@@ -64,8 +78,11 @@ private:
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
 
-	CRPiTouchScreen		m_RPiTouchScreen;
-	CLVGL			m_GUI;
+	CTouchScreenDevice	*m_pTouchScreen;
+	volatile boolean	 m_bTouched;
+	TPosition		 m_TouchPosition;
+
+	static CKernel *s_pThis;
 };
 
 #endif

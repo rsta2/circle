@@ -110,6 +110,7 @@ USB library
 * CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices
 * CUSBStandardHub: USB hub driver for LAN9512/9514 and external hubs (max. 8 ports)
 * CUSBString: Encapsulates a string descriptor, available on an USB device.
+* CUSBTouchScreenDevice: Driver for USB HID-class touchscreens.
 * CXHCICommandManager: Synchronous xHC command execution for the xHCI driver.
 * CXHCIDevice: USB host controller interface (xHCI) driver for Raspberry Pi 4.
 * CXHCIEndpoint: Encapsulates a single endpoint of an USB device for the xHCI driver.
@@ -131,7 +132,8 @@ Input library
 * CLineDiscipline: Implements line editor function
 * CMouseBehaviour: Generic mouse function, handles the mouse cursor
 * CMouseDevice: Generic mouse interface device
-* CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
+* CRPiTouchScreen: Driver for the official Raspberry Pi touch screen
+* CTouchScreenDevice: Generic touch screen interface device
 
 FS library
 

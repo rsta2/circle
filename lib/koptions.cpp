@@ -34,7 +34,8 @@ CKernelOptions::CKernelOptions (void)
 	m_bUSBFullSpeed (FALSE),
 	m_nSoundOption (0),
 	m_CPUSpeed (CPUSpeedLow),
-	m_nSoCMaxTemp (60)
+	m_nSoCMaxTemp (60),
+	m_bTouchScreenValid (FALSE)
 {
 	strcpy (m_LogDevice, "tty1");
 	strcpy (m_KeyMap, DEFAULT_KEYMAP);
@@ -142,6 +143,10 @@ CKernelOptions::CKernelOptions (void)
 				m_nSoCMaxTemp = nValue;
 			}
 		}
+		else if (strcmp (pOption, "touchscreen") == 0)
+		{
+			m_bTouchScreenValid = GetDecimals (pValue, m_TouchScreen, 4);
+		}
 	}
 }
 
@@ -203,6 +208,11 @@ TCPUSpeed CKernelOptions::GetCPUSpeed (void) const
 unsigned CKernelOptions::GetSoCMaxTemp (void) const
 {
 	return m_nSoCMaxTemp;
+}
+
+const unsigned *CKernelOptions::GetTouchScreen (void) const
+{
+	return m_bTouchScreenValid ? m_TouchScreen : nullptr;
 }
 
 CKernelOptions *CKernelOptions::Get (void)
@@ -295,4 +305,31 @@ unsigned CKernelOptions::GetDecimal (char *pString)
 	}
 
 	return nResult;
+}
+
+boolean CKernelOptions::GetDecimals (char *pString, unsigned *pResult, unsigned nCount)
+{
+	static const char Delim[] = ",";
+
+	char *pSavePtr;
+	while (nCount--)
+	{
+		char *pToken = strtok_r (pString, Delim, &pSavePtr);
+		if (!pToken)
+		{
+			return FALSE;
+		}
+
+		unsigned nValue = GetDecimal (pToken);
+		if (nValue == INVALID_VALUE)
+		{
+			return FALSE;
+		}
+
+		*pResult++ = nValue;
+
+		pString = nullptr;
+	}
+
+	return !strtok_r (nullptr, Delim, &pSavePtr);
 }

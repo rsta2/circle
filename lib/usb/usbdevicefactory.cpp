@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/usbdevicefactory.h>
+#include <circle/usb/usbhid.h>
 #include <assert.h>
 
 // for factory
@@ -42,6 +43,7 @@
 #include <circle/usb/usbserialcp2102.h>
 #include <circle/usb/usbserialpl2303.h>
 #include <circle/usb/usbserialft231x.h>
+#include <circle/usb/usbtouchscreen.h>
 
 CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
 {
@@ -69,7 +71,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	}
 	else if (pName->Compare ("int3-0-0") == 0)
 	{
-		pResult = new CUSBGamePadStandardDevice (pParent);
+		pResult = GetGenericHIDDevice (pParent);
 	}
 	else if (pName->Compare ("ven54c-268") == 0)
 	{
@@ -153,6 +155,85 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	delete pName;
 
 	return pResult;
+}
+
+CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
+{
+	// Must copy parent function here, because we consume the HID report descriptor,
+	// which is requested again later by the HID Use Page specific driver class.
+	CUSBFunction TempFunction (pParent);
+
+	TUSBHIDDescriptor *pHIDDesc =
+		(TUSBHIDDescriptor *) TempFunction.GetDescriptor (DESCRIPTOR_HID);
+	if (   pHIDDesc == 0
+	    || pHIDDesc->wReportDescriptorLength == 0)
+	{
+		TempFunction.ConfigurationError ("usbhid");
+
+		return 0;
+	}
+
+	u16 usReportDescriptorLength = pHIDDesc->wReportDescriptorLength;
+	u8 ReportDescriptor[usReportDescriptorLength];
+
+	if (   TempFunction.GetHost ()->GetDescriptor (
+			TempFunction.GetEndpoint0 (),
+			pHIDDesc->bReportDescriptorType, DESCRIPTOR_INDEX_DEFAULT,
+			ReportDescriptor, usReportDescriptorLength,
+			REQUEST_IN | REQUEST_TO_INTERFACE, TempFunction.GetInterfaceNumber ())
+	    != usReportDescriptorLength)
+	{
+		TempFunction.GetDevice ()->LogWrite (LogError, "Cannot get HID report descriptor");
+
+		return 0;
+	}
+
+	// If we find a Usage Page (Digitizer) item anywhere in the HID report descriptor,
+	// then use the touch screen driver, otherwise the gamepad standard driver.
+	const u8 *pDesc = ReportDescriptor;
+	for (u16 nDescSize = usReportDescriptorLength; nDescSize;)
+	{
+		u8 ucItem = *pDesc++;
+		nDescSize--;
+
+		u32 nArg;
+
+		switch (ucItem & 0x03)
+		{
+		case 0:
+			nArg = 0;
+			break;
+
+		case 1:
+			nArg = *pDesc++;
+			nDescSize--;
+			break;
+
+		case 2:
+			nArg  = *pDesc++;
+			nArg |= *pDesc++ << 8;
+			nDescSize -= 2;
+			break;
+
+		case 3:
+			nArg  = *pDesc++;
+			nArg |= *pDesc++ << 8;
+			nArg |= *pDesc++ << 16;
+			nArg |= *pDesc++ << 24;
+			nDescSize -= 4;
+			break;
+		}
+
+		ucItem &= 0xFC;
+
+		if (   ucItem == 0x04		// Usage Page (Digitizer)
+		    && nArg == 0x0D)
+		{
+			return new CUSBTouchScreenDevice (pParent);
+		}
+	}
+
+	return new CUSBGamePadStandardDevice (pParent);
 }
 
 boolean CUSBDeviceFactory::FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable)

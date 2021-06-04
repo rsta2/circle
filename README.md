@@ -220,6 +220,11 @@ Base library
 * CGenericLock: Locks a resource with or without scheduler
 * CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ)
 
+Input library
+
+* CRPiTouchScreen: Driver for the official Raspberry Pi touch screen
+* CTouchScreenDevice: Generic touch screen interface device
+
 Scheduler library
 
 * CMutex: Provides a method to provide mutual exclusion (critical sections) across tasks

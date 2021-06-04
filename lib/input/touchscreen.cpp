@@ -1,173 +1,61 @@
 //
 // touchscreen.cpp
 //
-// This is based on the the Raspbian Linux driver:
+// Circle - A C++ bare metal environment for Raspberry Pi
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 //
-//   drivers/input/touchscreen/rpi-ft5406.c
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//   Driver for memory based ft5406 touchscreen
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 //
-//   Copyright (C) 2015 Raspberry Pi
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License version 2 as
-// published by the Free Software Foundation.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/input/touchscreen.h>
-#include <circle/bcmpropertytags.h>
 #include <circle/devicenameservice.h>
-#include <circle/memory.h>
-#include <circle/bcm2835.h>
-#include <circle/logger.h>
-#include <circle/util.h>
 #include <assert.h>
 
-struct TFT5406Buffer
-{
-	u8	DeviceMode;
-	u8	GestureID;
-	u8	NumPoints;
+CNumberPool CTouchScreenDevice::s_DeviceNumberPool (1);
 
-	struct
-	{
-		u8	xh;
-		u8	xl;
-		u8	yh;
-		u8	yl;
-		u8	Reserved[2];
-	}
-	Point[TOUCH_SCREEN_MAX_POINTS];
-};
+static const char DevicePrefix[] = "touch";
 
-#define FTS_TOUCH_DOWN		0
-#define FTS_TOUCH_UP		1
-#define FTS_TOUCH_CONTACT	2
-
-static const char FromFT5406[] = "ft5406";
-
-CTouchScreenDevice::CTouchScreenDevice (void)
-:	m_pFT5406Buffer (0),
+CTouchScreenDevice::CTouchScreenDevice (TTouchScreenUpdateHandler *pUpdateHandler, void *pParam)
+:	m_pUpdateHandler (pUpdateHandler),
+	m_pUpdateParam (pParam),
 	m_pEventHandler (0),
-	m_nKnownIDs (0)
+	m_nScaleX (1000),
+	m_nScaleY (1000),
+	m_nOffsetX (0),
+	m_nOffsetY (0),
+	m_nWidth (10000),
+	m_nHeight (10000),
+	m_nDeviceNumber (s_DeviceNumberPool.AllocateNumber (TRUE, DevicePrefix))
 {
+	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 }
 
 CTouchScreenDevice::~CTouchScreenDevice (void)
 {
-	m_pFT5406Buffer = 0;
+	m_pUpdateHandler = 0;
 	m_pEventHandler = 0;
-}
 
-boolean CTouchScreenDevice::Initialize (void)
-{
-	assert (m_pFT5406Buffer == 0);
+	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
 
-	uintptr nTouchBuffer = CMemorySystem::GetCoherentPage (COHERENT_SLOT_TOUCHBUF);
-
-	CBcmPropertyTags Tags;
-	TPropertyTagSimple TagSimple;
-	TagSimple.nValue = BUS_ADDRESS (nTouchBuffer);
-	if (!Tags.GetTag (PROPTAG_SET_TOUCHBUF, &TagSimple, sizeof TagSimple))
-	{
-		if (!Tags.GetTag (PROPTAG_GET_TOUCHBUF, &TagSimple, sizeof TagSimple))
-		{
-			CLogger::Get ()->Write (FromFT5406, LogError, "Cannot get touch buffer");
-
-			return FALSE;
-		}
-
-		if (TagSimple.nValue == 0)
-		{
-			CLogger::Get ()->Write (FromFT5406, LogError, "Touchscreen not detected");
-
-			return FALSE;
-		}
-
-		nTouchBuffer = TagSimple.nValue & ~0xC0000000;
-	}
-
-	m_pFT5406Buffer = (TFT5406Buffer *) nTouchBuffer;
-	assert (m_pFT5406Buffer != 0);
-	*(volatile u8 *) &m_pFT5406Buffer->NumPoints = 99;
-
-	CDeviceNameService::Get ()->AddDevice ("touch1", this, FALSE);
-
-	return TRUE;
+	s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 }
 
 void CTouchScreenDevice::Update (void)
 {
-	TFT5406Buffer Regs;
-	assert (m_pFT5406Buffer != 0);
-	memcpy (&Regs, m_pFT5406Buffer, sizeof *m_pFT5406Buffer);
-	*(volatile u8 *) &m_pFT5406Buffer->NumPoints = 99;
-
-	// Do not output if theres no new information (NumPoints is 99)
-	// or we have no touch points and don't need to release any
-	if (   Regs.NumPoints == 99
-	    || (   Regs.NumPoints == 0
-		&& m_nKnownIDs == 0))
+	if (m_pUpdateHandler != 0)
 	{
-		return;
+		(*m_pUpdateHandler) (m_pUpdateParam);
 	}
-
-	unsigned nModifiedIDs = 0;
-	assert (Regs.NumPoints <= TOUCH_SCREEN_MAX_POINTS);
-	for (unsigned i = 0; i < Regs.NumPoints; i++)
-	{
-		unsigned x = (((unsigned) Regs.Point[i].xh & 0xF) << 8) | Regs.Point[i].xl;
-		unsigned y = (((unsigned) Regs.Point[i].yh & 0xF) << 8) | Regs.Point[i].yl;
-
-		unsigned nTouchID = (Regs.Point[i].yh >> 4) & 0xF;
-		unsigned nEventID = (Regs.Point[i].xh >> 6) & 0x3;
-		assert (nTouchID < TOUCH_SCREEN_MAX_POINTS);
-
-		nModifiedIDs |= 1 << nTouchID;
-
-		if (nEventID == FTS_TOUCH_CONTACT || nEventID == FTS_TOUCH_DOWN)
-		{
-			if (!((1 << nTouchID) & m_nKnownIDs))
-			{
-				m_nPosX[nTouchID] = x;
-				m_nPosY[nTouchID] = y;
-
-				if (m_pEventHandler != 0)
-				{
-					(*m_pEventHandler) (TouchScreenEventFingerDown, nTouchID, x, y);
-				}
-			}
-			else
-			{
-				if (   x != m_nPosX[nTouchID]
-				    || y != m_nPosY[nTouchID])
-				{
-					m_nPosX[nTouchID] = x;
-					m_nPosY[nTouchID] = y;
-
-					if (m_pEventHandler != 0)
-					{
-						(*m_pEventHandler) (TouchScreenEventFingerMove, nTouchID, x, y);
-					}
-				}
-			}
-		}
-	}
-
-	unsigned nReleasedIDs = m_nKnownIDs & ~nModifiedIDs;
-	for (unsigned i = 0; nReleasedIDs != 0 && i < TOUCH_SCREEN_MAX_POINTS; i++)
-	{
-		if (nReleasedIDs & (1 << i))
-		{
-			if (m_pEventHandler != 0)
-			{
-				(*m_pEventHandler) (TouchScreenEventFingerUp, i, 0, 0);
-			}
-
-			nModifiedIDs &= ~(1 << i);
-		}
-	}
-
-	m_nKnownIDs = nModifiedIDs;
 }
 
 void CTouchScreenDevice::RegisterEventHandler (TTouchScreenEventHandler *pEventHandler)
@@ -175,4 +63,58 @@ void CTouchScreenDevice::RegisterEventHandler (TTouchScreenEventHandler *pEventH
 	assert (m_pEventHandler == 0);
 	m_pEventHandler = pEventHandler;
 	assert (m_pEventHandler != 0);
+}
+
+boolean CTouchScreenDevice::SetCalibration (const unsigned Coords[4],
+					    unsigned nWidth, unsigned nHeight)
+{
+	if (   Coords[0] >= Coords[1]
+	    || Coords[2] >= Coords[3]
+	    || nWidth == 0
+	    || nHeight == 0)
+	{
+		return FALSE;
+	}
+
+	unsigned nTouchWidth = Coords[1] - Coords[0] + 1;
+	unsigned nTouchHeight = Coords[3] - Coords[2] + 1;
+	if (   nTouchWidth == 0
+	    || nTouchHeight == 0)
+	{
+		return FALSE;
+	}
+
+	m_nScaleX = 1000 * nWidth / nTouchWidth;
+	m_nOffsetX = Coords[0] * m_nScaleX/1000;
+
+	m_nScaleY = 1000 * nHeight / nTouchHeight;
+	m_nOffsetY = Coords[2] * m_nScaleY/1000;
+
+	m_nWidth = nWidth;
+	m_nHeight = nHeight;
+
+	return TRUE;
+}
+
+void CTouchScreenDevice::ReportHandler (TTouchScreenEvent Event,
+					unsigned nID, unsigned nPosX, unsigned nPosY)
+{
+	if (m_pEventHandler != 0)
+	{
+		if (Event != TouchScreenEventFingerUp)
+		{
+			nPosX = nPosX * m_nScaleX/1000 - m_nOffsetX;
+			nPosY = nPosY * m_nScaleY/1000 - m_nOffsetY;
+
+			if (   nPosX < m_nWidth
+			    && nPosY < m_nHeight)
+			{
+				(*m_pEventHandler) (Event, nID, nPosX, nPosY);
+			}
+		}
+		else
+		{
+			(*m_pEventHandler) (Event, nID, 0, 0);
+		}
+	}
 }
