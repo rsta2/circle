@@ -1,69 +1,49 @@
 QEMU
 
-This document mainly describes using QEMU based on Andrew Baumann's fork for the
-Raspberry Pi 2 (32-bit), which has been patched in my own fork:
+Circle applications can run inside the QEMU processor emulator in 32- and 64-bit
+mode. Not all Raspberry Pi hardware devices are supported by QEMU, so there may
+be restrictions, but a number of Circle samples will run. In the past there was
+no USB and networking support for the Raspberry Pi in the official QEMU, but the
+current v6.0.0 provides USB and TCP/IP networking support now. For running
+Circle applications with USB in QEMU, there is still a patch needed, which is
+provided in this repository:
 
-	https://github.com/rsta2/qemu
-
-Current official QEMU releases (e.g. 4.2.0) can be used for emulating the
-Raspberry Pi 3 in AArch64 mode with Circle programs. Unfortunately USB and
-networking are not supported in this case. QEMU 4.2.0 will be started with:
-
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img
-
-
-A number of Circle samples can run inside the QEMU processor emulator. This
-includes MMU, USB and TCP/IP network support. The following features are
-currently not supported or are not stable with Circle:
-
-* Multi-core emulation (-smp)
-* GPIO low level peripherals (e.g. Act LED, I2C, SPI, PWM)
-* PWM sound
-* Kernel options
-* Mouse cursor
-* HW random number generator
-
-There is a special fork of QEMU by Andrew Baumann which supports the Raspberry
-Pi 2 and which should be used for 32-bit operation at the moment. Circle
-programs must be build with the system option PHYSICAL_COUNTER undefined (!) in
-include/circle/sysconfig.h to run inside this QEMU version in any case. Please
-note that there is a problem in the USB CDC Ethernet/RNDIS driver of Andrew
-Baumann's fork. This has been patched in a third repository.
-
-* https://git.qemu.org/?p=qemu.git	Official QEMU repository
-* https://github.com/0xabu/qemu		Fork of Andrew Baumann for Raspberry Pi 2
-* https://github.com/rsta2/qemu		Fork with patches for Circle
-
-Most of my Circle tests have been done with the version from the third
-repository on a x86_64 Linux host. Other host systems have not been tested with
-Circle by myself so far.
+	https://github.com/smuehlst/qemu
 
 To get and build the QEMU source code for Circle enter the following commands:
 
-	git clone https://github.com/rsta2/qemu.git qemu
+	git clone https://github.com/smuehlst/qemu.git
 	cd qemu
-	git submodule update --init dtc
+	git submodule update --init --recursive
 
 	mkdir build
 	cd build
-	../configure --target-list=arm-softmmu
+	../configure --target-list=arm-softmmu,aarch64-softmmu
 	make
 
-When you have build a Circle sample (e.g. sample/17-fractal) for the Raspberry
-Pi 2, you can run it in QEMU as follows:
+There is an option --qemu supported by the Circle configure tool, which should
+be applied, when building Circle programs to run in QEMU.
 
-	cd arm-softmmu
-	./qemu-system-arm -M raspi2 -bios /path_to_circle/sample/17-fractal/kernel7.img
+When you have build a Circle sample (e.g. sample/17-fractal) for the Raspberry
+Pi 3 (AArch64), you can run it in QEMU as follows:
+
+	./qemu-system-aarch64 -M raspi3b -kernel /path_to_circle/sample/17-fractal/kernel8.img
+
+Please note, that in 32-bit mode the option -bios is used instead of -kernel to
+specify the kernel image! This has been successfully tested with the Raspberry
+Pi Zero emulation only:
+
+	./qemu-system-arm -M raspi0 -bios kernel.img
 
 These options enable specific features of QEMU:
 
 -global bcm2835-fb.xres=1024 -global bcm2835-fb.yres=768 (set screen resolution)
 -serial stdio		(write serial output to stdout)
 -d guest_errors,unimp	(write unimplemented feature calls to stdout)
--sd filename		(enable SD card access to the disk image filename)
--usbdevice keyboard	(enable USB keyboard support)
--usbdevice mouse	(enable USB mouse support, but mouse cursor not working)
--usbdevice disk:filename (enable USB mass storage device access to disk image)
+-drive file=filename,if=sd,format=raw
+			(enable SD card access to the disk image filename)
+-device usb-kbd		(enable USB keyboard support)
+-device usb-mouse	(enable USB mouse support, but mouse cursor not working)
 -semihosting		(enable semihosting support)
 
 With the last option the possibility to automatically exit QEMU, requested by a
@@ -73,37 +53,18 @@ program can access files in the file system of the host system. This may cause
 security issues, so be careful!
 
 
-USB
-
-If you use the -usbdevice option, you may notice a USB freeze inside a Circle
-application after some time. This may hang the whole application. This is caused
-by an issue in the BCM2835 USB driver in QEMU. As a workaround you can define
-USE_QEMU_USB_FIX in include/circle/sysconfig.h before building Circle. Do not
-use this, if you build Circle images, which will run on a real Raspberry Pi.
-
-
 NETWORKING
 
-Setting up QEMU for networking may be not that easy. The following
-configurations have been tested:
+Setting up QEMU for networking may be not that easy. The following configuration
+has been tested:
 
 With sample/21-webserver:
 
-	qemu-system-arm -M raspi2 -bios kernel7.img -usbdevice net \
-			-net user,hostfwd=tcp::8080-:80
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img \
+		-netdev user,id=net0,hostfwd=tcp::8080-:80 -device usb-net,netdev=net0
 
 Open http://localhost:8080 in your web browser on your host system! Port 8080 on
 the host will be forwarded to port 80 on the guest system.
-
-With sample/18-ntptime:
-
-	qemu-system-arm -M raspi2 -bios kernel7.img -usbdevice net \
-			-net tap,ifname=tap0,script=no,downscript=no
-
-This command has to be run as root (sudo). QEMU creates an additional networking
-device "tap0" which can be used as described in:
-
-	http://opensourceforu.com/2011/05/quick-quide-to-qemu-setup/
 
 
 DEBUG
@@ -113,8 +74,8 @@ with ARM support. You have to add the options -s (enable GDB support) and -S
 (wait for GDB connect) to the QEMU command line to do this. Inside GDB use the
 following commands:
 
-	file kernel7.elf
-	target remote localhost:1234
+	file kernel8.elf
+	target remote :1234
 	cont
 
 
@@ -122,5 +83,4 @@ LINKS
 
 Have a look at these URLs for further information:
 
-* https://www.qemu.org/documentation/
-* https://github.com/0xabu/qemu/wiki/
+* https://www.qemu.org/
