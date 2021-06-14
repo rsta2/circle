@@ -5,8 +5,21 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 44.1
+------------
+
+This hotfix release solves the following issues:
+
+* Do not use platform DMA12 controller, which has no dedicated IRQ line (Raspberry Pi 1-3 and Zero).
+* M/S mode in class CPWMOutput did not work on channel 2.
+* memmove() did not work together with circle-stdlib project. Now always implemented in Circle itself.
+* doc/qemu.txt updated to refer to patched QEMU v6.0.0 to be used with Circle.
+* doc/stdlib-support.txt referred to removed build.bash script.
+
 The 44th Step
 -------------
+
+2021-05-14
 
 This release comes with new features, improvements and bug fixes. There is a new HDMI sound driver class `CHDMISoundBaseDevice`, which allows to generate **HDMI sound without VCHIQ** driver, which can be easier to integrate in an application. This is shown by the [sample/29-miniorgan](sample/29-miniorgan) and [sample/34-sounddevices](sample/34-sounddevices). On the Raspberry Pi 4 only the connector HDMI0 is supported. The class `CI2SSoundBaseDevice` now supports the **PCM5122 DAC**.
 
