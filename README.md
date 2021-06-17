@@ -159,6 +159,8 @@ For a binary distribution you should do one build with *RASPPI = 1*, one with *R
 
 The configuration file *Config.mk* can be created using the `configure` tool too. Please enter `./configure -h` for help on using it!
 
+> There are a number of configurable system options in the file [include/circle/sysconfig.h](include/circle/sysconfig.h). Please have a look into this file to learn, how you can configure Circle for your purposes. Some hardware configurations may require modifications to these options (e.g. using USB on the CM4).
+
 Then go to the build root of Circle and do:
 
 ```
