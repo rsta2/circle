@@ -32,7 +32,7 @@
 #include <circle/types.h>
 
 #ifndef DEPTH
-#define DEPTH	16		// can be: 8, 16 or 32
+#define DEPTH	32		// can be: 8, 16 or 32
 #endif
 
 // really ((green) & 0x3F) << 5, but to have a 0-7 range for all colors

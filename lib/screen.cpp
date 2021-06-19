@@ -109,17 +109,11 @@ boolean CScreenDevice::Initialize (void)
 		m_nWidth  = m_pFrameBuffer->GetWidth ();
 		m_nHeight = m_pFrameBuffer->GetHeight ();
 
-#if DEPTH == 8
-		m_pCursorPixels = (uint8_t*)malloc (8 * m_CharGen.GetCharWidth () * 
-					(m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ()));
-#elif DEPTH == 16
-		m_pCursorPixels = (uint16_t*)malloc (16 * m_CharGen.GetCharWidth () * 
-					(m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ()));
-#elif DEPTH == 32
-		m_pCursorPixels = (uint32_t*)malloc (32 * m_CharGen.GetCharWidth () * 
-					(m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ()));
-#endif
+		m_pCursorPixels = (TScreenColor *)malloc (sizeof (TScreenColor) *
+					m_CharGen.GetCharWidth () * 
+				       (m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ()));
 		
+		// Fail if we couldn't malloc the backing store for cursor pixels
 		if (!m_pCursorPixels)
 		{
 			return FALSE;

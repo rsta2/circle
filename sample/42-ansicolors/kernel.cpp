@@ -120,5 +120,22 @@ TShutdownMode CKernel::Run (void)
 		m_Screen.Write ("\n", 1);
 	}
 
+	while(1)
+	{
+		for (u8 uRow = 1; uRow <= 20 ; uRow++)
+		{
+			for (u8 uColumn = 1; uColumn <= 60 ; uColumn++)
+			{
+				Message.Format("\u001b[%d;%dH", uRow, uColumn);
+				m_Screen.Write((const char *)Message, Message.GetLength());
+				
+				for (volatile unsigned i = 1; i <= 10000000; i++)
+				{
+					// just wait
+				}
+			}
+		}
+	}
+
 	return ShutdownHalt;
 }
