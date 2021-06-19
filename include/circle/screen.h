@@ -81,26 +81,26 @@
 #elif DEPTH == 16
 	typedef u16 TScreenColor;
 
-	#define NORMAL_COLOR			COLOR16 (31, 31, 31)
-	#define HIGH_COLOR			COLOR16 (31, 0, 0)
-	#define HALF_COLOR			COLOR16 (0, 0, 31)
+	#define NORMAL_COLOR			COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
+	#define HIGH_COLOR			COLOR16 (255 >> 3, 0, 0)
+	#define HALF_COLOR			COLOR16 (0, 0, 255 >> 3)
 
-	#define RED_COLOR			COLOR16 (24, 0, 0)
-	#define GREEN_COLOR			COLOR16 (0, 24, 0)
-	#define YELLOW_COLOR			COLOR16 (24, 15, 0)
-	#define BLUE_COLOR			COLOR16 (0, 0, 24)
-	#define MAGENTA_COLOR			COLOR16 (24, 0, 24)
-	#define CYAN_COLOR			COLOR16 (0, 24, 24)
-	#define WHITE_COLOR			COLOR16 (24, 24, 24)
+	#define RED_COLOR			COLOR16 (170 >> 3, 0, 0)
+	#define GREEN_COLOR			COLOR16 (0, 170 >> 3, 0)
+	#define YELLOW_COLOR			COLOR16 (170 >> 3, 85 >> 3, 0)
+	#define BLUE_COLOR			COLOR16 (0, 0, 170 >> 3)
+	#define MAGENTA_COLOR			COLOR16 (170 >> 3, 0, 170 >> 3)
+	#define CYAN_COLOR			COLOR16 (0, 170 >> 3, 170 >> 3)
+	#define WHITE_COLOR			COLOR16 (170 >> 3, 170 >> 3, 170 >> 3)
 
-	#define BRIGHT_BLACK_COLOR		COLOR16 (15, 15, 15)
-	#define BRIGHT_RED_COLOR		COLOR16 (31, 15, 15)
-	#define BRIGHT_GREEN_COLOR		COLOR16 (15, 31, 15)
-	#define BRIGHT_YELLOW_COLOR		COLOR16 (31, 31, 15)
-	#define BRIGHT_BLUE_COLOR		COLOR16 (15, 15, 31)
-	#define BRIGHT_MAGENTA_COLOR		COLOR16 (31, 15, 31)
-	#define BRIGHT_CYAN_COLOR		COLOR16 (15, 31, 31)
-	#define BRIGHT_WHITE_COLOR		COLOR16 (31, 31, 31)
+	#define BRIGHT_BLACK_COLOR		COLOR16 (85 >> 3, 85 >> 3, 85 >> 3)
+	#define BRIGHT_RED_COLOR		COLOR16 (255 >> 3, 85 >> 3, 85 >> 3)
+	#define BRIGHT_GREEN_COLOR		COLOR16 (85 >> 3, 255 >> 3, 85 >> 3)
+	#define BRIGHT_YELLOW_COLOR		COLOR16 (255 >> 3, 255 >> 3, 85 >> 3)
+	#define BRIGHT_BLUE_COLOR		COLOR16 (85 >> 3, 85 >> 3, 255 >> 3)
+	#define BRIGHT_MAGENTA_COLOR		COLOR16 (255 >> 3, 85 >> 3, 255 >> 3)
+	#define BRIGHT_CYAN_COLOR		COLOR16 (85 >> 3, 255 >> 3, 255 >> 3)
+	#define BRIGHT_WHITE_COLOR		COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
 #elif DEPTH == 32
 	typedef u32 TScreenColor;
 
