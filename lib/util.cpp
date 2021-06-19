@@ -51,8 +51,6 @@ void *memset (void *pBuffer, int nValue, size_t nLength)
 	return pBuffer;
 }
 
-#if STDLIB_SUPPORT <= 1
-
 void *memmove (void *pDest, const void *pSrc, size_t nLength)
 {
 	char *pchDest = (char *) pDest;
@@ -74,6 +72,8 @@ void *memmove (void *pDest, const void *pSrc, size_t nLength)
 
 	return memcpy (pDest, pSrc, nLength);
 }
+
+#if STDLIB_SUPPORT <= 1
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength)
 {

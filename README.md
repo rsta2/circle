@@ -10,6 +10,17 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
+Release 44.1
+------------
+
+This hotfix release solves the following issues:
+
+* Do not use platform DMA12 controller, which has no dedicated IRQ line (Raspberry Pi 1-3 and Zero).
+* M/S mode in class CPWMOutput did not work on channel 2.
+* memmove() did not work together with circle-stdlib project. Now always implemented in Circle itself.
+* doc/qemu.txt updated to refer to patched QEMU v6.0.0 to be used with Circle.
+* doc/stdlib-support.txt referred to removed build.bash script.
+
 The 44th Step
 -------------
 
