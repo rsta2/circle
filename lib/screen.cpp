@@ -17,10 +17,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+#include <stdint.h>
+
 #include <circle/screen.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
 #include <circle/util.h>
+#include <circle/alloc.h>
 
 #define ROTORS		4
 
@@ -50,6 +53,7 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtua
 	m_nCursorX (0),
 	m_nCursorY (0),
 	m_bCursorOn (TRUE),
+	m_bCursorVisible (FALSE),
 	m_Color (NORMAL_COLOR),
 	m_BackgroundColor (BLACK_COLOR),
 	m_ReverseAttribute (FALSE),
@@ -74,6 +78,8 @@ CScreenDevice::~CScreenDevice (void)
 	
 	delete m_pFrameBuffer;
 	m_pFrameBuffer = 0;
+
+	free(m_pCursorPixels);
 }
 
 boolean CScreenDevice::Initialize (void)
@@ -103,6 +109,22 @@ boolean CScreenDevice::Initialize (void)
 		m_nWidth  = m_pFrameBuffer->GetWidth ();
 		m_nHeight = m_pFrameBuffer->GetHeight ();
 
+#if DEPTH == 8
+		m_pCursorPixels = (uint8_t*)malloc (8 * m_CharGen.GetCharWidth () * 
+					(m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ()));
+#elif DEPTH == 16
+		m_pCursorPixels = (uint16_t*)malloc (16 * m_CharGen.GetCharWidth () * 
+					(m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ()));
+#elif DEPTH == 32
+		m_pCursorPixels = (uint32_t*)malloc (32 * m_CharGen.GetCharWidth () * 
+					(m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ()));
+#endif
+		
+		if (!m_pCursorPixels)
+		{
+			return FALSE;
+		}
+		
 		// Ensure that each row is word-aligned so that we can safely use memcpyblk()
 		if (m_nPitch % sizeof (u32) != 0)
 		{
@@ -926,16 +948,26 @@ void CScreenDevice::InvertCursor (void)
 	{
 		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 		{
-			if (GetPixel (m_nCursorX + x, m_nCursorY + y) == m_BackgroundColor)
+			// Is the cursor currently visible?
+			if (!m_bCursorVisible)
 			{
-				SetPixel (m_nCursorX + x, m_nCursorY + y, m_Color);
+				// Store the old pixel
+				m_pCursorPixels[x + 
+					((y - m_CharGen.GetUnderline () * m_CharGen.GetCharWidth ()))] 
+					= GetPixel(m_nCursorX + x, m_nCursorY + y);
+				// Plot the underscore with the current FG Colour
+				SetPixel(m_nCursorX + x, m_nCursorY + y, m_Color);
 			}
 			else
 			{
-				SetPixel (m_nCursorX + x, m_nCursorY + y, m_BackgroundColor);
+				// Restore the backinstore for the cursor colour
+				SetPixel (m_nCursorX + x, m_nCursorY + y, m_pCursorPixels[x + 
+					((y - m_CharGen.GetUnderline () * m_CharGen.GetCharWidth ())
+					)]);
 			}
 		}
 	}
+	m_bCursorVisible = !m_bCursorVisible;
 }
 
 void CScreenDevice::SetPixel (unsigned nPosX, unsigned nPosY, TScreenColor Color)

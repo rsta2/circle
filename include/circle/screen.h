@@ -20,6 +20,8 @@
 #ifndef _circle_screen_h
 #define _circle_screen_h
 
+#include <stdint.h>
+
 #include <circle/device.h>
 #include <circle/bcmframebuffer.h>
 #include <circle/chargenerator.h>
@@ -251,6 +253,7 @@ private:
 #endif
 	CCharGenerator	 m_CharGen;
 #ifndef SCREEN_HEADLESS
+	TScreenColor	*m_pCursorPixels;
 	TScreenColor  	*m_pBuffer;
 	unsigned	 m_nSize;
 	unsigned	 m_nPitch;
@@ -265,6 +268,7 @@ private:
 	unsigned	 m_nCursorX;
 	unsigned	 m_nCursorY;
 	boolean		 m_bCursorOn;
+	boolean		 m_bCursorVisible;
 	TScreenColor	 m_Color;
 	TScreenColor	 m_BackgroundColor;
 	boolean		 m_ReverseAttribute;
