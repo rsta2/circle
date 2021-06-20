@@ -74,7 +74,13 @@ void CSpinLock::Acquire (void)
 			"mov x1, %0\n"
 			"mov w2, #1\n"
 			"prfm pstl1keep, [x1]\n"
-			"1: ldaxr w3, [x1]\n"
+#ifdef SPINLOCK_SAVE_POWER
+			"sevl\n"
+			"1: wfe\n"
+#else
+			"1:\n"
+#endif
+			"ldaxr w3, [x1]\n"
 			"cbnz w3, 1b\n"
 			"stxr w3, w2, [x1]\n"
 			"cbnz w3, 1b\n"
