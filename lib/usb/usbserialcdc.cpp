@@ -2,7 +2,7 @@
 // usbserialcdc.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ static const char From[] = "uttycdc";
 
 CUSBSerialCDCDevice::CUSBSerialCDCDevice (CUSBFunction *pFunction)
 :	CUSBSerialDevice (pFunction),
+	m_ucCommunicationsInterfaceNumber (GetInterfaceNumber ()),
 	m_bInterfaceOK (SelectInterfaceByClass (10, 0, 0))
 {
 }
@@ -121,7 +122,7 @@ boolean CUSBSerialCDCDevice::SetLineCoding (void)
 
 	if (GetHost ()->ControlMessage (GetEndpoint0 (),
 					   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-					   SET_LINE_CODING, 0, GetInterfaceNumber (),
+					   SET_LINE_CODING, 0, m_ucCommunicationsInterfaceNumber,
 					   pLineCoding, sizeof *pLineCoding) < 0)
 	{
 		CLogger::Get ()->Write (From, LogWarning, "Cannot set line coding");
