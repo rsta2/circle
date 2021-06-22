@@ -125,7 +125,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBCDCEthernetDevice (pParent);
 	}
-	else if (pName->Compare ("int2-2-1") == 0)
+	else if (   pName->Compare ("int2-2-0") == 0
+		 || pName->Compare ("int2-2-1") == 0)
 	{
 		pResult = new CUSBSerialCDCDevice (pParent);
 	}
