@@ -1,7 +1,8 @@
 README
 
 First blink 5 times to show the image was loaded right. Write a colourmatrix to
-screen. Write some logging messages to screen or UART. 
+screen. Write some logging messages to screen or UART. Continiously moves the
+cursor around the screen on a loop after matrix is printed.
 
 You can create a file cmdline.txt like this on the SD(HC) card to change the
 frame buffer size:
