@@ -32,13 +32,8 @@
 #include <circle/types.h>
 
 #ifndef DEPTH
-#define DEPTH	32		// can be: 8, 16 or 32
+#define DEPTH	8		// can be: 8, 16 or 32
 #endif
-
-// really ((green) & 0x3F) << 5, but to have a 0-7 range for all colors
-#define COLOR8(red, green, blue)	  (((red) & 0x7) << 5 \
-					| ((green) & 0x6) << 3 \
-					| ((blue) & 0x7))
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \
@@ -56,30 +51,49 @@
 #if DEPTH == 8
 	typedef u8 TScreenColor;
 
-	#define NORMAL_COLOR16			COLOR16 (31, 31, 31)
-	#define HIGH_COLOR16			COLOR16 (31, 0, 0)
-	#define HALF_COLOR16			COLOR16 (0, 0, 31)
+	#define NORMAL_COLOR			WHITE_COLOR
+	#define HIGH_COLOR			RED_COLOR
+	#define HALF_COLOR			BLUE_COLOR
 
-	#define NORMAL_COLOR			COLOR8 (7, 7, 7)
-	#define HIGH_COLOR			COLOR8 (7, 0, 0)
-	#define HALF_COLOR			COLOR8 (0, 0, 7)
+	#define RED_COLOR16			COLOR16 (170 >> 3, 0, 0)
+	#define GREEN_COLOR16			COLOR16 (0, 170 >> 3, 0)
+	#define YELLOW_COLOR16			COLOR16 (170 >> 3, 85 >> 3, 0)
+	#define BLUE_COLOR16			COLOR16 (0, 0, 170 >> 3)
+	#define MAGENTA_COLOR16			COLOR16 (170 >> 3, 0, 170 >> 3)
+	#define CYAN_COLOR16			COLOR16 (0, 170 >> 3, 170 >> 3)
+	#define WHITE_COLOR16			COLOR16 (170 >> 3, 170 >> 3, 170 >> 3)
 
-	#define RED_COLOR			COLOR8 (4, 0, 0)
-	#define GREEN_COLOR			COLOR8 (0, 4, 0)
-	#define YELLOW_COLOR			COLOR8 (4, 4, 0)
-	#define BLUE_COLOR			COLOR8 (0, 0, 4)
-	#define MAGENTA_COLOR			COLOR8 (4, 0, 4)
-	#define CYAN_COLOR			COLOR8 (0, 4, 4)
-	#define WHITE_COLOR			COLOR8 (4, 4, 4)
+	#define BRIGHT_BLACK_COLOR16		COLOR16 (85 >> 3, 85 >> 3, 85 >> 3)
+	#define BRIGHT_RED_COLOR16		COLOR16 (255 >> 3, 85 >> 3, 85 >> 3)
+	#define BRIGHT_GREEN_COLOR16		COLOR16 (85 >> 3, 255 >> 3, 85 >> 3)
+	#define BRIGHT_YELLOW_COLOR16		COLOR16 (255 >> 3, 255 >> 3, 85 >> 3)
+	#define BRIGHT_BLUE_COLOR16		COLOR16 (85 >> 3, 85 >> 3, 255 >> 3)
+	#define BRIGHT_MAGENTA_COLOR16		COLOR16 (255 >> 3, 85 >> 3, 255 >> 3)
+	#define BRIGHT_CYAN_COLOR16		COLOR16 (85 >> 3, 255 >> 3, 255 >> 3)
+	#define BRIGHT_WHITE_COLOR16		COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
+	
+	#define RED_COLOR			1
+	#define GREEN_COLOR			2
+	#define YELLOW_COLOR			3
+	#define BLUE_COLOR			4
+	#define MAGENTA_COLOR			5
+	#define CYAN_COLOR			6
+	#define WHITE_COLOR			7
 
-	#define BRIGHT_BLACK_COLOR		COLOR8 (7, 7, 7)
-	#define BRIGHT_RED_COLOR		COLOR8 (7, 4, 4)
-	#define BRIGHT_GREEN_COLOR		COLOR8 (4, 7, 4)
-	#define BRIGHT_YELLOW_COLOR		COLOR8 (7, 7, 4)
-	#define BRIGHT_BLUE_COLOR		COLOR8 (4, 4, 7)
-	#define BRIGHT_MAGENTA_COLOR		COLOR8 (7, 4, 7)
-	#define BRIGHT_CYAN_COLOR		COLOR8 (4, 7, 7)
-	#define BRIGHT_WHITE_COLOR		COLOR8 (7, 7, 7)
+	#define BRIGHT_BLACK_COLOR		8
+	#define BRIGHT_RED_COLOR		9
+	#define BRIGHT_GREEN_COLOR		10
+	#define BRIGHT_YELLOW_COLOR		11
+	#define BRIGHT_BLUE_COLOR		12
+	#define BRIGHT_MAGENTA_COLOR		13
+	#define BRIGHT_CYAN_COLOR		14
+	#define BRIGHT_WHITE_COLOR		15
+	
+
+	#define NORMAL_COLOR16			WHITE_COLOR16
+	#define HIGH_COLOR16			RED_COLOR16
+	#define HALF_COLOR16			BLUE_COLOR16
+
 #elif DEPTH == 16
 	typedef u16 TScreenColor;
 
