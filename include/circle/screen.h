@@ -20,6 +20,8 @@
 #ifndef _circle_screen_h
 #define _circle_screen_h
 
+#include <stdint.h>
+
 #include <circle/device.h>
 #include <circle/bcmframebuffer.h>
 #include <circle/chargenerator.h>
@@ -30,7 +32,7 @@
 #include <circle/types.h>
 
 #ifndef DEPTH
-#define DEPTH	16		// can be: 8, 16 or 32
+#define DEPTH	32		// can be: 8, 16 or 32
 #endif
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
@@ -49,25 +51,94 @@
 #if DEPTH == 8
 	typedef u8 TScreenColor;
 
-	#define NORMAL_COLOR16			COLOR16 (31, 31, 31)
-	#define HIGH_COLOR16			COLOR16 (31, 0, 0)
-	#define HALF_COLOR16			COLOR16 (0, 0, 31)
+	#define NORMAL_COLOR			WHITE_COLOR
+	#define HIGH_COLOR			RED_COLOR
+	#define HALF_COLOR			BLUE_COLOR
 
-	#define NORMAL_COLOR			1
-	#define HIGH_COLOR			2
-	#define HALF_COLOR			3
+	#define RED_COLOR16			COLOR16 (170 >> 3, 0, 0)
+	#define GREEN_COLOR16			COLOR16 (0, 170 >> 3, 0)
+	#define YELLOW_COLOR16			COLOR16 (170 >> 3, 85 >> 3, 0)
+	#define BLUE_COLOR16			COLOR16 (0, 0, 170 >> 3)
+	#define MAGENTA_COLOR16			COLOR16 (170 >> 3, 0, 170 >> 3)
+	#define CYAN_COLOR16			COLOR16 (0, 170 >> 3, 170 >> 3)
+	#define WHITE_COLOR16			COLOR16 (170 >> 3, 170 >> 3, 170 >> 3)
+
+	#define BRIGHT_BLACK_COLOR16		COLOR16 (85 >> 3, 85 >> 3, 85 >> 3)
+	#define BRIGHT_RED_COLOR16		COLOR16 (255 >> 3, 85 >> 3, 85 >> 3)
+	#define BRIGHT_GREEN_COLOR16		COLOR16 (85 >> 3, 255 >> 3, 85 >> 3)
+	#define BRIGHT_YELLOW_COLOR16		COLOR16 (255 >> 3, 255 >> 3, 85 >> 3)
+	#define BRIGHT_BLUE_COLOR16		COLOR16 (85 >> 3, 85 >> 3, 255 >> 3)
+	#define BRIGHT_MAGENTA_COLOR16		COLOR16 (255 >> 3, 85 >> 3, 255 >> 3)
+	#define BRIGHT_CYAN_COLOR16		COLOR16 (85 >> 3, 255 >> 3, 255 >> 3)
+	#define BRIGHT_WHITE_COLOR16		COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
+	
+	#define RED_COLOR			1
+	#define GREEN_COLOR			2
+	#define YELLOW_COLOR			3
+	#define BLUE_COLOR			4
+	#define MAGENTA_COLOR			5
+	#define CYAN_COLOR			6
+	#define WHITE_COLOR			7
+
+	#define BRIGHT_BLACK_COLOR		8
+	#define BRIGHT_RED_COLOR		9
+	#define BRIGHT_GREEN_COLOR		10
+	#define BRIGHT_YELLOW_COLOR		11
+	#define BRIGHT_BLUE_COLOR		12
+	#define BRIGHT_MAGENTA_COLOR		13
+	#define BRIGHT_CYAN_COLOR		14
+	#define BRIGHT_WHITE_COLOR		15
+
+	#define NORMAL_COLOR16			WHITE_COLOR16
+	#define HIGH_COLOR16			RED_COLOR16
+	#define HALF_COLOR16			BLUE_COLOR16
+
 #elif DEPTH == 16
 	typedef u16 TScreenColor;
 
-	#define NORMAL_COLOR			COLOR16 (31, 31, 31)
-	#define HIGH_COLOR			COLOR16 (31, 0, 0)
-	#define HALF_COLOR			COLOR16 (0, 0, 31)
+	#define NORMAL_COLOR			COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
+	#define HIGH_COLOR			COLOR16 (255 >> 3, 0, 0)
+	#define HALF_COLOR			COLOR16 (0, 0, 255 >> 3)
+
+	#define RED_COLOR			COLOR16 (170 >> 3, 0, 0)
+	#define GREEN_COLOR			COLOR16 (0, 170 >> 3, 0)
+	#define YELLOW_COLOR			COLOR16 (170 >> 3, 85 >> 3, 0)
+	#define BLUE_COLOR			COLOR16 (0, 0, 170 >> 3)
+	#define MAGENTA_COLOR			COLOR16 (170 >> 3, 0, 170 >> 3)
+	#define CYAN_COLOR			COLOR16 (0, 170 >> 3, 170 >> 3)
+	#define WHITE_COLOR			COLOR16 (170 >> 3, 170 >> 3, 170 >> 3)
+
+	#define BRIGHT_BLACK_COLOR		COLOR16 (85 >> 3, 85 >> 3, 85 >> 3)
+	#define BRIGHT_RED_COLOR		COLOR16 (255 >> 3, 85 >> 3, 85 >> 3)
+	#define BRIGHT_GREEN_COLOR		COLOR16 (85 >> 3, 255 >> 3, 85 >> 3)
+	#define BRIGHT_YELLOW_COLOR		COLOR16 (255 >> 3, 255 >> 3, 85 >> 3)
+	#define BRIGHT_BLUE_COLOR		COLOR16 (85 >> 3, 85 >> 3, 255 >> 3)
+	#define BRIGHT_MAGENTA_COLOR		COLOR16 (255 >> 3, 85 >> 3, 255 >> 3)
+	#define BRIGHT_CYAN_COLOR		COLOR16 (85 >> 3, 255 >> 3, 255 >> 3)
+	#define BRIGHT_WHITE_COLOR		COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
 #elif DEPTH == 32
 	typedef u32 TScreenColor;
 
 	#define NORMAL_COLOR			COLOR32 (255, 255, 255, 255)
 	#define HIGH_COLOR			COLOR32 (255, 0, 0, 255)
 	#define HALF_COLOR			COLOR32 (0, 0, 255, 255)
+
+	#define RED_COLOR			COLOR32 (170, 0, 0, 255)
+	#define GREEN_COLOR			COLOR32 (0, 170, 0, 255)
+	#define YELLOW_COLOR			COLOR32 (170, 85, 0, 255)
+	#define BLUE_COLOR			COLOR32 (0, 0, 170, 255)
+	#define MAGENTA_COLOR			COLOR32 (170, 0, 170, 255)
+	#define CYAN_COLOR			COLOR32 (0, 170, 170, 255)
+	#define WHITE_COLOR			COLOR32 (170, 170, 170, 255)
+
+	#define BRIGHT_BLACK_COLOR		COLOR32 (85, 85, 85, 255)
+	#define BRIGHT_RED_COLOR		COLOR32 (255, 85, 85, 255)
+	#define BRIGHT_GREEN_COLOR		COLOR32 (85, 255, 85, 255)
+	#define BRIGHT_YELLOW_COLOR		COLOR32 (255, 255, 85, 255)
+	#define BRIGHT_BLUE_COLOR		COLOR32 (85, 85, 255, 255)
+	#define BRIGHT_MAGENTA_COLOR		COLOR32 (255, 85, 255, 255)
+	#define BRIGHT_CYAN_COLOR		COLOR32 (85, 255, 255, 255)
+	#define BRIGHT_WHITE_COLOR		COLOR32 (255, 255, 255, 255)
 #else
 	#error DEPTH must be 8, 16 or 32
 #endif
@@ -195,6 +266,7 @@ private:
 #endif
 	CCharGenerator	 m_CharGen;
 #ifndef SCREEN_HEADLESS
+	TScreenColor	*m_pCursorPixels;
 	TScreenColor  	*m_pBuffer;
 	unsigned	 m_nSize;
 	unsigned	 m_nPitch;
@@ -209,6 +281,7 @@ private:
 	unsigned	 m_nCursorX;
 	unsigned	 m_nCursorY;
 	boolean		 m_bCursorOn;
+	boolean		 m_bCursorVisible;
 	TScreenColor	 m_Color;
 	TScreenColor	 m_BackgroundColor;
 	boolean		 m_ReverseAttribute;
