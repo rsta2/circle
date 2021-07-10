@@ -32,7 +32,7 @@
 #include <circle/types.h>
 
 #ifndef DEPTH
-#define DEPTH	8		// can be: 8, 16 or 32
+#define DEPTH	32		// can be: 8, 16 or 32
 #endif
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
@@ -88,7 +88,6 @@
 	#define BRIGHT_MAGENTA_COLOR		13
 	#define BRIGHT_CYAN_COLOR		14
 	#define BRIGHT_WHITE_COLOR		15
-	
 
 	#define NORMAL_COLOR16			WHITE_COLOR16
 	#define HIGH_COLOR16			RED_COLOR16
