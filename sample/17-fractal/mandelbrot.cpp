@@ -2,7 +2,7 @@
 // mandelbrot.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ void CMandelbrotCalculator::Calculate (float x1, float x2, float y1, float y2, u
 			}
 
 #if DEPTH == 8
-			TScreenColor Color = (TScreenColor) (nIteration * 3 / nMaxIteration);
+			TScreenColor Color = (TScreenColor) (nIteration * 15 / nMaxIteration);
 #elif DEPTH == 16
 			TScreenColor Color = (TScreenColor) (nIteration * 65535 / nMaxIteration);
 			Color++;
