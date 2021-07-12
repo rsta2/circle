@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,13 +17,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <stdint.h>
-
 #include <circle/screen.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
 #include <circle/util.h>
-#include <circle/alloc.h>
 
 #define ROTORS		4
 
@@ -47,6 +44,7 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtua
 	m_bVirtual (bVirtual),
 	m_nDisplay (nDisplay),
 	m_pFrameBuffer (0),
+	m_pCursorPixels (0),
 	m_pBuffer (0),
 	m_nState (ScreenStateStart),
 	m_nScrollStart (0),
@@ -79,7 +77,8 @@ CScreenDevice::~CScreenDevice (void)
 	delete m_pFrameBuffer;
 	m_pFrameBuffer = 0;
 
-	free(m_pCursorPixels);
+	delete [] m_pCursorPixels;
+	m_pCursorPixels = 0;
 }
 
 boolean CScreenDevice::Initialize (void)
@@ -95,17 +94,15 @@ boolean CScreenDevice::Initialize (void)
 		m_pFrameBuffer->SetPalette (BLUE_COLOR, BLUE_COLOR16);
 		m_pFrameBuffer->SetPalette (MAGENTA_COLOR, MAGENTA_COLOR16);
 		m_pFrameBuffer->SetPalette (CYAN_COLOR, CYAN_COLOR16);
-		m_pFrameBuffer->SetPalette (WHITE_COLOR,   WHITE_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_BLACK_COLOR,   BRIGHT_BLACK_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_RED_COLOR,   BRIGHT_RED_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_GREEN_COLOR,   BRIGHT_GREEN_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_YELLOW_COLOR,   BRIGHT_YELLOW_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_BLUE_COLOR,   BRIGHT_BLUE_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_MAGENTA_COLOR,   BRIGHT_MAGENTA_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_CYAN_COLOR,   BRIGHT_CYAN_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_WHITE_COLOR,   BRIGHT_WHITE_COLOR16);
-		
-		
+		m_pFrameBuffer->SetPalette (WHITE_COLOR, WHITE_COLOR16);
+		m_pFrameBuffer->SetPalette (BRIGHT_BLACK_COLOR, BRIGHT_BLACK_COLOR16);
+		m_pFrameBuffer->SetPalette (BRIGHT_RED_COLOR, BRIGHT_RED_COLOR16);
+		m_pFrameBuffer->SetPalette (BRIGHT_GREEN_COLOR, BRIGHT_GREEN_COLOR16);
+		m_pFrameBuffer->SetPalette (BRIGHT_YELLOW_COLOR, BRIGHT_YELLOW_COLOR16);
+		m_pFrameBuffer->SetPalette (BRIGHT_BLUE_COLOR, BRIGHT_BLUE_COLOR16);
+		m_pFrameBuffer->SetPalette (BRIGHT_MAGENTA_COLOR, BRIGHT_MAGENTA_COLOR16);
+		m_pFrameBuffer->SetPalette (BRIGHT_CYAN_COLOR, BRIGHT_CYAN_COLOR16);
+		m_pFrameBuffer->SetPalette (BRIGHT_WHITE_COLOR, BRIGHT_WHITE_COLOR16);
 #endif
 		if (!m_pFrameBuffer->Initialize ())
 		{
@@ -123,9 +120,9 @@ boolean CScreenDevice::Initialize (void)
 		m_nWidth  = m_pFrameBuffer->GetWidth ();
 		m_nHeight = m_pFrameBuffer->GetHeight ();
 
-		m_pCursorPixels = (TScreenColor *)malloc (sizeof (TScreenColor) *
+		m_pCursorPixels = new TScreenColor[
 					m_CharGen.GetCharWidth () * 
-				       (m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ()));
+				       (m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ())];
 		
 		// Fail if we couldn't malloc the backing store for cursor pixels
 		if (!m_pCursorPixels)

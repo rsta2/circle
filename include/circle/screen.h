@@ -20,8 +20,6 @@
 #ifndef _circle_screen_h
 #define _circle_screen_h
 
-#include <stdint.h>
-
 #include <circle/device.h>
 #include <circle/bcmframebuffer.h>
 #include <circle/chargenerator.h>
@@ -32,7 +30,7 @@
 #include <circle/types.h>
 
 #ifndef DEPTH
-#define DEPTH	32		// can be: 8, 16 or 32
+#define DEPTH	16		// can be: 8, 16 or 32
 #endif
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
@@ -48,12 +46,12 @@
 
 #define BLACK_COLOR	0
 
+#define NORMAL_COLOR	BRIGHT_WHITE_COLOR
+#define HIGH_COLOR	BRIGHT_RED_COLOR
+#define HALF_COLOR	BLUE_COLOR
+
 #if DEPTH == 8
 	typedef u8 TScreenColor;
-
-	#define NORMAL_COLOR			WHITE_COLOR
-	#define HIGH_COLOR			RED_COLOR
-	#define HALF_COLOR			BLUE_COLOR
 
 	#define RED_COLOR16			COLOR16 (170 >> 3, 0, 0)
 	#define GREEN_COLOR16			COLOR16 (0, 170 >> 3, 0)
@@ -89,16 +87,8 @@
 	#define BRIGHT_CYAN_COLOR		14
 	#define BRIGHT_WHITE_COLOR		15
 
-	#define NORMAL_COLOR16			WHITE_COLOR16
-	#define HIGH_COLOR16			RED_COLOR16
-	#define HALF_COLOR16			BLUE_COLOR16
-
 #elif DEPTH == 16
 	typedef u16 TScreenColor;
-
-	#define NORMAL_COLOR			COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
-	#define HIGH_COLOR			COLOR16 (255 >> 3, 0, 0)
-	#define HALF_COLOR			COLOR16 (0, 0, 255 >> 3)
 
 	#define RED_COLOR			COLOR16 (170 >> 3, 0, 0)
 	#define GREEN_COLOR			COLOR16 (0, 170 >> 3, 0)
@@ -118,10 +108,6 @@
 	#define BRIGHT_WHITE_COLOR		COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
 #elif DEPTH == 32
 	typedef u32 TScreenColor;
-
-	#define NORMAL_COLOR			COLOR32 (255, 255, 255, 255)
-	#define HIGH_COLOR			COLOR32 (255, 0, 0, 255)
-	#define HALF_COLOR			COLOR32 (0, 0, 255, 255)
 
 	#define RED_COLOR			COLOR32 (170, 0, 0, 255)
 	#define GREEN_COLOR			COLOR32 (0, 170, 0, 255)

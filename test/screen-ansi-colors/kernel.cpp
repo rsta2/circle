@@ -1,8 +1,11 @@
 //
 // kernel.cpp
 //
+// This file:
+//	Copyright (C) 2021  D. Rimron
+//
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +22,7 @@
 //
 #include "kernel.h"
 #include <circle/string.h>
-#include <circle/debug.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 static const char FromKernel[] = "kernel";
@@ -28,7 +31,6 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Logger (m_Options.GetLogLevel ())
 {
-	m_ActLED.On ();	// show we are alive
 	m_ActLED.Blink (5);	// show we are alive
 }
 
@@ -128,11 +130,8 @@ TShutdownMode CKernel::Run (void)
 			{
 				Message.Format("\u001b[%d;%dH", uRow, uColumn);
 				m_Screen.Write((const char *)Message, Message.GetLength());
-				
-				for (volatile unsigned i = 1; i <= 10000000; i++)
-				{
-					// just wait
-				}
+
+				CTimer::SimpleMsDelay (100);
 			}
 		}
 	}
