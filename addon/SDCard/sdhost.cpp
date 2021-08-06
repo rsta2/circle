@@ -184,7 +184,7 @@ CSDHOSTDevice::CSDHOSTDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer
 	for (unsigned i = 0; i <= 5; i++)
 	{
 		m_GPIO34_39[i].AssignPin (34+i);
-		m_GPIO34_39[i].SetMode (GPIOModeInput, FALSE);
+		m_GPIO34_39[i].SetMode (GPIOModeAlternateFunction3, FALSE);
 
 		m_GPIO48_53[i].AssignPin (48+i);
 		m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction0, FALSE);
