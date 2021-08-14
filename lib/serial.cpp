@@ -208,6 +208,8 @@ CSerialDevice::~CSerialDevice (void)
 		return;
 	}
 
+	CDeviceNameService::Get ()->RemoveDevice ("ttyS", m_nDevice+1, FALSE);
+
 	// remove device from interrupt handling
 	s_nInterruptDeviceMask &= ~(1 << m_nDevice);
 	DataSyncBarrier ();
@@ -362,7 +364,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate,
 
 	PeripheralExit ();
 
-	CDeviceNameService::Get ()->AddDevice ("ttyS1", this, FALSE);
+	CDeviceNameService::Get ()->AddDevice ("ttyS", m_nDevice+1, this, FALSE);
 
 	return TRUE;
 }
