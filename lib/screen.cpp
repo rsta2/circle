@@ -948,7 +948,8 @@ void CScreenDevice::InvertCursor (void)
 	{
 		return;
 	}
-	
+
+	TScreenColor *pPixelData = m_pCursorPixels;
 	for (unsigned y = m_CharGen.GetUnderline (); y < m_CharGen.GetCharHeight (); y++)
 	{
 		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
@@ -957,21 +958,19 @@ void CScreenDevice::InvertCursor (void)
 			if (!m_bCursorVisible)
 			{
 				// Store the old pixel
-				m_pCursorPixels[x + 
-					((y - m_CharGen.GetUnderline () * m_CharGen.GetCharWidth ()))] 
-					= GetPixel(m_nCursorX + x, m_nCursorY + y);
+				*pPixelData++ = GetPixel (m_nCursorX + x, m_nCursorY + y);
+
 				// Plot the underscore with the current FG Colour
-				SetPixel(m_nCursorX + x, m_nCursorY + y, m_Color);
+				SetPixel (m_nCursorX + x, m_nCursorY + y, m_Color);
 			}
 			else
 			{
 				// Restore the backinstore for the cursor colour
-				SetPixel (m_nCursorX + x, m_nCursorY + y, m_pCursorPixels[x + 
-					((y - m_CharGen.GetUnderline () * m_CharGen.GetCharWidth ())
-					)]);
+				SetPixel (m_nCursorX + x, m_nCursorY + y, *pPixelData++);
 			}
 		}
 	}
+
 	m_bCursorVisible = !m_bCursorVisible;
 }
 
