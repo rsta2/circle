@@ -20,6 +20,7 @@
 #include <circle/usb/usbtouchscreen.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/usb/usbhid.h>
+#include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
 #include <circle/debug.h>
@@ -84,7 +85,7 @@ boolean CUSBTouchScreenDevice::Configure (void)
 	}
 
 	u16 nDescSize = pHIDDesc->wReportDescriptorLength;
-	u8 ReportDescriptor[nDescSize];
+	DMA_BUFFER (u8, ReportDescriptor, nDescSize);
 
 	if (   GetHost ()->GetDescriptor (GetEndpoint0 (),
 					  pHIDDesc->bReportDescriptorType, DESCRIPTOR_INDEX_DEFAULT,

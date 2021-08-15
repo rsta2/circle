@@ -19,6 +19,7 @@
 //
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/usb/usbhid.h>
+#include <circle/synchronize.h>
 #include <assert.h>
 
 // for factory
@@ -175,7 +176,7 @@ CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 	}
 
 	u16 usReportDescriptorLength = pHIDDesc->wReportDescriptorLength;
-	u8 ReportDescriptor[usReportDescriptorLength];
+	DMA_BUFFER (u8, ReportDescriptor, usReportDescriptorLength);
 
 	if (   TempFunction.GetHost ()->GetDescriptor (
 			TempFunction.GetEndpoint0 (),
