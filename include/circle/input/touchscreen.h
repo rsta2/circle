@@ -50,7 +50,7 @@ public:
 
 	void RegisterEventHandler (TTouchScreenEventHandler *pEventHandler);
 
-	/// \param pCoords Usable Touch screen coordinates (min x, max x, min y, max y)
+	/// \param Coords Usable Touch screen coordinates (min x, max x, min y, max y)
 	/// \param nWidth Physical screen width in number of pixels
 	/// \param nHeight Physical screen height in number of pixels
 	/// \return Calibration data valid?
