@@ -1,0 +1,26 @@
+README
+
+This sample continuously displays the current input voltage at a channel of a
+MCP3004 or MCP3008 DAC using the single-ended conversation method. The
+MCP3004/3008 has to be connected to the SPI0 or SPI1 (AUX) masters as follows
+(SoC GPIO numbers):
+
+MCP3004/3008	SPI0		SPI1 (AUX)
+
+/CS SHDN	GPIO8		GPIO18		(CE0)
+DOUT		GPIO9		GPIO19		(MISO)
+DIN		GPIO10		GPIO20		(MOSI)
+CLK		GPIO11		GPIO21		(SCLK)
+DGND		GND
+AGND		GND
+VDD		3.3V
+VREF		3.3V
+CHn		input voltage (0..VREF, n = 0..7)
+
+Before build you may have to change the configuration options in the files
+kernel.h (enable the #define USE_SPI_MASTER_AUX to use the SPI1 (AUX) master
+instead of SPI0) and kernel.cpp (e.g. CHANNEL and/or VREF). On the Raspberry Pi
+4 there are additional SPI master devices, which can be used too. Please see the
+file include/circle/spimaster.h for their pinout!
+
+For more information see the MCP3004/3008 datasheet!
