@@ -1,0 +1,32 @@
+README
+
+This sample program is a I2S to PWM sound converter. It receives I2S sound data
+(2 channels with 32 bit width and 24 bit signed audio samples) via the I2S
+interface exposed on the 40 pin GPIO header. The sound data will be converted to
+PWM signals and you can listen to it on the 3.5" headphone jack.
+
+For a simple test two Raspberry Pi computers can be used. Install
+sample/34-sounddevices on the transmitting computer and create a file
+cmdline.txt on the SD card with this contents:
+
+	soundev=sndi2s
+
+Install this sample program on the receiving computer and connect a headphone to
+the 3.5" headphone jack.
+
+Both computers have to be connected via the 40 pin GPIO header this way (GPIO
+numbers are chip numbers, not header positions):
+
+	Transmitter		Receiver
+	GPIO			GPIO
+
+	18 (CLK)	-->	18 (CLK)
+	19 (FS)		-->	19 (FS)
+	21 (DOUT)	-->	20 (DIN)
+	GND		<-->	GND
+
+The configured SAMPLE_RATE (default 44100) in the file config.h of both sample
+programs must match, but can be modified.
+
+After powering on both computers and completed boot a modulated 440 Hz tone can
+be heard on both channels of the headphone.

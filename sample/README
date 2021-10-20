@@ -40,5 +40,6 @@ SAMPLES
 39-umsdplugging	[PnP]	Plug in and remove USB flash drives, list directory
 40-irqlatency	[PnP]	Displays the maximum measured IRQ latency
 41-screenanimations	2D graphical shapes demo on screen without flickering or screen tearing
+42-i2sinput		I2S to PWM sound data converter
 
 Samples marked with [PnP] are enabled for USB plug-and-play.
