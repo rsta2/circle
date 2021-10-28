@@ -57,6 +57,7 @@ extern void dummy ( unsigned int );
 #define CODE_RESPONSE_FAILURE	0x80000001
 
 #define PROPTAG_GET_CLOCK_RATE	0x00030002
+#define PROPTAG_GET_CLOCK_RATE_MEASURED 0x00030047
 #define PROPTAG_END		0x00000000
 
 #define CLOCK_ID_CORE		4
@@ -208,7 +209,26 @@ unsigned get_core_clock (void)
 
 	mbox_writeread ((unsigned) (unsigned long) &proptag);
 
-	return proptag[6];
+	if (proptag[6] != 0)
+	{
+		return proptag[6];
+	}
+
+	unsigned proptag_measured[] __attribute__ ((aligned (16))) =
+	{
+		8*4,
+		CODE_REQUEST,
+		PROPTAG_GET_CLOCK_RATE_MEASURED,
+		4*4,
+		1*4,
+		CLOCK_ID_CORE,
+		0,
+		PROPTAG_END
+	};
+
+	mbox_writeread ((unsigned) (unsigned long) &proptag_measured);
+
+	return proptag_measured[6];
 }
 //-------------------------------------------------------------------------
 unsigned div (unsigned nDividend, unsigned nDivisor)

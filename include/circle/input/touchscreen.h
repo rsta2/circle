@@ -1,8 +1,8 @@
 //
-// touchscreen.h
+/// \file touchscreen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_input_touchscreen_h
 
 #include <circle/device.h>
+#include <circle/numberpool.h>
 #include <circle/types.h>
 
 enum TTouchScreenEvent
@@ -31,34 +32,49 @@ enum TTouchScreenEvent
 	TouchScreenEventUnknown
 };
 
+/// \brief For internal use only
+typedef void TTouchScreenUpdateHandler (void *pParam);
+
+/// \brief Handler to be called on a touch screen event
 typedef void TTouchScreenEventHandler (TTouchScreenEvent Event,
 				       unsigned nID, unsigned nPosX, unsigned nPosY);
-#define TOUCH_SCREEN_MAX_POINTS		10
-#define TOUCH_SCREEN_MAX_ID		(TOUCH_SCREEN_MAX_POINTS-1)
 
-struct TFT5406Buffer;
-
-class CTouchScreenDevice : public CDevice
+class CTouchScreenDevice : public CDevice	/// Generic touch screen interface device
 {
 public:
-	CTouchScreenDevice (void);
+	CTouchScreenDevice (TTouchScreenUpdateHandler *pUpdateHandler = 0, void *pParam = 0);
 	~CTouchScreenDevice (void);
 
-	boolean Initialize (void);
-
-	void Update (void);		// call this about 60 times per second
+	/// \note Call this about 60 times per second!
+	void Update (void);
 
 	void RegisterEventHandler (TTouchScreenEventHandler *pEventHandler);
 
+	/// \param Coords Usable Touch screen coordinates (min x, max x, min y, max y)
+	/// \param nWidth Physical screen width in number of pixels
+	/// \param nHeight Physical screen height in number of pixels
+	/// \return Calibration data valid?
+	boolean SetCalibration (const unsigned Coords[4], unsigned nWidth, unsigned nHeight);
+
+public:
+	/// \warning Do not call this from application!
+	void ReportHandler (TTouchScreenEvent Event, unsigned nID, unsigned nPosX, unsigned nPosY);
+
 private:
-	TFT5406Buffer *m_pFT5406Buffer;
+	TTouchScreenUpdateHandler *m_pUpdateHandler;
+	void *m_pUpdateParam;
 
 	TTouchScreenEventHandler *m_pEventHandler;
 
-	unsigned m_nKnownIDs;
+	unsigned m_nScaleX;	// scale * 1000
+	unsigned m_nScaleY;	// scale * 1000
+	unsigned m_nOffsetX;
+	unsigned m_nOffsetY;
+	unsigned m_nWidth;
+	unsigned m_nHeight;
 
-	unsigned m_nPosX[TOUCH_SCREEN_MAX_POINTS];
-	unsigned m_nPosY[TOUCH_SCREEN_MAX_POINTS];
+	unsigned m_nDeviceNumber;
+	static CNumberPool s_DeviceNumberPool;
 };
 
 #endif

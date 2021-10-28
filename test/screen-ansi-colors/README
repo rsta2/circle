@@ -1,0 +1,19 @@
+README
+
+First blink 5 times to show the image was loaded right. Write a colourmatrix to
+screen. Write some logging messages to screen or UART. Continiously moves the
+cursor around the screen on a loop after matrix is printed.
+
+You can create a file cmdline.txt like this on the SD(HC) card to change the
+frame buffer size:
+
+width=640 height=480
+
+In the same file you can control the logging feature by these options (append
+them to the same line):
+
+logdev=ttyS1 loglevel=4
+
+(write logging messages to UART now, default is to screen ("tty1"), the loglevel
+controls the amount of messages produced (0: only panic, 1: also errors, 2: also
+warnings, 3: also notices, 4: also debug output (default))

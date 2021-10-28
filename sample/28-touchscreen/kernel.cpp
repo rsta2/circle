@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,9 +26,10 @@ static const char FromKernel[] = "kernel";
 CKernel *CKernel::s_pThis = 0;
 
 CKernel::CKernel (void)
-:	m_Screen (800, 480),
+:	m_Screen (0, 0),	// auto-detect size
 	m_Timer (&m_Interrupt),
-	m_Logger (m_Options.GetLogLevel (), &m_Timer)
+	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+	m_USBHCI (&m_Interrupt, &m_Timer)
 {
 	s_pThis = this;
 
@@ -77,7 +78,12 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_TouchScreen.Initialize ();
+		bOK = m_USBHCI.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = m_RPiTouchScreen.Initialize ();
 	}
 
 	return bOK;
@@ -92,6 +98,16 @@ TShutdownMode CKernel::Run (void)
 	if (pTouchScreen == 0)
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Touchscreen not found");
+	}
+
+	const unsigned *pCalibration = m_Options.GetTouchScreen ();
+	if (pCalibration != 0)
+	{
+		if (!pTouchScreen->SetCalibration (pCalibration,
+						   m_Screen.GetWidth (), m_Screen.GetHeight ()))
+		{
+			m_Logger.Write (FromKernel, LogPanic, "Invalid calibration info");
+		}
 	}
 
 	pTouchScreen->RegisterEventHandler (TouchScreenEventHandler);

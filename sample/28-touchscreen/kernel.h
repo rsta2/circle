@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include <circle/input/touchscreen.h>
+#include <circle/usb/usbhcidevice.h>
+#include <circle/input/rpitouchscreen.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -64,8 +65,9 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
+	CUSBHCIDevice		m_USBHCI;
 
-	CTouchScreenDevice	m_TouchScreen;
+	CRPiTouchScreen		m_RPiTouchScreen;
 
 	static CKernel *s_pThis;
 };

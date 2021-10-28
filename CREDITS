@@ -78,3 +78,7 @@ Improving bootloader support and tools
 
 D. Rimron
 Adding screen reverse mode
+Adding screen ANSI colors
+
+@sebastienNEC
+Providing info patch for I2S input

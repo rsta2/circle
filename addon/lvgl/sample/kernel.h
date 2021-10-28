@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/usbhcidevice.h>
-#include <circle/input/touchscreen.h>
+#include <circle/input/rpitouchscreen.h>
 #include <lvgl/lvgl.h>
 #include <circle/types.h>
 
@@ -64,7 +64,7 @@ private:
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
 
-	CTouchScreenDevice	m_TouchScreen;
+	CRPiTouchScreen		m_RPiTouchScreen;
 	CLVGL			m_GUI;
 };
 

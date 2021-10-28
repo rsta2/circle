@@ -10,6 +10,7 @@ Base library
 * CBcmPCIeHostBridge: Driver for PCIe Host Bridge of Raspberry Pi 4.
 * CBcmPropertyTags: Get several information from the GPU side or control something on this side.
 * CBcmRandomNumberGenerator: Driver for the built-in hardware random number generator.
+* CBcmWatchdog: Driver for the BCM2835 watchdog device.
 * CCharGenerator: Gives pixel information for console font
 * CClassAllocator: Support class for the class-specific allocation of objects
 * CCPUThrottle: Manages CPU clock rate depending on user requirements and SoC temperature.
@@ -18,6 +19,7 @@ Base library
 * CDeviceTreeBlob: Simple Devicetree blob parser
 * CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
 * CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
+* CDMASoundBuffers: Concatenated DMA buffers to be used by sound device drivers.
 * CExceptionHandler: Generates a stack-trace and a panic message if an abort exception occurs.
 * CGPIOClock: Using GPIO clocks, initialize, start and stop it.
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
@@ -108,6 +110,7 @@ USB library
 * CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices
 * CUSBStandardHub: USB hub driver for LAN9512/9514 and external hubs (max. 8 ports)
 * CUSBString: Encapsulates a string descriptor, available on an USB device.
+* CUSBTouchScreenDevice: Driver for USB HID-class touchscreens.
 * CXHCICommandManager: Synchronous xHC command execution for the xHCI driver.
 * CXHCIDevice: USB host controller interface (xHCI) driver for Raspberry Pi 4.
 * CXHCIEndpoint: Encapsulates a single endpoint of an USB device for the xHCI driver.
@@ -129,7 +132,8 @@ Input library
 * CLineDiscipline: Implements line editor function
 * CMouseBehaviour: Generic mouse function, handles the mouse cursor
 * CMouseDevice: Generic mouse interface device
-* CTouchScreenDevice: Driver for the official Raspberry Pi touch screen
+* CRPiTouchScreen: Driver for the official Raspberry Pi touch screen
+* CTouchScreenDevice: Generic touch screen interface device
 
 FS library
 

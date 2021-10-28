@@ -694,25 +694,18 @@ void CEMMCDevice::PowerOff (void)
 // Get the current base clock rate in Hz
 u32 CEMMCDevice::GetBaseClock (void)
 {
-	CBcmPropertyTags Tags;
-	TPropertyTagClockRate TagClockRate;
+	u32 nClockRate;
 #if RASPPI <= 3
-	TagClockRate.nClockId = CLOCK_ID_EMMC;
+	nClockRate = CMachineInfo::Get ()->GetClockRate (CLOCK_ID_EMMC);
 #else
-	TagClockRate.nClockId = CLOCK_ID_EMMC2;
+	nClockRate = CMachineInfo::Get ()->GetClockRate (CLOCK_ID_EMMC2);
 #endif
-	if (!Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate))
-	{
-		LogWrite (LogError, "Cannot get clock rate");
-		
-		TagClockRate.nRate = 0;
-	}
 
 #ifdef EMMC_DEBUG2
-	LogWrite (LogDebug, "Base clock rate is %u Hz", TagClockRate.nRate);
+	LogWrite (LogDebug, "Base clock rate is %u Hz", nClockRate);
 #endif
 
-	return TagClockRate.nRate;
+	return nClockRate;
 }
 
 // Set the clock dividers to generate a target value

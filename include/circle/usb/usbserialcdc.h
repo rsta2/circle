@@ -2,7 +2,7 @@
 // usbserialcdc.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ private:
 	boolean SetLineCoding (void);
 
 private:
+	u8 m_ucCommunicationsInterfaceNumber;
 	boolean m_bInterfaceOK;
 };
 

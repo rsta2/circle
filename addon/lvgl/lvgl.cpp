@@ -1,8 +1,8 @@
 //
-// lvgl.h
+// lvgl.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 //
 #include <lvgl/lvgl.h>
 #include <circle/devicenameservice.h>
+#include <circle/koptions.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/string.h>
@@ -89,13 +90,15 @@ boolean CLVGL::Initialize (void)
 
 	assert (m_pFrameBuffer != 0);
 	assert (m_pFrameBuffer->GetDepth () == LV_COLOR_DEPTH);
+	size_t nWidth = m_pFrameBuffer->GetWidth ();
+	size_t nHeight = m_pFrameBuffer->GetHeight ();
 
 	lv_init ();
 
 	lv_log_register_print_cb (LogPrint);
 
-	m_pBuffer1 = new (HEAP_DMA30) lv_color_t[LV_HOR_RES_MAX*10];
-	m_pBuffer2 = new (HEAP_DMA30) lv_color_t[LV_HOR_RES_MAX*10];
+	m_pBuffer1 = new (HEAP_DMA30) lv_color_t[nWidth*10];
+	m_pBuffer2 = new (HEAP_DMA30) lv_color_t[nWidth*10];
 	if (   m_pBuffer1 == 0
 	    || m_pBuffer2 == 0)
 	{
@@ -103,18 +106,20 @@ boolean CLVGL::Initialize (void)
 	}
 
 	static lv_disp_buf_t disp_buf;
-	lv_disp_buf_init (&disp_buf, m_pBuffer1, m_pBuffer2, LV_HOR_RES_MAX*10);
+	lv_disp_buf_init (&disp_buf, m_pBuffer1, m_pBuffer2, nWidth*10);
 
 	lv_disp_drv_t disp_drv;
 	lv_disp_drv_init (&disp_drv);
 	disp_drv.buffer = &disp_buf;
 	disp_drv.flush_cb = DisplayFlush;
+	disp_drv.hor_res = nWidth;
+	disp_drv.ver_res = nHeight;
 	lv_disp_drv_register (&disp_drv);
 
 	m_pMouseDevice = (CMouseDevice *) CDeviceNameService::Get ()->GetDevice ("mouse1", FALSE);
 	if (m_pMouseDevice != 0)
 	{
-		if (m_pMouseDevice->Setup (m_pFrameBuffer->GetWidth (), m_pFrameBuffer->GetHeight ()))
+		if (m_pMouseDevice->Setup (nWidth, nHeight))
 		{
 			m_pMouseDevice->ShowCursor (TRUE);
 
@@ -133,6 +138,12 @@ boolean CLVGL::Initialize (void)
 		m_pTouchScreen = (CTouchScreenDevice *) CDeviceNameService::Get ()->GetDevice ("touch1", FALSE);
 		if (m_pTouchScreen != 0)
 		{
+			const unsigned *pCalibration = CKernelOptions::Get ()->GetTouchScreen ();
+			if (pCalibration != 0)
+			{
+				m_pTouchScreen->SetCalibration (pCalibration, nWidth, nHeight);
+			}
+
 			m_pTouchScreen->RegisterEventHandler (TouchScreenEventHandler);
 		}
 	}

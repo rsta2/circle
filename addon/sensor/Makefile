@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= hcsr04.o mpu6050.o bmp180.o
+OBJS	= hcsr04.o mpu6050.o bmp180.o mcp300x.o
 
 libsensor.a: $(OBJS)
 	@echo "  AR    $@"

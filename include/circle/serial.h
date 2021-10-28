@@ -2,7 +2,7 @@
 /// \file serial.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -61,9 +61,19 @@
 #define SERIAL_ERROR_BREAK	1
 #define SERIAL_ERROR_OVERRUN	2
 #define SERIAL_ERROR_FRAMING	3
+#define SERIAL_ERROR_PARITY	4
 
 class CSerialDevice : public CDevice
 {
+public:
+	enum TParity
+	{
+		ParityNone,
+		ParityOdd,
+		ParityEven,
+		ParityUnknown
+	};
+
 public:
 #ifndef USE_RPI_STUB_AT
 	/// \param pInterruptSystem Pointer to interrupt system object (or 0 for polling driver)
@@ -76,8 +86,17 @@ public:
 #endif
 
 	/// \param nBaudrate Baud rate in bits per second
+	/// \param nDataBits Number of data bits (5..8, default 8)
+	/// \param nStopBits Number of stop bits (1..2, default 1)
+	/// \param Parity Parity setting (ParityNone (default), ParityOdd or ParityEven)
 	/// \return Operation successful?
+#ifndef USE_RPI_STUB_AT
+	boolean Initialize (unsigned nBaudrate = 115200,
+			    unsigned nDataBits = 8, unsigned nStopBits = 1,
+			    TParity Parity = ParityNone);
+#else
 	boolean Initialize (unsigned nBaudrate = 115200);
+#endif
 
 	/// \param pBuffer Pointer to data to be sent
 	/// \param nCount Number of bytes to be sent

@@ -301,7 +301,15 @@ unsigned CMachineInfo::GetClockRate (u32 nClockId) const
 	CBcmPropertyTags Tags;
 	TPropertyTagClockRate TagClockRate;
 	TagClockRate.nClockId = nClockId;
-	if (Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4))
+	if (   Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4)
+	    && TagClockRate.nRate != 0)
+	{
+		return TagClockRate.nRate;
+	}
+
+	TagClockRate.nClockId = nClockId;
+	if (   Tags.GetTag (PROPTAG_GET_CLOCK_RATE_MEASURED, &TagClockRate, sizeof TagClockRate, 4)
+	    && TagClockRate.nRate != 0)
 	{
 		return TagClockRate.nRate;
 	}
@@ -312,6 +320,7 @@ unsigned CMachineInfo::GetClockRate (u32 nClockId) const
 	switch (nClockId)
 	{
 	case CLOCK_ID_EMMC:
+	case CLOCK_ID_EMMC2:
 		nResult = 100000000;
 		break;
 

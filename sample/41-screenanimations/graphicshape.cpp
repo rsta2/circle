@@ -99,7 +99,7 @@ CGraphicShape::CGraphicShape (unsigned nDisplayWidth, unsigned nDisplayHeight)
 	}
 
 #if DEPTH == 8
-	m_Color = randomNumber() % 4;
+	m_Color = randomNumber() % 16;
 #elif DEPTH == 16
 	m_Color = randomNumber();
 #elif DEPTH == 32

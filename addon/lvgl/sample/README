@@ -1,14 +1,15 @@
 README 
 
 This sample program demonstrates some features of the LVGL embedded GUI
-library v7.6.1 ((c) 2020 LVGL LLC):
+library v7.11.0 ((c) 2020 LVGL LLC):
 
 	https://github.com/lvgl/lvgl
 	https://lvgl.io
 
-The program can be controlled with an USB mouse or with the official Raspberry
-Pi touch screen and is itself only a wrapper, which uses the LVGL widgets demo
-program from this project:
+The program can be controlled with an USB mouse, with the official Raspberry
+Pi touch screen or with some USB HID-class digitizer touch screens and is
+itself only a wrapper, which uses the LVGL widgets demo program from this
+project:
 
 	https://github.com/lvgl/lv_examples
 
