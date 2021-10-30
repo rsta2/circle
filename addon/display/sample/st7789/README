@@ -1,0 +1,29 @@
+README
+
+This sample demonstrates using the driver for ST7789-based dot-matrix displays.
+You have to set your hardware configuration in the file kernel.cpp before build.
+The DC_PIN is required, the RESET_PIN and BACKLIGHT_PIN are optional and not
+provided by some displays. Please specify the GPIO chip number (not the header
+position) here or CST7789Display::None, if the pin is not connected. The default
+display connection is as follows:
+
+Display		Raspberry Pi	Comment
+			GPIO
+
+SCL	<--	SCLK	11	SPI clock
+SDA	<--	MOSI	10	SPI data
+CS		not used	Chip select, e.g. GPIO8 (CS0) or GPIO7 (CS1)
+DC	<--		22	Data/Command selection
+RES	<--		23	Reset
+BLK		not used	Backlight, e.g. GPIO24
+VCC	<--	3.3V		may be 5V for some displays (be careful!)
+GND	<-->	GND
+
+An additional DOUT line is not used, if provided by the display. In the given
+configuration the SPI settings CPOL/CPHA are normally 1/0. If a chip select line
+is provided by your display, this may change to CPOL/CPHA 0/0. You can try this
+out, if the display does not work.
+
+The sample program shows some text on the display and a countdown with progress
+bar. After that a rectangle with a cross will be drawn on the display. After 5
+seconds the display is switched off and the system reboots.
