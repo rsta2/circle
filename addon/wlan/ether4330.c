@@ -290,6 +290,7 @@ static struct {
 	{ 43362, 0,	"fw_bcm40181a0.bin", config40181, 0 },
 	{ 43362, 1,	"fw_bcm40181a2.bin", config40181, 0 },
 	{ 43430, 1,	"brcmfmac43430-sdio.bin", "brcmfmac43430-sdio.txt", 0 },
+	{ 43430, 2,	"brcmfmac43436-sdio.bin", "brcmfmac43436-sdio.txt", "brcmfmac43436-sdio.clm_blob" },
 	{ 0x4345, 6, "brcmfmac43455-sdio.bin", "brcmfmac43455-sdio.txt", "brcmfmac43455-sdio.clm_blob" },
 	{ 0x4345, 9, "brcmfmac43456-sdio.bin", "brcmfmac43456-sdio.txt", "brcmfmac43456-sdio.clm_blob" },
 };
