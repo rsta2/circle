@@ -6,7 +6,7 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4, 400 and on Raspberry Pi Zero), except on the Raspberry Pi Pico, which is not supported. The new Raspberry Pi Zero 2 W is not supported yet. Circle provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4, 400 and on Raspberry Pi Zero), except on the Raspberry Pi Pico, which is not supported. Circle provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is named a C++ programming environment.
 
@@ -162,8 +162,8 @@ The following table gives support for selecting the right *RASPPI* value:
 | RASPPI | Target         | Models                   | Optimized for |
 | ------ | -------------- | ------------------------ | ------------- |
 |      1 | kernel.img     | A, B, A+, B+, Zero, (CM) | ARM1176JZF-S  |
-|      2 | kernel7.img    | 2, 3, (CM3)              | Cortex-A7     |
-|      3 | kernel8-32.img | 3, (CM3)                 | Cortex-A53    |
+|      2 | kernel7.img    | 2, 3, Zero 2, (CM3)      | Cortex-A7     |
+|      3 | kernel8-32.img | 3, Zero 2, (CM3)         | Cortex-A53    |
 |      4 | kernel7l.img   | 4B, 400, CM4             | Cortex-A72    |
 
 For a binary distribution you should do one build with *RASPPI = 1*, one with *RASPPI = 2* and one build with *RASPPI = 4* and include the created files *kernel.img*, *kernel7.img* and *kernel7l.img*. Optionally you can do a build with *RASPPI = 3* and add the created file *kernel8-32.img* to provide an optimized version for the Raspberry Pi 3.
@@ -186,7 +186,7 @@ You can also build Circle on the Raspberry Pi itself (set `PREFIX =` (empty)) on
 AArch64
 -------
 
-Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3 or 4. There are also Raspberry Pi 2 versions, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too.
+Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3 or 4. There are also Raspberry Pi 2 versions and the Raspberry Pi Zero 2, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too (with `RASPPI = 3`).
 
 The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads). Circle has been tested with the version *10.3-2021.07* (gcc-arm-10.3-2021.07-x86_64-aarch64-none-elf.tar.xz) from this website.
 
