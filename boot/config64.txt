@@ -11,6 +11,9 @@
 
 arm_64bit=1
 
+[pi02]
+kernel=kernel8.img
+
 [pi2]
 kernel=kernel8.img
 
