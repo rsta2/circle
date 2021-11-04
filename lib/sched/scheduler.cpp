@@ -20,6 +20,8 @@
 #include <circle/sched/scheduler.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
+#include <circle/string.h>
+#include <circle/util.h>
 #include <assert.h>
 
 static const char FromScheduler[] = "sched";
@@ -39,6 +41,7 @@ CScheduler::CScheduler (void)
 
 	m_pCurrent = new CTask (0);		// main task currently running
 	assert (m_pCurrent != 0);
+	m_pCurrent->SetName ("main");
 }
 
 CScheduler::~CScheduler (void)
@@ -122,6 +125,24 @@ CTask *CScheduler::GetCurrentTask (void)
 	return m_pCurrent;
 }
 
+CTask *CScheduler::GetTask (const char *pTaskName)
+{
+	assert (pTaskName != 0);
+
+	for (unsigned i = 0; i < m_nTasks; i++)
+	{
+		CTask *pTask = m_pTask[i];
+
+		if (   pTask != 0
+		    && strcmp (pTask->GetName (), pTaskName) == 0)
+		{
+			return pTask;
+		}
+	}
+
+	return 0;
+}
+
 boolean CScheduler::IsValidTask (CTask *pTask)
 {
 	unsigned i;
@@ -169,6 +190,40 @@ void CScheduler::ResumeNewTasks (void)
 			}
 		}
 
+	}
+}
+
+void CScheduler::ListTasks (CDevice *pTarget)
+{
+	assert (pTarget != 0);
+
+	static const char Header[] = "#  ADDR     STAT  FL NAME\n";
+	pTarget->Write (Header, sizeof Header-1);
+
+	for (unsigned i = 0; i < m_nTasks; i++)
+	{
+		CTask *pTask = m_pTask[i];
+		if (pTask == 0)
+		{
+			continue;
+		}
+
+		TTaskState State = pTask->GetState ();
+		assert (State < TaskStateUnknown);
+
+		// must match CTask::TTaskState
+		static const char *StateNames[] =
+			{"new", "ready", "block", "block", "sleep", "term"};
+
+		CString Line;
+		Line.Format ("%02u %08lX %-5s %c%c %s\n",
+			     i, (uintptr) pTask,
+			     StateNames[State],
+			     pTask->IsSuspended () ? 'S' : ' ',
+			     State == TaskStateBlockedWithTimeout ? 'T' : ' ',
+			     pTask->GetName ());
+
+		pTarget->Write (Line, Line.GetLength ());
 	}
 }
 
@@ -326,6 +381,11 @@ unsigned CScheduler::GetNextTask (void)
 
 		CTask *pTask = m_pTask[nTask];
 		if (pTask == 0)
+		{
+			continue;
+		}
+
+		if (pTask->IsSuspended ())
 		{
 			continue;
 		}
