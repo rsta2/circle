@@ -604,8 +604,7 @@ void CTCPConnection::Process (void)
 		m_RetransmissionQueue.Read (TempBuffer, nLength);
 
 		unsigned nFlags = TCP_FLAG_ACK;
-		if (   m_RetransmissionQueue.IsEmpty ()
-		    && m_TxQueue.IsEmpty ())
+		if (m_TxQueue.IsEmpty ())
 		{
 			nFlags |= TCP_FLAG_PUSH;
 		}
