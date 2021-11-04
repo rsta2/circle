@@ -23,9 +23,15 @@ controllers of the Raspberry Pi:
 
 	brcmfmac43430-sdio.txt
 	brcmfmac43430-sdio.bin
+	brcmfmac43436-sdio.bin
+	brcmfmac43436-sdio.txt
+	brcmfmac43436-sdio.clm_blob
 	brcmfmac43455-sdio.bin
 	brcmfmac43455-sdio.clm_blob
 	brcmfmac43455-sdio.txt
+	brcmfmac43456-sdio.bin
+	brcmfmac43456-sdio.txt
+	brcmfmac43456-sdio.clm_blob
 
 These files can be downloaded as follows (uses the "wget" tool):
 
