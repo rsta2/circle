@@ -32,6 +32,11 @@ Known issues of Circle are:
   by incompatibilities of the USB device firmware. These devices cannot be used
   with Circle on the Raspberry Pi 4 currently.
 
+* If there are problems to detect a specific USB device after power-on or
+  attach, it may help to increase the USB power-on delay by setting the option
+  usbpowerdelay= in the file cmdline.txt to 800 (ms) or higher. See the file
+  doc/cmdline.txt for details!
+
 
 You can see or report further issues here:
 
