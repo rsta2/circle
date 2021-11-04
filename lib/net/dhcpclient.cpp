@@ -4,7 +4,7 @@
 // This implements a DHCP client (RFC 2131 and RFC 2132).
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -116,6 +116,8 @@ CDHCPClient::CDHCPClient (CNetSubSystem *pNetSubSystem, const char *pHostname)
 	assert (m_pNetConfig != 0);
 
 	assert (m_Hostname.GetLength () <= 30);
+
+	SetName (FromDHCPClient);
 }
 
 CDHCPClient::~CDHCPClient (void)
