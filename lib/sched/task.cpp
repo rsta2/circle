@@ -24,6 +24,7 @@
 
 CTask::CTask (unsigned nStackSize, boolean bCreateSuspended)
 :	m_State (bCreateSuspended ? TaskStateNew : TaskStateReady),
+	m_bSuspended (FALSE),
 	m_nStackSize (nStackSize),
 	m_pStack (0),
 	m_pWaitListNext (0)
@@ -47,6 +48,8 @@ CTask::CTask (unsigned nStackSize, boolean bCreateSuspended)
 		InitializeRegs ();
 	}
 
+	m_Name.Format ("@%lp", this);
+
 	CScheduler::Get ()->AddTask (this);
 }
 
@@ -61,8 +64,22 @@ CTask::~CTask (void)
 
 void CTask::Start (void)
 {
-	assert(m_State == TaskStateNew);
-	m_State = TaskStateReady;
+	if (m_State == TaskStateNew)
+	{
+		m_State = TaskStateReady;
+	}
+	else
+	{
+		assert (m_bSuspended);
+		m_bSuspended = FALSE;
+	}
+}
+
+void CTask::Suspend (void)
+{
+	assert (m_State != TaskStateNew);
+	assert (!m_bSuspended);
+	m_bSuspended = TRUE;
 }
 
 void CTask::Run (void)		// dummy method which is never called
@@ -90,6 +107,16 @@ void CTask::WaitForTermination (void)
 	}
 
 	m_Event.Wait ();
+}
+
+void CTask::SetName (const char *pName)
+{
+	m_Name = pName;
+}
+
+const char *CTask::GetName (void) const
+{
+	return m_Name;
 }
 
 void CTask::SetUserData (void *pData, unsigned nSlot)
