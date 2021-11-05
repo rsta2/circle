@@ -2,7 +2,7 @@
 # Makefile
 #
 
-CIRCLEHOME = ../../..
+CIRCLEHOME = ../../../..
 
 OBJS	= main.o kernel.o
 
