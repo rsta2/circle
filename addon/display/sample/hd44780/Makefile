@@ -2,11 +2,11 @@
 # Makefile
 #
 
-CIRCLEHOME = ../../..
+CIRCLEHOME = ../../../..
 
 OBJS	= main.o kernel.o
 
-LIBS	= ../libdisplay.a \
+LIBS	= $(CIRCLEHOME)/addon/display/libdisplay.a \
 	  $(CIRCLEHOME)/lib/usb/libusb.a \
 	  $(CIRCLEHOME)/lib/input/libinput.a \
 	  $(CIRCLEHOME)/lib/fs/libfs.a \
