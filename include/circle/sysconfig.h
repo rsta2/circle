@@ -83,7 +83,7 @@
 
 ///////////////////////////////////////////////////////////////////////
 //
-// Raspberry Pi 1 and Zero
+// Raspberry Pi 1, Zero (W) and Zero 2 W
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -104,9 +104,13 @@
 #define GPU_L2_CACHE_ENABLED
 #endif
 
+#endif
+
+#if RASPPI == 1 || RASPPI == 3
+
 // USE_PWM_AUDIO_ON_ZERO can be defined to use GPIO12/13 (or 18/19) for
-// PWM audio output on RPi Zero (W). Some external circuit is needed to
-// use this.
+// PWM audio output on RPi Zero (W) and Zero 2 W. Some external circuit
+// is needed to use this.
 // WARNING: Do not feed voltage into these GPIO pins with this option
 //          defined on a RPi Zero, because this may destroy the pins.
 
