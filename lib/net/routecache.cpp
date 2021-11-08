@@ -94,7 +94,6 @@ const u8 *CRouteCache::GetRoute (const u8 *pDestIP) const
 
 		if (memcmp (pEntry->DestIP, pDestIP, IP_ADDRESS_SIZE) == 0)
 		{
-			assert (pEntry->GatewayIP != 0);
 			return pEntry->GatewayIP;
 		}
 	}
