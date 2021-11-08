@@ -70,11 +70,11 @@ REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10);
 	REGBIT (MaiControl, Enable, 3);
 	REGSHIFT (MaiControl, ChannelNumber, 4);
 	REGBIT (MaiControl, Flush, 9);
-	REGBIT (MaiControl, Empty, 10);
-	REGBIT (MaiControl, Full, 11);
+	//REGBIT (MaiControl, Empty, 10);
+	//REGBIT (MaiControl, Full, 11);
 	REGBIT (MaiControl, WholSample, 12);
 	REGBIT (MaiControl, ChannelAlign, 13);
-	REGBIT (MaiControl, Busy, 14);
+	//REGBIT (MaiControl, Busy, 14);
 	REGBIT (MaiControl, Delayed, 15);
 REG (MaiData, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x1C);
 REG (MaiFormat, ARM_HD_BASE, 0x1C, ARM_HD_BASE, 0x18);
@@ -103,10 +103,13 @@ REG (RamPacketConfig, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xBC);
 	REGBIT (RamPacketConfig, Enable, 16);
 REG (RamPacketStatus, ARM_HDMI_BASE, 0xA4, ARM_HDMI_BASE, 0xC4);
 	REGBIT (RamPacketStatus, AudioPacketIdentifier, 4);
+#if RASPPI <= 3
 REG (TxPhyControl0, ARM_HDMI_BASE, 0x2C4, UNUSED, UNUSED);
 	REGBIT (TxPhyControl0, RngPowerDown, 25);
+#else
 REG (TxPhyPowerDownControl, UNUSED, UNUSED, ARM_PHY_BASE, 0x04);
 	REGBIT (TxPhyPowerDownControl, RngGenPowerDown, 4);
+#endif
 
 static const char DeviceName[] = "sndhdmi";
 static const char From[] = "sndhdmi";
