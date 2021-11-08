@@ -2,7 +2,7 @@
 // usbgamepad.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // Ported from the USPi driver which is:
 // 	Copyright (C) 2014  M. Maccaferri <macca@maccasoft.com>
@@ -56,7 +56,7 @@ CUSBGamePadDevice::~CUSBGamePadDevice (void)
 boolean CUSBGamePadDevice::Configure (void)
 {
 	assert (m_usReportSize != 0);
-	if (!CUSBHIDDevice::Configure (m_usReportSize))
+	if (!CUSBHIDDevice::ConfigureHID (m_usReportSize))
 	{
 		CLogger::Get ()->Write (FromUSBPad, LogError, "Cannot configure HID device");
 

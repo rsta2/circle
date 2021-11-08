@@ -2,7 +2,7 @@
 // usbstandardhub.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ public:
 	boolean Configure (void);
 
 	boolean ReScanDevices (void);
-	boolean RemoveDevice (unsigned nPortIndex);	// nPortIndex is 0-based
+	boolean RemoveDeviceAt (unsigned nPortIndex);	// nPortIndex is 0-based
 
 	boolean DisablePort (unsigned nPortIndex);	// nPortIndex is 0-based
 

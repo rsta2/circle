@@ -2,7 +2,7 @@
 // usbstandardhub.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -201,7 +201,7 @@ boolean CUSBStandardHub::ReScanDevices (void)
 	return EnumeratePorts ();
 }
 
-boolean CUSBStandardHub::RemoveDevice (unsigned nPortIndex)
+boolean CUSBStandardHub::RemoveDeviceAt (unsigned nPortIndex)
 {
 	if (!DisablePort (nPortIndex))
 	{
@@ -618,7 +618,7 @@ void CUSBStandardHub::HandlePortStatusChange (void)
 
 				if (m_pDevice[nPort] != 0)
 				{
-					RemoveDevice (nPort);
+					RemoveDeviceAt (nPort);
 				}
 			}
 		}
