@@ -23,13 +23,23 @@ CIRCLEHOME ?= ..
 -include $(CIRCLEHOME)/Config.mk
 -include $(CIRCLEHOME)/Config2.mk	# is not overwritten by "configure"
 
+# set this to 1 to build with clang (experimental)
+CLANG	 ?= 0
+
 AARCH	 ?= 32
 RASPPI	 ?= 1
+
+ifneq ($(strip $(CLANG)),1)
 PREFIX	 ?= arm-none-eabi-
 PREFIX64 ?= aarch64-none-elf-
+endif
 
 # see: doc/stdlib-support.txt
+ifneq ($(strip $(CLANG)),1)
 STDLIB_SUPPORT ?= 1
+else
+STDLIB_SUPPORT ?= 0
+endif
 
 # set this to 0 to globally disable dependency checking
 CHECK_DEPS ?= 1
@@ -40,35 +50,58 @@ FLOAT_ABI ?= hard
 # set this to 1 to enable garbage collection on sections, may cause side effects
 GC_SECTIONS ?= 0
 
+ifneq ($(strip $(CLANG)),1)
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
 AS	= $(CC)
 LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
+OBJCOPY	= $(PREFIX)objcopy
+OBJDUMP	= $(PREFIX)objdump
+CPPFILT	= $(PREFIX)c++filt
+else
+CC	= $(PREFIX)clang
+CPP	= $(PREFIX)clang++
+AS	= $(CC)
+LD	= $(CC)
+AR	= $(PREFIX)llvm-ar
+OBJCOPY	= $(PREFIX)llvm-objcopy
+OBJDUMP	= $(PREFIX)llvm-objdump
+CPPFILT	= $(PREFIX)llvm-cxxfilt
+
+STANDARD ?= -std=c++14
+endif
 
 ifeq ($(strip $(AARCH)),32)
+ifeq ($(strip $(CLANG)),1)
+ARCH	?= -target armv7a-none-eabi
+endif
 ifeq ($(strip $(RASPPI)),1)
-ARCH	?= -DAARCH=32 -mcpu=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
+ARCH	+= -DAARCH=32 -mcpu=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
-ARCH	?= -DAARCH=32 -mcpu=cortex-a7 -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
+ARCH	+= -DAARCH=32 -mcpu=cortex-a7 -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7
 else ifeq ($(strip $(RASPPI)),3)
-ARCH	?= -DAARCH=32 -mcpu=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCH	+= -DAARCH=32 -mcpu=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel8-32
 else ifeq ($(strip $(RASPPI)),4)
-ARCH	?= -DAARCH=32 -mcpu=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCH	+= -DAARCH=32 -mcpu=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
 TARGET	?= kernel7l
 else
 $(error RASPPI must be set to 1, 2, 3 or 4)
 endif
 LOADADDR = 0x8000
 else ifeq ($(strip $(AARCH)),64)
+ifeq ($(strip $(CLANG)),1)
+ARCH	?= -target aarch64-none-elf
+OPTIMIZE ?= -O1
+endif
 ifeq ($(strip $(RASPPI)),3)
-ARCH	?= -DAARCH=64 -mcpu=cortex-a53 -mlittle-endian -mcmodel=small
+ARCH	+= -DAARCH=64 -mcpu=cortex-a53 -mlittle-endian -mcmodel=small
 TARGET	?= kernel8
 else ifeq ($(strip $(RASPPI)),4)
-ARCH	?= -DAARCH=64 -mcpu=cortex-a72 -mlittle-endian -mcmodel=small
+ARCH	+= -DAARCH=64 -mcpu=cortex-a72 -mlittle-endian -mcmodel=small
 TARGET	?= kernel8-rpi4
 else
 $(error RASPPI must be set to 3 or 4)
@@ -91,7 +124,10 @@ CRTBEGIN = "$(shell $(CPP) $(ARCH) -print-file-name=crtbegin.o)"
 CRTEND   = "$(shell $(CPP) $(ARCH) -print-file-name=crtend.o)"
 endif
 else
-CPPFLAGS  += -fno-exceptions -fno-rtti -nostdinc++
+CPPFLAGS  += -fno-exceptions -fno-rtti
+ifneq ($(strip $(CLANG)),1)
+CPPFLAGS  += -nostdinc++
+endif
 endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),0)
@@ -124,7 +160,12 @@ DEFINE	+= -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
 AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
 CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding $(DEFINE) $(INCLUDE) $(OPTIMIZE) -g
 CPPFLAGS+= $(CFLAGS) $(STANDARD)
+
+ifneq ($(strip $(CLANG)),1)
 LDFLAGS	+= --section-start=.init=$(LOADADDR)
+else
+LDFLAGS	+= -Wl,--section-start=.init=$(LOADADDR)
+endif
 
 ifeq ($(strip $(CHECK_DEPS)),1)
 DEPS	= $(OBJS:.o=.d)
@@ -153,13 +194,19 @@ endif
 
 $(TARGET).img: $(OBJS) $(LIBS) $(CIRCLEHOME)/circle.ld
 	@echo "  LD    $(TARGET).elf"
+ifneq ($(strip $(CLANG)),1)
 	@$(LD) -o $(TARGET).elf -Map $(TARGET).map $(LDFLAGS) \
 		-T $(CIRCLEHOME)/circle.ld $(CRTBEGIN) $(OBJS) \
 		--start-group $(LIBS) $(EXTRALIBS) --end-group $(CRTEND)
+else
+	@$(LD) -o $(TARGET).elf -Wl,--Map,$(TARGET).map $(LDFLAGS) \
+	       $(ARCH) -nostdlib -T $(CIRCLEHOME)/circle.ld $(CRTBEGIN) $(OBJS) \
+	       $(LIBS) $(EXTRALIBS) $(CRTEND)
+endif
 	@echo "  DUMP  $(TARGET).lst"
-	@$(PREFIX)objdump -d $(TARGET).elf | $(PREFIX)c++filt > $(TARGET).lst
+	@$(OBJDUMP) -d $(TARGET).elf | $(CPPFILT) > $(TARGET).lst
 	@echo "  COPY  $(TARGET).img"
-	@$(PREFIX)objcopy $(TARGET).elf -O binary $(TARGET).img
+	@$(OBJCOPY) $(TARGET).elf -O binary $(TARGET).img
 	@echo -n "  WC    $(TARGET).img => "
 	@wc -c < $(TARGET).img
 
@@ -189,7 +236,7 @@ REBOOTMAGIC ?=
 
 $(TARGET).hex: $(TARGET).img
 	@echo "  COPY  $(TARGET).hex"
-	@$(PREFIX)objcopy $(TARGET).elf -O ihex $(TARGET).hex
+	@$(OBJCOPY) $(TARGET).elf -O ihex $(TARGET).hex
 
 # Command line to run node and python.  
 # Including the '.exe' forces WSL to run the Windows host version
