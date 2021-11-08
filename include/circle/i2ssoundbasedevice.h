@@ -101,7 +101,6 @@ private:
 	boolean InitPCM51xx (u8 ucI2CAddress);
 
 private:
-	CInterruptSystem *m_pInterruptSystem;
 	unsigned m_nChunkSize;
 	bool     m_bSlave;
 	CI2CMaster *m_pI2CMaster;

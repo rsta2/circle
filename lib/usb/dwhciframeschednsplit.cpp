@@ -78,6 +78,8 @@ u16 CDWHCIFrameSchedulerNoSplit::GetFrameNumber (void)
 void CDWHCIFrameSchedulerNoSplit::PeriodicDelay (u16 usFrameOffset)
 {
 	assert (0);
+
+	(void) m_bIsPeriodic;	// to suppress warning from clang compiler
 }
 
 #endif
