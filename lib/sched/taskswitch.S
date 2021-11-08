@@ -2,7 +2,7 @@
  * taskswitch.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,15 +24,15 @@
 
 	.globl	TaskSwitch
 TaskSwitch:					/* r0: pOldRegs, r1: pNewRegs */
-	fmrx	r2, fpexc
-	fmrx	r3, fpscr
+	vmrs	r2, fpexc
+	vmrs	r3, fpscr
 	stmia	r0!, {r0, r2-r14}
-	fstmiad	r0, {d0-d15}
+	vstmia	r0, {d0-d15}
 
 	ldmia	r1!, {r0, r2-r14}
-	fmxr	fpexc, r2
-	fmxr	fpscr, r3
-	fldmiad	r1, {d0-d15}
+	vmsr	fpexc, r2
+	vmsr	fpscr, r3
+	vldmia	r1, {d0-d15}
 
 	bx	lr
 

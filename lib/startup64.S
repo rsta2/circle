@@ -2,7 +2,7 @@
  * startup64.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
  *
  * This file contains (sligthly modified) code taken from U-Boot:
  *	armv8_switch_to_el1_m macro
@@ -71,7 +71,7 @@
 
 	.endm
 
-	.sect	.init
+	.section .init
 
 	.globl	_start
 _start:					/* normally entered from armstub8 in EL2 after boot */
