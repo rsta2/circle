@@ -76,7 +76,7 @@ CTimer::~CTimer (void)
 #if AARCH == 32
 	asm volatile ("mcr p15, 0, %0, c14, c2, 1" :: "r" (0));
 #else
-	asm volatile ("msr CNTP_CTL_EL0, %0" :: "r" (0));
+	asm volatile ("msr CNTP_CTL_EL0, %0" :: "r" (0UL));
 #endif
 
 	m_pInterruptSystem->DisconnectIRQ (ARM_IRQLOCAL0_CNTPNS);
@@ -130,7 +130,7 @@ boolean CTimer::Initialize (void)
 	asm volatile ("mrs %0, CNTPCT_EL0" : "=r" (nCNTPCT));
 	asm volatile ("msr CNTP_CVAL_EL0, %0" :: "r" (nCNTPCT + m_nClockTicksPerHZTick));
 
-	asm volatile ("msr CNTP_CTL_EL0, %0" :: "r" (1));
+	asm volatile ("msr CNTP_CTL_EL0, %0" :: "r" (1UL));
 #endif
 #endif
 	
