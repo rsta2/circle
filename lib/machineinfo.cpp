@@ -362,7 +362,8 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 	case GPIOPinAudioLeft:
 #ifdef USE_PWM_AUDIO_ON_ZERO
 		if (   m_MachineModel == MachineModelZero
-		    || m_MachineModel == MachineModelZeroW)
+		    || m_MachineModel == MachineModelZeroW
+		    || m_MachineModel == MachineModelZero2W)
 		{
 #ifdef USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
 			return 18;
@@ -391,7 +392,8 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 	case GPIOPinAudioRight:
 #ifdef USE_PWM_AUDIO_ON_ZERO
 		if (   m_MachineModel == MachineModelZero
-		    || m_MachineModel == MachineModelZeroW)
+		    || m_MachineModel == MachineModelZeroW
+		    || m_MachineModel == MachineModelZero2W)
 		{
 #ifdef USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
 			return 19;
@@ -481,7 +483,8 @@ boolean CMachineInfo::ArePWMChannelsSwapped (void) const
 {
 	return    m_MachineModel >= MachineModelAPlus
 	       && m_MachineModel != MachineModelZero
-	       && m_MachineModel != MachineModelZeroW;
+	       && m_MachineModel != MachineModelZeroW
+	       && m_MachineModel != MachineModelZero2W;
 }
 
 unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)
