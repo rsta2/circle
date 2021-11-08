@@ -1,5 +1,3 @@
-// Use ISO-8859-1 when editing this file!
-
 // Normal	Shift		AltGr		AltGr+Shift
 {KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x00
 {KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x01
@@ -32,32 +30,32 @@
 {'y',		'Y',		KeyNone,	KeyNone},	// 0x1C
 {'w',		'W',		KeyNone,	KeyNone},	// 0x1D
 {'&',		'1',		KeyNone,	KeyNone},	// 0x1E
-{C('é'),	'2',		'~',		KeyNone},	// 0x1F
+{C('\xE9'),	'2',		'~',		KeyNone},	// 0x1F
 {'\"',		'3',		'#',		KeyNone},	// 0x20
 {'\'',		'4',		'{',		KeyNone},	// 0x21
 {'(',		'5',		'[',		KeyNone},	// 0x22
 {'-',		'6',		'|',		KeyNone},	// 0x23
-{C('è'),	'7',		'`',		KeyNone},	// 0x24
+{C('\xE8'),	'7',		'`',		KeyNone},	// 0x24
 {'_',		'8',		'\\',		KeyNone},	// 0x25
-{C('ç'),	'9',		'^',		KeyNone},	// 0x26
-{C('à'),	'0',		'@',		KeyNone},	// 0x27
+{C('\xE7'),	'9',		'^',		KeyNone},	// 0x26
+{C('\xE0'),	'0',		'@',		KeyNone},	// 0x27
 {KeyReturn,	KeyReturn,	KeyNone,	KeyNone},	// 0x28
 {KeyEscape,	KeyEscape,	KeyNone,	KeyNone},	// 0x29
 {KeyBackspace,	KeyBackspace,	KeyNone,	KeyNone},	// 0x2A
 {KeyTabulator,	KeyTabulator,	KeyNone,	KeyNone},	// 0x2B
 {KeySpace,	KeySpace,	KeyNone,	KeyNone},	// 0x2C
-{')',		C('°'),		']',		KeyNone},	// 0x2D
+{')',		C('\xB0'),	']',		KeyNone},	// 0x2D
 {'=',		'+',		'}',		KeyNone},	// 0x2E
-{'^',		C('¨'),		KeyNone,	KeyNone},	// 0x2F
-{'$',		C('£'),		C('¤'),		KeyNone},	// 0x30
-{'*',		C('µ'),		KeyNone,	KeyNone},	// 0x31
-{'*',		C('µ'),		KeyNone,	KeyNone},	// 0x32
+{'^',		C('\xA8'),	KeyNone,	KeyNone},	// 0x2F
+{'$',		C('\xA3'),	C('\xA4'),	KeyNone},	// 0x30
+{'*',		C('\xB5'),	KeyNone,	KeyNone},	// 0x31
+{'*',		C('\xB5'),	KeyNone,	KeyNone},	// 0x32
 {'m',		'M',		KeyNone,	KeyNone},	// 0x33
-{C('ù'),	'%',		KeyNone,	KeyNone},	// 0x34
-{C('²'),	KeyNone,	KeyNone,	KeyNone},	// 0x35
+{C('\xF9'),	'%',		KeyNone,	KeyNone},	// 0x34
+{C('\xB2'),	KeyNone,	KeyNone,	KeyNone},	// 0x35
 {';',		'.',		KeyNone,	KeyNone},	// 0x36
 {':',		'/',		KeyNone,	KeyNone},	// 0x37
-{'!',		C('§'),		KeyNone,	KeyNone},	// 0x38
+{'!',		C('\xA7'),	KeyNone,	KeyNone},	// 0x38
 {KeyCapsLock,	KeyCapsLock,	KeyNone,	KeyNone},	// 0x39
 {KeyF1,		KeyNone,	KeyNone,	KeyNone},	// 0x3A
 {KeyF2,		KeyNone,	KeyNone,	KeyNone},	// 0x3B

@@ -1,5 +1,3 @@
-// Use ISO-8859-1 when editing this file!
-
 // Normal	Shift		AltGr		AltGr+Shift
 {KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x00
 {KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x01
@@ -9,7 +7,7 @@
 {'b',		'B',		KeyNone,	KeyNone},	// 0x05
 {'c',		'C',		KeyNone,	KeyNone},	// 0x06
 {'d',		'D',		KeyNone,	KeyNone},	// 0x07
-{'e',		'E',		C('€'),		C('€')},	// 0x08
+{'e',		'E',		C('\x80'),	C('\x80')},	// 0x08
 {'f',		'F',		KeyNone,	KeyNone},	// 0x09
 {'g',		'G',		KeyNone,	KeyNone},	// 0x0A
 {'h',		'H',		KeyNone,	KeyNone},	// 0x0B
@@ -33,9 +31,9 @@
 {'z',		'Z',		KeyNone,	KeyNone},	// 0x1D
 {'1',		'!',		KeyNone,	KeyNone},	// 0x1E
 {'2',		'\"',		KeyNone,	KeyNone},	// 0x1F
-{'3',		C('£'),		KeyNone,	KeyNone},	// 0x20
+{'3',		C('\xA3'),	KeyNone,	KeyNone},	// 0x20
 {'4',		'$',		KeyNone,	KeyNone},	// 0x21
-{'5',		'%',		C('€'),		C('€')},	// 0x22
+{'5',		'%',		C('\x80'),	C('\x80')},	// 0x22
 {'6',		'&',		KeyNone,	KeyNone},	// 0x23
 {'7',		'/',		KeyNone,	KeyNone},	// 0x24
 {'8',		'(',		KeyNone,	KeyNone},	// 0x25
@@ -47,13 +45,13 @@
 {KeyTabulator,	KeyTabulator,	KeyNone,	KeyNone},	// 0x2B
 {KeySpace,	KeySpace,	KeyNone,	KeyNone},	// 0x2C
 {'\'',		'?',		KeyNone,	KeyNone},	// 0x2D
-{C('ì'),	'^',		KeyNone,	KeyNone},	// 0x2E
-{C('è'),	C('é'),		'[',		'{'},		// 0x2F
+{C('\xEC'),	'^',		KeyNone,	KeyNone},	// 0x2E
+{C('\xE8'),	C('\xE9'),	'[',		'{'},		// 0x2F
 {'+',		'*',		']',		'}'},		// 0x30
-{C('ù'),	C('§'),		KeyNone,	KeyNone},	// 0x31
-{C('ù'),	C('§'),		KeyNone,	KeyNone},	// 0x32
-{C('ò'),	C('ç'),		'@',		KeyNone},	// 0x33
-{C('à'),	C('°'),		'#',		KeyNone},	// 0x34
+{C('\xF9'),	C('\xA7'),	KeyNone,	KeyNone},	// 0x31
+{C('\xF9'),	C('\xA7'),	KeyNone,	KeyNone},	// 0x32
+{C('\xF2'),	C('\xE7'),	'@',		KeyNone},	// 0x33
+{C('\xE0'),	C('\xB0'),	'#',		KeyNone},	// 0x34
 {'\\',		'|',		KeyNone,	KeyNone},	// 0x35
 {',',		';',		KeyNone,	KeyNone},	// 0x36
 {'.',		':',		KeyNone,	KeyNone},	// 0x37
