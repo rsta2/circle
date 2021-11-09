@@ -95,7 +95,6 @@ LOADADDR = 0x8000
 else ifeq ($(strip $(AARCH)),64)
 ifeq ($(strip $(CLANG)),1)
 ARCH	?= -target aarch64-none-elf
-OPTIMIZE ?= -O1
 endif
 ifeq ($(strip $(RASPPI)),3)
 ARCH	+= -DAARCH=64 -mcpu=cortex-a53 -mlittle-endian -mcmodel=small

@@ -75,7 +75,7 @@ struct TMemoryWindow
 class CMachineInfo
 {
 public:
-	CMachineInfo (void) NOOPT;
+	CMachineInfo (void);
 	~CMachineInfo (void);
 
 	// Basic info
@@ -139,17 +139,17 @@ public:
 	static CMachineInfo *Get (void);
 
 private:
-	u32		m_nRevisionRaw;
-	TMachineModel	m_MachineModel;
-	unsigned	m_nModelMajor;
-	unsigned	m_nModelRevision;
-	TSoCType	m_SoCType;
-	unsigned	m_nRAMSize;
+	u32		m_nRevisionRaw	  ALIGNED;	// suppress unaligned access in init stage
+	TMachineModel	m_MachineModel	  ALIGNED;
+	unsigned	m_nModelMajor	  ALIGNED;
+	unsigned	m_nModelRevision  ALIGNED;
+	TSoCType	m_SoCType	  ALIGNED;
+	unsigned	m_nRAMSize	  ALIGNED;
 
-	u16		m_usDMAChannelMap;		// channel bit set if channel is free
+	u16		m_usDMAChannelMap ALIGNED;	// channel bit set if channel is free
 
 #if RASPPI >= 4
-	CDeviceTreeBlob	*m_pDTB;
+	CDeviceTreeBlob	*m_pDTB		  ALIGNED;
 #endif
 
 	static CMachineInfo *s_pThis;

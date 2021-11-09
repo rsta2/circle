@@ -21,6 +21,7 @@
 #define _circle_macros_h
 
 #define PACKED		__attribute__ ((packed))
+#define	ALIGNED		__attribute__ ((aligned))
 #define	ALIGN(n)	__attribute__ ((aligned (n)))
 #define NORETURN	__attribute__ ((noreturn))
 #ifndef __clang__
