@@ -63,7 +63,13 @@ CMCP300X::~CMCP300X (void)
 float CMCP300X::DoSingleEndedConversion (unsigned nChannel)
 {
 	assert (nChannel < Channels);
-	return DoConversion (0b1000 | nChannel);
+	int nResultRaw = DoConversion (0b1000 | nChannel);
+	if (nResultRaw < 0)
+	{
+		return ResultSPIError;
+	}
+
+	return m_fVREF * nResultRaw / MaxResultRaw;
 }
 
 float CMCP300X::DoDifferentialConversion (unsigned nChannelPlus, unsigned nChannelMinus)
@@ -72,10 +78,31 @@ float CMCP300X::DoDifferentialConversion (unsigned nChannelPlus, unsigned nChann
 	assert (nChannelMinus < Channels);
 	u8 nControl = s_DifferentialMap[nChannelPlus][nChannelMinus];
 	assert (nControl <= 7);
+	int nResultRaw = DoConversion (nControl);
+	if (nResultRaw < 0)
+	{
+		return ResultSPIError;
+	}
+
+	return m_fVREF * nResultRaw / MaxResultRaw;
+}
+
+int CMCP300X::DoSingleEndedConversionRaw (unsigned nChannel)
+{
+	assert (nChannel < Channels);
+	return DoConversion (0b1000 | nChannel);
+}
+
+int CMCP300X::DoDifferentialConversionRaw (unsigned nChannelPlus, unsigned nChannelMinus)
+{
+	assert (nChannelPlus < Channels);
+	assert (nChannelMinus < Channels);
+	u8 nControl = s_DifferentialMap[nChannelPlus][nChannelMinus];
+	assert (nControl <= 7);
 	return DoConversion (nControl);
 }
 
-float CMCP300X::DoConversion (u8 nControl)
+int CMCP300X::DoConversion (u8 nControl)
 {
 	u8 TxBuffer[3] ALIGN (4) = {0x01, (u8) (nControl << 4), 0x00};
 	u8 RxBuffer[3] ALIGN (4);
@@ -87,7 +114,7 @@ float CMCP300X::DoConversion (u8 nControl)
 
 		if (m_pSPIMaster->WriteRead (m_nChipSelect, TxBuffer, RxBuffer, 3) != 3)
 		{
-			return ResultSPIError;
+			return -1;
 		}
 	}
 	else
@@ -97,7 +124,7 @@ float CMCP300X::DoConversion (u8 nControl)
 
 		if (m_pSPIMasterAUX->WriteRead (m_nChipSelect, TxBuffer, RxBuffer, 3) != 3)
 		{
-			return ResultSPIError;
+			return -1;
 		}
 	}
 
@@ -105,5 +132,5 @@ float CMCP300X::DoConversion (u8 nControl)
 	usResult <<= 8;
 	usResult |= RxBuffer[2];
 
-	return m_fVREF * usResult / 1024.0f;
+	return usResult;
 }
