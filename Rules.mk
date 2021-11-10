@@ -29,10 +29,8 @@ CLANG	 ?= 0
 AARCH	 ?= 32
 RASPPI	 ?= 1
 
-ifneq ($(strip $(CLANG)),1)
 PREFIX	 ?= arm-none-eabi-
 PREFIX64 ?= aarch64-none-elf-
-endif
 
 # see: doc/stdlib-support.txt
 ifneq ($(strip $(CLANG)),1)
@@ -60,33 +58,37 @@ OBJCOPY	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 CPPFILT	= $(PREFIX)c++filt
 else
-CC	= $(PREFIX)clang
-CPP	= $(PREFIX)clang++
+CC	= clang$(SUFFIX)
+CPP	= clang++$(SUFFIX)
 AS	= $(CC)
 LD	= $(CC)
-AR	= $(PREFIX)llvm-ar
-OBJCOPY	= $(PREFIX)llvm-objcopy
-OBJDUMP	= $(PREFIX)llvm-objdump
-CPPFILT	= $(PREFIX)llvm-cxxfilt
+AR	= llvm-ar$(SUFFIX)
+OBJCOPY	= llvm-objcopy$(SUFFIX)
+OBJDUMP	= llvm-objdump$(SUFFIX)
+CPPFILT	= llvm-cxxfilt$(SUFFIX)
 
 STANDARD ?= -std=c++14
 endif
 
 ifeq ($(strip $(AARCH)),32)
 ifeq ($(strip $(CLANG)),1)
-ARCH	?= -target armv7a-none-eabi
+ARCH	+= --target=arm-none-eabi
 endif
 ifeq ($(strip $(RASPPI)),1)
-ARCH	+= -DAARCH=32 -mcpu=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
+ARCHCPU	?= -mcpu=arm1176jzf-s -marm -mfpu=vfp -mfloat-abi=$(FLOAT_ABI)
+ARCH	+= -DAARCH=32 $(ARCHCPU)
 TARGET	?= kernel
 else ifeq ($(strip $(RASPPI)),2)
-ARCH	+= -DAARCH=32 -mcpu=cortex-a7 -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
+ARCHCPU	?= -mcpu=cortex-a7 -marm -mfpu=neon-vfpv4 -mfloat-abi=$(FLOAT_ABI)
+ARCH	+= -DAARCH=32 $(ARCHCPU)
 TARGET	?= kernel7
 else ifeq ($(strip $(RASPPI)),3)
-ARCH	+= -DAARCH=32 -mcpu=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCHCPU	?= -mcpu=cortex-a53 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCH	+= -DAARCH=32 $(ARCHCPU)
 TARGET	?= kernel8-32
 else ifeq ($(strip $(RASPPI)),4)
-ARCH	+= -DAARCH=32 -mcpu=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCHCPU	?= -mcpu=cortex-a72 -marm -mfpu=neon-fp-armv8 -mfloat-abi=$(FLOAT_ABI)
+ARCH	+= -DAARCH=32 $(ARCHCPU)
 TARGET	?= kernel7l
 else
 $(error RASPPI must be set to 1, 2, 3 or 4)
@@ -94,13 +96,15 @@ endif
 LOADADDR = 0x8000
 else ifeq ($(strip $(AARCH)),64)
 ifeq ($(strip $(CLANG)),1)
-ARCH	?= -target aarch64-none-elf
+ARCH	+= --target=aarch64-none-elf
 endif
 ifeq ($(strip $(RASPPI)),3)
-ARCH	+= -DAARCH=64 -mcpu=cortex-a53 -mlittle-endian -mcmodel=small
+ARCHCPU	?= -mcpu=cortex-a53 -mlittle-endian
+ARCH	+= -DAARCH=64 $(ARCHCPU)
 TARGET	?= kernel8
 else ifeq ($(strip $(RASPPI)),4)
-ARCH	+= -DAARCH=64 -mcpu=cortex-a72 -mlittle-endian -mcmodel=small
+ARCHCPU	?= -mcpu=cortex-a72 -mlittle-endian
+ARCH	+= -DAARCH=64 $(ARCHCPU)
 TARGET	?= kernel8-rpi4
 else
 $(error RASPPI must be set to 3 or 4)
@@ -132,12 +136,12 @@ endif
 ifeq ($(strip $(STDLIB_SUPPORT)),0)
 CFLAGS	  += -nostdinc
 else
-LIBGCC	  = "$(shell $(CPP) $(ARCH) -print-file-name=libgcc.a)"
+LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
 EXTRALIBS += $(LIBGCC)
 endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),1)
-LIBM	  = "$(shell $(CPP) $(ARCH) -print-file-name=libm.a)"
+LIBM	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libm.a)"
 ifneq ($(strip $(LIBM)),"libm.a")
 EXTRALIBS += $(LIBM)
 endif
@@ -157,7 +161,8 @@ DEFINE	+= -D__circle__ -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB_SUPPORT) \
 	   -D__VCCOREVER__=0x04000000 -U__unix__ -U__linux__ #-DNDEBUG
 
 AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
-CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding $(DEFINE) $(INCLUDE) $(OPTIMIZE) -g
+CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding -g \
+	   $(DEFINE) $(INCLUDE) $(EXTRAINCLUDE) $(OPTIMIZE)
 CPPFLAGS+= $(CFLAGS) $(STANDARD)
 
 ifneq ($(strip $(CLANG)),1)
