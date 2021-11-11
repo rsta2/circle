@@ -2,7 +2,7 @@
 // bcm4343.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -192,6 +192,13 @@ boolean CBcm4343Device::JoinOpenNet (const char *pSSID)
 {
 	assert (pSSID != 0);
 	return Control ("join %s %s 0 off", pSSID, "FFFFFFFFFFFF");
+}
+
+// by @sebastienNEC
+boolean CBcm4343Device::CreateOpenNet (const char *pSSID, int nChannel, bool bHidden)
+{
+	assert (pSSID != 0);
+	return Control ("create %s %d %d", pSSID, nChannel, bHidden);
 }
 
 void CBcm4343Device::DumpStatus (void)

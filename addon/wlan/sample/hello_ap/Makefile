@@ -2,12 +2,11 @@
 # Makefile
 #
 
-CIRCLEHOME = ../../..
+CIRCLEHOME = ../../../..
 
-OBJS	= main.o kernel.o
+OBJS	= main.o kernel.o echoserver.o
 
-LIBS	= $(CIRCLEHOME)/addon/wlan/hostap/wpa_supplicant/libwpa_supplicant.a \
-	  $(CIRCLEHOME)/addon/wlan/libwlan.a \
+LIBS	= $(CIRCLEHOME)/addon/wlan/libwlan.a \
 	  $(CIRCLEHOME)/addon/fatfs/libfatfs.a \
 	  $(CIRCLEHOME)/addon/SDCard/libsdcard.a \
 	  $(CIRCLEHOME)/lib/net/libnet.a \
