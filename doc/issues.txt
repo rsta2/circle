@@ -43,6 +43,11 @@ Known issues of Circle are:
   usbpowerdelay= in the file cmdline.txt to 800 (ms) or higher. See the file
   doc/cmdline.txt for details!
 
+* The class CScreenDevice does not initialize successfully on the Raspberry Pi 4,
+  when a display is not attached. This is different from earlier models. To run
+  most of the sample programs headless, you have to enable the system option
+  SCREEN_HEADLESS in the file include/circle/sysconfig.h.
+
 
 You can see or report further issues here:
 
