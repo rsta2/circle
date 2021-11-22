@@ -318,21 +318,34 @@ void CI2SSoundBaseDevice::RunI2S (void)
 	write32 (ARM_PCM_MODE_A, nModeA);
 
 	// init GPIO pins
-	m_PCMCLKPin.AssignPin (18);
-	m_PCMCLKPin.SetMode (GPIOModeAlternateFunction0);
-	m_PCMFSPin.AssignPin (19);
-	m_PCMFSPin.SetMode (GPIOModeAlternateFunction0);
+	unsigned nPinBase = 18;
+	TGPIOMode GPIOMode = GPIOModeAlternateFunction0;
+
+	// assign to P5 header on early models
+	TMachineModel Model = CMachineInfo::Get ()->GetMachineModel ();
+	if (   Model == MachineModelA
+	    || Model == MachineModelBRelease2MB256
+	    || Model == MachineModelBRelease2MB512)
+	{
+		nPinBase = 28;
+		GPIOMode = GPIOModeAlternateFunction2;
+	}
+
+	m_PCMCLKPin.AssignPin (nPinBase);
+	m_PCMCLKPin.SetMode (GPIOMode);
+	m_PCMFSPin.AssignPin (nPinBase+1);
+	m_PCMFSPin.SetMode (GPIOMode);
 
 	if (m_DeviceMode != DeviceModeTXOnly)
 	{
-		m_PCMDINPin.AssignPin (20);
-		m_PCMDINPin.SetMode (GPIOModeAlternateFunction0);
+		m_PCMDINPin.AssignPin (nPinBase+2);
+		m_PCMDINPin.SetMode (GPIOMode);
 	}
 
 	if (m_DeviceMode != DeviceModeRXOnly)
 	{
-		m_PCMDOUTPin.AssignPin (21);
-		m_PCMDOUTPin.SetMode (GPIOModeAlternateFunction0);
+		m_PCMDOUTPin.AssignPin (nPinBase+3);
+		m_PCMDOUTPin.SetMode (GPIOMode);
 	}
 
 	// disable standby
