@@ -23,6 +23,7 @@
 #include <circle/sched/taskswitch.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/sysconfig.h>
+#include <circle/string.h>
 #include <circle/types.h>
 
 enum TTaskState
@@ -50,8 +51,15 @@ public:
 	/// \brief Override this method to define the entry point for your class
 	virtual void Run (void);
 
-	/// \brief Starts a task that was created with bCreateSuspended = TRUE
+	/// \brief Starts a task that was created with bCreateSuspended = TRUE\n
+	/// or restarts it after Suspend()
 	void Start (void);
+	/// \brief Suspend task from running until Resume()
+	void Suspend (void);
+	/// \brief Alternative method to (re-)start suspended task
+	void Resume (void)			{ Start (); }
+	/// \return Is task suspended from running?
+	boolean IsSuspended (void) const	{ return m_bSuspended; }
 
 	/// \brief Terminate the execution of this task
 	/// \note Callable from this task only
@@ -60,6 +68,12 @@ public:
 	/// \brief Wait for the termination of this task
 	/// \note Callable from other task only
 	void WaitForTermination (void);
+
+	/// \brief Set a specific name for this task
+	/// \param pName Name string for this task
+	void SetName (const char *pName);
+	/// \return Pointer to 0-terminated name string ("@this_address" if not explicitly set)
+	const char *GetName (void) const;
 
 #define TASK_USER_DATA_KTHREAD		0	// Linux driver emulation
 #define TASK_USER_DATA_ERROR_STACK	1	// Plan 9 driver emulation
@@ -93,10 +107,12 @@ private:
 
 private:
 	volatile TTaskState m_State;
+	boolean		    m_bSuspended;
 	unsigned	    m_nWakeTicks;
 	TTaskRegisters	    m_Regs;
 	unsigned	    m_nStackSize;
 	u8		   *m_pStack;
+	CString		    m_Name;
 	void		   *m_pUserData[TASK_USER_DATA_SLOTS];
 	CSynchronizationEvent m_Event;
 	CTask		   *m_pWaitListNext;	// next in list of tasks waiting on an event

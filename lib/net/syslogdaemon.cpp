@@ -4,7 +4,7 @@
 // Syslog sender task according to RFC5424 and RFC5426 (UDP transport only)
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,6 +68,8 @@ CSysLogDaemon::CSysLogDaemon (CNetSubSystem *pNetSubSystem,
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
+
+	SetName (FromSysLogDaemon);
 }
 
 CSysLogDaemon::~CSysLogDaemon (void)
