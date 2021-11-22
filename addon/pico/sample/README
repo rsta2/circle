@@ -23,5 +23,5 @@ PROJECT is the project name:
 
 pico_set_binary_type (PROJECT no_flash)
 
-You should install the file dummy_rom.uf2 in the flash ROM of your Raspberry Pi
+You should install the file dummy_flash.uf2 in the flash of your Raspberry Pi
 Pico before running the program.
