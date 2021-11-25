@@ -40,6 +40,7 @@ public:
 
 	unsigned GetUSBPowerDelay (void) const;
 	boolean GetUSBFullSpeed (void) const;
+	const char *GetUSBIgnore (void) const;		// defaults to empty string
 
 	const char *GetSoundDevice (void) const;	// defaults to empty string
 	unsigned GetSoundOption (void) const;
@@ -75,6 +76,7 @@ private:
 
 	unsigned m_nUSBPowerDelay;
 	boolean m_bUSBFullSpeed;
+	char m_USBIgnore[20];
 
 	char m_SoundDevice[20];
 	unsigned m_nSoundOption;

@@ -39,6 +39,7 @@ CKernelOptions::CKernelOptions (void)
 {
 	strcpy (m_LogDevice, "tty1");
 	strcpy (m_KeyMap, DEFAULT_KEYMAP);
+	m_USBIgnore[0] = '\0';
 	m_SoundDevice[0] = '\0';
 
 	s_pThis = this;
@@ -112,6 +113,11 @@ CKernelOptions::CKernelOptions (void)
 			{
 				m_bUSBFullSpeed = TRUE;
 			}
+		}
+		else if (strcmp (pOption, "usbignore") == 0)
+		{
+			strncpy (m_USBIgnore, pValue, sizeof m_USBIgnore-1);
+			m_USBIgnore[sizeof m_USBIgnore-1] = '\0';
 		}
 		else if (strcmp (pOption, "sounddev") == 0)
 		{
@@ -188,6 +194,11 @@ unsigned CKernelOptions::GetUSBPowerDelay (void) const
 boolean CKernelOptions::GetUSBFullSpeed (void) const
 {
 	return m_bUSBFullSpeed;
+}
+
+const char *CKernelOptions::GetUSBIgnore (void) const
+{
+	return m_USBIgnore;
 }
 
 const char *CKernelOptions::GetSoundDevice (void) const

@@ -20,6 +20,8 @@
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/usb/usbhid.h>
 #include <circle/synchronize.h>
+#include <circle/koptions.h>
+#include <circle/logger.h>
 #include <assert.h>
 
 // for factory
@@ -50,6 +52,16 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 {
 	assert (pParent != 0);
 	assert (pName != 0);
+
+	const char *pUSBIgnore = CKernelOptions::Get ()->GetUSBIgnore ();
+	assert (pUSBIgnore != 0);
+	if (pName->Compare (pUSBIgnore) == 0)
+	{
+		CLogger::Get ()->Write ("ufactory", LogWarning,
+					"Ignoring device/interface %s", pUSBIgnore);
+
+		return 0;
+	}
 
 	CUSBFunction *pResult = 0;
 
