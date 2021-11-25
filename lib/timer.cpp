@@ -42,8 +42,6 @@ struct TKernelTimer
 	void 		    *m_pContext;
 };
 
-extern "C" void DelayLoop (unsigned nCount);
-
 static const char FromTimer[] = "timer";
 
 const unsigned CTimer::s_nDaysOfMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
