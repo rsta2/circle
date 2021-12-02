@@ -1,0 +1,27 @@
+README
+
+This sample loads and starts a program into the Raspberry Pi Pico, which has to
+be connected as follows (SoC numbers):
+
+Raspberry Pi	Raspberry Pi
+Pico		1-4 or Zero
+
+SWCLK	<---	GPIO17
+SWDIO	<--->	GPIO27
+RUN	<---	GPIO24
+GND	<--->	GND
+
+This is the default setting. If you want to different GPIO pins, you have to
+update the configuration in the file kernel.cpp.
+
+The program loads the file firmware.bin to the Raspberry Pi Pico, which does
+simply blink the LED. If you want to load your own program, you have to replace
+this file. Be sure to copy the .bin file from the built Pico SDK project and
+rename it to firmware.bin in this directory. Your Pico project must be
+configured for operation from RAM using this option in CMakeLists.txt, where
+PROJECT is the project name:
+
+pico_set_binary_type (PROJECT no_flash)
+
+You should install the file dummy_flash.uf2 in the flash of your Raspberry Pi
+Pico before running the program.

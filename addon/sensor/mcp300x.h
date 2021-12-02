@@ -28,6 +28,7 @@ class CMCP300X		/// Driver for MCP3004/3008 DAC with SPI interface
 {
 public:
 	static const unsigned Channels = 8;
+	static const int MaxResultRaw = 1023;
 
 	static constexpr float ResultSPIError = 1000.0f;	///< returned for SPI error
 
@@ -58,8 +59,18 @@ public:
 	/// \note See the MCP3004/3008 data sheet for supported channel combinations!
 	float DoDifferentialConversion (unsigned nChannelPlus, unsigned nChannelMinus);
 
+	/// \param nChannel Channel to be used (0..7, 0..3 for MCP3004)
+	/// \return Measured raw value, or < 0 on error
+	int DoSingleEndedConversionRaw (unsigned nChannel);
+
+	/// \param nChannelPlus IN+ channel (0..7, 0..3 for MCP3004)
+	/// \param nChannelMinus IN- channel (0..7, 0..3 for MCP3004)
+	/// \return Measured differential raw value, or < 0 on error
+	/// \note See the MCP3004/3008 data sheet for supported channel combinations!
+	int DoDifferentialConversionRaw (unsigned nChannelPlus, unsigned nChannelMinus);
+
 private:
-	float DoConversion (u8 nControl);
+	int DoConversion (u8 nControl);
 
 private:
 	CSPIMaster *m_pSPIMaster;
@@ -72,4 +83,3 @@ private:
 };
 
 #endif
-

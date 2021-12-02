@@ -1,0 +1,47 @@
+README
+
+This sample uses the on-board WLAN device of the Raspberry Pi 3, 4 and Zero (2) W
+to create an open WLAN access point (AP) and provides a TCP echo server for
+testing data transfers. You will need a second Raspberry Pi with WLAN device,
+which runs the sample program from the client/ subdirectory to test this.
+Because the created WLAN AP provides an open network, you have to be careful,
+because anybody in the radio range could connect it.
+
+The only required configuration is the alpha2 ISO/IEC code of the country, where
+you are in, which should be set in the file kernel.cpp for server and client.
+
+Beside the main Circle libraries the libraries in addon/fatfs/ and addon/SDCard/
+are needed and must be made, before the WLAN libraries and this server sample
+and the client sample can be built using:
+
+	cd addon/wlan
+	make
+	cd sample/hello_ap
+	make
+	cd client
+	make
+
+You have to provide the firmware files for the different WLAN controllers of the
+Raspberry Pi, which can be downloaded as follows (uses the "wget" tool):
+
+	cd addon/wlan/firmware
+	make
+
+The downloaded files must be copied into the directory /firmware on both SD
+cards, which are used to boot the server and client computers.
+
+The sample programs first blink 5 times to show the image was loaded right.
+After initialization the server program is waiting for an incoming TCP
+connection on port 7 (echo). You should start the server first and wait until
+its initialization has been done. Then start the client computer. The client
+connects the server and sends a message every 5 seconds, which is send back by
+the server. When the client receives the message, it is displayed on the screen.
+After 120 seconds the connection is closed automatically.
+
+If you want to use an other computer (e.g. PC) as client, you have to ensure,
+that it has a static IP address in the range 192.168.1.{2-254} with net mask
+255.255.255.0. The SSID of the open network is "TEST". Try the "telnet" command
+as given on the screen. Type something in the telnet session and press Return.
+It will be echoed back to the session and displayed. To leave the telnet session
+you have to press some escape key which is normally displayed when the session
+starts. Enter the "quit" command then at the telnet prompt.

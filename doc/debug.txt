@@ -19,11 +19,11 @@ Single-core Circle applications can be source-level debugged on the Raspberry Pi
 * rpi_stub from https://github.com/turboscrew/rpi_stub
   There is already a ready build kernel7.img in the Debug/ subdirectory. For the Raspberry Pi 3 you need a recent version of it.
  
-The file kernel7.img has to be installed on a Micro-SD card along with the firmware files also required to boot Circle (see the main README.md for this). You have to create a cmdline.txt file on the Micro-SD card (if it is not already there) and write the following options into it:
+The file kernel7.img has to be installed on a Micro-SD card along with the firmware files also required to boot Circle (see the file boot/README for this). You have to create a cmdline.txt file on the Micro-SD card (if it is not already there) and write the following options into it:
 
-	rpi_stub_mmu rpi_stub_interrupt=fiq
+	rpi_stub_baud=115200 rpi_stub_mmu rpi_stub_interrupt=fiq rpi_stub_enable_neon
 
-This enables the MMU and caches in rpi_stub and the FIQ interrupt mode. Because Circle mostly does not use the FIQ this mode is recommended for Circle.
+This sets the serial baud rate and enables the MMU and caches in rpi_stub and the FIQ interrupt mode. Because Circle mostly does not use the FIQ this mode is recommended for Circle. Furthermore rpi_stub enables NEON and the support for XML description of NEON registers.
 
 Before building a Circle application which should be debugged with rpi_stub you have to enable the define
 
@@ -31,7 +31,7 @@ Before building a Circle application which should be debugged with rpi_stub you 
 
 in include/circle/sysconfig.h. This prevents Circle from enabling the MMU by itself (it is already enabled), Circle will not install own exception handlers (done by rpi_stub) and will not access the UART any more because it is used by rpi_stub. Log messages will go to the screen in this case (exception from this see below). Applications build with USE_RPI_STUB_AT defined do normally not run without rpi_stub loaded.
 
-rpi_stub versions beginning from Nov 7, 2015 allow sending log messages to the GDB client. You have to set "logdev=ttyS1" in cmdline.txt to use this.
+rpi_stub allows sending log messages to the GDB client. You have to set "logdev=ttyS1" in cmdline.txt to use this.
 
 To use GDB do the following:
 
@@ -40,6 +40,7 @@ To use GDB do the following:
 * Start GDB and give the following commands:
 
 	file kernel.elf			# the executable to be debugged (in current directory here)
+	set serial baud 115200		# set baud rate used for the serial interface
 	target remote /dev/ttyUSB0	# your serial interface (may vary)
 	load				# transfer the executable (may take some seconds)
 	break CKernel::Run		# set breakpoint at the entry of CKernel::Run()

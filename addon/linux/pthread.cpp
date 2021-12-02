@@ -54,7 +54,7 @@ int pthread_create (pthread_t *thread, const pthread_attr_t *attr,
 	p->retval = 0;
 	INIT_LIST_HEAD (&p->key_list);
 
-	p->kthread = kthread_create (_start, p, "pthread");
+	p->kthread = kthread_create (_start, p, "pthread@%lp", p);
 	BUG_ON (p->kthread == 0);
 
 	p->kthread->userdata = p;

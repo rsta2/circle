@@ -2,7 +2,7 @@
 // bcm4343.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,6 +66,12 @@ public:
 	/// \param pSSID SSID of open network to be joined
 	/// \return Operation successful?
 	boolean JoinOpenNet (const char *pSSID);
+
+	/// \param pSSID SSID of open network to be created
+	/// \param nChannel 802.11 channel of open network to be created
+	/// \param bHidden Whether to hide the SSID
+	/// \return Operation successful?
+	boolean CreateOpenNet (const char *pSSID, int nChannel, bool bHidden);
 
 	void DumpStatus (void);
 

@@ -228,6 +228,7 @@ enum{
 	CMdisassoc,
 	CMescan,
 	CMcountry,
+	CMcreate,
 };
 
 static Cmdtab cmds[] = {
@@ -250,6 +251,7 @@ static Cmdtab cmds[] = {
 	{CMdisassoc,	"disassoc", 2},
 	{CMescan,	"escan", 2},
 	{CMcountry,	"country", 2},
+	{CMcreate,	"create", 4},
 };
 
 typedef struct Sdpcm Sdpcm;
@@ -290,6 +292,7 @@ static struct {
 	{ 43362, 0,	"fw_bcm40181a0.bin", config40181, 0 },
 	{ 43362, 1,	"fw_bcm40181a2.bin", config40181, 0 },
 	{ 43430, 1,	"brcmfmac43430-sdio.bin", "brcmfmac43430-sdio.txt", 0 },
+	{ 43430, 2,	"brcmfmac43436-sdio.bin", "brcmfmac43436-sdio.txt", "brcmfmac43436-sdio.clm_blob" },
 	{ 0x4345, 6, "brcmfmac43455-sdio.bin", "brcmfmac43455-sdio.txt", "brcmfmac43455-sdio.clm_blob" },
 	{ 0x4345, 9, "brcmfmac43456-sdio.bin", "brcmfmac43456-sdio.txt", "brcmfmac43456-sdio.clm_blob" },
 };
@@ -1878,6 +1881,33 @@ wljoin(Ctlr *ctl, char *ssid, int chan, uchar *bssid)
 }
 
 static void
+wlcreateAP(Ctlr *ctl, char *ssid, int channel, int hidden)	/* by @sebastienNEC */
+{
+	wlcmdint(ctl, 3, 1);		/* DOWN */
+	wlcmdint(ctl, 20, 1);		/* SET_INFRA */
+	wlcmdint(ctl, 118, 1);		/* SET_AP */
+	wlcmdint(ctl, 30, channel);
+	wlcmdint(ctl, 2, 1);		/* UP */
+
+	uchar join_params[4+WNameLen+14];
+	uchar *p = join_params;
+	int n = strlen(ssid);		/* copy ssid */
+	n = MIN(n, WNameLen);
+	p = put4(p, n);
+	memmove(p, ssid, n);
+	memset(p + n, 0, WNameLen - n);
+	p += WNameLen;
+	memset(p, 0, 14);		/* clear assoc params */
+	wlcmd(ctl, 1, 26, &join_params, sizeof(join_params), nil, 0);	/* SET_SSID */
+
+	wlsetint(ctl, "closednet", hidden);
+
+	/* TODO? beacon settings */
+
+	ctl->status = Connected;	/* TODO: check return code as in waitjoin() */
+}
+
+static void
 wlscanstart(Ctlr *ctl)
 {
 	/* version[4] action[2] sync_id[2] ssidlen[4] ssid[32] bssid[6] bss_type[1]
@@ -2427,6 +2457,19 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 		break;
 	case CMdebug:
 		iodebug = atoi(cb->f[1]);
+		break;
+	case CMcreate:		/* create essid channel */ /* by @sebastienNEC */
+		if(strcmp(cb->f[1], "") != 0) {	/* empty string for no change */
+			if(cistrcmp(cb->f[1], "default") != 0) {
+				strncpy(ctlr->essid, cb->f[1], sizeof(ctlr->essid)-1);
+				ctlr->essid[sizeof(ctlr->essid)-1] = 0;
+			}
+			else memset(ctlr->essid, 0, sizeof(ctlr->essid));
+		}
+		else if(ctlr->essid[0] == 0) cmderror(cb, "essid not set");
+		if ((i = atoi(cb->f[2])) >= 0 && i <= 16) ctlr->chanid = i;
+		else cmderror(cb, "bad channel number");
+		if(ctlr->essid[0]) wlcreateAP(ctlr, ctlr->essid, ctlr->chanid, atoi(cb->f[3]));
 		break;
 	}
 	poperror();

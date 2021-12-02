@@ -56,6 +56,18 @@ CHTTPDaemon::CHTTPDaemon (CNetSubSystem *pNetSubSystem, CSocket *pSocket,
 		m_pContentBuffer = new u8[m_nMaxContentSize];
 		assert (m_pContentBuffer != 0);
 	}
+
+	if (pSocket == 0)
+	{
+		SetName (FromHTTPDaemon);
+	}
+	else
+	{
+		CString TaskName;
+		TaskName.Format ("httpd@%lp", this);
+
+		SetName (TaskName);
+	}
 }
 
 CHTTPDaemon::~CHTTPDaemon (void)

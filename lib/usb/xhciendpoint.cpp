@@ -228,6 +228,7 @@ boolean CXHCIEndpoint::Transfer (CUSBRequest *pURB, unsigned nTimeoutMs)
 			m_pDevice->DumpStatus ();
 #endif
 
+			m_pURB = 0;
 			m_bTransferCompleted = TRUE;
 
 			return FALSE;

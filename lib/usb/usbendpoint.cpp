@@ -258,9 +258,10 @@ void CUSBEndpoint::SkipPID (unsigned nPackets, boolean bStatusStage)
 void CUSBEndpoint::ResetPID (void)
 {
 #if RASPPI <= 3
-	assert (m_Type == EndpointTypeBulk);
+	assert (   m_Type == EndpointTypeControl
+		|| m_Type == EndpointTypeBulk);
 
-	m_NextPID = USBPIDData0;
+	m_NextPID = m_Type == EndpointTypeControl ? USBPIDSetup : USBPIDData0;
 #endif
 }
 

@@ -163,10 +163,11 @@ int return0 (void *param)
 class CKProc : public CTask
 {
 public:
-	CKProc (void (*procfn) (void *param), void *param)
+	CKProc (void (*procfn) (void *param), void *param, const char *name)
 	:	m_procfn (procfn),
 		m_param (param)
 	{
+		SetName (name);
 	}
 
 	void Run (void)
@@ -186,7 +187,7 @@ private:
 
 void kproc (const char *name, void (*func) (void *), void *parm)
 {
-	new CKProc (func, parm);
+	new CKProc (func, parm, name);
 }
 
 static struct up_t upstruct;

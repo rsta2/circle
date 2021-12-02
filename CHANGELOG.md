@@ -5,8 +5,34 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 44.3
+------------
+
+This intermediate release supports the new **Raspberry Pi Zero 2 W**. Please download the updated recommended firmware in [boot/](boot/) to be able to use it!
+
+**Tasks have a name** now, which can be assigned using `CTask::SetName()` and is shown in the task list, which can be generated with `CScheduler::ListTasks()`. A task can be found with this name using `CScheduler::GetTask()` and can be suspended from running with `CTask::Suspend()` and reactivated later with `CTask::Resume()`.
+
+The I2S driver can be used via the **P5 extension header on early Raspberry Pi models**.
+
+There are some new features in [addon/](addon/):
+
+* Driver for **ST7789-based dot-matrix displays** with SPI interface in [addon/display/](addon/display/)
+* Experimental **WLAN AP mode support** for open networks with static IP addresses in [addon/wlan/](addon/wlan/)
+* **RAM loader for the Raspberry Pi Pico**, which uses the SWD debug interface in [addon/pico/](addon/pico/)
+* **MCP3004/3008 driver** can return raw values in [addon/sensor/](addon/sensor/)
+
+These fixes have been applied:
+
+* The TCP sender did not set the PUSH flag under some circumstances, where it was necessary.
+* When an synchronous xHCI USB transfer timed out, this might have lead to a failed assertion, when the next transfer starts.
+* The DWHCI USB driver might have asserted, when a control message transfer failed before.
+
+There is the new option `usbignore=` for the file *cmdline.txt*, which allows to explicitly ignore an USB device or interface in the USB device enumeration process, which is otherwise supported.
+
 Release 44.2
 ------------
+
+2021-10-28
 
 This intermediate release supports **USB HID-class touchscreens** in digitizer mode now, which has been tested with the Waveshare 5 inch LCD B and 7 inch LCD C displays. Such USB touchscreens will be detected automatically, when the USB support is included in an application, and an instance of the class `CTouchScreenDevice` will be created, which provides the generic API for touchscreens. Please note that the class `CTouchScreenDevice` was the driver for the official 7 inch Raspberry Pi touchscreen before, which has been renamed to `CRPiTouchScreen` now. Existing applications, which support the official 7 inch Raspberry Pi touchscreen, have to be modified this way. [sample/28-touchscreen](sample/28-touchscreen) and the LVGL and uGUI wrappers have been updated to support both the official 7 inch Raspberry Pi touchscreen and USB HID-class touchscreens in digitizer mode. There is a new calibration tool in *tools/touchscreen-calibrator*, which allows to gather the calibration info for USB touchscreens, which require calibration.
 

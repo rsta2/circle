@@ -17,7 +17,7 @@ cd ../..
 
 if [[ $makesample == true ]]
 then
-	cd sample
+	cd sample/hello_wlan
 	$make $1 $2 || exit
-	cd ..
+	cd ../..
 fi

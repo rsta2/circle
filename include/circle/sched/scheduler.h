@@ -22,6 +22,7 @@
 
 #include <circle/sched/task.h>
 #include <circle/spinlock.h>
+#include <circle/device.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
@@ -49,6 +50,10 @@ public:
 	/// \return Pointer to the CTask object of the currently running task
 	CTask *GetCurrentTask (void);
 
+	/// \param pTaskName Task name to look for
+	/// \return Pointer to the CTask object of the task with the given name (0 if not found)
+	CTask *GetTask (const char *pTaskName);
+
 	/// \param pTask Any pointer
 	/// \return Is is this pointer referencing a CTask object of a currently known task?
 	boolean IsValidTask (CTask *pTask);
@@ -68,6 +73,10 @@ public:
 	/// \brief Stops causing new tasks to be created in a suspended state\n
 	///	   and starts any tasks that were created suspended.
 	void ResumeNewTasks (void);
+
+	/// \brief Generate task listing
+	/// \param pTarget Device to be used for output
+	void ListTasks (CDevice *pTarget);
 
 	/// \return Pointer to the only scheduler object in the system
 	static CScheduler *Get (void);

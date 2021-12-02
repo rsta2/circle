@@ -20,6 +20,7 @@ qemu		Support library and demos for using Circle with QEMU
 linux		Linux kernel device driver emulation (used by HDMI sound and accelerated graphics)
 lvgl		LVGL embedded GUI library (by LVGL LLC)
 microbit	Library providing access to features of the micro:bit computer
+pico		Library providing access to features of the Raspberry Pi Pico (e.g. RAM loader)
 profile		Software profiling library for performance analysis
 rtc		Library providing drivers for real-time clocks (RTC)
 SDCard		Driver for SD card access using the internal EMMC controller (by John Cronin)

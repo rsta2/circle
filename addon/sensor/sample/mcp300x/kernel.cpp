@@ -97,10 +97,13 @@ TShutdownMode CKernel::Run (void)
 	while (1)
 	{
 		float fResult = m_MCP300X.DoSingleEndedConversion (CHANNEL);
-		if (fResult < CMCP300X::ResultSPIError)
+		int nResultRaw = m_MCP300X.DoSingleEndedConversionRaw (CHANNEL);
+
+		if (   fResult < CMCP300X::ResultSPIError
+		    && nResultRaw >= 0)
 		{
 			CString Msg;
-			Msg.Format ("%.2fV\n", fResult);
+			Msg.Format ("%.2fV (raw %d)\n", fResult, nResultRaw);
 
 			m_Screen.Write (Msg, Msg.GetLength ());
 		}

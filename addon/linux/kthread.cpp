@@ -2,14 +2,17 @@
 #include <linux/bug.h>
 #include <circle/sched/task.h>
 #include <circle/sched/scheduler.h>
+#include <circle/string.h>
+#include <circle/stdarg.h>
 
 class CKThread : public CTask
 {
 public:
-	CKThread (int (*threadfn) (void *data), void *data)
+	CKThread (int (*threadfn) (void *data), void *data, const char *pName)
 	:	m_threadfn (threadfn),
 		m_data (data)
 	{
+		SetName (pName);
 	}
 
 	void Run (void)
@@ -30,13 +33,19 @@ struct task_struct *kthread_create (int (*threadfn)(void *data),
 				    void *data,
 				    const char namefmt[], ...)
 {
+	CString name;
+	va_list var;
+	va_start (var, namefmt);
+	name.FormatV (namefmt, var);
+	va_end (var);
+
 	task_struct *task = new task_struct;
 
 	task->pid = next_pid++;
 	task->terminated = 0;
 	task->userdata = 0;
 
-	CTask *ctask = new CKThread (threadfn, data);
+	CTask *ctask = new CKThread (threadfn, data, name);
 	ctask->SetUserData (task, TASK_USER_DATA_KTHREAD);
 	task->taskobj = (void *) ctask;
 

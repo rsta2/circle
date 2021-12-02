@@ -42,6 +42,8 @@ typedef boolean TUpdateTimeHandler (unsigned nNewTime, unsigned nOldTime);
 
 typedef void TPeriodicTimerHandler (void);
 
+extern "C" void DelayLoop (unsigned nCount);
+
 class CTimer	/// Manages the system clock, supports kernel timers and a calibrated delay loop
 {
 public:
@@ -120,6 +122,10 @@ public:
 	/// When a CTimer object is available better use this instead of SimpleusDelay()\n
 	/// \param nMicroSeconds Delay in microseconds
 	void usDelay (unsigned nMicroSeconds)	{ SimpleusDelay (nMicroSeconds); }
+#ifdef CALIBRATE_DELAY
+	/// \param nNanoSeconds Delay in nanoseconds
+	void nsDelay (unsigned nNanoSeconds)	{ DelayLoop (m_nusDelay * nNanoSeconds / 1000); }
+#endif
 	
 	/// \return Pointer to the only CTimer object in the system
 	static CTimer *Get (void);
