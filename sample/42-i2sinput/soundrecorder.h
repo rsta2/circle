@@ -1,8 +1,8 @@
 //
-// config.h
+// soundrecorder.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,23 +17,37 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _config_h
-#define _config_h
+#ifndef _soundrecorder_h
+#define _soundrecorder_h
 
-#define SAMPLE_RATE	44100		// overall system clock
+#include <circle/sched/task.h>
+#include <circle/sched/synchronizationevent.h>
+#include <circle/gpiopin.h>
+#include <circle/string.h>
+#include <circle/types.h>
+#include <fatfs/ff.h>
+#include "queue.h"
 
-#define WRITE_FORMAT	2		// 0: 8-bit unsigned, 1: 16-bit signed, 2: 24-bit signed,
-					// 3: 24-bit signed (occupies 32-bit)
-#define WRITE_CHANNELS	2		// 1: Mono, 2: Stereo
+class CSoundRecorder : public CTask
+{
+public:
+	CSoundRecorder (FATFS *pFileSystem);
+	~CSoundRecorder (void);
 
-#define QUEUE_SIZE_MSECS 1000		// size of the sound queue in milliseconds duration
-#define CHUNK_SIZE	1024		// number of samples, written to sound device at once
+	void Run (void);
 
-#ifdef ENABLE_RECORDER
-#define DRIVE		"SD:"
-#define FILEPATTERN	"/raw-audio-%u.bin"
+	int Write (const void *pBuffer, size_t nCount);
 
-#define RECORD_BUTTON	17		// GPIO number of record button (chip number)
-#endif
+private:
+	CGPIOPin m_RecordButtonPin;
+
+	unsigned m_nFileNumber;
+	CString	 m_FileName;
+	boolean	 m_bFileOpen;
+	FIL	 m_File;
+
+	CQueue m_Queue;
+	CSynchronizationEvent m_Event;
+};
 
 #endif

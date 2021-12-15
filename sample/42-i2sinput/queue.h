@@ -1,8 +1,8 @@
 //
-// config.h
+// queue.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,23 +17,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _config_h
-#define _config_h
+#ifndef _queue_h
+#define _queue_h
 
-#define SAMPLE_RATE	44100		// overall system clock
+#include <circle/types.h>
 
-#define WRITE_FORMAT	2		// 0: 8-bit unsigned, 1: 16-bit signed, 2: 24-bit signed,
-					// 3: 24-bit signed (occupies 32-bit)
-#define WRITE_CHANNELS	2		// 1: Mono, 2: Stereo
+class CQueue
+{
+public:
+	CQueue (unsigned nSize);
+	~CQueue (void);
 
-#define QUEUE_SIZE_MSECS 1000		// size of the sound queue in milliseconds duration
-#define CHUNK_SIZE	1024		// number of samples, written to sound device at once
+	boolean IsEmpty (void) const;
+	
+	unsigned GetFreeSpace (void) const;
+	void Write (const void *pBuffer, unsigned nLength);
 
-#ifdef ENABLE_RECORDER
-#define DRIVE		"SD:"
-#define FILEPATTERN	"/raw-audio-%u.bin"
+	unsigned GetBytesAvailable (void) const;
+	void Read (void *pBuffer, unsigned nLength);
 
-#define RECORD_BUTTON	17		// GPIO number of record button (chip number)
-#endif
+	void Flush (void);
+
+private:
+	unsigned m_nSize;
+
+	u8 *m_pBuffer;
+
+	unsigned m_nInPtr;
+	unsigned m_nOutPtr;
+};
 
 #endif

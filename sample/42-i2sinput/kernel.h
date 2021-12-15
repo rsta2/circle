@@ -29,9 +29,15 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
+#include <circle/sched/scheduler.h>
 #include <circle/i2ssoundbasedevice.h>
 #include <circle/pwmsoundbasedevice.h>
 #include <circle/types.h>
+
+#ifdef ENABLE_RECORDER
+	#include <SDCard/emmc.h>
+	#include <fatfs/ff.h>
+#endif
 
 enum TShutdownMode
 {
@@ -61,6 +67,12 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
+	CScheduler		m_Scheduler;
+
+#ifdef ENABLE_RECORDER
+	CEMMCDevice		m_EMMC;
+	FATFS			m_FileSystem;
+#endif
 
 	CI2SSoundBaseDevice	m_SoundIn;
 	CPWMSoundBaseDevice	m_SoundOut;
