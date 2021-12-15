@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@
 #include <circle/qemu.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
+#include <circle/version.h>
+#include <circle/string.h>
 #include <circle/macros.h>
 #include <circle/util.h>
 #include <circle/types.h>
@@ -179,6 +181,8 @@ static void vfpinit (void)
 
 #endif
 
+char circle_version_string[10];
+
 void sysinit (void)
 {
 	EnableFIQs ();		// go to IRQ_LEVEL, EnterCritical() will not work otherwise
@@ -212,6 +216,24 @@ void sysinit (void)
 #if RASPPI >= 4
 	MachineInfo.FetchDTB ();
 #endif
+
+	// set circle_version_string[]
+	CString Version;
+	if (CIRCLE_MINOR_VERSION && CIRCLE_PATCH_VERSION)
+	{
+		Version.Format ("%d.%d.%d", CIRCLE_MAJOR_VERSION, CIRCLE_MINOR_VERSION,
+			        CIRCLE_PATCH_VERSION);
+	}
+	else if (CIRCLE_MINOR_VERSION)
+	{
+		Version.Format ("%d.%d", CIRCLE_MAJOR_VERSION, CIRCLE_MINOR_VERSION);
+	}
+	else
+	{
+		Version.Format ("%d", CIRCLE_MAJOR_VERSION);
+	}
+
+	strcpy (circle_version_string, Version);
 
 	// call constructors of static objects
 	extern void (*__init_start) (void);

@@ -83,11 +83,11 @@ boolean CLogger::Initialize (CDevice *pTarget)
 {
 	m_pTarget = pTarget;
 
-	Write ("logger", LogNotice, CIRCLE_NAME " " CIRCLE_VERSION_STRING " started on %s"
+	Write ("logger", LogNotice, CIRCLE_NAME " %s started on %s"
 #if AARCH == 64
 	       " (AArch64)"
 #endif
-	       , CMachineInfo::Get ()->GetMachineName ());
+	       , CIRCLE_VERSION_STRING, CMachineInfo::Get ()->GetMachineName ());
 
 	return TRUE;
 }

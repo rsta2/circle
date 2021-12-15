@@ -20,11 +20,18 @@
 #ifndef _circle_version_h
 #define _circle_version_h
 
+#ifdef __cplusplus
+extern "C" char circle_version_string[];
+#else
+extern char circle_version_string[];
+#endif
+
 #define CIRCLE_NAME			"Circle"
 
-#define CIRCLE_MAJOR_VERSION		44
-#define CIRCLE_MINOR_VERSION		3
-#define CIRCLE_VERSION_STRING		"44.3"
+#define CIRCLE_MAJOR_VERSION		(__circle__ / 10000)
+#define CIRCLE_MINOR_VERSION		(__circle__ / 100 % 100)
+#define CIRCLE_PATCH_VERSION		(__circle__ % 100)
+#define CIRCLE_VERSION_STRING		circle_version_string
 
 #define OS_NAME				CIRCLE_NAME
 #define OS_VERSION			CIRCLE_VERSION_STRING
