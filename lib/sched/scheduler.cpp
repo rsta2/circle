@@ -218,7 +218,7 @@ void CScheduler::ListTasks (CDevice *pTarget)
 		CString Line;
 		Line.Format ("%02u %08lX %-5s %c%c %s\n",
 			     i, (uintptr) pTask,
-			     StateNames[State],
+			     pTask == m_pCurrent ? "run" : StateNames[State],
 			     pTask->IsSuspended () ? 'S' : ' ',
 			     State == TaskStateBlockedWithTimeout ? 'T' : ' ',
 			     pTask->GetName ());
