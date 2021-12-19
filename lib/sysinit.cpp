@@ -219,7 +219,7 @@ void sysinit (void)
 
 	// set circle_version_string[]
 	CString Version;
-	if (CIRCLE_MINOR_VERSION && CIRCLE_PATCH_VERSION)
+	if (CIRCLE_PATCH_VERSION)
 	{
 		Version.Format ("%d.%d.%d", CIRCLE_MAJOR_VERSION, CIRCLE_MINOR_VERSION,
 			        CIRCLE_PATCH_VERSION);
