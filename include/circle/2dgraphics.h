@@ -5,7 +5,7 @@
 //	Copyright (C) 2021  Stephane Damo
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -115,6 +115,18 @@ public:
 	/// \param PixelBuffer Pointer to the pixels
 	void DrawImageRect (unsigned nX, unsigned nY, unsigned nWidth, unsigned nHeight, unsigned nSourceX, unsigned nSourceY, TScreenColor *PixelBuffer);
 	
+	/// \brief Draws an area of an image from a pixel buffer
+	/// \param nX Image X coordinate
+	/// \param nY Image Y coordinate
+	/// \param nWidth Image width
+	/// \param nHeight Image height
+	/// \param nSourceX Source X coordinate in the pixel buffer
+	/// \param nSourceY Source Y coordinate in the pixel buffer
+	/// \param nSourceWidth Source image width
+	/// \param nSourceHeight Source image height
+	/// \param PixelBuffer Pointer to the pixels
+	void DrawImageRect (unsigned nX, unsigned nY, unsigned nWidth, unsigned nHeight, unsigned nSourceX, unsigned nSourceY, unsigned nSourceWidth, unsigned nSourceHeight, TScreenColor *PixelBuffer);
+
 	/// \brief Draws an area of an image from a pixel buffer with transparent color
 	/// \param nX Image X coordinate
 	/// \param nY Image Y coordinate
