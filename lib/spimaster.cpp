@@ -2,7 +2,7 @@
 // spimaster.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@
 #define CS_CLEAR_TX	(1 << 4)
 #define CS_CPOL__SHIFT	3
 #define CS_CPHA__SHIFT	2
-#define CS_CS		(1 << 0)
+#define CS_CS		(3 << 0)
 #define CS_CS__SHIFT	0
 
 static uintptr s_BaseAddress[DEVICES] =
@@ -255,7 +255,7 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 	assert (nCount <= 0xFFFF);
 	write32 (ARM_SPI_DLEN, nCount);
 
-	assert (nChipSelect <= 1);
+	assert (nChipSelect <= 1 || nChipSelect == ChipSelectNone);
 	write32 (ARM_SPI_CS,   (read32 (ARM_SPI_CS) & ~CS_CS)
 			     | (nChipSelect << CS_CS__SHIFT)
 			     | CS_CLEAR_RX | CS_CLEAR_TX

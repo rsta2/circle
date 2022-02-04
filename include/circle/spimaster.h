@@ -2,7 +2,7 @@
 /// \file spimaster.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,6 +48,9 @@
 class CSPIMaster
 {
 public:
+	const unsigned ChipSelectNone = 3;
+
+public:
 	/// \param nClockSpeed SPI clock frequency in Hz
 	/// \param CPOL        Clock polarity
 	/// \param CPHA        Clock phase
@@ -75,19 +78,19 @@ public:
 	///       this sets the additional time, CE# stays active
 	void SetCSHoldTime (unsigned nMicroSeconds);
 
-	/// \param nChipSelect CE# to be used (0 or 1)
+	/// \param nChipSelect CE# to be used (0, 1 or ChipSelectNone)
 	/// \param pBuffer     Read data will be stored here
 	/// \param nCount      Number of bytes to be read
 	/// \return Number of read bytes or < 0 on failure
 	int Read (unsigned nChipSelect, void *pBuffer, unsigned nCount);
 
-	/// \param nChipSelect CE# to be used (0 or 1)
+	/// \param nChipSelect CE# to be used (0, 1 or ChipSelectNone)
 	/// \param pBuffer     Write data for will be taken from here
 	/// \param nCount      Number of bytes to be written
 	/// \return Number of written bytes or < 0 on failure
 	int Write (unsigned nChipSelect, const void *pBuffer, unsigned nCount);
 
-	/// \param nChipSelect  CE# to be used (0 or 1)
+	/// \param nChipSelect CE# to be used (0, 1 or ChipSelectNone)
 	/// \param pWriteBuffer Write data for will be taken from here
 	/// \param pReadBuffer  Read data will be stored here
 	/// \param nCount       Number of bytes to be transferred

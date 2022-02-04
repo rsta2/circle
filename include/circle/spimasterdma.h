@@ -2,7 +2,7 @@
 // spimasterdma.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 //
 // Supported features:
 //	SPI0 device only
@@ -35,6 +35,9 @@ typedef void TSPICompletionRoutine (boolean bStatus, void *pParam);
 
 class CSPIMasterDMA
 {
+public:
+	const unsigned ChipSelectNone = 3;
+
 public:
 	// set bDMAChannelLite to FALSE for very high speeds or transfer sizes >= 64K
 	CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
