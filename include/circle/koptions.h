@@ -2,7 +2,7 @@
 // koptions.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ public:
 
 	TCPUSpeed GetCPUSpeed (void) const;
 	unsigned GetSoCMaxTemp (void) const;
+	unsigned GetGPIOFanPin (void) const;		// returns 0, if not defined
 
 	const unsigned *GetTouchScreen (void) const;	// returns 4 values (nullptr if unset)
 
@@ -83,6 +84,7 @@ private:
 
 	TCPUSpeed m_CPUSpeed;
 	unsigned m_nSoCMaxTemp;
+	unsigned m_nGPIOFanPin;
 
 	boolean m_bTouchScreenValid;
 	unsigned m_TouchScreen[4];

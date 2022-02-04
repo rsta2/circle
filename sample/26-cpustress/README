@@ -11,13 +11,20 @@ Celsius.
 
 Before building you should set the DEPTH define in include/circle/screen.h to 16
 to increase the number of available colors. If you want to run this sample with
-multiple cores on the Raspberry Pi 2/3 you have to define ARM_ALLOW_MULTI_CORE
+multiple cores on the Raspberry Pi 2/3/4 you have to define ARM_ALLOW_MULTI_CORE
 in include/circle/sysconfig.h.
 
 The behaviour of the sample can be influenced by two options which may be
 defined in the file cmdline.txt:
 
-fast=true	Set maximum CPU speed (default is low speed on Raspberry Pi 2/3)
+fast=true	Set maximum CPU speed (default is low speed on Raspberry Pi 2/3/4)
 
 socmaxtemp=60	Set maximum temperature of the SoC (the main chip) to be enforced
 		in degrees Celsius (range 40 to 78, default 60)
+
+gpiofanpin=2	GPIO pin number (SoC number, not header position) to which the
+		control line of a (Raspberry Pi 4) Case Fan is connected. The fan
+		will be switched on, when "socmaxtemp" will be reached. The CPU
+		speed is not throttled, when this option is used. Please note that
+		the default GPIO pin 14 for the Case Fan cannot be used in this
+		sample, because is it assigned to the serial interface here.

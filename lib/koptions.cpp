@@ -2,7 +2,7 @@
 // koptions.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ CKernelOptions::CKernelOptions (void)
 	m_nSoundOption (0),
 	m_CPUSpeed (CPUSpeedLow),
 	m_nSoCMaxTemp (60),
+	m_nGPIOFanPin (0),
 	m_bTouchScreenValid (FALSE)
 {
 	strcpy (m_LogDevice, "tty1");
@@ -149,6 +150,15 @@ CKernelOptions::CKernelOptions (void)
 				m_nSoCMaxTemp = nValue;
 			}
 		}
+		else if (strcmp (pOption, "gpiofanpin") == 0)
+		{
+			unsigned nValue;
+			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
+			    && 2 <= nValue && nValue <= 27)
+			{
+				m_nGPIOFanPin = nValue;
+			}
+		}
 		else if (strcmp (pOption, "touchscreen") == 0)
 		{
 			m_bTouchScreenValid = GetDecimals (pValue, m_TouchScreen, 4);
@@ -219,6 +229,11 @@ TCPUSpeed CKernelOptions::GetCPUSpeed (void) const
 unsigned CKernelOptions::GetSoCMaxTemp (void) const
 {
 	return m_nSoCMaxTemp;
+}
+
+unsigned CKernelOptions::GetGPIOFanPin (void) const
+{
+	return m_nGPIOFanPin;
 }
 
 const unsigned *CKernelOptions::GetTouchScreen (void) const
