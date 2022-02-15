@@ -2,7 +2,7 @@
 // lvgl.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/string.h>
+#include <circle/util.h>
 #include <circle/new.h>
 
 CLVGL *CLVGL::s_pThis = 0;
@@ -105,12 +106,12 @@ boolean CLVGL::Initialize (void)
 		return FALSE;
 	}
 
-	static lv_disp_buf_t disp_buf;
-	lv_disp_buf_init (&disp_buf, m_pBuffer1, m_pBuffer2, nWidth*10);
+	static lv_disp_draw_buf_t disp_buf;
+	lv_disp_draw_buf_init (&disp_buf, m_pBuffer1, m_pBuffer2, nWidth*10);
 
-	lv_disp_drv_t disp_drv;
+	static lv_disp_drv_t disp_drv;
 	lv_disp_drv_init (&disp_drv);
-	disp_drv.buffer = &disp_buf;
+	disp_drv.draw_buf = &disp_buf;
 	disp_drv.flush_cb = DisplayFlush;
 	disp_drv.hor_res = nWidth;
 	disp_drv.ver_res = nHeight;
@@ -148,7 +149,7 @@ boolean CLVGL::Initialize (void)
 		}
 	}
 
-	lv_indev_drv_t indev_drv;
+	static lv_indev_drv_t indev_drv;
 	lv_indev_drv_init (&indev_drv);
 	indev_drv.type = LV_INDEV_TYPE_POINTER;
 	indev_drv.read_cb = PointerRead;
@@ -244,15 +245,13 @@ void CLVGL::DisplayFlushComplete (unsigned nChannel, boolean bStatus, void *pPar
 	lv_disp_flush_ready (pDriver);
 }
 
-bool CLVGL::PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData)
+void CLVGL::PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData)
 {
 	assert (s_pThis != 0);
 
 	pData->state = s_pThis->m_PointerData.state;
 	pData->point.x = s_pThis->m_PointerData.point.x;
 	pData->point.y = s_pThis->m_PointerData.point.y;
-
-	return false;
 }
 
 void CLVGL::MouseEventHandler (TMouseEvent Event, unsigned nButtons,
@@ -313,25 +312,21 @@ void CLVGL::TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
 	}
 }
 
-void CLVGL::LogPrint (lv_log_level_t Level, const char *pFile, uint32_t nLine,
-		      const char *pFunction, const char *pDescription)
+void CLVGL::LogPrint (const char *pMessage)
 {
-	TLogSeverity Severity;
-	const char *pPrefix;
+	assert (pMessage != 0);
+	size_t nLen = strlen (pMessage);
+	assert (nLen > 0);
 
-	switch (Level)
+	char Buffer[nLen+1];
+	strcpy (Buffer, pMessage);
+
+	if (Buffer[nLen-1] == '\n')
 	{
-	default:
-	case LV_LOG_LEVEL_ERROR:	Severity = LogError;	pPrefix = "ERROR";	break;
-	case LV_LOG_LEVEL_WARN:		Severity = LogWarning;	pPrefix = "WARNING";	break;
-	case LV_LOG_LEVEL_INFO:		Severity = LogNotice;	pPrefix = "INFO";	break;
-	case LV_LOG_LEVEL_TRACE:	Severity = LogDebug;	pPrefix = "TRACE";	break;
+		Buffer[nLen-1] = '\0';
 	}
 
-	CString Source;
-	Source.Format ("%s(%d)", pFile, nLine);
-
-	CLogger::Get ()->Write (Source, Severity, "%s: %s: %s", pPrefix, pFunction, pDescription);
+	CLogger::Get ()->Write ("lvgl", LogDebug, Buffer);
 }
 
 void CLVGL::MouseRemovedHandler (CDevice *pDevice, void *pContext)
