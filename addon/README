@@ -18,7 +18,7 @@ OneWire		Support library for 1-wire devices (by Paul Stoffregen) and DS18x20 sen
 Properties	Library providing access to configuration properties saved in a file
 qemu		Support library and demos for using Circle with QEMU
 linux		Linux kernel device driver emulation (used by HDMI sound and accelerated graphics)
-lvgl		LVGL embedded GUI library (by LVGL LLC)
+lvgl		LVGL embedded GUI library (by LVGL Kft)
 microbit	Library providing access to features of the micro:bit computer
 pico		Library providing access to features of the Raspberry Pi Pico (e.g. RAM loader)
 profile		Software profiling library for performance analysis

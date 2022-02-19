@@ -7,7 +7,6 @@ CIRCLEHOME = ../../..
 OBJS	= main.o kernel.o
 
 LIBS	= ../liblvgl.a \
-	  ../liblv_examples.a \
 	  $(CIRCLEHOME)/lib/usb/libusb.a \
 	  $(CIRCLEHOME)/lib/input/libinput.a \
 	  $(CIRCLEHOME)/lib/fs/libfs.a \
