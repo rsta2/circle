@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,7 +76,15 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	}
 	else if (pName->Compare ("int3-1-1") == 0)
 	{
-		pResult = new CUSBKeyboardDevice (pParent);
+		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
+		assert (pVendor != 0);
+
+		if (pVendor->Compare ("ven3f0-1198") != 0)	// HP USB 1000dpi Laser Mouse
+		{
+			pResult = new CUSBKeyboardDevice (pParent);
+		}
+
+		delete pVendor;
 	}
 	else if (pName->Compare ("int3-1-2") == 0)
 	{
@@ -84,7 +92,15 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	}
 	else if (pName->Compare ("int3-0-0") == 0)
 	{
-		pResult = GetGenericHIDDevice (pParent);
+		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
+		assert (pVendor != 0);
+
+		if (pVendor->Compare ("ven5ac-21e") != 0)	// Apple Aluminum Mini Keyboard
+		{
+			pResult = GetGenericHIDDevice (pParent);
+		}
+
+		delete pVendor;
 	}
 	else if (pName->Compare ("ven54c-268") == 0)
 	{
