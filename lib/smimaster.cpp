@@ -21,6 +21,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/smimaster.h>
+#include <circle/bcm2835.h>
 #include <circle/memio.h>
 #include <circle/timer.h>
 #include <assert.h>
@@ -48,7 +49,7 @@
 // CS Register
 #define CS_ENABLE		(1 << 0)
 #define CS_DONE			(1 << 1)
-#define CS_ACTIVE		(1 << 2)
+//#define CS_ACTIVE		(1 << 2)	// TODO: name clash with <circle/dmacommon.h>
 #define CS_START		(1 << 3)
 #define CS_CLEAR		(1 << 4)
 #define CS_WRITE		(1 << 5)
@@ -125,14 +126,10 @@
 
 
 // DMA
-#define DREQSourceSMI		(TDREQ) 4 // todo should move this one to circle/dmacommon.h
 #define DMA_REQUEST_THRESH  2
 #define DMA_PANIC_LEVEL		8
 
-// Clock - todo should move to bcm2835.h
-#define ARM_CM_SMICTL		(ARM_CM_BASE + 0xb0)
-#define ARM_CM_SMIDIV		(ARM_CM_BASE + 0xb4)
-
+// Clock
 #define CM_SMICTL_FLIP (1 << 8)
 #define CM_SMICTL_BUSY (1 << 7)
 #define CM_SMICTL_KILL (1 << 5)
@@ -255,6 +252,10 @@ void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned 
 	write32(ARM_SMI_DCS, 0);
 	write32(ARM_SMI_DCA, 0);
 
+	PeripheralExit ();
+
+	PeripheralEntry ();		// switch to SMI clock device
+
 	// Initialise SMI clock
 	u32 divi = nCycle_ns / 2;
 	if (read32(ARM_CM_SMICTL) != divi << CM_SMIDIV_DIVI_OFFS) {
@@ -269,6 +270,10 @@ void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned 
 		while ((read32(ARM_CM_SMICTL) & CM_SMICTL_BUSY) == 0) {}
 		CTimer::Get ()->usDelay (100);
 	}
+
+	PeripheralExit ();
+
+	PeripheralEntry ();		// switch back to SMI device
 
 	// Initialise SMI with data width, time step, and setup/hold/strobe counts
 	u32 tmp = read32(ARM_SMI_CS);

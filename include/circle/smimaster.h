@@ -64,7 +64,7 @@ public:
 	/// \param nSDLinesMask		mask determining which SDx lines should be driven. For example (1 << 0) | (1 << 5) for SD0 (GPIO8) and SD5 (GPIO13)
 	CSMIMaster (CInterruptSystem *pInterruptSystem, unsigned nSDLinesMask = SMI_ALL_DATA_LINES_MASK, boolean bUseAddressPins = TRUE);
 
-	virtual ~CSMIMaster (void);
+	~CSMIMaster (void);
 
 	/// \brief Returns nSDLinesMask given in the constructor
 	unsigned GetSDLinesMask ();

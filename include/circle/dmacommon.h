@@ -2,7 +2,7 @@
 /// \file dmacommon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ enum TDREQ
 #endif
 	DREQSourcePCMTX	 = 2,
 	DREQSourcePCMRX	 = 3,
+	DREQSourceSMI	 = 4,
 	DREQSourcePWM	 = 5,
 	DREQSourceSPITX	 = 6,
 	DREQSourceSPIRX	 = 7,
