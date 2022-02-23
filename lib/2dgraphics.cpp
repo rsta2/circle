@@ -5,7 +5,7 @@
 //	Copyright (C) 2021  Stephane Damo
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -271,22 +271,6 @@ void C2DGraphics::DrawImageRect (unsigned nX, unsigned nY, unsigned nWidth, unsi
 		for(unsigned j=0; j<nWidth; j++)
 		{
 			m_Buffer[(nY + i) * m_nWidth + j + nX] = PixelBuffer[(nSourceY + i) * m_nWidth + j + nSourceX];
-		}
-	}
-}
-
-void C2DGraphics::DrawImageRect (unsigned nX, unsigned nY, unsigned nWidth, unsigned nHeight, unsigned nSourceX, unsigned nSourceY, unsigned nSourceWidth, unsigned nSourceHeight, TScreenColor *PixelBuffer)
-{
-	if(nX + nWidth > m_nWidth || nY + nHeight > m_nHeight || nSourceX + nWidth > nSourceWidth || nSourceY + nHeight > nSourceHeight)
-	{
-		return;
-	}
-
-	for(unsigned i=0; i<nHeight; i++)
-	{
-		for(unsigned j=0; j<nWidth; j++)
-		{
-			m_Buffer[(nY + i) * m_nWidth + j + nX] = PixelBuffer[(nSourceY + i) * nSourceWidth + j + nSourceX];
 		}
 	}
 }
