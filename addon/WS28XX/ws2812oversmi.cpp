@@ -6,7 +6,7 @@
 // Adapted from https://iosoft.blog/2020/09/29/raspberry-pi-multi-channel-ws2812/
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,26 +22,26 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "ws2812oversmi.h"
-#include <string.h>
+#include <circle/util.h>
 
 
 CWS2812OverSMI::CWS2812OverSMI(CInterruptSystem *pInterruptSystem, unsigned nSDLinesMask, unsigned nNumberOfLEDsPerStrip) :
 		m_SMIMaster (pInterruptSystem, nSDLinesMask, FALSE),
 		m_nLEDCount (nNumberOfLEDsPerStrip),
 		m_bDirty (TRUE)
-	{
-		assert (m_nLEDCount > 0);
-		unsigned len = TX_BUFF_LEN(m_nLEDCount);
-		m_pBuffer = new TXDATA_T[len]; // using new makes the buffer cache-aligned, so suitable for DMA
-		memset(m_pBuffer, 0, len * sizeof(TXDATA_T));
-		for (unsigned nStripIndex = 0; nStripIndex < LED_NCHANS; nStripIndex++) {
-			if (nSDLinesMask & (1 << nStripIndex)) {
-				for (unsigned nLEDIndex = 0; nLEDIndex < m_nLEDCount; nLEDIndex++) SetLED (nStripIndex, nLEDIndex, 0, 0, 0);
-			}
+{
+	assert (m_nLEDCount > 0);
+	unsigned len = TX_BUFF_LEN(m_nLEDCount);
+	m_pBuffer = new TXDATA_T[len]; // using new makes the buffer cache-aligned, so suitable for DMA
+	memset(m_pBuffer, 0, len * sizeof(TXDATA_T));
+	for (unsigned nStripIndex = 0; nStripIndex < LED_NCHANS; nStripIndex++) {
+		if (nSDLinesMask & (1 << nStripIndex)) {
+			for (unsigned nLEDIndex = 0; nLEDIndex < m_nLEDCount; nLEDIndex++) SetLED (nStripIndex, nLEDIndex, 0, 0, 0);
 		}
-		m_SMIMaster.SetupTiming(NEOPIXEL_SMI_WIDTH, NEOPIXEL_SMI_NS, NEOPIXEL_SMI_SETUP, NEOPIXEL_SMI_STROBE, NEOPIXEL_SMI_HOLD, NEOPIXEL_SMI_PACE);
-		m_SMIMaster.SetupDMA(m_pBuffer, len * sizeof(TXDATA_T));
 	}
+	m_SMIMaster.SetupTiming(NEOPIXEL_SMI_WIDTH, NEOPIXEL_SMI_NS, NEOPIXEL_SMI_SETUP, NEOPIXEL_SMI_STROBE, NEOPIXEL_SMI_HOLD, NEOPIXEL_SMI_PACE);
+	m_SMIMaster.SetupDMA(m_pBuffer, len * sizeof(TXDATA_T));
+}
 
 
 CWS2812OverSMI::~CWS2812OverSMI() {

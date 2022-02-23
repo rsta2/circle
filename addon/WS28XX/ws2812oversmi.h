@@ -6,7 +6,7 @@
 // Adapted from https://iosoft.blog/2020/09/29/raspberry-pi-multi-channel-ws2812/
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ public:
 	// nSDLinesMask may be for example (1 << 0) | (1 << 5) for 2 LED strips on SD0 (GPIO8) and SD5 (GPIO13)
 	CWS2812OverSMI(CInterruptSystem *pInterruptSystem, unsigned nSDLinesMask, unsigned nNumberOfLEDsPerStrip);
 
-	virtual ~CWS2812OverSMI();
+	~CWS2812OverSMI();
 
 	unsigned GetLEDCount() const;
 
