@@ -2,11 +2,11 @@
 # Makefile
 #
 
-CIRCLEHOME = ../../..
+CIRCLEHOME = ../../../..
 
 OBJS	= main.o kernel.o 
 
-LIBS	= ../libws28xx.a \
+LIBS	= $(CIRCLEHOME)/addon/WS28XX/libws28xx.a \
 	  $(CIRCLEHOME)/lib/libcircle.a
 
 include $(CIRCLEHOME)/sample/Rules.mk
