@@ -80,8 +80,6 @@ void CWS2812OverSMI::SetLED(unsigned nSDLine, unsigned nLEDIndexInStrip, u8 nRed
 			else txd[1] = 0;
 		}
 		else {
-			// todo this OR/AND mechanism below does not work - because of the data cache?
-			// If so we'd need to maintain a non-cached copy of m_pBuffer and flush it into the DMA buffer in Update()
 			if (grb & msk) txd[1] |= nLineMask;
 			else txd[1] &= ~nLineMask;
 		}

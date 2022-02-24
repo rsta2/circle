@@ -148,7 +148,8 @@
 CSMIMaster::CSMIMaster(CInterruptSystem *pInterruptSystem, unsigned nSDLinesMask, boolean bUseAddressPins) :
 	m_nSDLinesMask (nSDLinesMask),
 	m_bUseAddressPins (bUseAddressPins),
-	m_txDMA (DMA_CHANNEL_LITE /*DMA_CHANNEL_NORMAL*/, pInterruptSystem)
+	m_txDMA (DMA_CHANNEL_LITE /*DMA_CHANNEL_NORMAL*/, pInterruptSystem),
+	m_pDMABuffer (0)
 {
 	if (m_bUseAddressPins) {
 		for (unsigned i = 0 ; i < SMI_NUM_ADDRESS_LINES ; i++) {
@@ -211,6 +212,8 @@ void CSMIMaster::Write (unsigned nValue) {
 
 void CSMIMaster::WriteDMA(boolean bWaitForCompletion)
 {
+	assert (m_pDMABuffer != 0);
+	m_txDMA.SetupIOWrite (ARM_SMI_D, m_pDMABuffer, m_nLength, DREQSourceSMI);
 	m_txDMA.Start();
 	PeripheralEntry();
 	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START);
@@ -287,12 +290,15 @@ void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned 
 
 void CSMIMaster::SetupDMA(void *pDMABuffer, unsigned nLength)
 {
+	assert (pDMABuffer != 0);
+	m_pDMABuffer = pDMABuffer;
+	m_nLength = nLength;
+
 	PeripheralEntry ();
 	write32(ARM_SMI_DMC, (DMA_REQUEST_THRESH << DMC_REQW__SHIFT) | (DMA_REQUEST_THRESH << DMC_REQR__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICW__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICR__SHIFT) | DMC_DMAEN);
 	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_ENABLE | CS_CLEAR | CS_PXLDAT); // CS_PXLDAT packs the 8 or 16 bit data into 32-bit double-words
 	write32(ARM_SMI_L, nLength);
 	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_WRITE);
-	m_txDMA.SetupIOWrite (ARM_SMI_D, pDMABuffer, nLength, DREQSourceSMI);
 	PeripheralExit ();
 }
 

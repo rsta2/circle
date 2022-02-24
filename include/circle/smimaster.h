@@ -106,6 +106,8 @@ protected:
 	CDMAChannel m_txDMA;
 	CGPIOPin m_dataGpios[SMI_NUM_DATA_LINES];
 	CGPIOPin m_addressGpios[SMI_NUM_ADDRESS_LINES];
+	void *m_pDMABuffer;
+	unsigned m_nLength;
 };
 
 #endif
