@@ -60,9 +60,8 @@ enum TSMIDataWidth
 class CSMIMaster
 {
 public:
-	/// \param pInterrupt		pointer to the interrupt system object
 	/// \param nSDLinesMask		mask determining which SDx lines should be driven. For example (1 << 0) | (1 << 5) for SD0 (GPIO8) and SD5 (GPIO13)
-	CSMIMaster (CInterruptSystem *pInterruptSystem, unsigned nSDLinesMask = SMI_ALL_DATA_LINES_MASK, boolean bUseAddressPins = TRUE);
+	CSMIMaster (unsigned nSDLinesMask = SMI_ALL_DATA_LINES_MASK, boolean bUseAddressPins = TRUE);
 
 	~CSMIMaster (void);
 

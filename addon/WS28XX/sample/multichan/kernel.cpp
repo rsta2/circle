@@ -50,7 +50,7 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_NeoPixels (&m_Interrupt, SD_LINES_MASK, LED_COUNT)
+	m_NeoPixels (SD_LINES_MASK, LED_COUNT)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }

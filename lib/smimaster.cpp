@@ -145,10 +145,10 @@
 
 
 
-CSMIMaster::CSMIMaster(CInterruptSystem *pInterruptSystem, unsigned nSDLinesMask, boolean bUseAddressPins) :
+CSMIMaster::CSMIMaster(unsigned nSDLinesMask, boolean bUseAddressPins) :
 	m_nSDLinesMask (nSDLinesMask),
 	m_bUseAddressPins (bUseAddressPins),
-	m_txDMA (DMA_CHANNEL_LITE /*DMA_CHANNEL_NORMAL*/, pInterruptSystem),
+	m_txDMA (DMA_CHANNEL_LITE /*DMA_CHANNEL_NORMAL*/),
 	m_pDMABuffer (0)
 {
 	if (m_bUseAddressPins) {

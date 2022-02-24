@@ -25,8 +25,8 @@
 #include <circle/util.h>
 
 
-CWS2812OverSMI::CWS2812OverSMI(CInterruptSystem *pInterruptSystem, unsigned nSDLinesMask, unsigned nNumberOfLEDsPerStrip) :
-		m_SMIMaster (pInterruptSystem, nSDLinesMask, FALSE),
+CWS2812OverSMI::CWS2812OverSMI(unsigned nSDLinesMask, unsigned nNumberOfLEDsPerStrip) :
+		m_SMIMaster (nSDLinesMask, FALSE),
 		m_nLEDCount (nNumberOfLEDsPerStrip),
 		m_bDirty (TRUE)
 {
