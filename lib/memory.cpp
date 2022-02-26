@@ -2,7 +2,7 @@
 // memory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -241,6 +241,8 @@ void CMemorySystem::EnableMMU (void)
 	nControl &= ~ARM_CONTROL_STRICT_ALIGNMENT;
 	nControl |= ARM_CONTROL_UNALIGNED_PERMITTED;
 #endif
+#else
+	nControl &= ~ARM_CONTROL_STRICT_ALIGNMENT;
 #endif
 	nControl |= MMU_MODE;
 	asm volatile ("mcr p15, 0, %0, c1, c0,  0" : : "r" (nControl) : "memory");
