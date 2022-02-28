@@ -57,8 +57,8 @@ public:
 	boolean Halt (void);
 
 	/// \brief Load a chunk of a program image (or entire program)
-	/// \param pProgram Pointer to the chunk in memory
-	/// \param nProgSize Size of the chunk (must be a multiple of 4)
+	/// \param pChunk Pointer to the chunk in memory
+	/// \param nChunkSize Size of the chunk (must be a multiple of 4)
 	/// \param nAddress Load address of the chunk
 	/// \return Operation successful?
 	boolean LoadChunk (const void *pChunk, size_t nChunkSize, u32 nAddress);
