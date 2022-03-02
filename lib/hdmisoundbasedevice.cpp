@@ -2,7 +2,7 @@
 // hdmisoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -120,6 +120,7 @@ CHDMISoundBaseDevice::CHDMISoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_nChunkSize (nChunkSize),
 	m_ulAudioClockRate (0),
 	m_ulPixelClockRate (0),
+	m_bUsePolling (FALSE),
 	m_bIRQConnected (FALSE),
 	m_State (HDMISoundCreated),
 	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
@@ -144,13 +145,32 @@ CHDMISoundBaseDevice::CHDMISoundBaseDevice (CInterruptSystem *pInterrupt,
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 }
 
+CHDMISoundBaseDevice::CHDMISoundBaseDevice (unsigned nSampleRate)
+:	CSoundBaseDevice (SoundFormatIEC958, 0, nSampleRate, TRUE),
+	m_pInterruptSystem (0),
+	m_nSampleRate (nSampleRate),
+	m_nChunkSize (0),
+	m_ulAudioClockRate (0),
+	m_ulPixelClockRate (0),
+	m_bUsePolling (TRUE),
+	m_nSubFrame (0),
+	m_bIRQConnected (FALSE),
+	m_State (HDMISoundCreated),
+	m_nDMAChannel (DMA_CHANNEL_MAX)		// no DMA channel assigned
+{
+	assert (m_nSampleRate > 0);
+
+	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+}
+
 CHDMISoundBaseDevice::~CHDMISoundBaseDevice (void)
 {
 	assert (   m_State == HDMISoundCreated
 		|| m_State == HDMISoundIdle
 		|| m_State == HDMISoundError);
 
-	if (m_nDMAChannel > DMA_CHANNEL_MAX)
+	if (   m_nDMAChannel > DMA_CHANNEL_MAX
+	    && !m_bUsePolling)
 	{
 		return;
 	}
@@ -158,6 +178,11 @@ CHDMISoundBaseDevice::~CHDMISoundBaseDevice (void)
 	CDeviceNameService::Get ()->RemoveDevice (DeviceName, FALSE);
 
 	ResetHDMI ();
+
+	if (m_bUsePolling)
+	{
+		return;
+	}
 
 	// reset and disable DMA channel
 	PeripheralEntry ();
@@ -258,20 +283,23 @@ boolean CHDMISoundBaseDevice::Start (void)
 					m_ulPixelClockRate);
 #endif
 
-		// enable and reset DMA channel
-		PeripheralEntry ();
-
-		assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-		write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
-		CTimer::SimpleusDelay (1000);
-
-		write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
-		while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
+		if (!m_bUsePolling)
 		{
-			// do nothing
-		}
+			// enable and reset DMA channel
+			PeripheralEntry ();
 
-		PeripheralExit ();
+			assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+			write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
+			CTimer::SimpleusDelay (1000);
+
+			write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
+			while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
+			{
+				// do nothing
+			}
+
+			PeripheralExit ();
+		}
 
 		RunHDMI ();
 
@@ -283,22 +311,26 @@ boolean CHDMISoundBaseDevice::Start (void)
 	// fill buffer 0
 	m_nNextBuffer = 0;
 
-	if (!GetNextChunk ())
+	if (   !m_bUsePolling
+	    && !GetNextChunk ())
 	{
 		return FALSE;
 	}
 
 	m_State = HDMISoundRunning;
 
-	// connect IRQ
-	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-
-	if (!m_bIRQConnected)
+	if (!m_bUsePolling)
 	{
-		assert (m_pInterruptSystem != 0);
-		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel, InterruptStub, this);
+		// connect IRQ
+		assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
 
-		m_bIRQConnected = TRUE;
+		if (!m_bIRQConnected)
+		{
+			assert (m_pInterruptSystem != 0);
+			m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel, InterruptStub, this);
+
+			m_bIRQConnected = TRUE;
+		}
 	}
 
 	// enable HDMI audio operation
@@ -317,6 +349,11 @@ boolean CHDMISoundBaseDevice::Start (void)
 			       | BitMaiControlEnable);
 
 	PeripheralExit ();
+
+	if (m_bUsePolling)
+	{
+		return TRUE;
+	}
 
 	// start DMA
 	PeripheralEntry ();
@@ -358,6 +395,18 @@ boolean CHDMISoundBaseDevice::Start (void)
 
 void CHDMISoundBaseDevice::Cancel (void)
 {
+	if (m_bUsePolling)
+	{
+		if (m_State == HDMISoundRunning)
+		{
+			StopHDMI ();
+
+			m_State = HDMISoundIdle;
+		}
+
+		return;
+	}
+
 	m_SpinLock.Acquire ();
 
 	if (m_State == HDMISoundRunning)
@@ -373,6 +422,35 @@ boolean CHDMISoundBaseDevice::IsActive (void) const
 	return    m_State == HDMISoundRunning
 	       || m_State == HDMISoundCancelled
 	       || m_State == HDMISoundTerminating;
+}
+
+boolean CHDMISoundBaseDevice::IsWritable (void)
+{
+	assert (m_bUsePolling);
+
+	PeripheralEntry ();
+
+	boolean bResult = !(read32 (RegMaiControl) & BitMaiControlFull);
+
+	PeripheralExit ();
+
+	return bResult;
+}
+
+void CHDMISoundBaseDevice::WriteSample (s32 nSample)
+{
+	assert (m_bUsePolling);
+
+	PeripheralEntry ();
+
+	write32 (RegMaiData, ConvertIEC958Sample (nSample, m_nSubFrame / SOUND_HW_CHANNELS));
+
+	PeripheralExit ();
+
+	if (++m_nSubFrame == IEC958_SUBFRAMES_PER_BLOCK)
+	{
+		m_nSubFrame = 0;
+	}
 }
 
 boolean CHDMISoundBaseDevice::GetNextChunk (void)
