@@ -21,6 +21,8 @@
 #include <circle/util.h>
 #include <assert.h>
 
+//#define USE_POLLING_MODE
+
 #define KY040_CLK_PIN	13
 #define KY040_DT_PIN	19
 #define KY040_SW_PIN	26
@@ -32,7 +34,11 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_GPIOManager (&m_Interrupt),
-	m_RotaryEncoder (&m_GPIOManager, KY040_CLK_PIN, KY040_DT_PIN, KY040_SW_PIN),
+	m_RotaryEncoder (KY040_CLK_PIN, KY040_DT_PIN, KY040_SW_PIN
+#ifndef USE_POLLING_MODE
+			 , &m_GPIOManager
+#endif
+			 ),
 	m_nCount (0)
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -77,9 +83,16 @@ boolean CKernel::Initialize (void)
 		bOK = m_Timer.Initialize ();
 	}
 
+#ifndef USE_POLLING_MODE
 	if (bOK)
 	{
 		bOK = m_GPIOManager.Initialize ();
+	}
+#endif
+
+	if (bOK)
+	{
+		bOK = m_RotaryEncoder.Initialize ();
 	}
 
 	return bOK;
@@ -95,6 +108,10 @@ TShutdownMode CKernel::Run (void)
 
 	for (unsigned nCount = 0; 1; nCount++)
 	{
+#ifdef USE_POLLING_MODE
+		m_RotaryEncoder.Update ();
+#endif
+
 		m_Screen.Rotor (0, nCount);
 	}
 
@@ -136,6 +153,31 @@ void CKernel::EventHandler (CKY040::TEvent Event, void *pParam)
 	case CKY040::EventSwitchUp:
 		pMsg = "UP  ";
 		pThis->m_ActLED.Off ();
+		break;
+
+	case CKY040::EventSwitchClick:
+		pMsg = "CLK ";
+		break;
+
+	case CKY040::EventSwitchDoubleClick:
+		pMsg = "DBL ";
+		break;
+
+	case CKY040::EventSwitchTripleClick:
+		pMsg = "TPL ";
+		break;
+
+	case CKY040::EventSwitchHold:
+		switch (pThis->m_RotaryEncoder.GetHoldSeconds ())
+		{
+		case 1:		pMsg = "H1  ";	break;
+		case 3:		pMsg = "H3  ";	break;
+		case 5:		pMsg = "H5  ";	break;
+		case 10:	pMsg = "H10 ";	break;
+
+		default:
+			return;
+		}
 		break;
 
 	default:

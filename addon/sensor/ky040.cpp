@@ -20,7 +20,8 @@
 #include "ky040.h"
 #include <assert.h>
 
-static const unsigned SwitchDebounceDelayHZ = MSEC2HZ (50);
+static const unsigned SwitchDebounceDelayMillis	= 50;
+static const unsigned SwitchTickDelayMillis = 500;
 
 CKY040::TState CKY040::s_NextState[StateUnknown][2][2] =
 {
@@ -56,19 +57,56 @@ CKY040::TEvent CKY040::s_Output[StateUnknown][2][2] =
 	{{EventUnknown, EventUnknown}, {EventUnknown, EventUnknown}}           // StateInvalid
 };
 
-CKY040::CKY040 (CGPIOManager *pGPIOManager, unsigned nCLKPin, unsigned nDTPin, unsigned nSWPin)
+CKY040::TSwitchState CKY040::s_NextSwitchState[SwitchStateUnknown][SwitchEventUnknown] =
+{
+	// {SwitchEventDown, SwitchEventUp, SwitchEventTick}
+
+	{SwitchStateDown,    SwitchStateStart,  SwitchStateStart},	// SwitchStateStart
+	{SwitchStateDown,    SwitchStateClick,  SwitchStateHold},	// SwitchStateDown
+	{SwitchStateDown2,   SwitchStateClick,  SwitchStateStart},	// SwitchStateClick
+	{SwitchStateDown2,   SwitchStateClick2, SwitchStateInvalid}, 	// SwitchStateDown2
+	{SwitchStateDown3,   SwitchStateClick2, SwitchStateStart}, 	// SwitchStateClick2
+	{SwitchStateDown3,   SwitchStateClick3, SwitchStateInvalid}, 	// SwitchStateDown3
+	{SwitchStateInvalid, SwitchStateClick3, SwitchStateStart}, 	// SwitchStateClick3
+	{SwitchStateHold,    SwitchStateStart,  SwitchStateHold},	// SwitchStateHold
+	{SwitchStateInvalid, SwitchStateStart,  SwitchStateInvalid}	// SwitchStateInvalid
+};
+
+CKY040::TEvent CKY040::s_SwitchOutput[SwitchStateUnknown][SwitchEventUnknown] =
+{
+	// {SwitchEventDown, SwitchEventUp, SwitchEventTick}
+
+	{EventUnknown, EventUnknown, EventUnknown},		// SwitchStateStart
+	{EventUnknown, EventUnknown, EventSwitchHold},		// SwitchStateDown
+	{EventUnknown, EventUnknown, EventSwitchClick},		// SwitchStateClick
+	{EventUnknown, EventUnknown, EventUnknown},		// SwitchStateDown2
+	{EventUnknown, EventUnknown, EventSwitchDoubleClick},	// SwitchStateClick2
+	{EventUnknown, EventUnknown, EventUnknown},		// SwitchStateDown3
+	{EventUnknown, EventUnknown, EventSwitchTripleClick},	// SwitchStateClick3
+	{EventUnknown, EventUnknown, EventSwitchHold},		// SwitchStateHold
+	{EventUnknown, EventUnknown, EventUnknown}		// SwitchStateInvalid
+};
+
+CKY040::CKY040 (unsigned nCLKPin, unsigned nDTPin, unsigned nSWPin, CGPIOManager *pGPIOManager)
 :	m_CLKPin (nCLKPin, GPIOModeInputPullUp, pGPIOManager),
 	m_DTPin (nDTPin, GPIOModeInputPullUp, pGPIOManager),
 	m_SWPin (nSWPin, GPIOModeInputPullUp, pGPIOManager),
+	m_bPollingMode (!pGPIOManager),
+	m_bInterruptConnected (FALSE),
 	m_pEventHandler (nullptr),
 	m_State (StateStart),
-	m_hDebounceTimer (0)
+	m_hDebounceTimer (0),
+	m_hTickTimer (0),
+	m_nLastSWLevel (HIGH),
+	m_bDebounceActive (FALSE),
+	m_SwitchState (SwitchStateStart),
+	m_nSwitchLastTicks (0)
 {
 }
 
 CKY040::~CKY040 (void)
 {
-	if (m_pEventHandler)
+	if (m_bInterruptConnected)
 	{
 		m_pEventHandler = nullptr;
 
@@ -84,6 +122,40 @@ CKY040::~CKY040 (void)
 		m_SWPin.DisableInterrupt ();
 		m_SWPin.DisconnectInterrupt ();
 	}
+
+	if (m_hDebounceTimer)
+	{
+		CTimer::Get ()->CancelKernelTimer (m_hDebounceTimer);
+	}
+
+	if (m_hTickTimer)
+	{
+		CTimer::Get ()->CancelKernelTimer (m_hTickTimer);
+	}
+}
+
+boolean CKY040::Initialize (void)
+{
+	if (!m_bPollingMode)
+	{
+		assert (!m_bInterruptConnected);
+		m_bInterruptConnected = TRUE;
+
+		m_CLKPin.ConnectInterrupt (EncoderInterruptHandler, this);
+		m_DTPin.ConnectInterrupt (EncoderInterruptHandler, this);
+		m_SWPin.ConnectInterrupt (SwitchInterruptHandler, this);
+
+		m_CLKPin.EnableInterrupt (GPIOInterruptOnFallingEdge);
+		m_CLKPin.EnableInterrupt2 (GPIOInterruptOnRisingEdge);
+
+		m_DTPin.EnableInterrupt (GPIOInterruptOnFallingEdge);
+		m_DTPin.EnableInterrupt2 (GPIOInterruptOnRisingEdge);
+
+		m_SWPin.EnableInterrupt (GPIOInterruptOnFallingEdge);
+		m_SWPin.EnableInterrupt2 (GPIOInterruptOnRisingEdge);
+	}
+
+	return TRUE;
 }
 
 void CKY040::RegisterEventHandler (TEventHandler *pHandler, void *pParam)
@@ -92,19 +164,81 @@ void CKY040::RegisterEventHandler (TEventHandler *pHandler, void *pParam)
 	m_pEventHandler = pHandler;
 	assert (m_pEventHandler);
 	m_pEventParam = pParam;
+}
 
-	m_CLKPin.ConnectInterrupt (EncoderInterruptHandler, this);
-	m_DTPin.ConnectInterrupt (EncoderInterruptHandler, this);
-	m_SWPin.ConnectInterrupt (SwitchInterruptHandler, this);
+unsigned CKY040::GetHoldSeconds (void) const
+{
+	return m_nHoldCounter / 2;
+}
 
-	m_CLKPin.EnableInterrupt (GPIOInterruptOnFallingEdge);
-	m_CLKPin.EnableInterrupt2 (GPIOInterruptOnRisingEdge);
+void CKY040::Update (void)
+{
+	assert (m_bPollingMode);
 
-	m_DTPin.EnableInterrupt (GPIOInterruptOnFallingEdge);
-	m_DTPin.EnableInterrupt2 (GPIOInterruptOnRisingEdge);
+	EncoderInterruptHandler (this);
 
-	m_SWPin.EnableInterrupt (GPIOInterruptOnFallingEdge);
-	m_SWPin.EnableInterrupt2 (GPIOInterruptOnRisingEdge);
+	// handle switch
+	unsigned nTicks = CTimer::GetClockTicks ();
+	unsigned nSW = m_SWPin.Read ();
+
+	if (nSW != m_nLastSWLevel)
+	{
+		m_nLastSWLevel = nSW;
+
+		m_bDebounceActive = TRUE;
+		m_nDebounceLastTicks = CTimer::GetClockTicks ();
+	}
+	else
+	{
+		if (   m_bDebounceActive
+		    && nTicks - m_nDebounceLastTicks >= SwitchDebounceDelayMillis * (CLOCKHZ / 1000))
+		{
+			m_bDebounceActive = FALSE;
+			m_nSwitchLastTicks = nTicks;
+
+			if (m_pEventHandler)
+			{
+				(*m_pEventHandler) (nSW ? EventSwitchUp : EventSwitchDown,
+						    m_pEventParam);
+			}
+
+			HandleSwitchEvent (nSW ? SwitchEventUp : SwitchEventDown);
+		}
+
+		if (nTicks - m_nSwitchLastTicks >= SwitchTickDelayMillis * (CLOCKHZ / 1000))
+		{
+			m_nSwitchLastTicks = nTicks;
+
+			HandleSwitchEvent (SwitchEventTick);
+		}
+	}
+}
+
+// generates the higher level switch events
+void CKY040::HandleSwitchEvent (TSwitchEvent SwitchEvent)
+{
+	assert (SwitchEvent < SwitchEventUnknown);
+	TEvent Event = s_SwitchOutput[m_SwitchState][SwitchEvent];
+	TSwitchState NextState = s_NextSwitchState[m_SwitchState][SwitchEvent];
+
+	if (NextState == SwitchStateHold)
+	{
+		if (m_SwitchState != SwitchStateHold)
+		{
+			m_nHoldCounter = 0;
+		}
+
+		m_nHoldCounter++;
+	}
+
+	m_SwitchState = NextState;
+
+	if (   Event != EventUnknown
+	    && (Event != EventSwitchHold || !(m_nHoldCounter & 1)) // emit hold event each second
+	    && m_pEventHandler)
+	{
+		(*m_pEventHandler) (Event, m_pEventParam);
+	}
 }
 
 void CKY040::EncoderInterruptHandler (void *pParam)
@@ -117,6 +251,7 @@ void CKY040::EncoderInterruptHandler (void *pParam)
 	assert (nCLK <= 1);
 	assert (nDT <= 1);
 
+	assert (pThis->m_State < StateUnknown);
 	TEvent Event = s_Output[pThis->m_State][nCLK][nDT];
 	pThis->m_State = s_NextState[pThis->m_State][nCLK][nDT];
 
@@ -137,22 +272,44 @@ void CKY040::SwitchInterruptHandler (void *pParam)
 		CTimer::Get ()->CancelKernelTimer (pThis->m_hDebounceTimer);
 	}
 
-	pThis->m_hDebounceTimer = CTimer::Get ()->StartKernelTimer (SwitchDebounceDelayHZ,
-								    SwitchTimerHandler, pThis, 0);
+	pThis->m_hDebounceTimer =
+		CTimer::Get ()->StartKernelTimer (MSEC2HZ (SwitchDebounceDelayMillis),
+						  SwitchDebounceHandler, pThis, 0);
 }
 
-void CKY040::SwitchTimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext)
+void CKY040::SwitchDebounceHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext)
 {
 	CKY040 *pThis = static_cast<CKY040 *> (pParam);
 	assert (pThis != 0);
 
 	pThis->m_hDebounceTimer = 0;
 
+	if (pThis->m_hTickTimer)
+	{
+		CTimer::Get ()->CancelKernelTimer (pThis->m_hTickTimer);
+	}
+
+	pThis->m_hTickTimer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (SwitchTickDelayMillis),
+								SwitchTickHandler, pThis, 0);
+
+	unsigned nSW = pThis->m_SWPin.Read ();
+
 	if (pThis->m_pEventHandler)
 	{
-		(*pThis->m_pEventHandler) (  pThis->m_SWPin.Read ()
-					   ? EventSwitchUp
-					   : EventSwitchDown,
+		(*pThis->m_pEventHandler) (nSW ? EventSwitchUp : EventSwitchDown,
 					   pThis->m_pEventParam);
 	}
+
+	pThis->HandleSwitchEvent (nSW ? SwitchEventUp : SwitchEventDown);
+}
+
+void CKY040::SwitchTickHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext)
+{
+	CKY040 *pThis = static_cast<CKY040 *> (pParam);
+	assert (pThis != 0);
+
+	pThis->m_hTickTimer = CTimer::Get ()->StartKernelTimer (MSEC2HZ (SwitchTickDelayMillis),
+								SwitchTickHandler, pThis, 0);
+
+	pThis->HandleSwitchEvent (SwitchEventTick);
 }

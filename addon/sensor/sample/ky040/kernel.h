@@ -65,7 +65,7 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 
-	CGPIOManager		m_GPIOManager;
+	CGPIOManager		m_GPIOManager;		// not needed in polling mode
 	CKY040			m_RotaryEncoder;
 
 	unsigned		m_nCount;
