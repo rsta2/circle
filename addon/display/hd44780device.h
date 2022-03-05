@@ -2,7 +2,7 @@
 // hd44780device.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,6 +45,8 @@
 // ^I		Move to next hardware tab
 // \E[?25h	Normal cursor visible
 // \E[?25l	Cursor invisible
+// \Ed+		Start autopage mode
+// \Ed*		End autopage mode
 //
 // ^X = Control character
 // \E = Escape (\x1b)
@@ -62,10 +64,12 @@ public:
 	/// \param nENPin   GPIO pin number of Enable pin (Brcm numbering)
 	/// \param nRSPin   GPIO pin number of Register Select pin (Brcm numbering)
 	/// \param nRWPin   GPIO pin number of Read/Write pin (Brcm numbering, 0 if not connected)
-	/// \note Driver uses 4-bit mode, pins D0-D3 are note used.
+	/// \param bBlockCursor Use blinking block cursor instead of underline cursor
+	/// \note Driver uses 4-bit mode, pins D0-D3 are not used.
 	CHD44780Device (unsigned nColumns, unsigned nRows,
 			unsigned nD4Pin, unsigned nD5Pin, unsigned nD6Pin, unsigned nD7Pin,
-			unsigned nENPin, unsigned nRSPin, unsigned nRWPin = 0);
+			unsigned nENPin, unsigned nRSPin, unsigned nRWPin = 0,
+			boolean bBlockCursor = FALSE);
 	~CHD44780Device (void);
 
 	/// \return Operation successful?
@@ -104,6 +108,7 @@ private:
 	void DisplayChar (char chChar);
 	void EraseChars (unsigned nCount);
 	void NewLine (void);
+	void SetAutoPageMode (boolean bEnable);
 	void SetCursorMode (boolean bVisible);
 	void Tabulator (void);
 
@@ -129,12 +134,15 @@ private:
 	CGPIOPin  m_RS;
 	CGPIOPin *m_pRW;
 
+	boolean m_bBlockCursor;
+
 	unsigned m_nState;
 	unsigned m_nCursorX;
 	unsigned m_nCursorY;
 	boolean  m_bCursorOn;
 	unsigned m_nParam1;
 	unsigned m_nParam2;
+	boolean  m_bAutoPage;
 
 	char m_Buffer[HD44780_MAX_ROWS][HD44780_MAX_COLUMNS];
 

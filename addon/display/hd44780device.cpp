@@ -2,7 +2,7 @@
 // hd44780device.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <display/hd44780device.h>
+#include "hd44780device.h"
 #include <circle/timer.h>
 #include <assert.h>
 
@@ -30,12 +30,14 @@ enum TDisplayState
 	ScreenStateQuestionMark,
 	ScreenStateSemicolon,
 	ScreenStateNumber2,
-	ScreenStateNumber3
+	ScreenStateNumber3,
+	ScreenStateAutoPage
 };
 
 CHD44780Device::CHD44780Device (unsigned nColumns, unsigned nRows,
 				unsigned nD4Pin, unsigned nD5Pin, unsigned nD6Pin, unsigned nD7Pin,
-				unsigned nENPin, unsigned nRSPin, unsigned nRWPin)
+				unsigned nENPin, unsigned nRSPin, unsigned nRWPin,
+				boolean bBlockCursor)
 :	m_nColumns (nColumns),
 	m_nRows (nRows),
 	m_D4 (nD4Pin, GPIOModeOutput),
@@ -45,6 +47,7 @@ CHD44780Device::CHD44780Device (unsigned nColumns, unsigned nRows,
 	m_EN (nENPin, GPIOModeOutput),
 	m_RS (nRSPin, GPIOModeOutput),
 	m_pRW (0),
+	m_bBlockCursor (bBlockCursor),
 	m_nState (ScreenStateStart),
 	m_SpinLock (TASK_LEVEL)
 {
@@ -79,6 +82,7 @@ boolean CHD44780Device::Initialize (void)
 	WriteByte (m_nRows == 1 ? 0x20 : 0x28);
 
 	SetCursorMode (TRUE);
+	SetAutoPageMode (FALSE);
 	CursorHome ();
 	ClearDisplayEnd ();
 
@@ -158,6 +162,10 @@ void CHD44780Device::Write (char chChar)
 		{
 		case '[':
 			m_nState = ScreenStateBracket;
+			break;
+
+		case 'd':
+			m_nState = ScreenStateAutoPage;
 			break;
 
 		default:
@@ -335,6 +343,25 @@ void CHD44780Device::Write (char chChar)
 		}
 		break;
 
+	case ScreenStateAutoPage:
+		switch (chChar)
+		{
+		case '+':
+			SetAutoPageMode (TRUE);
+			m_nState = ScreenStateStart;
+			break;
+
+		case '*':
+			SetAutoPageMode (FALSE);
+			m_nState = ScreenStateStart;
+			break;
+
+		default:
+			m_nState = ScreenStateStart;
+			break;
+		}
+		break;
+
 	default:
 		m_nState = ScreenStateStart;
 		break;
@@ -387,9 +414,16 @@ void CHD44780Device::CursorDown (void)
 {
 	if (++m_nCursorY >= m_nRows)
 	{
-		Scroll ();
+		if (!m_bAutoPage)
+		{
+			Scroll ();
 
-		m_nCursorY--;
+			m_nCursorY--;
+		}
+		else
+		{
+			m_nCursorY = 0;
+		}
 	}
 }
 
@@ -483,11 +517,16 @@ void CHD44780Device::NewLine (void)
 	CursorDown ();
 }
 
+void CHD44780Device::SetAutoPageMode (boolean bEnable)
+{
+	m_bAutoPage = bEnable;
+}
+
 void CHD44780Device::SetCursorMode (boolean bVisible)
 {
 	m_bCursorOn = bVisible;
 
-	WriteByte (m_bCursorOn ? 0x0E : 0x0C);
+	WriteByte (m_bCursorOn ? (m_bBlockCursor ? 0x0D : 0x0E) : 0x0C);
 }
 
 void CHD44780Device::Tabulator (void)
