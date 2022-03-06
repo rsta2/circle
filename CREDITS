@@ -84,3 +84,4 @@ Adding screen ANSI colors
 @sebastienNEC
 Providing info patch for I2S input
 Providing patch for WLAN AP mode
+Adding SMI master driver and WS2812OverSMI addon

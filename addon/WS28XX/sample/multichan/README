@@ -1,0 +1,16 @@
+README
+
+This sample allows to control multiple LED stripes (aka NeoPixels) simultaneous,
+which are equipped with the WS2812. It uses the SMI (Second Memory Interface)
+master of the Raspberry Pi. The LED driver can theoretically drive up to 16
+lines, but the sample is prepared for three.
+
+You may have to configure the program in the kernel.cpp file to meet your
+configuration before build. The LED stripes can be connected to GPIO8 .. GPIO23
+(SoC numbers, not header positions). If you have less than three stripes, the
+respective GPIO pin can remain open. All LED stripes must have the same number
+of LEDs, if one stripe is shorter, some LED positions will be ignored on that
+stripe.
+
+The WS2812 over SMI support (including SMI driver) was developed by Sebastien
+Nicolas.
