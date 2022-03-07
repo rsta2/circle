@@ -23,8 +23,8 @@
 
 //#define USE_POLLING_MODE
 
-#define KY040_CLK_PIN	13
-#define KY040_DT_PIN	19
+#define KY040_CLK_PIN	5
+#define KY040_DT_PIN	6
 #define KY040_SW_PIN	26
 
 static const char FromKernel[] = "kernel";
