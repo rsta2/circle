@@ -61,6 +61,7 @@ class CSMIMaster
 {
 public:
 	/// \param nSDLinesMask		mask determining which SDx lines should be driven. For example (1 << 0) | (1 << 5) for SD0 (GPIO8) and SD5 (GPIO13)
+	/// \param bUseAddressPins	enable use of address pins GPIO0 to GPIO5
 	CSMIMaster (unsigned nSDLinesMask = SMI_ALL_DATA_LINES_MASK, boolean bUseAddressPins = TRUE);
 
 	~CSMIMaster (void);
@@ -92,7 +93,7 @@ public:
 	unsigned Read ();
 
 	/// \brief Issues a single SMI cycle, i.e. writes the value to the SDx lines
-	/// \param nValue	the value to be written to the enabled DSx lines
+	/// \param nValue	the value to be written to the enabled SDx lines
 	void Write (unsigned nValue);
 
 	/// \brief Triggers the DMA transfer of a few cycles with the buffer/length specified in SetupDMA

@@ -60,6 +60,7 @@ public:
 	virtual ~CHDMISoundBaseDevice (void);
 
 	/// \brief Starts the HDMI sound operation
+	/// \return Operation successful?
 	boolean Start (void);
 
 	/// \brief Cancels the HDMI sound operation
@@ -74,7 +75,8 @@ public:
 	/// \note Can be called in polling mode only.
 	boolean IsWritable (void);
 
-	/// \return Write one 24-bit signed sample to the data FIFO.
+	/// \brief Write one 24-bit signed sample to the data FIFO.
+	/// \param nSample 24-bit signed sample to be written
 	/// \note Can be called in polling mode only.
 	/// \note Should be called only, when IsWritable() returned TRUE before.
 	/// \note Must be called twice for each frame (left/right sample).
