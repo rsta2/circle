@@ -25,6 +25,37 @@
 
 #if AARCH == 32
 
+	.globl	memset
+	.type   memset, %function
+memset:
+	tst	r0, #3
+	bne	2f
+	cmp	r2, #16
+	blo	2f
+
+	orr	r3, r1, r1, lsl #8
+	orr	r12, r3, r3, lsl #16
+
+	mov	r3, r0
+1:	str	r12, [r3]
+	str	r12, [r3, #4]
+	str	r12, [r3, #8]
+	str	r12, [r3, #12]
+	add	r3, r3, #16
+	sub	r2, r2, #16
+	cmp	r2, #15
+	bhi	1b
+	b	3f
+
+2:	mov	r3, r0
+3:	cmp	r2, #0
+	bxeq	lr
+
+4:	strb	r1, [r3], #1
+	subs	r2, r2, #1
+	bne	4b
+	bx	lr
+
 	.globl	memcpy
 	.type   memcpy, %function
 memcpy:
@@ -58,6 +89,40 @@ memcpy:
 	bx	lr
 
 #else
+
+	.globl	memset
+	.type   memset, %function
+memset:
+	tst	x0, #7
+	b.ne	2f
+	cmp	x2, #16
+	b.lo	6f
+
+	orr	w8, w1, w1, lsl #8
+	orr	w9, w8, w8, lsl #16
+	mov	x10, x0
+
+1:	stp	w9, w9, [x10]
+	add	x8, x10, #16
+	sub	x2, x2, #16
+	cmp	x2, #15
+	stp	w9, w9, [x10, #8]
+	mov	x10, x8
+	b.hi	1b
+	b	3f
+
+2:	mov	x8, x0
+3:	cbz	x2, 5f
+
+4:	subs	x2, x2, #1
+	strb	w1, [x8], #1
+	b.ne	4b
+
+5:	ret
+
+6:	mov	x8, x0
+	cbnz	x2, 4b
+	b	5b
 
 	.globl	memcpy
 	.type   memcpy, %function
