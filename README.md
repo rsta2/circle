@@ -10,29 +10,21 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-Release 44.3
+Release 44.4
 ------------
 
-This intermediate release supports the new **Raspberry Pi Zero 2 W**. Please download the updated recommended firmware in [boot/](boot/) to be able to use it!
+This intermediate release updates the FatFs and LVGL support to the most recent versions. While the **update to FatFs R0.14b** is compatible with earlier releases, the **update to LVGL v8.2.0** requires modifications in existing applications, which use this graphics library. Also there isn't a separate submodule *lv_examples* for LVGL examples any more, the demo program is included in the main submodule.
 
-**Tasks have a name** now, which can be assigned using `CTask::SetName()` and is shown in the task list, which can be generated with `CScheduler::ListTasks()`. A task can be found with this name using `CScheduler::GetTask()` and can be suspended from running with `CTask::Suspend()` and reactivated later with `CTask::Resume()`.
+New features are:
 
-The I2S driver can be used via the **P5 extension header on early Raspberry Pi models**.
+* A **multi-channel driver and sample for WS2812 LED stripes**, which is based on a new **driver for the Secondary Memory Interface (SMI)**. See [addon/WS28XX/sample/multichan/](addon/WS28XX/sample/multichan/) for details!
+* A **driver and sample for the KY-040 rotary encoder** in [addon/sensor/sample/ky040/](addon/sensor/sample/ky040/).
+* The [sample/42-i2sinput](sample/42-i2sinput) has been extended with a **sound recorder mode**. You can record digital I2S sound from other devices to the SD card using this sample.
+* **Support for the Raspberry Pi 4 Case Fan** has been added to the class `CCPUThrottle`. There is a new option `gpiofanpin=` for [cmdline.txt](doc/cmdline.txt), which enables the case fan support. The CPU speed is not throttled any more, when this option is used.
 
-There are some new features in [addon/](addon/):
+Don't forget to update the used firmware to the one downloadable in [boot/](boot/)!
 
-* Driver for **ST7789-based dot-matrix displays** with SPI interface in [addon/display/](addon/display/)
-* Experimental **WLAN AP mode support** for open networks with static IP addresses in [addon/wlan/](addon/wlan/)
-* **RAM loader for the Raspberry Pi Pico**, which uses the SWD debug interface in [addon/pico/](addon/pico/)
-* **MCP3004/3008 driver** can return raw values in [addon/sensor/](addon/sensor/)
-
-These fixes have been applied:
-
-* The TCP sender did not set the PUSH flag under some circumstances, where it was necessary.
-* When an synchronous xHCI USB transfer timed out, this might have lead to a failed assertion, when the next transfer starts.
-* The DWHCI USB driver might have asserted, when a control message transfer failed before.
-
-There is the new option `usbignore=` for the file *cmdline.txt*, which allows to explicitly ignore an USB device or interface in the USB device enumeration process, which is otherwise supported.
+Have a look at the new [Circle documentation](https://circle-rpi.readthedocs.io/)! Feel free to use the the new [Discussions forum](https://github.com/rsta2/circle/discussions) for topics, which are not Issues.
 
 The 44th Step
 -------------
@@ -108,6 +100,7 @@ Circle supports the following features:
 |                       | SPI0 master (Polling and DMA driver)                |
 |                       | SPI1 auxiliary master (Polling)                     |
 |                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          |
+|                       | SMI master (experimental)                           |
 |                       | I2S sound output and input                          |
 |                       | HDMI sound output (without VCHIQ)                   |
 |                       | Hardware random number generator                    |
@@ -115,7 +108,7 @@ Circle supports the following features:
 |                       | Official Raspberry Pi touch screen                  |
 |                       | VCHIQ interface and audio service drivers           |
 |                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |
-|                       | Wireless LAN access (experimental)                  |
+|                       | Wireless LAN access                                 |
 |                       |                                                     |
 | USB                   | Host controller interface (HCI) drivers             |
 |                       | Standard hub driver (USB 2.0 only)                  |
@@ -139,7 +132,7 @@ Circle supports the following features:
 | Graphics              | OpenGL ES 1.1 and 2.0, OpenVG 1.1, EGL 1.4          |
 |                       | (not on Raspberry Pi 4)                             |
 |                       | uGUI (by Achim Doebler)                             |
-|                       | LVGL (by LVGL LLC)                                  |
+|                       | LVGL (by LVGL Kft)                                  |
 |                       | 2D graphics class in base library                   |
 |                       |                                                     |
 | Not supported         | Bluetooth                                           |
@@ -249,6 +242,7 @@ Base library
 * CDMASoundBuffers: Concatenated DMA buffers to be used by sound device drivers
 * CGenericLock: Locks a resource with or without scheduler
 * CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ)
+* CSMIMaster: Driver for the Second Memory Interface
 
 USB library
 
