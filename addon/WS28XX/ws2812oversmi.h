@@ -84,6 +84,7 @@ private:
 	unsigned m_nLEDCount;
 	boolean m_bDirty;
 	TXDATA_T *m_pBuffer;
+	boolean m_bOnlyOneLine;
 };
 
 #endif

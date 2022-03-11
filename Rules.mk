@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 440301
+CIRCLEVER = 440400
 
 CIRCLEHOME ?= ..
 

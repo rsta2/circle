@@ -28,14 +28,17 @@
 CWS2812OverSMI::CWS2812OverSMI(unsigned nSDLinesMask, unsigned nNumberOfLEDsPerStrip) :
 		m_SMIMaster (nSDLinesMask, FALSE),
 		m_nLEDCount (nNumberOfLEDsPerStrip),
-		m_bDirty (TRUE)
+		m_bDirty (TRUE),
+		m_bOnlyOneLine (TRUE)
 {
 	assert (m_nLEDCount > 0);
 	unsigned len = TX_BUFF_LEN(m_nLEDCount);
 	m_pBuffer = new TXDATA_T[len]; // using new makes the buffer cache-aligned, so suitable for DMA
 	memset(m_pBuffer, 0, len * sizeof(TXDATA_T));
+	unsigned nLines = 0;
 	for (unsigned nStripIndex = 0; nStripIndex < LED_NCHANS; nStripIndex++) {
 		if (nSDLinesMask & (1 << nStripIndex)) {
+			m_bOnlyOneLine = ++nLines == 1;
 			for (unsigned nLEDIndex = 0; nLEDIndex < m_nLEDCount; nLEDIndex++) SetLED (nStripIndex, nLEDIndex, 0, 0, 0);
 		}
 	}
@@ -69,13 +72,12 @@ void CWS2812OverSMI::SetLED(unsigned nSDLine, unsigned nLEDIndexInStrip, u8 nRed
 
 	// Logic 1 is 0.8us high, 0.4 us low, logic 0 is 0.4us high, 0.8us low
 	TXDATA_T nLineMask = 1 << nSDLine;
-	boolean onlyOneLine = __builtin_popcount(m_SMIMaster.GetSDLinesMask()) == 1;
 	// For each bit of the 24-bit GRB values...
 	for (unsigned msk = 1<<(LED_NBITS-1); msk > 0; msk >>= 1) {
 		// 1st byte or word is a high pulse on all lines
 		txd[0] = (TXDATA_T) 0xffff;
 		// 2nd has high or low bits from data
-		if (onlyOneLine) {
+		if (m_bOnlyOneLine) {
 			if (grb & msk) txd[1] = nLineMask;
 			else txd[1] = 0;
 		}

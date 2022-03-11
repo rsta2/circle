@@ -243,6 +243,9 @@ void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned 
 		break;
 	default:
 		assert(0);
+		readReg = ARM_SMI_DSR0;		// to keep the compiler quiet
+		writeReg = ARM_SMI_DSW0;
+		break;
 	}
 	PeripheralEntry ();
 
