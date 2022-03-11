@@ -1,0 +1,12 @@
+README
+
+This sample program displays events, generated from a KY-040 rotary encoder
+module, on the screen. Furthermore there is a rotor (the left one) in the top
+right corner of the screen, which turns with the encoder.
+
+You have to attach the KY-040 module properly to your Raspberry Pi. The sample
+program by default uses GPIO13 (chip numbers, not header positions) to connect
+the CLK pin (A), GPIO19 to connect the DT (B) pin, and GPIO26 for the SW pin.
+This configuration can be changed in the kernel.cpp file before building. Don't
+forget to connect GND and + (3.3V power) of the KY-040 module to the respective
+Raspberry Pi pins.

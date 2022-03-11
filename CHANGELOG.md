@@ -5,8 +5,26 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 44.4
+------------
+
+This intermediate release updates the FatFs and LVGL support to the most recent versions. While the **update to FatFs R0.14b** is compatible with earlier releases, the **update to LVGL v8.2.0** requires modifications in existing applications, which use this graphics library. Also there isn't a separate submodule *lv_examples* for LVGL examples any more, the demo program is included in the main submodule.
+
+New features are:
+
+* A **multi-channel driver and sample for WS2812 LED stripes**, which is based on a new **driver for the Secondary Memory Interface (SMI)**. See [addon/WS28XX/sample/multichan/](addon/WS28XX/sample/multichan/) for details!
+* A **driver and sample for the KY-040 rotary encoder** in [addon/sensor/sample/ky040/](addon/sensor/sample/ky040/).
+* The [sample/42-i2sinput](sample/42-i2sinput) has been extended with a **sound recorder mode**. You can record digital I2S sound from other devices to the SD card using this sample.
+* **Support for the Raspberry Pi 4 Case Fan** has been added to the class `CCPUThrottle`. There is a new option `gpiofanpin=` for [cmdline.txt](doc/cmdline.txt), which enables the case fan support. The CPU speed is not throttled any more, when this option is used.
+
+Don't forget to update the used firmware to the one downloadable in [boot/](boot/)!
+
+Have a look at the new [Circle documentation](https://circle-rpi.readthedocs.io/)! Feel free to use the the new [Discussions forum](https://github.com/rsta2/circle/discussions) for topics, which are not Issues.
+
 Release 44.3
 ------------
+
+2021-12-02
 
 This intermediate release supports the new **Raspberry Pi Zero 2 W**. Please download the updated recommended firmware in [boot/](boot/) to be able to use it!
 

@@ -22,6 +22,10 @@
 #include <circle/util.h>
 #include <assert.h>
 
+#ifdef ENABLE_RECORDER
+	#include "soundrecorder.h"
+#endif
+
 #if WRITE_FORMAT == 0
 	#define FORMAT		SoundFormatUnsigned8
 	#define TYPE		u8
@@ -54,6 +58,9 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+#ifdef ENABLE_RECORDER
+	m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
+#endif
 	m_SoundIn (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, TRUE, 0, 0,
 		   CI2SSoundBaseDevice::DeviceModeRXOnly),
 	m_SoundOut (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE)
@@ -100,12 +107,31 @@ boolean CKernel::Initialize (void)
 		bOK = m_Timer.Initialize ();
 	}
 
+#ifdef ENABLE_RECORDER
+	if (bOK)
+	{
+		bOK = m_EMMC.Initialize ();
+	}
+#endif
+
 	return bOK;
 }
 
 TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
+
+#ifdef ENABLE_RECORDER
+	// mount file system
+	if (f_mount (&m_FileSystem, DRIVE, 1) != FR_OK)
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Cannot mount drive: %s", DRIVE);
+	}
+
+	// start sound recorder task
+	CSoundRecorder *pRecorder = new CSoundRecorder (&m_FileSystem);
+	assert (pRecorder != 0);
+#endif
 
 	// configure sound device
 	if (!m_SoundIn.AllocateReadQueue (QUEUE_SIZE_MSECS))
@@ -136,7 +162,7 @@ TShutdownMode CKernel::Run (void)
 	// copy sound data
 	for (unsigned nCount = 0; 1; nCount++)
 	{
-		u8 Buffer[TYPE_SIZE*WRITE_CHANNELS*1000];
+		u8 Buffer[TYPE_SIZE*WRITE_CHANNELS*4096];
 		int nBytes = m_SoundIn.Read (Buffer, sizeof Buffer);
 		if (nBytes > 0)
 		{
@@ -145,9 +171,20 @@ TShutdownMode CKernel::Run (void)
 			{
 				m_Logger.Write (FromKernel, LogWarning, "Sound data dropped");
 			}
+
+#ifdef ENABLE_RECORDER
+			nResult = pRecorder->Write (Buffer, nBytes);
+			if (nResult != nBytes)
+			{
+				m_Logger.Write (FromKernel, LogWarning,
+						"Sound data dropped (recorder)");
+			}
+#endif
 		}
 
 		m_Screen.Rotor (0, nCount);
+
+		m_Scheduler.Yield ();
 	}
 
 	return ShutdownHalt;

@@ -2,7 +2,7 @@
 // cputhrottle.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #ifndef _circle_cputhrottle_h
 #define _circle_cputhrottle_h
 
+#include <circle/gpiopin.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -49,6 +50,9 @@ typedef void TSystemThrottledHandler (TSystemThrottledState CurrentState, void *
 /// \warning CCPUThrottle cannot be used together with code doing I2C or SPI transfers.\n
 ///	     Because clock rate changes to the CPU clock may also effect the CORE clock,\n
 ///	     this could result in a changing transfer speed.
+
+/// \note If the cmdline.txt option "gpiofanpin=" is used, this class controls a GPIO fan\n
+///	  not the CPU clock rate.
 
 class CCPUThrottle	/// Manages CPU clock rate depending on app/user requirements and SoC temperature
 {
@@ -137,6 +141,9 @@ private:
 	TSystemThrottledState m_LastThrottledState;
 	TSystemThrottledHandler *m_pThrottledHandler;
 	void *m_pThrottledParam;
+
+	boolean m_bFanConnected;
+	CGPIOPin m_FanPin;
 
 	static CCPUThrottle *s_pThis;
 };

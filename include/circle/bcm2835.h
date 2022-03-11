@@ -2,7 +2,7 @@
 // bcm2835.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -194,6 +194,9 @@
 
 #define ARM_CM_GP0CTL		(ARM_CM_BASE + 0x70)
 #define ARM_CM_GP0DIV		(ARM_CM_BASE + 0x74)
+
+#define ARM_CM_SMICTL		(ARM_CM_BASE + 0xB0)
+#define ARM_CM_SMIDIV		(ARM_CM_BASE + 0xB4)
 
 #define ARM_CM_PASSWD 		(0x5A << 24)
 

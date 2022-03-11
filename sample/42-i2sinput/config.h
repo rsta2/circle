@@ -26,7 +26,14 @@
 					// 3: 24-bit signed (occupies 32-bit)
 #define WRITE_CHANNELS	2		// 1: Mono, 2: Stereo
 
-#define QUEUE_SIZE_MSECS 100		// size of the sound queue in milliseconds duration
+#define QUEUE_SIZE_MSECS 1000		// size of the sound queue in milliseconds duration
 #define CHUNK_SIZE	1024		// number of samples, written to sound device at once
+
+#ifdef ENABLE_RECORDER
+#define DRIVE		"SD:"
+#define FILEPATTERN	"/raw-audio-%u.bin"
+
+#define RECORD_BUTTON	17		// GPIO number of record button (chip number)
+#endif
 
 #endif

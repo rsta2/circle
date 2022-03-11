@@ -2,7 +2,7 @@
 // cputhrottle.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,11 +42,22 @@ CCPUThrottle::CCPUThrottle (TCPUSpeed InitialSpeed)
 	m_ThrottledStateMask (SystemStateNothingOccurred),
 	m_LastThrottledState (SystemStateNothingOccurred),
 	m_pThrottledHandler (0),
-	m_pThrottledParam (0)
+	m_pThrottledParam (0),
+	m_bFanConnected (FALSE)
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
 	assert (s_pThis != 0);
+
+	unsigned nFanPin = CKernelOptions::Get ()->GetGPIOFanPin ();
+	if (nFanPin > 0)
+	{
+		m_bFanConnected = TRUE;
+
+		m_FanPin.AssignPin (nFanPin);
+		m_FanPin.SetMode (GPIOModeOutput, FALSE);
+		m_FanPin.Write (HIGH);
+	}
 
 	if (InitialSpeed == CPUSpeedUnknown)
 	{
@@ -89,6 +100,11 @@ CCPUThrottle::CCPUThrottle (TCPUSpeed InitialSpeed)
 CCPUThrottle::~CCPUThrottle (void)
 {
 	m_pThrottledHandler = 0;
+
+	if (m_bFanConnected)
+	{
+		m_FanPin.SetMode (GPIOModeInput);
+	}
 
 	if (m_bDynamic)
 	{
@@ -150,6 +166,32 @@ TCPUSpeed CCPUThrottle::SetSpeed (TCPUSpeed Speed, boolean bWait)
 
 boolean CCPUThrottle::SetOnTemperature (void)
 {
+	if (m_bFanConnected)
+	{
+		unsigned nTemperature = GetTemperature (PROPTAG_GET_TEMPERATURE);
+		if (nTemperature == 0)
+		{
+			return FALSE;
+		}
+
+		assert (40000 <= m_nEnforcedTemperature);
+		if (m_nEnforcedTemperature > m_nMaxTemperature)
+		{
+			m_nEnforcedTemperature = m_nMaxTemperature;
+		}
+
+		if (nTemperature > m_nEnforcedTemperature)
+		{
+			m_FanPin.Write (HIGH);
+		}
+		else if (nTemperature < (m_nEnforcedTemperature-5000))	// 5 degrees hysteresis
+		{
+			m_FanPin.Write (LOW);
+		}
+
+		return TRUE;
+	}
+
 	if (!m_bDynamic)
 	{
 		return TRUE;

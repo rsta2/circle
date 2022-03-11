@@ -2,7 +2,7 @@
 // util.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,38 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/util.h>
-
-void *memset (void *pBuffer, int nValue, size_t nLength)
-{
-	u32 *p32 = (u32 *) pBuffer;
-
-	if (   ((uintptr) p32 & 3) == 0
-	    && nLength >= 16)
-	{
-		u32 nValue32 = nValue | nValue << 8;
-		nValue32 |= nValue32 << 16;
-
-		do
-		{
-			*p32++ = nValue32;
-			*p32++ = nValue32;
-			*p32++ = nValue32;
-			*p32++ = nValue32;
-
-			nLength -= 16;
-		}
-		while (nLength >= 16);
-	}
-
-	char *p = (char *) p32;
-
-	while (nLength--)
-	{
-		*p++ = (char) nValue;
-	}
-
-	return pBuffer;
-}
 
 void *memmove (void *pDest, const void *pSrc, size_t nLength)
 {

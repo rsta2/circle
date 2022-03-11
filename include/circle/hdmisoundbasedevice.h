@@ -2,7 +2,7 @@
 // hdmisoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ enum THDMISoundState
 class CHDMISoundBaseDevice : public CSoundBaseDevice	/// Low level access to the HDMI sound device
 {
 public:
+	/// \brief Construct driver object in DMA mode.
 	/// \param pInterrupt	pointer to the interrupt system object
 	/// \param nSampleRate	sample rate in Hz
 	/// \param nChunkSize	twice the number of samples (words) to be handled\n
@@ -52,17 +53,34 @@ public:
 			      unsigned	        nSampleRate = 48000,
 			      unsigned	        nChunkSize  = 384 * 10);
 
+	/// \brief Construct driver object in polling mode.
+	/// \param nSampleRate sample rate in Hz
+	CHDMISoundBaseDevice (unsigned nSampleRate = 48000);
+
 	virtual ~CHDMISoundBaseDevice (void);
 
-	/// \brief Starts the HDMI sound and DMA operation
+	/// \brief Starts the HDMI sound operation
+	/// \return Operation successful?
 	boolean Start (void);
 
-	/// \brief Cancels the HDMI sound and DMA operation
-	/// \note Cancel takes effect after a short delay
+	/// \brief Cancels the HDMI sound operation
+	/// \note Cancel may take effect after a short delay
 	void Cancel (void);
 
-	/// \return Is HDMI sound and DMA operation running?
+	/// \return Is HDMI sound operation running?
 	boolean IsActive (void) const;
+
+public:
+	/// \return Has the data FIFO room for at least one sample to be written?
+	/// \note Can be called in polling mode only.
+	boolean IsWritable (void);
+
+	/// \brief Write one 24-bit signed sample to the data FIFO.
+	/// \param nSample 24-bit signed sample to be written
+	/// \note Can be called in polling mode only.
+	/// \note Should be called only, when IsWritable() returned TRUE before.
+	/// \note Must be called twice for each frame (left/right sample).
+	void WriteSample (s32 nSample);
 
 protected:
 	/// \brief May overload this to provide the sound samples!
@@ -111,6 +129,9 @@ private:
 
 	unsigned long m_ulAudioClockRate;
 	unsigned long m_ulPixelClockRate;
+
+	boolean m_bUsePolling;
+	unsigned m_nSubFrame;
 
 	boolean m_bIRQConnected;
 	volatile THDMISoundState m_State;
