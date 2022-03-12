@@ -6,7 +6,7 @@
 //	Licensed under GPL2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,6 +62,8 @@ boolean CMultiCoreSupport::Initialize (void)
 
 	write32 (ARM_LOCAL_MAILBOX_INT_CONTROL0, 1);		// enable IPI on core 0
 #endif
+
+	CleanDataCache ();	// write out all data to be accessible by secondary cores
 
 	for (unsigned nCore = 1; nCore < CORES; nCore++)
 	{
