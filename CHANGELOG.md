@@ -5,8 +5,15 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 44.4.1
+--------------
+
+This hotfix release fixes an issue in the initialization for 32-bit multi-core support. The start of the secondary CPU cores may have failed, if the data cache has not been flushed already, when `CMultiCoreSupport::Initialize()` was called. This especially happened, if the constructor of the class `CMultiCoreSupport` was executed immediately before `CMultiCoreSupport::Initialize()`.
+
 Release 44.4
 ------------
+
+2022-03-11
 
 This intermediate release updates the FatFs and LVGL support to the most recent versions. While the **update to FatFs R0.14b** is compatible with earlier releases, the **update to LVGL v8.2.0** requires modifications in existing applications, which use this graphics library. Also there isn't a separate submodule *lv_examples* for LVGL examples any more, the demo program is included in the main submodule.
 
