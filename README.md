@@ -10,6 +10,11 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
+Release 44.4.1
+--------------
+
+This hotfix release fixes an issue in the initialization for 32-bit multi-core support. The start of the secondary CPU cores may have failed, if the data cache has not been flushed already, when `CMultiCoreSupport::Initialize()` was called. This especially happened, if the constructor of the class `CMultiCoreSupport` was executed immediately before `CMultiCoreSupport::Initialize()`.
+
 Release 44.4
 ------------
 
