@@ -2,7 +2,7 @@
 // dwhcixferstagedata.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -221,7 +221,18 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 		m_pEndpoint->SkipPID (nPacketsTransfered, m_bStatusStage);
 	}
 
-	assert (nPacketsTransfered <= m_nPackets);
+	// this shouldn't but does happen with some devices
+	if (nPacketsTransfered > m_nPackets)
+	{
+		CLogger::Get ()->Write ("udata", LogWarning, "Frame overrun forced");
+
+		m_nTransactionStatus |= DWHCI_HOST_CHAN_INT_FRAME_OVERRUN;
+		m_nErrorCount = MAX_BULK_TRIES+1;
+		m_nPackets = 0;
+
+		return;
+	}
+
 	m_nPackets -= nPacketsTransfered;
 
 	if (!m_bSplitTransaction)
