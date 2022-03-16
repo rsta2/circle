@@ -210,6 +210,17 @@
 #define ARM_USB_POWER		(ARM_USB_BASE + 0xE00)
 
 //
+// Host Port (MPHI)
+//
+#define ARM_MPHI_BASE		(ARM_IO_BASE + 0x6000)
+#define ARM_MPHI_END		(ARM_IO_BASE + 0x6FFF)
+
+#define ARM_MPHI_OUTDDA		(ARM_MPHI_BASE + 0x28)
+#define ARM_MPHI_OUTDDB		(ARM_MPHI_BASE + 0x2C)
+#define ARM_MPHI_CTRL		(ARM_MPHI_BASE + 0x4C)
+#define ARM_MPHI_INTSTAT	(ARM_MPHI_BASE + 0x50)
+
+//
 // External Mass Media Controller (SD Card)
 //
 #define ARM_EMMC_BASE		(ARM_IO_BASE + 0x300000)
