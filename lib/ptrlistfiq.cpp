@@ -19,6 +19,7 @@
 //
 #include <circle/ptrlistfiq.h>
 #include <circle/classallocator.h>
+#include <circle/synchronize.h>
 #include <assert.h>
 
 struct TPtrListElement
@@ -40,7 +41,7 @@ IMPLEMENT_CLASS_ALLOCATOR (TPtrListElement)
 CPtrListFIQ::CPtrListFIQ (unsigned nMaxElements)
 :	m_pFirst (0)
 {
-	INIT_CLASS_ALLOCATOR (TPtrListElement, nMaxElements);
+	INIT_PROTECTED_CLASS_ALLOCATOR (TPtrListElement, nMaxElements, FIQ_LEVEL);
 }
 
 CPtrListFIQ::~CPtrListFIQ (void)
