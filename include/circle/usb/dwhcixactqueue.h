@@ -2,7 +2,7 @@
 // dwhcixactqueue.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #define _circle_usb_dwhcixactqueue_h
 
 #include <circle/usb/dwhcixferstagedata.h>
-#include <circle/ptrlist.h>
+#include <circle/ptrlistfiq.h>
 #include <circle/spinlock.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
@@ -33,7 +33,8 @@ class CUSBDevice;
 class CDWHCITransactionQueue		// Queues coming USB transactions (FIFO)
 {
 public:
-	CDWHCITransactionQueue (void);
+	CDWHCITransactionQueue (unsigned nMaxElements,
+				unsigned nMaxAccessLevel);	//  IRQ_LEVEL or FIQ_LEVEL
 	~CDWHCITransactionQueue (void);
 
 	// remove all entries
@@ -49,7 +50,7 @@ public:
 	CDWHCITransferStageData *Dequeue (u16 usFrameNumber);
 
 private:
-	CPtrList m_List;
+	CPtrListFIQ m_List;
 
 	CSpinLock m_SpinLock;
 };
