@@ -2,7 +2,7 @@
 // classallocator.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -55,11 +55,13 @@ CClassAllocator::CClassAllocator (size_t      nObjectSize,
 	m_pMemory (0),
 	m_pFreeList (0),
 	m_bProtected (TRUE),
+	m_nTargetLevel (nTargetLevel),
 	m_SpinLock (nTargetLevel)
 {
 	Init (nObjectSize, nReservedObjects);
 }
 
+// TODO: Does not free all memory, if class store has been extended.
 CClassAllocator::~CClassAllocator (void)
 {
 	m_pFreeList = 0;
@@ -103,6 +105,37 @@ void CClassAllocator::Init (size_t nObjectSize, unsigned nReservedObjects)
 
 		m_pFreeList = pBlock;
 	}
+}
+
+void CClassAllocator::Extend (unsigned nReservedObjects, unsigned nTargetLevel)
+{
+	assert (m_bProtected);
+	assert (m_nTargetLevel == nTargetLevel);
+	assert (nReservedObjects > 0);
+
+	unsigned char *pMemory = reinterpret_cast<unsigned char *> (malloc (  m_nObjectSize
+									    * nReservedObjects));
+	if (pMemory == 0)
+	{
+		return;
+	}
+	assert ((reinterpret_cast<uintptr> (pMemory) & ~ALIGN_MASK) == 0);
+
+	m_SpinLock.Acquire ();
+
+	for (unsigned i = 0; i < nReservedObjects; i++)
+	{
+		TBlock *pBlock = reinterpret_cast<TBlock *> (pMemory + m_nObjectSize*i);
+
+		pBlock->nMagic = BLOCK_MAGIC;
+		pBlock->pNext = m_pFreeList;
+
+		m_pFreeList = pBlock;
+	}
+
+	m_nReservedObjects += nReservedObjects;
+
+	m_SpinLock.Release ();
 }
 
 void *CClassAllocator::Allocate (void)
