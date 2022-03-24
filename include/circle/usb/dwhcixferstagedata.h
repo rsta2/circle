@@ -2,7 +2,7 @@
 // dwhcixferstagedata.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/dwhciframescheduler.h>
 #include <circle/classallocator.h>
+#include <circle/synchronize.h>
 #include <circle/types.h>
 
 class CDWHCITransferStageData
@@ -112,7 +113,7 @@ private:
 	u32		 m_nTransactionStatus;
 	unsigned	 m_nErrorCount;
 
-	u32		*m_pTempBuffer;
+	DMA_BUFFER (u32, m_TempBuffer, 1);
 	void		*m_pBufferPointer;
 
 	unsigned	 m_nStartTicksHZ;
