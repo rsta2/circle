@@ -45,6 +45,7 @@ private:
 
 	u8 *m_pDummyDMABuffer;
 
+	volatile int m_nTriggerCount;
 	int m_nIntCount;
 };
 
