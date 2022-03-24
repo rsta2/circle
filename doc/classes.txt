@@ -70,6 +70,7 @@ Base library
 
 USB library
 
+* CDWHCICompletionQueue: Queues USB requests ready for completion (with USE_USB_FIQ enabled).
 * CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi 1-3.
 * CDWHCIFrameScheduler: Base class for a simple micro frame scheduler
 * CDWHCIFrameSchedulerNonPeriodic: Schedules the transmission of non-interrupt split frames to non-high-speed devices
