@@ -874,8 +874,6 @@ void CDWHCIDevice::QueueDelayedTransaction (CDWHCITransferStageData *pStageData)
 
 #endif
 
-#if 0
-
 void CDWHCIDevice::StartTransaction (CDWHCITransferStageData *pStageData)
 {
 	assert (pStageData != 0);
@@ -902,8 +900,6 @@ void CDWHCIDevice::StartTransaction (CDWHCITransferStageData *pStageData)
 		StartChannel (pStageData);
 	}
 }
-
-#endif
 
 void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 {
@@ -953,7 +949,6 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 	// set channel parameters
 	CDWHCIRegister Character (DWHCI_HOST_CHAN_CHARACTER (nChannel));
 	Character.Read ();
-	assert (!Character.IsSet (DWHCI_HOST_CHAN_CHARACTER_ENABLE));
 	Character.And (~DWHCI_HOST_CHAN_CHARACTER_MAX_PKT_SIZ__MASK);
 	Character.Or (pStageData->GetMaxPacketSize () & DWHCI_HOST_CHAN_CHARACTER_MAX_PKT_SIZ__MASK);
 

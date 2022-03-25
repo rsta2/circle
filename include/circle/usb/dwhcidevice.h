@@ -92,14 +92,7 @@ private:
 	void QueueDelayedTransaction (CDWHCITransferStageData *pStageData);
 #endif
 
-#if 0
 	void StartTransaction (CDWHCITransferStageData *pStageData);
-#else
-	void StartTransaction (CDWHCITransferStageData *pStageData)
-	{
-		StartChannel (pStageData);
-	}
-#endif
 	void StartChannel (CDWHCITransferStageData *pStageData);
 
 	void ChannelInterruptHandler (unsigned nChannel);
