@@ -59,7 +59,7 @@ enum TStageState
 	StageStateUnknown
 };
 
-static const char FromDWHCI[] = "dwhci";
+LOGMODULE ("dwhci");
 
 CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, boolean bPlugAndPlay)
 :	CUSBHostController (bPlugAndPlay),
@@ -129,9 +129,7 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 #ifndef USE_USB_SOF_INTR
 	if (IsPlugAndPlay ())
 	{
-		CLogger::Get ()->Write (FromDWHCI, LogWarning,
-					"Using plug-and-play without USE_USB_SOF_INTR "
-					"is not recommended");
+		LOGWARN ("Using plug-and-play without USE_USB_SOF_INTR is not recommended");
 	}
 #endif
 
@@ -150,13 +148,13 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 	CDWHCIRegister VendorId (DWHCI_CORE_VENDOR_ID);
 	if (VendorId.Read () != 0x4F54280A)
 	{
-		CLogger::Get ()->Write (FromDWHCI, LogError, "Unknown vendor 0x%0X", VendorId.Get ());
+		LOGERR ("Unknown vendor 0x%0X", VendorId.Get ());
 		return FALSE;
 	}
 
 	if (!PowerOn ())
 	{
-		CLogger::Get ()->Write (FromDWHCI, LogError, "Cannot power on");
+		LOGERR ("Cannot power on");
 		return FALSE;
 	}
 	
@@ -176,7 +174,7 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 
 	if (!InitCore ())
 	{
-		CLogger::Get ()->Write (FromDWHCI, LogError, "Cannot initialize core");
+		LOGERR ("Cannot initialize core");
 		return FALSE;
 	}
 	
@@ -184,7 +182,7 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 	
 	if (!InitHost ())
 	{
-		CLogger::Get ()->Write (FromDWHCI, LogError, "Cannot initialize host");
+		LOGERR ("Cannot initialize host");
 		return FALSE;
 	}
 
@@ -211,14 +209,12 @@ void CDWHCIDevice::ReScanDevices (void)
 
 			if (!m_RootPort.Initialize ())
 			{
-				CLogger::Get ()->Write (FromDWHCI, LogWarning,
-							"Cannot initialize root port");
+				LOGERR ("Cannot initialize root port");
 			}
 		}
 		else
 		{
-			CLogger::Get ()->Write (FromDWHCI, LogWarning,
-						"No device connected to root port");
+			LOGWARN ("No device connected to root port");
 		}
 	}
 	else
@@ -410,7 +406,7 @@ boolean CDWHCIDevice::InitCore (void)
 
 	if (!Reset ())
 	{
-		CLogger::Get ()->Write (FromDWHCI, LogError, "Reset failed");
+		LOGERR ("Reset failed");
 		return FALSE;
 	}
 
@@ -1386,8 +1382,7 @@ void CDWHCIDevice::InterruptHandler (void)
 			CDWHCIRegister HostPort (DWHCI_HOST_PORT);
 			HostPort.Read ();
 
-			//CLogger::Get ()->Write (FromDWHCI, LogDebug,
-			//			"Port interrupt (status 0x%08X)", HostPort.Get ());
+			//LOGDBG ("Port interrupt (status 0x%08X)", HostPort.Get ());
 
 			if (HostPort.Get () & DWHCI_HOST_PORT_CONNECT_CHANGED)
 			{
@@ -1407,7 +1402,7 @@ void CDWHCIDevice::InterruptHandler (void)
 
 		if (IntStatus.Get () & DWHCI_CORE_INT_MASK_DISCONNECT)
 		{
-			//CLogger::Get ()->Write (FromDWHCI, LogDebug, "Disconnect interrupt");
+			//LOGDBG ("Disconnect interrupt");
 
 #ifndef USE_USB_FIQ
 			PortStatusChanged (&m_RootPort);
@@ -1622,7 +1617,7 @@ boolean CDWHCIDevice::WaitForBit (CDWHCIRegister *pRegister,
 
 		if (--nMsTimeout == 0)
 		{
-			//CLogger::Get ()->Write (FromDWHCI, LogWarning, "Timeout");
+			//LOGWARN ("Timeout");
 #ifndef NDEBUG
 			//pRegister->Dump ();
 #endif
@@ -1637,8 +1632,7 @@ void CDWHCIDevice::LogTransactionFailed (u32 nStatus)
 {
 	if (CurrentExecutionLevel () < FIQ_LEVEL)
 	{
-		CLogger::Get ()->Write (FromDWHCI, LogWarning,
-					"Transaction failed (status 0x%X)", nStatus);
+		LOGWARN ("Transaction failed (status 0x%X)", nStatus);
 	}
 }
 
@@ -1650,7 +1644,7 @@ void CDWHCIDevice::DumpRegister (const char *pName, u32 nAddress)
 
 	DataMemBarrier ();
 
-	CLogger::Get ()->Write (FromDWHCI, LogDebug, "0x%08X %s", Register.Read (), pName);
+	LOGDBG ("0x%08X %s", Register.Read (), pName);
 }
 
 void CDWHCIDevice::DumpStatus (unsigned nChannel)
