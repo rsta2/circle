@@ -59,13 +59,6 @@ enum TStageState
 	StageStateUnknown
 };
 
-enum TStageSubState
-{
-	StageSubStateWaitForChannelDisable,
-	StageSubStateWaitForTransactionComplete,
-	StageSubStateUnknown
-};
-
 static const char FromDWHCI[] = "dwhci";
 
 CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, boolean bPlugAndPlay)
@@ -878,45 +871,12 @@ void CDWHCIDevice::QueueDelayedTransaction (CDWHCITransferStageData *pStageData)
 
 #endif
 
-#if 0
-
 void CDWHCIDevice::StartTransaction (CDWHCITransferStageData *pStageData)
 {
 	assert (pStageData != 0);
 	unsigned nChannel = pStageData->GetChannelNumber ();
 	assert (nChannel < m_nChannels);
 	
-	// channel must be disabled, if not already done but controller
-	CDWHCIRegister Character (DWHCI_HOST_CHAN_CHARACTER (nChannel));
-	Character.Read ();
-	if (Character.IsSet (DWHCI_HOST_CHAN_CHARACTER_ENABLE))
-	{
-		pStageData->SetSubState (StageSubStateWaitForChannelDisable);
-		
-		Character.And (~DWHCI_HOST_CHAN_CHARACTER_ENABLE);
-		Character.Or (DWHCI_HOST_CHAN_CHARACTER_DISABLE);
-		Character.Write ();
-
-		CDWHCIRegister ChanInterruptMask (DWHCI_HOST_CHAN_INT_MASK (nChannel));
-		ChanInterruptMask.Set (DWHCI_HOST_CHAN_INT_HALTED);
-		ChanInterruptMask.Write ();
-	}
-	else
-	{
-		StartChannel (pStageData);
-	}
-}
-
-#endif
-
-void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
-{
-	assert (pStageData != 0);
-	unsigned nChannel = pStageData->GetChannelNumber ();
-	assert (nChannel < m_nChannels);
-	
-	pStageData->SetSubState (StageSubStateWaitForTransactionComplete);
-
 	// reset all pending channel interrupts
 	CDWHCIRegister ChanInterrupt (DWHCI_HOST_CHAN_INT (nChannel));
 	ChanInterrupt.SetAll ();
@@ -1052,48 +1012,35 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		return;
 	}
 
-	switch (pStageData->GetSubState ())
+	CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
+
+	CDWHCIRegister TransferSize (DWHCI_HOST_CHAN_XFER_SIZ (nChannel));
+	TransferSize.Read ();
+
+	CDWHCIRegister ChanInterrupt (DWHCI_HOST_CHAN_INT (nChannel));
+
+	// restart halted transaction
+	if (ChanInterrupt.Read () == DWHCI_HOST_CHAN_INT_HALTED)
 	{
-	case StageSubStateWaitForChannelDisable:
-		StartChannel (pStageData);
-		return;
-
-	case StageSubStateWaitForTransactionComplete: {
-		CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
-
-		CDWHCIRegister TransferSize (DWHCI_HOST_CHAN_XFER_SIZ (nChannel));
-		TransferSize.Read ();
-
-		CDWHCIRegister ChanInterrupt (DWHCI_HOST_CHAN_INT (nChannel));
-
-		// restart halted transaction
-		if (ChanInterrupt.Read () == DWHCI_HOST_CHAN_INT_HALTED)
-		{
 #ifndef USE_USB_SOF_INTR
-			StartTransaction (pStageData);
+		StartTransaction (pStageData);
 #else
-			m_pStageData[nChannel] = 0;
-			FreeChannel (nChannel);
+		m_pStageData[nChannel] = 0;
+		FreeChannel (nChannel);
 
-			QueueTransaction (pStageData);
+		QueueTransaction (pStageData);
 #endif
-			return;
-		}
-
-		assert (   !pStageData->IsPeriodic ()
-			||    DWHCI_HOST_CHAN_XFER_SIZ_PID (TransferSize.Get ())
-			   != DWHCI_HOST_CHAN_XFER_SIZ_PID_MDATA);
-
-		pStageData->TransactionComplete (ChanInterrupt.Read (),
-			DWHCI_HOST_CHAN_XFER_SIZ_PACKETS (TransferSize.Get ()),
-			TransferSize.Get () & DWHCI_HOST_CHAN_XFER_SIZ_BYTES__MASK);
-		} break;
-	
-	default:
-		assert (0);
-		break;
+		return;
 	}
 
+	assert (   !pStageData->IsPeriodic ()
+		||    DWHCI_HOST_CHAN_XFER_SIZ_PID (TransferSize.Get ())
+		   != DWHCI_HOST_CHAN_XFER_SIZ_PID_MDATA);
+
+	pStageData->TransactionComplete (ChanInterrupt.Read (),
+		DWHCI_HOST_CHAN_XFER_SIZ_PACKETS (TransferSize.Get ()),
+		TransferSize.Get () & DWHCI_HOST_CHAN_XFER_SIZ_BYTES__MASK);
+	
 	unsigned nStatus;
 	
 	switch (pStageData->GetState ())
