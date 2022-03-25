@@ -87,7 +87,11 @@ boolean CDWHCIFrameSchedulerPeriodic::CompleteSplit (void)
 		m_usNextFrame = (m_usNextFrame  + 2) & 7;
 #else
 		m_nTries = (m_usNextFrame & 7) != 5 ? 2 : 1;
-		m_usFrameOffset = 1;
+#ifndef USE_USB_FIQ
+		m_usFrameOffset = 2;
+#else
+		m_usFrameOffset = 1;	// with FIQ we can act on the next frame already
+#endif
 #endif
 		bResult = TRUE;
 		break;
