@@ -6,7 +6,7 @@
 //	no ISO transfers
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include <circle/logger.h>
 #include <circle/koptions.h>
 #include <circle/sysconfig.h>
+#include <circle/atomic.h>
 #include <circle/debug.h>
 #include <assert.h>
 
@@ -42,6 +43,12 @@
 	#define DWC_CFG_HOST_RX_FIFO_SIZE	1024	// number of 32 bit words
 	#define DWC_CFG_HOST_NPER_TX_FIFO_SIZE	1024	// number of 32 bit words
 	#define DWC_CFG_HOST_PER_TX_FIFO_SIZE	1024	// number of 32 bit words
+
+#ifdef USE_USB_FIQ
+	#define MAX_TARGET_LEVEL	FIQ_LEVEL
+#else
+	#define MAX_TARGET_LEVEL	IRQ_LEVEL
+#endif
 
 enum TStageState
 {
@@ -67,10 +74,20 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, 
 	m_pTimer (pTimer),
 	m_nChannels (0),
 	m_nChannelAllocated (0),
+	m_ChannelSpinLock (MAX_TARGET_LEVEL),
+#ifdef USE_USB_SOF_INTR
+	m_TransactionQueue (DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL),
+#endif
+	m_IntMaskSpinLock (MAX_TARGET_LEVEL),
 	m_nWaitBlockAllocated (0),
 	m_WaitBlockSpinLock (TASK_LEVEL),
 	m_RootPort (this),
 	m_bRootPortEnabled (FALSE),
+#ifdef USE_USB_FIQ
+	m_nPortStatusChanged (0),
+	m_CompletionQueue (DWHCI_MAX_CHANNELS*2),
+	m_MPHI (pInterruptSystem),
+#endif
 	m_bShutdown (FALSE)
 {
 	assert (m_pInterruptSystem != 0);
@@ -95,7 +112,12 @@ CDWHCIDevice::~CDWHCIDevice (void)
 	m_pTimer->MsDelay (200);	// wait for completion of all transactions
 
 	assert (m_pInterruptSystem != 0);
+#ifndef USE_USB_FIQ
 	m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_USB);
+#else
+	m_pInterruptSystem->DisconnectFIQ ();
+	m_MPHI.DisconnectHandler ();
+#endif
 
 	Reset ();
 
@@ -121,11 +143,11 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 #endif
 
 	// init class-specific allocators in USB library
-	INIT_PROTECTED_CLASS_ALLOCATOR (CUSBRequest, DWHCI_MAX_CHANNELS*2, IRQ_LEVEL);
-	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCITransferStageData, DWHCI_MAX_CHANNELS, IRQ_LEVEL);
-	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNonPeriodic, DWHCI_MAX_CHANNELS, IRQ_LEVEL);
-	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerPeriodic, DWHCI_MAX_CHANNELS, IRQ_LEVEL);
-	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNoSplit, DWHCI_MAX_CHANNELS, IRQ_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CUSBRequest, DWHCI_MAX_CHANNELS*2, MAX_TARGET_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCITransferStageData, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNonPeriodic, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerPeriodic, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNoSplit, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
 
 	PeripheralEntry ();
 
@@ -152,7 +174,12 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 	AHBConfig.Write ();
 	
 	assert (m_pInterruptSystem != 0);
+#ifndef USE_USB_FIQ
 	m_pInterruptSystem->ConnectIRQ (ARM_IRQ_USB, InterruptStub, this);
+#else
+	m_MPHI.ConnectHandler (InterruptStub2, this);
+	m_pInterruptSystem->ConnectFIQ (ARM_FIQ_USB, InterruptStub, this);
+#endif
 
 	if (!InitCore ())
 	{
@@ -851,6 +878,8 @@ void CDWHCIDevice::QueueDelayedTransaction (CDWHCITransferStageData *pStageData)
 
 #endif
 
+#if 0
+
 void CDWHCIDevice::StartTransaction (CDWHCITransferStageData *pStageData)
 {
 	assert (pStageData != 0);
@@ -877,6 +906,8 @@ void CDWHCIDevice::StartTransaction (CDWHCITransferStageData *pStageData)
 		StartChannel (pStageData);
 	}
 }
+
+#endif
 
 void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 {
@@ -926,6 +957,7 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 	// set channel parameters
 	CDWHCIRegister Character (DWHCI_HOST_CHAN_CHARACTER (nChannel));
 	Character.Read ();
+	assert (!Character.IsSet (DWHCI_HOST_CHAN_CHARACTER_ENABLE));
 	Character.And (~DWHCI_HOST_CHAN_CHARACTER_MAX_PKT_SIZ__MASK);
 	Character.Or (pStageData->GetMaxPacketSize () & DWHCI_HOST_CHAN_CHARACTER_MAX_PKT_SIZ__MASK);
 
@@ -1011,7 +1043,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
+#ifndef USE_USB_FIQ
 		pURB->CallCompletionRoutine ();
+#else
+		m_CompletionQueue.Enqueue (pURB);
+#endif
 
 		return;
 	}
@@ -1081,8 +1117,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		}
 		else if (nStatus & DWHCI_HOST_CHAN_INT_ERROR_MASK)
 		{
-			CLogger::Get ()->Write (FromDWHCI, LogError,
-						"Transaction failed (status 0x%X)", nStatus);
+			LogTransactionFailed (nStatus);
 
 			pURB->SetStatus (0);
 			pURB->SetUSBError (pStageData->GetUSBError ());
@@ -1131,7 +1166,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
+#ifndef USE_USB_FIQ
 		pURB->CallCompletionRoutine ();
+#else
+		m_CompletionQueue.Enqueue (pURB);
+#endif
 		break;
 
 	case StageStateStartSplit:
@@ -1140,8 +1179,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		    || (nStatus & DWHCI_HOST_CHAN_INT_NAK)
 		    || (nStatus & DWHCI_HOST_CHAN_INT_NYET))
 		{
-			CLogger::Get ()->Write (FromDWHCI, LogError,
-						"Transaction failed (status 0x%X)", nStatus);
+			LogTransactionFailed (nStatus);
 
 			pURB->SetStatus (0);
 			pURB->SetUSBError (pStageData->GetUSBError ());
@@ -1153,7 +1191,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			FreeChannel (nChannel);
 
+#ifndef USE_USB_FIQ
 			pURB->CallCompletionRoutine ();
+#else
+			m_CompletionQueue.Enqueue (pURB);
+#endif
 			break;
 		}
 
@@ -1181,8 +1223,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		nStatus = pStageData->GetTransactionStatus ();
 		if (nStatus & DWHCI_HOST_CHAN_INT_ERROR_MASK)
 		{
-			CLogger::Get ()->Write (FromDWHCI, LogError,
-						"Transaction failed (status 0x%X)", nStatus);
+			LogTransactionFailed (nStatus);
 
 			pURB->SetStatus (0);
 			pURB->SetUSBError (pStageData->GetUSBError ());
@@ -1194,7 +1235,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			FreeChannel (nChannel);
 
+#ifndef USE_USB_FIQ
 			pURB->CallCompletionRoutine ();
+#else
+			m_CompletionQueue.Enqueue (pURB);
+#endif
 			break;
 		}
 		
@@ -1228,7 +1273,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 				FreeChannel (nChannel);
 
+#ifndef USE_USB_FIQ
 				pURB->CallCompletionRoutine ();
+#else
+				m_CompletionQueue.Enqueue (pURB);
+#endif
 				break;
 			}
 
@@ -1261,7 +1310,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 					FreeChannel (nChannel);
 
+#ifndef USE_USB_FIQ
 					pURB->CallCompletionRoutine ();
+#else
+					m_CompletionQueue.Enqueue (pURB);
+#endif
 				}
 				else
 				{
@@ -1296,7 +1349,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
+#ifndef USE_USB_FIQ
 		pURB->CallCompletionRoutine ();
+#else
+		m_CompletionQueue.Enqueue (pURB);
+#endif
 		break;
 
 	default:
@@ -1321,10 +1378,8 @@ void CDWHCIDevice::SOFInterruptHandler (void)
 	while ((pStageData = m_TransactionQueue.Dequeue (usFrameNumber)) != 0)
 	{
 		unsigned nChannel = AllocateChannel ();
-		if (nChannel >= m_nChannels)
-		{
-			CLogger::Get ()->Write (FromDWHCI, LogPanic, "Too many parallel USB transactions");
-		}
+		assert (nChannel < m_nChannels);	// too many parallel transactions otherwise
+
 		pStageData->SetChannelNumber (nChannel);
 
 		assert (m_pStageData[nChannel] == 0);
@@ -1340,21 +1395,28 @@ void CDWHCIDevice::SOFInterruptHandler (void)
 
 void CDWHCIDevice::InterruptHandler (void)
 {
-#ifndef NDEBUG
-	//debug_click ();
-#endif
-
 	PeripheralEntry ();
 
 	CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT);
 	IntStatus.Read ();
+
+#ifdef USE_USB_SOF_INTR
+	if (IntStatus.Get () & DWHCI_CORE_INT_STAT_SOF_INTR)
+	{
+#ifndef NDEBUG
+		//debug_click (DEBUG_CLICK_LEFT);
+#endif
+
+		SOFInterruptHandler ();
+	}
+#endif
 
 	if (IntStatus.Get () & DWHCI_CORE_INT_STAT_HC_INTR)
 	{
 		CDWHCIRegister AllChanInterrupt (DWHCI_HOST_ALLCHAN_INT);
 		AllChanInterrupt.Read ();
 		AllChanInterrupt.Write ();
-		
+
 		unsigned nChannelMask = 1;
 		for (unsigned nChannel = 0; nChannel < m_nChannels; nChannel++)
 		{
@@ -1365,17 +1427,10 @@ void CDWHCIDevice::InterruptHandler (void)
 				
 				ChannelInterruptHandler (nChannel);
 			}
-			
+
 			nChannelMask <<= 1;
 		}
 	}
-
-#ifdef USE_USB_SOF_INTR
-	if (IntStatus.Get () & DWHCI_CORE_INT_STAT_SOF_INTR)
-	{
-		SOFInterruptHandler ();
-	}
-#endif
 
 	if (IsPlugAndPlay ())
 	{
@@ -1389,7 +1444,11 @@ void CDWHCIDevice::InterruptHandler (void)
 
 			if (HostPort.Get () & DWHCI_HOST_PORT_CONNECT_CHANGED)
 			{
+#ifndef USE_USB_FIQ
 				PortStatusChanged (&m_RootPort);
+#else
+				AtomicSet (&m_nPortStatusChanged, 1);
+#endif
 			}
 
 			HostPort.And (~DWHCI_HOST_PORT_ENABLE);
@@ -1403,13 +1462,25 @@ void CDWHCIDevice::InterruptHandler (void)
 		{
 			//CLogger::Get ()->Write (FromDWHCI, LogDebug, "Disconnect interrupt");
 
+#ifndef USE_USB_FIQ
 			PortStatusChanged (&m_RootPort);
+#else
+			AtomicSet (&m_nPortStatusChanged, 1);
+#endif
 		}
 	}
 
 	IntStatus.Write ();
 
 	PeripheralExit ();
+
+#ifdef USE_USB_FIQ
+	if (   !m_CompletionQueue.IsEmpty ()
+	    || AtomicGet (&m_nPortStatusChanged))
+	{
+		m_MPHI.TriggerIRQ ();
+	}
+#endif
 }
 
 void CDWHCIDevice::InterruptStub (void *pParam)
@@ -1480,6 +1551,36 @@ void CDWHCIDevice::TimerStub (TKernelTimerHandle /* hTimer */, void *pParam, voi
 	assert (pParam != 0);
 	
 	pThis->TimerHandler (pStageData);
+}
+
+#endif
+
+#ifdef USE_USB_FIQ
+
+void CDWHCIDevice::InterruptHandler2 (void)
+{
+#ifndef NDEBUG
+	//debug_click (DEBUG_CLICK_RIGHT);
+#endif
+
+	CUSBRequest *pURB;
+	while ((pURB = m_CompletionQueue.Dequeue ()) != 0)
+	{
+		pURB->CallCompletionRoutine ();
+	}
+
+	while (AtomicExchange (&m_nPortStatusChanged, 0))
+	{
+		PortStatusChanged (&m_RootPort);
+	}
+}
+
+void CDWHCIDevice::InterruptStub2 (void *pParam)
+{
+	CDWHCIDevice *pThis = static_cast <CDWHCIDevice *> (pParam);
+	assert (pThis != 0);
+
+	pThis->InterruptHandler2 ();
 }
 
 #endif
@@ -1583,6 +1684,15 @@ boolean CDWHCIDevice::WaitForBit (CDWHCIRegister *pRegister,
 	}
 	
 	return TRUE;
+}
+
+void CDWHCIDevice::LogTransactionFailed (u32 nStatus)
+{
+	if (CurrentExecutionLevel () < FIQ_LEVEL)
+	{
+		CLogger::Get ()->Write (FromDWHCI, LogWarning,
+					"Transaction failed (status 0x%X)", nStatus);
+	}
 }
 
 #ifndef NDEBUG

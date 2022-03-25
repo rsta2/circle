@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -204,6 +204,22 @@
 // This option has no influence on the Raspberry Pi 4.
 
 #ifndef NO_USB_SOF_INTR
+#define USE_USB_SOF_INTR
+#endif
+
+// USE_USB_FIQ makes the USB timing more accurate, by using the FIQ to
+// handle time-critical interrupts from the USB controller, which are
+// triggered 8000 times per second. When using the default IRQ instead,
+// USB interrupts may be delayed or entire micro-frames may be skipped,
+// when other IRQs are currently handled, which could result in
+// communication problems with some USB devices. If this option is
+// enabled, USE_USB_SOF_INTR will be enabled too, and the FIQ cannot be
+// used for other purposes. This option has no influence on the
+// Raspberry Pi 4.
+
+//#define USE_USB_FIQ
+
+#ifdef USE_USB_FIQ
 #define USE_USB_SOF_INTR
 #endif
 

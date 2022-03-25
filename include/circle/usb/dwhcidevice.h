@@ -2,7 +2,7 @@
 // dwhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,10 +28,12 @@
 #include <circle/usb/dwhcirootport.h>
 #include <circle/usb/dwhcixferstagedata.h>
 #include <circle/usb/dwhcixactqueue.h>
+#include <circle/usb/dwhcicompletionqueue.h>
 #include <circle/usb/dwhciregister.h>
 #include <circle/usb/dwhci.h>
 #include <circle/usb/usb.h>
 #include <circle/spinlock.h>
+#include <circle/mphi.h>
 #include <circle/sysconfig.h>
 #include <circle/types.h>
 
@@ -90,7 +92,14 @@ private:
 	void QueueDelayedTransaction (CDWHCITransferStageData *pStageData);
 #endif
 
+#if 0
 	void StartTransaction (CDWHCITransferStageData *pStageData);
+#else
+	void StartTransaction (CDWHCITransferStageData *pStageData)
+	{
+		StartChannel (pStageData);
+	}
+#endif
 	void StartChannel (CDWHCITransferStageData *pStageData);
 
 	void ChannelInterruptHandler (unsigned nChannel);
@@ -99,6 +108,11 @@ private:
 #endif
 	void InterruptHandler (void);
 	static void InterruptStub (void *pParam);
+
+#ifdef USE_USB_FIQ
+	void InterruptHandler2 (void);
+	static void InterruptStub2 (void *pParam);
+#endif
 
 #ifndef USE_USB_SOF_INTR
 	void TimerHandler (CDWHCITransferStageData *pStageData);
@@ -115,7 +129,9 @@ private:
 			    u32		    nMask,
 			    boolean	    bWaitUntilSet,
 			    unsigned	    nMsTimeout);
-	
+
+	void LogTransactionFailed (u32 nStatus);
+
 #ifndef NDEBUG
 	void DumpRegister (const char *pName, u32 nAddress);
 	void DumpStatus (unsigned nChannel = 0);
@@ -143,6 +159,12 @@ private:
 
 	CDWHCIRootPort m_RootPort;
 	volatile boolean m_bRootPortEnabled;
+
+#ifdef USE_USB_FIQ
+	volatile int m_nPortStatusChanged;
+	CDWHCICompletionQueue m_CompletionQueue;
+	CMPHIDevice m_MPHI;
+#endif
 
 	volatile boolean m_bShutdown;			// USB driver will shutdown
 };
