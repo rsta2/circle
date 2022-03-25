@@ -42,6 +42,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	m_bSplitComplete (FALSE),
 	m_nTotalBytesTransfered (0),
 	m_nState (0),
+	m_nSubState (0),
 	m_nTransactionStatus (0),
 	m_nErrorCount (0),
 	m_nStartTicksHZ (0),
@@ -255,6 +256,16 @@ void CDWHCITransferStageData::SetState (unsigned nState)
 unsigned CDWHCITransferStageData::GetState (void) const
 {
 	return m_nState;
+}
+
+void CDWHCITransferStageData::SetSubState (unsigned nSubState)
+{
+	m_nSubState = nSubState;
+}
+
+unsigned CDWHCITransferStageData::GetSubState (void) const
+{
+	return m_nSubState;
 }
 
 boolean CDWHCITransferStageData::BeginSplitCycle (void)

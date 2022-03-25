@@ -45,6 +45,8 @@ public:
 
 	void SetState (unsigned nState);
 	unsigned GetState (void) const;
+	void SetSubState (unsigned nSubState);
+	unsigned GetSubState (void) const;
 
 	boolean BeginSplitCycle (void);
 
@@ -107,6 +109,7 @@ private:
 	u32		 m_nTotalBytesTransfered;
 
 	unsigned	 m_nState;
+	unsigned	 m_nSubState;
 	u32		 m_nTransactionStatus;
 	unsigned	 m_nErrorCount;
 
