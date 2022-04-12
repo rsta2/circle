@@ -130,19 +130,12 @@ void CDWHCIFrameSchedulerNonPeriodic::TransactionComplete (u32 nStatus)
 		}
 		else if (nStatus & DWHCI_HOST_CHAN_INT_NAK)
 		{
-			if (m_nTries-- == 0)
-			{
 #ifndef USE_USB_SOF_INTR
-				m_pTimer->usDelay (5 * uFRAME);
+			m_pTimer->usDelay (5 * uFRAME);
 #else
-				m_usFrameOffset = 5;
+			m_usFrameOffset = 5;
 #endif
-				m_nState = StateCompleteSplitFailed;
-			}
-			else
-			{
-				m_nState = StateCompleteRetry;
-			}
+			m_nState = StateCompleteSplitFailed;
 		}
 		else
 		{
