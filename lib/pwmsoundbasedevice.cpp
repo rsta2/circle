@@ -2,7 +2,7 @@
 // pwmsoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 //
 // Information to implement PWM sound is from:
 //	"Bare metal sound" by Joeboy (RPi forum)
@@ -75,7 +75,7 @@
 #define ARM_PWM_CTL_SBIT2	(1 << 11)
 #define ARM_PWM_CTL_POLA2	(1 << 12)
 #define ARM_PWM_CTL_USEF2	(1 << 13)
-#define ARM_PWM_CTL_MSEN2	(1 << 14)
+#define ARM_PWM_CTL_MSEN2	(1 << 15)
 
 //
 // PWM status register
