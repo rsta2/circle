@@ -116,5 +116,7 @@ long readstr (ulong offset, void *buf, size_t len, const void *p)
 
 void hexdump (const void *p, size_t len, const char *from)
 {
+#ifndef NDEBUG
 	debug_hexdump (p, len, from);
+#endif
 }
