@@ -287,6 +287,7 @@ Additional Topics
 * [Screen escape sequences](doc/screen.txt)
 * [Keyboard escape sequences](doc/keyboard.txt)
 * [Memory layout](doc/memorymap.txt)
+* [Naming conventions](doc/naming-conventions.txt)
 * [Known issues](doc/issues.txt)
 
 Trademarks
