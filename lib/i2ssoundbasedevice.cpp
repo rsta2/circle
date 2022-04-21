@@ -164,21 +164,13 @@ boolean CI2SSoundBaseDevice::Start (void)
 	    && m_pI2CMaster != 0
 	    && !m_bI2CInited)
 	{
-		if (m_ucI2CAddress != 0)
-		{
-			if (!InitPCM51xx (m_ucI2CAddress))	// fixed address, must succeed
-			{
-				m_bError = TRUE;
+		DetectDAC ();
 
-				return FALSE;
-			}
-		}
-		else
+		if (!InitDAC ())
 		{
-			if (!InitPCM51xx (0x4C))		// auto probing, ignore failure
-			{
-				InitPCM51xx (0x4D);
-			}
+			m_bError = TRUE;
+
+			return FALSE;
 		}
 
 		m_bI2CInited = TRUE;
@@ -422,17 +414,51 @@ unsigned CI2SSoundBaseDevice::RXCompletedHandler (boolean bStatus, u32 *pBuffer,
 	return 0;
 }
 
+void CI2SSoundBaseDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
+{
+	va_list var;
+	va_start (var, pMessage);
+	CLogger::Get ()->WriteV ("CI2SSoundBaseDevice", Severity, pMessage, var);
+	va_end (var);
+}
+
+void CI2SSoundBaseDevice::DetectDAC () {
+	if (m_ucI2CAddress != 0)
+	{
+		return; // No need to guess if address is provided
+	}
+	static const u8 knownAddresses[] = {0x1A, 0x4C, 0x4D};
+	for (auto &address : knownAddresses)
+	{
+		int written = m_pI2CMaster->Write (address, nullptr, 0);
+		LogWrite (LogNotice, "Scan result at i2c address %u: %d", address, written);
+		if (written == 0) {
+			m_ucI2CAddress = address;
+			return;
+		}
+	}
+}
+
+// For WM8960 i2c register is 7 bits and value is 9 bits,
+// so let's have a helper for packing this into two bytes
+#define SHIFT_BIT(r, v) {((v&0x0100)>>8) | (r<<1), (v&0xff)}
+
 //
-// Taken from the file mt32pi.cpp from this project:
+// Based on the file mt32pi.cpp from this project:
 //
 // mt32-pi - A baremetal MIDI synthesizer for Raspberry Pi
 // Copyright (C) 2020-2021 Dale Whinham <daleyo@gmail.com>
 //
 // Licensed under GPLv3
 //
-boolean CI2SSoundBaseDevice::InitPCM51xx (u8 ucI2CAddress)
+boolean CI2SSoundBaseDevice::InitDAC ()
 {
-	static const u8 initBytes[][2] =
+	if (m_ucI2CAddress == 0)
+	{
+		return TRUE; // No DAC, no need to init
+	}
+
+	static const u8 initBytesPCM51xx[][2] =
 	{
 		// Set PLL reference clock to BCK (set SREF to 001b)
 		{ 0x0d, 0x10 },
@@ -444,9 +470,70 @@ boolean CI2SSoundBaseDevice::InitPCM51xx (u8 ucI2CAddress)
 		{ 0x41, 0x04 }
 	};
 
+	// based on https://github.com/RASPIAUDIO/ULTRA/blob/main/ultra.c
+	static const u8 initBytesWM8960[][2] =
+	{
+		// reset
+		SHIFT_BIT(15, 0x000),
+		// Power
+		SHIFT_BIT(25, 0x1FC),
+		SHIFT_BIT(26, 0x1F9),
+		SHIFT_BIT(47, 0x03C),
+		// Clock PLL
+		SHIFT_BIT(4, 0x001),
+		SHIFT_BIT(52, 0x027),
+		SHIFT_BIT(53, 0x086),
+		SHIFT_BIT(54, 0x0C2),
+		SHIFT_BIT(55, 0x026),
+		// ADC/DAC
+		SHIFT_BIT(5, 0x000),
+		SHIFT_BIT(7, 0x002),
+		// ALC and Noise control
+		SHIFT_BIT(20, 0x0F9),
+		SHIFT_BIT(17, 0x1FB),
+		SHIFT_BIT(18, 0x000),
+		SHIFT_BIT(19, 0x032),
+		// OUT1 volume
+		SHIFT_BIT(2, 0x16F),
+		SHIFT_BIT(3, 0x16F),
+		//SPK volume
+		SHIFT_BIT(40, 0x170),
+		SHIFT_BIT(41, 0x170),
+		SHIFT_BIT(51, 0x0CD),
+		// input volume
+		SHIFT_BIT(0, 0x13F),
+		SHIFT_BIT(1, 0x13F),
+		// INPUTS
+		SHIFT_BIT(32, 0x138),
+		SHIFT_BIT(33, 0x138),
+		// OUTPUTS
+		SHIFT_BIT(49, 0x0F7),
+		SHIFT_BIT(10, 0x1FF),
+		SHIFT_BIT(11, 0x1FF),
+		SHIFT_BIT(34, 0x100),
+		SHIFT_BIT(37, 0x100)
+	};
+
+	switch (m_ucI2CAddress)
+	{
+	case 0x4C:
+	case 0x4D:
+		return SendAll(initBytesPCM51xx);
+
+	case 0x1A:
+		return SendAll(initBytesWM8960);
+	
+	default:
+		LogWrite (LogError, "Don't know how to init device at i2c address %u", m_ucI2CAddress);
+		return FALSE;
+	}
+}
+
+template <size_t N> boolean CI2SSoundBaseDevice::SendAll (const u8 (&initBytes)[N][2])
+{
 	for (auto &command : initBytes)
 	{
-		if (   m_pI2CMaster->Write (ucI2CAddress, &command, sizeof (command))
+		if (   m_pI2CMaster->Write (m_ucI2CAddress, &command, sizeof (command))
 		    != sizeof (command))
 		{
 			return FALSE;

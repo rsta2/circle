@@ -26,6 +26,7 @@
 #include <circle/gpiopin.h>
 #include <circle/gpioclock.h>
 #include <circle/dmasoundbuffers.h>
+#include <circle/logger.h>
 #include <circle/types.h>
 
 class CI2SSoundBaseDevice : public CSoundBaseDevice	/// Low level access to the I2S sound device
@@ -98,7 +99,10 @@ private:
 	static unsigned RXCompletedHandler (boolean bStatus, u32 *pBuffer,
 					    unsigned nChunkSize, void *pParam);
 
-	boolean InitPCM51xx (u8 ucI2CAddress);
+	void LogWrite (TLogSeverity Severity, const char *pMessage, ...);
+	void DetectDAC ();
+	boolean InitDAC ();
+	template <size_t N> boolean SendAll (const u8 (&initBytes)[N][2]);
 
 private:
 	CInterruptSystem *m_pInterruptSystem;
