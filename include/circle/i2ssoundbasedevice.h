@@ -2,7 +2,7 @@
 // i2ssoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -99,10 +99,8 @@ private:
 	static unsigned RXCompletedHandler (boolean bStatus, u32 *pBuffer,
 					    unsigned nChunkSize, void *pParam);
 
-	void LogWrite (TLogSeverity Severity, const char *pMessage, ...);
-	void DetectDAC ();
-	boolean InitDAC ();
-	template <size_t N> boolean SendAll (const u8 (&initBytes)[N][2]);
+	boolean InitPCM51xx (u8 ucI2CAddress);
+	boolean InitWM8960 (u8 ucI2CAddress);
 
 private:
 	CInterruptSystem *m_pInterruptSystem;

@@ -11,7 +11,7 @@
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -164,13 +164,37 @@ boolean CI2SSoundBaseDevice::Start (void)
 	    && m_pI2CMaster != 0
 	    && !m_bI2CInited)
 	{
-		DetectDAC ();
-
-		if (!InitDAC ())
+		if (m_ucI2CAddress != 0)
 		{
-			m_bError = TRUE;
+			// fixed address, must succeed
+			if (m_ucI2CAddress != 0x1A)
+			{
+				if (!InitPCM51xx (m_ucI2CAddress))
+				{
+					m_bError = TRUE;
 
-			return FALSE;
+					return FALSE;
+				}
+			}
+			else
+			{
+				if (!InitWM8960 (m_ucI2CAddress))
+				{
+					m_bError = TRUE;
+
+					return FALSE;
+				}
+			}
+		}
+		else
+		{
+			if (!InitPCM51xx (0x4C))		// auto probing, ignore failure
+			{
+				if (!InitPCM51xx (0x4D))
+				{
+					InitWM8960 (0x1A);
+				}
+			}
 		}
 
 		m_bI2CInited = TRUE;
@@ -414,51 +438,17 @@ unsigned CI2SSoundBaseDevice::RXCompletedHandler (boolean bStatus, u32 *pBuffer,
 	return 0;
 }
 
-void CI2SSoundBaseDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
-{
-	va_list var;
-	va_start (var, pMessage);
-	CLogger::Get ()->WriteV ("CI2SSoundBaseDevice", Severity, pMessage, var);
-	va_end (var);
-}
-
-void CI2SSoundBaseDevice::DetectDAC () {
-	if (m_ucI2CAddress != 0)
-	{
-		return; // No need to guess if address is provided
-	}
-	static const u8 knownAddresses[] = {0x1A, 0x4C, 0x4D};
-	for (auto &address : knownAddresses)
-	{
-		int written = m_pI2CMaster->Write (address, nullptr, 0);
-		LogWrite (LogNotice, "Scan result at i2c address %u: %d", address, written);
-		if (written == 0) {
-			m_ucI2CAddress = address;
-			return;
-		}
-	}
-}
-
-// For WM8960 i2c register is 7 bits and value is 9 bits,
-// so let's have a helper for packing this into two bytes
-#define SHIFT_BIT(r, v) {((v&0x0100)>>8) | (r<<1), (v&0xff)}
-
 //
-// Based on the file mt32pi.cpp from this project:
+// Taken from the file mt32pi.cpp from this project:
 //
 // mt32-pi - A baremetal MIDI synthesizer for Raspberry Pi
 // Copyright (C) 2020-2021 Dale Whinham <daleyo@gmail.com>
 //
 // Licensed under GPLv3
 //
-boolean CI2SSoundBaseDevice::InitDAC ()
+boolean CI2SSoundBaseDevice::InitPCM51xx (u8 ucI2CAddress)
 {
-	if (m_ucI2CAddress == 0)
-	{
-		return TRUE; // No DAC, no need to init
-	}
-
-	static const u8 initBytesPCM51xx[][2] =
+	static const u8 initBytes[][2] =
 	{
 		// Set PLL reference clock to BCK (set SREF to 001b)
 		{ 0x0d, 0x10 },
@@ -470,8 +460,27 @@ boolean CI2SSoundBaseDevice::InitDAC ()
 		{ 0x41, 0x04 }
 	};
 
+	for (auto &command : initBytes)
+	{
+		if (   m_pI2CMaster->Write (ucI2CAddress, &command, sizeof (command))
+		    != sizeof (command))
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+// For WM8960 i2c register is 7 bits and value is 9 bits,
+// so let's have a helper for packing this into two bytes
+#define SHIFT_BIT(r, v) {((v&0x0100)>>8) | (r<<1), (v&0xff)}
+
+boolean CI2SSoundBaseDevice::InitWM8960 (u8 ucI2CAddress)
+{
 	// based on https://github.com/RASPIAUDIO/ULTRA/blob/main/ultra.c
-	static const u8 initBytesWM8960[][2] =
+	// Licensed under GPLv3
+	static const u8 initBytes[][2] =
 	{
 		// reset
 		SHIFT_BIT(15, 0x000),
@@ -514,26 +523,9 @@ boolean CI2SSoundBaseDevice::InitDAC ()
 		SHIFT_BIT(37, 0x100)
 	};
 
-	switch (m_ucI2CAddress)
-	{
-	case 0x4C:
-	case 0x4D:
-		return SendAll(initBytesPCM51xx);
-
-	case 0x1A:
-		return SendAll(initBytesWM8960);
-	
-	default:
-		LogWrite (LogError, "Don't know how to init device at i2c address %u", m_ucI2CAddress);
-		return FALSE;
-	}
-}
-
-template <size_t N> boolean CI2SSoundBaseDevice::SendAll (const u8 (&initBytes)[N][2])
-{
 	for (auto &command : initBytes)
 	{
-		if (   m_pI2CMaster->Write (m_ucI2CAddress, &command, sizeof (command))
+		if (   m_pI2CMaster->Write (ucI2CAddress, &command, sizeof (command))
 		    != sizeof (command))
 		{
 			return FALSE;
