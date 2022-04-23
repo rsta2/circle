@@ -506,9 +506,9 @@ boolean CI2SSoundBaseDevice::InitWM8960 (u8 ucI2CAddress)
 		SHIFT_BIT(2, 0x16F),
 		SHIFT_BIT(3, 0x16F),
 		//SPK volume
-		SHIFT_BIT(40, 0x170),
-		SHIFT_BIT(41, 0x170),
-		SHIFT_BIT(51, 0x0CD),
+		SHIFT_BIT(40, 0x17F),
+		SHIFT_BIT(41, 0x178),
+		SHIFT_BIT(51, 0x08D),
 		// input volume
 		SHIFT_BIT(0, 0x13F),
 		SHIFT_BIT(1, 0x13F),
