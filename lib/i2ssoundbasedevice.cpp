@@ -5,7 +5,7 @@
 //	BCM283x/BCM2711 I2S output and input
 //	two 24-bit audio channels
 //	sample rate up to 192 KHz
-//	output tested with PCM5102A and PCM5122 DACs
+//	output tested with PCM5102A, PCM5122 and WM8960 DACs
 //
 // References:
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
