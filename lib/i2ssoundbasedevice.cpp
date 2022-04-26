@@ -100,10 +100,11 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_ucI2CAddress (ucI2CAddress),
 	m_DeviceMode (DeviceMode),
 	m_Clock (GPIOClockPCM, GPIOClockSourcePLLD),
-	m_bI2CInited (FALSE),
 	m_bError (FALSE),
 	m_TXBuffers (TRUE, ARM_PCM_FIFO_A, DREQSourcePCMTX, nChunkSize, pInterrupt),
-	m_RXBuffers (FALSE, ARM_PCM_FIFO_A, DREQSourcePCMRX, nChunkSize, pInterrupt)
+	m_RXBuffers (FALSE, ARM_PCM_FIFO_A, DREQSourcePCMRX, nChunkSize, pInterrupt),
+	m_bControllerInited (FALSE),
+	m_pController (nullptr)
 {
 	assert (m_nChunkSize >= 32);
 	assert ((m_nChunkSize & 1) == 0);
@@ -159,45 +160,16 @@ boolean CI2SSoundBaseDevice::Start (void)
 		return FALSE;
 	}
 
-	// optional DAC init via I2C
-	if (   m_DeviceMode != DeviceModeRXOnly
-	    && m_pI2CMaster != 0
-	    && !m_bI2CInited)
+	if (!m_bControllerInited)
 	{
-		if (m_ucI2CAddress != 0)
+		if (!ControllerFactory ())
 		{
-			// fixed address, must succeed
-			if (m_ucI2CAddress != 0x1A)
-			{
-				if (!InitPCM51xx (m_ucI2CAddress))
-				{
-					m_bError = TRUE;
+			m_bError = TRUE;
 
-					return FALSE;
-				}
-			}
-			else
-			{
-				if (!InitWM8960 (m_ucI2CAddress))
-				{
-					m_bError = TRUE;
-
-					return FALSE;
-				}
-			}
-		}
-		else
-		{
-			if (!InitPCM51xx (0x4C))		// auto probing, ignore failure
-			{
-				if (!InitPCM51xx (0x4D))
-				{
-					InitWM8960 (0x1A);
-				}
-			}
+			return FALSE;
 		}
 
-		m_bI2CInited = TRUE;
+		m_bControllerInited = TRUE;
 	}
 
 	// enable I2S DMA operation
@@ -287,6 +259,11 @@ boolean CI2SSoundBaseDevice::IsActive (void) const
 	}
 
 	return FALSE;
+}
+
+CSoundController *CI2SSoundBaseDevice::GetController (void)
+{
+	return m_pController;
 }
 
 void CI2SSoundBaseDevice::RunI2S (void)
@@ -438,99 +415,39 @@ unsigned CI2SSoundBaseDevice::RXCompletedHandler (boolean bStatus, u32 *pBuffer,
 	return 0;
 }
 
-//
-// Taken from the file mt32pi.cpp from this project:
-//
-// mt32-pi - A baremetal MIDI synthesizer for Raspberry Pi
-// Copyright (C) 2020-2021 Dale Whinham <daleyo@gmail.com>
-//
-// Licensed under GPLv3
-//
-boolean CI2SSoundBaseDevice::InitPCM51xx (u8 ucI2CAddress)
+#include <circle/pcm512xsoundcontroller.h>
+#include <circle/wm8960soundcontroller.h>
+
+boolean CI2SSoundBaseDevice::ControllerFactory (void)
 {
-	static const u8 initBytes[][2] =
+	if (!m_pI2CMaster)
 	{
-		// Set PLL reference clock to BCK (set SREF to 001b)
-		{ 0x0d, 0x10 },
-
-		// Ignore clock halt detection (set IDCH to 1)
-		{ 0x25, 0x08 },
-
-		// Disable auto mute
-		{ 0x41, 0x04 }
-	};
-
-	for (auto &command : initBytes)
-	{
-		if (   m_pI2CMaster->Write (ucI2CAddress, &command, sizeof (command))
-		    != sizeof (command))
-		{
-			return FALSE;
-		}
+		return TRUE;
 	}
 
-	return TRUE;
-}
+	// PCM512x
+	m_pController = new CPCM512xSoundController (m_pI2CMaster, m_ucI2CAddress);
+	assert (m_pController);
 
-// For WM8960 i2c register is 7 bits and value is 9 bits,
-// so let's have a helper for packing this into two bytes
-#define SHIFT_BIT(r, v) {((v&0x0100)>>8) | (r<<1), (v&0xff)}
-
-boolean CI2SSoundBaseDevice::InitWM8960 (u8 ucI2CAddress)
-{
-	// based on https://github.com/RASPIAUDIO/ULTRA/blob/main/ultra.c
-	// Licensed under GPLv3
-	static const u8 initBytes[][2] =
+	if (m_pController->Probe ())
 	{
-		// reset
-		SHIFT_BIT(15, 0x000),
-		// Power
-		SHIFT_BIT(25, 0x1FC),
-		SHIFT_BIT(26, 0x1F9),
-		SHIFT_BIT(47, 0x03C),
-		// Clock PLL
-		SHIFT_BIT(4, 0x001),
-		SHIFT_BIT(52, 0x027),
-		SHIFT_BIT(53, 0x086),
-		SHIFT_BIT(54, 0x0C2),
-		SHIFT_BIT(55, 0x026),
-		// ADC/DAC
-		SHIFT_BIT(5, 0x000),
-		SHIFT_BIT(7, 0x002),
-		// ALC and Noise control
-		SHIFT_BIT(20, 0x0F9),
-		SHIFT_BIT(17, 0x1FB),
-		SHIFT_BIT(18, 0x000),
-		SHIFT_BIT(19, 0x032),
-		// OUT1 volume
-		SHIFT_BIT(2, 0x16F),
-		SHIFT_BIT(3, 0x16F),
-		//SPK volume
-		SHIFT_BIT(40, 0x17F),
-		SHIFT_BIT(41, 0x178),
-		SHIFT_BIT(51, 0x08D),
-		// input volume
-		SHIFT_BIT(0, 0x13F),
-		SHIFT_BIT(1, 0x13F),
-		// INPUTS
-		SHIFT_BIT(32, 0x138),
-		SHIFT_BIT(33, 0x138),
-		// OUTPUTS
-		SHIFT_BIT(49, 0x0F7),
-		SHIFT_BIT(10, 0x1FF),
-		SHIFT_BIT(11, 0x1FF),
-		SHIFT_BIT(34, 0x100),
-		SHIFT_BIT(37, 0x100)
-	};
-
-	for (auto &command : initBytes)
-	{
-		if (   m_pI2CMaster->Write (ucI2CAddress, &command, sizeof (command))
-		    != sizeof (command))
-		{
-			return FALSE;
-		}
+		return TRUE;
 	}
 
-	return TRUE;
+	delete m_pController;
+	m_pController = nullptr;
+
+	// WM8960
+	m_pController = new CWM8960SoundController (m_pI2CMaster, m_ucI2CAddress);
+	assert (m_pController);
+
+	if (m_pController->Probe ())
+	{
+		return TRUE;
+	}
+
+	delete m_pController;
+	m_pController = nullptr;
+
+	return !m_ucI2CAddress;		// PCM5102A does not need a controller
 }

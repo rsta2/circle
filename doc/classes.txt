@@ -44,6 +44,7 @@ Base library
 * CNumberPool: Allocation pool for (device) numbers.
 * CPageAllocator: Allocates aligned pages from a flat memory region.
 * CPageTable: Encapsulates a page table to be used by MMU (AArch32).
+* CPCM512xSoundController: Sound controller for PCM512x.
 * CPtrArray: Container class. Dynamic array of pointers.
 * CPtrList: Container class. List of pointers.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
@@ -65,6 +66,7 @@ Base library
 * CTranslationTable: Encapsulates a translation table to be used by MMU (AArch64).
 * CUserTimer: Fine grained user programmable interrupt timer (based on ARM_IRQ_TIMER1)
 * CVirtualGPIOPin: Encapsulates a "virtual" GPIO pin controlled by the VideoCore (Output only).
+* CWM8960SoundController: Sound controller for WM8960.
 * CWriteBufferDevice: Filter for buffered write to (e.g. screen) device.
 
 USB library
