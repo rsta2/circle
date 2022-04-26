@@ -17,6 +17,7 @@ CFLAGS += -DUSE_VCHIQ_SOUND=$(USE_VCHIQ_SOUND)
 endif
 
 LIBS	+= $(CIRCLEHOME)/lib/sched/libsched.a \
+	   $(CIRCLEHOME)/lib/sound/libsound.a \
 	   $(CIRCLEHOME)/lib/libcircle.a
 
 include ../Rules.mk

@@ -1,5 +1,5 @@
 //
-// pcm512xsoundcontroller.h
+// wm8960soundcontroller.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2022  R. Stange <rsta2@o2online.de>
@@ -17,25 +17,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_pcm512xsoundcontroller_h
-#define _circle_pcm512xsoundcontroller_h
+#ifndef _circle_sound_wm8960soundcontroller_h
+#define _circle_sound_wm8960soundcontroller_h
 
-#include <circle/soundcontroller.h>
+#include <circle/sound/soundcontroller.h>
 #include <circle/i2cmaster.h>
 #include <circle/types.h>
 
-class CPCM512xSoundController : public CSoundController		/// Sound controller for PCM512x
+class CWM8960SoundController : public CSoundController		/// Sound controller for WM8960
 {
 public:
-	CPCM512xSoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress = 0);
+	CWM8960SoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress = 0);
 
 	boolean Probe (void);
 
-	void SetOutputVolume (int ndB) override;
-	const TRange GetOutputVolumeRange (void) const override;
-
 private:
-	boolean InitPCM512x (u8 ucI2CAddress);
+	boolean InitWM8960 (u8 uchI2CAddress);
 
 private:
 	CI2CMaster *m_pI2CMaster;

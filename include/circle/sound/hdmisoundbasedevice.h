@@ -17,10 +17,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_hdmisoundbasedevice_h
-#define _circle_hdmisoundbasedevice_h
+#ifndef _circle_sound_hdmisoundbasedevice_h
+#define _circle_sound_hdmisoundbasedevice_h
 
-#include <circle/soundbasedevice.h>
+#include <circle/sound/soundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/gpioclock.h>
 #include <circle/dmachannel.h>

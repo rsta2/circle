@@ -2,7 +2,7 @@
 // vchiqsoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #ifndef _vc4_sound_vchiqsoundbasedevice_h
 #define _vc4_sound_vchiqsoundbasedevice_h
 
-#include <circle/soundbasedevice.h>
+#include <circle/sound/soundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/types.h>

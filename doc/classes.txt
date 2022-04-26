@@ -19,7 +19,6 @@ Base library
 * CDeviceTreeBlob: Simple Devicetree blob parser
 * CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
 * CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
-* CDMASoundBuffers: Concatenated DMA buffers to be used by sound device drivers.
 * CExceptionHandler: Generates a stack-trace and a panic message if an abort exception occurs.
 * CGPIOClock: Using GPIO clocks, initialize, start and stop it.
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
@@ -27,10 +26,8 @@ Base library
 * CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
 * CGenericLock: Locks a resource with or without scheduler.
 * CHeapAllocator: Allocates blocks from a flat memory region.
-* CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ).
 * CI2CMaster: Driver for I2C master devices.
 * CI2CSlave: Driver for I2C slave device.
-* CI2SSoundBaseDevice: Low level access to the I2S sound device.
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CKernelOptions: Providing kernel options from file cmdline.txt (see doc/cmdline.txt).
 * CLatencyTester: Measures the IRQ latency of the running code.
@@ -44,17 +41,12 @@ Base library
 * CNumberPool: Allocation pool for (device) numbers.
 * CPageAllocator: Allocates aligned pages from a flat memory region.
 * CPageTable: Encapsulates a page table to be used by MMU (AArch32).
-* CPCM512xSoundController: Sound controller for PCM512x.
 * CPtrArray: Container class. Dynamic array of pointers.
 * CPtrList: Container class. List of pointers.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
-* CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
-* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
 * CSerialDevice: Driver for PL011 UART, interrupt or polling mode
 * CSMIMaster: Driver for the Second Memory Interface.
-* CSoundBaseDevice: Base class of sound devices, converts several sound formats.
-* CSoundController: Optional controller of a sound device.
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
 * CSPIMaster: Driver for (non-AUX) SPI master device. Synchronous polling operation.
 * CSPIMasterAUX: Driver for the auxiliary SPI master (SPI1).
@@ -66,7 +58,6 @@ Base library
 * CTranslationTable: Encapsulates a translation table to be used by MMU (AArch64).
 * CUserTimer: Fine grained user programmable interrupt timer (based on ARM_IRQ_TIMER1)
 * CVirtualGPIOPin: Encapsulates a "virtual" GPIO pin controlled by the VideoCore (Output only).
-* CWM8960SoundController: Sound controller for WM8960.
 * CWriteBufferDevice: Filter for buffered write to (e.g. screen) device.
 
 USB library
@@ -195,3 +186,15 @@ Net library
 * CTFTPDaemon: TFTP server task.
 * CTransportLayer: Encapsulates the TCP/UDP transport layer.
 * CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.
+
+Sound library
+
+* CDMASoundBuffers: Concatenated DMA buffers to be used by sound device drivers.
+* CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ).
+* CI2SSoundBaseDevice: Low level access to the I2S sound device.
+* CPCM512xSoundController: Sound controller for PCM512x.
+* CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
+* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
+* CSoundBaseDevice: Base class of sound devices, converts several sound formats.
+* CSoundController: Optional controller of a sound device.
+* CWM8960SoundController: Sound controller for WM8960.

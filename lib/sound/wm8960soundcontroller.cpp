@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/wm8960soundcontroller.h>
+#include <circle/sound/wm8960soundcontroller.h>
 #include <assert.h>
 
 CWM8960SoundController::CWM8960SoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress)

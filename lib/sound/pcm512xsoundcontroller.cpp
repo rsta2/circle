@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/pcm512xsoundcontroller.h>
+#include <circle/sound/pcm512xsoundcontroller.h>
 #include <assert.h>
 
 CPCM512xSoundController::CPCM512xSoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress)

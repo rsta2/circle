@@ -17,11 +17,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_soundbasedevice_h
-#define _circle_soundbasedevice_h
+#ifndef _circle_sound_soundbasedevice_h
+#define _circle_sound_soundbasedevice_h
 
 #include <circle/device.h>
-#include <circle/soundcontroller.h>
+#include <circle/sound/soundcontroller.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
 

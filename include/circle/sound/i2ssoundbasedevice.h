@@ -17,15 +17,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_i2ssoundbasedevice_h
-#define _circle_i2ssoundbasedevice_h
+#ifndef _circle_sound_i2ssoundbasedevice_h
+#define _circle_sound_i2ssoundbasedevice_h
 
-#include <circle/soundbasedevice.h>
+#include <circle/sound/soundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/i2cmaster.h>
 #include <circle/gpiopin.h>
 #include <circle/gpioclock.h>
-#include <circle/dmasoundbuffers.h>
+#include <circle/sound/dmasoundbuffers.h>
 #include <circle/logger.h>
 #include <circle/types.h>
 

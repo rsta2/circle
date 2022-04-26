@@ -26,7 +26,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/i2ssoundbasedevice.h>
+#include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2835int.h>
@@ -415,8 +415,8 @@ unsigned CI2SSoundBaseDevice::RXCompletedHandler (boolean bStatus, u32 *pBuffer,
 	return 0;
 }
 
-#include <circle/pcm512xsoundcontroller.h>
-#include <circle/wm8960soundcontroller.h>
+#include <circle/sound/pcm512xsoundcontroller.h>
+#include <circle/sound/wm8960soundcontroller.h>
 
 boolean CI2SSoundBaseDevice::ControllerFactory (void)
 {
