@@ -53,6 +53,7 @@ Base library
 * CSerialDevice: Driver for PL011 UART, interrupt or polling mode
 * CSMIMaster: Driver for the Second Memory Interface.
 * CSoundBaseDevice: Base class of sound devices, converts several sound formats.
+* CSoundController: Optional controller of a sound device.
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
 * CSPIMaster: Driver for (non-AUX) SPI master device. Synchronous polling operation.
 * CSPIMasterAUX: Driver for the auxiliary SPI master (SPI1).
