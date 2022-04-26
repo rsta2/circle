@@ -2,7 +2,7 @@
 // miniorgan.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,9 @@
 
 #define MIDI_NOTE_OFF	0b1000
 #define MIDI_NOTE_ON	0b1001
+#define MIDI_CC		0b1011
+
+#define MIDI_CC_VOLUME	7
 
 #define KEY_NONE	255
 
@@ -308,6 +311,25 @@ void CMiniOrgan::MIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLeng
 		{
 			s_pThis->m_ucKeyNumber = KEY_NONE;
 			s_pThis->m_nFrequency = 0;
+		}
+	}
+	else if (ucType == MIDI_CC)
+	{
+		if (pPacket[1] == MIDI_CC_VOLUME)
+		{
+			CSoundController *pController = s_pThis->GetController ();
+			if (pController)
+			{
+				CSoundController::TRange Range =
+					pController->GetOutputVolumeRange ();
+
+				int nVolume = pPacket[2];
+				nVolume *= Range.Max - Range.Min;
+				nVolume /= 127;
+				nVolume += Range.Min;
+
+				pController->SetOutputVolume (nVolume);
+			}
 		}
 	}
 }
