@@ -21,6 +21,7 @@
 #define _circle_sound_i2ssoundbasedevice_h
 
 #include <circle/sound/soundbasedevice.h>
+#include <circle/sound/soundcontroller.h>
 #include <circle/interrupt.h>
 #include <circle/i2cmaster.h>
 #include <circle/gpiopin.h>

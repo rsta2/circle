@@ -51,7 +51,7 @@ public:
 public:
 	virtual ~CSoundController (void) {}
 
-	virtual boolean Probe (void) = 0;
+	virtual boolean Probe (void) { return TRUE; }
 
 	virtual void SelectOutput (TOutputSelector Selector) {}
 	virtual void SelectInput (TInputSelector Selector) {}
