@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
+#include <circle/koptions.h>
 #include <circle/logger.h>
 #include <circle/debug.h>
 #include <circle/util.h>
@@ -393,7 +394,8 @@ void CUSBMIDIDevice::CompletionRoutine (CUSBRequest *pURB)
 
 	delete pURB;
 
-	if (bRestart)
+	if (   bRestart
+	    || CKernelOptions::Get ()->GetUSBBoost ())
 	{
 		StartRequest ();
 	}
