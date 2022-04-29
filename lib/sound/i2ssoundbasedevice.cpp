@@ -139,6 +139,9 @@ CI2SSoundBaseDevice::~CI2SSoundBaseDevice (void)
 {
 	CDeviceNameService::Get ()->RemoveDevice ("sndi2s", FALSE);
 
+	delete m_pController;
+	m_pController = nullptr;
+
 	// stop I2S device and clock
 	StopI2S ();
 }
