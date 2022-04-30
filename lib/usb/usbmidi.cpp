@@ -54,6 +54,7 @@ CUSBMIDIDevice::CUSBMIDIDevice (CUSBFunction *pFunction)
 	m_pPacketHandler (0),
 	m_pPacketBuffer (0),
 	m_hTimer (0),
+	m_bAllSoundOff (FALSE),
 	m_nDeviceNumber (0)
 {
 }
@@ -346,6 +347,11 @@ boolean CUSBMIDIDevice::SendPlainMIDI (unsigned nCable, const u8 *pData, unsigne
 	return GetHost ()->Transfer (m_pEndpointOut, Buffer, nBufferValid) == (int) nBufferValid;
 }
 
+void CUSBMIDIDevice::SetAllSoundOffOnUSBError (boolean bEnable)
+{
+	m_bAllSoundOff = bEnable;
+}
+
 boolean CUSBMIDIDevice::StartRequest (void)
 {
 	assert (m_pEndpointIn != 0);
@@ -389,6 +395,17 @@ void CUSBMIDIDevice::CompletionRoutine (CUSBRequest *pURB)
 
 				bRestart = TRUE;
 			}
+		}
+	}
+	else if (   m_bAllSoundOff
+		 && !pURB->GetStatus ()
+		 && pURB->GetUSBError () != USBErrorUnknown
+		 && m_pPacketHandler)
+	{
+		for (u8 nChannel = 0; nChannel < 16; nChannel++)
+		{
+			u8 AllSoundOff[] = {(u8) (0xB0 | nChannel), 120, 0};
+			(*m_pPacketHandler) (0, AllSoundOff, sizeof AllSoundOff);
 		}
 	}
 
