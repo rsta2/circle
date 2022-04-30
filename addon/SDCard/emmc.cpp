@@ -2035,7 +2035,11 @@ int CEMMCDevice::CardReset (void)
 
 #else
 	m_pSCR->sd_version = SD_VER_4;
+#if RASPPI >= 4
 	m_pSCR->sd_bus_widths = 8;
+#else
+	m_pSCR->sd_bus_widths = 4;
+#endif
 	m_block_size = SD_BLOCK_SIZE;
 #endif	// #ifndef USE_EMBEDDED_MMC_CM4
 
@@ -2088,11 +2092,11 @@ int CEMMCDevice::CardReset (void)
 
 #else	// #ifndef USE_EMBEDDED_MMC_CM4
 
-	if (m_pSCR->sd_bus_widths & 8)
+	if (m_pSCR->sd_bus_widths & (4 | 8))
 	{
-		// Set 8-bit transfer mode (CMD6)
+		// Set 4/8-bit transfer mode (CMD6)
 #ifdef EMMC_DEBUG2
-		LogWrite (LogDebug, "Switching to 8-bit data mode");
+		LogWrite (LogDebug, "Switching to %u-bit data mode", m_pSCR->sd_bus_widths);
 #endif
 
 		// Disable card interrupt in host
@@ -2101,22 +2105,23 @@ int CEMMCDevice::CardReset (void)
 		write32(EMMC_IRPT_MASK, new_iprt_mask);
 
 		// Send CMD6 to change the card's bit mode
-		if (!IssueCommand (SWITCH_FUNC, 0x3B70200))
+		if (!IssueCommand (SWITCH_FUNC, (m_pSCR->sd_bus_widths & 8) ? 0x3B70200 : 0x3B70100))
 		{
-			LogWrite (LogError, "Switch to 8-bit data mode failed");
+			LogWrite (LogError, "Switch to %u-bit data mode failed",
+				  m_pSCR->sd_bus_widths);
 		}
 		else
 		{
 			// Change bit mode for Host
 			u32 control0 = read32(EMMC_CONTROL0);
-			control0 |= 1 << 5;
+			control0 |= (m_pSCR->sd_bus_widths & 8) ? 1 << 5 : 0x2;
 			write32(EMMC_CONTROL0, control0);
 
 			// Re-enable card interrupt in host
 			write32(EMMC_IRPT_MASK, old_irpt_mask);
 
 #ifdef EMMC_DEBUG2
-			LogWrite (LogDebug, "switch to 8-bit complete");
+			LogWrite (LogDebug, "switch to %u-bit complete", m_pSCR->sd_bus_widths);
 #endif
 		}
 	}
