@@ -38,6 +38,7 @@ Base library
 * CMACAddress: Encapsulates an Ethernet MAC address.
 * CMachineInfo: Helper class to get different information about the running computer.
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
+* CMPHIDevice: A driver, which uses the MPHI device to generate an IRQ.
 * CMultiCoreSupport: Implements multi-core support on the Raspberry Pi 2.
 * CNetDevice: Base class (interface) of net devices.
 * CNullDevice: Character device which ignores sent data and returns 0 bytes on read.
@@ -46,6 +47,7 @@ Base library
 * CPageTable: Encapsulates a page table to be used by MMU (AArch32).
 * CPtrArray: Container class. Dynamic array of pointers.
 * CPtrList: Container class. List of pointers.
+* CPtrListFIQ: Container class. List of pointers, usable from FIQ_LEVEL.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
 * CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
 * CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
@@ -68,6 +70,7 @@ Base library
 
 USB library
 
+* CDWHCICompletionQueue: Queues USB requests ready for completion (with USE_USB_FIQ enabled).
 * CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi 1-3.
 * CDWHCIFrameScheduler: Base class for a simple micro frame scheduler
 * CDWHCIFrameSchedulerNonPeriodic: Schedules the transmission of non-interrupt split frames to non-high-speed devices

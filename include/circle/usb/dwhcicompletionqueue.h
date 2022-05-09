@@ -1,8 +1,8 @@
 //
-// dwhcixactqueue.h
+// dwhcicompletionqueue.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,37 +17,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_dwhcixactqueue_h
-#define _circle_usb_dwhcixactqueue_h
+#ifndef _circle_usb_dwhcicompletionqueue_h
+#define _circle_usb_dwhcicompletionqueue_h
 
-#include <circle/usb/dwhcixferstagedata.h>
+#include <circle/usb/usbrequest.h>
 #include <circle/ptrlistfiq.h>
-#include <circle/spinlock.h>
 #include <circle/sysconfig.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
-#ifdef USE_USB_SOF_INTR
+#ifdef USE_USB_FIQ
 
-class CUSBDevice;
-
-class CDWHCITransactionQueue		// Queues coming USB transactions (FIFO)
+class CDWHCICompletionQueue		// Queues USB requests ready for completion (FIFO)
 {
 public:
-	CDWHCITransactionQueue (unsigned nMaxElements,
-				unsigned nMaxAccessLevel);	//  IRQ_LEVEL or FIQ_LEVEL
-	~CDWHCITransactionQueue (void);
+	CDWHCICompletionQueue (unsigned nMaxElements);
+	~CDWHCICompletionQueue (void);
 
-	// remove all entries
-	void Flush (void);
+	boolean IsEmpty (void);
 
-	// remove entries for device
-	void FlushDevice (CUSBDevice *pUSBDevice);
+	void Enqueue (CUSBRequest *pURB);
 
-	// enqueue transaction to be processed at usFrameNumber
-	void Enqueue (CDWHCITransferStageData *pStageData, u16 usFrameNumber);
-
-	// dequeue next transaction to be processed at usFrameNumber (or earlier)
-	CDWHCITransferStageData *Dequeue (u16 usFrameNumber);
+	CUSBRequest *Dequeue (void);
 
 private:
 	CPtrListFIQ m_List;

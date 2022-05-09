@@ -4,7 +4,7 @@
 // Class-specific allocator support
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -65,12 +65,18 @@
 	void class::InitProtectedAllocator (unsigned nReservedObjects,	\
 					    unsigned nTargetLevel)	\
 	{								\
-		assert (s_pAllocator == 0);				\
-		s_pAllocator = new CClassAllocator (sizeof (class),	\
-						    nReservedObjects,	\
-						    nTargetLevel,	\
-						    #class);		\
-		assert (s_pAllocator != 0);				\
+		if (s_pAllocator == 0)					\
+		{							\
+			s_pAllocator = new CClassAllocator (		\
+						sizeof (class),		\
+						nReservedObjects,	\
+						nTargetLevel,		\
+						#class);		\
+			assert (s_pAllocator != 0);			\
+		}							\
+		else							\
+			s_pAllocator->Extend (nReservedObjects,		\
+					      nTargetLevel);		\
 	}
 
 // call this somewhere before the class is instantiated
@@ -98,6 +104,8 @@ public:
 
 	void Free (void *pBlock);
 
+	void Extend (unsigned nReservedObjects, unsigned nTargetLevel);
+
 private:
 	void Init (size_t nObjectSize, unsigned nReservedObjects);
 
@@ -109,7 +117,8 @@ private:
 	unsigned char *m_pMemory;
 	struct TBlock *m_pFreeList;
 
-	boolean m_bProtected;
+	boolean   m_bProtected;
+	unsigned  m_nTargetLevel;
 	CSpinLock m_SpinLock;
 };
 

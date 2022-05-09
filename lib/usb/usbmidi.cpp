@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
+#include <circle/koptions.h>
 #include <circle/logger.h>
 #include <circle/debug.h>
 #include <circle/util.h>
@@ -53,6 +54,7 @@ CUSBMIDIDevice::CUSBMIDIDevice (CUSBFunction *pFunction)
 	m_pPacketHandler (0),
 	m_pPacketBuffer (0),
 	m_hTimer (0),
+	m_bAllSoundOff (FALSE),
 	m_nDeviceNumber (0)
 {
 }
@@ -345,6 +347,11 @@ boolean CUSBMIDIDevice::SendPlainMIDI (unsigned nCable, const u8 *pData, unsigne
 	return GetHost ()->Transfer (m_pEndpointOut, Buffer, nBufferValid) == (int) nBufferValid;
 }
 
+void CUSBMIDIDevice::SetAllSoundOffOnUSBError (boolean bEnable)
+{
+	m_bAllSoundOff = bEnable;
+}
+
 boolean CUSBMIDIDevice::StartRequest (void)
 {
 	assert (m_pEndpointIn != 0);
@@ -390,10 +397,22 @@ void CUSBMIDIDevice::CompletionRoutine (CUSBRequest *pURB)
 			}
 		}
 	}
+	else if (   m_bAllSoundOff
+		 && !pURB->GetStatus ()
+		 && pURB->GetUSBError () != USBErrorUnknown
+		 && m_pPacketHandler)
+	{
+		for (u8 nChannel = 0; nChannel < 16; nChannel++)
+		{
+			u8 AllSoundOff[] = {(u8) (0xB0 | nChannel), 120, 0};
+			(*m_pPacketHandler) (0, AllSoundOff, sizeof AllSoundOff);
+		}
+	}
 
 	delete pURB;
 
-	if (bRestart)
+	if (   bRestart
+	    || CKernelOptions::Get ()->GetUSBBoost ())
 	{
 		StartRequest ();
 	}
