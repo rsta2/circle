@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= hd44780device.o st7789display.o hd44780devicei2c.o
+OBJS	= hd44780device.o st7789display.o
 
 libdisplay.a: $(OBJS)
 	@echo "  AR    $@"

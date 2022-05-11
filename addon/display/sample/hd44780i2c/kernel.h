@@ -32,7 +32,7 @@
 #include <circle/usb/usbhcidevice.h>
 #include <circle/types.h>
 #include <circle/i2cmaster.h>
-#include <display/hd44780devicei2c.h>
+#include <display/hd44780device.h>
 
 enum TShutdownMode
 {
@@ -70,7 +70,7 @@ private:
 	CUSBHCIDevice		m_USBHCI;
 	CI2CMaster		m_I2CMaster;
 
-	CHD44780Devicei2c	m_LCD;
+	CHD44780Device	m_LCD;
 };
 
 #endif
