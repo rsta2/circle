@@ -1,13 +1,9 @@
 README
 
 This sample program demonstrates how to use a HD44780-controlled LCD dot-matrix
-display. Before building you have to configure the program in kernel.cpp
-according to the hardware of your LCD display. You have to set the display size
-(columns, rows) and the GPIO pins to which the different pins of the display
-(D4-D7, EN, RS, (RW)) are connected. Please note that the display driver uses
-the 4-bit mode. The pins D0-D3 do not need to be connected. Further the RW pin
-can be connected to ground on the display, because the driver does not read from
-the display.
+display connected using an I2C module. Before building you have to configure the
+program in kernel.cpp according to the hardware of your LCD display. You have to
+set the display size (columns, rows) and the I2C address of the interace module.
 
 There are two modes of the demo program. If you start it without an USB keyboard
 connected, it will display "No keyboard!" on the LCD display and will count the
