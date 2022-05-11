@@ -85,7 +85,7 @@ CHD44780Device::CHD44780Device (CI2CMaster *pI2CMaster, u8 nAddress, unsigned nC
 
 CHD44780Device::~CHD44780Device (void)
 {
-	WriteByte (0x30, HD44780_DATA);	// return to 8-bit mode
+	WriteByte (0x30, HD44780_CMD);	// return to 8-bit mode
 
 	delete m_pRW;
 	m_pRW = 0;
@@ -94,15 +94,15 @@ CHD44780Device::~CHD44780Device (void)
 boolean CHD44780Device::Initialize (void)
 {
 	// set 4-bit mode, line count and font
-	WriteHalfByte (0x02, HD44780_DATA);
-	WriteByte (m_nRows == 1 ? 0x20 : 0x28, HD44780_DATA);
+	WriteHalfByte (0x02, HD44780_CMD);
+	WriteByte (m_nRows == 1 ? 0x20 : 0x28, HD44780_CMD);
 
 	SetCursorMode (TRUE);
 	SetAutoPageMode (FALSE);
 	CursorHome ();
 	ClearDisplayEnd ();
 
-	WriteByte (0x06, HD44780_DATA);	// set move cursor right, do not shift display
+	WriteByte (0x06, HD44780_CMD);	// set move cursor right, do not shift display
 
 	return TRUE;
 }
@@ -393,7 +393,7 @@ void CHD44780Device::ClearDisplayEnd (void)
 {
 	if (m_nCursorX == 0 && m_nCursorY == 0)
 	{
-		WriteByte (0x01, HD44780_DATA);
+		WriteByte (0x01, HD44780_CMD);
 		CTimer::SimpleMsDelay (2);
 
 		for (unsigned nPosY = 0; nPosY < m_nRows; nPosY++)
@@ -542,7 +542,7 @@ void CHD44780Device::SetCursorMode (boolean bVisible)
 {
 	m_bCursorOn = bVisible;
 
-	WriteByte (m_bCursorOn ? (m_bBlockCursor ? 0x0D : 0x0E) : 0x0C, HD44780_DATA);
+	WriteByte (m_bCursorOn ? (m_bBlockCursor ? 0x0D : 0x0E) : 0x0C, HD44780_CMD);
 }
 
 void CHD44780Device::Tabulator (void)
@@ -572,9 +572,9 @@ void CHD44780Device::Scroll (void)
 
 void CHD44780Device::SetChar (unsigned nPosX, unsigned nPosY, char chChar)
 {
-	WriteByte (0x80 | GetDDRAMAddress (nPosX, nPosY), HD44780_DATA);
+	WriteByte (0x80 | GetDDRAMAddress (nPosX, nPosY), HD44780_CMD);
 
-	WriteByte ((u8) chChar, HD44780_CMD);
+	WriteByte ((u8) chChar, HD44780_DATA);
 
 	m_Buffer[nPosY][nPosX] = chChar;
 }
@@ -583,7 +583,7 @@ void CHD44780Device::SetCursor (void)
 {
 	if (m_bCursorOn)
 	{
-		WriteByte (0x80 | GetDDRAMAddress (m_nCursorX, m_nCursorY), HD44780_DATA);
+		WriteByte (0x80 | GetDDRAMAddress (m_nCursorX, m_nCursorY), HD44780_CMD);
 	}
 }
 
@@ -601,9 +601,9 @@ void CHD44780Device::DefineCharFont (char chChar, const u8 FontData[8])
 
 	for (unsigned nLine = 0; nLine <= 7; nLine++)
 	{
-		WriteByte (0x40 | (uchCGRAMAddress + nLine), HD44780_DATA);
+		WriteByte (0x40 | (uchCGRAMAddress + nLine), HD44780_CMD);
 
-		WriteByte (FontData[nLine] & 0x1F, HD44780_CMD);
+		WriteByte (FontData[nLine] & 0x1F, HD44780_DATA);
 	}
 }
 
@@ -623,7 +623,7 @@ void CHD44780Device::WriteHalfByte (u8 nData, int mode)
 		// I2C interface
 		u8 nByte = ((nData << 4) & 0xF0) | LCD_ENABLE_BIT;
 		nByte |= LCD_BACKLIGHT_BIT;
-		if (mode == HD44780_CMD) {
+		if (mode == HD44780_DATA) {
 			nByte |= LCD_DATA_BIT;
 		}
 
@@ -637,7 +637,7 @@ void CHD44780Device::WriteHalfByte (u8 nData, int mode)
 	} else {
 		// 4-pin data interface
 		
-		if (mode == HD44780_CMD) {
+		if (mode == HD44780_DATA) {
 			m_RS.Write(HIGH);
 		}
 		m_D4.Write (nData & 1 ? HIGH : LOW);
@@ -649,7 +649,7 @@ void CHD44780Device::WriteHalfByte (u8 nData, int mode)
 		CTimer::SimpleusDelay (1);
 		m_EN.Write (LOW);
 		CTimer::SimpleusDelay (50);
-		if (mode == HD44780_CMD) {
+		if (mode == HD44780_DATA) {
 			m_RS.Write(LOW);
 		}
 	}

@@ -29,8 +29,8 @@
 #define HD44780_MAX_COLUMNS	40
 #define HD44780_MAX_ROWS	4
 
-#define HD44780_DATA 0
-#define HD44780_CMD  1
+#define HD44780_CMD  0
+#define HD44780_DATA 1
 
 // ESCAPE SEQUENCES
 //
