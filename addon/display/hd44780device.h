@@ -24,9 +24,13 @@
 #include <circle/gpiopin.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
+#include <circle/i2cmaster.h>
 
 #define HD44780_MAX_COLUMNS	40
 #define HD44780_MAX_ROWS	4
+
+#define HD44780_CMD  0
+#define HD44780_DATA 1
 
 // ESCAPE SEQUENCES
 //
@@ -70,6 +74,15 @@ public:
 			unsigned nD4Pin, unsigned nD5Pin, unsigned nD6Pin, unsigned nD7Pin,
 			unsigned nENPin, unsigned nRSPin, unsigned nRWPin = 0,
 			boolean bBlockCursor = FALSE);
+
+	/// \param pI2CMaster Pointer to I2C master object
+	/// \param nAddress   I2C slave address of display
+	/// \param nColumns   Display size in number of columns (max. 40)
+	/// \param nRows      Display size in number of rows (max. 4)
+	/// \param bBlockCursor Use blinking block cursor instead of underline cursor
+	CHD44780Device (CI2CMaster *pI2CMaster, u8 nAddress,
+			unsigned nColumns, unsigned nRows, boolean bBlockCursor = FALSE);
+
 	~CHD44780Device (void);
 
 	/// \return Operation successful?
@@ -117,8 +130,8 @@ private:
 	void SetChar (unsigned nPosX, unsigned nPosY, char chChar);
 	void SetCursor (void);
 
-	void WriteByte (u8 nData);
-	void WriteHalfByte (u8 nData);
+	void WriteByte (u8 nData, int mode);
+	void WriteHalfByte (u8 nData, int mode);
 
 	u8 GetDDRAMAddress (unsigned nPosX, unsigned nPosY);
 
@@ -133,6 +146,9 @@ private:
 	CGPIOPin  m_EN;
 	CGPIOPin  m_RS;
 	CGPIOPin *m_pRW;
+
+	CI2CMaster *m_pI2CMaster;
+	u8 m_nAddress;
 
 	boolean m_bBlockCursor;
 
