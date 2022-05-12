@@ -20,7 +20,6 @@
 #include "hd44780device.h"
 #include <circle/timer.h>
 #include <assert.h>
-#include <circle/i2cmaster.h>
 
 enum TDisplayState
 {
@@ -48,8 +47,8 @@ CHD44780Device::CHD44780Device (unsigned nColumns, unsigned nRows,
 	m_EN (nENPin, GPIOModeOutput),
 	m_RS (nRSPin, GPIOModeOutput),
 	m_pRW (0),
-    m_pI2CMaster (0),
-    m_nAddress (0),
+	m_pI2CMaster (0),
+	m_nAddress (0),
 	m_bBlockCursor (bBlockCursor),
 	m_nState (ScreenStateStart),
 	m_SpinLock (TASK_LEVEL)
@@ -70,11 +69,12 @@ CHD44780Device::CHD44780Device (unsigned nColumns, unsigned nRows,
 	}
 }
 
-CHD44780Device::CHD44780Device (CI2CMaster *pI2CMaster, u8 nAddress, unsigned nColumns, unsigned nRows, boolean bBlockCursor)
+CHD44780Device::CHD44780Device (CI2CMaster *pI2CMaster, u8 nAddress,
+				unsigned nColumns, unsigned nRows, boolean bBlockCursor)
 :	m_nColumns (nColumns),
 	m_nRows (nRows),
-    m_pI2CMaster (pI2CMaster),
-    m_nAddress (nAddress),
+	m_pI2CMaster (pI2CMaster),
+	m_nAddress (nAddress),
 	m_bBlockCursor (bBlockCursor),
 	m_nState (ScreenStateStart),
 	m_SpinLock (TASK_LEVEL)

@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/time.h>
 #include <circle/string.h>
 #include <circle/util.h>
+#include <circle/machineinfo.h>
 
 // LCD configuration
 #define COLUMNS		16
@@ -30,7 +31,7 @@
 
 #define I2C_ADDR 0x27
 
-#define I2C_MASTER_DEVICE 1   // 0 on RPi V1 Rev 1; 1 on RPi V1 Rev 2 onwards
+#define I2C_MASTER_DEVICE	(CMachineInfo::Get ()->GetDevice (DeviceI2CMaster))
 
 static const char FromKernel[] = "kernel";
 
@@ -39,7 +40,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer),
-    m_I2CMaster (I2C_MASTER_DEVICE),
+	m_I2CMaster (I2C_MASTER_DEVICE),
 	m_LCD (&m_I2CMaster, I2C_ADDR, COLUMNS, ROWS)
 {
 	m_ActLED.Blink (5);	// show we are alive
