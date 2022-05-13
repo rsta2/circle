@@ -26,7 +26,7 @@
 #include <circle/machineinfo.h>
 
 // LCD configuration
-#define HEIGHT	64
+#define HEIGHT	32
 #define WIDTH	128
 
 #define I2C_ADDR 0x3C
@@ -99,13 +99,24 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_LCD.Initialize ();
 	}
-
+	
 	return bOK;
 }
 
 TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
+
+	LCDWrite ("01234567890123456789");
+	LCDWrite (">>>>>>>>>>>>>>>>>>>");
+
+	unsigned nTime = 10 + m_Timer.GetTime ();
+	while (nTime > m_Timer.GetTime ())
+	{
+		// just wait a few seconds
+	}
+	
+	LCDWrite ("\E[H\E[J"); // Reset cursor and clear display
 
 	CUSBKeyboardDevice *pKeyboard =
 		(CUSBKeyboardDevice *) m_DeviceNameService.GetDevice ("ukbd1", FALSE);

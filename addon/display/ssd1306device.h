@@ -27,8 +27,8 @@
 #include "chardevice.h"
 
 // Hard-codes how the text maps to the graphics display
-#define SSD1306_COLUMNS	16	// 128/6 ~= 22
-#define SSD1306_ROWS	2	// 32/8   = 4
+#define SSD1306_COLUMNS	20	// 128/6 ~= 22
+#define SSD1306_ROWS	2	// 32/8   = 4; But code uses Double Height Font
 
 class CSSD1306Device : public CCharDevice	/// LCD dot-matrix display driver (using SSD1306 controller)
 {
