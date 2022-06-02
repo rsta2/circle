@@ -217,8 +217,6 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 	// this shouldn't but does happen with some devices
 	if (nPacketsTransfered > m_nPackets)
 	{
-		CLogger::Get ()->Write ("udata", LogWarning, "Frame overrun forced");
-
 		m_nTransactionStatus |= DWHCI_HOST_CHAN_INT_FRAME_OVERRUN;
 		m_nErrorCount = MAX_BULK_TRIES+1;
 		m_nPackets = 0;
