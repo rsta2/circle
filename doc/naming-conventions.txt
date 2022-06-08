@@ -1,0 +1,37 @@
+NAMING CONVENTIONS
+
+Circle uses its own conventions for naming identifiers (types and variables).
+They have been influenced by the well-known Hungarian Notation, but the set of
+used prefix characters is much smaller. There has been much critics about using
+such conventions in a typed language like C++. Personally I find it useful and
+because I have been asked, I'm writing down these conventions, in case somebody
+wants to re-use them. Of course you can use any convention for your own types
+and variables, when developing applications using Circle.
+
+In short here are the naming conventions for Circle:
+
+* Identifiers for types and variables will be written this way:
+  "MyExampleIdentifier" (each word starts with an uppercase letter).
+
+* Class names start with a "C", other types (struct, enum) with a "T".
+
+* Member variable names of a class start with a "m_",
+  static variables in a class definition with a "s_".
+
+* Variable names get a prefix, which specify its (simple) standard type. This
+  prefix follows the "m_" or "s_", if it is used. Variables of complex types do
+  not have such prefix (except a "p" for pointer). Only one of these prefixes
+  is used (i.e. "puch" for a pointer to an unsigned char is not used, use only
+  "p" instead):
+
+	uch	unsigned char, u8, uint8_t
+	us	unsigned short u16, uint16_t
+	ul	unsigned long
+	ch	signed char, s8, int8_t
+	s	signed short, s16, int16_t
+	l	signed long
+	n	unsigned, int, u32, s32, uint32_t, int32_t,
+		or any other (non-float) numeric variable
+	f	float, double
+	b	bool, boolean
+	p	Pointer to a simple or complex type

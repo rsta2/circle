@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -63,6 +63,11 @@ public:
 	/// \note Fails, if format is invalid or send is not supported
 	boolean SendPlainMIDI (unsigned nCable, const u8 *pData, unsigned nLength);
 
+	/// \brief Generate MIDI CC "All Sound Off" event (120), when an USB error occurs?
+	/// \param bEnable Set to TRUE to enable function
+	/// \note This will generate an event for each MIDI channel (1-16) for MIDI cable 0.
+	void SetAllSoundOffOnUSBError (boolean bEnable);
+
 private:
 	boolean StartRequest (void);
 
@@ -82,6 +87,8 @@ private:
 	u8 *m_pPacketBuffer;
 
 	TKernelTimerHandle m_hTimer;
+
+	boolean m_bAllSoundOff;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

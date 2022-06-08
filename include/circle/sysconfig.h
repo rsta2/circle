@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -207,6 +207,22 @@
 #define USE_USB_SOF_INTR
 #endif
 
+// USE_USB_FIQ makes the USB timing more accurate, by using the FIQ to
+// handle time-critical interrupts from the USB controller, which are
+// triggered 8000 times per second. When using the default IRQ instead,
+// USB interrupts may be delayed or entire micro-frames may be skipped,
+// when other IRQs are currently handled, which could result in
+// communication problems with some USB devices. If this option is
+// enabled, USE_USB_SOF_INTR will be enabled too, and the FIQ cannot be
+// used for other purposes. This option has no influence on the
+// Raspberry Pi 4.
+
+//#define USE_USB_FIQ
+
+#ifdef USE_USB_FIQ
+#define USE_USB_SOF_INTR
+#endif
+
 // SCREEN_DMA_BURST_LENGTH enables using DMA for scrolling the screen
 // contents and set the burst length parameter for the DMA controller.
 // Using DMA speeds up the scrolling, especially with a burst length
@@ -305,13 +321,19 @@
 
 #endif
 
+// USE_EMBEDDED_MMC_CM enables access to the on-board embedded MMC
+// memory on Compute Modules 3+ and 4. Does not work with SD card on
+// CM3+ Lite and CM4 Lite.
+
+//#define USE_EMBEDDED_MMC_CM
+
 // USE_SDHOST selects the SDHOST device as interface for SD card
 // access. Otherwise the EMMC device is used for this purpose. The
 // SDHOST device is supported by Raspberry Pi 1-3 and Zero, but
 // not by QEMU. If you rely on a small IRQ latency, USE_SDHOST should
 // be disabled.
 
-#if RASPPI <= 3 && !defined (REALTIME)
+#if RASPPI <= 3 && !defined (REALTIME) && !defined (USE_EMBEDDED_MMC_CM)
 
 #ifndef NO_SDHOST
 #define USE_SDHOST
@@ -327,11 +349,6 @@
 #ifndef NO_SD_HIGH_SPEED
 #define SD_HIGH_SPEED
 #endif
-
-// USE_EMBEDDED_MMC_CM4 enables access to the on-board embedded MMC
-// memory on Compute Module 4. Does not work with SD card on CM4 Lite.
-
-//#define USE_EMBEDDED_MMC_CM4
 
 // SAVE_VFP_REGS_ON_IRQ enables saving the floating point registers
 // on entry when an IRQ occurs and will restore these registers on exit

@@ -2,7 +2,7 @@
 // dwhcixferstagedata.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,7 +45,6 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	m_nSubState (0),
 	m_nTransactionStatus (0),
 	m_nErrorCount (0),
-	m_pTempBuffer (0),
 	m_nStartTicksHZ (0),
 	m_pFrameScheduler (0)
 {
@@ -97,10 +96,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	}
 	else
 	{
-		assert (m_pTempBuffer == 0);
-		m_pTempBuffer = new u32[1];
-		assert (m_pTempBuffer != 0);
-		m_pBufferPointer = m_pTempBuffer;
+		m_pBufferPointer = &m_TempBuffer;
 
 		m_nTransferSize = 0;
 		m_nBytesPerTransaction = 0;
@@ -150,9 +146,6 @@ CDWHCITransferStageData::~CDWHCITransferStageData (void)
 	m_pFrameScheduler = 0;
 
 	m_pBufferPointer = 0;
-
-	delete [] m_pTempBuffer;
-	m_pTempBuffer = 0;
 
 	m_pEndpoint = 0;
 	m_pDevice = 0;
@@ -221,7 +214,16 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 		m_pEndpoint->SkipPID (nPacketsTransfered, m_bStatusStage);
 	}
 
-	assert (nPacketsTransfered <= m_nPackets);
+	// this shouldn't but does happen with some devices
+	if (nPacketsTransfered > m_nPackets)
+	{
+		m_nTransactionStatus |= DWHCI_HOST_CHAN_INT_FRAME_OVERRUN;
+		m_nErrorCount = MAX_BULK_TRIES+1;
+		m_nPackets = 0;
+
+		return;
+	}
+
 	m_nPackets -= nPacketsTransfered;
 
 	if (!m_bSplitTransaction)

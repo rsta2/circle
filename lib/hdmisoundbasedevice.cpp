@@ -114,7 +114,7 @@ static const char From[] = "sndhdmi";
 CHDMISoundBaseDevice::CHDMISoundBaseDevice (CInterruptSystem *pInterrupt,
 					    unsigned nSampleRate,
 					    unsigned nChunkSize)
-:	CSoundBaseDevice (SoundFormatIEC958, 0, nSampleRate, TRUE),
+:	CSoundBaseDevice (SoundFormatIEC958, 0, nSampleRate),
 	m_pInterruptSystem (pInterrupt),
 	m_nSampleRate (nSampleRate),
 	m_nChunkSize (nChunkSize),
@@ -146,7 +146,7 @@ CHDMISoundBaseDevice::CHDMISoundBaseDevice (CInterruptSystem *pInterrupt,
 }
 
 CHDMISoundBaseDevice::CHDMISoundBaseDevice (unsigned nSampleRate)
-:	CSoundBaseDevice (SoundFormatIEC958, 0, nSampleRate, TRUE),
+:	CSoundBaseDevice (SoundFormatIEC958, 0, nSampleRate),
 	m_pInterruptSystem (0),
 	m_nSampleRate (nSampleRate),
 	m_nChunkSize (0),

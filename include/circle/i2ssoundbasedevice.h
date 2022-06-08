@@ -2,7 +2,7 @@
 // i2ssoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <circle/gpiopin.h>
 #include <circle/gpioclock.h>
 #include <circle/dmasoundbuffers.h>
+#include <circle/logger.h>
 #include <circle/types.h>
 
 class CI2SSoundBaseDevice : public CSoundBaseDevice	/// Low level access to the I2S sound device
@@ -99,6 +100,7 @@ private:
 					    unsigned nChunkSize, void *pParam);
 
 	boolean InitPCM51xx (u8 ucI2CAddress);
+	boolean InitWM8960 (u8 ucI2CAddress);
 
 private:
 	CInterruptSystem *m_pInterruptSystem;

@@ -5,13 +5,13 @@
 //	BCM283x/BCM2711 I2S output and input
 //	two 24-bit audio channels
 //	sample rate up to 192 KHz
-//	output tested with PCM5102A and PCM5122 DACs
+//	output tested with PCM5102A, PCM5122 and WM8960 DACs
 //
 // References:
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -166,18 +166,34 @@ boolean CI2SSoundBaseDevice::Start (void)
 	{
 		if (m_ucI2CAddress != 0)
 		{
-			if (!InitPCM51xx (m_ucI2CAddress))	// fixed address, must succeed
+			// fixed address, must succeed
+			if (m_ucI2CAddress != 0x1A)
 			{
-				m_bError = TRUE;
+				if (!InitPCM51xx (m_ucI2CAddress))
+				{
+					m_bError = TRUE;
 
-				return FALSE;
+					return FALSE;
+				}
+			}
+			else
+			{
+				if (!InitWM8960 (m_ucI2CAddress))
+				{
+					m_bError = TRUE;
+
+					return FALSE;
+				}
 			}
 		}
 		else
 		{
 			if (!InitPCM51xx (0x4C))		// auto probing, ignore failure
 			{
-				InitPCM51xx (0x4D);
+				if (!InitPCM51xx (0x4D))
+				{
+					InitWM8960 (0x1A);
+				}
 			}
 		}
 
@@ -442,6 +458,69 @@ boolean CI2SSoundBaseDevice::InitPCM51xx (u8 ucI2CAddress)
 
 		// Disable auto mute
 		{ 0x41, 0x04 }
+	};
+
+	for (auto &command : initBytes)
+	{
+		if (   m_pI2CMaster->Write (ucI2CAddress, &command, sizeof (command))
+		    != sizeof (command))
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+// For WM8960 i2c register is 7 bits and value is 9 bits,
+// so let's have a helper for packing this into two bytes
+#define SHIFT_BIT(r, v) {((v&0x0100)>>8) | (r<<1), (v&0xff)}
+
+boolean CI2SSoundBaseDevice::InitWM8960 (u8 ucI2CAddress)
+{
+	// based on https://github.com/RASPIAUDIO/ULTRA/blob/main/ultra.c
+	// Licensed under GPLv3
+	static const u8 initBytes[][2] =
+	{
+		// reset
+		SHIFT_BIT(15, 0x000),
+		// Power
+		SHIFT_BIT(25, 0x1FC),
+		SHIFT_BIT(26, 0x1F9),
+		SHIFT_BIT(47, 0x03C),
+		// Clock PLL
+		SHIFT_BIT(4, 0x001),
+		SHIFT_BIT(52, 0x027),
+		SHIFT_BIT(53, 0x086),
+		SHIFT_BIT(54, 0x0C2),
+		SHIFT_BIT(55, 0x026),
+		// ADC/DAC
+		SHIFT_BIT(5, 0x000),
+		SHIFT_BIT(7, 0x002),
+		// ALC and Noise control
+		SHIFT_BIT(20, 0x0F9),
+		SHIFT_BIT(17, 0x1FB),
+		SHIFT_BIT(18, 0x000),
+		SHIFT_BIT(19, 0x032),
+		// OUT1 volume
+		SHIFT_BIT(2, 0x16F),
+		SHIFT_BIT(3, 0x16F),
+		//SPK volume
+		SHIFT_BIT(40, 0x17F),
+		SHIFT_BIT(41, 0x178),
+		SHIFT_BIT(51, 0x08D),
+		// input volume
+		SHIFT_BIT(0, 0x13F),
+		SHIFT_BIT(1, 0x13F),
+		// INPUTS
+		SHIFT_BIT(32, 0x138),
+		SHIFT_BIT(33, 0x138),
+		// OUTPUTS
+		SHIFT_BIT(49, 0x0F7),
+		SHIFT_BIT(10, 0x1FF),
+		SHIFT_BIT(11, 0x1FF),
+		SHIFT_BIT(34, 0x100),
+		SHIFT_BIT(37, 0x100)
 	};
 
 	for (auto &command : initBytes)

@@ -276,7 +276,7 @@ const char *CEMMCDevice::err_irpts[] =
 const u32 CEMMCDevice::sd_commands[] =
 {
 	SD_CMD_INDEX(0),
-#ifdef USE_EMBEDDED_MMC_CM4
+#ifdef USE_EMBEDDED_MMC_CM
 	SD_CMD_INDEX(1) | SD_RESP_R3,
 #else
 	SD_CMD_RESERVED(1),
@@ -285,7 +285,7 @@ const u32 CEMMCDevice::sd_commands[] =
 	SD_CMD_INDEX(3) | SD_RESP_R6,
 	SD_CMD_INDEX(4),
 	SD_CMD_INDEX(5) | SD_RESP_R4,
-#ifdef USE_EMBEDDED_MMC_CM4
+#ifdef USE_EMBEDDED_MMC_CM
 	SD_CMD_INDEX(6) | SD_RESP_R1,
 #else
 	SD_CMD_INDEX(6) | SD_RESP_R1 | SD_DATA_READ,
@@ -1557,7 +1557,7 @@ int CEMMCDevice::CardReset (void)
 		return -1;
 	}
 
-#ifndef USE_EMBEDDED_MMC_CM4
+#ifndef USE_EMBEDDED_MMC_CM
 
 	// Send CMD8 to the card
 	// Voltage supplied = 0x1 = 2.7-3.6V (standard)
@@ -1637,13 +1637,13 @@ int CEMMCDevice::CardReset (void)
 
 #else
 	int v2_later = 1;
-#endif	// #ifndef USE_EMBEDDED_MMC_CM4
+#endif	// #ifndef USE_EMBEDDED_MMC_CM
 
 	// Call an inquiry ACMD41 (voltage window = 0) to get the OCR
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "sending inquiry ACMD41");
 #endif
-#ifdef USE_EMBEDDED_MMC_CM4
+#ifdef USE_EMBEDDED_MMC_CM
 	if (!IssueCommand (SEND_OP_COND, 0))
 #else
 	if (!IssueCommand (ACMD(41), 0))
@@ -1679,7 +1679,7 @@ int CEMMCDevice::CardReset (void)
 #endif
 		}
 
-#ifdef USE_EMBEDDED_MMC_CM4
+#ifdef USE_EMBEDDED_MMC_CM
 		if (!IssueCommand (SEND_OP_COND, 0x00ff8000 | v2_flags))
 #else
 		if (!IssueCommand (ACMD(41), 0x00ff8000 | v2_flags))
@@ -1718,7 +1718,7 @@ int CEMMCDevice::CardReset (void)
 	LogWrite (LogDebug, "card identified: OCR: %04x, 1.8v support: %d, SDHC support: %d", m_card_ocr, m_card_supports_18v, m_card_supports_sdhc);
 #endif
 
-#ifndef USE_EMBEDDED_MMC_CM4
+#ifndef USE_EMBEDDED_MMC_CM
 	// At this point, we know the card is definitely an SD card, so will definitely
 	//  support SDR12 mode which runs at 25 MHz
 #ifndef USE_SDHOST
@@ -1731,7 +1731,7 @@ int CEMMCDevice::CardReset (void)
 	usDelay (5000);
 #endif
 
-#if !defined (USE_SDHOST) && !defined (USE_EMBEDDED_MMC_CM4)
+#if !defined (USE_SDHOST) && !defined (USE_EMBEDDED_MMC_CM)
 
 	// Switch to 1.8V mode if possible
 	if (m_card_supports_18v)
@@ -1819,7 +1819,7 @@ int CEMMCDevice::CardReset (void)
 #endif
 	}
 
-#endif	// #if !defined (USE_SDHOST) && !defined (USE_EMBEDDED_MMC_CM4)
+#endif	// #if !defined (USE_SDHOST) && !defined (USE_EMBEDDED_MMC_CM)
 
 	// Send CMD2 to get the cards CID
 	if (!IssueCommand (ALL_SEND_CID, 0))
@@ -1925,7 +1925,7 @@ int CEMMCDevice::CardReset (void)
 	write32 (EMMC_BLKSIZECNT, controller_block_size);
 #endif
 
-#ifndef USE_EMBEDDED_MMC_CM4
+#ifndef USE_EMBEDDED_MMC_CM
 
 	// Get the cards SCR register
 	m_buf = &m_pSCR->scr[0];
@@ -2035,11 +2035,15 @@ int CEMMCDevice::CardReset (void)
 
 #else
 	m_pSCR->sd_version = SD_VER_4;
+#if RASPPI >= 4
 	m_pSCR->sd_bus_widths = 8;
+#else
+	m_pSCR->sd_bus_widths = 4;
+#endif
 	m_block_size = SD_BLOCK_SIZE;
-#endif	// #ifndef USE_EMBEDDED_MMC_CM4
+#endif	// #ifndef USE_EMBEDDED_MMC_CM
 
-#ifndef USE_EMBEDDED_MMC_CM4
+#ifndef USE_EMBEDDED_MMC_CM
 
 	if (m_pSCR->sd_bus_widths & 4)
 	{
@@ -2086,13 +2090,13 @@ int CEMMCDevice::CardReset (void)
 
 	LogWrite (LogNotice, "Found a valid version %s SD card", sd_versions[m_pSCR->sd_version]);
 
-#else	// #ifndef USE_EMBEDDED_MMC_CM4
+#else	// #ifndef USE_EMBEDDED_MMC_CM
 
-	if (m_pSCR->sd_bus_widths & 8)
+	if (m_pSCR->sd_bus_widths & (4 | 8))
 	{
-		// Set 8-bit transfer mode (CMD6)
+		// Set 4/8-bit transfer mode (CMD6)
 #ifdef EMMC_DEBUG2
-		LogWrite (LogDebug, "Switching to 8-bit data mode");
+		LogWrite (LogDebug, "Switching to %u-bit data mode", m_pSCR->sd_bus_widths);
 #endif
 
 		// Disable card interrupt in host
@@ -2101,22 +2105,23 @@ int CEMMCDevice::CardReset (void)
 		write32(EMMC_IRPT_MASK, new_iprt_mask);
 
 		// Send CMD6 to change the card's bit mode
-		if (!IssueCommand (SWITCH_FUNC, 0x3B70200))
+		if (!IssueCommand (SWITCH_FUNC, (m_pSCR->sd_bus_widths & 8) ? 0x3B70200 : 0x3B70100))
 		{
-			LogWrite (LogError, "Switch to 8-bit data mode failed");
+			LogWrite (LogError, "Switch to %u-bit data mode failed",
+				  m_pSCR->sd_bus_widths);
 		}
 		else
 		{
 			// Change bit mode for Host
 			u32 control0 = read32(EMMC_CONTROL0);
-			control0 |= 1 << 5;
+			control0 |= (m_pSCR->sd_bus_widths & 8) ? 1 << 5 : 0x2;
 			write32(EMMC_CONTROL0, control0);
 
 			// Re-enable card interrupt in host
 			write32(EMMC_IRPT_MASK, old_irpt_mask);
 
 #ifdef EMMC_DEBUG2
-			LogWrite (LogDebug, "switch to 8-bit complete");
+			LogWrite (LogDebug, "switch to %u-bit complete", m_pSCR->sd_bus_widths);
 #endif
 		}
 	}
@@ -2126,7 +2131,7 @@ int CEMMCDevice::CardReset (void)
 
 	LogWrite (LogNotice, "Found a valid eMMC chip");
 
-#endif	// #ifndef USE_EMBEDDED_MMC_CM4
+#endif	// #ifndef USE_EMBEDDED_MMC_CM
 
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "setup successful (status %d)", status);

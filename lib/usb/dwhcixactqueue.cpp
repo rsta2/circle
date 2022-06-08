@@ -2,7 +2,7 @@
 // dwhcixactqueue.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <circle/usb/dwhcixactqueue.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/usb/dwhci.h>
+#include <circle/classallocator.h>
 #include <assert.h>
 
 #ifdef USE_USB_SOF_INTR
@@ -32,7 +33,11 @@ struct TQueueEntry
 #endif
 	CDWHCITransferStageData *pStageData;
 	u16			 usFrameNumber;
+
+	DECLARE_CLASS_ALLOCATOR
 };
+
+IMPLEMENT_CLASS_ALLOCATOR (TQueueEntry)
 
 // Returns TRUE if usFrameNumber1 is greater than usFrameNumber2
 static inline boolean FrameNumberGreater (u16 usFrameNumber1, u16 usFrameNumber2)
@@ -51,8 +56,11 @@ static inline boolean FrameNumberGreater (u16 usFrameNumber1, u16 usFrameNumber2
 	return TRUE;
 }
 
-CDWHCITransactionQueue::CDWHCITransactionQueue (void)
+CDWHCITransactionQueue::CDWHCITransactionQueue (unsigned nMaxElements, unsigned nMaxAccessLevel)
+:	m_List (nMaxElements),
+	m_SpinLock (nMaxAccessLevel)
 {
+	INIT_PROTECTED_CLASS_ALLOCATOR (TQueueEntry, nMaxElements, nMaxAccessLevel);
 }
 
 CDWHCITransactionQueue::~CDWHCITransactionQueue (void)

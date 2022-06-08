@@ -32,6 +32,7 @@ CKernelOptions::CKernelOptions (void)
 	m_nLogLevel (LogDebug),
 	m_nUSBPowerDelay (0),
 	m_bUSBFullSpeed (FALSE),
+	m_bUSBBoost (FALSE),
 	m_nSoundOption (0),
 	m_CPUSpeed (CPUSpeedLow),
 	m_nSoCMaxTemp (60),
@@ -113,6 +114,13 @@ CKernelOptions::CKernelOptions (void)
 			if (strcmp (pValue, "full") == 0)
 			{
 				m_bUSBFullSpeed = TRUE;
+			}
+		}
+		else if (strcmp (pOption, "usbboost") == 0)
+		{
+			if (strcmp (pValue, "true") == 0)
+			{
+				m_bUSBBoost = TRUE;
 			}
 		}
 		else if (strcmp (pOption, "usbignore") == 0)
@@ -204,6 +212,11 @@ unsigned CKernelOptions::GetUSBPowerDelay (void) const
 boolean CKernelOptions::GetUSBFullSpeed (void) const
 {
 	return m_bUSBFullSpeed;
+}
+
+boolean CKernelOptions::GetUSBBoost (void) const
+{
+	return m_bUSBBoost;
 }
 
 const char *CKernelOptions::GetUSBIgnore (void) const

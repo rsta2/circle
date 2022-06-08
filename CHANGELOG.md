@@ -5,8 +5,31 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 44.5
+------------
+
+This intermediate release offers a **revised DWHCI USB low-level driver for the Raspberry Pi 1-3 and Zero**. With the system option `USE_USB_FIQ` one can use the FIQ (Fast Interrupt Request) for this driver, which results in a more accurate timing on the USB. This may improve the compatibility with some USB devices and may help to prevent data loss, especially when receiving MIDI data from some USB MIDI controllers, which do have only small data buffers. Because there is only one FIQ source supported in the system, the FIQ cannot be used for other purpose than the USB with this system option. The xHCI USB driver for the Raspberry Pi 4 does not support this system option and remains unchanged.
+
+To **prevent data loss from USB MIDI controllers on the Raspberry Pi 1-3 and Zero**, there is also the new option `usbboost=true` for the file *cmdline.txt* now. It speeds up the USB MIDI handling, but may generate more system load on the other hand.
+
+The system option `USE_EMBEDDED_MMC_CM4` has been renamed to `USE_EMBEDDED_MMC_CM` and is tested to support **embedded MMC memory** on the Compute Module 3+ and 4.
+
+The `CI2SSoundBaseDevice` class driver for I2S sound devices **supports the WM8960 DAC**.
+
+There is **I2C support in the HD44780 LCD display driver** now.
+
+Bug fixes:
+
+* The Stereo channels were swapped in the `CHDMISoundBaseDevice` class before.
+* There seem to be USB devices, which send more data than it is expected. This fix should prevent a system crash by faking a frame overrun error, which should be handled by the upper layers.
+* Building the WLAN support with the `NDEBUG` option was not possible.
+
+Don't forget to update the used firmware to the one downloadable in [boot/](boot/)!
+
 Release 44.4.1
 --------------
+
+2022-03-12
 
 This hotfix release fixes an issue in the initialization for 32-bit multi-core support. The start of the secondary CPU cores may have failed, if the data cache has not been flushed already, when `CMultiCoreSupport::Initialize()` was called. This especially happened, if the constructor of the class `CMultiCoreSupport` was executed immediately before `CMultiCoreSupport::Initialize()`.
 

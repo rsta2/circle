@@ -2,7 +2,7 @@
 // dwhciframeschedper.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -86,8 +86,12 @@ boolean CDWHCIFrameSchedulerPeriodic::CompleteSplit (void)
 		m_nTries = m_usNextFrame != 5 ? 3 : 2;
 		m_usNextFrame = (m_usNextFrame  + 2) & 7;
 #else
-		m_nTries = (m_usNextFrame & 7) != 5 ? 3 : 2;
+		m_nTries = (m_usNextFrame & 7) != 5 ? 2 : 1;
+#ifndef USE_USB_FIQ
 		m_usFrameOffset = 2;
+#else
+		m_usFrameOffset = 1;	// with FIQ we can act on the next frame already
+#endif
 #endif
 		bResult = TRUE;
 		break;

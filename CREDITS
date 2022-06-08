@@ -85,3 +85,9 @@ Adding screen ANSI colors
 Providing info patch for I2S input
 Providing patch for WLAN AP mode
 Adding SMI master driver and WS2812OverSMI addon
+
+Maciej Sokolowski
+Adding WM8960 support to I2S sound driver
+
+@diyelectromusic
+Adding I2C support to HD44780 display driver

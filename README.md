@@ -10,26 +10,26 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-Release 44.4.1
---------------
-
-This hotfix release fixes an issue in the initialization for 32-bit multi-core support. The start of the secondary CPU cores may have failed, if the data cache has not been flushed already, when `CMultiCoreSupport::Initialize()` was called. This especially happened, if the constructor of the class `CMultiCoreSupport` was executed immediately before `CMultiCoreSupport::Initialize()`.
-
-Release 44.4
+Release 44.5
 ------------
 
-This intermediate release updates the FatFs and LVGL support to the most recent versions. While the **update to FatFs R0.14b** is compatible with earlier releases, the **update to LVGL v8.2.0** requires modifications in existing applications, which use this graphics library. Also there isn't a separate submodule *lv_examples* for LVGL examples any more, the demo program is included in the main submodule.
+This intermediate release offers a **revised DWHCI USB low-level driver for the Raspberry Pi 1-3 and Zero**. With the system option `USE_USB_FIQ` one can use the FIQ (Fast Interrupt Request) for this driver, which results in a more accurate timing on the USB. This may improve the compatibility with some USB devices and may help to prevent data loss, especially when receiving MIDI data from some USB MIDI controllers, which do have only small data buffers. Because there is only one FIQ source supported in the system, the FIQ cannot be used for other purpose than the USB with this system option. The xHCI USB driver for the Raspberry Pi 4 does not support this system option and remains unchanged.
 
-New features are:
+To **prevent data loss from USB MIDI controllers on the Raspberry Pi 1-3 and Zero**, there is also the new option `usbboost=true` for the file *cmdline.txt* now. It speeds up the USB MIDI handling, but may generate more system load on the other hand.
 
-* A **multi-channel driver and sample for WS2812 LED stripes**, which is based on a new **driver for the Secondary Memory Interface (SMI)**. See [addon/WS28XX/sample/multichan/](addon/WS28XX/sample/multichan/) for details!
-* A **driver and sample for the KY-040 rotary encoder** in [addon/sensor/sample/ky040/](addon/sensor/sample/ky040/).
-* The [sample/42-i2sinput](sample/42-i2sinput) has been extended with a **sound recorder mode**. You can record digital I2S sound from other devices to the SD card using this sample.
-* **Support for the Raspberry Pi 4 Case Fan** has been added to the class `CCPUThrottle`. There is a new option `gpiofanpin=` for [cmdline.txt](doc/cmdline.txt), which enables the case fan support. The CPU speed is not throttled any more, when this option is used.
+The system option `USE_EMBEDDED_MMC_CM4` has been renamed to `USE_EMBEDDED_MMC_CM` and is tested to support **embedded MMC memory** on the Compute Module 3+ and 4.
+
+The `CI2SSoundBaseDevice` class driver for I2S sound devices **supports the WM8960 DAC**.
+
+There is **I2C support in the HD44780 LCD display driver** now.
+
+Bug fixes:
+
+* The Stereo channels were swapped in the `CHDMISoundBaseDevice` class before.
+* There seem to be USB devices, which send more data than it is expected. This fix should prevent a system crash by faking a frame overrun error, which should be handled by the upper layers.
+* Building the WLAN support with the `NDEBUG` option was not possible.
 
 Don't forget to update the used firmware to the one downloadable in [boot/](boot/)!
-
-Have a look at the new [Circle documentation](https://circle-rpi.readthedocs.io/)! Feel free to use the the new [Discussions forum](https://github.com/rsta2/circle/discussions) for topics, which are not Issues.
 
 The 44th Step
 -------------
@@ -247,10 +247,13 @@ Base library
 * CDMASoundBuffers: Concatenated DMA buffers to be used by sound device drivers
 * CGenericLock: Locks a resource with or without scheduler
 * CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ)
+* CMPHIDevice: A driver, which uses the MPHI device to generate an IRQ
+* CPtrListFIQ: Container class. List of pointers, usable from FIQ_LEVEL
 * CSMIMaster: Driver for the Second Memory Interface
 
 USB library
 
+* CDWHCICompletionQueue: Queues USB requests ready for completion (with USE_USB_FIQ enabled)
 * CUSBTouchScreenDevice: Driver for USB HID-class touchscreens
 
 Input library
@@ -287,6 +290,7 @@ Additional Topics
 * [Screen escape sequences](doc/screen.txt)
 * [Keyboard escape sequences](doc/keyboard.txt)
 * [Memory layout](doc/memorymap.txt)
+* [Naming conventions](doc/naming-conventions.txt)
 * [Known issues](doc/issues.txt)
 
 Trademarks

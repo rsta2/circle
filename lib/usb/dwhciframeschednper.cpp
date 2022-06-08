@@ -2,7 +2,7 @@
 // dwhciframeschednper.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <circle/usb/dwhciframeschednper.h>
 #include <circle/usb/dwhciregister.h>
 #include <circle/usb/dwhci.h>
+#include <circle/koptions.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -130,19 +131,12 @@ void CDWHCIFrameSchedulerNonPeriodic::TransactionComplete (u32 nStatus)
 		}
 		else if (nStatus & DWHCI_HOST_CHAN_INT_NAK)
 		{
-			if (m_nTries-- == 0)
-			{
 #ifndef USE_USB_SOF_INTR
-				m_pTimer->usDelay (5 * uFRAME);
+			m_pTimer->usDelay (5 * uFRAME);
 #else
-				m_usFrameOffset = 5;
+			m_usFrameOffset = 5;
 #endif
-				m_nState = StateCompleteSplitFailed;
-			}
-			else
-			{
-				m_nState = StateCompleteRetry;
-			}
+			m_nState = StateCompleteSplitFailed;
 		}
 		else
 		{
@@ -169,6 +163,11 @@ u16 CDWHCIFrameSchedulerNonPeriodic::GetFrameNumber (void)
 {
 	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
 	u16 usFrameNumber = DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ());
+
+	if (CKernelOptions::Get ()->GetUSBBoost ())
+	{
+		return usFrameNumber;
+	}
 
 	assert (m_usFrameOffset < 8);
 	return (usFrameNumber+m_usFrameOffset) & DWHCI_MAX_FRAME_NUMBER;
