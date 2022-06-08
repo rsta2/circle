@@ -60,7 +60,7 @@ CDWHCITransactionQueue::CDWHCITransactionQueue (unsigned nMaxElements, unsigned 
 :	m_List (nMaxElements),
 	m_SpinLock (nMaxAccessLevel)
 {
-	INIT_CLASS_ALLOCATOR (TQueueEntry, nMaxElements);
+	INIT_PROTECTED_CLASS_ALLOCATOR (TQueueEntry, nMaxElements, nMaxAccessLevel);
 }
 
 CDWHCITransactionQueue::~CDWHCITransactionQueue (void)
