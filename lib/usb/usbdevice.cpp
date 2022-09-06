@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -362,6 +362,14 @@ boolean CUSBDevice::Initialize (void)
 		LogWrite (LogNotice, "Product: %s", (const char *) Product);
 	}
 
+	if (!m_pHost->SetConfiguration (m_pEndpoint0, m_pConfigDesc->bConfigurationValue))
+	{
+		LogWrite (LogError, "Cannot set configuration (%u)",
+			  (unsigned) m_pConfigDesc->bConfigurationValue);
+
+		return FALSE;
+	}
+
 	unsigned nFunction = 0;
 	u8 ucInterfaceNumber = 0;
 
@@ -449,6 +457,11 @@ boolean CUSBDevice::Initialize (void)
 	{
 		LogWrite (LogWarning, "Device has no supported function");
 
+		if (!m_pHost->SetConfiguration (m_pEndpoint0, 0))
+		{
+			LogWrite (LogWarning, "Cannot reset configuration");
+		}
+
 		return FALSE;
 	}
 
@@ -462,13 +475,6 @@ boolean CUSBDevice::Configure (void)
 
 	if (m_pConfigDesc == 0)		// not initialized
 	{
-		return FALSE;
-	}
-
-	if (!m_pHost->SetConfiguration (m_pEndpoint0, m_pConfigDesc->bConfigurationValue))
-	{
-		LogWrite (LogError, "Cannot set configuration (%u)", (unsigned) m_pConfigDesc->bConfigurationValue);
-
 		return FALSE;
 	}
 
