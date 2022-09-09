@@ -90,7 +90,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBMouseDevice (pParent);
 	}
-	else if (pName->Compare ("int3-0-0") == 0)
+	else if (   pName->Compare ("int3-0-0") == 0
+		 || pName->Compare ("int3-0-2") == 0)
 	{
 		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
 		assert (pVendor != 0);
