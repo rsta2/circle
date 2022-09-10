@@ -2,7 +2,7 @@
 // miniorgan.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 //
 #include "miniorgan.h"
 #include <circle/devicenameservice.h>
+#include <circle/sysconfig.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -69,14 +70,22 @@ const TNoteInfo CMiniOrgan::s_Keys[] =
 CMiniOrgan *CMiniOrgan::s_pThis = 0;
 
 CMiniOrgan::CMiniOrgan (CInterruptSystem *pInterrupt, CI2CMaster *pI2CMaster)
+#ifdef USE_USB
+:	SOUND_CLASS (SAMPLE_RATE
+#else
 :	SOUND_CLASS (pInterrupt, SAMPLE_RATE, CHUNK_SIZE
 #ifdef USE_I2S
 		     , FALSE, pI2CMaster, DAC_I2C_ADDRESS
 #endif
+#endif
 	),
 	m_pMIDIDevice (0),
 	m_pKeyboard (0),
+#if RASPPI <= 3 && defined (USE_USB_FIQ)
+	m_Serial (pInterrupt, FALSE),
+#else
 	m_Serial (pInterrupt, TRUE),
+#endif
 	m_bUseSerial (FALSE),
 	m_nSerialState (0),
 	m_nSampleCount (0),
@@ -205,7 +214,11 @@ void CMiniOrgan::Process (boolean bPlugAndPlayUpdated)
 	}
 }
 
+#ifdef USE_USB
+unsigned CMiniOrgan::GetChunk (s16 *pBuffer, unsigned nChunkSize)
+#else
 unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
+#endif
 {
 	unsigned nResult = nChunkSize;
 
@@ -229,7 +242,11 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 #endif
 	for (; nChunkSize > 0; nChunkSize -= 2)		// fill the whole buffer
 	{
+#ifdef USE_USB
+		s16 nSample = (s16) m_nNullLevel;
+#else
 		u32 nSample = (u32) m_nNullLevel;
+#endif
 
 		if (m_nFrequency != 0)			// key pressed?
 		{
@@ -248,7 +265,11 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 				}
 			}
 
+#ifdef USE_USB
+			nSample = (s16) m_nCurrentLevel;
+#else
 			nSample = (u32) m_nCurrentLevel;
+#endif
 		}
 
 #ifdef USE_HDMI

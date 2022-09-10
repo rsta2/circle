@@ -2,7 +2,7 @@
 // miniorgan.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 // define only one
 //#define USE_I2S
 //#define USE_HDMI
+//#define USE_USB
 
 #ifdef USE_I2S
 	#include <circle/i2ssoundbasedevice.h>
@@ -35,6 +36,10 @@
 	#define SOUND_CLASS	CHDMISoundBaseDevice
 	#define SAMPLE_RATE	48000
 	#define CHUNK_SIZE	(384 * 10)
+#elif defined (USE_USB)
+	#include <circle/usb/usbsoundbasedevice.h>
+	#define SOUND_CLASS	CUSBSoundBaseDevice
+	#define SAMPLE_RATE	48000
 #else
 	#include <circle/pwmsoundbasedevice.h>
 	#define SOUND_CLASS	CPWMSoundBaseDevice
@@ -65,7 +70,11 @@ public:
 
 	void Process (boolean bPlugAndPlayUpdated);
 
+#ifdef USE_USB
+	unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize);
+#else
 	unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
+#endif
 
 private:
 	static void MIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength);

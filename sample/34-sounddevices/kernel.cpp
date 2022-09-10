@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/pwmsoundbasedevice.h>
 #include <circle/i2ssoundbasedevice.h>
 #include <circle/hdmisoundbasedevice.h>
+#include <circle/usb/usbsoundbasedevice.h>
 #include <circle/machineinfo.h>
 #include <circle/util.h>
 #include <assert.h>
@@ -57,6 +58,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_I2CMaster (CMachineInfo::Get ()->GetDevice (DeviceI2CMaster), TRUE),
+	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),	// TRUE: enable plug-and-play
 #ifdef USE_VCHIQ_SOUND
 	m_VCHIQ (CMemorySystem::Get (), &m_Interrupt),
 #endif
@@ -110,6 +112,11 @@ boolean CKernel::Initialize (void)
 		bOK = m_I2CMaster.Initialize ();
 	}
 
+	if (bOK)
+	{
+		bOK = m_USBHCI.Initialize ();
+	}
+
 #ifdef USE_VCHIQ_SOUND
 	if (bOK)
 	{
@@ -138,6 +145,10 @@ TShutdownMode CKernel::Run (void)
 	else if (strcmp (pSoundDevice, "sndhdmi") == 0)
 	{
 		m_pSound = new CHDMISoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
+	}
+	else if (strcmp (pSoundDevice, "sndusb") == 0)
+	{
+		m_pSound = new CUSBSoundBaseDevice (SAMPLE_RATE);
 	}
 	else
 	{
@@ -182,6 +193,8 @@ TShutdownMode CKernel::Run (void)
 	// output sound data
 	for (unsigned nCount = 0; m_pSound->IsActive (); nCount++)
 	{
+		m_USBHCI.UpdatePlugAndPlay ();
+
 		m_Scheduler.MsSleep (QUEUE_SIZE_MSECS / 2);
 
 		// fill the whole queue free space with data
