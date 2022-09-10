@@ -73,6 +73,7 @@ USB library
 * CDWHCICompletionQueue: Queues USB requests ready for completion (with USE_USB_FIQ enabled).
 * CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi 1-3.
 * CDWHCIFrameScheduler: Base class for a simple micro frame scheduler
+* CDWHCIFrameSchedulerIsochronous: Schedules the transmission of isochronous split frames to non-high-speed devices
 * CDWHCIFrameSchedulerNonPeriodic: Schedules the transmission of non-interrupt split frames to non-high-speed devices
 * CDWHCIFrameSchedulerNoSplit: Schedules the transmission of frames to direct attached non-high-speed devices
 * CDWHCIFrameSchedulerPeriodic: Schedules the transmission of interrupt split frames to non-high-speed devices
@@ -82,6 +83,7 @@ USB library
 * CDWHCITransferStageData: Holds all the data needed for a transfer stage on one HCI channel.
 * CLAN7800Device: Driver for the on-board USB Gigabit Ethernet device of the Raspberry Pi 3 B+.
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
+* CUSBAudioStreamingDevice: Low-level driver for USB audio streaming devices.
 * CUSBBluetoothDevice: Bluetooth HCI transport driver for USB Bluetooth BR/EDR dongles.
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
 * CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU.
@@ -112,6 +114,7 @@ USB library
 * CUSBSerialDevice: Base class and interface for USB serial device drivers
 * CUSBSerialFT231XDevice: Driver for FTDI based USB serial devices
 * CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices
+* CUSBSoundBaseDevice: High-level driver for USB audio streaming devices.
 * CUSBStandardHub: USB hub driver for LAN9512/9514 and external hubs (max. 8 ports)
 * CUSBString: Encapsulates a string descriptor, available on an USB device.
 * CUSBTouchScreenDevice: Driver for USB HID-class touchscreens.

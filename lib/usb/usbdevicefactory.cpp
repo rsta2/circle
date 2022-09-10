@@ -20,6 +20,7 @@
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/usb/usbhid.h>
 #include <circle/synchronize.h>
+#include <circle/sysconfig.h>
 #include <circle/koptions.h>
 #include <circle/logger.h>
 #include <assert.h>
@@ -40,6 +41,7 @@
 #include <circle/usb/lan7800.h>
 #include <circle/usb/usbbluetooth.h>
 #include <circle/usb/usbmidi.h>
+#include <circle/usb/usbaudiostreaming.h>
 #include <circle/usb/usbcdcethernet.h>
 #include <circle/usb/usbserialcdc.h>
 #include <circle/usb/usbserialch341.h>
@@ -150,6 +152,12 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBMIDIDevice (pParent);
 	}
+#if RASPPI <= 3 && defined (USE_USB_SOF_INTR)
+	else if (pName->Compare ("int1-2-0") == 0)
+	{
+		pResult = new CUSBAudioStreamingDevice (pParent);
+	}
+#endif
 	else if (pName->Compare ("int2-6-0") == 0)
 	{
 		pResult = new CUSBCDCEthernetDevice (pParent);

@@ -21,11 +21,14 @@
 #include <circle/usb/dwhciframeschedper.h>
 #include <circle/usb/dwhciframeschednper.h>
 #include <circle/usb/dwhciframeschednsplit.h>
+#include <circle/usb/dwhciframeschediso.h>
 #include <circle/usb/dwhci.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
 #include <assert.h>
+
+#define MAX_ISO_SPLIT_PAYLOAD	188
 
 #define MAX_BULK_TRIES		8
 
@@ -77,7 +80,23 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 		
 		if (m_bSplitTransaction)
 		{
-			if (m_nTransferSize > m_nMaxPacketSize)
+			if (IsIsochronous ())
+			{
+				assert (m_nTransferSize <= m_nMaxPacketSize);
+
+				if (m_nTransferSize > MAX_ISO_SPLIT_PAYLOAD)
+				{
+					m_nBytesPerTransaction = MAX_ISO_SPLIT_PAYLOAD;
+
+					m_nPackets =   (m_nTransferSize + MAX_ISO_SPLIT_PAYLOAD-1)
+						     / MAX_ISO_SPLIT_PAYLOAD;
+				}
+				else
+				{
+					m_nBytesPerTransaction = m_nTransferSize;
+				}
+			}
+			else if (m_nTransferSize > m_nMaxPacketSize)
 			{
 				m_nBytesPerTransaction = m_nMaxPacketSize;
 			}
@@ -109,7 +128,11 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 
 	if (m_bSplitTransaction)
 	{
-		if (IsPeriodic ())
+		if (IsIsochronous ())
+		{
+			m_pFrameScheduler = new CDWHCIFrameSchedulerIsochronous;
+		}
+		else if (IsPeriodic ())
 		{
 			m_pFrameScheduler = new CDWHCIFrameSchedulerPeriodic;
 		}
@@ -198,11 +221,17 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 	u32 nBytesTransfered = m_nBytesPerTransaction - nBytesLeft;
 
 	if (   m_bSplitTransaction
-	    && m_bSplitComplete
 	    && nBytesTransfered == 0
 	    && m_nBytesPerTransaction > 0)
 	{
-		nBytesTransfered = m_nMaxPacketSize * nPacketsTransfered;
+		if (m_bSplitComplete)
+		{
+			nBytesTransfered = m_nMaxPacketSize * nPacketsTransfered;
+		}
+		else if (IsIsochronous ())
+		{
+			nBytesTransfered = m_nBytesPerTransaction * nPacketsTransfered;
+		}
 	}
 	
 	m_nTotalBytesTransfered += nBytesTransfered;
@@ -285,6 +314,14 @@ boolean CDWHCITransferStageData::IsPeriodic (void) const
 	       || Type == EndpointTypeIsochronous;
 }
 
+boolean CDWHCITransferStageData::IsIsochronous (void) const
+{
+	assert (m_pEndpoint != 0);
+	TEndpointType Type = m_pEndpoint->GetType ();
+
+	return Type == EndpointTypeIsochronous;
+}
+
 u8 CDWHCITransferStageData::GetDeviceAddress (void) const
 {
 	assert (m_pDevice != 0);
@@ -309,6 +346,10 @@ u8 CDWHCITransferStageData::GetEndpointType (void) const
 
 	case EndpointTypeInterrupt:
 		nEndpointType = DWHCI_HOST_CHAN_CHARACTER_EP_TYPE_INTERRUPT;
+		break;
+
+	case EndpointTypeIsochronous:
+		nEndpointType = DWHCI_HOST_CHAN_CHARACTER_EP_TYPE_ISO;
 		break;
 
 	default:
@@ -420,7 +461,25 @@ u8 CDWHCITransferStageData::GetHubPortAddress (void) const
 
 u8 CDWHCITransferStageData::GetSplitPosition (void) const
 {
-	// only important for isochronous transfers
+	if (   m_bSplitTransaction
+	    && IsIsochronous ()
+	    && m_nTransferSize > MAX_ISO_SPLIT_PAYLOAD)
+	{
+		if (!m_nTotalBytesTransfered)
+		{
+			return DWHCI_HOST_CHAN_SPLIT_CTRL_BEGIN;
+		}
+
+		if (m_nPackets > 1)
+		{
+			return DWHCI_HOST_CHAN_SPLIT_CTRL_MID;
+		}
+		else
+		{
+			return DWHCI_HOST_CHAN_SPLIT_CTRL_END;
+		}
+	}
+
 	return DWHCI_HOST_CHAN_SPLIT_CTRL_ALL;
 }
 
