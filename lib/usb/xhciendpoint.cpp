@@ -2,7 +2,7 @@
 // xhciendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -275,10 +275,8 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 			return FALSE;
 		}
 	}
-	else
+	else if (m_uchEndpointType == 4)		// control EP
 	{
-		assert (m_uchEndpointType == 4);	// control EP
-
 		TSetupData *pSetup = pURB->GetSetupData ();
 		assert (pSetup != 0);
 
@@ -339,6 +337,25 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 		// STATUS stage
 		if (!EnqueueTRB (  XHCI_TRB_TYPE_STATUS_STAGE << XHCI_TRB_CONTROL_TRB_TYPE__SHIFT
 				 | nDirStatus | XHCI_TRANSFER_TRB_CONTROL_IOC))
+		{
+			return FALSE;
+		}
+	}
+	else
+	{
+		assert (m_uchEndpointType == 1);	// isochronous OUT EP
+
+		assert (pBuffer != 0);
+		assert (nBufLen > 0);
+		assert ((uintptr) pBuffer > MEM_KERNEL_END);
+		CleanAndInvalidateDataCacheRange ((uintptr) pBuffer, nBufLen);
+
+		if (!EnqueueTRB (  XHCI_TRB_TYPE_ISOCH << XHCI_TRB_CONTROL_TRB_TYPE__SHIFT
+				 | XHCI_TRANSFER_TRB_CONTROL_IOC
+				 | XHCI_TRANSFER_TRB_CONTROL_SIA,
+				 nBufLen | 0 << XHCI_TRANSFER_TRB_STATUS_TD_SIZE__SHIFT,
+				 XHCI_TO_DMA_LO (pBuffer),
+				 XHCI_TO_DMA_HI (pBuffer)))
 		{
 			return FALSE;
 		}
@@ -526,6 +543,13 @@ TXHCIInputContext *CXHCIEndpoint::GetInputContextConfigureEndpoint (void)
 	case XHCI_EP_CONTEXT_EP_TYPE_INTERRUPT_IN:
 		pEPContext->Interval = m_uchInterval;
 		pEPContext->AverageTRBLength = 16;	// best guess
+		pEPContext->MaxESITPayload = m_usMaxPacketSize;
+		break;
+
+	case XHCI_EP_CONTEXT_EP_TYPE_ISOCH_OUT:
+		assert (m_pDevice->GetSpeed () == USBSpeedFull);	// TODO
+		pEPContext->Interval = 3;
+		pEPContext->AverageTRBLength = m_usMaxPacketSize;
 		pEPContext->MaxESITPayload = m_usMaxPacketSize;
 		break;
 
