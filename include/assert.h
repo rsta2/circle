@@ -39,7 +39,7 @@ extern "C" {
 #ifndef __cplusplus
 	#define ASSERT_STATIC(expr)	extern int assert_static[(expr) ? 1 : -1]
 #else
-	#define ASSERT_STATIC(expr)	static_assert (expr)
+	#define ASSERT_STATIC(expr)	static_assert (expr, #expr)
 #endif
 
 #ifdef __cplusplus

@@ -2,7 +2,7 @@
 // xhciusbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@ CXHCIUSBDevice::CXHCIUSBDevice (CXHCIDevice *pXHCIDevice, TUSBSpeed Speed, CXHCI
 :	CUSBDevice (pXHCIDevice, Speed, pRootPort),
 	m_pXHCIDevice (pXHCIDevice),
 	m_pRootPort (pRootPort),
-	m_pHub (0),
 	m_uchSlotID (0),
 	m_pDeviceContext (0),
 	m_pInputContextBuffer (0)
@@ -53,8 +52,6 @@ CXHCIUSBDevice::CXHCIUSBDevice (CXHCIDevice *pXHCIDevice, TUSBSpeed Speed,
 :	CUSBDevice (pXHCIDevice, Speed, pHub, nHubPortIndex),
 	m_pXHCIDevice (pXHCIDevice),
 	m_pRootPort (0),
-	m_pHub (pHub),
-	m_nHubPortIndex (nHubPortIndex),
 	m_uchSlotID (0),
 	m_pDeviceContext (0),
 	m_pInputContextBuffer (0)
@@ -94,8 +91,6 @@ CXHCIUSBDevice::~CXHCIUSBDevice (void)
 
 		m_pDeviceContext = 0;
 	}
-
-	m_pHub = 0;
 
 	for (unsigned i = 0; i < XHCI_MAX_ENDPOINTS; i++)
 	{

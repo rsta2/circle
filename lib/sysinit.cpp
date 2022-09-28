@@ -46,7 +46,7 @@ void __aeabi_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 	// TODO
 }
 
-#if AARCH == 64
+#if AARCH == 64 || defined (__clang__)
 
 void __cxa_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle) WEAK;
 

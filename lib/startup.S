@@ -2,7 +2,7 @@
  * startup.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
  *
  * This file contains code taken from Linux:
  *	safe_svcmode_maskall macro
@@ -49,7 +49,7 @@
 
 	.endm
 
-	.sect	.init
+	.section .init
 
 	.globl	_start
 _start:

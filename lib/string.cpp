@@ -711,7 +711,7 @@ char *CString::ftoa (char *pDest, double fNumber, unsigned nPrecision)
 		fNumber = -fNumber;
 	}
 
-	if (fNumber > (unsigned long) -1)
+	if (fNumber > (double) (unsigned long) -1)
 	{
 		strcpy (p, "overflow");
 

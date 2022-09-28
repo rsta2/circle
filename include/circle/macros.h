@@ -21,11 +21,18 @@
 #define _circle_macros_h
 
 #define PACKED		__attribute__ ((packed))
+#define	ALIGNED		__attribute__ ((aligned))
 #define	ALIGN(n)	__attribute__ ((aligned (n)))
 #define NORETURN	__attribute__ ((noreturn))
+#ifndef __clang__
 #define NOOPT		__attribute__ ((optimize (0)))
 #define STDOPT		__attribute__ ((optimize (2)))
 #define MAXOPT		__attribute__ ((optimize (3)))
+#else
+#define NOOPT
+#define STDOPT
+#define MAXOPT
+#endif
 #define WEAK		__attribute__ ((weak))
 
 #define likely(exp)	__builtin_expect (!!(exp), 1)

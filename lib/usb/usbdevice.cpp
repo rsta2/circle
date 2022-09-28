@@ -527,7 +527,7 @@ boolean CUSBDevice::RemoveDevice (void)
 	}
 
 	assert (m_pHub != 0);
-	return m_pHub->RemoveDevice (m_nHubPortIndex);
+	return m_pHub->RemoveDeviceAt (m_nHubPortIndex);
 }
 
 CString *CUSBDevice::GetName (TDeviceNameSelector Selector) const

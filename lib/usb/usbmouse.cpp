@@ -2,7 +2,7 @@
 // usbmouse.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
 //
 // USB mouse wheel support including HID report parser:
 // Copyright (C) 2020  H. Kocevar <hinxx@protonmail.com>
@@ -97,7 +97,7 @@ boolean CUSBMouseDevice::Configure (void)
 		return FALSE;
 	}
 
-	if (!CUSBHIDDevice::Configure (m_MouseReport.byteSize))
+	if (!CUSBHIDDevice::ConfigureHID (m_MouseReport.byteSize))
 	{
 		CLogger::Get ()->Write (FromUSBMouse, LogError, "Cannot configure HID device");
 

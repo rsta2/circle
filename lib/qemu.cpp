@@ -2,7 +2,7 @@
 // qemu.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ TSemihostingValue CallSemihostingSingle (u32 nOperation, TSemihostingValue nPara
 		: "=r" (nResult) : "r" (nOperation), "r" (nParam) : "r0", "r1"
 	);
 #else
+	u64 ulOperation = nOperation;
 	asm volatile
 	(
 		"mov x0, %1\n"
@@ -49,7 +50,7 @@ TSemihostingValue CallSemihostingSingle (u32 nOperation, TSemihostingValue nPara
 		"hlt #0xF000\n"
 		"mov %0, x0\n"
 
-		: "=r" (nResult) : "r" (nOperation), "r" (nParam) : "x0", "x1"
+		: "=r" (nResult) : "r" (ulOperation), "r" (nParam) : "x0", "x1"
 	);
 #endif
 
@@ -74,6 +75,7 @@ TSemihostingValue CallSemihosting (u32 nOperation,
 		: "=r" (nResult) : "r" (nOperation), "r" ((uintptr) &Data) : "r0", "r1"
 	);
 #else
+	u64 ulOperation = nOperation;
 	asm volatile
 	(
 		"mov x0, %1\n"
@@ -81,7 +83,7 @@ TSemihostingValue CallSemihosting (u32 nOperation,
 		"hlt #0xF000\n"
 		"mov %0, x0\n"
 
-		: "=r" (nResult) : "r" (nOperation), "r" ((uintptr) &Data) : "x0", "x1"
+		: "=r" (nResult) : "r" (ulOperation), "r" ((uintptr) &Data) : "x0", "x1"
 	);
 #endif
 
