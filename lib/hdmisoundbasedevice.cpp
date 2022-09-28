@@ -71,7 +71,7 @@ REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10);
 	REGSHIFT (MaiControl, ChannelNumber, 4);
 	REGBIT (MaiControl, Flush, 9);
 	//REGBIT (MaiControl, Empty, 10);
-	//REGBIT (MaiControl, Full, 11);
+	REGBIT (MaiControl, Full, 11);
 	REGBIT (MaiControl, WholSample, 12);
 	REGBIT (MaiControl, ChannelAlign, 13);
 	//REGBIT (MaiControl, Busy, 14);
