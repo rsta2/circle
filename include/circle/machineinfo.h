@@ -2,7 +2,7 @@
 // machineinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ struct TMemoryWindow
 class CMachineInfo
 {
 public:
-	CMachineInfo (void);
+	CMachineInfo (void) NOOPT;
 	~CMachineInfo (void);
 
 	// Basic info
