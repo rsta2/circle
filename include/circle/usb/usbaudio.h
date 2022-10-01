@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,21 @@ struct TUSBMIDIStreamingEndpointDescriptor
 	unsigned char	bDescriptorSubType;
 	unsigned char	bNumEmbMIDIJack;
 	unsigned char	bAssocJackIDs[];
+}
+PACKED;
+
+// Audio class type I format type descriptor
+struct TUSBAudioTypeIFormatTypeDescriptor
+{
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned char	bDescriptorSubtype;
+	unsigned char	bFormatType;
+	unsigned char	bNrChannels;
+	unsigned char	bSubframeSize;
+	unsigned char	bBitResolution;
+	unsigned char	bSamFreqType;
+	unsigned char	tSamFreq[][3];
 }
 PACKED;
 

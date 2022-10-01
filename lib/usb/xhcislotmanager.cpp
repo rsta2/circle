@@ -2,7 +2,7 @@
 // xhcislotmanager.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -103,7 +103,10 @@ void CXHCISlotManager::TransferEvent (u8 uchCompletionCode, u32 nTransferLength,
 				      u8 uchSlotID, u8 uchEndpointID)
 {
 	assert (XHCI_IS_SLOTID (uchSlotID));
-	assert (m_pUSBDevice[uchSlotID-1] != 0);
+	if (m_pUSBDevice[uchSlotID-1] == 0)
+	{
+		return;
+	}
 
 	m_pUSBDevice[uchSlotID-1]->TransferEvent (uchCompletionCode, nTransferLength, uchEndpointID);
 }

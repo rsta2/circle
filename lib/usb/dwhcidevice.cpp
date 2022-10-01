@@ -1,10 +1,6 @@
 //
 // dwhcidevice.cpp
 //
-// Supports:
-//	internal DMA only,
-//	no ISO transfers
-//
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
@@ -25,6 +21,7 @@
 #include <circle/usb/dwhciframeschednper.h>
 #include <circle/usb/dwhciframeschednsplit.h>
 #include <circle/usb/dwhciframeschedper.h>
+#include <circle/usb/dwhciframeschediso.h>
 #include <circle/sched/scheduler.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/bcm2835.h>
@@ -146,6 +143,7 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNonPeriodic, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
 	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerPeriodic, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
 	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNoSplit, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerIsochronous, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
 
 	PeripheralEntry ();
 
@@ -311,8 +309,7 @@ boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs
 	PeripheralEntry ();
 
 	assert (pURB != 0);
-	assert (   pURB->GetEndpoint ()->GetType () == EndpointTypeBulk
-		|| pURB->GetEndpoint ()->GetType () == EndpointTypeInterrupt);
+	assert (pURB->GetEndpoint ()->GetType () != EndpointTypeControl);
 	assert (pURB->GetBufLen () > 0);
 	
 	pURB->SetStatus (0);
@@ -1192,6 +1189,11 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		pStageData->GetFrameScheduler ()->TransactionComplete (nStatus);
 
+		if (pStageData->IsIsochronous ())
+		{
+			goto ContinueIsochronousSplit;
+		}
+
 		pStageData->SetState (StageStateCompleteSplit);
 		pStageData->SetSplitComplete (TRUE);
 
@@ -1249,6 +1251,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			break;
 		}
 
+	ContinueIsochronousSplit:
 	LeaveCompleteSplit:
 		if (!pStageData->IsStageComplete ())
 		{
@@ -1272,7 +1275,8 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 				break;
 			}
 
-			if (!pStageData->IsPeriodic ())
+			if (   !pStageData->IsPeriodic ()
+			    || pStageData->IsIsochronous ())
 			{
 				pStageData->SetState (StageStateStartSplit);
 				pStageData->SetSplitComplete (FALSE);

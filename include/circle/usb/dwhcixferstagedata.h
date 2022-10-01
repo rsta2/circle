@@ -54,6 +54,7 @@ public:
 	unsigned GetChannelNumber (void) const;
 	u8 GetDeviceAddress (void) const;
 	boolean IsPeriodic (void) const;
+	boolean IsIsochronous (void) const;
 	u8 GetEndpointType (void) const;
 	u8 GetEndpointNumber (void) const;
 	u32 GetMaxPacketSize (void) const;
