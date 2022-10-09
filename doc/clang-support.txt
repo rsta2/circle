@@ -5,7 +5,7 @@ Circle is normally build using a GNU-C/C++-based toolchain. For some reasons
 to build it using LLVM with the Clang frontend. To allow this, Circle provides
 some experimental support, which is described here.
 
-Please note that this support has been tested with Clang 14 on Linux hosts only.
+Please note that this support has been tested with Clang 15 on Linux hosts only.
 It cannot be guaranteed, that all code in the Circle repository will work, when
 built with Clang/LLVM, because the release tests will be normally run with GNU
 C/C++ builds. That's why you have to test your own application very carefully,
