@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/usb/usbsoundbasedevice.h>
+#include <circle/sound/usbsoundbasedevice.h>
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
 #include <assert.h>

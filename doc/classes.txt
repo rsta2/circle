@@ -108,7 +108,6 @@ USB library
 * CUSBSerialDevice: Base class and interface for USB serial device drivers
 * CUSBSerialFT231XDevice: Driver for FTDI based USB serial devices
 * CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices
-* CUSBSoundBaseDevice: High-level driver for USB audio streaming devices.
 * CUSBStandardHub: USB hub driver for LAN9512/9514 and external hubs (max. 8 ports)
 * CUSBString: Encapsulates a string descriptor, available on an USB device.
 * CUSBTouchScreenDevice: Driver for USB HID-class touchscreens.
@@ -203,4 +202,5 @@ Sound library
 * CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
 * CSoundBaseDevice: Base class of sound devices, converts several sound formats.
 * CSoundController: Optional controller of a sound device.
+* CUSBSoundBaseDevice: High-level driver for USB audio streaming devices.
 * CWM8960SoundController: Sound controller for WM8960.

@@ -37,7 +37,7 @@
 	#define SAMPLE_RATE	48000
 	#define CHUNK_SIZE	(384 * 10)
 #elif defined (USE_USB)
-	#include <circle/usb/usbsoundbasedevice.h>
+	#include <circle/sound/usbsoundbasedevice.h>
 	#define SOUND_CLASS	CUSBSoundBaseDevice
 	#define SAMPLE_RATE	48000
 #else

@@ -22,7 +22,7 @@
 #include <circle/sound/pwmsoundbasedevice.h>
 #include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/sound/hdmisoundbasedevice.h>
-#include <circle/usb/usbsoundbasedevice.h>
+#include <circle/sound/usbsoundbasedevice.h>
 #include <circle/machineinfo.h>
 #include <circle/util.h>
 #include <assert.h>
