@@ -29,7 +29,7 @@ class CPCM512xSoundController : public CSoundController		/// Sound controller fo
 public:
 	CPCM512xSoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress = 0);
 
-	boolean Probe (void);
+	boolean Probe (void) override;
 
 	void SetOutputVolume (int ndB) override;
 	const TRange GetOutputVolumeRange (void) const override;

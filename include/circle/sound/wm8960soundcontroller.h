@@ -29,7 +29,7 @@ class CWM8960SoundController : public CSoundController		/// Sound controller for
 public:
 	CWM8960SoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress = 0);
 
-	boolean Probe (void);
+	boolean Probe (void) override;
 
 private:
 	boolean InitWM8960 (u8 uchI2CAddress);

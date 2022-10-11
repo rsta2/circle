@@ -35,19 +35,19 @@ public:
 	~CUSBSoundBaseDevice (void);
 
 	/// \return Minium value of one sample
-	int GetRangeMin (void) const;
+	int GetRangeMin (void) const override;
 	/// \return Maximum value of one sample
-	int GetRangeMax (void) const;
+	int GetRangeMax (void) const override;
 
 	/// \brief Starts USB audio streaming
-	boolean Start (void);
+	boolean Start (void) override;
 
 	/// \brief Cancels USB audio streaming
 	/// \note Cancel takes effect after a short delay
-	void Cancel (void);
+	void Cancel (void) override;
 
 	/// \return Is USB audio streaming running?
-	boolean IsActive (void) const;
+	boolean IsActive (void) const override;
 
 protected:
 	/// \brief May overload this to provide the sound samples

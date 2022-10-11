@@ -61,19 +61,19 @@ public:
 	virtual ~CI2SSoundBaseDevice (void);
 
 	/// \return Minium value of one sample
-	int GetRangeMin (void) const;
+	int GetRangeMin (void) const override;
 	/// \return Maximum value of one sample
-	int GetRangeMax (void) const;
+	int GetRangeMax (void) const override;
 
 	/// \brief Starts the I2S and DMA operation
-	boolean Start (void);
+	boolean Start (void) override;
 
 	/// \brief Cancels the I2S and DMA operation
 	/// \note Cancel takes effect after a short delay
-	void Cancel (void);
+	void Cancel (void) override;
 
 	/// \return Is I2S and DMA operation running?
-	boolean IsActive (void) const;
+	boolean IsActive (void) const override;
 
 	/// \return Pointer to sound controller object or nullptr, if not supported.
 	CSoundController *GetController (void) override;

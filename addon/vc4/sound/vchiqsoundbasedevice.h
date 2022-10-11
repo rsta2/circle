@@ -56,20 +56,20 @@ public:
 	virtual ~CVCHIQSoundBaseDevice (void);
 
 	/// \return Minium value of one sample
-	int GetRangeMin (void) const;
+	int GetRangeMin (void) const override;
 	/// \return Maximum value of one sample
-	int GetRangeMax (void) const;
+	int GetRangeMax (void) const override;
 
 	/// \brief Connects to the VCHIQ sound service and starts sending sound data
 	/// \return Operation successful?
-	boolean Start (void);
+	boolean Start (void) override;
 
 	/// \brief Stops the transmission of sound data
 	/// \note Cancel takes effect after a short delay
-	void Cancel (void);
+	void Cancel (void) override;
 
 	/// \return Is the sound data transmission running?
-	boolean IsActive (void) const;
+	boolean IsActive (void) const override;
 
 	/// \param nVolume	Output volume to be set (-10000..400)
 	/// \param Destination	the target device, the sound data is sent to\n
