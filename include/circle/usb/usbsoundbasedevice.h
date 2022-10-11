@@ -20,7 +20,7 @@
 #ifndef _circle_usb_usbsoundbasedevice_h
 #define _circle_usb_usbsoundbasedevice_h
 
-#include <circle/soundbasedevice.h>
+#include <circle/sound/soundbasedevice.h>
 #include <circle/usb/usbaudiostreaming.h>
 #include <circle/device.h>
 #include <circle/spinlock.h>

@@ -2,7 +2,7 @@
 // vchiqsoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,25 +20,14 @@
 #ifndef _vc4_sound_vchiqsoundbasedevice_h
 #define _vc4_sound_vchiqsoundbasedevice_h
 
-#include <circle/soundbasedevice.h>
+#include <circle/sound/soundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/types.h>
+#include <vc4/sound/vchiqsoundcontroller.h>
 #include <vc4/vchiq/vchiqdevice.h>
 #include <vc4/vchi/vchi.h>
 #include "vc_vchi_audioserv_defs.h"
-
-#define VCHIQ_SOUND_VOLUME_MIN		-10000
-#define VCHIQ_SOUND_VOLUME_DEFAULT	0
-#define VCHIQ_SOUND_VOLUME_MAX		400
-
-enum TVCHIQSoundDestination
-{
-	VCHIQSoundDestinationAuto,
-	VCHIQSoundDestinationHeadphones,
-	VCHIQSoundDestinationHDMI,
-	VCHIQSoundDestinationUnknown
-};
 
 enum TVCHIQSoundState
 {
@@ -89,6 +78,9 @@ public:
 	void SetControl (int nVolume,
 			 TVCHIQSoundDestination Destination = VCHIQSoundDestinationUnknown);
 
+	/// \return Pointer to sound controller object
+	CSoundController *GetController (void) override;
+
 protected:
 	/// \brief May overload this to provide the sound samples!
 	/// \param pBuffer	buffer where the samples have to be placed
@@ -123,6 +115,8 @@ private:
 
 	unsigned m_nWritePos;
 	unsigned m_nCompletePos;
+
+	CVCHIQSoundController m_Controller;
 };
 
 #endif

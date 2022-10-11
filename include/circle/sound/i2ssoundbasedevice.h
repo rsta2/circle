@@ -17,15 +17,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_i2ssoundbasedevice_h
-#define _circle_i2ssoundbasedevice_h
+#ifndef _circle_sound_i2ssoundbasedevice_h
+#define _circle_sound_i2ssoundbasedevice_h
 
-#include <circle/soundbasedevice.h>
+#include <circle/sound/soundbasedevice.h>
+#include <circle/sound/soundcontroller.h>
 #include <circle/interrupt.h>
 #include <circle/i2cmaster.h>
 #include <circle/gpiopin.h>
 #include <circle/gpioclock.h>
-#include <circle/dmasoundbuffers.h>
+#include <circle/sound/dmasoundbuffers.h>
 #include <circle/logger.h>
 #include <circle/types.h>
 
@@ -74,6 +75,9 @@ public:
 	/// \return Is I2S and DMA operation running?
 	boolean IsActive (void) const;
 
+	/// \return Pointer to sound controller object or nullptr, if not supported.
+	CSoundController *GetController (void) override;
+
 protected:
 	/// \brief May overload this to provide the sound samples!
 	/// \param pBuffer	buffer where the samples have to be placed
@@ -99,8 +103,7 @@ private:
 	static unsigned RXCompletedHandler (boolean bStatus, u32 *pBuffer,
 					    unsigned nChunkSize, void *pParam);
 
-	boolean InitPCM51xx (u8 ucI2CAddress);
-	boolean InitWM8960 (u8 ucI2CAddress);
+	boolean ControllerFactory (void);
 
 private:
 	unsigned m_nChunkSize;
@@ -115,11 +118,13 @@ private:
 	CGPIOPin   m_PCMDOUTPin;
 	CGPIOClock m_Clock;
 
-	boolean m_bI2CInited;
 	volatile boolean m_bError;
 
 	CDMASoundBuffers m_TXBuffers;
 	CDMASoundBuffers m_RXBuffers;
+
+	boolean m_bControllerInited;
+	CSoundController *m_pController;
 };
 
 #endif

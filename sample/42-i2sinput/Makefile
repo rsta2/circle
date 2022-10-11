@@ -19,6 +19,7 @@ CFLAGS += -DENABLE_RECORDER=$(ENABLE_RECORDER)
 endif
 
 LIBS	+= $(CIRCLEHOME)/lib/sched/libsched.a \
+	   $(CIRCLEHOME)/lib/sound/libsound.a \
 	   $(CIRCLEHOME)/lib/libcircle.a
 
 include ../Rules.mk

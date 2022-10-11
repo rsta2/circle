@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../../..
 
-OBJS	= vchiqsoundbasedevice.o vchiqsounddevice.o
+OBJS	= vchiqsoundbasedevice.o vchiqsounddevice.o vchiqsoundcontroller.o
 
 libvchiqsound.a: $(OBJS)
 	@echo "  AR    $@"

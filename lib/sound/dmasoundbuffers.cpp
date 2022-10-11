@@ -2,7 +2,7 @@
 // dmasoundbuffers.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/dmasoundbuffers.h>
+#include <circle/sound/dmasoundbuffers.h>
 #include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/bcm2835int.h>

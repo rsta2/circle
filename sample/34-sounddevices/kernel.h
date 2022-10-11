@@ -32,7 +32,7 @@
 #include <circle/sched/scheduler.h>
 #include <circle/i2cmaster.h>
 #include <circle/usb/usbhcidevice.h>
-#include <circle/soundbasedevice.h>
+#include <circle/sound/soundbasedevice.h>
 #include <circle/types.h>
 #include "oscillator.h"
 

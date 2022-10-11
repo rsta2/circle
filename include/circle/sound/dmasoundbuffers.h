@@ -2,7 +2,7 @@
 // dmasoundbuffers.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_dmasoundbuffers_h
-#define _circle_dmasoundbuffers_h
+#ifndef _circle_sound_dmasoundbuffers_h
+#define _circle_sound_dmasoundbuffers_h
 
 #include <circle/dmachannel.h>
 #include <circle/interrupt.h>

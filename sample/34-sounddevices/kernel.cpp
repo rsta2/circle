@@ -19,9 +19,9 @@
 //
 #include "kernel.h"
 #include "config.h"
-#include <circle/pwmsoundbasedevice.h>
-#include <circle/i2ssoundbasedevice.h>
-#include <circle/hdmisoundbasedevice.h>
+#include <circle/sound/pwmsoundbasedevice.h>
+#include <circle/sound/i2ssoundbasedevice.h>
+#include <circle/sound/hdmisoundbasedevice.h>
 #include <circle/usb/usbsoundbasedevice.h>
 #include <circle/machineinfo.h>
 #include <circle/util.h>

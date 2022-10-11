@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/hdmisoundbasedevice.h>
+#include <circle/sound/hdmisoundbasedevice.h>
 #include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2835int.h>
