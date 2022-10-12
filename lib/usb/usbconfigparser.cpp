@@ -55,7 +55,7 @@ CUSBConfigurationParser::CUSBConfigurationParser (const void *pBuffer, unsigned 
 
 	const TUSBDescriptor *pCurrentPosition = m_pBuffer;
 	u8 ucLastDescType = 0;
-	boolean bInAudioInterface = FALSE;
+	boolean bInAudio10Interface = FALSE;
 	while (SKIP_BYTES (pCurrentPosition, 2) < m_pEndPosition)
 	{
 		u8 ucDescLen  = pCurrentPosition->Header.bLength;
@@ -88,7 +88,9 @@ CUSBConfigurationParser::CUSBConfigurationParser (const void *pBuffer, unsigned 
 				return;
 			}
 			ucExpectedLen = sizeof (TUSBInterfaceDescriptor);
-			bInAudioInterface = pCurrentPosition->Interface.bInterfaceClass == 0x01; // Audio class
+			// Audio class 1.0
+			bInAudio10Interface =    pCurrentPosition->Interface.bInterfaceClass == 0x01
+					      && pCurrentPosition->Interface.bInterfaceProtocol != 0x20;
 			break;
 
 		case DESCRIPTOR_ENDPOINT:
@@ -99,8 +101,9 @@ CUSBConfigurationParser::CUSBConfigurationParser (const void *pBuffer, unsigned 
 				return;
 			}
 			ucExpectedLen = sizeof (TUSBEndpointDescriptor);
-			if (bInAudioInterface)
+			if (bInAudio10Interface)
 			{
+				// Audio class 1.0 EP descriptors have additional fields.
 				ucAlternateLen = sizeof (TUSBAudioEndpointDescriptor);
 			}
 			break;
