@@ -296,7 +296,7 @@ Additional Topics
 Trademarks
 ----------
 
-Raspberry Pi is a trademark of Raspberry Pi Trading.
+Raspberry Pi is a trademark of Raspberry Pi Ltd.
 
 Linux is a trademark of Linus Torvalds.
 
