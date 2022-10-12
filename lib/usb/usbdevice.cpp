@@ -30,7 +30,7 @@
 #include <circle/debug.h>
 #include <assert.h>
 
-#define MAX_CONFIG_DESC_SIZE		512		// best guess
+#define MAX_CONFIG_DESC_SIZE		1024		// best guess
 
 static const char FromDevice[] = "usbdev";
 
