@@ -330,9 +330,13 @@ boolean CUSBDevice::Initialize (void)
 		return FALSE;
 	}
 
+	// must match enum TUSBSpeed in <circle/usb/usb.h>
+	static const char *Speeds[] = {"LS", "FS", "HS", "SS"};
+	assert (m_Speed < sizeof Speeds / sizeof Speeds[0]);
+
 	CString *pNames = GetNames ();
 	assert (pNames != 0);
-	LogWrite (LogNotice, "Device %s found", (const char *) *pNames);
+	LogWrite (LogNotice, "Device %s found (%s)", (const char *) *pNames, Speeds[m_Speed]);
 	delete pNames;
 
 	CString Product;
