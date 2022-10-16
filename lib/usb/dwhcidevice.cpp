@@ -785,22 +785,6 @@ boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolea
 	}
 	else
 	{
-		if (!pStageData->BeginSplitCycle ())
-		{
-#ifndef USE_USB_SOF_INTR
-			DisableChannelInterrupt (nChannel);
-#endif
-
-			delete pStageData;
-#ifndef USE_USB_SOF_INTR
-			m_pStageData[nChannel] = 0;
-
-			FreeChannel (nChannel);
-#endif
-
-			return FALSE;
-		}
-
 		pStageData->SetState (StageStateStartSplit);
 		pStageData->SetSplitComplete (FALSE);
 		pStageData->GetFrameScheduler ()->StartSplit ();
@@ -1263,26 +1247,6 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 	LeaveCompleteSplit:
 		if (!pStageData->IsStageComplete ())
 		{
-			if (!pStageData->BeginSplitCycle ())
-			{
-				pURB->SetStatus (0);
-				pURB->SetUSBError (USBErrorSplit);
-
-				DisableChannelInterrupt (nChannel);
-
-				delete pStageData;
-				m_pStageData[nChannel] = 0;
-
-				FreeChannel (nChannel);
-
-#ifndef USE_USB_FIQ
-				pURB->CallCompletionRoutine ();
-#else
-				m_CompletionQueue.Enqueue (pURB);
-#endif
-				break;
-			}
-
 			if (   !pStageData->IsPeriodic ()
 			    || pStageData->IsIsochronous ())
 			{

@@ -295,11 +295,6 @@ unsigned CDWHCITransferStageData::GetSubState (void) const
 	return m_nSubState;
 }
 
-boolean CDWHCITransferStageData::BeginSplitCycle (void)
-{
-	return TRUE;
-}
-
 unsigned CDWHCITransferStageData::GetChannelNumber (void) const
 {
 	return m_nChannel;

@@ -48,8 +48,6 @@ public:
 	void SetSubState (unsigned nSubState);
 	unsigned GetSubState (void) const;
 
-	boolean BeginSplitCycle (void);
-
 	// get transaction parameters
 	unsigned GetChannelNumber (void) const;
 	u8 GetDeviceAddress (void) const;
