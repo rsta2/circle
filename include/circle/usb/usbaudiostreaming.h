@@ -23,6 +23,7 @@
 #include <circle/usb/usbfunction.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
+#include <circle/synchronize.h>
 #include <circle/numberpool.h>
 #include <circle/types.h>
 
@@ -31,20 +32,19 @@
 class CUSBAudioStreamingDevice : public CUSBFunction	/// Low-level driver for USB audio streaming devices
 {
 public:
-	static const unsigned SampleRateTypeContinous = 0;
-	static const unsigned MaxDiscreteSampleRates  = 8;
+	static const unsigned MaxSampleRatesRanges = 8;
 
 	struct TFormatInfo
 	{
-		/// SampleRateTypeContinous, or length of DiscreteSampleRate[]
-		unsigned SampleRateType;
+		unsigned SampleRateRanges;	///< Number of valid entries in SampleRateRange[]
 
-		/// Range of sample rate, if SampleRateTypeContinous
-		unsigned LowerSampleRate;
-		unsigned UpperSampleRate;
-
-		/// Supported discrete sample rates
-		unsigned DiscreteSampleRate[MaxDiscreteSampleRates];
+		struct
+		{
+			unsigned Min;
+			unsigned Max;		///< equal to Min for discrete sample rate
+			unsigned Resolution;	///< 0 for discrete sample rate, or if unknown
+		}
+		SampleRateRange[MaxSampleRatesRanges];
 	};
 
 	typedef void TCompletionRoutine (void *pParam);
@@ -66,6 +66,7 @@ public:
 
 	/// \return Size of a send chunk in bytes
 	/// \note Must be called after Setup()
+	/// \note Varies in operation, first call returns mean value
 	unsigned GetChunkSizeBytes (void) const;
 
 	/// \brief Send a chunk of audio data to the audio streaming device
@@ -78,14 +79,26 @@ public:
 			   TCompletionRoutine *pCompletionRoutine = 0, void *pParam = 0);
 
 private:
-	void CompletionRoutine (CUSBRequest *pURB);
-	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);
+	static void CompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext);
+	static void SyncCompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext);
 
 private:
+	boolean m_bVer200;
+
 	CUSBEndpoint *m_pEndpointOut;
+	CUSBEndpoint *m_pEndpointSync;		// feedback EP
 
 	TFormatInfo m_FormatInfo;
-	unsigned m_nChunkSizeBytes;
+	volatile unsigned m_nChunkSizeBytes;
+
+	volatile boolean m_bSyncEPActive;
+	DMA_BUFFER (u32, m_SyncEPBuffer, 1);
+	unsigned m_nSyncAccu;
+
+	u8 m_uchClockSourceID;
+
+	TCompletionRoutine *m_pCompletionRoutine;
+	void *m_pCompletionParam;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

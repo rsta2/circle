@@ -77,6 +77,7 @@ USB library
 * CDWHCITransferStageData: Holds all the data needed for a transfer stage on one HCI channel.
 * CLAN7800Device: Driver for the on-board USB Gigabit Ethernet device of the Raspberry Pi 3 B+.
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
+* CUSBAudioControlDevice: Driver for USB audio control devices.
 * CUSBAudioStreamingDevice: Low-level driver for USB audio streaming devices.
 * CUSBBluetoothDevice: Bluetooth HCI transport driver for USB Bluetooth BR/EDR dongles.
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)

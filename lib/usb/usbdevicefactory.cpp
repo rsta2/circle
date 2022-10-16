@@ -41,6 +41,7 @@
 #include <circle/usb/lan7800.h>
 #include <circle/usb/usbbluetooth.h>
 #include <circle/usb/usbmidi.h>
+#include <circle/usb/usbaudiocontrol.h>
 #include <circle/usb/usbaudiostreaming.h>
 #include <circle/usb/usbcdcethernet.h>
 #include <circle/usb/usbserialcdc.h>
@@ -154,7 +155,13 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		pResult = new CUSBMIDIDevice (pParent);
 	}
 #if RASPPI >= 4 || defined (USE_USB_SOF_INTR)
-	else if (pName->Compare ("int1-2-0") == 0)
+	else if (   pName->Compare ("int1-1-0") == 0
+		 || pName->Compare ("int1-1-20") == 0)
+	{
+		pResult = new CUSBAudioControlDevice (pParent);
+	}
+	else if (   pName->Compare ("int1-2-0") == 0
+		 || pName->Compare ("int1-2-20") == 0)
 	{
 		pResult = new CUSBAudioStreamingDevice (pParent);
 	}

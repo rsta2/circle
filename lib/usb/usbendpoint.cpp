@@ -77,11 +77,9 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 	m_bDirectionIn   = pDesc->bEndpointAddress & 0x80 ? TRUE : FALSE;
 	m_nMaxPacketSize = pDesc->wMaxPacketSize & 0x7FF;
 
-	// TODO: support Isochronous IN endpoints
-	assert (m_Type != EndpointTypeIsochronous || !m_bDirectionIn);
-	
 #if RASPPI <= 3
-	if (m_Type == EndpointTypeInterrupt)
+	if (   m_Type == EndpointTypeInterrupt
+	    || m_Type == EndpointTypeIsochronous)
 	{
 		u8 ucInterval = pDesc->bInterval;
 		if (ucInterval < 1)
@@ -202,7 +200,8 @@ u32 CUSBEndpoint::GetMaxPacketSize (void) const
 
 unsigned CUSBEndpoint::GetInterval (void) const
 {
-	assert (m_Type == EndpointTypeInterrupt);
+	assert (   m_Type == EndpointTypeInterrupt
+		|| m_Type == EndpointTypeIsochronous);
 
 	return m_nInterval;
 }

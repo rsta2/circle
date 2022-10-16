@@ -25,7 +25,15 @@
 
 #include <circle/macros.h>
 
-// Audio class endpoint descriptor
+// USB Audio class interface protocol numbers
+#define USB_PROTO_AUDIO_VER_100		0x00
+#define USB_PROTO_AUDIO_VER_200		0x20
+
+// USB Audio class unit IDs
+#define USB_AUDIO_UNDEFINED_UNIT_ID	0
+#define USB_AUDIO_MAXIMUM_UNIT_ID	255
+
+// Audio class endpoint descriptor (v1.00 only)
 struct TUSBAudioEndpointDescriptor
 {
 	unsigned char	bLength;
@@ -39,7 +47,7 @@ struct TUSBAudioEndpointDescriptor
 }
 PACKED;
 
-// MIDI-streaming class-specific endpoint descriptor
+// MIDI-streaming class-specific endpoint descriptor (v1.00 only)
 struct TUSBMIDIStreamingEndpointDescriptor
 {
 	unsigned char	bLength;
@@ -50,19 +58,119 @@ struct TUSBMIDIStreamingEndpointDescriptor
 }
 PACKED;
 
+struct TUSBAudioControlInterfaceDescriptor
+{
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned char	bDescriptorSubtype;
+#define USB_AUDIO_CTL_IFACE_SUBTYPE_HEADER		0x01
+#define USB_AUDIO_CTL_IFACE_SUBTYPE_INPUT_TERMINAL	0x02
+
+	union
+	{
+		union
+		{
+			struct
+			{
+				unsigned short	bcdADC		PACKED;
+#define USB_AUDIO_CTL_IFACE_BCDADC_100			0x100
+				unsigned short	wTotalLength	PACKED;
+				unsigned char	bInCollection;
+				unsigned char	baInterfaceNr[];
+			}
+			Header;
+		}
+		Ver100;
+
+		union
+		{
+			struct
+			{
+				unsigned short	bcdADC		PACKED;
+#define USB_AUDIO_CTL_IFACE_BCDADC_200			0x200
+				unsigned char	bCategory;
+				unsigned short	wTotalLength	PACKED;
+				unsigned char	bmControls;
+			}
+			Header;
+
+			struct
+			{
+				unsigned char	bTerminalID;
+				unsigned short	wTerminalType	PACKED;
+				unsigned char	bAssocTerminal;
+				unsigned char	bCSourceID;
+				unsigned char	bNrChannels;
+				unsigned int	bmChannelConfig	PACKED;
+				unsigned char	iChannelNames;
+				unsigned short	bmControls	PACKED;
+				unsigned char	iTerminal;
+			}
+			InputTerminal;
+		}
+		Ver200;
+	};
+}
+PACKED;
+
+struct CUSBAudioStreamingInterfaceDescriptor
+{
+        unsigned char	bLength;
+        unsigned char	bDescriptorType;
+        unsigned char	bDescriptorSubtype;
+#define USB_AUDIO_STREAMING_GENERAL		0x01
+
+	struct
+	{
+		unsigned char	bTerminalLink;
+		unsigned char	bmControls;
+		unsigned char	bFormatType;
+		unsigned int	bmFormats	PACKED;
+		unsigned char	bNrChannels;
+		unsigned int	bmChannelConfig	PACKED;
+		unsigned char	iChannelNames;
+	}
+	Ver200;
+}
+PACKED;
+
 // Audio class type I format type descriptor
 struct TUSBAudioTypeIFormatTypeDescriptor
 {
 	unsigned char	bLength;
 	unsigned char	bDescriptorType;
 	unsigned char	bDescriptorSubtype;
+#define USB_AUDIO_FORMAT_TYPE			0x02
 	unsigned char	bFormatType;
-	unsigned char	bNrChannels;
-	unsigned char	bSubframeSize;
-	unsigned char	bBitResolution;
-	unsigned char	bSamFreqType;
-	unsigned char	tSamFreq[][3];
+#define USB_AUDIO_FORMAT_TYPE_I			0x01
+
+	union
+	{
+		struct
+		{
+			unsigned char	bNrChannels;
+			unsigned char	bSubframeSize;
+			unsigned char	bBitResolution;
+			unsigned char	bSamFreqType;
+			unsigned char	tSamFreq[][3];
+		}
+		Ver100;
+
+		struct
+		{
+			unsigned char	bSubslotSize;
+			unsigned char	bBitResolution;
+		}
+		Ver200;
+	};
 }
 PACKED;
+
+// Audio class control requests
+#define USB_AUDIO_REQ_SET_CUR		0x01
+#define USB_AUDIO_REQ_RANGE		0x02		// v2.00 only
+
+// Audio class control selectors
+#define USB_AUDIO_CS_SAM_FREQ_CONTROL	0x01
 
 #endif

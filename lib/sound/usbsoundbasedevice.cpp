@@ -88,8 +88,10 @@ boolean CUSBSoundBaseDevice::Start (void)
 		assert (!m_nChunkSizeBytes);
 		m_nChunkSizeBytes = m_pUSBDevice->GetChunkSizeBytes ();
 
+		// The actual chunk size varies in operation. A maximum of twice
+		// the initial size should not be exceeded.
 		assert (!m_pBuffer);
-		m_pBuffer = new u8[m_nChunkSizeBytes];
+		m_pBuffer = new u8[m_nChunkSizeBytes * 2];
 
 		m_State = StateIdle;
 	}
@@ -172,10 +174,13 @@ void CUSBSoundBaseDevice::CompletionRoutine (void)
 	}
 
 	assert (m_pBuffer);
-	assert (m_nChunkSizeBytes);
-	assert (m_nChunkSizeBytes % sizeof (s16) == 0);
+
+	unsigned nChunkSizeBytes = m_pUSBDevice->GetChunkSizeBytes ();
+	assert (nChunkSizeBytes);
+	assert (nChunkSizeBytes % sizeof (s16) == 0);
+	assert (nChunkSizeBytes <= m_nChunkSizeBytes * 2);
 	unsigned nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pBuffer),
-					m_nChunkSizeBytes / sizeof (s16));
+					nChunkSizeBytes / sizeof (s16));
 	if (!nChunkSize)
 	{
 		m_State = StateIdle;
