@@ -680,6 +680,12 @@ void CUSBDevice::ConfigurationError (const char *pSource) const
 	m_pConfigParser->Error (pSource);
 }
 
+CUSBFunction *CUSBDevice::GetFunction (unsigned nIndex)
+{
+	assert (nIndex < USBDEV_MAX_FUNCTIONS);
+	return m_pFunction[nIndex];
+}
+
 void CUSBDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 {
 	assert (pMessage != 0);
