@@ -555,6 +555,14 @@ boolean CDWHCIDevice::EnableRootPort (void)
 	// normally 10ms, seems to be too short for some devices
 	m_pTimer->MsDelay (20);		// see USB 2.0 spec (tRSTRCY)
 
+	if (CKernelOptions::Get ()->GetUSBFullSpeed ())
+	{
+		// ensure frame interval is 1 ms
+		CDWHCIRegister FrameInterval (DWHCI_HOST_FRM_INTERVAL);
+		FrameInterval.Set (48000);
+		FrameInterval.Write ();
+	}
+
 	return TRUE;
 }
 
@@ -786,7 +794,7 @@ boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolea
 			delete pStageData;
 #ifndef USE_USB_SOF_INTR
 			m_pStageData[nChannel] = 0;
-			
+
 			FreeChannel (nChannel);
 #endif
 
