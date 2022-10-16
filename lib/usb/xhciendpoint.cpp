@@ -91,7 +91,7 @@ CXHCIEndpoint::CXHCIEndpoint (CXHCIUSBDevice *pDevice, const TUSBEndpointDescrip
 	m_usMaxPacketSize = pDesc->wMaxPacketSize & 0x7FF;
 
 	assert (m_pDevice != 0);
-	if ((m_uchAttributes & 3) == 3)		// interrupt endpoint
+	if ((m_uchAttributes & 1) == 1)		// interrupt or isochronous endpoint
 	{
 		m_uchInterval = ConvertInterval (pDesc->bInterval, m_pDevice->GetSpeed ());
 	}
@@ -343,7 +343,7 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 	}
 	else
 	{
-		assert (m_uchEndpointType == 1);	// isochronous OUT EP
+		assert ((m_uchEndpointType & 3) == 1);	// isochronous EP
 
 		assert (pBuffer != 0);
 		assert (nBufLen > 0);
@@ -375,7 +375,6 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 
 void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 {
-
 #ifdef XHCI_DEBUG2
 	CLogger::Get ()->Write (From, LogDebug,
 				"Transfer event on endpoint %u (completion %u, length %u)",
@@ -385,7 +384,11 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 
 	DataMemBarrier ();
 
-	assert (m_pURB != 0);
+	if (!m_pURB)
+	{
+		return;
+	}
+
 	CUSBRequest *pURB = m_pURB;
 
 	if (   XHCI_TRB_SUCCESS (uchCompletionCode)
@@ -404,7 +407,7 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 
 		pURB->SetStatus (1);
 	}
-	else
+	else if (uchCompletionCode != XHCI_TRB_COMPLETION_CODE_MISSED_SERVICE_ERROR)
 	{
 		CLogger::Get ()->Write (From, LogWarning, "Transfer error %u on endpoint %u",
 					(unsigned) uchCompletionCode, (unsigned) m_uchEndpointID);
@@ -547,8 +550,8 @@ TXHCIInputContext *CXHCIEndpoint::GetInputContextConfigureEndpoint (void)
 		break;
 
 	case XHCI_EP_CONTEXT_EP_TYPE_ISOCH_OUT:
-		assert (m_pDevice->GetSpeed () == USBSpeedFull);	// TODO
-		pEPContext->Interval = 3;
+	case XHCI_EP_CONTEXT_EP_TYPE_ISOCH_IN:
+		pEPContext->Interval = m_uchInterval;
 		pEPContext->AverageTRBLength = m_usMaxPacketSize;
 		pEPContext->MaxESITPayload = m_usMaxPacketSize;
 		break;
