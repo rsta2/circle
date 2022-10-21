@@ -350,14 +350,23 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 		assert ((uintptr) pBuffer > MEM_KERNEL_END);
 		CleanAndInvalidateDataCacheRange ((uintptr) pBuffer, nBufLen);
 
-		if (!EnqueueTRB (  XHCI_TRB_TYPE_ISOCH << XHCI_TRB_CONTROL_TRB_TYPE__SHIFT
-				 | XHCI_TRANSFER_TRB_CONTROL_IOC
-				 | XHCI_TRANSFER_TRB_CONTROL_SIA,
-				 nBufLen | 0 << XHCI_TRANSFER_TRB_STATUS_TD_SIZE__SHIFT,
-				 XHCI_TO_DMA_LO (pBuffer),
-				 XHCI_TO_DMA_HI (pBuffer)))
+		u32 nPackets = pURB->GetNumIsoPackets ();
+		for (unsigned i = 0; i < nPackets; i++)
 		{
-			return FALSE;
+			u16 usPacketSize = pURB->GetIsoPacketSize (i);
+
+			if (!EnqueueTRB (  XHCI_TRB_TYPE_ISOCH << XHCI_TRB_CONTROL_TRB_TYPE__SHIFT
+					 | (i == nPackets-1 ? XHCI_TRANSFER_TRB_CONTROL_IOC : 0)
+					 | XHCI_TRANSFER_TRB_CONTROL_SIA,
+					   usPacketSize
+					 | (nPackets-i-1) << XHCI_TRANSFER_TRB_STATUS_TD_SIZE__SHIFT,
+					 XHCI_TO_DMA_LO (pBuffer),
+					 XHCI_TO_DMA_HI (pBuffer)))
+			{
+				return FALSE;
+			}
+
+			pBuffer = (u8 *) pBuffer + usPacketSize;
 		}
 	}
 

@@ -27,7 +27,7 @@
 #include <circle/numberpool.h>
 #include <circle/types.h>
 
-/// \note Supports 16-bit signed Stereo PCM output at 1ms interval only
+/// \note Supports 16-bit signed Stereo PCM output only
 
 class CUSBAudioStreamingDevice : public CUSBFunction	/// Low-level driver for USB audio streaming devices
 {
@@ -82,6 +82,8 @@ private:
 	static void CompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext);
 	static void SyncCompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext);
 
+	void UpdateChunkSize (void);
+
 private:
 	boolean m_bVer200;
 
@@ -89,7 +91,12 @@ private:
 	CUSBEndpoint *m_pEndpointSync;		// feedback EP
 
 	TFormatInfo m_FormatInfo;
+	unsigned m_nSampleRate;
 	volatile unsigned m_nChunkSizeBytes;
+
+	boolean m_bSynchronousSync;
+	unsigned m_nPacketsPerChunk;
+	u16 m_usPacketSizeBytes[CUSBRequest::MaxIsoPackets];
 
 	volatile boolean m_bSyncEPActive;
 	DMA_BUFFER (u32, m_SyncEPBuffer, 1);

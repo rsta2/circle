@@ -2,7 +2,7 @@
 // usbrequest.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ CUSBRequest::CUSBRequest (CUSBEndpoint *pEndpoint, void *pBuffer, u32 nBufLen, T
 	m_bStatus (0),
 	m_nResultLen (0),
 	m_USBError (USBErrorUnknown),
+	m_nNumIsoPackets (0),
 	m_pCompletionRoutine (0),
 	m_pCompletionParam (0),
 	m_pCompletionContext (0),
@@ -104,6 +105,29 @@ void *CUSBRequest::GetBuffer (void)
 u32 CUSBRequest::GetBufLen (void) const
 {
 	return m_nBufLen;
+}
+
+void CUSBRequest::AddIsoPacket (u16 usPacketSize)
+{
+	assert (m_nNumIsoPackets < MaxIsoPackets);
+	assert (usPacketSize > 0);
+	assert (usPacketSize <= m_nBufLen);
+
+	m_usIsoPacketSize[m_nNumIsoPackets++] = usPacketSize;
+}
+
+u32 CUSBRequest::GetNumIsoPackets (void) const
+{
+	assert (m_nNumIsoPackets > 0);
+
+	return m_nNumIsoPackets;
+}
+
+u16 CUSBRequest::GetIsoPacketSize (unsigned nPacketIndex) const
+{
+	assert (nPacketIndex < m_nNumIsoPackets);
+
+	return m_usIsoPacketSize[nPacketIndex];
 }
 
 void CUSBRequest::SetCompletionRoutine (TURBCompletionRoutine *pRoutine, void *pParam, void *pContext)

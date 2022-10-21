@@ -47,7 +47,9 @@ CUSBAudioStreamingDevice::CUSBAudioStreamingDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_pEndpointOut (nullptr),
 	m_pEndpointSync (nullptr),
+	m_nSampleRate (0),
 	m_nChunkSizeBytes (0),
+	m_nPacketsPerChunk (0),
 	m_bSyncEPActive (FALSE),
 	m_nSyncAccu (0),
 	m_uchClockSourceID (USB_AUDIO_UNDEFINED_UNIT_ID),
@@ -127,10 +129,9 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		return FALSE;
 	}
 
-	if (   GetDevice ()->GetSpeed () != USBSpeedFull		// TODO: HS
-	    || pEndpointDesc->bInterval  != 1)
+	if (pEndpointDesc->bInterval != 1)			// TODO
 	{
-		LOGWARN ("Unsupported EP timing");
+		LOGWARN ("Unsupported EP timing (%u)", (unsigned) pEndpointDesc->bInterval);
 
 		return FALSE;
 	}
@@ -183,12 +184,8 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		m_pEndpointSync = new CUSBEndpoint (GetDevice (), (TUSBEndpointDescriptor *) pEndpointInDesc);
 		assert (m_pEndpointSync != 0);
 	}
-	else if ((pEndpointDesc->bmAttributes & 0x0C) != 0x08)		// Adaptive sync
-	{
-		LOGWARN ("Unsupported EP synchronization");
 
-		return FALSE;
-	}
+	m_bSynchronousSync = (pEndpointDesc->bmAttributes & 0x0C) == 0x0C;
 
 	m_pEndpointOut = new CUSBEndpoint (GetDevice (), (TUSBEndpointDescriptor *) pEndpointDesc);
 	assert (m_pEndpointOut != 0);
@@ -398,7 +395,16 @@ boolean CUSBAudioStreamingDevice::Setup (unsigned nSampleRate)
 		}
 	}
 
-	m_nChunkSizeBytes = nSampleRate * CHANNELS * SUBFRAME_SIZE / CHUNK_FREQUENCY;
+	m_nSampleRate = nSampleRate;
+
+	if (m_bSynchronousSync)
+	{
+		UpdateChunkSize ();
+	}
+	else
+	{
+		m_nChunkSizeBytes = nSampleRate * CHANNELS * SUBFRAME_SIZE / CHUNK_FREQUENCY;
+	}
 
 	return TRUE;
 }
@@ -418,6 +424,19 @@ boolean CUSBAudioStreamingDevice::SendChunk (const void *pBuffer, unsigned nChun
 	CUSBRequest *pURB = new CUSBRequest (m_pEndpointOut, (void *) pBuffer, nChunkSizeBytes);
 	assert (pURB);
 
+	if (m_bSynchronousSync)
+	{
+		assert (m_nPacketsPerChunk > 0);
+		for (unsigned i = 0; i < m_nPacketsPerChunk; i++)
+		{
+			pURB->AddIsoPacket (m_usPacketSizeBytes[i]);
+		}
+	}
+	else
+	{
+		pURB->AddIsoPacket (nChunkSizeBytes);
+	}
+
 	assert (!m_pCompletionRoutine);
 	m_pCompletionRoutine = pCompletionRoutine;
 	m_pCompletionParam = pParam;
@@ -432,14 +451,23 @@ boolean CUSBAudioStreamingDevice::SendChunk (const void *pBuffer, unsigned nChun
 	{
 		m_bSyncEPActive = TRUE;
 
+		u16 usPacketSize = GetDevice ()->GetSpeed () == USBSpeedFull ? 3 : 4;
+
 		assert (m_pEndpointSync);
 		CUSBRequest *pURBSync = new CUSBRequest (m_pEndpointSync, &m_SyncEPBuffer,
-						GetDevice ()->GetSpeed () == USBSpeedFull ? 3 : 4);
+							 usPacketSize);
 		assert (pURBSync);
+
+		pURBSync->AddIsoPacket (usPacketSize);
 
 		pURBSync->SetCompletionRoutine (SyncCompletionHandler, nullptr, this);
 
 		bOK = GetHost ()->SubmitAsyncRequest (pURBSync);
+	}
+	else if (   bOK
+		 && m_bSynchronousSync)
+	{
+		UpdateChunkSize ();
 	}
 
 	return bOK;
@@ -497,4 +525,28 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 	}
 
 	pThis->m_bSyncEPActive = FALSE;
+}
+
+void CUSBAudioStreamingDevice::UpdateChunkSize (void)
+{
+	assert (m_bSynchronousSync);
+	assert (m_nSampleRate > 0);
+
+	unsigned nUSBFrameRate = GetDevice ()->GetSpeed () == USBSpeedFull ? 1000 : 8000;
+
+	m_nPacketsPerChunk = nUSBFrameRate / CHUNK_FREQUENCY;
+
+	unsigned nChunkSizeBytes = 0;
+	for (unsigned i = 0; i < m_nPacketsPerChunk; i++)
+	{
+		m_nSyncAccu += m_nSampleRate;
+		unsigned nFrames = m_nSyncAccu / nUSBFrameRate;
+		m_nSyncAccu %= nUSBFrameRate;
+
+		m_usPacketSizeBytes[i] = nFrames * CHANNELS * SUBFRAME_SIZE;
+
+		nChunkSizeBytes += m_usPacketSizeBytes[i];
+	}
+
+	m_nChunkSizeBytes = nChunkSizeBytes;
 }
