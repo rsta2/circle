@@ -53,7 +53,6 @@ CUSBAudioStreamingDevice::CUSBAudioStreamingDevice (CUSBFunction *pFunction)
 	m_bSyncEPActive (FALSE),
 	m_nSyncAccu (0),
 	m_uchClockSourceID (USB_AUDIO_UNDEFINED_UNIT_ID),
-	m_pCompletionRoutine (nullptr),
 	m_nDeviceNumber (0)
 {
 	memset (&m_FormatInfo, 0, sizeof m_FormatInfo);
@@ -437,11 +436,7 @@ boolean CUSBAudioStreamingDevice::SendChunk (const void *pBuffer, unsigned nChun
 		pURB->AddIsoPacket (nChunkSizeBytes);
 	}
 
-	assert (!m_pCompletionRoutine);
-	m_pCompletionRoutine = pCompletionRoutine;
-	m_pCompletionParam = pParam;
-
-	pURB->SetCompletionRoutine (CompletionHandler, nullptr, this);
+	pURB->SetCompletionRoutine (CompletionHandler, pParam, (void *) pCompletionRoutine);
 
 	boolean bOK = GetHost ()->SubmitAsyncRequest (pURB);
 
@@ -475,18 +470,13 @@ boolean CUSBAudioStreamingDevice::SendChunk (const void *pBuffer, unsigned nChun
 
 void CUSBAudioStreamingDevice::CompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext)
 {
-	CUSBAudioStreamingDevice *pThis = (CUSBAudioStreamingDevice *) pContext;
-	assert (pThis);
-
 	assert (pURB);
 	delete pURB;
 
-	TCompletionRoutine *pCompletionRoutine = pThis->m_pCompletionRoutine;
-	pThis->m_pCompletionRoutine = nullptr;
-
+	TCompletionRoutine *pCompletionRoutine = (TCompletionRoutine *) pContext;
 	if (pCompletionRoutine)
 	{
-		(*pCompletionRoutine) (pThis->m_pCompletionParam);
+		(*pCompletionRoutine) (pParam);
 	}
 }
 
@@ -534,6 +524,8 @@ void CUSBAudioStreamingDevice::UpdateChunkSize (void)
 
 	unsigned nUSBFrameRate = GetDevice ()->GetSpeed () == USBSpeedFull ? 1000 : 8000;
 
+	m_SpinLock.Acquire ();
+
 	m_nPacketsPerChunk = nUSBFrameRate / CHUNK_FREQUENCY;
 
 	unsigned nChunkSizeBytes = 0;
@@ -549,4 +541,6 @@ void CUSBAudioStreamingDevice::UpdateChunkSize (void)
 	}
 
 	m_nChunkSizeBytes = nChunkSizeBytes;
+
+	m_SpinLock.Release ();
 }

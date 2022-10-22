@@ -60,6 +60,8 @@ protected:
 	/// virtual unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize);
 
 private:
+	boolean SendChunk (void);
+
 	void CompletionRoutine (void);
 	static void CompletionStub (void *pParam);
 
@@ -82,7 +84,8 @@ private:
 	CUSBAudioStreamingDevice *m_pUSBDevice;
 
 	unsigned m_nChunkSizeBytes;
-	u8 *m_pBuffer;
+	u8 *m_pBuffer[2];
+	unsigned m_nCurrentBuffer;
 
 	CSpinLock m_SpinLock;
 };

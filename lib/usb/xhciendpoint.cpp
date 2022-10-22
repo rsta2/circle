@@ -41,7 +41,7 @@ CXHCIEndpoint::CXHCIEndpoint (CXHCIUSBDevice *pDevice, CXHCIDevice *pXHCIDevice)
 	m_pTransferRing (0),
 	m_uchEndpointID (1),
 	m_uchEndpointType (XHCI_EP_CONTEXT_EP_TYPE_CONTROL),
-	m_pURB (0),
+	m_pURB {0, 0},
 	m_bTransferCompleted (TRUE),
 	m_pInputContextBuffer (0)
 {
@@ -67,7 +67,7 @@ CXHCIEndpoint::CXHCIEndpoint (CXHCIUSBDevice *pDevice, const TUSBEndpointDescrip
 	m_pTransferRing (0),
 	m_uchEndpointID (0),
 	m_uchEndpointType (0),
-	m_pURB (0),
+	m_pURB {0, 0},
 	m_bTransferCompleted (TRUE),
 	m_pInputContextBuffer (0)
 {
@@ -228,7 +228,10 @@ boolean CXHCIEndpoint::Transfer (CUSBRequest *pURB, unsigned nTimeoutMs)
 			m_pDevice->DumpStatus ();
 #endif
 
-			m_pURB = 0;
+			m_SpinLock.Acquire ();
+			m_pURB[0] = m_pURB[1];
+			m_pURB[1] = 0;
+			m_SpinLock.Release ();
 			m_bTransferCompleted = TRUE;
 
 			return FALSE;
@@ -370,8 +373,11 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 		}
 	}
 
-	assert (m_pURB == 0);
-	m_pURB = pURB;
+	m_SpinLock.Acquire ();
+	assert (m_pURB[1] == 0);
+	m_pURB[1] = m_pURB[0];
+	m_pURB[0] = pURB;
+	m_SpinLock.Release ();
 
 	DataSyncBarrier ();
 
@@ -393,12 +399,11 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 
 	DataMemBarrier ();
 
-	if (!m_pURB)
+	CUSBRequest *pURB = m_pURB[0];
+	if (!pURB)
 	{
 		return;
 	}
-
-	CUSBRequest *pURB = m_pURB;
 
 	if (   XHCI_TRB_SUCCESS (uchCompletionCode)
 	    || uchCompletionCode == XHCI_TRB_COMPLETION_CODE_SHORT_PACKET)
@@ -422,7 +427,10 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 					(unsigned) uchCompletionCode, (unsigned) m_uchEndpointID);
 	}
 
-	m_pURB = 0;
+	m_SpinLock.Acquire ();
+	m_pURB[0] = m_pURB[1];
+	m_pURB[1] = 0;
+	m_SpinLock.Release ();
 
 	pURB->CallCompletionRoutine ();
 }

@@ -31,7 +31,8 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate)
 	m_State (StateCreated),
 	m_pUSBDevice (nullptr),
 	m_nChunkSizeBytes (0),
-	m_pBuffer (nullptr)
+	m_pBuffer {nullptr, nullptr},
+	m_nCurrentBuffer (0)
 {
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 }
@@ -46,8 +47,10 @@ CUSBSoundBaseDevice::~CUSBSoundBaseDevice (void)
 
 	m_pUSBDevice = nullptr;
 
-	delete [] m_pBuffer;
-	m_pBuffer = nullptr;
+	delete [] m_pBuffer[0];
+	delete [] m_pBuffer[1];
+	m_pBuffer[0] = nullptr;
+	m_pBuffer[1] = nullptr;
 }
 
 int CUSBSoundBaseDevice::GetRangeMin (void) const
@@ -90,28 +93,26 @@ boolean CUSBSoundBaseDevice::Start (void)
 
 		// The actual chunk size varies in operation. A maximum of twice
 		// the initial size should not be exceeded.
-		assert (!m_pBuffer);
-		m_pBuffer = new u8[m_nChunkSizeBytes * 2];
+		assert (!m_pBuffer[0]);
+		assert (!m_pBuffer[1]);
+		m_pBuffer[0] = new u8[m_nChunkSizeBytes * 2];
+		m_pBuffer[1] = new u8[m_nChunkSizeBytes * 2];
 
 		m_State = StateIdle;
 	}
 
-	assert (m_pBuffer);
-	assert (m_nChunkSizeBytes);
-	assert (m_nChunkSizeBytes % sizeof (s16) == 0);
-	unsigned nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pBuffer),
-					m_nChunkSizeBytes / sizeof (s16));
-	if (!nChunkSize)
-	{
-		LOGWARN ("No sound data");
+	m_nCurrentBuffer = 0;
 
-		return FALSE;
-	}
-
+	assert (m_State == StateIdle);
 	m_State = StateRunning;
 
-	assert (m_pUSBDevice);
-	if (!m_pUSBDevice->SendChunk (m_pBuffer, nChunkSize * sizeof (s16), CompletionStub, this))
+	// Two pending transfers on Raspberry Pi 4,
+	// RPi 1-3 and Zero cannot handle this yet.
+	if (   !SendChunk ()
+#if RASPPI >= 4
+	    || !SendChunk ()
+#endif
+	   )
 	{
 		LOGWARN ("Cannot send chunk");
 
@@ -139,6 +140,34 @@ boolean CUSBSoundBaseDevice::IsActive (void) const
 {
 	return    m_State == StateRunning
 	       || m_State == StateCanceled;
+}
+
+boolean CUSBSoundBaseDevice::SendChunk (void)
+{
+	assert (m_pUSBDevice);
+	unsigned nChunkSizeBytes = m_pUSBDevice->GetChunkSizeBytes ();
+	assert (nChunkSizeBytes);
+	assert (nChunkSizeBytes % sizeof (s16) == 0);
+	assert (nChunkSizeBytes <= m_nChunkSizeBytes * 2);
+
+	assert (m_nCurrentBuffer < 2);
+	assert (m_pBuffer[m_nCurrentBuffer]);
+	unsigned nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pBuffer[m_nCurrentBuffer]),
+					nChunkSizeBytes / sizeof (s16));
+	if (!nChunkSize)
+	{
+		return FALSE;
+	}
+
+	if (!m_pUSBDevice->SendChunk (m_pBuffer[m_nCurrentBuffer], nChunkSize * sizeof (s16),
+				      CompletionStub, this))
+	{
+		return FALSE;
+	}
+
+	m_nCurrentBuffer ^= 1;
+
+	return TRUE;
 }
 
 void CUSBSoundBaseDevice::CompletionRoutine (void)
@@ -173,29 +202,11 @@ void CUSBSoundBaseDevice::CompletionRoutine (void)
 		return;
 	}
 
-	assert (m_pBuffer);
-
-	unsigned nChunkSizeBytes = m_pUSBDevice->GetChunkSizeBytes ();
-	assert (nChunkSizeBytes);
-	assert (nChunkSizeBytes % sizeof (s16) == 0);
-	assert (nChunkSizeBytes <= m_nChunkSizeBytes * 2);
-	unsigned nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pBuffer),
-					nChunkSizeBytes / sizeof (s16));
-	if (!nChunkSize)
-	{
-		m_State = StateIdle;
-
-		return;
-	}
-
-	assert (m_pUSBDevice);
-	if (!m_pUSBDevice->SendChunk (m_pBuffer, nChunkSize * sizeof (s16), CompletionStub, this))
+	if (!SendChunk ())
 	{
 		LOGWARN ("Cannot send chunk");
 
 		m_State = StateIdle;
-
-		return;
 	}
 }
 
@@ -218,11 +229,6 @@ void CUSBSoundBaseDevice::DeviceRemovedHandler (CDevice *pDevice, void *pContext
 	pThis->m_State = StateCreated;
 
 	pThis->m_SpinLock.Release ();
-
-	pThis->m_pUSBDevice = nullptr;
-
-	delete [] pThis->m_pBuffer;
-	pThis->m_pBuffer = nullptr;
 
 	pThis->m_nChunkSizeBytes = 0;
 }

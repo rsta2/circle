@@ -25,6 +25,7 @@
 #include <circle/usb/usbrequest.h>
 #include <circle/synchronize.h>
 #include <circle/numberpool.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
 /// \note Supports 16-bit signed Stereo PCM output only
@@ -104,8 +105,7 @@ private:
 
 	u8 m_uchClockSourceID;
 
-	TCompletionRoutine *m_pCompletionRoutine;
-	void *m_pCompletionParam;
+	CSpinLock m_SpinLock;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;
