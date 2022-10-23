@@ -65,6 +65,11 @@ struct TUSBAudioControlInterfaceDescriptor
 	unsigned char	bDescriptorSubtype;
 #define USB_AUDIO_CTL_IFACE_SUBTYPE_HEADER		0x01
 #define USB_AUDIO_CTL_IFACE_SUBTYPE_INPUT_TERMINAL	0x02
+#define USB_AUDIO_CTL_IFACE_SUBTYPE_OUTPUT_TERMINAL	0x03
+#define USB_AUDIO_CTL_IFACE_SUBTYPE_MIXER_UNIT		0x04
+#define USB_AUDIO_CTL_IFACE_SUBTYPE_SELECTOR_UNIT	0x05
+#define USB_AUDIO_CTL_IFACE_SUBTYPE_FEATURE_UNIT	0x06
+#define USB_AUDIO_CTL_IFACE_SUBTYPE_CLOCK_SOURCE	0x0A		// v2.00 only
 
 	union
 	{
@@ -79,6 +84,59 @@ struct TUSBAudioControlInterfaceDescriptor
 				unsigned char	baInterfaceNr[];
 			}
 			Header;
+
+			struct
+			{
+				unsigned char	bTerminalID;
+				unsigned short	wTerminalType	PACKED;
+#define USB_AUDIO_TERMINAL_TYPE_USB_UNDEFINED		0x100
+#define USB_AUDIO_TERMINAL_TYPE_USB_STREAMING		0x101
+#define USB_AUDIO_TERMINAL_TYPE_SPEAKER			0x301
+#define USB_AUDIO_TERMINAL_TYPE_SPDIF			0x605
+				unsigned char	bAssocTerminal;
+				unsigned char	bNrChannels;
+				unsigned short	wChannelConfig	PACKED;
+				unsigned char	iChannelNames;
+				unsigned char	iTerminal;
+			}
+			InputTerminal;
+
+			struct
+			{
+				unsigned char	bTerminalID;
+				unsigned short	wTerminalType	PACKED;
+				unsigned char	bAssocTerminal;
+				unsigned char	bSourceID;
+				unsigned char	iTerminal;
+			}
+			OutputTerminal;
+
+			struct
+			{
+				unsigned char	bUnitID;
+				unsigned char	bNrInPins;
+				unsigned char	baSourceID[];
+			}
+			MixerUnit;
+
+			struct
+			{
+				unsigned char	bUnitID;
+				unsigned char	bNrInPins;
+				unsigned char	baSourceID[];
+				//unsigned char	iSelector;
+			}
+			SelectorUnit;
+
+			struct
+			{
+				unsigned char	bUnitID;
+				unsigned char	bSourceID;
+				unsigned char	bControlSize;
+				unsigned char	bmaControls[];
+				//unsigned char	iFeature;
+			}
+			FeatureUnit;
 		}
 		Ver100;
 
@@ -107,9 +165,79 @@ struct TUSBAudioControlInterfaceDescriptor
 				unsigned char	iTerminal;
 			}
 			InputTerminal;
+
+			struct
+			{
+				unsigned char	bTerminalID;
+				unsigned short	wTerminalType	PACKED;
+				unsigned char	bAssocTerminal;
+				unsigned char	bSourceID;
+				unsigned char	bCSourceID;
+				unsigned short	bmControls	PACKED;
+				unsigned char	iTerminal;
+			}
+			OutputTerminal;
+
+			struct
+			{
+				unsigned char	bUnitID;
+				unsigned char	bNrInPins;
+				unsigned char	baSourceID[];
+			}
+			MixerUnit;
+
+			struct
+			{
+				unsigned char	bUnitID;
+				unsigned char	bNrInPins;
+				unsigned char	baSourceID[];
+				//unsigned char	bmControls;
+				//unsigned char	iSelector;
+			}
+			SelectorUnit;
+
+			struct
+			{
+				unsigned char	bUnitID;
+				unsigned char	bSourceID;
+				unsigned int	bmaControls[]	PACKED;
+				//unsigned char	iFeature;
+			}
+			FeatureUnit;
+
+			struct
+			{
+				unsigned char	bClockID;
+				unsigned char	bmAttributes;
+				unsigned char	bmControls;
+				unsigned char	bAssocTerminal;
+				unsigned char	iClockSource;
+			}
+			ClockSource;
 		}
 		Ver200;
 	};
+}
+PACKED;
+
+struct TUSBAudioControlMixerUnitTrailerVer100
+{
+	unsigned char	bNrChannels;
+	unsigned short	wChannelConfig	PACKED;
+	unsigned char	iChannelNames;
+	unsigned char	bmControls[];
+	//unsigned char	iMixer;
+}
+PACKED;
+
+struct TUSBAudioControlMixerUnitTrailerVer200
+{
+	unsigned char	bNrChannels;
+	unsigned int	bmChannelConfig	PACKED;
+	unsigned char	iChannelNames;
+	unsigned char	bmMixerControls[];
+	//unsigned char	bmControls;
+	//unsigned char	iMixer;
 }
 PACKED;
 
@@ -120,17 +248,28 @@ struct CUSBAudioStreamingInterfaceDescriptor
         unsigned char	bDescriptorSubtype;
 #define USB_AUDIO_STREAMING_GENERAL		0x01
 
-	struct
+	union
 	{
-		unsigned char	bTerminalLink;
-		unsigned char	bmControls;
-		unsigned char	bFormatType;
-		unsigned int	bmFormats	PACKED;
-		unsigned char	bNrChannels;
-		unsigned int	bmChannelConfig	PACKED;
-		unsigned char	iChannelNames;
-	}
-	Ver200;
+		struct
+		{
+			unsigned char	bTerminalLink;
+			unsigned char	bDelay;
+			unsigned short	wFormatTag	PACKED;
+		}
+		Ver100;
+
+		struct
+		{
+			unsigned char	bTerminalLink;
+			unsigned char	bmControls;
+			unsigned char	bFormatType;
+			unsigned int	bmFormats	PACKED;
+			unsigned char	bNrChannels;
+			unsigned int	bmChannelConfig	PACKED;
+			unsigned char	iChannelNames;
+		}
+		Ver200;
+	};
 }
 PACKED;
 

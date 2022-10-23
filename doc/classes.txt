@@ -79,6 +79,7 @@ USB library
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
 * CUSBAudioControlDevice: Driver for USB audio control devices.
 * CUSBAudioStreamingDevice: Low-level driver for USB audio streaming devices.
+* CUSBAudioFunctionTopology: Topology parser for USB audio class devices.
 * CUSBBluetoothDevice: Bluetooth HCI transport driver for USB Bluetooth BR/EDR dongles.
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
 * CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU.

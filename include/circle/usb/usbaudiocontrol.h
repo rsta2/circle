@@ -21,7 +21,7 @@
 #define _circle_usb_usbaudiocontrol_h
 
 #include <circle/usb/usbfunction.h>
-#include <circle/usb/usbaudio.h>
+#include <circle/usb/usbaudiofunctopology.h>
 #include <circle/numberpool.h>
 #include <circle/types.h>
 
@@ -36,14 +36,23 @@ public:
 
 	boolean Configure (void);
 
+	/// \param uchInputTerminalID Terminal ID of the USB streaming Input Terminal
+	/// \return Terminal type of the associated output terminal\n
+	//	    (or USB_AUDIO_TERMINAL_TYPE_USB_UNDEFINED)
+	u16 GetTerminalType (u8 uchInputTerminalID) const;
+
 	/// \brief Get the clock source of an Input Terminal of the controlled device
-	/// \param uchInputTerminalID Terminal ID of the Input Terminal
+	/// \param uchInputTerminalID Terminal ID of the USB streaming Input Terminal
 	/// \return Unit ID of the associated clock source (or USB_AUDIO_UNDEFINED_UNIT_ID)
 	/// \note Supported for USB Audio class version 2.00 devices only
 	u8 GetClockSourceID (u8 uchInputTerminalID) const;
 
+	/// \param uchInputTerminalID Terminal ID of the USB streaming Input Terminal
+	/// \return Unit ID of the associated feature unit (or USB_AUDIO_UNDEFINED_UNIT_ID)
+	u8 GetFeatureUnitID (u8 uchInputTerminalID) const;
+
 private:
-	u8 m_ClockSourceID[USB_AUDIO_MAXIMUM_UNIT_ID];
+	CUSBAudioFunctionTopology m_Topology;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

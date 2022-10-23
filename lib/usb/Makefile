@@ -31,7 +31,7 @@ OBJS	= lan7800.o smsc951x.o usbbluetooth.o usbcdcethernet.o \
 	  usbkeyboard.o usbmassdevice.o usbmidi.o usbmouse.o usbprinter.o usbrequest.o \
 	  usbstandardhub.o usbstring.o usbserial.o usbserialch341.o usbserialcp2102.o \
 	  usbserialpl2303.o usbserialft231x.o usbserialcdc.o usbtouchscreen.o \
-	  usbaudiocontrol.o usbaudiostreaming.o
+	  usbaudiocontrol.o usbaudiostreaming.o usbaudiofunctopology.o
 
 ifneq ($(strip $(RASPPI)),4)
 OBJS	+= dwhcidevice.o dwhciframeschednper.o dwhciframeschednsplit.o dwhciframeschedper.o \

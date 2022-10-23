@@ -46,6 +46,8 @@ public:
 			unsigned Resolution;	///< 0 for discrete sample rate, or if unknown
 		}
 		SampleRateRange[MaxSampleRatesRanges];
+
+		u16 TerminalType;	///< Terminal type of the output terminal (e.g. Speaker)
 	};
 
 	typedef void TCompletionRoutine (void *pParam);

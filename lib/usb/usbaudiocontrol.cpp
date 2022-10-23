@@ -20,7 +20,6 @@
 #include <circle/usb/usbaudiocontrol.h>
 #include <circle/devicenameservice.h>
 #include <circle/logger.h>
-#include <circle/debug.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -33,7 +32,6 @@ CUSBAudioControlDevice::CUSBAudioControlDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_nDeviceNumber (0)
 {
-	memset (m_ClockSourceID, USB_AUDIO_UNDEFINED_UNIT_ID, sizeof m_ClockSourceID);
 }
 
 CUSBAudioControlDevice::~CUSBAudioControlDevice (void)
@@ -58,50 +56,10 @@ boolean CUSBAudioControlDevice::Configure (void)
 		return FALSE;
 	}
 
-	// If no additional unit descriptor follows (e.g. this is a MIDI device),
-	// silently ignore this USB function.
-	if (pCtlIfaceDesc->Ver100.Header.bcdADC == USB_AUDIO_CTL_IFACE_BCDADC_100)
+	if (!m_Topology.Parse (pCtlIfaceDesc))
 	{
-		if (pCtlIfaceDesc->Ver100.Header.wTotalLength <= pCtlIfaceDesc->bLength)
-		{
-			return FALSE;
-		}
-	}
-	else if (pCtlIfaceDesc->Ver200.Header.bcdADC == USB_AUDIO_CTL_IFACE_BCDADC_200)
-	{
-		if (pCtlIfaceDesc->Ver200.Header.wTotalLength <= pCtlIfaceDesc->bLength)
-		{
-			return FALSE;
-		}
-	}
-	else
-	{
-		LOGWARN ("Unsupported audio device class version");
-
 		return FALSE;
 	}
-
-	// Currently we support USB audio class v2.00 only.
-	if (pCtlIfaceDesc->Ver200.Header.bcdADC == USB_AUDIO_CTL_IFACE_BCDADC_200)
-	{
-		// Walk all CS_INTERFACE descriptors for INPUT_TERMINAL descriptors.
-		while (pCtlIfaceDesc->bDescriptorType == DESCRIPTOR_CS_INTERFACE)
-		{
-			if (   pCtlIfaceDesc->bDescriptorSubtype
-			    == USB_AUDIO_CTL_IFACE_SUBTYPE_INPUT_TERMINAL)
-			{
-				assert (   pCtlIfaceDesc->Ver200.InputTerminal.bCSourceID
-					!= USB_AUDIO_UNDEFINED_UNIT_ID);
-				m_ClockSourceID[pCtlIfaceDesc->Ver200.InputTerminal.bTerminalID] =
-					pCtlIfaceDesc->Ver200.InputTerminal.bCSourceID;
-			}
-
-			pCtlIfaceDesc = (TUSBAudioControlInterfaceDescriptor *)
-						((u8 *) pCtlIfaceDesc + pCtlIfaceDesc->bLength);
-		}
-	}
-
-	//debug_hexdump (m_ClockSourceID, sizeof m_ClockSourceID, From);
 
 	if (!CUSBFunction::Configure ())
 	{
@@ -118,7 +76,58 @@ boolean CUSBAudioControlDevice::Configure (void)
 	return TRUE;
 }
 
+u16 CUSBAudioControlDevice::GetTerminalType (u8 uchInputTerminalID) const
+{
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchInputTerminalID);
+	if (   !pEntity
+	    || pEntity->GetEntityType () != CUSBAudioEntity::EntityTerminal)
+	{
+		return USB_AUDIO_TERMINAL_TYPE_USB_UNDEFINED;
+	}
+
+	CUSBAudioTerminal *pInputTerminal = static_cast <CUSBAudioTerminal *> (pEntity);
+	CUSBAudioTerminal *pOutputTerminal = m_Topology.FindOutputTerminal (pInputTerminal);
+	if (!pOutputTerminal)
+	{
+		return USB_AUDIO_TERMINAL_TYPE_USB_UNDEFINED;
+	}
+
+	return pOutputTerminal->GetTerminalType ();
+}
+
 u8 CUSBAudioControlDevice::GetClockSourceID (u8 uchInputTerminalID) const
 {
-	return m_ClockSourceID[uchInputTerminalID];
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchInputTerminalID);
+	if (   !pEntity
+	    || pEntity->GetEntityType () != CUSBAudioEntity::EntityTerminal)
+	{
+		return USB_AUDIO_UNDEFINED_UNIT_ID;
+	}
+
+	CUSBAudioTerminal *pTerminal = static_cast <CUSBAudioTerminal *> (pEntity);
+	if (!pTerminal->IsInput ())
+	{
+		return USB_AUDIO_UNDEFINED_UNIT_ID;
+	}
+
+	return pTerminal->GetClockSourceID ();
+}
+
+u8 CUSBAudioControlDevice::GetFeatureUnitID (u8 uchInputTerminalID) const
+{
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchInputTerminalID);
+	if (   !pEntity
+	    || pEntity->GetEntityType () != CUSBAudioEntity::EntityTerminal)
+	{
+		return USB_AUDIO_UNDEFINED_UNIT_ID;
+	}
+
+	CUSBAudioTerminal *pTerminal = static_cast <CUSBAudioTerminal *> (pEntity);
+	CUSBAudioFeatureUnit *pUnit = m_Topology.FindFeatureUnit (pTerminal);
+	if (!pUnit)
+	{
+		return USB_AUDIO_UNDEFINED_UNIT_ID;
+	}
+
+	return pUnit->GetID ();
 }

@@ -19,6 +19,7 @@
 //
 #include <circle/usb/usbaudiostreaming.h>
 #include <circle/usb/usbaudiocontrol.h>
+#include <circle/usb/usbaudiofunctopology.h>
 #include <circle/usb/usbaudio.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
@@ -196,8 +197,24 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		return FALSE;
 	}
 
+	// Interface of audio control device is the first in configuration descriptor,
+	// so that the respective function has the index 0.
+	CUSBFunction *pFunction = GetDevice ()->GetFunction (0);
+	CUSBAudioControlDevice *pControlDevice = (CUSBAudioControlDevice *) pFunction;
+	if (   !pFunction
+	    || pControlDevice->GetInterfaceClass ()    != 1
+	    || pControlDevice->GetInterfaceSubClass () != 1)
+	{
+		LOGWARN ("Associated control device not found");
+
+		return FALSE;
+	}
+
 	if (!m_bVer200)
 	{
+		m_FormatInfo.TerminalType =
+			pControlDevice->GetTerminalType (pGeneralDesc->Ver100.bTerminalLink);
+
 		// fetch format info from descriptor
 		if (pFormatTypeDesc->Ver100.bSamFreqType == 0)
 		{
@@ -228,18 +245,8 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 	}
 	else
 	{
-		// Interface of audio control device is the first in configuration descriptor,
-		// so that the respective function has the index 0.
-		CUSBFunction *pFunction = GetDevice ()->GetFunction (0);
-		CUSBAudioControlDevice *pControlDevice = (CUSBAudioControlDevice *) pFunction;
-		if (   !pFunction
-		    || pControlDevice->GetInterfaceClass ()    != 1
-		    || pControlDevice->GetInterfaceSubClass () != 1)
-		{
-			LOGWARN ("Associated control device not found");
-
-			return FALSE;
-		}
+		m_FormatInfo.TerminalType =
+			pControlDevice->GetTerminalType (pGeneralDesc->Ver200.bTerminalLink);
 
 		// request clock source ID for this Input Terminal
 		m_uchClockSourceID =
@@ -327,6 +334,7 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		SampleRates.Append (String);
 	}
 
+	LOGNOTE ("Terminal type is 0x%X", m_FormatInfo.TerminalType);
 	LOGNOTE ("Supported sample rate(s): %s Hz", (const char *) SampleRates);
 
 	assert (m_nDeviceNumber == 0);
