@@ -36,6 +36,11 @@ public:
 
 	boolean Configure (void);
 
+	/// \return Device number of this USB audio device
+	unsigned GetDeviceNumber (void) const;
+	/// \return Sub-device number for next interface of this USB audio streaming device
+	unsigned GetNextStreamingSubDeviceNumber (void);
+
 	/// \param uchInputTerminalID Terminal ID of the USB streaming Input Terminal
 	/// \return Terminal type of the associated output terminal\n
 	//	    (or USB_AUDIO_TERMINAL_TYPE_USB_UNDEFINED)
@@ -56,6 +61,8 @@ private:
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;
+
+	unsigned m_nNextStreamingSubDeviceNumber;
 };
 
 #endif

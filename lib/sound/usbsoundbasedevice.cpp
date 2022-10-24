@@ -25,9 +25,10 @@
 LOGMODULE ("sndusb");
 static const char DeviceName[] = "sndusb";
 
-CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate)
+CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, const char *pDeviceName)
 :	CSoundBaseDevice (SoundFormatSigned16, 0, nSampleRate),
 	m_nSampleRate (nSampleRate),
+	m_DeviceName (pDeviceName),
 	m_State (StateCreated),
 	m_pUSBDevice (nullptr),
 	m_nChunkSizeBytes (0),
@@ -71,7 +72,7 @@ boolean CUSBSoundBaseDevice::Start (void)
 	{
 		assert (!m_pUSBDevice);
 		m_pUSBDevice = static_cast<CUSBAudioStreamingDevice *>
-			(CDeviceNameService::Get ()->GetDevice ("uaudio1", FALSE));
+			(CDeviceNameService::Get ()->GetDevice (m_DeviceName, FALSE));
 		if (!m_pUSBDevice)
 		{
 			LOGWARN ("USB audio streaming device not found");
@@ -130,7 +131,11 @@ void CUSBSoundBaseDevice::Cancel (void)
 
 	if (m_State == StateRunning)
 	{
+#if RASPPI >= 4
 		m_State = StateCanceled;
+#else
+		m_State = StateCanceled2;
+#endif
 	}
 
 	m_SpinLock.Release ();
@@ -139,7 +144,8 @@ void CUSBSoundBaseDevice::Cancel (void)
 boolean CUSBSoundBaseDevice::IsActive (void) const
 {
 	return    m_State == StateRunning
-	       || m_State == StateCanceled;
+	       || m_State == StateCanceled
+	       || m_State == StateCanceled2;
 }
 
 boolean CUSBSoundBaseDevice::SendChunk (void)
@@ -186,6 +192,10 @@ void CUSBSoundBaseDevice::CompletionRoutine (void)
 		break;
 
 	case StateCanceled:
+		m_State = StateCanceled2;
+		break;
+
+	case StateCanceled2:
 		m_State = StateIdle;
 		break;
 

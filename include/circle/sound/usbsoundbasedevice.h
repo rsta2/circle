@@ -23,6 +23,7 @@
 #include <circle/sound/soundbasedevice.h>
 #include <circle/usb/usbaudiostreaming.h>
 #include <circle/device.h>
+#include <circle/string.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
@@ -30,7 +31,8 @@ class CUSBSoundBaseDevice : public CSoundBaseDevice	/// High-level driver for US
 {
 public:
 	/// \param nSampleRate Requested sample rate in Hz
-	CUSBSoundBaseDevice (unsigned nSampleRate = 48000);
+	/// \param pDeviceName USB audio device to be used
+	CUSBSoundBaseDevice (unsigned nSampleRate = 48000, const char *pDeviceName = "uaudio1-1");
 
 	~CUSBSoundBaseDevice (void);
 
@@ -74,11 +76,13 @@ private:
 		StateIdle,
 		StateRunning,
 		StateCanceled,
+		StateCanceled2,
 		StateUnknown
 	};
 
 private:
 	unsigned m_nSampleRate;
+	CString m_DeviceName;
 
 	TDeviceState m_State;
 	CUSBAudioStreamingDevice *m_pUSBDevice;

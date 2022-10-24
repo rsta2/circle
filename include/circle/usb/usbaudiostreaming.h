@@ -24,8 +24,9 @@
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/synchronize.h>
-#include <circle/numberpool.h>
 #include <circle/spinlock.h>
+#include <circle/logger.h>
+#include <circle/string.h>
 #include <circle/types.h>
 
 /// \note Supports 16-bit signed Stereo PCM output only
@@ -109,8 +110,9 @@ private:
 
 	CSpinLock m_SpinLock;
 
-	unsigned m_nDeviceNumber;
-	static CNumberPool s_DeviceNumberPool;
+	CString m_DeviceName;
+
+	const char *From;			// for logger
 };
 
 #endif

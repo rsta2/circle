@@ -30,7 +30,8 @@ CNumberPool CUSBAudioControlDevice::s_DeviceNumberPool (1);
 
 CUSBAudioControlDevice::CUSBAudioControlDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
-	m_nDeviceNumber (0)
+	m_nDeviceNumber (0),
+	m_nNextStreamingSubDeviceNumber (1)
 {
 }
 
@@ -74,6 +75,18 @@ boolean CUSBAudioControlDevice::Configure (void)
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
 	return TRUE;
+}
+
+unsigned CUSBAudioControlDevice::GetDeviceNumber (void) const
+{
+	assert (m_nDeviceNumber);
+
+	return m_nDeviceNumber;
+}
+
+unsigned CUSBAudioControlDevice::GetNextStreamingSubDeviceNumber (void)
+{
+	return m_nNextStreamingSubDeviceNumber++;
 }
 
 u16 CUSBAudioControlDevice::GetTerminalType (u8 uchInputTerminalID) const

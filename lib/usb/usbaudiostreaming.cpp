@@ -23,8 +23,6 @@
 #include <circle/usb/usbaudio.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
-#include <circle/logger.h>
-#include <circle/string.h>
 #include <circle/debug.h>
 #include <circle/util.h>
 #include <assert.h>
@@ -39,10 +37,7 @@
 				 | (unsigned) (rate)[1] << 8	\
 				 | (unsigned) (rate)[2] << 16)
 
-LOGMODULE ("uaudio");
-static const char DevicePrefix[] = "uaudio";
-
-CNumberPool CUSBAudioStreamingDevice::s_DeviceNumberPool (1);
+static const char DeviceNamePattern[] = "uaudio%u-%u";
 
 CUSBAudioStreamingDevice::CUSBAudioStreamingDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
@@ -54,18 +49,16 @@ CUSBAudioStreamingDevice::CUSBAudioStreamingDevice (CUSBFunction *pFunction)
 	m_bSyncEPActive (FALSE),
 	m_nSyncAccu (0),
 	m_uchClockSourceID (USB_AUDIO_UNDEFINED_UNIT_ID),
-	m_nDeviceNumber (0)
+	From ("uaudio")
 {
 	memset (&m_FormatInfo, 0, sizeof m_FormatInfo);
 }
 
 CUSBAudioStreamingDevice::~CUSBAudioStreamingDevice (void)
 {
-	if (m_nDeviceNumber)
+	if (m_DeviceName.GetLength ())
 	{
-		CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
-
-		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
+		CDeviceNameService::Get ()->RemoveDevice (m_DeviceName, FALSE);
 	}
 
 	delete m_pEndpointSync;
@@ -334,13 +327,16 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		SampleRates.Append (String);
 	}
 
+	m_DeviceName.Format (DeviceNamePattern,
+			     pControlDevice->GetDeviceNumber (),
+			     pControlDevice->GetNextStreamingSubDeviceNumber ());
+
+	CDeviceNameService::Get ()->AddDevice (m_DeviceName, this, FALSE);
+
+	From = m_DeviceName;	// for logger
+
 	LOGNOTE ("Terminal type is 0x%X", m_FormatInfo.TerminalType);
 	LOGNOTE ("Supported sample rate(s): %s Hz", (const char *) SampleRates);
-
-	assert (m_nDeviceNumber == 0);
-	m_nDeviceNumber = s_DeviceNumberPool.AllocateNumber (TRUE, From);
-
-	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 
 	return TRUE;
 }
