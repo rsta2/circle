@@ -22,7 +22,8 @@ CIRCLEHOME = ../..
 
 OBJS	= dmasoundbuffers.o hdmisoundbasedevice.o i2ssoundbasedevice.o \
 	  pwmsoundbasedevice.o pwmsounddevice.o soundbasedevice.o \
-	  pcm512xsoundcontroller.o wm8960soundcontroller.o usbsoundbasedevice.o
+	  pcm512xsoundcontroller.o wm8960soundcontroller.o \
+	  usbsoundbasedevice.o usbsoundcontroller.o
 
 libsound.a: $(OBJS)
 	@echo "  AR    $@"

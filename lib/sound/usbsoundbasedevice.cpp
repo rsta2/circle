@@ -19,21 +19,26 @@
 //
 #include <circle/sound/usbsoundbasedevice.h>
 #include <circle/devicenameservice.h>
+#include <circle/sched/scheduler.h>
+#include <circle/sysconfig.h>
+#include <circle/string.h>
 #include <circle/logger.h>
 #include <assert.h>
 
 LOGMODULE ("sndusb");
 static const char DeviceName[] = "sndusb";
 
-CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, const char *pDeviceName)
+CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, unsigned nDevice)
 :	CSoundBaseDevice (SoundFormatSigned16, 0, nSampleRate),
 	m_nSampleRate (nSampleRate),
-	m_DeviceName (pDeviceName),
+	m_nDevice (nDevice),
+	m_nInterface (0),
 	m_State (StateCreated),
 	m_pUSBDevice (nullptr),
 	m_nChunkSizeBytes (0),
 	m_pBuffer {nullptr, nullptr},
-	m_nCurrentBuffer (0)
+	m_nCurrentBuffer (0),
+	m_SoundController (this)
 {
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 }
@@ -70,9 +75,12 @@ boolean CUSBSoundBaseDevice::Start (void)
 		|| m_State == StateIdle);
 	if (m_State == StateCreated)
 	{
+		CString USBDeviceName;
+		USBDeviceName.Format ("uaudio%u-%u", m_nDevice+1, m_nInterface+1);
+
 		assert (!m_pUSBDevice);
 		m_pUSBDevice = static_cast<CUSBAudioStreamingDevice *>
-			(CDeviceNameService::Get ()->GetDevice (m_DeviceName, FALSE));
+			(CDeviceNameService::Get ()->GetDevice (USBDeviceName, FALSE));
 		if (!m_pUSBDevice)
 		{
 			LOGWARN ("USB audio streaming device not found");
@@ -146,6 +154,11 @@ boolean CUSBSoundBaseDevice::IsActive (void) const
 	return    m_State == StateRunning
 	       || m_State == StateCanceled
 	       || m_State == StateCanceled2;
+}
+
+CSoundController *CUSBSoundBaseDevice::GetController (void)
+{
+	return &m_SoundController;
 }
 
 boolean CUSBSoundBaseDevice::SendChunk (void)
@@ -241,4 +254,47 @@ void CUSBSoundBaseDevice::DeviceRemovedHandler (CDevice *pDevice, void *pContext
 	pThis->m_SpinLock.Release ();
 
 	pThis->m_nChunkSizeBytes = 0;
+}
+
+void CUSBSoundBaseDevice::Disconnect (void)
+{
+	if (IsActive ())
+	{
+		Cancel ();
+
+		while (IsActive ())
+		{
+#ifdef NO_BUSY_WAIT
+			CScheduler::Get ()->Yield ();
+#endif
+		}
+	}
+
+	assert (   m_State == StateCreated
+	        || m_State == StateIdle);
+	if (m_State == StateIdle)
+	{
+		assert (m_pUSBDevice);
+		m_pUSBDevice->RegisterRemovedHandler (nullptr);
+		m_pUSBDevice = nullptr;
+
+		delete [] m_pBuffer[0];
+		delete [] m_pBuffer[1];
+		m_pBuffer[0] = nullptr;
+		m_pBuffer[1] = nullptr;
+
+		m_nChunkSizeBytes = 0;
+
+		m_State = StateCreated;
+	}
+}
+
+unsigned CUSBSoundBaseDevice::GetDeviceIndex (void) const
+{
+	return m_nDevice;
+}
+
+void CUSBSoundBaseDevice::SetInterface (unsigned nInterface)
+{
+	m_nInterface = nInterface;
 }

@@ -21,9 +21,9 @@
 #define _circle_usb_usbsoundbasedevice_h
 
 #include <circle/sound/soundbasedevice.h>
+#include <circle/sound/usbsoundcontroller.h>
 #include <circle/usb/usbaudiostreaming.h>
 #include <circle/device.h>
-#include <circle/string.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
@@ -31,8 +31,8 @@ class CUSBSoundBaseDevice : public CSoundBaseDevice	/// High-level driver for US
 {
 public:
 	/// \param nSampleRate Requested sample rate in Hz
-	/// \param pDeviceName USB audio device to be used
-	CUSBSoundBaseDevice (unsigned nSampleRate = 48000, const char *pDeviceName = "uaudio1-1");
+	/// \param nDevice 0-based index of USB audio device to be used
+	CUSBSoundBaseDevice (unsigned nSampleRate = 48000, unsigned nDevice = 0);
 
 	~CUSBSoundBaseDevice (void);
 
@@ -50,6 +50,9 @@ public:
 
 	/// \return Is USB audio streaming running?
 	boolean IsActive (void) const override;
+
+	/// \return Pointer to sound controller object
+	CSoundController *GetController (void) override;
 
 protected:
 	/// \brief May overload this to provide the sound samples
@@ -69,6 +72,11 @@ private:
 
 	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
 
+	friend class CUSBSoundController;
+	void Disconnect (void);
+	unsigned GetDeviceIndex (void) const;
+	void SetInterface (unsigned nInterface);
+
 private:
 	enum TDeviceState
 	{
@@ -82,7 +90,8 @@ private:
 
 private:
 	unsigned m_nSampleRate;
-	CString m_DeviceName;
+	unsigned m_nDevice;
+	unsigned m_nInterface;
 
 	TDeviceState m_State;
 	CUSBAudioStreamingDevice *m_pUSBDevice;
@@ -92,6 +101,8 @@ private:
 	unsigned m_nCurrentBuffer;
 
 	CSpinLock m_SpinLock;
+
+	CUSBSoundController m_SoundController;
 };
 
 #endif

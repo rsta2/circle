@@ -29,8 +29,10 @@ public:
 	{
 		OutputSelectorDefault,
 		OutputSelectorLine,
+		OutputSelectorSpeaker,
 		OutputSelectorHeadphones,
 		OutputSelectorHDMI,
+		OutputSelectorSPDIF,
 		OutputSelectorUnknown
 	};
 

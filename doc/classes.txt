@@ -205,4 +205,5 @@ Sound library
 * CSoundBaseDevice: Base class of sound devices, converts several sound formats.
 * CSoundController: Optional controller of a sound device.
 * CUSBSoundBaseDevice: High-level driver for USB audio streaming devices.
+* CUSBSoundController: Sound controller for USB sound devices.
 * CWM8960SoundController: Sound controller for WM8960.
