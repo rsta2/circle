@@ -94,7 +94,8 @@ CMiniOrgan::CMiniOrgan (CInterruptSystem *pInterrupt, CI2CMaster *pI2CMaster)
 	m_nSampleCount (0),
 	m_nFrequency (0),
 	m_nPrevFrequency (0),
-	m_ucKeyNumber (KEY_NONE)
+	m_ucKeyNumber (KEY_NONE),
+	m_bSetVolume (FALSE)
 {
 	s_pThis = this;
 
@@ -126,6 +127,27 @@ boolean CMiniOrgan::Initialize (void)
 
 void CMiniOrgan::Process (boolean bPlugAndPlayUpdated)
 {
+	// The sound controller is callable from TASK_LEVEL only. That's why we must do
+	// this here and not in MIDIPacketHandler(), which is called from IRQ_LEVEL too.
+	if (m_bSetVolume)
+	{
+		m_bSetVolume = FALSE;
+
+		// The sound controller is optional, so we check, if it exists.
+		CSoundController *pController = GetController ();
+		if (pController)
+		{
+			CSoundController::TRange Range = pController->GetOutputVolumeRange ();
+
+			int nVolume = m_uchVolume;
+			nVolume *= Range.Max - Range.Min;
+			nVolume /= 127;
+			nVolume += Range.Min;
+
+			pController->SetOutputVolume (nVolume);
+		}
+	}
+
 	if (m_pMIDIDevice != 0)
 	{
 		return;
@@ -185,7 +207,8 @@ void CMiniOrgan::Process (boolean bPlugAndPlayUpdated)
 		{
 		case 0:
 		MIDIRestart:
-			if ((uchData & 0xE0) == 0x80)		// Note on or off, all channels
+			if (   (uchData & 0xE0) == 0x80		// Note on or off, all channels
+			    || (uchData & 0xF0) == 0xB0)	// MIDI CC, all channels
 			{
 				m_SerialMessage[m_nSerialState++] = uchData;
 			}
@@ -338,19 +361,8 @@ void CMiniOrgan::MIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLeng
 	{
 		if (pPacket[1] == MIDI_CC_VOLUME)
 		{
-			CSoundController *pController = s_pThis->GetController ();
-			if (pController)
-			{
-				CSoundController::TRange Range =
-					pController->GetOutputVolumeRange ();
-
-				int nVolume = pPacket[2];
-				nVolume *= Range.Max - Range.Min;
-				nVolume /= 127;
-				nVolume += Range.Min;
-
-				pController->SetOutputVolume (nVolume);
-			}
+			s_pThis->m_uchVolume = pPacket[2];
+			s_pThis->m_bSetVolume = TRUE;
 		}
 	}
 }

@@ -19,20 +19,42 @@
 //
 #include <circle/sound/usbsoundcontroller.h>
 #include <circle/sound/usbsoundbasedevice.h>
-#include <circle/usb/usbaudiostreaming.h>
 #include <circle/usb/usbaudio.h>
 #include <circle/devicenameservice.h>
 #include <assert.h>
 
 CUSBSoundController::CUSBSoundController (CUSBSoundBaseDevice *pSoundDevice)
-:	m_pSoundDevice (pSoundDevice)
+:	m_pSoundDevice (pSoundDevice),
+	m_nInterface (0),
+	m_pStreamingDevice (nullptr)
 {
 	assert (m_pSoundDevice);
 }
 
 CUSBSoundController::~CUSBSoundController (void)
 {
+	m_pStreamingDevice = nullptr;
 	m_pSoundDevice = nullptr;
+}
+
+boolean CUSBSoundController::Probe (void)
+{
+	assert (m_pSoundDevice);
+	assert (!m_pStreamingDevice);
+
+	CString DeviceName;
+	DeviceName.Format ("uaudio%u-%u", m_pSoundDevice->GetDeviceIndex ()+1, m_nInterface+1);
+
+	m_pStreamingDevice = static_cast<CUSBAudioStreamingDevice *>
+		(CDeviceNameService::Get ()->GetDevice (DeviceName, FALSE));
+	if (!m_pStreamingDevice)
+	{
+		return FALSE;
+	}
+
+	m_FormatInfo = m_pStreamingDevice->GetFormatInfo ();
+
+	return TRUE;
 }
 
 void CUSBSoundController::SelectOutput (TOutputSelector Selector)
@@ -76,17 +98,33 @@ void CUSBSoundController::SelectOutput (TOutputSelector Selector)
 	}
 
 	// Set the interface and restart the device, if it was active before.
-	if (m_pSoundDevice->IsActive ())
+	boolean bWasActive = m_pSoundDevice->IsActive ();
+
+	m_pSoundDevice->Disconnect ();
+	m_pStreamingDevice = nullptr;
+
+	m_nInterface = nBestInterface;
+	m_pSoundDevice->SetInterface (nBestInterface);
+
+	if (bWasActive)
 	{
-		m_pSoundDevice->Disconnect ();
-		m_pSoundDevice->SetInterface (nBestInterface);
 		m_pSoundDevice->Start ();
 	}
-	else
-	{
-		m_pSoundDevice->Disconnect ();
-		m_pSoundDevice->SetInterface (nBestInterface);
-	}
+}
+
+void CUSBSoundController::SetOutputVolume (int ndB)
+{
+	assert (m_pStreamingDevice);
+
+	m_pStreamingDevice->SetVolume (0, ndB);
+	m_pStreamingDevice->SetVolume (1, ndB);
+}
+
+const CUSBSoundController::TRange CUSBSoundController::GetOutputVolumeRange (void) const
+{
+	assert (m_pStreamingDevice);	// info is not valid otherwise
+
+	return { m_FormatInfo.MinVolume, m_FormatInfo.MaxVolume };
 }
 
 unsigned CUSBSoundController::MatchTerminalType (u16 usTerminalType, TOutputSelector Selector)

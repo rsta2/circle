@@ -309,7 +309,12 @@ PACKED;
 #define USB_AUDIO_REQ_SET_CUR		0x01
 #define USB_AUDIO_REQ_RANGE		0x02		// v2.00 only
 
+#define USB_AUDIO_REQ_GET_MIN		0x82		// v1.00 only
+#define USB_AUDIO_REQ_GET_MAX		0x83		// v1.00 only
+
 // Audio class control selectors
 #define USB_AUDIO_CS_SAM_FREQ_CONTROL	0x01
+
+#define USB_AUDIO_FU_VOLUME_CONTROL	0x02
 
 #endif

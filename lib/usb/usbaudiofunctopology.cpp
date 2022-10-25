@@ -339,7 +339,7 @@ CUSBAudioFeatureUnit::CUSBAudioFeatureUnit (const TUSBAudioControlInterfaceDescr
 }
 
 CUSBAudioFeatureUnit::TControlStatus CUSBAudioFeatureUnit::GetControlStatus (unsigned nChannel,
-									     TControl Control)
+									     TControl Control) const
 {
 	assert (nChannel <= MaximumChannelIndex);
 	assert (Control < MaximumControl);

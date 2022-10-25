@@ -75,6 +75,13 @@ boolean CUSBSoundBaseDevice::Start (void)
 		|| m_State == StateIdle);
 	if (m_State == StateCreated)
 	{
+		if (!m_SoundController.Probe ())
+		{
+			LOGWARN ("Probing sound controller failed");
+
+			return FALSE;
+		}
+
 		CString USBDeviceName;
 		USBDeviceName.Format ("uaudio%u-%u", m_nDevice+1, m_nInterface+1);
 

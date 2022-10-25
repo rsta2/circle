@@ -144,3 +144,18 @@ u8 CUSBAudioControlDevice::GetFeatureUnitID (u8 uchInputTerminalID) const
 
 	return pUnit->GetID ();
 }
+
+boolean CUSBAudioControlDevice::IsControlSupported (u8 uchFeatureUnitID, unsigned nChannel,
+						    CUSBAudioFeatureUnit::TControl Control) const
+{
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchFeatureUnitID);
+	if (   !pEntity
+	    || pEntity->GetEntityType () != CUSBAudioEntity::EntityFeatureUnit)
+	{
+		return FALSE;
+	}
+
+	CUSBAudioFeatureUnit *pUnit = static_cast <CUSBAudioFeatureUnit *> (pEntity);
+
+	return pUnit->GetControlStatus (nChannel, Control) == CUSBAudioFeatureUnit::ControlReadWrite;
+}

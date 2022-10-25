@@ -21,6 +21,7 @@
 #define _circle_sound_usbsoundcontroller_h
 
 #include <circle/sound/soundcontroller.h>
+#include <circle/usb/usbaudiostreaming.h>
 #include <circle/types.h>
 
 class CUSBSoundBaseDevice;
@@ -31,7 +32,13 @@ public:
 	CUSBSoundController (CUSBSoundBaseDevice *pSoundDevice);
 	~CUSBSoundController (void);
 
+	boolean Probe (void) override;
+
 	void SelectOutput (TOutputSelector Selector) override;
+
+	void SetOutputVolume (int ndB) override;
+
+	const TRange GetOutputVolumeRange (void) const override;
 
 private:
 	// returns matching priority with selector (0..N, 0: best)
@@ -40,6 +47,10 @@ private:
 
 private:
 	CUSBSoundBaseDevice *m_pSoundDevice;
+	unsigned m_nInterface;
+
+	CUSBAudioStreamingDevice *m_pStreamingDevice;
+	CUSBAudioStreamingDevice::TFormatInfo m_FormatInfo;
 };
 
 #endif

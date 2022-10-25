@@ -22,6 +22,8 @@
 
 #include <circle/types.h>
 
+/// \note The methods of the sound controller are callable from TASK_LEVEL only.
+
 class CSoundController		/// Optional controller of a sound device
 {
 public:

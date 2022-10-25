@@ -49,6 +49,7 @@ CUSBAudioStreamingDevice::CUSBAudioStreamingDevice (CUSBFunction *pFunction)
 	m_bSyncEPActive (FALSE),
 	m_nSyncAccu (0),
 	m_uchClockSourceID (USB_AUDIO_UNDEFINED_UNIT_ID),
+	m_uchFeatureUnitID (USB_AUDIO_UNDEFINED_UNIT_ID),
 	From ("uaudio")
 {
 	memset (&m_FormatInfo, 0, sizeof m_FormatInfo);
@@ -235,6 +236,48 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 					RATE2UNSIGNED (pFormatTypeDesc->Ver100.tSamFreq[i]);
 			}
 		}
+
+		// get access to the Feature Unit, to control volume etc.
+		m_uchFeatureUnitID =
+			pControlDevice->GetFeatureUnitID (pGeneralDesc->Ver100.bTerminalLink);
+		if (   m_uchFeatureUnitID != USB_AUDIO_UNDEFINED_UNIT_ID
+		    && pControlDevice->IsControlSupported (m_uchFeatureUnitID, 1,
+							   CUSBAudioFeatureUnit::VolumeControl)
+		    && pControlDevice->IsControlSupported (m_uchFeatureUnitID, 2,
+							   CUSBAudioFeatureUnit::VolumeControl))
+		{
+			// get volume range from left channel only, should be same as right
+			DMA_BUFFER (s16, VolumeBuffer, 1);
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+							REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+							USB_AUDIO_REQ_GET_MIN,
+							USB_AUDIO_FU_VOLUME_CONTROL << 8 | 0x01, // left
+							m_uchFeatureUnitID << 8,
+							VolumeBuffer, 2) < 0)
+			{
+				LOGWARN ("Cannot get volume minimum");
+
+				return FALSE;
+			}
+
+			m_FormatInfo.MinVolume = VolumeBuffer[0] >> 8;
+
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+							REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+							USB_AUDIO_REQ_GET_MAX,
+							USB_AUDIO_FU_VOLUME_CONTROL << 8 | 0x01, // left
+							m_uchFeatureUnitID << 8,
+							VolumeBuffer, 2) < 0)
+			{
+				LOGWARN ("Cannot get volume maximum");
+
+				return FALSE;
+			}
+
+			m_FormatInfo.MaxVolume = VolumeBuffer[0] >> 8;
+
+			m_FormatInfo.VolumeSupported = TRUE;
+		}
 	}
 	else
 	{
@@ -296,6 +339,37 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 			m_FormatInfo.SampleRateRange[i].Min = *pFreq++;
 			m_FormatInfo.SampleRateRange[i].Max = *pFreq++;
 			m_FormatInfo.SampleRateRange[i].Resolution = *pFreq++;
+		}
+
+		// get access to the Feature Unit, to control volume etc.
+		m_uchFeatureUnitID =
+			pControlDevice->GetFeatureUnitID (pGeneralDesc->Ver200.bTerminalLink);
+		if (   m_uchFeatureUnitID != USB_AUDIO_UNDEFINED_UNIT_ID
+		    && pControlDevice->IsControlSupported (m_uchFeatureUnitID, 1,
+							   CUSBAudioFeatureUnit::VolumeControl)
+		    && pControlDevice->IsControlSupported (m_uchFeatureUnitID, 2,
+							   CUSBAudioFeatureUnit::VolumeControl))
+		{
+			// get volume range from left channel only, should be same as right
+			DMA_BUFFER (s16, VolumeBuffer, 4);
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+							REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+							USB_AUDIO_REQ_RANGE,
+							USB_AUDIO_FU_VOLUME_CONTROL << 8 | 0x01, // left
+							m_uchFeatureUnitID << 8,
+							VolumeBuffer, 8) < 0)
+			{
+				LOGWARN ("Cannot get volume range");
+
+				return FALSE;
+			}
+
+			if (VolumeBuffer[0] == 1)
+			{
+				m_FormatInfo.MinVolume = VolumeBuffer[1] >> 8;
+				m_FormatInfo.MaxVolume = VolumeBuffer[2] >> 8;
+				m_FormatInfo.VolumeSupported = TRUE;
+			}
 		}
 	}
 
@@ -470,6 +544,34 @@ boolean CUSBAudioStreamingDevice::SendChunk (const void *pBuffer, unsigned nChun
 	}
 
 	return bOK;
+}
+
+boolean CUSBAudioStreamingDevice::SetVolume (unsigned nChannel, int ndB)
+{
+	assert (nChannel <= 1);
+
+	if (!m_FormatInfo.VolumeSupported)
+	{
+		return FALSE;
+	}
+
+	assert (m_uchFeatureUnitID != USB_AUDIO_UNDEFINED_UNIT_ID);
+
+	DMA_BUFFER (s16, VolumeBuffer, 1);
+	VolumeBuffer[0] = ndB << 8;
+
+	// same request for v1.00 and v2.00
+	if (GetHost ()->ControlMessage (GetEndpoint0 (),
+					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+					USB_AUDIO_REQ_SET_CUR,
+					USB_AUDIO_FU_VOLUME_CONTROL << 8 | (nChannel+1),
+					m_uchFeatureUnitID << 8,
+					VolumeBuffer, 2) < 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 void CUSBAudioStreamingDevice::CompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext)

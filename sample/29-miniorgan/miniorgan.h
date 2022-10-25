@@ -102,6 +102,9 @@ private:
 
 	u8 m_ucKeyNumber;
 
+	boolean m_bSetVolume;
+	u8 m_uchVolume;
+
 	static const float s_KeyFrequency[];
 	static const TNoteInfo s_Keys[];
 

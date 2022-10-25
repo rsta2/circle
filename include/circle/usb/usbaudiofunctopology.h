@@ -142,7 +142,7 @@ public:
 public:
 	CUSBAudioFeatureUnit (const TUSBAudioControlInterfaceDescriptor *pDesc, boolean bVer200);
 
-	TControlStatus GetControlStatus (unsigned nChannel, TControl Control);
+	TControlStatus GetControlStatus (unsigned nChannel, TControl Control) const;
 
 private:
 	u32 m_nControls[MaximumChannelIndex+1];

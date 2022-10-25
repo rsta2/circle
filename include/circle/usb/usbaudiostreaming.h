@@ -49,6 +49,9 @@ public:
 		SampleRateRange[MaxSampleRatesRanges];
 
 		u16 TerminalType;	///< Terminal type of the output terminal (e.g. Speaker)
+
+		boolean VolumeSupported;
+		int MinVolume, MaxVolume;	///< in dB
 	};
 
 	typedef void TCompletionRoutine (void *pParam);
@@ -82,6 +85,12 @@ public:
 	boolean SendChunk (const void *pBuffer, unsigned nChunkSizeBytes,
 			   TCompletionRoutine *pCompletionRoutine = 0, void *pParam = 0);
 
+	/// \param nChannel Addressed audio channel (0: left, 1: right)
+	/// \param ndB Volume value to be set (in dB)
+	/// \return Operation successful?
+	/// \note Can be called from TASK_LEVEL only.
+	boolean SetVolume (unsigned nChannel, int ndB);
+
 private:
 	static void CompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext);
 	static void SyncCompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext);
@@ -107,6 +116,7 @@ private:
 	unsigned m_nSyncAccu;
 
 	u8 m_uchClockSourceID;
+	u8 m_uchFeatureUnitID;
 
 	CSpinLock m_SpinLock;
 

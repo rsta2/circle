@@ -56,6 +56,13 @@ public:
 	/// \return Unit ID of the associated feature unit (or USB_AUDIO_UNDEFINED_UNIT_ID)
 	u8 GetFeatureUnitID (u8 uchInputTerminalID) const;
 
+	/// \param uchFeatureUnitID Unit ID of a Feature Unit of the controlled device
+	/// \param nChannel Audio channel (0: master, 1: normally front left, 2: right)
+	/// \param Control Control selector (see: <circle/usb/usbaudiofunctopology.h>)
+	/// \return Selected control is present and read/writable
+	boolean IsControlSupported (u8 uchFeatureUnitID, unsigned nChannel,
+				    CUSBAudioFeatureUnit::TControl Control) const;
+
 private:
 	CUSBAudioFunctionTopology m_Topology;
 
