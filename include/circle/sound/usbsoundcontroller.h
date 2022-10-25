@@ -29,7 +29,7 @@ class CUSBSoundBaseDevice;
 class CUSBSoundController : public CSoundController	/// Sound controller for USB sound devices
 {
 public:
-	CUSBSoundController (CUSBSoundBaseDevice *pSoundDevice);
+	CUSBSoundController (CUSBSoundBaseDevice *pSoundDevice, unsigned nDevice);
 	~CUSBSoundController (void);
 
 	boolean Probe (void) override;
@@ -47,10 +47,11 @@ private:
 
 private:
 	CUSBSoundBaseDevice *m_pSoundDevice;
+	unsigned m_nDevice;
 	unsigned m_nInterface;
 
 	CUSBAudioStreamingDevice *m_pStreamingDevice;
-	CUSBAudioStreamingDevice::TFormatInfo m_FormatInfo;
+	CUSBAudioStreamingDevice::TDeviceInfo m_DeviceInfo;
 };
 
 #endif

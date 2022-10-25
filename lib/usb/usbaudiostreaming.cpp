@@ -52,7 +52,7 @@ CUSBAudioStreamingDevice::CUSBAudioStreamingDevice (CUSBFunction *pFunction)
 	m_uchFeatureUnitID (USB_AUDIO_UNDEFINED_UNIT_ID),
 	From ("uaudio")
 {
-	memset (&m_FormatInfo, 0, sizeof m_FormatInfo);
+	memset (&m_DeviceInfo, 0, sizeof m_DeviceInfo);
 }
 
 CUSBAudioStreamingDevice::~CUSBAudioStreamingDevice (void)
@@ -206,17 +206,17 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 
 	if (!m_bVer200)
 	{
-		m_FormatInfo.TerminalType =
+		m_DeviceInfo.TerminalType =
 			pControlDevice->GetTerminalType (pGeneralDesc->Ver100.bTerminalLink);
 
 		// fetch format info from descriptor
 		if (pFormatTypeDesc->Ver100.bSamFreqType == 0)
 		{
 			// continuous range
-			m_FormatInfo.SampleRateRanges = 1;
-			m_FormatInfo.SampleRateRange[0].Min =
+			m_DeviceInfo.SampleRateRanges = 1;
+			m_DeviceInfo.SampleRateRange[0].Min =
 				RATE2UNSIGNED (pFormatTypeDesc->Ver100.tSamFreq[0]);
-			m_FormatInfo.SampleRateRange[0].Max =
+			m_DeviceInfo.SampleRateRange[0].Max =
 				RATE2UNSIGNED (pFormatTypeDesc->Ver100.tSamFreq[1]);
 		}
 		else
@@ -227,12 +227,12 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 			{
 				nSampleRates = MaxSampleRatesRanges;
 			}
-			m_FormatInfo.SampleRateRanges = nSampleRates;
+			m_DeviceInfo.SampleRateRanges = nSampleRates;
 
 			for (unsigned i = 0; i < nSampleRates; i++)
 			{
-				m_FormatInfo.SampleRateRange[i].Min =
-				m_FormatInfo.SampleRateRange[i].Max =
+				m_DeviceInfo.SampleRateRange[i].Min =
+				m_DeviceInfo.SampleRateRange[i].Max =
 					RATE2UNSIGNED (pFormatTypeDesc->Ver100.tSamFreq[i]);
 			}
 		}
@@ -260,7 +260,7 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 				return FALSE;
 			}
 
-			m_FormatInfo.MinVolume = VolumeBuffer[0] >> 8;
+			m_DeviceInfo.MinVolume = VolumeBuffer[0] >> 8;
 
 			if (GetHost ()->ControlMessage (GetEndpoint0 (),
 							REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,
@@ -274,14 +274,14 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 				return FALSE;
 			}
 
-			m_FormatInfo.MaxVolume = VolumeBuffer[0] >> 8;
+			m_DeviceInfo.MaxVolume = VolumeBuffer[0] >> 8;
 
-			m_FormatInfo.VolumeSupported = TRUE;
+			m_DeviceInfo.VolumeSupported = TRUE;
 		}
 	}
 	else
 	{
-		m_FormatInfo.TerminalType =
+		m_DeviceInfo.TerminalType =
 			pControlDevice->GetTerminalType (pGeneralDesc->Ver200.bTerminalLink);
 
 		// request clock source ID for this Input Terminal
@@ -326,19 +326,19 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 			return FALSE;
 		}
 
-		// fill in the m_FormatInfo struct
+		// fill in the m_DeviceInfo struct
 		if (nSampleRates > MaxSampleRatesRanges)
 		{
 			nSampleRates = MaxSampleRatesRanges;
 		}
-		m_FormatInfo.SampleRateRanges = nSampleRates;
+		m_DeviceInfo.SampleRateRanges = nSampleRates;
 
 		u32 *pFreq = (u32 *) (RangesBuffer+2);
 		for (unsigned i = 0; i < nSampleRates; i++)
 		{
-			m_FormatInfo.SampleRateRange[i].Min = *pFreq++;
-			m_FormatInfo.SampleRateRange[i].Max = *pFreq++;
-			m_FormatInfo.SampleRateRange[i].Resolution = *pFreq++;
+			m_DeviceInfo.SampleRateRange[i].Min = *pFreq++;
+			m_DeviceInfo.SampleRateRange[i].Max = *pFreq++;
+			m_DeviceInfo.SampleRateRange[i].Resolution = *pFreq++;
 		}
 
 		// get access to the Feature Unit, to control volume etc.
@@ -366,31 +366,31 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 
 			if (VolumeBuffer[0] == 1)
 			{
-				m_FormatInfo.MinVolume = VolumeBuffer[1] >> 8;
-				m_FormatInfo.MaxVolume = VolumeBuffer[2] >> 8;
-				m_FormatInfo.VolumeSupported = TRUE;
+				m_DeviceInfo.MinVolume = VolumeBuffer[1] >> 8;
+				m_DeviceInfo.MaxVolume = VolumeBuffer[2] >> 8;
+				m_DeviceInfo.VolumeSupported = TRUE;
 			}
 		}
 	}
 
 	// write supported sample rates info to log
 	CString SampleRates;
-	for (unsigned i = 0; i < m_FormatInfo.SampleRateRanges; i++)
+	for (unsigned i = 0; i < m_DeviceInfo.SampleRateRanges; i++)
 	{
 		CString String;
-		if (   m_FormatInfo.SampleRateRange[i].Min
-		    != m_FormatInfo.SampleRateRange[i].Max)
+		if (   m_DeviceInfo.SampleRateRange[i].Min
+		    != m_DeviceInfo.SampleRateRange[i].Max)
 		{
 			// continuous subrange
 			String.Format ("%u-%u/%u",
-					m_FormatInfo.SampleRateRange[i].Min,
-					m_FormatInfo.SampleRateRange[i].Max,
-					m_FormatInfo.SampleRateRange[i].Resolution);
+					m_DeviceInfo.SampleRateRange[i].Min,
+					m_DeviceInfo.SampleRateRange[i].Max,
+					m_DeviceInfo.SampleRateRange[i].Resolution);
 		}
 		else
 		{
 			// discrete rate
-			String.Format ("%u", m_FormatInfo.SampleRateRange[i].Min);
+			String.Format ("%u", m_DeviceInfo.SampleRateRange[i].Min);
 		}
 
 		if (i)
@@ -409,31 +409,31 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 
 	From = m_DeviceName;	// for logger
 
-	LOGNOTE ("Terminal type is 0x%X", m_FormatInfo.TerminalType);
+	LOGNOTE ("Terminal type is 0x%X", m_DeviceInfo.TerminalType);
 	LOGNOTE ("Supported sample rate(s): %s Hz", (const char *) SampleRates);
 
 	return TRUE;
 }
 
-CUSBAudioStreamingDevice::TFormatInfo CUSBAudioStreamingDevice::GetFormatInfo (void) const
+CUSBAudioStreamingDevice::TDeviceInfo CUSBAudioStreamingDevice::GetDeviceInfo (void) const
 {
-	return m_FormatInfo;
+	return m_DeviceInfo;
 }
 
 boolean CUSBAudioStreamingDevice::Setup (unsigned nSampleRate)
 {
 	// is sample rate supported?
 	unsigned i;
-	for (i = 0; i < m_FormatInfo.SampleRateRanges; i++)
+	for (i = 0; i < m_DeviceInfo.SampleRateRanges; i++)
 	{
-		if (   m_FormatInfo.SampleRateRange[i].Min >= nSampleRate
-		    && m_FormatInfo.SampleRateRange[i].Max <= nSampleRate)
+		if (   m_DeviceInfo.SampleRateRange[i].Min >= nSampleRate
+		    && m_DeviceInfo.SampleRateRange[i].Max <= nSampleRate)
 		{
 			break;
 		}
 	}
 
-	if (i >= m_FormatInfo.SampleRateRanges)
+	if (i >= m_DeviceInfo.SampleRateRanges)
 	{
 		LOGWARN ("Sample rate is not supported (%u)", nSampleRate);
 
@@ -550,7 +550,7 @@ boolean CUSBAudioStreamingDevice::SetVolume (unsigned nChannel, int ndB)
 {
 	assert (nChannel <= 1);
 
-	if (!m_FormatInfo.VolumeSupported)
+	if (!m_DeviceInfo.VolumeSupported)
 	{
 		return FALSE;
 	}

@@ -23,8 +23,9 @@
 #include <circle/devicenameservice.h>
 #include <assert.h>
 
-CUSBSoundController::CUSBSoundController (CUSBSoundBaseDevice *pSoundDevice)
+CUSBSoundController::CUSBSoundController (CUSBSoundBaseDevice *pSoundDevice, unsigned nDevice)
 :	m_pSoundDevice (pSoundDevice),
+	m_nDevice (nDevice),
 	m_nInterface (0),
 	m_pStreamingDevice (nullptr)
 {
@@ -43,7 +44,7 @@ boolean CUSBSoundController::Probe (void)
 	assert (!m_pStreamingDevice);
 
 	CString DeviceName;
-	DeviceName.Format ("uaudio%u-%u", m_pSoundDevice->GetDeviceIndex ()+1, m_nInterface+1);
+	DeviceName.Format ("uaudio%u-%u", m_nDevice+1, m_nInterface+1);
 
 	m_pStreamingDevice = static_cast<CUSBAudioStreamingDevice *>
 		(CDeviceNameService::Get ()->GetDevice (DeviceName, FALSE));
@@ -52,7 +53,7 @@ boolean CUSBSoundController::Probe (void)
 		return FALSE;
 	}
 
-	m_FormatInfo = m_pStreamingDevice->GetFormatInfo ();
+	m_DeviceInfo = m_pStreamingDevice->GetDeviceInfo ();
 
 	return TRUE;
 }
@@ -71,14 +72,14 @@ void CUSBSoundController::SelectOutput (TOutputSelector Selector)
 	do
 	{
 		CString DeviceName;
-		DeviceName.Format ("uaudio%u-%u", m_pSoundDevice->GetDeviceIndex ()+1, nInterface+1);
+		DeviceName.Format ("uaudio%u-%u", m_nDevice+1, nInterface+1);
 
 		pStreamingDevice = static_cast<CUSBAudioStreamingDevice *>
 			(CDeviceNameService::Get ()->GetDevice (DeviceName, FALSE));
 		if (pStreamingDevice)
 		{
-			CUSBAudioStreamingDevice::TFormatInfo Info =
-				pStreamingDevice->GetFormatInfo ();
+			CUSBAudioStreamingDevice::TDeviceInfo Info =
+				pStreamingDevice->GetDeviceInfo ();
 
 			unsigned nPriority = MatchTerminalType (Info.TerminalType, Selector);
 			if (nPriority < nBestPriority)
@@ -97,19 +98,10 @@ void CUSBSoundController::SelectOutput (TOutputSelector Selector)
 		return;
 	}
 
-	// Set the interface and restart the device, if it was active before.
-	boolean bWasActive = m_pSoundDevice->IsActive ();
-
-	m_pSoundDevice->Disconnect ();
 	m_pStreamingDevice = nullptr;
 
 	m_nInterface = nBestInterface;
 	m_pSoundDevice->SetInterface (nBestInterface);
-
-	if (bWasActive)
-	{
-		m_pSoundDevice->Start ();
-	}
 }
 
 void CUSBSoundController::SetOutputVolume (int ndB)
@@ -124,7 +116,7 @@ const CUSBSoundController::TRange CUSBSoundController::GetOutputVolumeRange (voi
 {
 	assert (m_pStreamingDevice);	// info is not valid otherwise
 
-	return { m_FormatInfo.MinVolume, m_FormatInfo.MaxVolume };
+	return { m_DeviceInfo.MinVolume, m_DeviceInfo.MaxVolume };
 }
 
 unsigned CUSBSoundController::MatchTerminalType (u16 usTerminalType, TOutputSelector Selector)

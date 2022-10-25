@@ -73,9 +73,7 @@ private:
 	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
 
 	friend class CUSBSoundController;
-	void Disconnect (void);
-	unsigned GetDeviceIndex (void) const;
-	void SetInterface (unsigned nInterface);
+	boolean SetInterface (unsigned nInterface);
 
 private:
 	enum TDeviceState

@@ -38,7 +38,7 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, unsigned nDevice
 	m_nChunkSizeBytes (0),
 	m_pBuffer {nullptr, nullptr},
 	m_nCurrentBuffer (0),
-	m_SoundController (this)
+	m_SoundController (this, nDevice)
 {
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 }
@@ -263,9 +263,10 @@ void CUSBSoundBaseDevice::DeviceRemovedHandler (CDevice *pDevice, void *pContext
 	pThis->m_nChunkSizeBytes = 0;
 }
 
-void CUSBSoundBaseDevice::Disconnect (void)
+boolean CUSBSoundBaseDevice::SetInterface (unsigned nInterface)
 {
-	if (IsActive ())
+	boolean bWasActive = IsActive ();
+	if (bWasActive)
 	{
 		Cancel ();
 
@@ -294,14 +295,13 @@ void CUSBSoundBaseDevice::Disconnect (void)
 
 		m_State = StateCreated;
 	}
-}
 
-unsigned CUSBSoundBaseDevice::GetDeviceIndex (void) const
-{
-	return m_nDevice;
-}
-
-void CUSBSoundBaseDevice::SetInterface (unsigned nInterface)
-{
 	m_nInterface = nInterface;
+
+	if (bWasActive)
+	{
+		return Start ();
+	}
+
+	return TRUE;
 }

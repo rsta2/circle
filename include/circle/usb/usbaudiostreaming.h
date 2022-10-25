@@ -36,7 +36,7 @@ class CUSBAudioStreamingDevice : public CUSBFunction	/// Low-level driver for US
 public:
 	static const unsigned MaxSampleRatesRanges = 8;
 
-	struct TFormatInfo
+	struct TDeviceInfo
 	{
 		unsigned SampleRateRanges;	///< Number of valid entries in SampleRateRange[]
 
@@ -63,8 +63,8 @@ public:
 	boolean Initialize (void);
 	boolean Configure (void);
 
-	/// \return Format information struct
-	TFormatInfo GetFormatInfo (void) const;
+	/// \return Device information struct
+	TDeviceInfo GetDeviceInfo (void) const;
 
 	/// \brief Setup format
 	/// \param nSampleRate Sample rate in Hz
@@ -103,7 +103,7 @@ private:
 	CUSBEndpoint *m_pEndpointOut;
 	CUSBEndpoint *m_pEndpointSync;		// feedback EP
 
-	TFormatInfo m_FormatInfo;
+	TDeviceInfo m_DeviceInfo;
 	unsigned m_nSampleRate;
 	volatile unsigned m_nChunkSizeBytes;
 
