@@ -35,6 +35,8 @@ class CSSD1306Device : public CCharDevice	/// LCD dot-matrix display driver (usi
 public:
 	/// \param nWidth Display size in pixels (128 only)
 	/// \param nHeight Display size in pixels (32 or 64)
+	/// \param pI2CMaster I2C master to be used
+	/// \param nAddress I2C slave address of the display controller
 	CSSD1306Device (unsigned nWidth, unsigned nHeight,
 					CI2CMaster *pI2CMaster, u8 nAddress);
 	~CSSD1306Device (void);
