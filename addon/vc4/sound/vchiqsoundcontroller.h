@@ -42,11 +42,17 @@ public:
 	CVCHIQSoundController (CVCHIQSoundBaseDevice *pSoundDevice,
 			       TVCHIQSoundDestination Destination);
 
-	void SelectOutput (TOutputSelector Selector);
+	u32 GetOutputProperties (void) const override
+	{
+		return   PropertyDirectionSupported
+		       | PropertyVolumeSupported;
+	}
 
-	void SetOutputVolume (int ndB);
+	boolean EnableJack (TJack Jack) override;
 
-	const TRange GetOutputVolumeRange (void) const;
+	boolean SetVolume (TJack Jack, int ndB, TChannel Channel) override;
+
+	const TRange GetVolumeRange (TJack Jack) const override;
 
 private:
 	CVCHIQSoundBaseDevice *m_pSoundDevice;

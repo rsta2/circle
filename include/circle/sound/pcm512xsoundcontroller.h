@@ -31,8 +31,15 @@ public:
 
 	boolean Probe (void) override;
 
-	void SetOutputVolume (int ndB) override;
-	const TRange GetOutputVolumeRange (void) const override;
+	u32 GetOutputProperties (void) const override
+	{
+		return   PropertyDirectionSupported
+		       | PropertyVolumeSupported
+		       | PropertyVolumePerChannel;
+	}
+
+	boolean SetVolume (TJack Jack, int ndB, TChannel Channel) override;
+	const TRange GetVolumeRange (TJack Jack) const override;
 
 private:
 	boolean InitPCM512x (u8 ucI2CAddress);

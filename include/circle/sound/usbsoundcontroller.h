@@ -34,16 +34,18 @@ public:
 
 	boolean Probe (void) override;
 
-	void SelectOutput (TOutputSelector Selector) override;
+	u32 GetOutputProperties (void) const override;
 
-	void SetOutputVolume (int ndB) override;
+	boolean EnableJack (TJack Jack) override;
 
-	const TRange GetOutputVolumeRange (void) const override;
+	boolean SetVolume (TJack Jack, int ndB, TChannel Channel) override;
+
+	const TRange GetVolumeRange (TJack Jack) const override;
 
 private:
-	// returns matching priority with selector (0..N, 0: best)
+	// returns matching priority with jack (0..N, 0: best)
 	static const unsigned NoMatch = 99;
-	unsigned MatchTerminalType (u16 usTerminalType, TOutputSelector Selector);
+	unsigned MatchTerminalType (u16 usTerminalType, TJack Jack);
 
 private:
 	CUSBSoundBaseDevice *m_pSoundDevice;

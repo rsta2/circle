@@ -58,7 +58,20 @@ boolean CUSBSoundController::Probe (void)
 	return TRUE;
 }
 
-void CUSBSoundController::SelectOutput (TOutputSelector Selector)
+u32 CUSBSoundController::GetOutputProperties (void) const
+{
+	u32 Result = PropertyDirectionSupported;
+
+	if (m_DeviceInfo.VolumeSupported)
+	{
+		Result |=   PropertyVolumeSupported
+			  | PropertyVolumePerChannel;
+	}
+
+	return Result;
+}
+
+boolean CUSBSoundController::EnableJack (TJack Jack)
 {
 	assert (m_pSoundDevice);
 
@@ -81,7 +94,7 @@ void CUSBSoundController::SelectOutput (TOutputSelector Selector)
 			CUSBAudioStreamingDevice::TDeviceInfo Info =
 				pStreamingDevice->GetDeviceInfo ();
 
-			unsigned nPriority = MatchTerminalType (Info.TerminalType, Selector);
+			unsigned nPriority = MatchTerminalType (Info.TerminalType, Jack);
 			if (nPriority < nBestPriority)
 			{
 				nBestInterface = nInterface;
@@ -93,38 +106,59 @@ void CUSBSoundController::SelectOutput (TOutputSelector Selector)
 	}
 	while (pStreamingDevice);
 
-	if (nBestPriority == NoMatch)		// no match, do nothing
+	if (nBestPriority == NoMatch)
 	{
-		return;
+		return FALSE;
 	}
 
 	m_pStreamingDevice = nullptr;
 
 	m_nInterface = nBestInterface;
-	m_pSoundDevice->SetInterface (nBestInterface);
+
+	return m_pSoundDevice->SetInterface (nBestInterface);
 }
 
-void CUSBSoundController::SetOutputVolume (int ndB)
+boolean CUSBSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
 {
 	assert (m_pStreamingDevice);
 
-	m_pStreamingDevice->SetVolume (0, ndB);
-	m_pStreamingDevice->SetVolume (1, ndB);
+	if (!IsOutputJack (Jack))
+	{
+		return FALSE;
+	}
+
+	if (Channel & ChannelLeft)
+	{
+		if (!m_pStreamingDevice->SetVolume (0, ndB))
+		{
+			return FALSE;
+		}
+	}
+
+	if (Channel & ChannelRight)
+	{
+		if (!m_pStreamingDevice->SetVolume (1, ndB))
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }
 
-const CUSBSoundController::TRange CUSBSoundController::GetOutputVolumeRange (void) const
+const CUSBSoundController::TRange CUSBSoundController::GetVolumeRange (TJack Jack) const
 {
 	assert (m_pStreamingDevice);	// info is not valid otherwise
 
 	return { m_DeviceInfo.MinVolume, m_DeviceInfo.MaxVolume };
 }
 
-unsigned CUSBSoundController::MatchTerminalType (u16 usTerminalType, TOutputSelector Selector)
+unsigned CUSBSoundController::MatchTerminalType (u16 usTerminalType, TJack Jack)
 {
 	// These 0-terminated tables contain the USB audio class terminal types
-	// for different Selectors in decreasing priority order.
+	// for different jacks in decreasing priority order.
 
-	static const u16 LineTable[] =
+	static const u16 LineOutTable[] =
 	{
 		0x603,	// Line connector
 		0x601,	// Analog connector
@@ -146,14 +180,14 @@ unsigned CUSBSoundController::MatchTerminalType (u16 usTerminalType, TOutputSele
 		0
 	};
 
-	static const u16 HeadphonesTable[] =
+	static const u16 HeadphoneTable[] =
 	{
 		0x302,	// Headphones
 		0x301,	// Speaker
 		0
 	};
 
-	static const u16 SPDIFTable[] =
+	static const u16 SPDIFOutTable[] =
 	{
 		0x605,	// S/PDIF interface
 		0x602,	// Digital audio interface
@@ -162,15 +196,15 @@ unsigned CUSBSoundController::MatchTerminalType (u16 usTerminalType, TOutputSele
 
 	const u16 *pMatchTable = nullptr;
 
-	switch (Selector)
+	switch (Jack)
 	{
-	case OutputSelectorDefault:		// first interface always matches
+	case JackDefaultOut:		// first interface always matches
 		return 0;
 
-	case OutputSelectorLine:	pMatchTable = LineTable;	break;
-	case OutputSelectorSpeaker:	pMatchTable = SpeakerTable;	break;
-	case OutputSelectorHeadphones:	pMatchTable = HeadphonesTable;	break;
-	case OutputSelectorSPDIF:	pMatchTable = SPDIFTable;	break;
+	case JackLineOut:	pMatchTable = LineOutTable;	break;
+	case JackSpeaker:	pMatchTable = SpeakerTable;	break;
+	case JackHeadphone:	pMatchTable = HeadphoneTable;	break;
+	case JackSPDIFOut:	pMatchTable = SPDIFOutTable;	break;
 
 	default:
 		return NoMatch;

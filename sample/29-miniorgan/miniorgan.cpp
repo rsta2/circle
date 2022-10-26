@@ -137,14 +137,20 @@ void CMiniOrgan::Process (boolean bPlugAndPlayUpdated)
 		CSoundController *pController = GetController ();
 		if (pController)
 		{
-			CSoundController::TRange Range = pController->GetOutputVolumeRange ();
+			u32 Properties = pController->GetOutputProperties ();
+			if (Properties & CSoundController::PropertyVolumeSupported)
+			{
+				CSoundController::TRange Range = pController->GetVolumeRange (
+					CSoundController::JackDefaultOut);
 
-			int nVolume = m_uchVolume;
-			nVolume *= Range.Max - Range.Min;
-			nVolume /= 127;
-			nVolume += Range.Min;
+				int nVolume = m_uchVolume;
+				nVolume *= Range.Max - Range.Min;
+				nVolume /= 127;
+				nVolume += Range.Min;
 
-			pController->SetOutputVolume (nVolume);
+				pController->SetVolume (CSoundController::JackDefaultOut, nVolume,
+							CSoundController::ChannelAll);
+			}
 		}
 	}
 

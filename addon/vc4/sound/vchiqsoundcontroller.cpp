@@ -29,39 +29,49 @@ CVCHIQSoundController::CVCHIQSoundController (CVCHIQSoundBaseDevice *pSoundDevic
 {
 }
 
-void CVCHIQSoundController::SelectOutput (TOutputSelector Selector)
+boolean CVCHIQSoundController::EnableJack (TJack Jack)
 {
-	switch (Selector)
+	switch (Jack)
 	{
-	case OutputSelectorDefault:
+	case JackDefaultOut:
 		m_Destination = VCHIQSoundDestinationAuto;
 		break;
 
-	case OutputSelectorHeadphones:
+	case JackHeadphone:
 		m_Destination = VCHIQSoundDestinationHeadphones;
 		break;
 
-	case OutputSelectorHDMI:
+	case JackHDMI:
 		m_Destination = VCHIQSoundDestinationHDMI;
 		break;
 
 	default:
-		return;
+		return FALSE;
 	}
 
 	assert (m_pSoundDevice);
 	m_pSoundDevice->SetControl (m_nOutputVolumedB, m_Destination);
+
+	return TRUE;
 }
 
-void CVCHIQSoundController::SetOutputVolume (int ndB)
+boolean CVCHIQSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
 {
+	if (   !IsOutputJack (Jack)
+	    || Channel != ChannelAll)
+	{
+		return FALSE;
+	}
+
 	m_nOutputVolumedB = ndB;
 
 	assert (m_pSoundDevice);
 	m_pSoundDevice->SetControl (m_nOutputVolumedB, m_Destination);
+
+	return TRUE;
 }
 
-const CSoundController::TRange CVCHIQSoundController::GetOutputVolumeRange (void) const
+const CSoundController::TRange CVCHIQSoundController::GetVolumeRange (TJack Jack) const
 {
 	return { VCHIQ_SOUND_VOLUME_MIN, VCHIQ_SOUND_VOLUME_MAX };
 }

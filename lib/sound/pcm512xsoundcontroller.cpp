@@ -50,10 +50,15 @@ boolean CPCM512xSoundController::Probe (void)
 	return FALSE;
 }
 
-void CPCM512xSoundController::SetOutputVolume (int ndB)
+boolean CPCM512xSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
 {
 	assert (m_pI2CMaster);
 	assert (m_uchI2CAddress);
+
+	if (!IsOutputJack (Jack))
+	{
+		return FALSE;
+	}
 
 	if (ndB < -103)
 	{
@@ -66,11 +71,28 @@ void CPCM512xSoundController::SetOutputVolume (int ndB)
 
 	u8 uchVolume = (u8) (0b110000 - (ndB * 2));
 
-	const u8 Cmd[] = {61, uchVolume};
-	m_pI2CMaster->Write (m_uchI2CAddress, Cmd, sizeof Cmd);
+	if (Channel & ChannelLeft)
+	{
+		const u8 Cmd[] = {61, uchVolume};
+		if (m_pI2CMaster->Write (m_uchI2CAddress, Cmd, sizeof Cmd) < 0)
+		{
+			return FALSE;
+		}
+	}
+
+	if (Channel & ChannelRight)
+	{
+		const u8 Cmd[] = {62, uchVolume};
+		if (m_pI2CMaster->Write (m_uchI2CAddress, Cmd, sizeof Cmd) < 0)
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }
 
-const CSoundController::TRange CPCM512xSoundController::GetOutputVolumeRange (void) const
+const CSoundController::TRange CPCM512xSoundController::GetVolumeRange (TJack Jack) const
 {
 	return { -103, 24 };
 }
@@ -92,9 +114,6 @@ boolean CPCM512xSoundController::InitPCM512x (u8 uchI2CAddress)
 
 		// Ignore clock halt detection (set IDCH to 1)
 		{ 0x25, 0x08 },
-
-		//  Right channel volume follows left channel setting (set PCTL to 0b01)
-		{ 0x3c, 0x01 },
 
 		// Disable auto mute
 		{ 0x41, 0x04 }

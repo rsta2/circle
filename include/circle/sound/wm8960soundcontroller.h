@@ -31,6 +31,11 @@ public:
 
 	boolean Probe (void) override;
 
+	u32 GetOutputProperties (void) const override
+	{
+		return PropertyDirectionSupported;
+	}
+
 private:
 	boolean InitWM8960 (u8 uchI2CAddress);
 
