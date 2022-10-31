@@ -50,6 +50,8 @@ public:
 
 		u16 TerminalType;	///< Terminal type of the output terminal (e.g. Speaker)
 
+		boolean MuteSupported;
+
 		boolean VolumeSupported;
 		int MinVolume, MaxVolume;	///< in dB
 	};
@@ -84,6 +86,11 @@ public:
 	/// \return Operation successful?
 	boolean SendChunk (const void *pBuffer, unsigned nChunkSizeBytes,
 			   TCompletionRoutine *pCompletionRoutine = 0, void *pParam = 0);
+
+	/// \param bEnable Set to TRUE to enable mute, FALSE to disable
+	/// \return Operation successful?
+	/// \note Can be called from TASK_LEVEL only.
+	boolean SetMute (boolean bEnable);
 
 	/// \param nChannel Addressed audio channel (0: left, 1: right)
 	/// \param ndB Volume value to be set (in dB)

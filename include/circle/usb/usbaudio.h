@@ -315,6 +315,7 @@ PACKED;
 // Audio class control selectors
 #define USB_AUDIO_CS_SAM_FREQ_CONTROL	0x01
 
+#define USB_AUDIO_FU_MUTE_CONTROL	0x01
 #define USB_AUDIO_FU_VOLUME_CONTROL	0x02
 
 #endif

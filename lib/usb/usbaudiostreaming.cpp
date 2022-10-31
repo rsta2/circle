@@ -373,6 +373,10 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		}
 	}
 
+	m_DeviceInfo.MuteSupported =    m_uchFeatureUnitID != USB_AUDIO_UNDEFINED_UNIT_ID
+				     && pControlDevice->IsControlSupported (m_uchFeatureUnitID, 0,
+						CUSBAudioFeatureUnit::MuteControl);
+
 	// write supported sample rates info to log
 	CString SampleRates;
 	for (unsigned i = 0; i < m_DeviceInfo.SampleRateRanges; i++)
@@ -544,6 +548,32 @@ boolean CUSBAudioStreamingDevice::SendChunk (const void *pBuffer, unsigned nChun
 	}
 
 	return bOK;
+}
+
+boolean CUSBAudioStreamingDevice::SetMute (boolean bEnable)
+{
+	if (!m_DeviceInfo.MuteSupported)
+	{
+		return FALSE;
+	}
+
+	assert (m_uchFeatureUnitID != USB_AUDIO_UNDEFINED_UNIT_ID);
+
+	DMA_BUFFER (u8, MuteBuffer, 1);
+	MuteBuffer[0] = bEnable ? 1 : 0;
+
+	// same request for v1.00 and v2.00
+	if (GetHost ()->ControlMessage (GetEndpoint0 (),
+					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+					USB_AUDIO_REQ_SET_CUR,
+					USB_AUDIO_FU_MUTE_CONTROL << 8 | 0x00,	// master channel
+					m_uchFeatureUnitID << 8,
+					MuteBuffer, 1) < 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 boolean CUSBAudioStreamingDevice::SetVolume (unsigned nChannel, int ndB)

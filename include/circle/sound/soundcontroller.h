@@ -32,8 +32,9 @@ public:
 	{
 		PropertyDirectionSupported	= BIT(0),	///< Output/input supported?
 		PropertyMultiJackOperation	= BIT(1),	///< Enable multiple jacks at once?
-		PropertyVolumeSupported		= BIT(2),	///< Volume control available?
-		PropertyVolumePerChannel	= BIT(3)	///< Can set volume per channel?
+		PropertyMuteSupported		= BIT(2),	///< Mute control available?
+		PropertyVolumeSupported		= BIT(3),	///< Volume control available?
+		PropertyVolumePerChannel	= BIT(4)	///< Can set volume per channel?
 	};
 
 	enum TJack
@@ -92,6 +93,11 @@ public:
 	/// \return Operation successful?
 	/// \note Allways fails without PropertyMultiJackOperation available.
 	virtual boolean DisableJack (TJack Jack) { return FALSE; }
+
+	/// \param Jack Affected jack
+	/// \param bEnable Set to TRUE to enable mute, FALSE to disable
+	/// \return Operation successful?
+	virtual boolean SetMute (TJack Jack, boolean bEnable) { return FALSE; }
 
 	/// \param Jack Affected jack
 	/// \param ndB Volume to be set (in dB)

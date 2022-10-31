@@ -38,8 +38,9 @@ public:
 
 	boolean EnableJack (TJack Jack) override;
 
-	boolean SetVolume (TJack Jack, int ndB, TChannel Channel) override;
+	boolean SetMute (TJack Jack, boolean bEnable) override;
 
+	boolean SetVolume (TJack Jack, int ndB, TChannel Channel) override;
 	const TRange GetVolumeRange (TJack Jack) const override;
 
 private:

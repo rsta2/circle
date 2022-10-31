@@ -62,6 +62,11 @@ u32 CUSBSoundController::GetOutputProperties (void) const
 {
 	u32 Result = PropertyDirectionSupported;
 
+	if (m_DeviceInfo.MuteSupported)
+	{
+		Result |= PropertyMuteSupported;
+	}
+
 	if (m_DeviceInfo.VolumeSupported)
 	{
 		Result |=   PropertyVolumeSupported
@@ -116,6 +121,18 @@ boolean CUSBSoundController::EnableJack (TJack Jack)
 	m_nInterface = nBestInterface;
 
 	return m_pSoundDevice->SetInterface (nBestInterface);
+}
+
+boolean CUSBSoundController::SetMute (TJack Jack, boolean bEnable)
+{
+	assert (m_pStreamingDevice);
+
+	if (!IsOutputJack (Jack))
+	{
+		return FALSE;
+	}
+
+	return m_pStreamingDevice->SetMute (bEnable);
 }
 
 boolean CUSBSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
