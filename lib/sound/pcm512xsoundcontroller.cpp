@@ -50,6 +50,20 @@ boolean CPCM512xSoundController::Probe (void)
 	return FALSE;
 }
 
+boolean CPCM512xSoundController::SetMute (TJack Jack, boolean bEnable)
+{
+	assert (m_pI2CMaster);
+	assert (m_uchI2CAddress);
+
+	if (!IsOutputJack (Jack))
+	{
+		return FALSE;
+	}
+
+	const u8 Cmd[] = {3, (u8) (bEnable ? 0x11 : 0)};
+	return m_pI2CMaster->Write (m_uchI2CAddress, Cmd, sizeof Cmd) >= 0;
+}
+
 boolean CPCM512xSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
 {
 	assert (m_pI2CMaster);

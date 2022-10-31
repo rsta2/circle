@@ -34,9 +34,12 @@ public:
 	u32 GetOutputProperties (void) const override
 	{
 		return   PropertyDirectionSupported
+		       | PropertyMuteSupported
 		       | PropertyVolumeSupported
 		       | PropertyVolumePerChannel;
 	}
+
+	boolean SetMute (TJack Jack, boolean bEnable) override;
 
 	boolean SetVolume (TJack Jack, int ndB, TChannel Channel) override;
 	const TRange GetVolumeRange (TJack Jack) const override;
