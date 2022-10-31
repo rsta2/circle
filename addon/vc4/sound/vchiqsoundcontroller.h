@@ -44,15 +44,18 @@ public:
 
 	u32 GetOutputProperties (void) const override
 	{
-		return   PropertyDirectionSupported
-		       | PropertyVolumeSupported;
+		return PropertyDirectionSupported;
 	}
 
 	boolean EnableJack (TJack Jack) override;
 
-	boolean SetVolume (TJack Jack, int ndB, TChannel Channel) override;
 
-	const TRange GetVolumeRange (TJack Jack) const override;
+	const TControlInfo GetControlInfo (TControl Control, TJack Jack,
+					   TChannel Channel) const override;
+	boolean SetControl (TControl Control, TJack Jack, TChannel Channel, int nValue) override;
+
+private:
+	boolean SetVolume (TJack Jack, TChannel Channel, int ndB);
 
 private:
 	CVCHIQSoundBaseDevice *m_pSoundDevice;

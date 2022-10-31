@@ -33,16 +33,17 @@ public:
 
 	u32 GetOutputProperties (void) const override
 	{
-		return   PropertyDirectionSupported
-		       | PropertyMuteSupported
-		       | PropertyVolumeSupported
-		       | PropertyVolumePerChannel;
+		return PropertyDirectionSupported;
 	}
 
-	boolean SetMute (TJack Jack, boolean bEnable) override;
+	const TControlInfo GetControlInfo (TControl Control, TJack Jack,
+					   TChannel Channel) const override;
+	boolean SetControl (TControl Control, TJack Jack, TChannel Channel, int nValue) override;
 
-	boolean SetVolume (TJack Jack, int ndB, TChannel Channel) override;
-	const TRange GetVolumeRange (TJack Jack) const override;
+private:
+	boolean SetMute (TJack Jack, TChannel Channel, boolean bEnable);
+
+	boolean SetVolume (TJack Jack, TChannel Channel, int ndB);
 
 private:
 	boolean InitPCM512x (u8 ucI2CAddress);
@@ -50,6 +51,8 @@ private:
 private:
 	CI2CMaster *m_pI2CMaster;
 	u8 m_uchI2CAddress;
+
+	u8 m_uchMuteValue;
 };
 
 #endif

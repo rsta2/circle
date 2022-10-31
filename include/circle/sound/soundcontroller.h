@@ -31,10 +31,7 @@ public:
 	enum TProperty
 	{
 		PropertyDirectionSupported	= BIT(0),	///< Output/input supported?
-		PropertyMultiJackOperation	= BIT(1),	///< Enable multiple jacks at once?
-		PropertyMuteSupported		= BIT(2),	///< Mute control available?
-		PropertyVolumeSupported		= BIT(3),	///< Volume control available?
-		PropertyVolumePerChannel	= BIT(4)	///< Can set volume per channel?
+		PropertyMultiJackOperation	= BIT(1)	///< Enable multiple jacks at once?
 	};
 
 	enum TJack
@@ -53,22 +50,29 @@ public:
 		JackMicrophone	= BIT(10)
 	};
 
-	boolean IsOutputJack (TJack Jack) { return !!(Jack & 0x00FF); }
-	boolean IsInputJack (TJack Jack) { return !!(Jack & 0xFF00); }
+	boolean IsOutputJack (TJack Jack) const { return !!(Jack & 0x00FF); }
+	boolean IsInputJack (TJack Jack) const { return !!(Jack & 0xFF00); }
 
 	enum TChannel
 	{
-		ChannelUnknown	= 0,
-
-		ChannelLeft	= BIT(0),
-		ChannelRight	= BIT(1),
-		ChannelAll	= ChannelLeft | ChannelRight
+		ChannelAll,
+		ChannelLeft,
+		ChannelRight,
+		ChannelUnknown
 	};
 
-	struct TRange
+	enum TControl
 	{
-		int Min;
-		int Max;
+		ControlMute,			///< Mute value is 0 (disable) or 1 (enable)
+		ControlVolume,			///< Volume value is in dB
+		ControlUnknown
+	};
+
+	struct TControlInfo
+	{
+		boolean	Supported;
+		int	RangeMin;
+		int	RangeMax;
 	};
 
 public:
@@ -94,19 +98,20 @@ public:
 	/// \note Allways fails without PropertyMultiJackOperation available.
 	virtual boolean DisableJack (TJack Jack) { return FALSE; }
 
+	/// \param Control Control selector
 	/// \param Jack Affected jack
-	/// \param bEnable Set to TRUE to enable mute, FALSE to disable
-	/// \return Operation successful?
-	virtual boolean SetMute (TJack Jack, boolean bEnable) { return FALSE; }
-
-	/// \param Jack Affected jack
-	/// \param ndB Volume to be set (in dB)
 	/// \param Channel Affected channel(s)
+	/// \return Info about the control in the selected configuration
+	/// \note A control may be supported for ChannelAll, but not for ChannelLeft/Right.
+	virtual const TControlInfo GetControlInfo (TControl Control, TJack Jack,
+						   TChannel Channel) const { return { FALSE }; }
+	/// \param Control Control selector
+	/// \param Jack Affected jack
+	/// \param Channel Affected channel(s)
+	/// \param nValue Value to be set
 	/// \return Operation successful?
-	virtual boolean SetVolume (TJack Jack, int ndB, TChannel Channel) { return FALSE; }
-	/// \param Jack Get volume info for this jack
-	/// \return Allowed output volume range (in dB)
-	virtual const TRange GetVolumeRange (TJack Jack) const { return { -100, 20 }; }
+	virtual boolean SetControl (TControl Control, TJack Jack, TChannel Channel, int nValue)
+									{ return FALSE; }
 };
 
 #endif

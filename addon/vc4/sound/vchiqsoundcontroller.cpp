@@ -55,7 +55,47 @@ boolean CVCHIQSoundController::EnableJack (TJack Jack)
 	return TRUE;
 }
 
-boolean CVCHIQSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
+const CSoundController::TControlInfo CVCHIQSoundController::GetControlInfo (TControl Control,
+									    TJack Jack,
+									    TChannel Channel) const
+{
+	if (IsOutputJack (Jack))
+	{
+		switch (Control)
+		{
+		case ControlVolume:
+			if (Channel == ChannelAll)
+			{
+				return { TRUE, VCHIQ_SOUND_VOLUME_MIN, VCHIQ_SOUND_VOLUME_MAX };
+			}
+			break;
+
+		case ControlMute:
+		default:
+			break;
+		}
+	}
+
+	return { FALSE };
+}
+
+boolean CVCHIQSoundController::SetControl (TControl Control, TJack Jack, TChannel Channel,
+					   int nValue)
+{
+	switch (Control)
+	{
+	case ControlVolume:
+		return SetVolume (Jack, Channel, nValue);
+
+	case ControlMute:
+	default:
+		break;
+	}
+
+	return FALSE;
+}
+
+boolean CVCHIQSoundController::SetVolume (TJack Jack, TChannel Channel, int ndB)
 {
 	if (   !IsOutputJack (Jack)
 	    || Channel != ChannelAll)
@@ -69,9 +109,4 @@ boolean CVCHIQSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
 	m_pSoundDevice->SetControl (m_nOutputVolumedB, m_Destination);
 
 	return TRUE;
-}
-
-const CSoundController::TRange CVCHIQSoundController::GetVolumeRange (TJack Jack) const
-{
-	return { VCHIQ_SOUND_VOLUME_MIN, VCHIQ_SOUND_VOLUME_MAX };
 }

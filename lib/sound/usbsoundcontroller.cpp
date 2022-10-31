@@ -58,24 +58,6 @@ boolean CUSBSoundController::Probe (void)
 	return TRUE;
 }
 
-u32 CUSBSoundController::GetOutputProperties (void) const
-{
-	u32 Result = PropertyDirectionSupported;
-
-	if (m_DeviceInfo.MuteSupported)
-	{
-		Result |= PropertyMuteSupported;
-	}
-
-	if (m_DeviceInfo.VolumeSupported)
-	{
-		Result |=   PropertyVolumeSupported
-			  | PropertyVolumePerChannel;
-	}
-
-	return Result;
-}
-
 boolean CUSBSoundController::EnableJack (TJack Jack)
 {
 	assert (m_pSoundDevice);
@@ -123,6 +105,56 @@ boolean CUSBSoundController::EnableJack (TJack Jack)
 	return m_pSoundDevice->SetInterface (nBestInterface);
 }
 
+const CSoundController::TControlInfo CUSBSoundController::GetControlInfo (TControl Control,
+									  TJack Jack,
+									  TChannel Channel) const
+{
+	assert (m_pStreamingDevice);	// info is not valid otherwise
+
+	if (IsOutputJack (Jack))
+	{
+		switch (Control)
+		{
+		case ControlMute:
+			if (Channel == ChannelAll)
+			{
+				return { m_DeviceInfo.MuteSupported, 0, 1 };
+			}
+			break;
+
+		case ControlVolume:
+			return { m_DeviceInfo.VolumeSupported,
+				 m_DeviceInfo.MinVolume, m_DeviceInfo.MaxVolume };
+
+		default:
+			break;
+		}
+	}
+
+	return { FALSE };
+}
+
+boolean CUSBSoundController::SetControl (TControl Control, TJack Jack, TChannel Channel, int nValue)
+{
+	switch (Control)
+	{
+	case ControlMute:
+		if (Channel == ChannelAll)
+		{
+			return SetMute (Jack, !!nValue);
+		}
+		break;
+
+	case ControlVolume:
+		return SetVolume (Jack, Channel, nValue);
+
+	default:
+		break;
+	}
+
+	return FALSE;
+}
+
 boolean CUSBSoundController::SetMute (TJack Jack, boolean bEnable)
 {
 	assert (m_pStreamingDevice);
@@ -135,7 +167,7 @@ boolean CUSBSoundController::SetMute (TJack Jack, boolean bEnable)
 	return m_pStreamingDevice->SetMute (bEnable);
 }
 
-boolean CUSBSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
+boolean CUSBSoundController::SetVolume (TJack Jack, TChannel Channel, int ndB)
 {
 	assert (m_pStreamingDevice);
 
@@ -144,7 +176,8 @@ boolean CUSBSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
 		return FALSE;
 	}
 
-	if (Channel & ChannelLeft)
+	if (   Channel == ChannelLeft
+	    || Channel == ChannelAll)
 	{
 		if (!m_pStreamingDevice->SetVolume (0, ndB))
 		{
@@ -152,7 +185,8 @@ boolean CUSBSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
 		}
 	}
 
-	if (Channel & ChannelRight)
+	if (   Channel == ChannelRight
+	    || Channel == ChannelAll)
 	{
 		if (!m_pStreamingDevice->SetVolume (1, ndB))
 		{
@@ -161,13 +195,6 @@ boolean CUSBSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
 	}
 
 	return TRUE;
-}
-
-const CUSBSoundController::TRange CUSBSoundController::GetVolumeRange (TJack Jack) const
-{
-	assert (m_pStreamingDevice);	// info is not valid otherwise
-
-	return { m_DeviceInfo.MinVolume, m_DeviceInfo.MaxVolume };
 }
 
 unsigned CUSBSoundController::MatchTerminalType (u16 usTerminalType, TJack Jack)

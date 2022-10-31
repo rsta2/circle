@@ -34,14 +34,21 @@ public:
 
 	boolean Probe (void) override;
 
-	u32 GetOutputProperties (void) const override;
+	u32 GetOutputProperties (void) const override
+	{
+		return PropertyDirectionSupported;
+	}
 
 	boolean EnableJack (TJack Jack) override;
 
-	boolean SetMute (TJack Jack, boolean bEnable) override;
+	const TControlInfo GetControlInfo (TControl Control, TJack Jack,
+					   TChannel Channel) const override;
+	boolean SetControl (TControl Control, TJack Jack, TChannel Channel, int nValue) override;
 
-	boolean SetVolume (TJack Jack, int ndB, TChannel Channel) override;
-	const TRange GetVolumeRange (TJack Jack) const override;
+private:
+	boolean SetMute (TJack Jack, boolean bEnable);
+
+	boolean SetVolume (TJack Jack, TChannel Channel, int ndB);
 
 private:
 	// returns matching priority with jack (0..N, 0: best)

@@ -22,7 +22,8 @@
 
 CPCM512xSoundController::CPCM512xSoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress)
 :	m_pI2CMaster (pI2CMaster),
-	m_uchI2CAddress (uchI2CAddress)
+	m_uchI2CAddress (uchI2CAddress),
+	m_uchMuteValue (0)
 {
 }
 
@@ -50,7 +51,48 @@ boolean CPCM512xSoundController::Probe (void)
 	return FALSE;
 }
 
-boolean CPCM512xSoundController::SetMute (TJack Jack, boolean bEnable)
+
+const CSoundController::TControlInfo CPCM512xSoundController::GetControlInfo (TControl Control,
+									      TJack Jack,
+									      TChannel Channel) const
+{
+	if (IsOutputJack (Jack))
+	{
+		switch (Control)
+		{
+		case ControlMute:
+			return { TRUE, 0, 1 };
+
+		case ControlVolume:
+			return { TRUE, -103, 12 };
+
+		default:
+			break;
+		}
+	}
+
+	return { FALSE };
+}
+
+boolean CPCM512xSoundController::SetControl (TControl Control, TJack Jack, TChannel Channel,
+					     int nValue)
+{
+	switch (Control)
+	{
+	case ControlMute:
+		return SetMute (Jack, Channel, !!nValue);
+
+	case ControlVolume:
+		return SetVolume (Jack, Channel, nValue);
+
+	default:
+		break;
+	}
+
+	return FALSE;
+}
+
+boolean CPCM512xSoundController::SetMute (TJack Jack, TChannel Channel, boolean bEnable)
 {
 	assert (m_pI2CMaster);
 	assert (m_uchI2CAddress);
@@ -60,11 +102,32 @@ boolean CPCM512xSoundController::SetMute (TJack Jack, boolean bEnable)
 		return FALSE;
 	}
 
-	const u8 Cmd[] = {3, (u8) (bEnable ? 0x11 : 0)};
+	u8 uchMask = 0;
+	switch (Channel)
+	{
+	case ChannelAll:	uchMask = 0x11;		break;
+	case ChannelLeft:	uchMask = 0x10;		break;
+	case ChannelRight:	uchMask = 0x01;		break;
+
+	default:
+		assert (0);
+		break;
+	}
+
+	if (bEnable)
+	{
+		m_uchMuteValue |= uchMask;
+	}
+	else
+	{
+		m_uchMuteValue &= ~uchMask;
+	}
+
+	const u8 Cmd[] = {3, m_uchMuteValue};
 	return m_pI2CMaster->Write (m_uchI2CAddress, Cmd, sizeof Cmd) >= 0;
 }
 
-boolean CPCM512xSoundController::SetVolume (TJack Jack, int ndB, TChannel Channel)
+boolean CPCM512xSoundController::SetVolume (TJack Jack, TChannel Channel, int ndB)
 {
 	assert (m_pI2CMaster);
 	assert (m_uchI2CAddress);
@@ -78,14 +141,15 @@ boolean CPCM512xSoundController::SetVolume (TJack Jack, int ndB, TChannel Channe
 	{
 		ndB = -103;
 	}
-	else if (ndB > 24)
+	else if (ndB > 12)
 	{
-		ndB = 24;
+		ndB = 12;
 	}
 
 	u8 uchVolume = (u8) (0b110000 - (ndB * 2));
 
-	if (Channel & ChannelLeft)
+	if (   Channel == ChannelLeft
+	    || Channel == ChannelAll)
 	{
 		const u8 Cmd[] = {61, uchVolume};
 		if (m_pI2CMaster->Write (m_uchI2CAddress, Cmd, sizeof Cmd) < 0)
@@ -94,7 +158,8 @@ boolean CPCM512xSoundController::SetVolume (TJack Jack, int ndB, TChannel Channe
 		}
 	}
 
-	if (Channel & ChannelRight)
+	if (   Channel == ChannelRight
+	    || Channel == ChannelAll)
 	{
 		const u8 Cmd[] = {62, uchVolume};
 		if (m_pI2CMaster->Write (m_uchI2CAddress, Cmd, sizeof Cmd) < 0)
@@ -104,11 +169,6 @@ boolean CPCM512xSoundController::SetVolume (TJack Jack, int ndB, TChannel Channe
 	}
 
 	return TRUE;
-}
-
-const CSoundController::TRange CPCM512xSoundController::GetVolumeRange (TJack Jack) const
-{
-	return { -103, 24 };
 }
 
 //
