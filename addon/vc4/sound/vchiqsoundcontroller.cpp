@@ -25,7 +25,7 @@ CVCHIQSoundController::CVCHIQSoundController (CVCHIQSoundBaseDevice *pSoundDevic
 					      TVCHIQSoundDestination Destination)
 :	m_pSoundDevice (pSoundDevice),
 	m_Destination (Destination),
-	m_nOutputVolumedB (VCHIQ_SOUND_VOLUME_DEFAULT)
+	m_nOutputVolumedB (VCHIQ_SOUND_VOLUME_DEFAULT / 100)
 {
 }
 
@@ -50,7 +50,7 @@ boolean CVCHIQSoundController::EnableJack (TJack Jack)
 	}
 
 	assert (m_pSoundDevice);
-	m_pSoundDevice->SetControl (m_nOutputVolumedB, m_Destination);
+	m_pSoundDevice->SetControl (m_nOutputVolumedB * 100, m_Destination);
 
 	return TRUE;
 }
@@ -66,7 +66,8 @@ const CSoundController::TControlInfo CVCHIQSoundController::GetControlInfo (TCon
 		case ControlVolume:
 			if (Channel == ChannelAll)
 			{
-				return { TRUE, VCHIQ_SOUND_VOLUME_MIN, VCHIQ_SOUND_VOLUME_MAX };
+				return { TRUE, VCHIQ_SOUND_VOLUME_MIN / 100,
+					       VCHIQ_SOUND_VOLUME_MAX / 100 };
 			}
 			break;
 
@@ -106,7 +107,7 @@ boolean CVCHIQSoundController::SetVolume (TJack Jack, TChannel Channel, int ndB)
 	m_nOutputVolumedB = ndB;
 
 	assert (m_pSoundDevice);
-	m_pSoundDevice->SetControl (m_nOutputVolumedB, m_Destination);
+	m_pSoundDevice->SetControl (m_nOutputVolumedB * 100, m_Destination);
 
 	return TRUE;
 }
