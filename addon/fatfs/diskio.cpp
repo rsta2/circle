@@ -16,6 +16,8 @@
 #include <circle/types.h>
 #include <assert.h>
 
+#include <circle/usb/usbmassdevice.h>
+
 #if FF_MIN_SS != FF_MAX_SS
 	#error FF_MIN_SS != FF_MAX_SS is not supported!
 #endif
@@ -229,6 +231,27 @@ DRESULT disk_ioctl (
 {
 	switch (cmd)
 	{
+	case GET_SECTOR_COUNT:
+		{
+			if (pdrv >= FF_VOLUMES)
+			{
+				return RES_PARERR;
+			}
+			CUSBBulkOnlyMassStorageDevice * pDevice =
+					(CUSBBulkOnlyMassStorageDevice *) CDeviceNameService::Get ()->GetDevice (s_pVolumeName[pdrv], TRUE);
+			if (pDevice != 0)
+			{
+				u32 sectorCount = pDevice->GetCapacity();
+				*(DWORD *) buff = sectorCount;
+			}
+			else
+			{
+				return RES_NOTRDY;
+			}
+
+			return RES_OK;
+		}
+		break;
 	case CTRL_SYNC:
 		return RES_OK;
 
