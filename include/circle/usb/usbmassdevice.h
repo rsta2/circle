@@ -2,7 +2,7 @@
 // usbmassdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,7 +45,8 @@ public:
 
 	u64 Seek (u64 ullOffset);
 
-	unsigned GetCapacity (void) const;
+	u64 GetSize (void) const;		// in bytes
+	unsigned GetCapacity (void) const;	// in blocks
 
 private:
 	int TryRead (void *pBuffer, size_t nCount);

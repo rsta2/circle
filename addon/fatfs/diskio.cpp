@@ -229,6 +229,32 @@ DRESULT disk_ioctl (
 {
 	switch (cmd)
 	{
+	case GET_SECTOR_COUNT:
+		{
+			if (pdrv >= FF_VOLUMES)
+			{
+				return RES_PARERR;
+			}
+
+			CDevice *pDevice =
+				CDeviceNameService::Get ()->GetDevice (s_pVolumeName[pdrv], TRUE);
+			if (pDevice != 0)
+			{
+				u64 ullSize = pDevice->GetSize ();
+				if (ullSize == (u64) -1)
+				{
+					return RES_PARERR;
+				}
+
+				*(LBA_t *) buff = (LBA_t) (ullSize / SECTOR_SIZE);
+			}
+			else
+			{
+				return RES_NOTRDY;
+			}
+		}
+		return RES_OK;
+
 	case CTRL_SYNC:
 		return RES_OK;
 
