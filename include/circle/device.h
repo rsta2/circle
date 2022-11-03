@@ -2,7 +2,7 @@
 // device.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,22 +26,32 @@ class CDevice;
 
 typedef void TDeviceRemovedHandler (CDevice *pDevice, void *pContext);
 
-class CDevice
+class CDevice		/// Base class for all devices
 {
 public:
 	CDevice (void);
 	virtual ~CDevice (void);
 
-	// returns number of read bytes or < 0 on failure
+	/// \param pBuffer Buffer, where read data will be placed
+	/// \param nCount Maximum number of bytes to be read
+	/// \return Number of read bytes or < 0 on failure
 	virtual int Read (void *pBuffer, size_t nCount);
 
-	// returns number of written bytes or < 0 on failure
+	/// \param pBuffer Buffer, from which data will be fetched for write
+	/// \param nCount Number of bytes to be written
+	/// \return Number of written bytes or < 0 on failure
 	virtual int Write (const void *pBuffer, size_t nCount);
 
-	// returns the resulting offset, (u64) -1 on error
-	virtual u64 Seek (u64 ullOffset);		// byte offset
+	/// \param ullOffset Byte offset from start
+	/// \return The resulting offset, (u64) -1 on error
+	/// \note Supported by block devices only
+	virtual u64 Seek (u64 ullOffset);
 
-	// returns TRUE on successful removal
+	/// \return Total byte size of a block device, (u64) -1 on error
+	/// \note Supported by block devices only
+	virtual u64 GetSize (void) const;
+
+	/// \return TRUE on successful device removal
 	virtual boolean RemoveDevice (void);
 
 public:

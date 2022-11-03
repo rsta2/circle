@@ -2,7 +2,7 @@
 // usbmassdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -477,6 +477,14 @@ u64 CUSBBulkOnlyMassStorageDevice::Seek (u64 ullOffset)
 	m_ullOffset = ullOffset;
 
 	return m_ullOffset;
+}
+
+u64 CUSBBulkOnlyMassStorageDevice::GetSize (void) const
+{
+	assert (m_nBlockCount > 0);
+	assert (m_nBlockCount < (u32) -1);
+
+	return (u64) m_nBlockCount << UMSD_BLOCK_SHIFT;
 }
 
 unsigned CUSBBulkOnlyMassStorageDevice::GetCapacity (void) const
