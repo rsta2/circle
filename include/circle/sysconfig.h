@@ -308,6 +308,14 @@
 
 //#define SCREEN_HEADLESS
 
+// USE_LOG_COLORS enables the use of different ANSI colors for different
+// severities in the system log (bright red for LogPanic, bright magenta
+// for LogError, bright yellow for LogWarning, bright white for LogNotice
+// and LogDebug). All log messages are bright white, when this option is
+// disabled, except LogPanic, which is bright red too.
+
+//#define USE_LOG_COLORS
+
 // SERIAL_GPIO_SELECT selects the TXD GPIO pin used for the serial
 // device (UART0). The RXD pin is (SERIAL_GPIO_SELECT+1). Modifying
 // this setting can be useful for Compute Modules. Select only one

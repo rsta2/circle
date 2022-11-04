@@ -2,7 +2,7 @@
 // logger.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -121,10 +121,22 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 
 	CString Buffer;
 
+#ifdef USE_LOG_COLORS
+	switch (Severity)
+	{
+	case LogPanic:		Buffer = "\x1b[91m";	break;
+	case LogError:		Buffer = "\x1b[95m";	break;
+	case LogWarning:	Buffer = "\x1b[93m";	break;
+
+	default:
+		break;
+	}
+#else
 	if (Severity == LogPanic)
 	{
 		Buffer = "\x1b[1m";
 	}
+#endif
 
 	if (m_pTimer != 0)
 	{
@@ -143,10 +155,17 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 
 	Buffer.Append (Message);
 
+#ifdef USE_LOG_COLORS
+	if (Severity <= LogWarning)
+	{
+		Buffer.Append ("\x1b[97m");
+	}
+#else
 	if (Severity == LogPanic)
 	{
 		Buffer.Append ("\x1b[0m");
 	}
+#endif
 
 	Buffer.Append ("\n");
 
