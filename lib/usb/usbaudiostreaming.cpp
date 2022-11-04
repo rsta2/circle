@@ -118,7 +118,7 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 	    || (pEndpointDesc->bmAttributes     & 0x33) != 0x01	 // Isochronous, Data
 	    || (pEndpointDesc->bEndpointAddress & 0x80) != 0x00) // Output EP
 	{
-		LOGWARN ("Isochronous data output EP expected");
+		LOGDBG ("Isochronous data output EP expected");
 
 		return FALSE;
 	}

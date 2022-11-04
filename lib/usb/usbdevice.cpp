@@ -439,7 +439,7 @@ boolean CUSBDevice::Initialize (void)
 
 		if (!m_pFunction[nFunction]->Initialize ())
 		{
-			LogWrite (LogError, "Cannot initialize function");
+			LogWrite (LogDebug, "Cannot initialize function");
 
 			delete m_pFunction[nFunction];
 			m_pFunction[nFunction] = 0;
