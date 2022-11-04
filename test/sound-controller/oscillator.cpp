@@ -151,7 +151,7 @@ void COscillator::NextSample (void)
 		} break;
 
 	case WaveformNoise:
-		m_fOutputLevel = (float) GetRandom () / RandomMax;
+		m_fOutputLevel = GetRandom () * (2.0 / RandomMax) - 1.0;
 		break;
 
 	default:
