@@ -38,7 +38,8 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, unsigned nDevice
 	m_nChunkSizeBytes (0),
 	m_pBuffer {nullptr, nullptr},
 	m_nCurrentBuffer (0),
-	m_SoundController (this, nDevice)
+	m_SoundController (this, nDevice),
+	m_hRemoveRegistration (0)
 {
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 }
@@ -95,7 +96,9 @@ boolean CUSBSoundBaseDevice::Start (void)
 			return FALSE;
 		}
 
-		m_pUSBDevice->RegisterRemovedHandler (DeviceRemovedHandler, this);
+		assert (!m_hRemoveRegistration);
+		m_hRemoveRegistration =
+			m_pUSBDevice->RegisterRemovedHandler (DeviceRemovedHandler, this);
 
 		if (!m_pUSBDevice->Setup (m_nSampleRate))
 		{
@@ -261,6 +264,8 @@ void CUSBSoundBaseDevice::DeviceRemovedHandler (CDevice *pDevice, void *pContext
 	pThis->m_SpinLock.Release ();
 
 	pThis->m_nChunkSizeBytes = 0;
+
+	pThis->m_hRemoveRegistration = 0;
 }
 
 boolean CUSBSoundBaseDevice::SetInterface (unsigned nInterface)
@@ -283,7 +288,9 @@ boolean CUSBSoundBaseDevice::SetInterface (unsigned nInterface)
 	if (m_State == StateIdle)
 	{
 		assert (m_pUSBDevice);
-		m_pUSBDevice->RegisterRemovedHandler (nullptr);
+		assert (m_hRemoveRegistration);
+		m_pUSBDevice->UnregisterRemovedHandler (m_hRemoveRegistration);
+		m_hRemoveRegistration = 0;
 		m_pUSBDevice = nullptr;
 
 		delete [] m_pBuffer[0];

@@ -19,18 +19,30 @@
 //
 #include <circle/device.h>
 
+struct TRemovedHandlerEntry
+{
+	TDeviceRemovedHandler *pHandler;
+	void		      *pContext;
+};
+
 CDevice::CDevice (void)
-:	m_pRemovedHandler (0)
 {
 }
 
 CDevice::~CDevice (void)
 {
-	if (m_pRemovedHandler != 0)
+	TPtrListElement *pElement;
+	while ((pElement = m_RemovedHandlerList.GetFirst ()) != 0)
 	{
-		(*m_pRemovedHandler) (this, m_pRemovedContext);
+		TRemovedHandlerEntry *pEntry =
+			(TRemovedHandlerEntry *) m_RemovedHandlerList.GetPtr (pElement);
 
-		m_pRemovedHandler = 0;
+		assert (pEntry->pHandler != 0);
+		(*pEntry->pHandler) (this, pEntry->pContext);
+
+		m_RemovedHandlerList.Remove (pElement);
+
+		delete pEntry;
 	}
 }
 
@@ -59,8 +71,38 @@ boolean CDevice::RemoveDevice (void)
 	return FALSE;
 }
 
-void CDevice::RegisterRemovedHandler (TDeviceRemovedHandler *pHandler, void *pContext)
+CDevice::TRegistrationHandle CDevice::RegisterRemovedHandler (TDeviceRemovedHandler *pHandler,
+							      void *pContext)
 {
-	m_pRemovedContext = pContext;
-	m_pRemovedHandler = pHandler;
+	assert (pHandler != 0);		// not allowed any more to unregister
+
+	TRemovedHandlerEntry *pEntry = new TRemovedHandlerEntry;
+	assert (pEntry != 0);
+	pEntry->pHandler = pHandler;
+	pEntry->pContext = pContext;
+
+	TPtrListElement *pElement = m_RemovedHandlerList.GetFirst ();
+	if (pElement == 0)
+	{
+		m_RemovedHandlerList.InsertAfter (0, pEntry);
+	}
+	else
+	{
+		m_RemovedHandlerList.InsertBefore (pElement, pEntry);
+	}
+
+	return (TRegistrationHandle) pEntry;
+}
+
+void CDevice::UnregisterRemovedHandler (TRegistrationHandle hRegistration)
+{
+	TRemovedHandlerEntry *pEntry = (TRemovedHandlerEntry *) hRegistration;
+	assert (pEntry != 0);
+
+	TPtrListElement *pElement = m_RemovedHandlerList.Find (pEntry);
+	assert (pElement != 0);
+
+	m_RemovedHandlerList.Remove (pElement);
+
+	delete pEntry;
 }

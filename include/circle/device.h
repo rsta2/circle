@@ -20,6 +20,7 @@
 #ifndef _circle_device_h
 #define _circle_device_h
 
+#include <circle/ptrlist.h>
 #include <circle/types.h>
 
 class CDevice;
@@ -55,13 +56,21 @@ public:
 	virtual boolean RemoveDevice (void);
 
 public:
-	/// \param pHandler Handler gets called, when device is destroyed (0 to unregister)
+	typedef void *TRegistrationHandle;
+
+	/// \param pHandler Handler gets called, when device is destroyed
 	/// \param pContext Context pointer handed over to the handler
-	void RegisterRemovedHandler (TDeviceRemovedHandler *pHandler, void *pContext = 0);
+	/// \return Handle to be handed over to UnregisterRemovedHandler()
+	/// \note Can be called multiple times. Handlers will be called in reverse order.
+	/// \note Calling this with pHandler = 0 to unregister is not supported any more.
+	TRegistrationHandle RegisterRemovedHandler (TDeviceRemovedHandler *pHandler,
+						    void *pContext = 0);
+
+	/// \param hRegistration Handle returned by RegisterRemovedHandler()
+	void UnregisterRemovedHandler (TRegistrationHandle hRegistration);
 
 private:
-	TDeviceRemovedHandler *m_pRemovedHandler;
-	void *m_pRemovedContext;
+	CPtrList m_RemovedHandlerList;
 };
 
 #endif

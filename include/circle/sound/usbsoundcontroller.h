@@ -22,6 +22,7 @@
 
 #include <circle/sound/soundcontroller.h>
 #include <circle/usb/usbaudiostreaming.h>
+#include <circle/device.h>
 #include <circle/types.h>
 
 class CUSBSoundBaseDevice;
@@ -51,9 +52,11 @@ private:
 	boolean SetVolume (TJack Jack, TChannel Channel, int ndB);
 
 private:
+	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
+
 	// returns matching priority with jack (0..N, 0: best)
 	static const unsigned NoMatch = 99;
-	unsigned MatchTerminalType (u16 usTerminalType, TJack Jack);
+	static unsigned MatchTerminalType (u16 usTerminalType, TJack Jack);
 
 private:
 	CUSBSoundBaseDevice *m_pSoundDevice;
@@ -62,6 +65,8 @@ private:
 
 	CUSBAudioStreamingDevice *m_pStreamingDevice;
 	CUSBAudioStreamingDevice::TDeviceInfo m_DeviceInfo;
+
+	CDevice::TRegistrationHandle m_hRemoveRegistration;
 };
 
 #endif

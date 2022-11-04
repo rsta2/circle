@@ -101,6 +101,8 @@ private:
 	CSpinLock m_SpinLock;
 
 	CUSBSoundController m_SoundController;
+
+	TRegistrationHandle m_hRemoveRegistration;
 };
 
 #endif

@@ -27,7 +27,8 @@ CUSBSoundController::CUSBSoundController (CUSBSoundBaseDevice *pSoundDevice, uns
 :	m_pSoundDevice (pSoundDevice),
 	m_nDevice (nDevice),
 	m_nInterface (0),
-	m_pStreamingDevice (nullptr)
+	m_pStreamingDevice (nullptr),
+	m_hRemoveRegistration (0)
 {
 	assert (m_pSoundDevice);
 }
@@ -52,6 +53,10 @@ boolean CUSBSoundController::Probe (void)
 	{
 		return FALSE;
 	}
+
+	assert (!m_hRemoveRegistration);
+	m_hRemoveRegistration = m_pStreamingDevice->RegisterRemovedHandler (DeviceRemovedHandler,
+									    this);
 
 	m_DeviceInfo = m_pStreamingDevice->GetDeviceInfo ();
 
@@ -98,18 +103,27 @@ boolean CUSBSoundController::EnableJack (TJack Jack)
 		return FALSE;
 	}
 
+	if (m_hRemoveRegistration)
+	{
+		m_pStreamingDevice->UnregisterRemovedHandler (m_hRemoveRegistration);
+		m_hRemoveRegistration = 0;
+	}
+
 	m_pStreamingDevice = nullptr;
 
 	m_nInterface = nBestInterface;
 
-	return m_pSoundDevice->SetInterface (nBestInterface);
+	return m_pSoundDevice->SetInterface (nBestInterface);	// calls Probe() again
 }
 
 const CSoundController::TControlInfo CUSBSoundController::GetControlInfo (TControl Control,
 									  TJack Jack,
 									  TChannel Channel) const
 {
-	assert (m_pStreamingDevice);	// info is not valid otherwise
+	if (!m_pStreamingDevice)	// info is not valid otherwise
+	{
+		return { FALSE };
+	}
 
 	if (IsOutputJack (Jack))
 	{
@@ -157,7 +171,10 @@ boolean CUSBSoundController::SetControl (TControl Control, TJack Jack, TChannel 
 
 boolean CUSBSoundController::SetMute (TJack Jack, boolean bEnable)
 {
-	assert (m_pStreamingDevice);
+	if (!m_pStreamingDevice)
+	{
+		return FALSE;
+	}
 
 	if (!IsOutputJack (Jack))
 	{
@@ -169,7 +186,10 @@ boolean CUSBSoundController::SetMute (TJack Jack, boolean bEnable)
 
 boolean CUSBSoundController::SetVolume (TJack Jack, TChannel Channel, int ndB)
 {
-	assert (m_pStreamingDevice);
+	if (!m_pStreamingDevice)
+	{
+		return FALSE;
+	}
 
 	if (!IsOutputJack (Jack))
 	{
@@ -195,6 +215,16 @@ boolean CUSBSoundController::SetVolume (TJack Jack, TChannel Channel, int ndB)
 	}
 
 	return TRUE;
+}
+
+void CUSBSoundController::DeviceRemovedHandler (CDevice *pDevice, void *pContext)
+{
+	CUSBSoundController *pThis = static_cast<CUSBSoundController *> (pContext);
+	assert (pThis);
+
+	pThis->m_pStreamingDevice = nullptr;
+
+	pThis->m_hRemoveRegistration = 0;
 }
 
 unsigned CUSBSoundController::MatchTerminalType (u16 usTerminalType, TJack Jack)
