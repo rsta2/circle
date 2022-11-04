@@ -365,6 +365,13 @@ boolean CSoundShell::Enable (void)
 		return FALSE;
 	}
 
+	if (!m_pSound)
+	{
+		Print ("Sound device is not active\n");
+
+		return FALSE;
+	}
+
 	CSoundController *pController = m_pSound->GetController ();
 	if (pController == 0)
 	{
@@ -398,6 +405,13 @@ boolean CSoundShell::Disable (void)
 	if (Jack == CSoundController::JackUnknown)
 	{
 		Print ("Unknown jack: %s\n", (const char *) Token);
+
+		return FALSE;
+	}
+
+	if (!m_pSound)
+	{
+		Print ("Sound device is not active\n");
 
 		return FALSE;
 	}
@@ -865,6 +879,7 @@ void CSoundShell::ProcessSound (void)
 		}
 		else
 		{
+			delete m_pSound;
 			m_pSound = 0;
 
 			Print ("\nDevice went inactive\n");
