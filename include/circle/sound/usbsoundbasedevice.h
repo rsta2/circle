@@ -30,9 +30,21 @@
 class CUSBSoundBaseDevice : public CSoundBaseDevice	/// High-level driver for USB audio streaming devices
 {
 public:
+	enum TDeviceMode
+	{
+		DeviceModeTXOnly,	///< Streaming output
+		DeviceModeRXOnly,	///< Streaming input
+		DeviceModeTXRX,		///< Streaming output and input
+		DeviceModeUnknown
+	};
+
+public:
 	/// \param nSampleRate Requested sample rate in Hz
+	/// \param DeviceMode Select output operation, input or both
 	/// \param nDevice 0-based index of USB audio device to be used
-	CUSBSoundBaseDevice (unsigned nSampleRate = 48000, unsigned nDevice = 0);
+	CUSBSoundBaseDevice (unsigned nSampleRate   = 48000,
+			     TDeviceMode DeviceMode = DeviceModeTXOnly,
+			     unsigned nDevice       = 0);
 
 	~CUSBSoundBaseDevice (void);
 
@@ -55,7 +67,7 @@ public:
 	CSoundController *GetController (void) override;
 
 protected:
-	/// \brief May overload this to provide the sound samples
+	/// \brief May override this to provide the sound samples
 	/// \param pBuffer    Buffer where the samples have to be placed
 	/// \param nChunkSize Size of the buffer in words
 	/// \return Number of words written to the buffer (normally nChunkSize),\n
@@ -64,16 +76,29 @@ protected:
 	///	  Each word must be between GetRangeMin() and GetRangeMax()
 	/// virtual unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize);
 
-private:
-	boolean SendChunk (void);
+	/// \brief May override this to consume the received sound samples
+	/// \param pBuffer    Buffer where the samples have been placed
+	/// \param nChunkSize Size of the buffer in words
+	/// \note Each sample consists of two words (Left channel, right channel)
+	/// virtual void PutChunk (const s16 *pBuffer, unsigned nChunkSize);
 
-	void CompletionRoutine (void);
-	static void CompletionStub (void *pParam);
+private:
+	// get streaming device with 0-based index of the given kind (TX or RX)
+	CUSBAudioStreamingDevice *GetStreamingDevice (boolean bTX, unsigned nIndex);
+
+	boolean SendChunk (void);
+	boolean ReceiveChunk (void);
+
+	void TXCompletionRoutine (unsigned nBytesTransferred);
+	static void TXCompletionStub (unsigned nBytesTransferred, void *pParam);
+
+	void RXCompletionRoutine (unsigned nBytesTransferred);
+	static void RXCompletionStub (unsigned nBytesTransferred, void *pParam);
 
 	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
 
 	friend class CUSBSoundController;
-	boolean SetInterface (unsigned nInterface);
+	boolean SetTXInterface (unsigned nInterface);
 
 private:
 	enum TDeviceState
@@ -82,27 +107,36 @@ private:
 		StateIdle,
 		StateRunning,
 		StateCanceled,
-		StateCanceled2,
 		StateUnknown
 	};
 
 private:
 	unsigned m_nSampleRate;
+	TDeviceMode m_DeviceMode;
 	unsigned m_nDevice;
-	unsigned m_nInterface;
+	unsigned m_nTXInterface;
 
 	TDeviceState m_State;
-	CUSBAudioStreamingDevice *m_pUSBDevice;
+	CUSBAudioStreamingDevice *m_pTXUSBDevice;
+	CUSBAudioStreamingDevice *m_pRXUSBDevice;
 
-	unsigned m_nChunkSizeBytes;
-	u8 *m_pBuffer[2];
-	unsigned m_nCurrentBuffer;
+	unsigned m_nTXChunkSizeBytes;
+	u8 *m_pTXBuffer[2];
+	unsigned m_nTXCurrentBuffer;
+
+	unsigned m_nRXChannels;
+	unsigned m_nRXChunkSizeBytes;
+	u8 *m_pRXBuffer[2];
+	unsigned m_nRXCurrentBuffer;
+
+	int m_nOutstanding;
 
 	CSpinLock m_SpinLock;
 
-	CUSBSoundController m_SoundController;
+	CUSBSoundController *m_pSoundController;
 
-	TRegistrationHandle m_hRemoveRegistration;
+	TRegistrationHandle m_hTXRemoveRegistration;
+	TRegistrationHandle m_hRXRemoveRegistration;
 };
 
 #endif

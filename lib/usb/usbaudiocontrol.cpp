@@ -89,28 +89,28 @@ unsigned CUSBAudioControlDevice::GetNextStreamingSubDeviceNumber (void)
 	return m_nNextStreamingSubDeviceNumber++;
 }
 
-u16 CUSBAudioControlDevice::GetTerminalType (u8 uchInputTerminalID) const
+u16 CUSBAudioControlDevice::GetTerminalType (u8 uchEntityID, boolean bUpstream) const
 {
-	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchInputTerminalID);
-	if (   !pEntity
-	    || pEntity->GetEntityType () != CUSBAudioEntity::EntityTerminal)
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchEntityID);
+	if (!pEntity)
 	{
 		return USB_AUDIO_TERMINAL_TYPE_USB_UNDEFINED;
 	}
 
-	CUSBAudioTerminal *pInputTerminal = static_cast <CUSBAudioTerminal *> (pEntity);
-	CUSBAudioTerminal *pOutputTerminal = m_Topology.FindOutputTerminal (pInputTerminal);
-	if (!pOutputTerminal)
+	pEntity = m_Topology.FindEntity (CUSBAudioEntity::EntityTerminal, pEntity, bUpstream);
+	if (!pEntity)
 	{
 		return USB_AUDIO_TERMINAL_TYPE_USB_UNDEFINED;
 	}
 
-	return pOutputTerminal->GetTerminalType ();
+	CUSBAudioTerminal *pTerminal = static_cast <CUSBAudioTerminal *> (pEntity);
+
+	return pTerminal->GetTerminalType ();
 }
 
-u8 CUSBAudioControlDevice::GetClockSourceID (u8 uchInputTerminalID) const
+u8 CUSBAudioControlDevice::GetClockSourceID (u8 uchTerminalID) const
 {
-	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchInputTerminalID);
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchTerminalID);
 	if (   !pEntity
 	    || pEntity->GetEntityType () != CUSBAudioEntity::EntityTerminal)
 	{
@@ -118,31 +118,70 @@ u8 CUSBAudioControlDevice::GetClockSourceID (u8 uchInputTerminalID) const
 	}
 
 	CUSBAudioTerminal *pTerminal = static_cast <CUSBAudioTerminal *> (pEntity);
-	if (!pTerminal->IsInput ())
-	{
-		return USB_AUDIO_UNDEFINED_UNIT_ID;
-	}
 
 	return pTerminal->GetClockSourceID ();
 }
 
-u8 CUSBAudioControlDevice::GetFeatureUnitID (u8 uchInputTerminalID) const
+u8 CUSBAudioControlDevice::GetSelectorUnitID (u8 uchOutputTerminalID) const
 {
-	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchInputTerminalID);
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchOutputTerminalID);
 	if (   !pEntity
 	    || pEntity->GetEntityType () != CUSBAudioEntity::EntityTerminal)
 	{
 		return USB_AUDIO_UNDEFINED_UNIT_ID;
 	}
 
-	CUSBAudioTerminal *pTerminal = static_cast <CUSBAudioTerminal *> (pEntity);
-	CUSBAudioFeatureUnit *pUnit = m_Topology.FindFeatureUnit (pTerminal);
-	if (!pUnit)
+	pEntity = m_Topology.FindEntity (CUSBAudioEntity::EntitySelectorUnit, pEntity, TRUE);
+	if (!pEntity)
 	{
 		return USB_AUDIO_UNDEFINED_UNIT_ID;
 	}
 
-	return pUnit->GetID ();
+	return pEntity->GetID ();
+}
+
+unsigned CUSBAudioControlDevice::GetNumSources (u8 uchEntityID) const
+{
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchEntityID);
+	if (!pEntity)
+	{
+		return 0;
+	}
+
+	return pEntity->GetNumSources ();
+}
+
+u8 CUSBAudioControlDevice::GetSourceID (u8 uchEntityID, unsigned nIndex) const
+{
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchEntityID);
+	if (!pEntity)
+	{
+		return USB_AUDIO_UNDEFINED_UNIT_ID;
+	}
+
+	return pEntity->GetSourceID (nIndex);
+}
+
+u8 CUSBAudioControlDevice::GetFeatureUnitID (u8 uchEntityID, boolean bUpstream) const
+{
+	CUSBAudioEntity *pEntity = m_Topology.GetEntity (uchEntityID);
+	if (!pEntity)
+	{
+		return USB_AUDIO_UNDEFINED_UNIT_ID;
+	}
+
+	if (pEntity->GetEntityType () == CUSBAudioEntity::EntityFeatureUnit)
+	{
+		return uchEntityID;
+	}
+
+	pEntity = m_Topology.FindEntity (CUSBAudioEntity::EntityFeatureUnit, pEntity, bUpstream);
+	if (!pEntity)
+	{
+		return USB_AUDIO_UNDEFINED_UNIT_ID;
+	}
+
+	return pEntity->GetID ();
 }
 
 boolean CUSBAudioControlDevice::IsControlSupported (u8 uchFeatureUnitID, unsigned nChannel,

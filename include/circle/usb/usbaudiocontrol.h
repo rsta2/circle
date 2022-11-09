@@ -41,20 +41,37 @@ public:
 	/// \return Sub-device number for next interface of this USB audio streaming device
 	unsigned GetNextStreamingSubDeviceNumber (void);
 
-	/// \param uchInputTerminalID Terminal ID of the USB streaming Input Terminal
-	/// \return Terminal type of the associated output terminal\n
+	/// \param uchEntityID ID of an audio Entity of the controlled device
+	/// \param bUpstream Search upstream (or downstream)
+	/// \return Terminal type of the associated terminating terminal in search order\n
 	//	    (or USB_AUDIO_TERMINAL_TYPE_USB_UNDEFINED)
-	u16 GetTerminalType (u8 uchInputTerminalID) const;
+	u16 GetTerminalType (u8 uchEntityID, boolean bUpstream) const;
 
-	/// \brief Get the clock source of an Input Terminal of the controlled device
-	/// \param uchInputTerminalID Terminal ID of the USB streaming Input Terminal
+	/// \brief Get the clock source of a Terminal of the controlled device
+	/// \param uchTerminalID Terminal ID of the USB streaming Terminal
 	/// \return Unit ID of the associated clock source (or USB_AUDIO_UNDEFINED_UNIT_ID)
 	/// \note Supported for USB Audio class version 2.00 devices only
-	u8 GetClockSourceID (u8 uchInputTerminalID) const;
+	u8 GetClockSourceID (u8 uchTerminalID) const;
 
-	/// \param uchInputTerminalID Terminal ID of the USB streaming Input Terminal
-	/// \return Unit ID of the associated feature unit (or USB_AUDIO_UNDEFINED_UNIT_ID)
-	u8 GetFeatureUnitID (u8 uchInputTerminalID) const;
+	/// \param uchOutputTerminalID Terminal ID of the USB streaming Output Terminal
+	/// \return Unit ID of the associated selector unit (or USB_AUDIO_UNDEFINED_UNIT_ID)
+	u8 GetSelectorUnitID (u8 uchOutputTerminalID) const;
+
+	/// \param uchEntityID ID of an audio Entity of the controlled device
+	/// \return Number of sources of the Entity (or 0 on error)
+	unsigned GetNumSources (u8 uchEntityID) const;
+
+	/// \param uchEntityID ID of an audio Entity of the controlled device
+	/// \param nIndex Index of the source pin (0 .. NumSources-1)
+	/// \return Entity ID of a source of the given Entity (or USB_AUDIO_UNDEFINED_UNIT_ID)
+	u8 GetSourceID (u8 uchEntityID, unsigned nIndex) const;
+
+	/// \param uchEntityID ID of an audio Entity of the controlled device
+	/// \param bUpstream Search upstream (or downstream)
+	/// \return Unit ID of the associated Feature Unit in search order\n
+	///	    (or USB_AUDIO_UNDEFINED_UNIT_ID)
+	/// \note If uchEntityID references a Feature Unit itself, it is returned.
+	u8 GetFeatureUnitID (u8 uchEntityID, boolean bUpstream) const;
 
 	/// \param uchFeatureUnitID Unit ID of a Feature Unit of the controlled device
 	/// \param nChannel Audio channel (0: master, 1: normally front left, 2: right)

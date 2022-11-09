@@ -30,14 +30,20 @@ class CUSBSoundBaseDevice;
 class CUSBSoundController : public CSoundController	/// Sound controller for USB sound devices
 {
 public:
-	CUSBSoundController (CUSBSoundBaseDevice *pSoundDevice, unsigned nDevice);
+	CUSBSoundController (CUSBSoundBaseDevice *pSoundDevice,
+			     boolean bTX, boolean bRX, unsigned nDevice);
 	~CUSBSoundController (void);
 
 	boolean Probe (void) override;
 
 	u32 GetOutputProperties (void) const override
 	{
-		return PropertyDirectionSupported;
+		return m_bTX ? PropertyDirectionSupported : 0;
+	}
+
+	u32 GetInputProperties (void) const override
+	{
+		return m_bRX ? PropertyDirectionSupported : 0;
 	}
 
 	boolean EnableJack (TJack Jack) override;
@@ -47,12 +53,15 @@ public:
 	boolean SetControl (TControl Control, TJack Jack, TChannel Channel, int nValue) override;
 
 private:
+	boolean SelectInputTerminal (TJack Jack);
+
 	boolean SetMute (TJack Jack, boolean bEnable);
 
 	boolean SetVolume (TJack Jack, TChannel Channel, int ndB);
 
 private:
-	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
+	// get streaming device with 0-based index of the given kind (TX or RX)
+	CUSBAudioStreamingDevice *GetStreamingDevice (boolean bTX, unsigned nIndex);
 
 	// returns matching priority with jack (0..N, 0: best)
 	static const unsigned NoMatch = 99;
@@ -60,13 +69,17 @@ private:
 
 private:
 	CUSBSoundBaseDevice *m_pSoundDevice;
+	boolean m_bTX;
+	boolean m_bRX;
 	unsigned m_nDevice;
-	unsigned m_nInterface;
 
-	CUSBAudioStreamingDevice *m_pStreamingDevice;
-	CUSBAudioStreamingDevice::TDeviceInfo m_DeviceInfo;
+	unsigned m_nTXInterface;
+	CUSBAudioStreamingDevice *m_pTXStreamingDevice;
+	CUSBAudioStreamingDevice::TDeviceInfo m_TXDeviceInfo;
 
-	CDevice::TRegistrationHandle m_hRemoveRegistration;
+	unsigned m_nRXTerminal;
+	CUSBAudioStreamingDevice *m_pRXStreamingDevice;
+	CUSBAudioStreamingDevice::TDeviceInfo m_RXDeviceInfo;
 };
 
 #endif

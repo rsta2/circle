@@ -376,6 +376,7 @@ CUSBAudioFunctionTopology::~CUSBAudioFunctionTopology (void)
 	}
 }
 
+// TODO: Parser fails with assertion, if device configuration is wrong
 boolean CUSBAudioFunctionTopology::Parse (
 	const TUSBAudioControlInterfaceDescriptor *pDescriptorHeader)
 {
@@ -457,6 +458,8 @@ boolean CUSBAudioFunctionTopology::Parse (
 		pDesc = (TUSBAudioControlInterfaceDescriptor *) ((u8 *) pDesc + pDesc->bLength);
 	}
 
+	//Dump ();
+
 	return TRUE;
 }
 
@@ -465,51 +468,33 @@ CUSBAudioEntity *CUSBAudioFunctionTopology::GetEntity (CUSBAudioEntity::TEntityI
 	return m_pEntity[ID];
 }
 
-CUSBAudioTerminal *CUSBAudioFunctionTopology::FindOutputTerminal (
-	CUSBAudioTerminal *pInputTerminalUSB) const
+CUSBAudioEntity *CUSBAudioFunctionTopology::FindEntity (CUSBAudioEntity::TEntityType EntityType,
+							CUSBAudioEntity *pStartFromEntity,
+							boolean bUpstream) const
 {
-	assert (pInputTerminalUSB);
+	assert (pStartFromEntity);
 
 	for (unsigned i = 0; i <= CUSBAudioEntity::MaximumID; i++)
 	{
 		if (   !m_pEntity[i]
-		    || m_pEntity[i]->GetEntityType () != CUSBAudioEntity::EntityTerminal)
+		    || m_pEntity[i]->GetEntityType () != EntityType)
 		{
 			continue;
 		}
 
-		CUSBAudioTerminal *pTerminal = static_cast<CUSBAudioTerminal *> (m_pEntity[i]);
-		if (pTerminal->IsInput ())
+		if (bUpstream)
 		{
-			continue;
+			if (FindUpstream (pStartFromEntity, m_pEntity[i]))
+			{
+				return m_pEntity[i];
+			}
 		}
-
-		if (FindUpstream (pTerminal, pInputTerminalUSB))
+		else
 		{
-			return pTerminal;
-		}
-	}
-
-	return nullptr;
-}
-
-CUSBAudioFeatureUnit *CUSBAudioFunctionTopology::FindFeatureUnit (
-	CUSBAudioTerminal *pInputTerminalUSB) const
-{
-	assert (pInputTerminalUSB);
-
-	for (unsigned i = 0; i <= CUSBAudioEntity::MaximumID; i++)
-	{
-		if (   !m_pEntity[i]
-		    || m_pEntity[i]->GetEntityType () != CUSBAudioEntity::EntityFeatureUnit)
-		{
-			continue;
-		}
-
-		CUSBAudioFeatureUnit *pUnit = static_cast <CUSBAudioFeatureUnit *> (m_pEntity[i]);
-		if (FindUpstream (pUnit, pInputTerminalUSB))
-		{
-			return pUnit;
+			if (FindUpstream (m_pEntity[i], pStartFromEntity))
+			{
+				return m_pEntity[i];
+			}
 		}
 	}
 

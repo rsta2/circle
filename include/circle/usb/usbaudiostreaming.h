@@ -21,6 +21,7 @@
 #define _circle_usb_usbaudiostreaming_h
 
 #include <circle/usb/usbfunction.h>
+#include <circle/usb/usbaudiocontrol.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/synchronize.h>
@@ -34,12 +35,16 @@
 class CUSBAudioStreamingDevice : public CUSBFunction	/// Low-level driver for USB audio streaming devices
 {
 public:
+	static const unsigned MaxTerminals = 4;		///< multiple Input Terminals allowed
+
 	static const unsigned MaxSampleRatesRanges = 8;
 
 	struct TDeviceInfo
 	{
-		unsigned SampleRateRanges;	///< Number of valid entries in SampleRateRange[]
+		boolean IsOutput;		///< Direction output (or input)
+		unsigned NumChannels;		///< 1 (input only) or 2
 
+		unsigned SampleRateRanges;	///< Number of valid entries in SampleRateRange[]
 		struct
 		{
 			unsigned Min;
@@ -48,15 +53,22 @@ public:
 		}
 		SampleRateRange[MaxSampleRatesRanges];
 
-		u16 TerminalType;	///< Terminal type of the output terminal (e.g. Speaker)
+		unsigned NumTerminals;		///< Number of terminals (always 1 for output)
+		struct TTerminalInfo
+		{
+			u16 TerminalType;	///< Type of the terminal (e.g. Speaker, Microphone)
 
-		boolean MuteSupported;
+			boolean MuteSupported;
 
-		boolean VolumeSupported;
-		int MinVolume, MaxVolume;	///< in dB
+			boolean VolumeSupported;
+			boolean VolumePerChannel;
+			int MinVolume;		///< in dB
+			int MaxVolume;		///< in dB
+		}
+		Terminal[MaxTerminals];
 	};
 
-	typedef void TCompletionRoutine (void *pParam);
+	typedef void TCompletionRoutine (unsigned nBytesTransferred, void *pParam);
 
 public:
 	CUSBAudioStreamingDevice (CUSBFunction *pFunction);
@@ -73,7 +85,7 @@ public:
 	/// \return Operation successful?
 	boolean Setup (unsigned nSampleRate);
 
-	/// \return Size of a send chunk in bytes
+	/// \return Size of a chunk in bytes
 	/// \note Must be called after Setup()
 	/// \note Varies in operation, first call returns mean value
 	unsigned GetChunkSizeBytes (void) const;
@@ -87,18 +99,35 @@ public:
 	boolean SendChunk (const void *pBuffer, unsigned nChunkSizeBytes,
 			   TCompletionRoutine *pCompletionRoutine = 0, void *pParam = 0);
 
+	/// \brief Receive a chunk of audio data from the audio streaming device
+	/// \param pBuffer Pointer to the audio data buffer
+	/// \param nChunkSizeBytes Maximum number of bytes to be received
+	/// \param pCompletionRoutine Optional pointer to a completion routine
+	/// \param pParam Optional user parameter, handed over to the completion routine
+	/// \return Operation successful?
+	boolean ReceiveChunk (void *pBuffer, unsigned nChunkSizeBytes,
+			      TCompletionRoutine *pCompletionRoutine = 0, void *pParam = 0);
+
+	/// \brief Select Input Terminal to be used for input
+	/// \param nIndex Index of the Input Terminal (0 .. NumTerminals-1)
+	/// \return Operation successful?
+	/// \note Can be called from TASK_LEVEL only.
+	boolean SelectInputTerminal (unsigned nIndex);
+
 	/// \param bEnable Set to TRUE to enable mute, FALSE to disable
 	/// \return Operation successful?
 	/// \note Can be called from TASK_LEVEL only.
 	boolean SetMute (boolean bEnable);
 
-	/// \param nChannel Addressed audio channel (0: left, 1: right)
+	/// \param nChannel Addressed audio channel (0: both, 1: left, 2: right)
 	/// \param ndB Volume value to be set (in dB)
 	/// \return Operation successful?
 	/// \note Can be called from TASK_LEVEL only.
 	boolean SetVolume (unsigned nChannel, int ndB);
 
 private:
+	boolean InitTerminalControlInfo (CUSBAudioControlDevice *pControlDevice);
+
 	static void CompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext);
 	static void SyncCompletionHandler (CUSBRequest *pURB, void *pParam, void *pContext);
 
@@ -107,8 +136,14 @@ private:
 private:
 	boolean m_bVer200;
 
-	CUSBEndpoint *m_pEndpointOut;
+	CUSBEndpoint *m_pEndpointData;
 	CUSBEndpoint *m_pEndpointSync;		// feedback EP
+
+	boolean m_bIsOutput;
+	unsigned m_nChannels;
+
+	unsigned m_nTerminals;
+	unsigned m_nActiveTerminal;
 
 	TDeviceInfo m_DeviceInfo;
 	unsigned m_nSampleRate;
@@ -123,7 +158,8 @@ private:
 	unsigned m_nSyncAccu;
 
 	u8 m_uchClockSourceID;
-	u8 m_uchFeatureUnitID;
+	u8 m_uchSelectorUnitID;
+	u8 m_uchFeatureUnitID[MaxTerminals];
 
 	CSpinLock m_SpinLock;
 

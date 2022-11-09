@@ -23,9 +23,6 @@
 #include <circle/usb/usbaudio.h>
 #include <circle/types.h>
 
-// TODO: Number of channels handling needs improvement
-// TODO: Parser fails with assertion, if device configuration is wrong
-
 class CUSBAudioEntity
 {
 public:
@@ -165,13 +162,13 @@ public:
 	/// \return Entity for ID
 	CUSBAudioEntity *GetEntity (CUSBAudioEntity::TEntityID ID) const;
 
-	/// \return Output Terminal (e.g. Speaker, SPDIF), which is connected\n
-	///	    to this Input Terminal (USB streaming)
-	CUSBAudioTerminal *FindOutputTerminal (CUSBAudioTerminal *pInputTerminalUSB) const;
-
-	/// \return Feature Unit (e.g. Mute, Volume), which is connected\n
-	///	    to this Input Terminal (USB streaming)
-	CUSBAudioFeatureUnit *FindFeatureUnit (CUSBAudioTerminal *pInputTerminalUSB) const;
+	/// \param EntityType Entity type to search for
+	/// \param pStartFromEntity Where to start from in the topology tree
+	/// \param bUpstream Search upstream (OT -> IT) or downstream (IT -> OT)
+	/// \return Pointer to found entity, or nullptr if not found
+	CUSBAudioEntity *FindEntity (CUSBAudioEntity::TEntityType EntityType,
+				     CUSBAudioEntity *pStartFromEntity,
+				     boolean bUpstream) const;
 
 private:
 	// Is entity *pEntityToFind inside the upstream from *pCurrentEntity
