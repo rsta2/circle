@@ -53,13 +53,17 @@ const char CSoundShell::HelpMsg[] =
 	"\n"
 	"Command\t\tDescription\t\t\t\t\t\tAlias\n"
 	"\n"
-	"start DEV\tStart sound device (snd{pwm|i2s|hdmi|usb"
+	"start DEV [MODE]\n"
+	"\t\tStart sound device (snd{pwm|i2s|hdmi|usb"
 #ifdef USE_VCHIQ_SOUND
 	"|vchiq"
 #endif
 	"})\n"
+	"\t\tfor input (i), output (o, default) or both (io)\n"
 	"cancel\t\tStop active sound device\n"
-	"enable JACK\tEnable jack (default|line|speaker|headphone|hdmi|spdif)\n"
+	"mode MODE\tNext commands effects input (i) or output (o) device\n"
+	"enable JACK\tEnable jack (defaultout|lineout|speaker|headphone|hdmi\n"
+	"\t\t|spdif|defaultin|linein|microphone)\n"
 	"disable JACK\tDisable jack (multi-jack operation only)\n"
 	"controlinfo CTRL CHAN [JACK]\t\t\t\t\t\tinfo\n"
 	"\t\tDisplay control (mute|volume) info for channel (lr|l|r)\n"
@@ -74,14 +78,25 @@ const char CSoundShell::HelpMsg[] =
 	"help\t\tThis help\n"
 	"\n";
 
+const CSoundShell::TStringMapping CSoundShell::s_ModeMap[] =
+{
+	{"i",		ModeInput},
+	{"o",		ModeOutput},
+	{"io",		ModeInputOutput},
+	{0,		ModeUnknown}
+};
+
 const CSoundShell::TStringMapping CSoundShell::s_JackMap[] =
 {
-	{"default",	CSoundController::JackDefaultOut},	// currently output only
-	{"line",	CSoundController::JackLineOut},
+	{"defaultout",	CSoundController::JackDefaultOut},
+	{"lineout",	CSoundController::JackLineOut},
 	{"speaker",	CSoundController::JackSpeaker},
 	{"headphone",	CSoundController::JackHeadphone},
 	{"hdmi",	CSoundController::JackHDMI},
 	{"spdif",	CSoundController::JackSPDIFOut},
+	{"defaultin",	CSoundController::JackDefaultIn},
+	{"linein",	CSoundController::JackLineIn},
+	{"microphone",	CSoundController::JackMicrophone},
 	{0,		CSoundController::JackUnknown}
 };
 
@@ -126,7 +141,8 @@ CSoundShell::CSoundShell (CConsole *pConsole, CInterruptSystem *pInterrupt,
 #endif
 	m_pUSBHCI (pUSBHCI),
 	m_bContinue (TRUE),
-	m_pSound (0)
+	m_nMode (ModeOutput),
+	m_pSound {0, 0}
 {
 	// initialize oscillators
 	m_VCOLeft.SetWaveform (WaveformSine);
@@ -142,7 +158,8 @@ CSoundShell::~CSoundShell (void)
 	m_pInterrupt = 0;
 	m_pI2CMaster = 0;
 	m_pUSBHCI = 0;
-	m_pSound = 0;
+	m_pSound[ModeOutput] = 0;
+	m_pSound[ModeInput] = 0;
 }
 
 void CSoundShell::Run (void)
@@ -171,6 +188,13 @@ void CSoundShell::Run (void)
 			else if (Command.Compare ("cancel") == 0)
 			{
 				if (!Cancel ())
+				{
+					break;
+				}
+			}
+			else if (Command.Compare ("mode") == 0)
+			{
+				if (!Mode ())
 				{
 					break;
 				}
@@ -250,38 +274,140 @@ boolean CSoundShell::Start (void)
 		return FALSE;
 	}
 
-	if (m_pSound != 0)
+	CString Mode;
+	if (!GetToken (&Mode))
 	{
-		Print ("Device already active\n");
+		Mode = "o";
+	}
+
+	unsigned nMode = ConvertString (Mode, s_ModeMap);
+	if (nMode == ModeUnknown)
+	{
+		Print ("Invalid device mode: %s\n", (const char *) Mode);
 
 		return FALSE;
+	}
+
+	if (nMode != ModeInputOutput)
+	{
+		if (m_pSound[nMode] != 0)
+		{
+			Print ("Device already active\n");
+
+			return FALSE;
+		}
+	}
+	else
+	{
+		if (   m_pSound[ModeInput] != 0
+		    || m_pSound[ModeOutput] != 0)
+		{
+			Print ("Device already active\n");
+
+			return FALSE;
+		}
 	}
 
 	// select the sound device
 	assert (m_pInterrupt != 0);
 	if (strcmp (Token, "sndpwm") == 0)
 	{
-		m_pSound = new CPWMSoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
+		if (nMode != ModeOutput)
+		{
+			Print ("Device mode is not supported\n");
+
+			return FALSE;
+		}
+
+		m_pSound[nMode] = new CPWMSoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
 	else if (strcmp (Token, "sndi2s") == 0)
 	{
 		assert (m_pI2CMaster != 0);
-		m_pSound = new CI2SSoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE, I2S_SLAVE,
-						    m_pI2CMaster, DAC_I2C_ADDRESS);
+
+		switch (nMode)
+		{
+		case ModeOutput:
+			m_pSound[ModeOutput] = new CI2SSoundBaseDevice (
+							m_pInterrupt,
+							SAMPLE_RATE, CHUNK_SIZE,
+							I2S_SLAVE, m_pI2CMaster, DAC_I2C_ADDRESS,
+							CI2SSoundBaseDevice::DeviceModeTXOnly);
+			break;
+
+		case ModeInput:
+			m_pSound[ModeInput] = new CI2SSoundBaseDevice (
+							m_pInterrupt,
+							SAMPLE_RATE, CHUNK_SIZE,
+							I2S_SLAVE, m_pI2CMaster, DAC_I2C_ADDRESS,
+							CI2SSoundBaseDevice::DeviceModeRXOnly);
+			break;
+
+		case ModeInputOutput:
+			m_pSound[ModeOutput] =
+			m_pSound[ModeInput] = new CI2SSoundBaseDevice (
+							m_pInterrupt,
+							SAMPLE_RATE, CHUNK_SIZE,
+							I2S_SLAVE, m_pI2CMaster, DAC_I2C_ADDRESS,
+							CI2SSoundBaseDevice::DeviceModeTXRX);
+			break;
+
+		default:
+			assert (0);
+			break;
+		}
 	}
 	else if (strcmp (Token, "sndhdmi") == 0)
 	{
-		m_pSound = new CHDMISoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
+		if (nMode != ModeOutput)
+		{
+			Print ("Device mode is not supported\n");
+
+			return FALSE;
+		}
+
+		m_pSound[nMode] = new CHDMISoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
 	else if (strcmp (Token, "sndusb") == 0)
 	{
-		m_pSound = new CUSBSoundBaseDevice (SAMPLE_RATE);
+		switch (nMode)
+		{
+		case ModeOutput:
+			m_pSound[ModeOutput] = new CUSBSoundBaseDevice (
+							SAMPLE_RATE,
+							CUSBSoundBaseDevice::DeviceModeTXOnly);
+			break;
+
+		case ModeInput:
+			m_pSound[ModeInput] = new CUSBSoundBaseDevice (
+							SAMPLE_RATE,
+							CUSBSoundBaseDevice::DeviceModeRXOnly);
+			break;
+
+		case ModeInputOutput:
+			m_pSound[ModeOutput] =
+			m_pSound[ModeInput] = new CUSBSoundBaseDevice (
+							SAMPLE_RATE,
+							CUSBSoundBaseDevice::DeviceModeTXRX);
+			break;
+
+		default:
+			assert (0);
+			break;
+		}
 	}
 #ifdef USE_VCHIQ_SOUND
 	else if (strcmp (Token, "sndvchiq") == 0)
 	{
+		if (nMode != ModeOutput)
+		{
+			Print ("Device mode is not supported\n");
+
+			return FALSE;
+		}
+
 		assert (m_pVCHIQ != 0);
-		m_pSound = new CVCHIQSoundBaseDevice (m_pVCHIQ, SAMPLE_RATE, CHUNK_SIZE);
+		m_pSound[nMode] = new CVCHIQSoundBaseDevice (m_pVCHIQ, SAMPLE_RATE, CHUNK_SIZE);
 	}
 #endif
 	else
@@ -290,33 +416,67 @@ boolean CSoundShell::Start (void)
 
 		return FALSE;
 	}
-	assert (m_pSound != 0);
 
-	// configure sound device
-	if (!m_pSound->AllocateQueue (QUEUE_SIZE_MSECS))
+	if (nMode != ModeInput)
 	{
-		Print ("Cannot allocate sound queue\n");
+		// configure sound device
+		if (!m_pSound[ModeOutput]->AllocateQueue (QUEUE_SIZE_MSECS))
+		{
+			Print ("Cannot allocate sound queue\n");
 
-		delete m_pSound;
-		m_pSound = 0;
+			delete m_pSound[ModeOutput];
+			m_pSound[ModeOutput] = 0;
 
-		return FALSE;
+			return FALSE;
+		}
+
+		m_pSound[ModeOutput]->SetWriteFormat (FORMAT, WRITE_CHANNELS);
+
+		// initially fill the whole queue with data
+		WriteSoundData (m_pSound[ModeOutput]->GetQueueSizeFrames ());
 	}
 
-	m_pSound->SetWriteFormat (FORMAT, WRITE_CHANNELS);
+	if (nMode != ModeOutput)
+	{
+		// configure sound device
+		if (!m_pSound[ModeInput]->AllocateReadQueue (QUEUE_SIZE_MSECS))
+		{
+			Print ("Cannot allocate sound queue\n");
 
-	// initially fill the whole queue with data
-	WriteSoundData (m_pSound->GetQueueSizeFrames ());
+			delete m_pSound[ModeInput];
+			m_pSound[ModeInput] = 0;
+
+			return FALSE;
+		}
+
+		m_pSound[ModeInput]->SetReadFormat (FORMAT, WRITE_CHANNELS);
+	}
 
 	// start sound device
-	if (!m_pSound->Start ())
+	if (nMode == ModeInputOutput)
 	{
-		Print ("Cannot start sound device\n");
+		if (!m_pSound[ModeOutput]->Start ())
+		{
+			Print ("Cannot start sound device\n");
 
-		delete m_pSound;
-		m_pSound = 0;
+			delete m_pSound[ModeOutput];
+			m_pSound[ModeOutput] =
+			m_pSound[ModeInput] = 0;
 
-		return FALSE;
+			return FALSE;
+		}
+	}
+	else
+	{
+		if (!m_pSound[nMode]->Start ())
+		{
+			Print ("Cannot start sound device\n");
+
+			delete m_pSound[nMode];
+			m_pSound[nMode] = 0;
+
+			return FALSE;
+		}
 	}
 
 	return TRUE;
@@ -324,24 +484,79 @@ boolean CSoundShell::Start (void)
 
 boolean CSoundShell::Cancel (void)
 {
-	if (!m_pSound)
+	if (m_pSound[ModeOutput] != m_pSound[ModeInput])
 	{
-		Print ("Sound device is not active\n");
+		if (!m_pSound[m_nMode])
+		{
+			Print ("Sound device is not active\n");
+
+			return FALSE;
+		}
+
+		m_pSound[m_nMode]->Cancel ();
+
+		while (m_pSound[m_nMode]->IsActive ())
+		{
+#ifdef USE_VCHIQ_SOUND
+			CScheduler::Get ()->Yield ();
+#endif
+		}
+
+		delete m_pSound[m_nMode];
+		m_pSound[m_nMode] = 0;
+	}
+	else
+	{
+		if (!m_pSound[ModeOutput])
+		{
+			Print ("Sound device is not active\n");
+
+			return FALSE;
+		}
+
+		m_pSound[ModeOutput]->Cancel ();
+
+		while (m_pSound[ModeOutput]->IsActive ())
+		{
+#ifdef USE_VCHIQ_SOUND
+			CScheduler::Get ()->Yield ();
+#endif
+		}
+
+		delete m_pSound[ModeOutput];
+		m_pSound[ModeOutput] =
+		m_pSound[ModeInput] = 0;
+	}
+
+	return TRUE;
+}
+
+boolean CSoundShell::Mode (void)
+{
+	CString Mode;
+	if (!GetToken (&Mode))
+	{
+		Print ("Device mode expected\n");
 
 		return FALSE;
 	}
 
-	m_pSound->Cancel ();
-
-	while (m_pSound->IsActive ())
+	unsigned nMode = ConvertString (Mode, s_ModeMap);
+	if (nMode >= ModeInputOutput)
 	{
-#ifdef USE_VCHIQ_SOUND
-		CScheduler::Get ()->Yield ();
-#endif
+		Print ("Invalid device mode: %s\n", (const char *) Mode);
+
+		return FALSE;
 	}
 
-	delete m_pSound;
-	m_pSound = 0;
+	if (m_pSound[ModeOutput] == m_pSound[ModeInput])
+	{
+		Print ("Mode command has no effect\n");
+
+		return FALSE;
+	}
+
+	m_nMode = nMode;
 
 	return TRUE;
 }
@@ -365,14 +580,14 @@ boolean CSoundShell::Enable (void)
 		return FALSE;
 	}
 
-	if (!m_pSound)
+	if (!m_pSound[m_nMode])
 	{
 		Print ("Sound device is not active\n");
 
 		return FALSE;
 	}
 
-	CSoundController *pController = m_pSound->GetController ();
+	CSoundController *pController = m_pSound[m_nMode]->GetController ();
 	if (pController == 0)
 	{
 		Print ("Sound controller is not supported\n");
@@ -409,14 +624,14 @@ boolean CSoundShell::Disable (void)
 		return FALSE;
 	}
 
-	if (!m_pSound)
+	if (!m_pSound[m_nMode])
 	{
 		Print ("Sound device is not active\n");
 
 		return FALSE;
 	}
 
-	CSoundController *pController = m_pSound->GetController ();
+	CSoundController *pController = m_pSound[m_nMode]->GetController ();
 	if (pController == 0)
 	{
 		Print ("Sound controller is not supported\n");
@@ -436,8 +651,8 @@ boolean CSoundShell::Disable (void)
 
 boolean CSoundShell::ControlInfo (void)
 {
-	if (   !m_pSound
-	    || !m_pSound->IsActive ())
+	if (   !m_pSound[m_nMode]
+	    || !m_pSound[m_nMode]->IsActive ())
 	{
 		Print ("Sound device is not active\n");
 
@@ -477,19 +692,25 @@ boolean CSoundShell::ControlInfo (void)
 		return FALSE;
 	}
 
-	CSoundController::TJack Jack = CSoundController::JackDefaultOut;
+	CSoundController::TJack DefaultJack = CSoundController::JackDefaultOut;
+	if (m_nMode == ModeInput)
+	{
+		DefaultJack = CSoundController::JackDefaultIn;
+	}
+
+	CSoundController::TJack Jack = DefaultJack;
 	if (GetToken (&Token))
 	{
 		Jack = (CSoundController::TJack) ConvertString (Token, s_JackMap);
 		if (Jack == CSoundController::JackUnknown)
 		{
-			Jack = CSoundController::JackDefaultOut;
+			Jack = DefaultJack;
 
 			UnGetToken (Token);
 		}
 	}
 
-	CSoundController *pController = m_pSound->GetController ();
+	CSoundController *pController = m_pSound[m_nMode]->GetController ();
 	if (pController == 0)
 	{
 		Print ("Sound controller is not supported\n");
@@ -512,8 +733,8 @@ boolean CSoundShell::ControlInfo (void)
 
 boolean CSoundShell::SetControl (void)
 {
-	if (!m_pSound
-	    || !m_pSound->IsActive ())
+	if (   !m_pSound[m_nMode]
+	    || !m_pSound[m_nMode]->IsActive ())
 	{
 		Print ("Sound device is not active\n");
 
@@ -568,19 +789,25 @@ boolean CSoundShell::SetControl (void)
 		return FALSE;
 	}
 
-	CSoundController::TJack Jack = CSoundController::JackDefaultOut;
+	CSoundController::TJack DefaultJack = CSoundController::JackDefaultOut;
+	if (m_nMode == ModeInput)
+	{
+		DefaultJack = CSoundController::JackDefaultIn;
+	}
+
+	CSoundController::TJack Jack = DefaultJack;
 	if (GetToken (&Token))
 	{
 		Jack = (CSoundController::TJack) ConvertString (Token, s_JackMap);
 		if (Jack == CSoundController::JackUnknown)
 		{
-			Jack = CSoundController::JackDefaultOut;
+			Jack = DefaultJack;
 
 			UnGetToken (Token);
 		}
 	}
 
-	CSoundController *pController = m_pSound->GetController ();
+	CSoundController *pController = m_pSound[m_nMode]->GetController ();
 	if (pController == 0)
 	{
 		Print ("Sound controller is not supported\n");
@@ -739,7 +966,14 @@ void CSoundShell::ReadLine (void)
 
 	do
 	{
-		Print ("Sound%s> ", m_pSound != 0 ? "!" : "");
+		const char *pMode = "IO";
+		if (m_pSound[ModeOutput] != m_pSound[ModeInput])
+		{
+			pMode = m_nMode == ModeOutput ? "O" : "I";
+		}
+
+		Print ("Sound %s%s> ",
+		       pMode, m_pSound[ModeOutput] ||  m_pSound[ModeInput] ? "!" : "");
 
 		assert (m_pConsole != 0);
 		while ((nResult = m_pConsole->Read (m_LineBuffer, sizeof m_LineBuffer-1)) <= 0)
@@ -869,21 +1103,69 @@ void CSoundShell::Print (const char *pFormat, ...)
 
 void CSoundShell::ProcessSound (void)
 {
-	if (m_pSound != 0)
+	boolean bInactive = FALSE;
+
+	if (   m_pSound[ModeOutput] != 0
+	    && m_pSound[ModeInput] == 0)
 	{
-		if (m_pSound->IsActive ())
+		if (m_pSound[ModeOutput]->IsActive ())
 		{
 			// fill the whole queue free space with data
-			WriteSoundData (  m_pSound->GetQueueSizeFrames ()
-					- m_pSound->GetQueueFramesAvail ());
+			WriteSoundData (  m_pSound[ModeOutput]->GetQueueSizeFrames ()
+					- m_pSound[ModeOutput]->GetQueueFramesAvail ());
 		}
 		else
 		{
-			delete m_pSound;
-			m_pSound = 0;
+			delete m_pSound[ModeOutput];
+			m_pSound[ModeOutput] = 0;
 
-			Print ("\nDevice went inactive\n");
+			bInactive = TRUE;
 		}
+	}
+	else if (   m_pSound[ModeOutput] == 0
+		 && m_pSound[ModeInput] != 0)
+	{
+		if (!m_pSound[ModeInput]->IsActive ())
+		{
+			delete m_pSound[ModeInput];
+			m_pSound[ModeInput] = 0;
+
+			bInactive = TRUE;
+		}
+	}
+	else if (   m_pSound[ModeOutput] != 0
+		 && m_pSound[ModeInput] != 0)
+	{
+		if (!m_pSound[ModeOutput]->IsActive ())
+		{
+			if (m_pSound[ModeOutput] != m_pSound[ModeInput])
+			{
+				delete m_pSound[ModeOutput];
+			}
+
+			m_pSound[ModeOutput] = 0;
+
+			bInactive = TRUE;
+		}
+
+		if (!m_pSound[ModeInput]->IsActive ())
+		{
+			delete m_pSound[ModeInput];
+			m_pSound[ModeInput] = 0;
+
+			bInactive = TRUE;
+		}
+
+		if (   m_pSound[ModeOutput] != 0
+		    && m_pSound[ModeInput] != 0)
+		{
+			CopySoundData ();
+		}
+	}
+
+	if (bInactive)
+	{
+		Print ("\nDevice(s) went inactive\n");
 	}
 
 #ifdef USE_VCHIQ_SOUND
@@ -904,7 +1186,7 @@ void CSoundShell::WriteSoundData (unsigned nFrames)
 
 		unsigned nWriteBytes = nWriteFrames * WRITE_CHANNELS * TYPE_SIZE;
 
-		int nResult = m_pSound->Write (Buffer, nWriteBytes);
+		int nResult = m_pSound[ModeOutput]->Write (Buffer, nWriteBytes);
 		if (nResult != (int) nWriteBytes)
 		{
 			Print ("Sound data dropped\n");
@@ -939,4 +1221,15 @@ void CSoundShell::GetSoundData (void *pBuffer, unsigned nFrames)
 		memcpy (&pBuffer8[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
 #endif
 	}
+}
+
+void CSoundShell::CopySoundData (void)
+{
+	u8 Buffer[TYPE_SIZE*WRITE_CHANNELS*4096];
+	int nBytes = m_pSound[ModeInput]->Read (Buffer, sizeof Buffer);
+	if (nBytes > 0)
+	{
+		m_pSound[ModeOutput]->Write (Buffer, nBytes);
+	}
+
 }

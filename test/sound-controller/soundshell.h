@@ -51,6 +51,7 @@ public:
 private:
 	boolean Start (void);
 	boolean Cancel (void);
+	boolean Mode (void);
 	boolean Enable (void);
 	boolean Disable (void);
 	boolean ControlInfo (void);
@@ -84,6 +85,16 @@ private:
 	void WriteSoundData (unsigned nFrames);
 	void GetSoundData (void *pBuffer, unsigned nFrames);
 
+	void CopySoundData (void);
+
+	enum TMode
+	{
+		ModeOutput,
+		ModeInput,
+		ModeInputOutput,
+		ModeUnknown
+	};
+
 private:
 	CConsole *m_pConsole;
 	CInterruptSystem *m_pInterrupt;
@@ -95,7 +106,8 @@ private:
 
 	boolean m_bContinue;
 
-	CSoundBaseDevice *m_pSound;
+	unsigned m_nMode;
+	CSoundBaseDevice *m_pSound[2];
 	COscillator m_VCOLeft;
 	COscillator m_VCORight;
 
@@ -106,6 +118,7 @@ private:
 
 	static const char HelpMsg[];
 
+	static const TStringMapping s_ModeMap[];
 	static const TStringMapping s_JackMap[];
 	static const TStringMapping s_ChannelMap[];
 	static const TStringMapping s_ControlMap[];
