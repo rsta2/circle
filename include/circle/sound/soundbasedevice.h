@@ -181,7 +181,7 @@ public:
 	void RegisterHaveDataCallback (TSoundDataCallback *pCallback, void *pParam);
 
 protected:
-	/// \brief May overload this to provide the sound samples
+	/// \brief May override this to provide the sound samples
 	/// \param pBuffer    Buffer where the samples have to be placed
 	/// \param nChunkSize Size of the buffer in words
 	/// \return Number of words written to the buffer (normally nChunkSize),\n
@@ -191,10 +191,11 @@ protected:
 	virtual unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize);
 	virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
-	/// \brief Overload this to consume the received sound samples
+	/// \brief May override this to consume the received sound samples
 	/// \param pBuffer    Buffer where the samples have been placed
 	/// \param nChunkSize Size of the buffer in words
 	/// \note Each sample consists of two words (Left channel, right channel)
+	virtual void PutChunk (const s16 *pBuffer, unsigned nChunkSize);
 	virtual void PutChunk (const u32 *pBuffer, unsigned nChunkSize);
 
 	/// \brief Called from GetChunk() to apply framing on IEC958 samples
@@ -217,6 +218,8 @@ private:
 	// Input //////////////////////////////////////////////////////////////
 
 	void ConvertReadSoundFormat (void *pTo, const void *pFrom);
+
+	void PutChunkInternal (const void *pBuffer, unsigned nChunkSize);
 
 	unsigned GetReadQueueBytesFree (void);
 	unsigned GetReadQueueBytesAvail (void);

@@ -762,10 +762,22 @@ void CSoundBaseDevice::Dequeue (void *pBuffer, unsigned nCount)
 
 // Input //////////////////////////////////////////////////////////////
 
+void CSoundBaseDevice::PutChunk (const s16 *pBuffer, unsigned nChunkSize)
+{
+	assert (m_HWFormat == SoundFormatSigned16);
+
+	PutChunkInternal (pBuffer, nChunkSize);
+}
+
 void CSoundBaseDevice::PutChunk (const u32 *pBuffer, unsigned nChunkSize)
 {
 	assert (m_HWFormat == SoundFormatSigned24_32);
 
+	PutChunkInternal (pBuffer, nChunkSize);
+}
+
+void CSoundBaseDevice::PutChunkInternal (const void *pBuffer, unsigned nChunkSize)
+{
 	const u8 *pBuffer8 = reinterpret_cast<const u8 *> (pBuffer);
 	assert (pBuffer8 != 0);
 
@@ -800,9 +812,25 @@ void CSoundBaseDevice::PutChunk (const u32 *pBuffer, unsigned nChunkSize)
 
 void CSoundBaseDevice::ConvertReadSoundFormat (void *pTo, const void *pFrom)
 {
-	assert (m_HWFormat == SoundFormatSigned24_32);
-	const u32 *pValue = reinterpret_cast<const u32 *> (pFrom);
-	u32 nValue = *pValue;
+	u32 nValue = 0;
+
+	switch (m_HWFormat)
+	{
+	case SoundFormatSigned16: {
+		const s16 *pValue = reinterpret_cast<const s16 *> (pFrom);
+		nValue = *pValue;
+		nValue <<= 8;
+		} break;
+
+	case SoundFormatSigned24_32: {
+		const u32 *pValue = reinterpret_cast<const u32 *> (pFrom);
+		nValue = *pValue;
+		} break;
+
+	default:
+		assert (0);
+		break;
+	}
 
 	switch (m_ReadFormat)
 	{
