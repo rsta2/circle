@@ -224,7 +224,8 @@ void CDWHCIFrameSchedulerPeriodic::PeriodicDelay (u16 usFrameOffset)
 
 boolean CDWHCIFrameSchedulerPeriodic::IsOddFrame (void) const
 {
-	return m_usNextFrame & 1 ? TRUE : FALSE;
+	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
+	return !!(FrameNumber.Read () & 1);
 }
 
 IMPLEMENT_CLASS_ALLOCATOR (CDWHCIFrameSchedulerPeriodic)

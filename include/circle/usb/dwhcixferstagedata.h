@@ -107,6 +107,8 @@ private:
 	unsigned	 m_nPacketsPerTransaction;
 	u32		 m_nTotalBytesTransfered;
 
+	unsigned	 m_nIsoPackets;
+
 	unsigned	 m_nState;
 	unsigned	 m_nSubState;
 	u32		 m_nTransactionStatus;

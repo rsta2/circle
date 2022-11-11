@@ -2,7 +2,7 @@
 // dwhciframeschednsplit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -86,7 +86,8 @@ void CDWHCIFrameSchedulerNoSplit::PeriodicDelay (u16 usFrameOffset)
 
 boolean CDWHCIFrameSchedulerNoSplit::IsOddFrame (void) const
 {
-	return m_usNextFrame & 1 ? TRUE : FALSE;
+	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
+	return !!(FrameNumber.Read () & 1);
 }
 
 IMPLEMENT_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNoSplit)

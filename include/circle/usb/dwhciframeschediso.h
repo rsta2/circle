@@ -47,7 +47,10 @@ public:
 
 private:
 	unsigned m_nState;
+	u16 m_usFrameOffset;
+	boolean m_bFrameAlign;		// microframe number is multiple of 8
 	u16 m_usNextFrame;
+	unsigned m_nRetries;
 
 	DECLARE_CLASS_ALLOCATOR
 };

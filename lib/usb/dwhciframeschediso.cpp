@@ -20,7 +20,6 @@
 #include <circle/usb/dwhciframeschediso.h>
 #include <circle/usb/dwhciregister.h>
 #include <circle/usb/dwhci.h>
-#include <circle/logger.h>
 #include <assert.h>
 
 #define FRAME_UNSET		(DWHCI_MAX_FRAME_NUMBER+1)
@@ -31,13 +30,22 @@ enum TFrameSchedulerState
 	StateStartSplit,
 	StateStartSplitComplete,
 	StateStartSplitContinued,
+	StateCompleteSplit,
+	StateCompleteSplitRetry,
+	StateCompleteSplitComplete,
+	StatePeriodicDelay,
 	StateUnknown
 };
 
 CDWHCIFrameSchedulerIsochronous::CDWHCIFrameSchedulerIsochronous (void)
 :	m_nState (StateStart),
+	m_usFrameOffset (FRAME_UNSET),
+	m_bFrameAlign (FALSE),
 	m_usNextFrame (FRAME_UNSET)
 {
+#ifndef USE_USB_SOF_INTR
+	assert (0);
+#endif
 }
 
 CDWHCIFrameSchedulerIsochronous::~CDWHCIFrameSchedulerIsochronous (void)
@@ -47,26 +55,106 @@ CDWHCIFrameSchedulerIsochronous::~CDWHCIFrameSchedulerIsochronous (void)
 
 void CDWHCIFrameSchedulerIsochronous::StartSplit (void)
 {
-#ifndef USE_USB_SOF_INTR
-	m_usNextFrame = FRAME_UNSET;
-#endif
-	m_nState = m_nState == StateStart ? StateStartSplit : StateStartSplitContinued;
+	switch (m_nState)
+	{
+	case StateStart:
+		m_nState = StateStartSplit;
+		m_usFrameOffset = 8;
+		m_bFrameAlign = TRUE;
+		m_usNextFrame = FRAME_UNSET;
+		break;
+
+	case StateStartSplitComplete:
+		m_nState = StateStartSplitContinued;
+		m_usFrameOffset = 1;
+		m_bFrameAlign = FALSE;
+		m_usNextFrame = FRAME_UNSET;
+		break;
+
+	case StatePeriodicDelay:
+		m_nState = StateStartSplit;
+		assert (m_usFrameOffset != FRAME_UNSET);
+		assert (m_bFrameAlign);
+		assert (m_usNextFrame != FRAME_UNSET);
+		break;
+
+	default:
+		break;
+	}
 }
 
 boolean CDWHCIFrameSchedulerIsochronous::CompleteSplit (void)
 {
-	assert (0);
+	boolean bResult = FALSE;
 
-	return FALSE;
+	switch (m_nState)
+	{
+	case StateStartSplitComplete:
+		m_nState = StateCompleteSplit;
+		m_usFrameOffset = 2;
+		m_bFrameAlign = FALSE;
+		assert (m_usNextFrame != FRAME_UNSET);
+		bResult = TRUE;
+		m_nRetries = 3;
+		break;
+
+	case StateCompleteSplitComplete:
+	case StatePeriodicDelay:
+		break;
+
+	case StateCompleteSplitRetry:
+		m_nState = StateCompleteSplit;
+		m_usFrameOffset = 2;
+		m_bFrameAlign = FALSE;
+		assert (m_usNextFrame != FRAME_UNSET);
+		bResult = TRUE;
+		break;
+
+	default:
+		assert (0);
+		break;
+	}
+
+	return bResult;
 }
 
 void CDWHCIFrameSchedulerIsochronous::TransactionComplete (u32 nStatus)
 {
-	assert (nStatus & DWHCI_HOST_CHAN_INT_ACK);
+	switch (m_nState)
+	{
+	case StateStartSplit:
+	case StateStartSplitContinued:
+		assert (nStatus & DWHCI_HOST_CHAN_INT_ACK);
+		m_nState = StateStartSplitComplete;
+		break;
 
-	assert (   m_nState != StateStartSplit
-		|| m_nState != StateStartSplitContinued);
-	m_nState = StateStartSplitComplete;
+	case StateCompleteSplit:
+		assert (!(nStatus & DWHCI_HOST_CHAN_INT_NAK));
+		if (nStatus & DWHCI_HOST_CHAN_INT_XFER_COMPLETE)
+		{
+			m_nState = StateCompleteSplitComplete;
+		}
+		else if (nStatus & DWHCI_HOST_CHAN_INT_NYET)
+		{
+			if (--m_nRetries)
+			{
+				m_nState = StateCompleteSplitRetry;
+			}
+			else
+			{
+				m_nState = StatePeriodicDelay;
+			}
+		}
+		else
+		{
+			assert (0);
+		}
+		break;
+
+	default:
+		assert (0);
+		break;
+	}
 }
 
 #ifndef USE_USB_SOF_INTR
@@ -83,15 +171,12 @@ u16 CDWHCIFrameSchedulerIsochronous::GetFrameNumber (void)
 	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
 	u16 usFrameNumber = DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ());
 
-	assert (   m_nState != StateStartSplit
-		|| m_nState != StateStartSplitContinued);
-	if (m_nState == StateStartSplit)
+	assert (m_usFrameOffset != FRAME_UNSET);
+	m_usNextFrame = (usFrameNumber + m_usFrameOffset) & DWHCI_MAX_FRAME_NUMBER;
+
+	if (m_bFrameAlign)
 	{
-		m_usNextFrame = (usFrameNumber + 8) & (DWHCI_MAX_FRAME_NUMBER & ~7);
-	}
-	else
-	{
-		m_usNextFrame = (usFrameNumber + 1) & DWHCI_MAX_FRAME_NUMBER;
+		m_usNextFrame = m_usNextFrame & ~7;
 	}
 
 	return m_usNextFrame;
@@ -99,14 +184,19 @@ u16 CDWHCIFrameSchedulerIsochronous::GetFrameNumber (void)
 
 void CDWHCIFrameSchedulerIsochronous::PeriodicDelay (u16 usFrameOffset)
 {
-	assert (0);
+	assert (m_nState == StatePeriodicDelay);
+
+	m_usFrameOffset = usFrameOffset;
+	m_bFrameAlign = TRUE;
+	m_usNextFrame = FRAME_UNSET;
 }
 
 #endif
 
 boolean CDWHCIFrameSchedulerIsochronous::IsOddFrame (void) const
 {
-	return m_usNextFrame & 1 ? TRUE : FALSE;
+	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
+	return !!(FrameNumber.Read () & 1);
 }
 
 IMPLEMENT_CLASS_ALLOCATOR (CDWHCIFrameSchedulerIsochronous)

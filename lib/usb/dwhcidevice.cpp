@@ -988,6 +988,19 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 			Character.And (~DWHCI_HOST_CHAN_CHARACTER_PER_ODD_FRAME);
 		}
 	}
+	else
+	{
+		CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
+		u16 usFrameNumber = DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ());
+		if (usFrameNumber & 1)
+		{
+			Character.Or (DWHCI_HOST_CHAN_CHARACTER_PER_ODD_FRAME);
+		}
+		else
+		{
+			Character.And (~DWHCI_HOST_CHAN_CHARACTER_PER_ODD_FRAME);
+		}
+	}
 #endif
 
 	CDWHCIRegister ChanInterruptMask (DWHCI_HOST_CHAN_INT_MASK(nChannel));
@@ -1102,6 +1115,20 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			pURB->SetStatus (0);
 			pURB->SetUSBError (pStageData->GetUSBError ());
 		}
+#ifdef USE_USB_SOF_INTR
+		else if (   pStageData->IsIsochronous ()
+			 && !pStageData->IsStageComplete ())
+		{
+			DisableChannelInterrupt (nChannel);
+
+			m_pStageData[nChannel] = 0;
+			FreeChannel (nChannel);
+
+			QueueTransaction (pStageData);
+
+			break;
+		}
+#endif
 		else if (   (nStatus & (DWHCI_HOST_CHAN_INT_NAK | DWHCI_HOST_CHAN_INT_NYET))
 			 && pStageData->IsPeriodic ())
 		{
@@ -1138,7 +1165,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			pURB->SetStatus (1);
 		}
-		
+
 		DisableChannelInterrupt (nChannel);
 
 		delete pStageData;
@@ -1181,9 +1208,10 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		pStageData->GetFrameScheduler ()->TransactionComplete (nStatus);
 
-		if (pStageData->IsIsochronous ())
+		if (   pStageData->IsIsochronous ()
+		    && !pStageData->IsDirectionIn ())
 		{
-			goto ContinueIsochronousSplit;
+			goto ContinueIsochronousOutSplit;
 		}
 
 		pStageData->SetState (StageStateCompleteSplit);
@@ -1243,12 +1271,13 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			break;
 		}
 
-	ContinueIsochronousSplit:
+	ContinueIsochronousOutSplit:
 	LeaveCompleteSplit:
 		if (!pStageData->IsStageComplete ())
 		{
 			if (   !pStageData->IsPeriodic ()
-			    || pStageData->IsIsochronous ())
+			    || (   pStageData->IsIsochronous ()
+			        && !pStageData->IsDirectionIn ()))
 			{
 				pStageData->SetState (StageStateStartSplit);
 				pStageData->SetSplitComplete (FALSE);
@@ -1344,6 +1373,25 @@ void CDWHCIDevice::SOFInterruptHandler (void)
 	CDWHCITransferStageData *pStageData;
 	while ((pStageData = m_TransactionQueue.Dequeue (usFrameNumber)) != 0)
 	{
+#if 0
+		if (pStageData->IsPeriodic ())
+		{
+			unsigned nMinRemaining = 500;
+			CDWHCIRegister HostPort (DWHCI_HOST_PORT);
+			if (DWHCI_HOST_PORT_SPEED (HostPort.Read ()) == DWHCI_HOST_PORT_SPEED_HIGH)
+			{
+				nMinRemaining = 125;
+			}
+
+			if (DWHCI_HOST_FRM_NUM_REMAINING (FrameNumber.Read ()) < nMinRemaining)
+			{
+				QueueTransaction (pStageData);
+
+				break;
+			}
+		}
+#endif
+
 		unsigned nChannel = AllocateChannel ();
 		assert (nChannel < m_nChannels);	// too many parallel transactions otherwise
 

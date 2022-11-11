@@ -44,6 +44,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	m_nTimeoutHZ (USB_TIMEOUT_NONE),
 	m_bSplitComplete (FALSE),
 	m_nTotalBytesTransfered (0),
+	m_nIsoPackets (0),
 	m_nState (0),
 	m_nSubState (0),
 	m_nTransactionStatus (0),
@@ -82,6 +83,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 		{
 			if (IsIsochronous ())
 			{
+				assert (m_pURB->GetNumIsoPackets () == 1);
 				assert (m_nTransferSize <= m_nMaxPacketSize);
 
 				if (m_nTransferSize > MAX_ISO_SPLIT_PAYLOAD)
@@ -109,6 +111,13 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 		}
 		else
 		{
+			if (IsIsochronous ())
+			{
+				m_nTransferSize = m_pURB->GetIsoPacketSize (0);
+				m_nPackets =   (m_nTransferSize + m_nMaxPacketSize - 1)
+					     / m_nMaxPacketSize;
+			}
+
 			m_nBytesPerTransaction = m_nTransferSize;
 			m_nPacketsPerTransaction = m_nPackets;
 		}
@@ -220,11 +229,11 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 	u32 nPacketsTransfered = m_nPacketsPerTransaction - nPacketsLeft;
 	u32 nBytesTransfered = m_nBytesPerTransaction - nBytesLeft;
 
-	if (   m_bSplitTransaction
-	    && nBytesTransfered == 0
+	if (   nBytesTransfered == 0
 	    && m_nBytesPerTransaction > 0)
 	{
-		if (m_bSplitComplete)
+		if (   m_bSplitTransaction
+		    && m_bSplitComplete)
 		{
 			nBytesTransfered = m_nMaxPacketSize * nPacketsTransfered;
 		}
@@ -233,7 +242,7 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 			nBytesTransfered = m_nBytesPerTransaction * nPacketsTransfered;
 		}
 	}
-	
+
 	m_nTotalBytesTransfered += nBytesTransfered;
 	m_pBufferPointer = (u8 *) m_pBufferPointer + nBytesTransfered;
 	
@@ -257,7 +266,24 @@ void CDWHCITransferStageData::TransactionComplete (u32 nStatus, u32 nPacketsLeft
 
 	if (!m_bSplitTransaction)
 	{
-		m_nPacketsPerTransaction = m_nPackets;
+		if (!IsIsochronous ())
+		{
+			m_nPacketsPerTransaction = m_nPackets;
+		}
+		else
+		{
+			if (++m_nIsoPackets < m_pURB->GetNumIsoPackets ())
+			{
+				m_nTransferSize = m_pURB->GetIsoPacketSize (m_nIsoPackets);
+				m_nPackets =   (m_nTransferSize + m_nMaxPacketSize - 1)
+					     / m_nMaxPacketSize;
+
+				m_nBytesPerTransaction = m_nTransferSize;
+				m_nPacketsPerTransaction = m_nPackets;
+			}
+
+			return;
+		}
 	}
 
 	// if (m_nTotalBytesTransfered > m_nTransferSize) this will be false:
