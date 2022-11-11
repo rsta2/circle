@@ -477,6 +477,8 @@ boolean CSoundShell::Start (void)
 
 			return FALSE;
 		}
+
+		m_nMode = nMode;
 	}
 
 	return TRUE;
