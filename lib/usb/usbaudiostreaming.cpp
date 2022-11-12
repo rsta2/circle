@@ -131,6 +131,15 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 
 	m_bIsOutput = (pEndpointDesc->bEndpointAddress & 0x80) == 0x00;
 
+#if RASPPI <= 3
+	if (!m_bIsOutput)
+	{
+		LOGWARN ("USB audio input is not supported");
+
+		return FALSE;
+	}
+#endif
+
 	if (pEndpointDesc->bInterval != 1)			// TODO
 	{
 		LOGWARN ("Unsupported EP timing (%u)", (unsigned) pEndpointDesc->bInterval);
