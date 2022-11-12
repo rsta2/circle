@@ -86,7 +86,8 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 				assert (m_pURB->GetNumIsoPackets () == 1);
 				assert (m_nTransferSize <= m_nMaxPacketSize);
 
-				if (m_nTransferSize > MAX_ISO_SPLIT_PAYLOAD)
+				if (   !m_bIn
+				    && m_nTransferSize > MAX_ISO_SPLIT_PAYLOAD)
 				{
 					m_nBytesPerTransaction = MAX_ISO_SPLIT_PAYLOAD;
 
@@ -139,7 +140,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	{
 		if (IsIsochronous ())
 		{
-			m_pFrameScheduler = new CDWHCIFrameSchedulerIsochronous;
+			m_pFrameScheduler = new CDWHCIFrameSchedulerIsochronous (m_bIn);
 		}
 		else if (IsPeriodic ())
 		{

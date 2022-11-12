@@ -37,8 +37,9 @@ enum TFrameSchedulerState
 	StateUnknown
 };
 
-CDWHCIFrameSchedulerIsochronous::CDWHCIFrameSchedulerIsochronous (void)
-:	m_nState (StateStart),
+CDWHCIFrameSchedulerIsochronous::CDWHCIFrameSchedulerIsochronous (boolean bIn)
+:	m_bIn (bIn),
+	m_nState (StateStart),
 	m_usFrameOffset (FRAME_UNSET),
 	m_bFrameAlign (FALSE),
 	m_usNextFrame (FRAME_UNSET)
@@ -95,7 +96,7 @@ boolean CDWHCIFrameSchedulerIsochronous::CompleteSplit (void)
 		m_bFrameAlign = FALSE;
 		assert (m_usNextFrame != FRAME_UNSET);
 		bResult = TRUE;
-		m_nRetries = 3;
+		m_nRetries = 1;
 		break;
 
 	case StateCompleteSplitComplete:
@@ -177,6 +178,11 @@ u16 CDWHCIFrameSchedulerIsochronous::GetFrameNumber (void)
 	if (m_bFrameAlign)
 	{
 		m_usNextFrame = m_usNextFrame & ~7;
+
+		if (m_bIn)
+		{
+			m_usNextFrame = (m_usNextFrame + 4) & DWHCI_MAX_FRAME_NUMBER;
+		}
 	}
 
 	return m_usNextFrame;

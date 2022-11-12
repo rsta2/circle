@@ -28,7 +28,7 @@
 class CDWHCIFrameSchedulerIsochronous : public CDWHCIFrameScheduler
 {
 public:
-	CDWHCIFrameSchedulerIsochronous (void);
+	CDWHCIFrameSchedulerIsochronous (boolean bIn);
 	~CDWHCIFrameSchedulerIsochronous (void);
 
 	void StartSplit (void);
@@ -46,6 +46,7 @@ public:
 	boolean IsOddFrame (void) const;
 
 private:
+	boolean m_bIn;
 	unsigned m_nState;
 	u16 m_usFrameOffset;
 	boolean m_bFrameAlign;		// microframe number is multiple of 8
