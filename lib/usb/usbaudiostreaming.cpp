@@ -17,6 +17,86 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
+/*
+USB audio streaming architecture:
+
+The USB audio streaming support in Circle is based on the following components
+(top -> down, 1 instance each per hardware device, if not specified differently):
+
+------------------------------	--------------------------------------------------
+Component / class name		Function
+Source files
+Device name
+USB interface(s)
+------------------------------	--------------------------------------------------
+Application with sound		creates and calls instance of CUSBSoundBaseDevice,
+				gets pointer to instance of CUSBSoundController
+				from CUSBSoundBaseDevice and calls it
+------------------------------	--------------------------------------------------
+CUSBSoundBaseDevice		creates and probes instance of CUSBSoundController,
+sound/usbsoundbasedevice.*	calls instance(s) of CUSBAudioStreamingDevice,
+"sndusb"			maintains sound samples in sound queue(s)
+none				for TX and RX
+------------------------------	--------------------------------------------------
+CUSBSoundController		calls instance of CUSBSoundBaseDevice, which did
+sound/usbsoundcontroller.*	create it,
+none				calls instance of CUSBAudioStreamingDevice to get
+none				device information and to set controls (e.g. mute)
+------------------------------	--------------------------------------------------
+CUSBAudioStreamingDevice	M instances per hardware device (1 instance for RX,
+usb/usbaudiostreaming.*		M-1 instances for TX), configures USB endpoints,
+"uaudioN-M"			manages per packet data transfer to endpoints and
+"int1-2-0", "int1-2-20"		synchronization, calls instance of
+				CUSBAudioControlDevice to get device information
+				of CUSBSoundBaseDevice on completion of transfers,
+				calls USB HCI driver to transfer data
+------------------------------	--------------------------------------------------
+CUSBAudioControlDevice		parses and maintains topology of the audio device,
+usb/audiocontrol.*		owns 1 instance of CUSBAudioFunctionTopology
+"uaudioctlN"
+"int1-1-0", "int1-1-20"
+------------------------------	--------------------------------------------------
+CUSBAudioFunctionTopology	member of CUSBAudioControlDevice
+usb/usbaudiofunctopology.*
+none
+none
+------------------------------	--------------------------------------------------
+USB HCI driver			creates instance(s) of CUSBAudioStreamingDevice
+				and instance of CUSBAudioControlDevice, calls
+				them for configuration and on completion of USB
+				data transfers
+------------------------------	--------------------------------------------------
+
+Topology of an USB audio streaming device:
+
+The topology of components of an USB audio streaming device (called a "device")
+varies and can be complex. To be able to support such devices in Circle, the
+following assumptions were made:
+
+* An device can have 1 USB audio streaming interface with the supported audio
+  parameters for input of audio data (RX) and N USB interfaces with the supported
+  audio parameters for output (TX).
+
+* Only USB audio streaming interfaces which support the following audio
+  parameters will be used: 16-bit signed audio samples, 2 (Stereo) or 1 (Mono,
+  RX only) channels
+
+* TX: An USB audio streaming interface input terminal (IT) is connected
+  downstream to one output terminal (e.g. Speaker) via one optional feature unit,
+  with the audio controls mute (channel global) and/or volume (channel global and
+  optionally per channel).
+
+* RX: An USB audio streaming interface output terminal (OT) is connected
+  upstream to N input terminals (e.g. microphone, line-in) via one selector unit,
+  and one optional feature unit per input terminal, with the same audio controls.
+
+References:
+
+Universal Serial Bus Device Class Definition for Audio Devices,
+Release 1.0 and 2.0, https://usb.org/documents
+*/
+
 #include <circle/usb/usbaudiostreaming.h>
 #include <circle/usb/usbaudiofunctopology.h>
 #include <circle/usb/usbaudio.h>
