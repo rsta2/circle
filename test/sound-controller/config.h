@@ -30,7 +30,4 @@
 #define QUEUE_SIZE_MSECS 100		// size of the sound queue in milliseconds duration
 #define CHUNK_SIZE	(384 * 10)	// number of samples, written to sound device at once
 
-#define I2S_SLAVE	FALSE		// TRUE to enable I2S slave mode (clocks are GPIO inputs)
-#define DAC_I2C_ADDRESS	0		// I2C slave address of the DAC (0 for auto probing)
-
 #endif

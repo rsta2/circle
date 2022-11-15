@@ -53,14 +53,16 @@ const char CSoundShell::HelpMsg[] =
 	"\n"
 	"Command\t\tDescription\t\t\t\t\t\tAlias\n"
 	"\n"
-	"start DEV [MODE]\n"
+	"start DEV [MODE] [CLK] [I2C]\n"
 	"\t\tStart sound device (snd{pwm|i2s|hdmi|usb"
 #ifdef USE_VCHIQ_SOUND
 	"|vchiq"
 #endif
 	"})\n"
-	"\t\tfor input (i), output (o, default) or both (io)\n"
-	"cancel\t\tStop active sound device\n"
+	"\t\t[for input (i), output (o, default) or both (io)]\n"
+	"\t\t[with slave (s, default) or master (m) I2S clock]\n"
+	"\t\t[and I2C slave address of DAC]\n"
+	"cancel\t\tStop active sound device\t\t\t\tstop\n"
 	"mode MODE\tNext commands effects input (i) or output (o) device\n"
 	"enable JACK\tEnable jack (defaultout|lineout|speaker|headphone|hdmi\n"
 	"\t\t|spdif|defaultin|linein|microphone)\n"
@@ -84,6 +86,13 @@ const CSoundShell::TStringMapping CSoundShell::s_ModeMap[] =
 	{"o",		ModeOutput},
 	{"io",		ModeInputOutput},
 	{0,		ModeUnknown}
+};
+
+const CSoundShell::TStringMapping CSoundShell::s_ClockModeMap[] =
+{
+	{"m",		ClockModeMaster},
+	{"s",		ClockModeSlave},
+	{0,		ClockModeUnknown}
 };
 
 const CSoundShell::TStringMapping CSoundShell::s_JackMap[] =
@@ -142,6 +151,7 @@ CSoundShell::CSoundShell (CConsole *pConsole, CInterruptSystem *pInterrupt,
 	m_pUSBHCI (pUSBHCI),
 	m_bContinue (TRUE),
 	m_nMode (ModeOutput),
+	m_bI2SDevice {FALSE, FALSE},
 	m_pSound {0, 0}
 {
 	// initialize oscillators
@@ -185,7 +195,8 @@ void CSoundShell::Run (void)
 					break;
 				}
 			}
-			else if (Command.Compare ("cancel") == 0)
+			else if (   Command.Compare ("cancel") == 0
+				 || Command.Compare ("stop") == 0)
 			{
 				if (!Cancel ())
 				{
@@ -323,7 +334,35 @@ boolean CSoundShell::Start (void)
 	}
 	else if (strcmp (Token, "sndi2s") == 0)
 	{
+		CString ClockMode;
+		if (!GetToken (&ClockMode))
+		{
+			ClockMode = "s";
+		}
+
+		unsigned nClockMode = ConvertString (ClockMode, s_ClockModeMap);
+		if (nClockMode == ClockModeUnknown)
+		{
+			Print ("Invalid clock mode: %s\n", (const char *) ClockMode);
+
+			return FALSE;
+		}
+
+		int nI2CSlaveAddress = GetNumber ("I2C slave address", 0, 0x7F, TRUE);
+		if (nI2CSlaveAddress == INVALID_NUMBER)
+		{
+			nI2CSlaveAddress = 0;
+		}
+
 		assert (m_pI2CMaster != 0);
+
+		if (   m_bI2SDevice[ModeOutput]
+		    || m_bI2SDevice[ModeInput])
+		{
+			Print ("Device already active\n");
+
+			return FALSE;
+		}
 
 		switch (nMode)
 		{
@@ -331,16 +370,20 @@ boolean CSoundShell::Start (void)
 			m_pSound[ModeOutput] = new CI2SSoundBaseDevice (
 							m_pInterrupt,
 							SAMPLE_RATE, CHUNK_SIZE,
-							I2S_SLAVE, m_pI2CMaster, DAC_I2C_ADDRESS,
+							nClockMode == ClockModeSlave,
+							m_pI2CMaster, nI2CSlaveAddress,
 							CI2SSoundBaseDevice::DeviceModeTXOnly);
+			m_bI2SDevice[ModeOutput] = TRUE;
 			break;
 
 		case ModeInput:
 			m_pSound[ModeInput] = new CI2SSoundBaseDevice (
 							m_pInterrupt,
 							SAMPLE_RATE, CHUNK_SIZE,
-							I2S_SLAVE, m_pI2CMaster, DAC_I2C_ADDRESS,
+							nClockMode == ClockModeSlave,
+							m_pI2CMaster, nI2CSlaveAddress,
 							CI2SSoundBaseDevice::DeviceModeRXOnly);
+			m_bI2SDevice[ModeInput] = TRUE;
 			break;
 
 		case ModeInputOutput:
@@ -348,8 +391,11 @@ boolean CSoundShell::Start (void)
 			m_pSound[ModeInput] = new CI2SSoundBaseDevice (
 							m_pInterrupt,
 							SAMPLE_RATE, CHUNK_SIZE,
-							I2S_SLAVE, m_pI2CMaster, DAC_I2C_ADDRESS,
+							nClockMode == ClockModeSlave,
+							m_pI2CMaster, nI2CSlaveAddress,
 							CI2SSoundBaseDevice::DeviceModeTXRX);
+			m_bI2SDevice[ModeOutput] = TRUE;
+			m_bI2SDevice[ModeInput] = TRUE;
 			break;
 
 		default:
@@ -426,6 +472,7 @@ boolean CSoundShell::Start (void)
 
 			delete m_pSound[ModeOutput];
 			m_pSound[ModeOutput] = 0;
+			m_bI2SDevice[ModeOutput] = FALSE;
 
 			return FALSE;
 		}
@@ -445,6 +492,7 @@ boolean CSoundShell::Start (void)
 
 			delete m_pSound[ModeInput];
 			m_pSound[ModeInput] = 0;
+			m_bI2SDevice[ModeInput] = FALSE;
 
 			return FALSE;
 		}
@@ -462,6 +510,8 @@ boolean CSoundShell::Start (void)
 			delete m_pSound[ModeOutput];
 			m_pSound[ModeOutput] =
 			m_pSound[ModeInput] = 0;
+			m_bI2SDevice[ModeOutput] = FALSE;
+			m_bI2SDevice[ModeInput] = FALSE;
 
 			return FALSE;
 		}
@@ -474,6 +524,7 @@ boolean CSoundShell::Start (void)
 
 			delete m_pSound[nMode];
 			m_pSound[nMode] = 0;
+			m_bI2SDevice[nMode] = FALSE;
 
 			return FALSE;
 		}
@@ -506,6 +557,7 @@ boolean CSoundShell::Cancel (void)
 
 		delete m_pSound[m_nMode];
 		m_pSound[m_nMode] = 0;
+		m_bI2SDevice[m_nMode] = FALSE;
 	}
 	else
 	{
@@ -528,6 +580,8 @@ boolean CSoundShell::Cancel (void)
 		delete m_pSound[ModeOutput];
 		m_pSound[ModeOutput] =
 		m_pSound[ModeInput] = 0;
+		m_bI2SDevice[ModeOutput] = FALSE;
+		m_bI2SDevice[ModeInput] = FALSE;
 	}
 
 	return TRUE;

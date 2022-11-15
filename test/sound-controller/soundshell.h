@@ -95,6 +95,13 @@ private:
 		ModeUnknown
 	};
 
+	enum TClockMode
+	{
+		ClockModeMaster,
+		ClockModeSlave,
+		ClockModeUnknown
+	};
+
 private:
 	CConsole *m_pConsole;
 	CInterruptSystem *m_pInterrupt;
@@ -107,6 +114,7 @@ private:
 	boolean m_bContinue;
 
 	unsigned m_nMode;
+	boolean m_bI2SDevice[2];
 	CSoundBaseDevice *m_pSound[2];
 	COscillator m_VCOLeft;
 	COscillator m_VCORight;
@@ -119,6 +127,7 @@ private:
 	static const char HelpMsg[];
 
 	static const TStringMapping s_ModeMap[];
+	static const TStringMapping s_ClockModeMap[];
 	static const TStringMapping s_JackMap[];
 	static const TStringMapping s_ChannelMap[];
 	static const TStringMapping s_ControlMap[];

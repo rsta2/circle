@@ -1,8 +1,5 @@
 README
 
-        For I2S operation you may have to set the I2S_SLAVE parameter in the
-        file config.h to TRUE, especially to use the I2S input.
-
 This test program is a command line tool for interactive communication with the
 sound controller of sound devices. It can be used via an attached USB keyboard
 and a (HDMI) display or via a serial terminal at 115200 Bps connected to
@@ -56,10 +53,12 @@ Sound IO> help
 
 Command         Description                                             Alias
 
-start DEV [MODE]
+start DEV [MODE] [CLK] [I2C]
                 Start sound device (snd{pwm|i2s|hdmi|usb})
-                for input (i), output (o, default) or both (io)
-cancel          Stop active sound device
+                [for input (i), output (o, default) or both (io)]
+                [with slave (s, default) or master (m) I2S clock]
+                [and I2C slave address of DAC]
+cancel          Stop active sound device                                stop
 mode MODE       Next commands effects input (i) or output (o) device
 enable JACK     Enable jack (defaultout|lineout|speaker|headphone|hdmi
                 |spdif|defaultin|linein|microphone)
