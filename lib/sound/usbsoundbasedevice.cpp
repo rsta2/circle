@@ -39,7 +39,6 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode Devi
 	m_State (StateCreated),
 	m_pTXBuffer {nullptr, nullptr},
 	m_pRXBuffer {nullptr, nullptr},
-	m_nOutstanding (0),
 	m_pSoundController (nullptr),
 	m_hTXRemoveRegistration (0),
 	m_hRXRemoveRegistration (0)
@@ -182,6 +181,8 @@ boolean CUSBSoundBaseDevice::Start (void)
 
 	assert (m_State == StateIdle);
 	m_State = StateRunning;
+
+	m_nOutstanding = 0;
 
 	if (m_DeviceMode != DeviceModeRXOnly)
 	{
@@ -484,11 +485,7 @@ void CUSBSoundBaseDevice::DeviceRemovedHandler (CDevice *pDevice, void *pContext
 	CUSBSoundBaseDevice *pThis = static_cast<CUSBSoundBaseDevice *> (pContext);
 	assert (pThis);
 
-	pThis->m_SpinLock.Acquire ();
-
-	pThis->m_State = StateCreated;
-
-	pThis->m_SpinLock.Release ();
+	pThis->Cancel ();
 
 	CUSBAudioStreamingDevice *pUSBDevice = static_cast<CUSBAudioStreamingDevice *> (pDevice);
 	assert (pUSBDevice);
@@ -516,6 +513,12 @@ void CUSBSoundBaseDevice::DeviceRemovedHandler (CDevice *pDevice, void *pContext
 
 	delete pThis->m_pSoundController;
 	pThis->m_pSoundController = nullptr;
+
+	if (   !pThis->m_hTXRemoveRegistration
+	    && !pThis->m_hRXRemoveRegistration)
+	{
+		pThis->m_State = StateCreated;
+	}
 }
 
 boolean CUSBSoundBaseDevice::SetTXInterface (unsigned nInterface)
