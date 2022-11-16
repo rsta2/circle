@@ -6,7 +6,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= main.o kernel.o soundshell.o oscillator.o
+OBJS	= main.o kernel.o soundshell.o oscillator.o vumeter.o
 
 ifeq ($(strip $(USE_VCHIQ_SOUND)),1)
 LIBS	= $(CIRCLEHOME)/addon/vc4/sound/libvchiqsound.a \

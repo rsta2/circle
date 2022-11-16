@@ -42,7 +42,7 @@ CKernel::CKernel (void)
 #ifdef USE_VCHIQ_SOUND
 		      &m_VCHIQ,
 #endif
-		      &m_USBHCI)
+		      &m_Screen, &m_USBHCI)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }

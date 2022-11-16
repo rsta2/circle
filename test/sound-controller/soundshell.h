@@ -25,9 +25,11 @@
 #include <circle/sound/soundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/i2cmaster.h>
+#include <circle/screen.h>
 #include <circle/string.h>
 #include <circle/types.h>
 #include "oscillator.h"
+#include "vumeter.h"
 
 #ifdef USE_VCHIQ_SOUND
 	#include <vc4/sound/vchiqsoundbasedevice.h>
@@ -43,7 +45,7 @@ public:
 #ifdef USE_VCHIQ_SOUND
 		     CVCHIQDevice *pVCHIQ,
 #endif
-		     CUSBHCIDevice *pUSBHCI = 0);
+		     CScreenDevice *pScreen, CUSBHCIDevice *pUSBHCI = 0);
 	~CSoundShell (void);
 
 	void Run (void);
@@ -57,6 +59,7 @@ private:
 	boolean ControlInfo (void);
 	boolean SetControl (void);
 	boolean Oscillator (void);
+	boolean VUMeter (void);
 	boolean Delay (void);
 	boolean Help (void);
 
@@ -85,7 +88,7 @@ private:
 	void WriteSoundData (unsigned nFrames);
 	void GetSoundData (void *pBuffer, unsigned nFrames);
 
-	void CopySoundData (void);
+	void ReadSoundData (void);
 
 	enum TMode
 	{
@@ -109,6 +112,7 @@ private:
 #ifdef USE_VCHIQ_SOUND
 	CVCHIQDevice *m_pVCHIQ;
 #endif
+	CScreenDevice *m_pScreen;
 	CUSBHCIDevice *m_pUSBHCI;
 
 	boolean m_bContinue;
@@ -118,6 +122,9 @@ private:
 	CSoundBaseDevice *m_pSound[2];
 	COscillator m_VCOLeft;
 	COscillator m_VCORight;
+
+	CVUMeter *m_pVUMeter[2];
+	unsigned m_nLastTicks;
 
 	char m_LineBuffer[SOUNDSHELL_MAX_LINE+1];
 	boolean m_bFirstToken;

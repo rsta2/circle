@@ -41,7 +41,7 @@ The program maintains up to two devices, an output and an input device. If only
 the output device is active, it is driven from an oscillator, which can generate
 sound of different wave-forms. When the input device is active too, the input
 sound is transferred to the output device. If only the input device is active,
-the input sound data is ignored.
+the input sound data is ignored and can control an VU meter only.
 
 The following example log shows the communication with an USB audio device:
 
@@ -71,6 +71,7 @@ setcontrol CTRL CHAN VAL [JACK]                                         set
 oscillator WAVE [FREQ] [CHAN]                                           osc
                 Set oscillator parameters (sine|square|sawtooth|triangle
                 |pulse12|pulse25|noise) [and frequency] [for channel]
+vumeter         Toggle VU meter display on screen
 delay MS        Delay MS milliseconds
 reboot          Reboot the system
 help            This help

@@ -75,6 +75,7 @@ const char CSoundShell::HelpMsg[] =
 	"oscillator WAVE [FREQ] [CHAN]\t\t\t\t\t\tosc\n"
 	"\t\tSet oscillator parameters (sine|square|sawtooth|triangle\n"
 	"\t\t|pulse12|pulse25|noise) [and frequency] [for channel]\n"
+	"vumeter\t\tToggle VU meter display on screen\n"
 	"delay MS\tDelay MS milliseconds\n"
 	"reboot\t\tReboot the system\n"
 	"help\t\tThis help\n"
@@ -141,18 +142,21 @@ CSoundShell::CSoundShell (CConsole *pConsole, CInterruptSystem *pInterrupt,
 #ifdef USE_VCHIQ_SOUND
 			  CVCHIQDevice *pVCHIQ,
 #endif
-			  CUSBHCIDevice *pUSBHCI)
+			  CScreenDevice *pScreen, CUSBHCIDevice *pUSBHCI)
 :	m_pConsole (pConsole),
 	m_pInterrupt (pInterrupt),
 	m_pI2CMaster (pI2CMaster),
 #ifdef USE_VCHIQ_SOUND
 	m_pVCHIQ (pVCHIQ),
 #endif
+	m_pScreen (pScreen),
 	m_pUSBHCI (pUSBHCI),
 	m_bContinue (TRUE),
 	m_nMode (ModeOutput),
 	m_bI2SDevice {FALSE, FALSE},
-	m_pSound {0, 0}
+	m_pSound {0, 0},
+	m_pVUMeter {0, 0},
+	m_nLastTicks (0)
 {
 	// initialize oscillators
 	m_VCOLeft.SetWaveform (WaveformSine);
@@ -170,6 +174,8 @@ CSoundShell::~CSoundShell (void)
 	m_pUSBHCI = 0;
 	m_pSound[ModeOutput] = 0;
 	m_pSound[ModeInput] = 0;
+	m_pVUMeter[0] = 0;
+	m_pVUMeter[1] = 0;
 }
 
 void CSoundShell::Run (void)
@@ -244,6 +250,13 @@ void CSoundShell::Run (void)
 				 || Command.Compare ("osc") == 0)
 			{
 				if (!Oscillator ())
+				{
+					break;
+				}
+			}
+			else if (Command.Compare ("vumeter") == 0)
+			{
+				if (!VUMeter ())
 				{
 					break;
 				}
@@ -480,7 +493,7 @@ boolean CSoundShell::Start (void)
 		m_pSound[ModeOutput]->SetWriteFormat (FORMAT, WRITE_CHANNELS);
 
 		// initially fill the whole queue with data
-		WriteSoundData (m_pSound[ModeOutput]->GetQueueSizeFrames ());
+		//WriteSoundData (m_pSound[ModeOutput]->GetQueueSizeFrames ());
 	}
 
 	if (nMode != ModeOutput)
@@ -951,6 +964,34 @@ boolean CSoundShell::Oscillator (void)
 	return TRUE;
 }
 
+boolean CSoundShell::VUMeter (void)
+{
+	if (!m_pVUMeter[0])
+	{
+		assert (m_pScreen != 0);
+		unsigned nWidth = m_pScreen->GetWidth () / 12;
+		unsigned nHeight = m_pScreen->GetHeight () / 160;
+		unsigned nPosX = m_pScreen->GetWidth () - nWidth;
+
+		for (unsigned i = 0; i < WRITE_CHANNELS; i++)
+		{
+			m_pVUMeter[i] = new CVUMeter (m_pScreen, nPosX, i*nHeight,
+						      nWidth, nHeight-1);
+			assert (m_pVUMeter[i] != 0);
+		}
+	}
+	else
+	{
+		for (unsigned i = 0; i < WRITE_CHANNELS; i++)
+		{
+			delete m_pVUMeter[i];
+			m_pVUMeter[i] = 0;
+		}
+	}
+
+	return TRUE;
+}
+
 boolean CSoundShell::Delay (void)
 {
 	int nMillis = GetNumber ("Delay", 1, 5000);
@@ -1181,7 +1222,11 @@ void CSoundShell::ProcessSound (void)
 	else if (   m_pSound[ModeOutput] == 0
 		 && m_pSound[ModeInput] != 0)
 	{
-		if (!m_pSound[ModeInput]->IsActive ())
+		if (m_pSound[ModeInput]->IsActive ())
+		{
+			ReadSoundData ();
+		}
+		else
 		{
 			delete m_pSound[ModeInput];
 			m_pSound[ModeInput] = 0;
@@ -1215,13 +1260,38 @@ void CSoundShell::ProcessSound (void)
 		if (   m_pSound[ModeOutput] != 0
 		    && m_pSound[ModeInput] != 0)
 		{
-			CopySoundData ();
+			ReadSoundData ();
 		}
 	}
 
 	if (bInactive)
 	{
 		Print ("\nDevice(s) went inactive\n");
+	}
+
+	if (m_pVUMeter[0] != 0)
+	{
+		if (   m_pSound[0] == 0
+		    && m_pSound[1] == 0)
+		{
+			m_pVUMeter[0]->PutInputLevel (0.0f);
+			if (m_pVUMeter[1] != 0)
+			{
+				m_pVUMeter[1]->PutInputLevel (0.0f);
+			}
+		}
+
+		unsigned nTicks = CTimer::Get ()->GetTicks ();
+		if (nTicks - m_nLastTicks > HZ/50)
+		{
+			m_nLastTicks = nTicks;
+
+			m_pVUMeter[0]->Update ();
+			if (m_pVUMeter[1] != 0)
+			{
+				m_pVUMeter[1]->Update ();
+			}
+		}
 	}
 
 #ifdef USE_VCHIQ_SOUND
@@ -1267,25 +1337,55 @@ void CSoundShell::GetSoundData (void *pBuffer, unsigned nFrames)
 		m_VCOLeft.NextSample ();
 		m_VCORight.NextSample ();
 
-		float fLevel = m_VCOLeft.GetOutputLevel ();
-		TYPE nLevel = (TYPE) (fLevel*VOLUME * FACTOR + NULL_LEVEL);
+		float fLevel = m_VCOLeft.GetOutputLevel () * VOLUME;
+		TYPE nLevel = (TYPE) (fLevel * FACTOR + NULL_LEVEL);
 		memcpy (&pBuffer8[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
 
+		if (m_pVUMeter[0] != 0)
+		{
+			m_pVUMeter[0]->PutInputLevel (fLevel);
+		}
+
 #if WRITE_CHANNELS == 2
-		fLevel = m_VCORight.GetOutputLevel ();
-		nLevel = (TYPE) (fLevel*VOLUME * FACTOR + NULL_LEVEL);
+		fLevel = m_VCORight.GetOutputLevel () * VOLUME;
+		nLevel = (TYPE) (fLevel * FACTOR + NULL_LEVEL);
 		memcpy (&pBuffer8[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
+
+		if (m_pVUMeter[1] != 0)
+		{
+			m_pVUMeter[1]->PutInputLevel (fLevel);
+		}
 #endif
 	}
 }
 
-void CSoundShell::CopySoundData (void)
+void CSoundShell::ReadSoundData (void)
 {
-	u8 Buffer[TYPE_SIZE*WRITE_CHANNELS*4096];
+	u8 Buffer[TYPE_SIZE*WRITE_CHANNELS*1000];
 	int nBytes = m_pSound[ModeInput]->Read (Buffer, sizeof Buffer);
 	if (nBytes > 0)
 	{
-		m_pSound[ModeOutput]->Write (Buffer, nBytes);
-	}
+		if (m_pSound[ModeOutput] != 0)
+		{
+			m_pSound[ModeOutput]->Write (Buffer, nBytes);
+		}
 
+		if (m_pVUMeter[0] != 0)
+		{
+			unsigned nFrames = nBytes / (TYPE_SIZE*WRITE_CHANNELS);
+
+			for (unsigned i = 0; i < nFrames; i++)
+			{
+				for (unsigned j = 0; j < WRITE_CHANNELS; j++)
+				{
+					TYPE nLevel = 0;
+					memcpy (&nLevel, &Buffer[(i*WRITE_CHANNELS + j) * TYPE_SIZE],
+						TYPE_SIZE);
+					float fLevel = (float) (nLevel - NULL_LEVEL) / FACTOR;
+
+					m_pVUMeter[j]->PutInputLevel (fLevel);
+				}
+			}
+		}
+	}
 }
