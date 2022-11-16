@@ -24,6 +24,7 @@
 #include <circle/string.h>
 #include <circle/logger.h>
 #include <circle/atomic.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 LOGMODULE ("sndusb");
@@ -37,13 +38,21 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode Devi
 	m_nDevice (nDevice),
 	m_nTXInterface (0),
 	m_State (StateCreated),
+	m_pTXUSBDevice (nullptr),
+	m_pRXUSBDevice (nullptr),
 	m_pTXBuffer {nullptr, nullptr},
 	m_pRXBuffer {nullptr, nullptr},
 	m_pSoundController (nullptr),
-	m_hTXRemoveRegistration (0),
-	m_hRXRemoveRegistration (0)
+	m_hRemoveRegistration (0)
 {
-	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	if (!m_nDevice)
+	{
+		CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
+	}
+	else
+	{
+		CDeviceNameService::Get ()->AddDevice (DeviceName, m_nDevice, this, FALSE);
+	}
 }
 
 CUSBSoundBaseDevice::~CUSBSoundBaseDevice (void)
@@ -52,7 +61,23 @@ CUSBSoundBaseDevice::~CUSBSoundBaseDevice (void)
 		|| m_State == StateIdle);
 	m_State = StateUnknown;
 
-	CDeviceNameService::Get ()->RemoveDevice (DeviceName, FALSE);
+	if (!m_nDevice)
+	{
+		CDeviceNameService::Get ()->RemoveDevice (DeviceName, FALSE);
+	}
+	else
+	{
+		CDeviceNameService::Get ()->RemoveDevice (DeviceName, m_nDevice, FALSE);
+	}
+
+	if (m_hRemoveRegistration)
+	{
+		assert (m_pTXUSBDevice || m_pRXUSBDevice);
+		(m_pTXUSBDevice ? m_pTXUSBDevice : m_pRXUSBDevice)->
+			UnregisterRemovedHandler (m_hRemoveRegistration);
+
+		m_hRemoveRegistration = 0;
+	}
 
 	delete m_pSoundController;
 	m_pSoundController = nullptr;
@@ -118,6 +143,8 @@ boolean CUSBSoundBaseDevice::Start (void)
 			{
 				LOGWARN ("USB audio device setup failed");
 
+				m_pTXUSBDevice = nullptr;
+
 				return FALSE;
 			}
 		}
@@ -134,6 +161,8 @@ boolean CUSBSoundBaseDevice::Start (void)
 			{
 				LOGWARN ("USB audio device setup failed");
 
+				m_pRXUSBDevice = nullptr;
+
 				return FALSE;
 			}
 		}
@@ -142,10 +171,6 @@ boolean CUSBSoundBaseDevice::Start (void)
 
 		if (m_DeviceMode != DeviceModeRXOnly)
 		{
-			assert (!m_hTXRemoveRegistration);
-			m_hTXRemoveRegistration =
-				m_pTXUSBDevice->RegisterRemovedHandler (DeviceRemovedHandler, this);
-
 			m_nTXChunkSizeBytes = m_pTXUSBDevice->GetChunkSizeBytes ();
 
 			// The actual chunk size varies in operation. A maximum of twice
@@ -158,10 +183,6 @@ boolean CUSBSoundBaseDevice::Start (void)
 
 		if (m_DeviceMode != DeviceModeTXOnly)
 		{
-			assert (!m_hRXRemoveRegistration);
-			m_hRXRemoveRegistration =
-				m_pRXUSBDevice->RegisterRemovedHandler (DeviceRemovedHandler, this);
-
 			m_nRXChunkSizeBytes = m_pRXUSBDevice->GetChunkSizeBytes ();
 
 			// The actual chunk size varies in operation. A maximum of twice
@@ -175,6 +196,12 @@ boolean CUSBSoundBaseDevice::Start (void)
 				m_pRXUSBDevice->GetDeviceInfo ();
 			m_nRXChannels = Info.NumChannels;
 		}
+
+		assert (!m_hRemoveRegistration);
+		assert (m_pTXUSBDevice || m_pRXUSBDevice);
+		m_hRemoveRegistration = (m_pTXUSBDevice ? m_pTXUSBDevice : m_pRXUSBDevice)->
+					RegisterRemovedHandler (DeviceRemovedStub, this);
+		assert (m_hRemoveRegistration);
 
 		m_State = StateIdle;
 	}
@@ -480,45 +507,55 @@ void CUSBSoundBaseDevice::RXCompletionStub (unsigned nBytesTransferred, void *pP
 	pThis->RXCompletionRoutine (nBytesTransferred);
 }
 
-void CUSBSoundBaseDevice::DeviceRemovedHandler (CDevice *pDevice, void *pContext)
+void CUSBSoundBaseDevice::DeviceRemovedHandler (CDevice *pDevice)
+{
+	m_hRemoveRegistration = 0;
+
+	Cancel ();
+
+	for (unsigned nStartTicks = CTimer::Get ()->GetTicks (); IsActive ();)
+	{
+		if (CTimer::Get ()->GetTicks () - nStartTicks > MSEC2HZ (200))
+		{
+			LOGWARN ("Timeout while going idle");
+
+			m_State = StateIdle;
+
+			break;
+		}
+
+#ifdef NO_BUSY_WAIT
+		CScheduler::Get ()->Yield ();
+#endif
+	}
+
+	assert (   m_State == StateCreated
+		|| m_State == StateIdle);
+	m_State = StateCreated;
+
+	delete m_pSoundController;
+	m_pSoundController = nullptr;
+
+	delete [] m_pTXBuffer[0];
+	delete [] m_pTXBuffer[1];
+	m_pTXBuffer[0] = nullptr;
+	m_pTXBuffer[1] = nullptr;
+
+	delete [] m_pRXBuffer[0];
+	delete [] m_pRXBuffer[1];
+	m_pRXBuffer[0] = nullptr;
+	m_pRXBuffer[1] = nullptr;
+
+	m_pTXUSBDevice = nullptr;
+	m_pRXUSBDevice = nullptr;
+}
+
+void CUSBSoundBaseDevice::DeviceRemovedStub (CDevice *pDevice, void *pContext)
 {
 	CUSBSoundBaseDevice *pThis = static_cast<CUSBSoundBaseDevice *> (pContext);
 	assert (pThis);
 
-	pThis->Cancel ();
-
-	CUSBAudioStreamingDevice *pUSBDevice = static_cast<CUSBAudioStreamingDevice *> (pDevice);
-	assert (pUSBDevice);
-
-	if (pUSBDevice == pThis->m_pTXUSBDevice)
-	{
-		delete [] pThis->m_pTXBuffer[0];
-		delete [] pThis->m_pTXBuffer[1];
-		pThis->m_pTXBuffer[0] = nullptr;
-		pThis->m_pTXBuffer[1] = nullptr;
-
-		pThis->m_hTXRemoveRegistration = 0;
-	}
-	else
-	{
-		assert (pUSBDevice == pThis->m_pRXUSBDevice);
-
-		delete [] pThis->m_pRXBuffer[0];
-		delete [] pThis->m_pRXBuffer[1];
-		pThis->m_pRXBuffer[0] = nullptr;
-		pThis->m_pRXBuffer[1] = nullptr;
-
-		pThis->m_hRXRemoveRegistration = 0;
-	}
-
-	delete pThis->m_pSoundController;
-	pThis->m_pSoundController = nullptr;
-
-	if (   !pThis->m_hTXRemoveRegistration
-	    && !pThis->m_hRXRemoveRegistration)
-	{
-		pThis->m_State = StateCreated;
-	}
+	pThis->DeviceRemovedHandler (pDevice);
 }
 
 boolean CUSBSoundBaseDevice::SetTXInterface (unsigned nInterface)
@@ -538,31 +575,24 @@ boolean CUSBSoundBaseDevice::SetTXInterface (unsigned nInterface)
 
 	assert (m_State == StateIdle);
 
-	if (m_DeviceMode != DeviceModeRXOnly)
-	{
-		assert (m_pTXUSBDevice);
-		assert (m_hTXRemoveRegistration);
-		m_pTXUSBDevice->UnregisterRemovedHandler (m_hTXRemoveRegistration);
-		m_hTXRemoveRegistration = 0;
+	assert (m_hRemoveRegistration);
+	assert (m_pTXUSBDevice || m_pRXUSBDevice);
+	(m_pTXUSBDevice ? m_pTXUSBDevice : m_pRXUSBDevice)->
+		UnregisterRemovedHandler (m_hRemoveRegistration);
+	m_hRemoveRegistration = 0;
 
-		delete [] m_pTXBuffer[0];
-		delete [] m_pTXBuffer[1];
-		m_pTXBuffer[0] = nullptr;
-		m_pTXBuffer[1] = nullptr;
-	}
+	delete [] m_pTXBuffer[0];
+	delete [] m_pTXBuffer[1];
+	m_pTXBuffer[0] = nullptr;
+	m_pTXBuffer[1] = nullptr;
 
-	if (m_DeviceMode != DeviceModeTXOnly)
-	{
-		assert (m_pRXUSBDevice);
-		assert (m_hRXRemoveRegistration);
-		m_pRXUSBDevice->UnregisterRemovedHandler (m_hRXRemoveRegistration);
-		m_hRXRemoveRegistration = 0;
+	delete [] m_pRXBuffer[0];
+	delete [] m_pRXBuffer[1];
+	m_pRXBuffer[0] = nullptr;
+	m_pRXBuffer[1] = nullptr;
 
-		delete [] m_pRXBuffer[0];
-		delete [] m_pRXBuffer[1];
-		m_pRXBuffer[0] = nullptr;
-		m_pRXBuffer[1] = nullptr;
-	}
+	m_pTXUSBDevice = nullptr;
+	m_pRXUSBDevice = nullptr;
 
 	m_State = StateCreated;
 

@@ -95,7 +95,8 @@ private:
 	void RXCompletionRoutine (unsigned nBytesTransferred);
 	static void RXCompletionStub (unsigned nBytesTransferred, void *pParam);
 
-	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
+	void DeviceRemovedHandler (CDevice *pDevice);
+	static void DeviceRemovedStub (CDevice *pDevice, void *pContext);
 
 	friend class CUSBSoundController;
 	boolean SetTXInterface (unsigned nInterface);
@@ -135,8 +136,7 @@ private:
 
 	CUSBSoundController *m_pSoundController;
 
-	TRegistrationHandle m_hTXRemoveRegistration;
-	TRegistrationHandle m_hRXRemoveRegistration;
+	TRegistrationHandle m_hRemoveRegistration;
 };
 
 #endif

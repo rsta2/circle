@@ -36,7 +36,7 @@ Application with sound		creates and calls instance of CUSBSoundBaseDevice,
 ------------------------------	--------------------------------------------------
 CUSBSoundBaseDevice		creates and probes instance of CUSBSoundController,
 sound/usbsoundbasedevice.*	calls instance(s) of CUSBAudioStreamingDevice,
-"sndusb"			maintains sound samples in sound queue(s)
+"sndusb[N]" (N > 0)		maintains sound samples in sound queue(s)
 none				for TX and RX
 ------------------------------	--------------------------------------------------
 CUSBSoundController		calls instance of CUSBSoundBaseDevice, which did
