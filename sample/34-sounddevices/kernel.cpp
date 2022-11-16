@@ -58,7 +58,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_I2CMaster (CMachineInfo::Get ()->GetDevice (DeviceI2CMaster), TRUE),
-	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),	// TRUE: enable plug-and-play
+	m_USBHCI (&m_Interrupt, &m_Timer, FALSE),
 #ifdef USE_VCHIQ_SOUND
 	m_VCHIQ (CMemorySystem::Get (), &m_Interrupt),
 #endif
@@ -193,8 +193,6 @@ TShutdownMode CKernel::Run (void)
 	// output sound data
 	for (unsigned nCount = 0; m_pSound->IsActive (); nCount++)
 	{
-		m_USBHCI.UpdatePlugAndPlay ();
-
 		m_Scheduler.MsSleep (QUEUE_SIZE_MSECS / 2);
 
 		// fill the whole queue free space with data
