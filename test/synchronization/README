@@ -6,4 +6,4 @@ The first example demonstrates CEvent::WaitWithTimeout() by waiting on an event 
 
 The second example demonstrates multiple tasks waiting on a single event in order to exercise/test this new functionality.  Some of the tasks wait with a timeout to test the removal of a single task from an event's task wait list.
 
-The third example demonstrates CSynchronizationMutex by having multiple tasks simulate an atomic increment of a counter.  Each task acquires the mutex and splits the increment operation across a sleep during which other tasks can run, but those waiting on the mutex will be locked out.  At the end the counter value is checked to ensure none of the atomic operations were violated.
+The third example demonstrates CMutex by having multiple tasks simulate an atomic increment of a counter.  Each task acquires the mutex and splits the increment operation across a sleep during which other tasks can run, but those waiting on the mutex will be locked out.  At the end the counter value is checked to ensure none of the atomic operations were violated.

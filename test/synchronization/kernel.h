@@ -20,7 +20,6 @@
 #ifndef _kernel_h
 #define _kernel_h
 
-#include <circle/memory.h>
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
@@ -32,7 +31,7 @@
 #include <circle/logger.h>
 #include <circle/sched/scheduler.h>
 #include <circle/sched/synchronizationevent.h>
-#include <circle/sched/synchronizationmutex.h>
+#include <circle/sched/mutex.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -57,7 +56,6 @@ private:
 
 private:
 	// do not change this order
-	CMemorySystem		m_Memory;
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
@@ -70,7 +68,7 @@ private:
 
 	CScheduler		m_Scheduler;
 	CSynchronizationEvent	m_Event;
-	CSynchronizationMutex	m_Mutex;
+	CMutex			m_Mutex;
 };
 
 #endif

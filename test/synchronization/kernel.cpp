@@ -102,7 +102,7 @@ public:
 class CCounterTask : public CTask
 {
 public:
-	CCounterTask(int id, int timeout, int* piCounter, CSynchronizationMutex* pMutex)
+	CCounterTask(int id, int timeout, int* piCounter, CMutex* pMutex)
 	{
 		m_id = id;
 		m_timeout = timeout;
@@ -142,7 +142,7 @@ public:
 	int m_id;
 	int m_timeout;
 	int* m_piCounter;
-	CSynchronizationMutex* m_pMutex;
+	CMutex* m_pMutex;
 };
 
 TShutdownMode CKernel::Run (void)
@@ -193,7 +193,7 @@ TShutdownMode CKernel::Run (void)
 
 	m_Logger.Write (FromKernel, LogNotice, "Finished!");
 	CScheduler::Get()->MsSleep(1000);
-	return ShutdownReboot;
+	return ShutdownHalt;
 }
 
 void CKernel::TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext)
