@@ -1,5 +1,7 @@
 README
 
+Test by Brad Robinson
+
 This sample demonstrates/tests the synchronization primitives that form part of the optional cooperative non-preemtive scheduler which is available in Circle. The scheduler allows to have several independent threads of execution in a Circle application which may ease the programming model.
 
 The first example demonstrates CEvent::WaitWithTimeout() by waiting on an event in a loop with a 1 second timeout while a 5 second kernel timer is used to signal it.
