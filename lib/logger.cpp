@@ -127,9 +127,7 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 	case LogPanic:		Buffer = "\x1b[91m";	break;
 	case LogError:		Buffer = "\x1b[95m";	break;
 	case LogWarning:	Buffer = "\x1b[93m";	break;
-
-	default:
-		break;
+	default:		Buffer = "\x1b[97m";	break;
 	}
 #else
 	if (Severity == LogPanic)
