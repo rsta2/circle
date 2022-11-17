@@ -2,7 +2,7 @@
 // soundrecorder.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,9 +19,12 @@
 //
 #include "soundrecorder.h"
 #include "config.h"
+#include "wavefile.h"
 #include <circle/sched/scheduler.h>
 #include <circle/logger.h>
 #include <assert.h>
+
+static const unsigned BitsPerSample = (WRITE_FORMAT + 1) * 8;
 
 // queue can hold data for 5 seconds of maximum frame size
 static const unsigned QueueSize = 5 * SAMPLE_RATE * WRITE_CHANNELS * sizeof (u32);
@@ -84,11 +87,21 @@ void CSoundRecorder::Run (void)
 			goto Error;
 		}
 
+		m_bFileOpen = TRUE;
+
+		// reserve room for WAVE header
+		if (f_lseek (&m_File, sizeof (TWAVEFileHeader)) != FR_OK)
+		{
+			LOGERR ("Seek failed");
+
+			goto Error;
+		}
+
 		// run queue, as long record button is not pressed
 		m_Queue.Flush ();
 		m_Event.Clear ();
-		m_bFileOpen = TRUE;
 
+		unsigned nDataChunkSize = 0;
 		while (m_RecordButtonPin.Read () == HIGH)
 		{
 			m_Event.Wait ();
@@ -108,11 +121,28 @@ void CSoundRecorder::Run (void)
 
 					goto Error;
 				}
+
+				nDataChunkSize += nBytesWritten;
 			}
 			else
 			{
 				m_Event.Clear ();
 			}
+		}
+
+		// prepare and write WAVE header
+		TWAVEFileHeader Header = WAVE_FILE_HEADER (WRITE_CHANNELS, BitsPerSample,
+							   SAMPLE_RATE, nDataChunkSize);
+
+		unsigned nBytesWritten;
+		if (   f_rewind (&m_File) != FR_OK
+		    || f_write (&m_File, &Header, sizeof Header,
+				&nBytesWritten) != FR_OK
+		    || nBytesWritten != sizeof Header)
+		{
+			LOGERR ("Write failed");
+
+			goto Error;
 		}
 
 		m_bFileOpen = FALSE;

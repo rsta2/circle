@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include "config.h"
 #include <circle/util.h>
 #include <assert.h>
 
@@ -58,11 +57,18 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+#ifdef USE_USB
+	m_USBHCI (&m_Interrupt, &m_Timer, FALSE),
+#endif
 #ifdef ENABLE_RECORDER
 	m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
 #endif
+#ifndef USE_USB
 	m_SoundIn (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, TRUE, 0, 0,
 		   CI2SSoundBaseDevice::DeviceModeRXOnly),
+#else
+	m_SoundIn (SAMPLE_RATE, CUSBSoundBaseDevice::DeviceModeRXOnly),
+#endif
 	m_SoundOut (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE)
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -106,6 +112,13 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_Timer.Initialize ();
 	}
+
+#ifdef USE_USB
+	if (bOK)
+	{
+		bOK = m_USBHCI.Initialize ();
+	}
+#endif
 
 #ifdef ENABLE_RECORDER
 	if (bOK)
@@ -158,6 +171,27 @@ TShutdownMode CKernel::Run (void)
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Cannot start output sound device");
 	}
+
+#ifdef INPUT_JACK
+	// enable input jack and set volume
+	CSoundController *pController = m_SoundIn.GetController ();
+	if (pController)
+	{
+		pController->EnableJack (INPUT_JACK);
+
+#ifdef INPUT_VOLUME
+		CSoundController::TControlInfo Info =
+			pController->GetControlInfo (CSoundController::ControlVolume, INPUT_JACK,
+						     CSoundController::ChannelAll);
+
+		if (Info.Supported)
+		{
+			pController->SetControl (CSoundController::ControlVolume, INPUT_JACK,
+						 CSoundController::ChannelAll, INPUT_VOLUME);
+		}
+#endif
+	}
+#endif
 
 	// copy sound data
 	for (unsigned nCount = 0; 1; nCount++)

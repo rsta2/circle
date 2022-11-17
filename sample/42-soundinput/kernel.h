@@ -30,9 +30,16 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/sched/scheduler.h>
-#include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/sound/pwmsoundbasedevice.h>
 #include <circle/types.h>
+#include "config.h"
+
+#ifndef USE_USB
+	#include <circle/sound/i2ssoundbasedevice.h>
+#else
+	#include <circle/usb/usbhcidevice.h>
+	#include <circle/sound/usbsoundbasedevice.h>
+#endif
 
 #ifdef ENABLE_RECORDER
 	#include <SDCard/emmc.h>
@@ -68,13 +75,20 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CScheduler		m_Scheduler;
+#ifdef USE_USB
+	CUSBHCIDevice		m_USBHCI;
+#endif
 
 #ifdef ENABLE_RECORDER
 	CEMMCDevice		m_EMMC;
 	FATFS			m_FileSystem;
 #endif
 
+#ifndef USE_USB
 	CI2SSoundBaseDevice	m_SoundIn;
+#else
+	CUSBSoundBaseDevice	m_SoundIn;
+#endif
 	CPWMSoundBaseDevice	m_SoundOut;
 };
 
