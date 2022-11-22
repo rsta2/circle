@@ -1,8 +1,6 @@
 Circle
 ======
 
-> If you read this file in an editor you should switch line wrapping on.
-
 Overview
 --------
 
@@ -10,62 +8,37 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-Release 44.5
-------------
-
-This intermediate release offers a **revised DWHCI USB low-level driver for the Raspberry Pi 1-3 and Zero**. With the system option `USE_USB_FIQ` one can use the FIQ (Fast Interrupt Request) for this driver, which results in a more accurate timing on the USB. This may improve the compatibility with some USB devices and may help to prevent data loss, especially when receiving MIDI data from some USB MIDI controllers, which do have only small data buffers. Because there is only one FIQ source supported in the system, the FIQ cannot be used for other purpose than the USB with this system option. The xHCI USB driver for the Raspberry Pi 4 does not support this system option and remains unchanged.
-
-To **prevent data loss from USB MIDI controllers on the Raspberry Pi 1-3 and Zero**, there is also the new option `usbboost=true` for the file *cmdline.txt* now. It speeds up the USB MIDI handling, but may generate more system load on the other hand.
-
-The system option `USE_EMBEDDED_MMC_CM4` has been renamed to `USE_EMBEDDED_MMC_CM` and is tested to support **embedded MMC memory** on the Compute Module 3+ and 4.
-
-The `CI2SSoundBaseDevice` class driver for I2S sound devices **supports the WM8960 DAC**.
-
-There is **I2C support in the HD44780 LCD display driver** now.
-
-Bug fixes:
-
-* The Stereo channels were swapped in the `CHDMISoundBaseDevice` class before.
-* There seem to be USB devices, which send more data than it is expected. This fix should prevent a system crash by faking a frame overrun error, which should be handled by the upper layers.
-* Building the WLAN support with the `NDEBUG` option was not possible.
-
-Don't forget to update the used firmware to the one downloadable in [boot/](boot/)!
-
-The 44th Step
+The 45th Step
 -------------
 
-This release comes with new features, improvements and bug fixes. There is a new HDMI sound driver class `CHDMISoundBaseDevice`, which allows to generate **HDMI sound without VCHIQ** driver, which can be easier to integrate in an application. This is shown by the [sample/29-miniorgan](sample/29-miniorgan) and [sample/34-sounddevices](sample/34-sounddevices). On the Raspberry Pi 4 only the connector HDMI0 is supported. The class `CI2SSoundBaseDevice` now supports the **PCM5122 DAC**.
+This release comes with the long awaited **support for USB audio streaming devices**. Supported should be devices, which are compliant with the "USB Device Class Definition for Audio Devices", Release 1.0 and 2.0, in output direction on all Raspberry Pi models and in input direction only on the Raspberry Pi 4, 400 and Compute Module 4. Only USB audio interfaces with 16-bit PCM audio and two channels (Stereo) are supported for output and input, and additionally with one channel (Mono) for input. On the Raspberry Pi 1-3 and Zero it is recommended to define the system option `USE_USB_FIQ` for USB better timing. There is no constant chunk size for USB sound devices and it is not configurable here. Some devices may require the option `usbpowerdelay=1000` in the file [cmdline.txt](doc/cmdline.txt) to enumerate successfully.
 
-A new class ``C2DGraphics`` has been added to the base library, which provides **2D drawing routines**, which work without flickering or screen tearing. This is demonstrated in the [sample/41-screenanimations](sample/41-screenanimations).
+USB audio streaming devices often support multiple jacks for output and input and some method was required to select them. Furthermore these devices have Feature Units, which allow to set the volume for different audio channels or to mute the whole signal. Before there was no common API for such functions. This release adds the new feature of a **sound controller** for that purpose, which is provided by the class `CSoundController`. A pointer to the sound controller of an existing sound device (derived from the class `CSoundBaseDevice`) can be requested by calling `GetController()` on its device object. See the [Circle documentation](https://circle-rpi.readthedocs.io/en/latest/devices/audio-devices.html#sound-controller) for more information.
 
-The **scheduler library** has been improved and provides the new classes `CMutex` and `CSemaphore`. Multiple tasks can wait for a `CSynchronzationEvent` to be set now.
+Please note that the sound controller is optional and currently only the following sound devices implement it: `CUSBSoundBaseDevice`, `CI2SSoundBaseDevice` (for PCM512x-based devices), `CVCHIQSoundBaseDevice`. Because implementations of sound controllers for new devices are expected in the future, which provide additional audio functions, the sound controller API may be extended or modified in coming releases.
 
-There is a **new serial bootloader and flash tool** (Flashy), which improves the download speed and reliability. Please see the second part of the file [doc/bootloader.txt](doc/bootloader.txt) for more information! You can interrupt the download process with Ctrl-C now and start again, without resetting your Raspberry Pi. You should update your bootloader kernel image(s) on the SD card in any case. The old flash tool is still available.
+The sound support has been moved from the base library to the new library *lib/sound/libsound.a* with the header files in *include/circle/sound/* (instead of *include/circle/*). If your application uses sound, you have to add the sound library to the `LIBS` variable in the *Makefile* and to update some `#include` statements for the sound classes.
 
-Circle comes with a **configure script** now, which can be used to create the configuration file `Config.mk` easier. Please enter `configure -h` for a description of its options.
+The samples [29-miniorgan](sample/29-miniorgan/), [34-sounddevices](sample/34-sounddevices/) and [42-soundinput](sample/42-soundinput/) (former *42-i2sinput*) have been updated to use USB audio streaming devices. The samples 29 and 42 also demonstrate functions of the sound controller. The sound recorder in sample 42 generates compatible *.wav* files now. The default sample rate for these samples is 48000 Hz now, because it is supported by most USB sound cards. The new test [sound-controller](test/sound-controller/) may also be of interest for trying several sound features and the sound controller.
 
-The C++ support has been improved. Now **placement new operators** and **static objects inside of a function** can be used. Furthermore the **C++17 standard** is optionally supported and can be enabled with the option `--c++17` of `configure`, if you have a toolchain version, which supports it.
+There is a new method `CDevice::UnregisterRemovedHandler()` for undoing the registration of **device remove handlers**. Calling `CDevice::RegisterRemovedHandler()` with a `nullptr` for this purpose does not work any more. There can be multiple device remove handlers for one device now.
 
 Further improvements:
 
-* There is a new system option `NO_BUSY_WAIT`. With this option enabled, the EMMC, SDHOST and USB drivers will **not busy wait for the completion of synchronous transfers** any more. This should improve system throughput and network latency, but requires the scheduler in the system.
-* The **embedded MMC memory of the Compute Module 4** can be accessed, when the system option `USE_EMBEDDED_MMC_CM4` has been defined.
-* The class `CTFTPFatFsFileServer` was added to [addon/tftpfileserver](addon/tftpfileserver) to support **TFTP access with the FatFs filesystem module**.
-* The class `CDS18x20` in [addon/OneWire](addon/OneWire) has been improved and is now part of the library, not of the sample as before. It determines the used power mode of the sensor automatically.
-* Functions for **atomic memory access** have been added to `<circle/atomic.h>`.
+* The **LVGL submodule** has been updated to version 8.3.3.
+* The **FatFs submodule** has been updated with two recent patches. Furthermore it supports the function `f_mkfs()` for USB mass-storage devices now. This requires the FatFs option `FF_USE_MKFS` to be enabled in [addon/fatfs/ffconf.h](addon/fatfs/ffconf.h).
+* There is a new **driver for SSD1306-based displays** in [addon/display/](addon/display/).
+* The new system option `USE_LOG_COLORS` can be defined to **use different ANSI colors** for different severities **in the system log**.
 
 Bug fixes:
 
-* System timer IRQ handling may have stopped working after a while on the Raspberry Pi 1 and Zero before.
-* xHCI USB controller did not work on some Raspberry Pi 4 models.
-* Starting secondary cores 1-3 was not reliable.
-* Access to USB mass-storage devices was not reliable on Raspberry Pi Model A+, 3A+ and Zero before.
-* Add workaround for non-compliant low-speed USB devices with bulk endpoints.
-* Suppress concurrent split IN/OUT requests on Raspberry Pi 1-3 and Zero in USB serial drivers.
-* Enable serial FIFO in polling mode too.
-* The screen size select-able in *cmdline.txt* was limited to 1920x1080 before.
-* Semaphore implementation in *addon/linux* was not IRQ safe, but used from IRQ handler in VCHIQ driver.
-* Allow received text segment in TCP state SYN-RECEIVED.
+* Reading the USB HID report descriptor for `int3-0-0` devices did fail on some devices, when they were not configured yet. The USB HID support was not usable on these devices before.
+* Some USB MIDI controllers use an USB interrupt endpoint for reporting MIDI events, instead of a bulk endpoint. These devices were not usable before.
+* The serial bootloader "Flashy" did not work with the Bluetooth modules HC-05/-06.
+
+This release has been built with a new recommended toolchain, which comes from a new webpage. See the link in the *Building* section below.
+
+With this release a number of Circle applications **can be built using Clang/LLVM**. Please see [doc/clang-support.txt](doc/clang-support.txt) for details. This support is currently experimental.
 
 Don't forget to update the used firmware to the one downloadable in [boot/](boot/)!
 
@@ -83,6 +56,7 @@ Circle supports the following features:
 |                       | Multi-core support (Raspberry Pi 2, 3 and 4)        |
 |                       | Cooperative non-preemtive scheduler                 |
 |                       | CPU clock rate management                           |
+|                       | Clang/LLVM support (experimental)                   |
 |                       |                                                     |
 | Debug support         | Kernel logging to screen, UART and/or syslog server |
 |                       | C-assertions with stack trace                       |
@@ -121,6 +95,7 @@ Circle supports the following features:
 |                       | Driver for on-board Ethernet device (SMSC951x)      |
 |                       | Driver for on-board Ethernet device (LAN7800)       |
 |                       | Driver for USB mass storage devices (bulk only)     |
+|                       | Driver for USB audio streaming devices              |
 |                       | Drivers for different USB serial devices            |
 |                       | Audio class MIDI input support                      |
 |                       | Touchscreen driver (digitizer mode)                 |
@@ -143,7 +118,6 @@ Circle supports the following features:
 | Not supported         | Bluetooth                                           |
 |                       | Camera                                              |
 |                       | USB device (gadget) mode                            |
-|                       | USB isochronous transfers and audio                 |
 
 Building
 --------
@@ -238,33 +212,33 @@ Directories
 Classes
 -------
 
-The following C++ classes were added to Circle:
+The following C++ classes were moved in Circle:
 
-Base library
+Base library -> Sound library (new)
 
-* C2DGraphics: Software graphics library with VSync and hardware-accelerated double buffering
-* CBcmWatchdog: Driver for the BCM2835 watchdog device
 * CDMASoundBuffers: Concatenated DMA buffers to be used by sound device drivers
-* CGenericLock: Locks a resource with or without scheduler
 * CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ)
-* CMPHIDevice: A driver, which uses the MPHI device to generate an IRQ
-* CPtrListFIQ: Container class. List of pointers, usable from FIQ_LEVEL
-* CSMIMaster: Driver for the Second Memory Interface
+* CI2SSoundBaseDevice: Low level access to the I2S sound device
+* CPWMSoundDevice: Using the PWM device to playback sound samples in different formats
+* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the headphone jack
+* CSoundBaseDevice: Base class of sound devices, converts several sound formats
+
+The following C++ classes were added to Circle:
 
 USB library
 
-* CDWHCICompletionQueue: Queues USB requests ready for completion (with USE_USB_FIQ enabled)
-* CUSBTouchScreenDevice: Driver for USB HID-class touchscreens
+* CDWHCIFrameSchedulerIsochronous: Schedules the transmission of isochronous split-frames
+* CUSBAudioControlDevice: Driver for USB audio control devices
+* CUSBAudioFunctionTopology: Topology parser for USB audio class devices
+* CUSBAudioStreamingDevice: Low-level driver for USB audio streaming devices
 
-Input library
+Sound library (new)
 
-* CRPiTouchScreen: Driver for the official Raspberry Pi touch screen
-* CTouchScreenDevice: Generic touch screen interface device
-
-Scheduler library
-
-* CMutex: Provides a method to provide mutual exclusion (critical sections) across tasks
-* CSemaphore: Implements a semaphore synchronization class
+* CPCM512xSoundController: Sound controller for PCM512x
+* CSoundController: Optional controller of a sound device
+* CUSBSoundBaseDevice: High-level driver for USB audio streaming devices
+* CUSBSoundController: Sound controller for USB sound devices
+* CWM8960SoundController: Sound controller for WM8960
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 
@@ -289,6 +263,7 @@ Additional Topics
 * [cmdline.txt options](doc/cmdline.txt)
 * [Screen escape sequences](doc/screen.txt)
 * [Keyboard escape sequences](doc/keyboard.txt)
+* [Clang support](doc/clang-support.txt)
 * [Memory layout](doc/memorymap.txt)
 * [Naming conventions](doc/naming-conventions.txt)
 * [Known issues](doc/issues.txt)

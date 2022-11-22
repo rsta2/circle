@@ -1,12 +1,46 @@
 Change Log
 ==========
 
-> If you read this file in an editor you should switch line wrapping on.
-
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
+
+The 45th Step
+-------------
+
+This release comes with the long awaited **support for USB audio streaming devices**. Supported should be devices, which are compliant with the "USB Device Class Definition for Audio Devices", Release 1.0 and 2.0, in output direction on all Raspberry Pi models and in input direction only on the Raspberry Pi 4, 400 and Compute Module 4. Only USB audio interfaces with 16-bit PCM audio and two channels (Stereo) are supported for output and input, and additionally with one channel (Mono) for input. On the Raspberry Pi 1-3 and Zero it is recommended to define the system option `USE_USB_FIQ` for USB better timing. There is no constant chunk size for USB sound devices and it is not configurable here. Some devices may require the option `usbpowerdelay=1000` in the file [cmdline.txt](doc/cmdline.txt) to enumerate successfully.
+
+USB audio streaming devices often support multiple jacks for output and input and some method was required to select them. Furthermore these devices have Feature Units, which allow to set the volume for different audio channels or to mute the whole signal. Before there was no common API for such functions. This release adds the new feature of a **sound controller** for that purpose, which is provided by the class `CSoundController`. A pointer to the sound controller of an existing sound device (derived from the class `CSoundBaseDevice`) can be requested by calling `GetController()` on its device object. See the [Circle documentation](https://circle-rpi.readthedocs.io/en/latest/devices/audio-devices.html#sound-controller) for more information.
+
+Please note that the sound controller is optional and currently only the following sound devices implement it: `CUSBSoundBaseDevice`, `CI2SSoundBaseDevice` (for PCM512x-based devices), `CVCHIQSoundBaseDevice`. Because implementations of sound controllers for new devices are expected in the future, which provide additional audio functions, the sound controller API may be extended or modified in coming releases.
+
+The sound support has been moved from the base library to the new library *lib/sound/libsound.a* with the header files in *include/circle/sound/* (instead of *include/circle/*). If your application uses sound, you have to add the sound library to the `LIBS` variable in the *Makefile* and to update some `#include` statements for the sound classes.
+
+The samples [29-miniorgan](sample/29-miniorgan/), [34-sounddevices](sample/34-sounddevices/) and [42-soundinput](sample/42-soundinput/) (former *42-i2sinput*) have been updated to use USB audio streaming devices. The samples 29 and 42 also demonstrate functions of the sound controller. The sound recorder in sample 42 generates compatible *.wav* files now. The default sample rate for these samples is 48000 Hz now, because it is supported by most USB sound cards. The new test [sound-controller](test/sound-controller/) may also be of interest for trying several sound features and the sound controller.
+
+There is a new method `CDevice::UnregisterRemovedHandler()` for undoing the registration of **device remove handlers**. Calling `CDevice::RegisterRemovedHandler()` with a `nullptr` for this purpose does not work any more. There can be multiple device remove handlers for one device now.
+
+Further improvements:
+
+* The **LVGL submodule** has been updated to version 8.3.3.
+* The **FatFs submodule** has been updated with two recent patches. Furthermore it supports the function `f_mkfs()` for USB mass-storage devices now. This requires the FatFs option `FF_USE_MKFS` to be enabled in [addon/fatfs/ffconf.h](addon/fatfs/ffconf.h).
+* There is a new **driver for SSD1306-based displays** in [addon/display/](addon/display/).
+* The new system option `USE_LOG_COLORS` can be defined to **use different ANSI colors** for different severities **in the system log**.
+
+Bug fixes:
+
+* Reading the USB HID report descriptor for `int3-0-0` devices did fail on some devices, when they were not configured yet. The USB HID support was not usable on these devices before.
+* Some USB MIDI controllers use an USB interrupt endpoint for reporting MIDI events, instead of a bulk endpoint. These devices were not usable before.
+* The serial bootloader "Flashy" did not work with the Bluetooth modules HC-05/-06.
+
+This release has been built with a new recommended toolchain, which comes from a new webpage. See the link in the *Building* section below.
+
+With this release a number of Circle applications **can be built using Clang/LLVM**. Please see [doc/clang-support.txt](doc/clang-support.txt) for details. This support is currently experimental.
+
+Don't forget to update the used firmware to the one downloadable in [boot/](boot/)!
 
 Release 44.5
 ------------
+
+2022-06-08
 
 This intermediate release offers a **revised DWHCI USB low-level driver for the Raspberry Pi 1-3 and Zero**. With the system option `USE_USB_FIQ` one can use the FIQ (Fast Interrupt Request) for this driver, which results in a more accurate timing on the USB. This may improve the compatibility with some USB devices and may help to prevent data loss, especially when receiving MIDI data from some USB MIDI controllers, which do have only small data buffers. Because there is only one FIQ source supported in the system, the FIQ cannot be used for other purpose than the USB with this system option. The xHCI USB driver for the Raspberry Pi 4 does not support this system option and remains unchanged.
 
