@@ -37,12 +37,10 @@ You have to enable the #define USE_HDMI in the file miniorgan.h before building
 to use this. You may notice a delay between pressing a key and the start of the
 tone. This latency is caused by the hardware and cannot be eliminated.
 
-This sample can be built to be used with an external USB audio class streaming
-device. You have to enable the #define USE_USB in the file miniorgan.h before
-building to use this. Using these devices on the Raspberry Pi 1-3 and Zero
-requires the system option USE_USB_SOF_INTR defined (default setting) and
-should work even better with USE_USB_FIQ defined. The USB sound card must be
-connected before the sample program is started.
+This sample can be built for the Raspberry Pi 4 to be used with an external USB
+audio class streaming device. You have to enable the #define USE_USB in the file
+miniorgan.h before building to use this. The USB sound card must be connected
+before the sample program is started.
 
 The PC keyboard mapping is as follows:
 

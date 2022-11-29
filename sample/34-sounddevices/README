@@ -7,7 +7,8 @@ devices:
 * I2S sound device using external hardware (tested with PCM5102A and PCM5122 DACs)
 * HDMI sound device via sound-capable HDMI monitor (without VCHIQ, HDMI0 only)
 * VCHIQ sound device via sound-capable HDMI monitor or headphone jack (optional)
-* USB sound device using external hardware (supporting USB audio class spec.)
+* USB sound device using external hardware (supporting USB audio class spec.,
+  for Raspberry Pi 4 only)
 
 By default the sample is built without the VCHIQ option, because this requires
 additional libraries, which have to be built manually. If you want this VCHIQ
@@ -46,8 +47,6 @@ I2C slave address of the DAC in config.h. By default the addresses 0x4C and
 0x4D will be auto-probed. WM8960-based I2S sound cards are also supported with
 the default I2C slave address 0x1A.
 
-USB operation requires an USB audio class streaming device. Using these devices
-on the Raspberry Pi 1-3 and Zero requires the system option USE_USB_SOF_INTR
-defined (default setting) and should work even better with USE_USB_FIQ defined.
-The USB sound card must be connected before the sample program is started and
-must not be removed, while the program is running.
+USB operation (on Raspberry Pi 4 only) requires an USB audio class streaming
+device. The USB sound card must be connected before the sample program is
+started and must not be removed, while the program is running.
