@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include <circle/debug.h>
 #include <assert.h>
 
-#define MAX_CONFIG_DESC_SIZE		512		// best guess
+#define MAX_CONFIG_DESC_SIZE		1024		// best guess
 
 static const char FromDevice[] = "usbdev";
 
@@ -330,9 +330,13 @@ boolean CUSBDevice::Initialize (void)
 		return FALSE;
 	}
 
+	// must match enum TUSBSpeed in <circle/usb/usb.h>
+	static const char *Speeds[] = {"LS", "FS", "HS", "SS"};
+	assert (m_Speed < sizeof Speeds / sizeof Speeds[0]);
+
 	CString *pNames = GetNames ();
 	assert (pNames != 0);
-	LogWrite (LogNotice, "Device %s found", (const char *) *pNames);
+	LogWrite (LogNotice, "Device %s found (%s)", (const char *) *pNames, Speeds[m_Speed]);
 	delete pNames;
 
 	CString Product;
@@ -360,6 +364,14 @@ boolean CUSBDevice::Initialize (void)
 	if (Product.GetLength () > 0)
 	{
 		LogWrite (LogNotice, "Product: %s", (const char *) Product);
+	}
+
+	if (!m_pHost->SetConfiguration (m_pEndpoint0, m_pConfigDesc->bConfigurationValue))
+	{
+		LogWrite (LogError, "Cannot set configuration (%u)",
+			  (unsigned) m_pConfigDesc->bConfigurationValue);
+
+		return FALSE;
 	}
 
 	unsigned nFunction = 0;
@@ -427,7 +439,7 @@ boolean CUSBDevice::Initialize (void)
 
 		if (!m_pFunction[nFunction]->Initialize ())
 		{
-			LogWrite (LogError, "Cannot initialize function");
+			LogWrite (LogDebug, "Cannot initialize function");
 
 			delete m_pFunction[nFunction];
 			m_pFunction[nFunction] = 0;
@@ -449,6 +461,11 @@ boolean CUSBDevice::Initialize (void)
 	{
 		LogWrite (LogWarning, "Device has no supported function");
 
+		if (!m_pHost->SetConfiguration (m_pEndpoint0, 0))
+		{
+			LogWrite (LogWarning, "Cannot reset configuration");
+		}
+
 		return FALSE;
 	}
 
@@ -462,13 +479,6 @@ boolean CUSBDevice::Configure (void)
 
 	if (m_pConfigDesc == 0)		// not initialized
 	{
-		return FALSE;
-	}
-
-	if (!m_pHost->SetConfiguration (m_pEndpoint0, m_pConfigDesc->bConfigurationValue))
-	{
-		LogWrite (LogError, "Cannot set configuration (%u)", (unsigned) m_pConfigDesc->bConfigurationValue);
-
 		return FALSE;
 	}
 
@@ -521,7 +531,7 @@ boolean CUSBDevice::RemoveDevice (void)
 	}
 
 	assert (m_pHub != 0);
-	return m_pHub->RemoveDevice (m_nHubPortIndex);
+	return m_pHub->RemoveDeviceAt (m_nHubPortIndex);
 }
 
 CString *CUSBDevice::GetName (TDeviceNameSelector Selector) const
@@ -668,6 +678,12 @@ void CUSBDevice::ConfigurationError (const char *pSource) const
 {
 	assert (m_pConfigParser != 0);
 	m_pConfigParser->Error (pSource);
+}
+
+CUSBFunction *CUSBDevice::GetFunction (unsigned nIndex)
+{
+	assert (nIndex < USBDEV_MAX_FUNCTIONS);
+	return m_pFunction[nIndex];
 }
 
 void CUSBDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)

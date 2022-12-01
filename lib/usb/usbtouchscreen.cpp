@@ -107,7 +107,7 @@ boolean CUSBTouchScreenDevice::Configure (void)
 		return FALSE;
 	}
 
-	if (!CUSBHIDDevice::Configure (m_Report.ByteSize))
+	if (!CUSBHIDDevice::ConfigureHID (m_Report.ByteSize))
 	{
 		LOGERR ("Cannot configure HID device");
 

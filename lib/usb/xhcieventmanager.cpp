@@ -2,7 +2,7 @@
 // xhcieventmanager.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -116,14 +116,19 @@ TXHCITRB *CXHCIEventManager::HandleEvents (void)
 			>> XHCI_PORT_STATUS_EVENT_TRB_PARAMETER1_PORTID__SHIFT);
 		break;
 
-	case XHCI_TRB_TYPE_EVENT_HOST_CONTROLLER:
+	case XHCI_TRB_TYPE_EVENT_HOST_CONTROLLER: {
+		u8 uchCompletionCode =    pEventTRB->Status
+				       >> XHCI_EVENT_TRB_STATUS_COMPLETION_CODE__SHIFT;
+		if (uchCompletionCode == XHCI_TRB_COMPLETION_CODE_EVENT_RING_FULL_ERROR)
+		{
+			CLogger::Get ()->Write (From, LogPanic, "Event ring full");
+		}
 #ifndef NDEBUG
 		m_pXHCIDevice->DumpStatus ();
 #endif
 		CLogger::Get ()->Write (From, LogPanic, "HC event (completion %u)",
-					   (unsigned) pEventTRB->Status
-					>> XHCI_EVENT_TRB_STATUS_COMPLETION_CODE__SHIFT);
-		break;
+					(unsigned) uchCompletionCode);
+		} break;
 
 	default:
 		CLogger::Get ()->Write (From, LogPanic, "Unhandled TRB (type %u)", nTRBType);

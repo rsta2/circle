@@ -19,7 +19,6 @@ Base library
 * CDeviceTreeBlob: Simple Devicetree blob parser
 * CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
 * CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
-* CDMASoundBuffers: Concatenated DMA buffers to be used by sound device drivers.
 * CExceptionHandler: Generates a stack-trace and a panic message if an abort exception occurs.
 * CGPIOClock: Using GPIO clocks, initialize, start and stop it.
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
@@ -27,10 +26,8 @@ Base library
 * CGPIOPinFIQ: GPIO fast interrupt pin (only one allowed in the system).
 * CGenericLock: Locks a resource with or without scheduler.
 * CHeapAllocator: Allocates blocks from a flat memory region.
-* CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ).
 * CI2CMaster: Driver for I2C master devices.
 * CI2CSlave: Driver for I2C slave device.
-* CI2SSoundBaseDevice: Low level access to the I2S sound device.
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CKernelOptions: Providing kernel options from file cmdline.txt (see doc/cmdline.txt).
 * CLatencyTester: Measures the IRQ latency of the running code.
@@ -49,12 +46,9 @@ Base library
 * CPtrList: Container class. List of pointers.
 * CPtrListFIQ: Container class. List of pointers, usable from FIQ_LEVEL.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
-* CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
-* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
 * CSerialDevice: Driver for PL011 UART, interrupt or polling mode
 * CSMIMaster: Driver for the Second Memory Interface.
-* CSoundBaseDevice: Base class of sound devices, converts several sound formats.
 * CSpinLock: Encapsulates a spin lock for synchronizing the concurrent access to a resource from multiple cores.
 * CSPIMaster: Driver for (non-AUX) SPI master device. Synchronous polling operation.
 * CSPIMasterAUX: Driver for the auxiliary SPI master (SPI1).
@@ -73,6 +67,7 @@ USB library
 * CDWHCICompletionQueue: Queues USB requests ready for completion (with USE_USB_FIQ enabled).
 * CDWHCIDevice: USB host controller interface (HCI) driver for Raspberry Pi 1-3.
 * CDWHCIFrameScheduler: Base class for a simple micro frame scheduler
+* CDWHCIFrameSchedulerIsochronous: Schedules the transmission of isochronous split frames to non-high-speed devices
 * CDWHCIFrameSchedulerNonPeriodic: Schedules the transmission of non-interrupt split frames to non-high-speed devices
 * CDWHCIFrameSchedulerNoSplit: Schedules the transmission of frames to direct attached non-high-speed devices
 * CDWHCIFrameSchedulerPeriodic: Schedules the transmission of interrupt split frames to non-high-speed devices
@@ -82,6 +77,9 @@ USB library
 * CDWHCITransferStageData: Holds all the data needed for a transfer stage on one HCI channel.
 * CLAN7800Device: Driver for the on-board USB Gigabit Ethernet device of the Raspberry Pi 3 B+.
 * CSMSC951xDevice: Driver for the on-board USB Ethernet device.
+* CUSBAudioControlDevice: Driver for USB audio control devices.
+* CUSBAudioStreamingDevice: Low-level driver for USB audio streaming devices.
+* CUSBAudioFunctionTopology: Topology parser for USB audio class devices.
 * CUSBBluetoothDevice: Bluetooth HCI transport driver for USB Bluetooth BR/EDR dongles.
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
 * CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU.
@@ -195,3 +193,17 @@ Net library
 * CTFTPDaemon: TFTP server task.
 * CTransportLayer: Encapsulates the TCP/UDP transport layer.
 * CUDPConnection: Encapsulates a (virtual) UDP connection. Derived from CNetConnection.
+
+Sound library
+
+* CDMASoundBuffers: Concatenated DMA buffers to be used by sound device drivers.
+* CHDMISoundBaseDevice: Low level access to the HDMI sound device (without VCHIQ).
+* CI2SSoundBaseDevice: Low level access to the I2S sound device.
+* CPCM512xSoundController: Sound controller for PCM512x.
+* CPWMSoundDevice: Using the PWM device to playback sound samples in different formats.
+* CPWMSoundBaseDevice: Low level access to the PWM device to generate sounds on the 3.5mm headphone jack.
+* CSoundBaseDevice: Base class of sound devices, converts several sound formats.
+* CSoundController: Optional controller of a sound device.
+* CUSBSoundBaseDevice: High-level driver for USB audio streaming devices.
+* CUSBSoundController: Sound controller for USB sound devices.
+* CWM8960SoundController: Sound controller for WM8960.

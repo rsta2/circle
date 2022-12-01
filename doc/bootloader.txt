@@ -128,3 +128,5 @@ For a full set of command line args, run the script with --help
 
 For details on using this under WSL, see the [Windows build instructions](windows-build.txt)
 
+If you want to use Flashy with the Bluetooth modules HC-05 or HC-06, please see
+[these instructions](https://github.com/rsta2/circle/pull/312).

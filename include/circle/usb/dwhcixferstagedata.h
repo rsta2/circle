@@ -48,12 +48,11 @@ public:
 	void SetSubState (unsigned nSubState);
 	unsigned GetSubState (void) const;
 
-	boolean BeginSplitCycle (void);
-
 	// get transaction parameters
 	unsigned GetChannelNumber (void) const;
 	u8 GetDeviceAddress (void) const;
 	boolean IsPeriodic (void) const;
+	boolean IsIsochronous (void) const;
 	u8 GetEndpointType (void) const;
 	u8 GetEndpointNumber (void) const;
 	u32 GetMaxPacketSize (void) const;
@@ -107,6 +106,8 @@ private:
 	u32		 m_nBytesPerTransaction;
 	unsigned	 m_nPacketsPerTransaction;
 	u32		 m_nTotalBytesTransfered;
+
+	unsigned	 m_nIsoPackets;
 
 	unsigned	 m_nState;
 	unsigned	 m_nSubState;

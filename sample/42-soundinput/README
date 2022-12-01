@@ -1,0 +1,72 @@
+README
+
+	For USB audio operation see below.
+
+This sample program is a I2S to PWM sound converter. It receives I2S sound data
+(2 channels with 32 bit width and 24 bit signed audio samples) via the I2S
+interface exposed on the 40 pin GPIO header. The sound data will be converted to
+PWM signals and you can listen to it on the 3.5" headphone jack.
+
+For a simple test two Raspberry Pi computers can be used. Install
+sample/34-sounddevices on the transmitting computer and create a file
+cmdline.txt on the SD card with this contents:
+
+	soundev=sndi2s
+
+Install this sample program on the receiving computer and connect a headphone to
+the 3.5" headphone jack.
+
+Both computers have to be connected via the 40 pin GPIO header this way (GPIO
+numbers are chip numbers, not header positions):
+
+	Transmitter		Receiver
+	GPIO			GPIO
+
+	18 (CLK)	-->	18 (CLK)
+	19 (FS)		-->	19 (FS)
+	21 (DOUT)	-->	20 (DIN)
+	GND		<-->	GND
+
+The configured SAMPLE_RATE (default 48000) in the file config.h of both sample
+programs must match, but can be modified.
+
+After powering on both computers and completed boot a modulated 440 Hz tone can
+be heard on both channels of the headphone.
+
+
+USB AUDIO
+
+The input sound data for this program can also come from an USB audio streaming
+device. This is currently only supported on the Raspberry Pi 4. You have to
+define USE_USB in the file config.h to enable this.
+
+USB audio devices often support setting the input jack (LineIn or Microphone)
+and the input volume in dB. You can enable this in config.h too. Without these
+settings, the default input jack and volume is used.
+
+
+SOUND RECORDER
+
+If you enable the setting "ENABLE_RECORDER = 1" in the Makefile, this sample acts
+as a digital sound recorder, which saves the received I2S or USB sound data to
+the SD card in a .wav file. It can be imported into many applications for further
+processing.
+
+The sound recorder is started and stopped using a simple button, which connects
+the pin GPIO17 to GND. If you want to use an other pin, you can change this in
+the file config.h.
+
+Before build you should add the following system options to the file Config.mk:
+
+	DEFINE += -DNO_BUSY_WAIT -DNO_SDHOST
+
+If you want to use this program on the Raspberry Pi 4, without a connected
+display, you also have to add this option to the file Config.mk:
+
+	DEFINE += -DSCREEN_HEADLESS
+
+Building the sound recorder program requires the libraries in addon/SDCard/ and
+addon/fatfs/ to be built manually before.
+
+Be sure that you have enough free space on your SD card (about 15 MB/min with
+24-bit Stereo mode).

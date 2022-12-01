@@ -2,7 +2,7 @@
 // vchiqsoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,25 +20,14 @@
 #ifndef _vc4_sound_vchiqsoundbasedevice_h
 #define _vc4_sound_vchiqsoundbasedevice_h
 
-#include <circle/soundbasedevice.h>
+#include <circle/sound/soundbasedevice.h>
 #include <circle/interrupt.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/types.h>
+#include <vc4/sound/vchiqsoundcontroller.h>
 #include <vc4/vchiq/vchiqdevice.h>
 #include <vc4/vchi/vchi.h>
 #include "vc_vchi_audioserv_defs.h"
-
-#define VCHIQ_SOUND_VOLUME_MIN		-10000
-#define VCHIQ_SOUND_VOLUME_DEFAULT	0
-#define VCHIQ_SOUND_VOLUME_MAX		400
-
-enum TVCHIQSoundDestination
-{
-	VCHIQSoundDestinationAuto,
-	VCHIQSoundDestinationHeadphones,
-	VCHIQSoundDestinationHDMI,
-	VCHIQSoundDestinationUnknown
-};
 
 enum TVCHIQSoundState
 {
@@ -67,20 +56,20 @@ public:
 	virtual ~CVCHIQSoundBaseDevice (void);
 
 	/// \return Minium value of one sample
-	int GetRangeMin (void) const;
+	int GetRangeMin (void) const override;
 	/// \return Maximum value of one sample
-	int GetRangeMax (void) const;
+	int GetRangeMax (void) const override;
 
 	/// \brief Connects to the VCHIQ sound service and starts sending sound data
 	/// \return Operation successful?
-	boolean Start (void);
+	boolean Start (void) override;
 
 	/// \brief Stops the transmission of sound data
 	/// \note Cancel takes effect after a short delay
-	void Cancel (void);
+	void Cancel (void) override;
 
 	/// \return Is the sound data transmission running?
-	boolean IsActive (void) const;
+	boolean IsActive (void) const override;
 
 	/// \param nVolume	Output volume to be set (-10000..400)
 	/// \param Destination	the target device, the sound data is sent to\n
@@ -88,6 +77,9 @@ public:
 	/// \note This method can be called, while the sound data transmission is running.
 	void SetControl (int nVolume,
 			 TVCHIQSoundDestination Destination = VCHIQSoundDestinationUnknown);
+
+	/// \return Pointer to sound controller object
+	CSoundController *GetController (void) override;
 
 protected:
 	/// \brief May overload this to provide the sound samples!
@@ -123,6 +115,8 @@ private:
 
 	unsigned m_nWritePos;
 	unsigned m_nCompletePos;
+
+	CVCHIQSoundController m_Controller;
 };
 
 #endif

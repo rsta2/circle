@@ -109,7 +109,7 @@ boolean CUSBMIDIDevice::Configure (void)
 	TUSBAudioEndpointDescriptor *pEndpointDesc;
 	while ((pEndpointDesc = (TUSBAudioEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT)) != 0)
 	{
-		if ((pEndpointDesc->bmAttributes & 0x3F) != 0x02)	// Bulk EP
+		if ((pEndpointDesc->bmAttributes & 0x3E) != 0x02)	// Bulk or Interrupt EP
 		{
 			continue;
 		}

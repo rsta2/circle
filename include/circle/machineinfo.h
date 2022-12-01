@@ -2,7 +2,7 @@
 // machineinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ enum TMachineModel
 	MachineModel4B,
 	MachineModel400,
 	MachineModelCM4,
+	MachineModelCM4S,
 	MachineModelUnknown
 };
 
@@ -139,17 +140,17 @@ public:
 	static CMachineInfo *Get (void);
 
 private:
-	u32		m_nRevisionRaw;
-	TMachineModel	m_MachineModel;
-	unsigned	m_nModelMajor;
-	unsigned	m_nModelRevision;
-	TSoCType	m_SoCType;
-	unsigned	m_nRAMSize;
+	u32		m_nRevisionRaw	  MAXALIGN;	// suppress unaligned access in init stage
+	TMachineModel	m_MachineModel	  MAXALIGN;
+	unsigned	m_nModelMajor	  MAXALIGN;
+	unsigned	m_nModelRevision  MAXALIGN;
+	TSoCType	m_SoCType	  MAXALIGN;
+	unsigned	m_nRAMSize	  MAXALIGN;
 
-	u16		m_usDMAChannelMap;		// channel bit set if channel is free
+	u16		m_usDMAChannelMap MAXALIGN;	// channel bit set if channel is free
 
 #if RASPPI >= 4
-	CDeviceTreeBlob	*m_pDTB;
+	CDeviceTreeBlob	*m_pDTB		  MAXALIGN;
 #endif
 
 	static CMachineInfo *s_pThis;

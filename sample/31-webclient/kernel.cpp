@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -123,7 +123,7 @@ TShutdownMode CKernel::Run (void)
 		ParseDocument (pBuffer);
 	}
 
-	delete pBuffer;
+	delete [] pBuffer;
 	pBuffer = 0;
 
 	// should not halt here, because TCP disconnect may still be in process

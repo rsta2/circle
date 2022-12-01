@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -75,7 +75,8 @@ s_NewInfo[]
 	{17, MachineModel4B,		4},
 	{18, MachineModelZero2W,	3},
 	{19, MachineModel400,		4},
-	{20, MachineModelCM4,		4}
+	{20, MachineModelCM4,		4},
+	{21, MachineModelCM4S,		4}
 };
 
 static const char *s_MachineName[] =		// must match TMachineModel
@@ -99,6 +100,7 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Raspberry Pi 4 Model B",
 	"Raspberry Pi 400",
 	"Compute Module 4",
+	"Compute Module 4S",
 	"Unknown"
 };
 
@@ -132,6 +134,7 @@ static unsigned s_ActLEDInfo[] =		// must match TMachineModel
 	42,				// 4B
 	42,				// 400
 	42,				// CM4
+	0 | ACTLED_VIRTUAL_PIN,		// CM4S
 
 	ACTLED_UNKNOWN			// Unknown
 };

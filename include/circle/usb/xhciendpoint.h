@@ -2,7 +2,7 @@
 // xhciendpoint.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <circle/usb/xhciring.h>
 #include <circle/usb/xhci.h>
 #include <circle/usb/usb.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
 class CXHCIDevice;
@@ -83,10 +84,12 @@ private:
 	u8		 m_uchEndpointID;
 	u8		 m_uchEndpointType;
 
-	CUSBRequest	*m_pURB;
+	CUSBRequest	*m_pURB[2];
 	volatile boolean m_bTransferCompleted;
 
 	u8		*m_pInputContextBuffer;
+
+	CSpinLock	 m_SpinLock;
 };
 
 #endif

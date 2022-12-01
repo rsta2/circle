@@ -20,6 +20,7 @@
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/usb/usbhid.h>
 #include <circle/synchronize.h>
+#include <circle/sysconfig.h>
 #include <circle/koptions.h>
 #include <circle/logger.h>
 #include <assert.h>
@@ -40,6 +41,8 @@
 #include <circle/usb/lan7800.h>
 #include <circle/usb/usbbluetooth.h>
 #include <circle/usb/usbmidi.h>
+#include <circle/usb/usbaudiocontrol.h>
+#include <circle/usb/usbaudiostreaming.h>
 #include <circle/usb/usbcdcethernet.h>
 #include <circle/usb/usbserialcdc.h>
 #include <circle/usb/usbserialch341.h>
@@ -90,7 +93,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBMouseDevice (pParent);
 	}
-	else if (pName->Compare ("int3-0-0") == 0)
+	else if (   pName->Compare ("int3-0-0") == 0
+		 || pName->Compare ("int3-0-2") == 0)
 	{
 		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
 		assert (pVendor != 0);
@@ -150,6 +154,18 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBMIDIDevice (pParent);
 	}
+#if RASPPI >= 4
+	else if (   pName->Compare ("int1-1-0") == 0
+		 || pName->Compare ("int1-1-20") == 0)
+	{
+		pResult = new CUSBAudioControlDevice (pParent);
+	}
+	else if (   pName->Compare ("int1-2-0") == 0
+		 || pName->Compare ("int1-2-20") == 0)
+	{
+		pResult = new CUSBAudioStreamingDevice (pParent);
+	}
+#endif
 	else if (pName->Compare ("int2-6-0") == 0)
 	{
 		pResult = new CUSBCDCEthernetDevice (pParent);

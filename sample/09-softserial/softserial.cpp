@@ -2,7 +2,7 @@
 // softserial.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ boolean CSoftSerialDevice::Initialize (void)
 	return TRUE;
 }
 
-int CSoftSerialDevice::Write (const void *pBuffer, unsigned nCount)
+int CSoftSerialDevice::Write (const void *pBuffer, size_t nCount)
 {
 	char *p = (char *) pBuffer;
 	int nResult = 0;
@@ -94,7 +94,7 @@ int CSoftSerialDevice::Write (const void *pBuffer, unsigned nCount)
 	return nResult;
 }
 
-int CSoftSerialDevice::Read (void *pBuffer, unsigned nCount)
+int CSoftSerialDevice::Read (void *pBuffer, size_t nCount)
 {
 	char *p = (char *) pBuffer;
 	int nResult = 0;

@@ -1,10 +1,6 @@
 //
 // dwhcidevice.cpp
 //
-// Supports:
-//	internal DMA only,
-//	no ISO transfers
-//
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
@@ -25,6 +21,7 @@
 #include <circle/usb/dwhciframeschednper.h>
 #include <circle/usb/dwhciframeschednsplit.h>
 #include <circle/usb/dwhciframeschedper.h>
+#include <circle/usb/dwhciframeschediso.h>
 #include <circle/sched/scheduler.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/bcm2835.h>
@@ -146,6 +143,7 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNonPeriodic, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
 	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerPeriodic, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
 	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerNoSplit, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
+	INIT_PROTECTED_CLASS_ALLOCATOR (CDWHCIFrameSchedulerIsochronous, DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL);
 
 	PeripheralEntry ();
 
@@ -311,8 +309,7 @@ boolean CDWHCIDevice::SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs
 	PeripheralEntry ();
 
 	assert (pURB != 0);
-	assert (   pURB->GetEndpoint ()->GetType () == EndpointTypeBulk
-		|| pURB->GetEndpoint ()->GetType () == EndpointTypeInterrupt);
+	assert (pURB->GetEndpoint ()->GetType () != EndpointTypeControl);
 	assert (pURB->GetBufLen () > 0);
 	
 	pURB->SetStatus (0);
@@ -558,6 +555,14 @@ boolean CDWHCIDevice::EnableRootPort (void)
 	// normally 10ms, seems to be too short for some devices
 	m_pTimer->MsDelay (20);		// see USB 2.0 spec (tRSTRCY)
 
+	if (CKernelOptions::Get ()->GetUSBFullSpeed ())
+	{
+		// ensure frame interval is 1 ms
+		CDWHCIRegister FrameInterval (DWHCI_HOST_FRM_INTERVAL);
+		FrameInterval.Set (48000);
+		FrameInterval.Write ();
+	}
+
 	return TRUE;
 }
 
@@ -780,22 +785,6 @@ boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolea
 	}
 	else
 	{
-		if (!pStageData->BeginSplitCycle ())
-		{
-#ifndef USE_USB_SOF_INTR
-			DisableChannelInterrupt (nChannel);
-#endif
-
-			delete pStageData;
-#ifndef USE_USB_SOF_INTR
-			m_pStageData[nChannel] = 0;
-			
-			FreeChannel (nChannel);
-#endif
-
-			return FALSE;
-		}
-
 		pStageData->SetState (StageStateStartSplit);
 		pStageData->SetSplitComplete (FALSE);
 		pStageData->GetFrameScheduler ()->StartSplit ();
@@ -999,6 +988,19 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 			Character.And (~DWHCI_HOST_CHAN_CHARACTER_PER_ODD_FRAME);
 		}
 	}
+	else
+	{
+		CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
+		u16 usFrameNumber = DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ());
+		if (usFrameNumber & 1)
+		{
+			Character.Or (DWHCI_HOST_CHAN_CHARACTER_PER_ODD_FRAME);
+		}
+		else
+		{
+			Character.And (~DWHCI_HOST_CHAN_CHARACTER_PER_ODD_FRAME);
+		}
+	}
 #endif
 
 	CDWHCIRegister ChanInterruptMask (DWHCI_HOST_CHAN_INT_MASK(nChannel));
@@ -1113,6 +1115,20 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			pURB->SetStatus (0);
 			pURB->SetUSBError (pStageData->GetUSBError ());
 		}
+#ifdef USE_USB_SOF_INTR
+		else if (   pStageData->IsIsochronous ()
+			 && !pStageData->IsStageComplete ())
+		{
+			DisableChannelInterrupt (nChannel);
+
+			m_pStageData[nChannel] = 0;
+			FreeChannel (nChannel);
+
+			QueueTransaction (pStageData);
+
+			break;
+		}
+#endif
 		else if (   (nStatus & (DWHCI_HOST_CHAN_INT_NAK | DWHCI_HOST_CHAN_INT_NYET))
 			 && pStageData->IsPeriodic ())
 		{
@@ -1149,7 +1165,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			pURB->SetStatus (1);
 		}
-		
+
 		DisableChannelInterrupt (nChannel);
 
 		delete pStageData;
@@ -1191,6 +1207,12 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 		}
 
 		pStageData->GetFrameScheduler ()->TransactionComplete (nStatus);
+
+		if (   pStageData->IsIsochronous ()
+		    && !pStageData->IsDirectionIn ())
+		{
+			goto ContinueIsochronousOutSplit;
+		}
 
 		pStageData->SetState (StageStateCompleteSplit);
 		pStageData->SetSplitComplete (TRUE);
@@ -1249,30 +1271,13 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			break;
 		}
 
+	ContinueIsochronousOutSplit:
 	LeaveCompleteSplit:
 		if (!pStageData->IsStageComplete ())
 		{
-			if (!pStageData->BeginSplitCycle ())
-			{
-				pURB->SetStatus (0);
-				pURB->SetUSBError (USBErrorSplit);
-
-				DisableChannelInterrupt (nChannel);
-
-				delete pStageData;
-				m_pStageData[nChannel] = 0;
-
-				FreeChannel (nChannel);
-
-#ifndef USE_USB_FIQ
-				pURB->CallCompletionRoutine ();
-#else
-				m_CompletionQueue.Enqueue (pURB);
-#endif
-				break;
-			}
-
-			if (!pStageData->IsPeriodic ())
+			if (   !pStageData->IsPeriodic ()
+			    || (   pStageData->IsIsochronous ()
+			        && !pStageData->IsDirectionIn ()))
 			{
 				pStageData->SetState (StageStateStartSplit);
 				pStageData->SetSplitComplete (FALSE);
@@ -1368,6 +1373,25 @@ void CDWHCIDevice::SOFInterruptHandler (void)
 	CDWHCITransferStageData *pStageData;
 	while ((pStageData = m_TransactionQueue.Dequeue (usFrameNumber)) != 0)
 	{
+#if 0
+		if (pStageData->IsPeriodic ())
+		{
+			unsigned nMinRemaining = 500;
+			CDWHCIRegister HostPort (DWHCI_HOST_PORT);
+			if (DWHCI_HOST_PORT_SPEED (HostPort.Read ()) == DWHCI_HOST_PORT_SPEED_HIGH)
+			{
+				nMinRemaining = 125;
+			}
+
+			if (DWHCI_HOST_FRM_NUM_REMAINING (FrameNumber.Read ()) < nMinRemaining)
+			{
+				QueueTransaction (pStageData);
+
+				break;
+			}
+		}
+#endif
+
 		unsigned nChannel = AllocateChannel ();
 		assert (nChannel < m_nChannels);	// too many parallel transactions otherwise
 

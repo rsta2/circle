@@ -6,7 +6,8 @@ CIRCLEHOME = ../..
 
 OBJS	= main.o kernel.o
 
-LIBS	= $(CIRCLEHOME)/lib/libcircle.a
+LIBS	= $(CIRCLEHOME)/lib/sound/libsound.a \
+	  $(CIRCLEHOME)/lib/libcircle.a
 
 EXTRACLEAN = sound.h
 

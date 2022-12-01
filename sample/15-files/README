@@ -1,5 +1,14 @@
 README
 
-This sample program creates a listing of the files in the root directory of a connected USB drive (WHICH DOES NOT CONTAIN ANY IMPORTANT DATA). The first primary partition of the USB drive must be a FAT16 or FAT32 partition. Extended partitions or other file systems are not supported.
+This sample program creates a listing of the files in the root directory of a
+connected USB drive (WHICH DOES NOT CONTAIN ANY IMPORTANT DATA). The first
+primary partition of the USB drive must be a FAT16 or FAT32 partition. Extended
+partitions or other file systems are not supported.
 
-After creating the directory listing a file "circle.txt" is created in the root directory and some text is written to it. After closing the file it is re-opened and its contents is read and written to the screen.
+After creating the directory listing a file "circle.txt" is created in the root
+directory and some text is written to it. After closing the file it is re-opened
+and its contents is read and written to the screen.
+
+If your USB drive is not detected at all, you may have to use the option
+"usbpowerdelay=" in the file cmdline.txt on the SD card. See the file
+doc/cmdline.txt for details.

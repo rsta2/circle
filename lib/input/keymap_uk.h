@@ -1,5 +1,3 @@
-// Use ISO-8859-1 when editing this file!
-
 // Normal	Shift		AltGr		AltGr+Shift
 {KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x00
 {KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x01
@@ -33,7 +31,7 @@
 {'z',		'Z',		KeyNone,	KeyNone},	// 0x1D
 {'1',		'!',		KeyNone,	KeyNone},	// 0x1E
 {'2',		'\"',		KeyNone,	KeyNone},	// 0x1F
-{'3',		C('£'),		KeyNone,	KeyNone},	// 0x20
+{'3',		C('\xA3'),	KeyNone,	KeyNone},	// 0x20
 {'4',		'$',		KeyNone,	KeyNone},	// 0x21
 {'5',		'%',		KeyNone,	KeyNone},	// 0x22
 {'6',		'^',		KeyNone,	KeyNone},	// 0x23
@@ -54,7 +52,7 @@
 {'#',		'~',		KeyNone,	KeyNone},	// 0x32
 {';',		':',		KeyNone,	KeyNone},	// 0x33
 {'\'',		'@',		KeyNone,	KeyNone},	// 0x34
-{'`',		C('¬'),		'|',		KeyNone},	// 0x35
+{'`',		C('\xAC'),	'|',		KeyNone},	// 0x35
 {',',		'<',		KeyNone,	KeyNone},	// 0x36
 {'.',		'>',		KeyNone,	KeyNone},	// 0x37
 {'/',		'?',		KeyNone,	KeyNone},	// 0x38

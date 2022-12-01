@@ -1,0 +1,93 @@
+README
+
+This test program is a command line tool for interactive communication with the
+sound controller of sound devices. It can be used via an attached USB keyboard
+and a (HDMI) display or via a serial terminal at 115200 Bps connected to
+GPIO14/15 of the GPIO header (SoC numbers). The serial interface is
+automatically used, if an USB keyboard is not attached.
+
+If you want to use an USB keyboard, you should select your preferred keyboard
+map using the file cmdline.txt (e.g. keymap=UK). There are six of these
+language-depended maps at the moment (UK English (UK), Spanish (ES), French
+(FR), Italian (IT), US International (US) and German (DE)).
+
+It is recommended to enable the system option REALTIME in the file
+include/circle/sysconfig.h before build. Some parameters of the sound device
+(e.g. if a I2S device in slave mode (clocks are GPIO inputs) is used) may have
+to be set in the file config.h before build.
+
+By default the sample is built without the VCHIQ option, because this requires
+additional libraries, which have to be built manually. If you want this VCHIQ
+sound support, first enable the line "USE_VCHIQ_SOUND = 1" in the Makefile of
+the sample. Then enter the following commands from project root:
+
+	./makeall --nosample
+	cd addon/linux
+	make
+	cd ../vc4
+	./makeall
+	cd ../../test/sound-controller
+	make
+
+The ready built kernel image should be in the current directory then.
+
+After starting the Raspberry Pi you will get a sign-on message and a prompt. You
+can now choose a supported command and execute it by pressing ENTER. Multiple
+commands can be entered on one line without a special delimiter. The command
+execution will be aborted if an error occurs. Please use the "help" command to
+get info on all commands.
+
+The program maintains up to two devices, an output and an input device. If only
+the output device is active, it is driven from an oscillator, which can generate
+sound of different wave-forms. When the input device is active too, the input
+sound is transferred to the output device. If only the input device is active,
+the input sound data is ignored and can control an VU meter only.
+
+The following example log shows the communication with an USB audio device (on
+Raspberry Pi 4 only):
+
+
+Sound Shell
+Enter "help" for help!
+
+Sound IO> help
+
+Command         Description                                             Alias
+
+start DEV [MODE] [CLK] [I2C]
+                Start sound device (snd{pwm|i2s|hdmi|usb})
+                [for input (i), output (o, default) or both (io)]
+                [with slave (s, default) or master (m) I2S clock]
+                [and I2C slave address of DAC]
+cancel          Stop active sound device                                stop
+mode MODE       Next commands effects input (i) or output (o) device
+enable JACK     Enable jack (defaultout|lineout|speaker|headphone|hdmi
+                |spdif|defaultin|linein|microphone)
+disable JACK    Disable jack (multi-jack operation only)
+controlinfo CTRL CHAN [JACK]                                            info
+                Display control (mute|volume) info for channel (lr|l|r)
+                [and jack]
+setcontrol CTRL CHAN VAL [JACK]                                         set
+                Set control for channel [and jack] to value
+oscillator WAVE [FREQ] [CHAN]                                           osc
+                Set oscillator parameters (sine|square|sawtooth|triangle
+                |pulse12|pulse25|noise) [and frequency] [for channel]
+vumeter         Toggle VU meter display on screen
+delay MS        Delay MS milliseconds
+reboot          Reboot the system
+help            This help
+
+Sound IO> start sndusb io
+Sound IO!> enable headphone
+Sound IO!> enable microphone
+Sound IO!> info volume lr microphone
+Control is supported with range -16 to 12
+Sound IO!> set volume lr 12 microphone
+Sound IO!> cancel
+Sound IO> start sndusb o
+Sound O!> osc noise
+Sound O!> info mute lr
+Control is supported with range 0 to 1
+Sound O!> set mute lr 1
+Sound O!> cancel
+Sound IO>

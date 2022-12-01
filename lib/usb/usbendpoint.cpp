@@ -2,7 +2,7 @@
 // usbendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,6 +56,10 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 
 	switch (pDesc->bmAttributes & 0x03)
 	{
+	case 1:
+		m_Type = EndpointTypeIsochronous;
+		break;
+
 	case 2:
 		m_Type = EndpointTypeBulk;
 		break;
@@ -72,9 +76,10 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 	m_ucNumber       = pDesc->bEndpointAddress & 0x0F;
 	m_bDirectionIn   = pDesc->bEndpointAddress & 0x80 ? TRUE : FALSE;
 	m_nMaxPacketSize = pDesc->wMaxPacketSize & 0x7FF;
-	
+
 #if RASPPI <= 3
-	if (m_Type == EndpointTypeInterrupt)
+	if (   m_Type == EndpointTypeInterrupt
+	    || m_Type == EndpointTypeIsochronous)
 	{
 		u8 ucInterval = pDesc->bInterval;
 		if (ucInterval < 1)
@@ -195,7 +200,8 @@ u32 CUSBEndpoint::GetMaxPacketSize (void) const
 
 unsigned CUSBEndpoint::GetInterval (void) const
 {
-	assert (m_Type == EndpointTypeInterrupt);
+	assert (   m_Type == EndpointTypeInterrupt
+		|| m_Type == EndpointTypeIsochronous);
 
 	return m_nInterval;
 }
@@ -214,10 +220,12 @@ TUSBPID CUSBEndpoint::GetNextPID (boolean bStatusStage)
 
 void CUSBEndpoint::SkipPID (unsigned nPackets, boolean bStatusStage)
 {
-	assert (   m_Type == EndpointTypeControl
-		|| m_Type == EndpointTypeBulk
-		|| m_Type == EndpointTypeInterrupt);
-	
+	// TODO: for the supported Isochronous endpoints PID is always DATA0 (as initially set)
+	if (m_Type == EndpointTypeIsochronous)
+	{
+		return;
+	}
+
 	if (!bStatusStage)
 	{
 		switch (m_NextPID)

@@ -1,0 +1,74 @@
+CLANG SUPPORT
+
+Circle is normally build using a GNU-C/C++-based toolchain. For some reasons
+(e.g. better generated code, more strict error checking) it may be interesting
+to build it using LLVM with the Clang frontend. To allow this, Circle provides
+some experimental support, which is described here.
+
+Please note that this support has been tested with Clang 15 on Linux hosts only.
+It cannot be guaranteed, that all code in the Circle repository will work, when
+built with Clang/LLVM, because the release tests will be normally run with GNU
+C/C++ builds. That's why you have to test your own application very carefully,
+if you are using Clang/LLVM to build it.
+
+To build Circle with Clang, you need a special build configuration in the file
+Config.mk, which should look like this:
+
+	CLANG = 1
+	AARCH = 64
+	RASPPI = 3
+
+"CLANG = 1" enables the Clang build support. The other settings are similar to
+GNU C/C++ builds and are described in the main Circle README.md file.
+
+The Clang/LLVM tools must be found via the PATH environment variable. If your
+Clang/LLVM toolchain command names need a specific suffix (e.g. "-11"), it can
+be given like that:
+
+	SUFFIX = -11
+
+By default Clang builds will be done with the setting "STDLIB_SUPPORT = 0". That
+means that external functions (e.g. from <math.h>) cannot be used. This is
+caused by the reason that available LLVM/Clang toolchains do not provide
+libraries for Raspberry Pi targets.
+
+There is a solution to provide additional libraries, which come with the
+recommended standard GNU-C/C++-based toolchains, which are referenced in the
+main Circle README.md file. This will rise the STDLIB_SUPPORT level to 1.
+
+To enable this you need the recommended GNU-C/C++-based toolchain installed on
+your host computer, along with Clang/LLVM. Then add the following lines to your
+Config.mk configuration file:
+
+	STDLIB_SUPPORT = 1
+	PREFIX64 = aarch64-none-elf-
+	EXTRAINCLUDE += -I /absolute/path/to/toolchain/aarch64-none-elf/include
+
+This is for "AARCH = 64" builds and sets the prefix of the GNU-C/C++-based
+toolchain command names. In the given case the commands will be found using the
+PATH variable. Alternatively you can provide an absolute path to the GNU C/C++
+toolchain commands in the PREFIX64 variable. For "AARCH = 32" builds this
+variable has the name PREFIX.
+
+The variable EXTRAINCLUDE provides the absolute path to the standard include
+files, which come with the GNU-C/C++-based toolchain. This path can be normally
+determined by entering:
+
+	$ cd /absolute/path/to/toolchain
+	$ find -name math.h
+
+You have to remove the suffix "/math.h" from the reported directory path.
+
+
+KNOWN ISSUES
+
+* Unlike GNU C/C++ builds the order of libraries, given in the LIBS variable,
+  does matter with Clang/LLVM.
+
+* The Linker may fail with arm-none-eabi target (AArch32) and "STDLIB_SUPPORT =
+  1", because of missing __aeabi_*() functions in the provided toolchain
+  libraries.
+
+* There have been reports, that currently there are problems on Macs, especially
+  with the Linker. If somebody is able to sort these out and would contribute the
+  necessary modifications, this would be highly appreciated.

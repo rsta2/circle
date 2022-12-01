@@ -20,6 +20,7 @@ let rebootMagic = null;
 let rebootDelay = null;
 let monitor = false;
 let noFast = false;
+let usingHC06 = false;
 let goDelay = 0;
 
 // The currently open serial port
@@ -208,7 +209,9 @@ function binary_encoder()
             if (inbyte == 0x3a)     // ":"
             {
                 // Flush buffer?
-                if (buffer_used > buffer.length - 1024)
+                // When using an HC-06 module as a serial device,
+                // flush on every record to fix transfer failure.
+                if (buffer_used > buffer.length - 1024 || usingHC06)
                     await flush();
 
                 // start of new record
@@ -364,6 +367,12 @@ async function flashDevice()
     {
         // Send reset command
         await writeSerialPortAsync(resetBuf);
+    }
+
+    // Make sure fast mode is enabled when using an HC-06
+    if(!fastMode && usingHC06)
+    {
+        fail(`Bootloader doesn't support fast mode while HC-06 depends on it`);
     }
 
     // Create fast write binary encoder
@@ -530,6 +539,7 @@ function showHelp()
     console.log(`--reboot:<magic>   Sends a magic reboot string at user baud before flashing`);
     console.log(`--rebootdelay:<ms> Delay after sending reboot magic`);
     console.log(`--monitor          Monitor serial port`);
+    console.log(`--hc06             Hints that a HC-06 is used as a serial device (cannot be used with --nofast)`)
     console.log(`--help             Show this help`);
 }
 
@@ -602,6 +612,10 @@ function parseCommandLine()
                     noFast = true;
                     break;
 
+                case `hc06`:
+                    usingHC06 = true;
+                    break;
+
                 default:
                     fail(`Unknown switch --${sw}`);
             }
@@ -635,6 +649,12 @@ function parseCommandLine()
     // Can't do anything without a serial port
     if (!serialPortName)
         fail(`No serial port specified`);
+
+    // HC-06 module must use fast mode (binary encoder) in order to work
+    if(usingHC06 && noFast)
+    {
+        fail(`Cannot use --hc06 and --nofast`);
+    }
 }
 
 

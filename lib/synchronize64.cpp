@@ -25,7 +25,7 @@
 
 unsigned CurrentExecutionLevel (void)
 {
-	u32 nFlags;
+	u64 nFlags;
 	asm volatile ("mrs %0, daif" : "=r" (nFlags));
 
 	if (nFlags & 0x40)
@@ -44,7 +44,7 @@ unsigned CurrentExecutionLevel (void)
 #ifdef ARM_ALLOW_MULTI_CORE
 
 static volatile unsigned s_nCriticalLevel[CORES] = {0};
-static volatile u32 s_nFlags[CORES][MAX_CRITICAL_LEVEL];
+static volatile u64 s_nFlags[CORES][MAX_CRITICAL_LEVEL];
 
 void EnterCritical (unsigned nTargetLevel)
 {
@@ -54,7 +54,7 @@ void EnterCritical (unsigned nTargetLevel)
 	asm volatile ("mrs %0, mpidr_el1" : "=r" (nMPIDR));
 	unsigned nCore = nMPIDR & (CORES-1);
 
-	u32 nFlags;
+	u64 nFlags;
 	asm volatile ("mrs %0, daif" : "=r" (nFlags));
 
 	// if we are already on FIQ_LEVEL, we must not go back to IRQ_LEVEL here
@@ -84,7 +84,7 @@ void LeaveCritical (void)
 	DisableFIQs ();
 
 	assert (s_nCriticalLevel[nCore] > 0);
-	u32 nFlags = s_nFlags[nCore][--s_nCriticalLevel[nCore]];
+	u64 nFlags = s_nFlags[nCore][--s_nCriticalLevel[nCore]];
 
 	asm volatile ("msr daif, %0" :: "r" (nFlags));
 }
@@ -92,13 +92,13 @@ void LeaveCritical (void)
 #else
 
 static volatile unsigned s_nCriticalLevel = 0;
-static volatile u32 s_nFlags[MAX_CRITICAL_LEVEL];
+static volatile u64 s_nFlags[MAX_CRITICAL_LEVEL];
 
 void EnterCritical (unsigned nTargetLevel)
 {
 	assert (nTargetLevel == IRQ_LEVEL || nTargetLevel == FIQ_LEVEL);
 
-	u32 nFlags;
+	u64 nFlags;
 	asm volatile ("mrs %0, daif" : "=r" (nFlags));
 
 	// if we are already on FIQ_LEVEL, we must not go back to IRQ_LEVEL here
@@ -124,7 +124,7 @@ void LeaveCritical (void)
 	DisableFIQs ();
 
 	assert (s_nCriticalLevel > 0);
-	u32 nFlags = s_nFlags[--s_nCriticalLevel];
+	u64 nFlags = s_nFlags[--s_nCriticalLevel];
 
 	asm volatile ("msr daif, %0" :: "r" (nFlags));
 }

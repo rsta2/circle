@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,7 +31,8 @@
 #include <circle/logger.h>
 #include <circle/sched/scheduler.h>
 #include <circle/i2cmaster.h>
-#include <circle/soundbasedevice.h>
+#include <circle/usb/usbhcidevice.h>
+#include <circle/sound/soundbasedevice.h>
 #include <circle/types.h>
 #include "oscillator.h"
 
@@ -74,6 +75,7 @@ private:
 	CLogger			m_Logger;
 	CScheduler		m_Scheduler;
 	CI2CMaster		m_I2CMaster;
+	CUSBHCIDevice		m_USBHCI;
 
 #ifdef USE_VCHIQ_SOUND
 	CVCHIQDevice		m_VCHIQ;

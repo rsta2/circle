@@ -35,11 +35,11 @@ OBJS	= lan7800.o smsc951x.o usbbluetooth.o usbcdcethernet.o \
 ifneq ($(strip $(RASPPI)),4)
 OBJS	+= dwhcidevice.o dwhciframeschednper.o dwhciframeschednsplit.o dwhciframeschedper.o \
 	   dwhciregister.o dwhcirootport.o dwhcixactqueue.o dwhcicompletionqueue.o \
-	   dwhcixferstagedata.o
+	   dwhcixferstagedata.o dwhciframeschediso.o
 else
 OBJS	+= xhcicommandmanager.o xhcidevice.o xhciendpoint.o xhcieventmanager.o xhcimmiospace.o \
 	   xhciring.o xhciroothub.o xhcirootport.o xhcisharedmemallocator.o xhcislotmanager.o \
-	   xhciusbdevice.o
+	   xhciusbdevice.o usbaudiocontrol.o usbaudiostreaming.o usbaudiofunctopology.o
 endif
 
 libusb.a: $(OBJS)

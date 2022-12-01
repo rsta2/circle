@@ -16,7 +16,7 @@
 //	Licensed under GPLv2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -1108,6 +1108,11 @@ void CBcm54213Device::set_rx_mode(void)
 // clear Hardware Filter Block and disable all filtering
 void CBcm54213Device::hfb_init(void)
 {
+	// this has no function, but to suppress warnings from clang compiler >>>
+	hfb_reg_readl (HFB_CTRL);
+	hfb_readl (0);
+	// <<<
+
 	hfb_reg_writel(0, HFB_CTRL);
 	hfb_reg_writel(0, HFB_FLT_ENABLE_V3PLUS);
 	hfb_reg_writel(0, HFB_FLT_ENABLE_V3PLUS + 4);
@@ -1764,10 +1769,10 @@ static inline void mdio_start(void)
 	mdio_writel(reg, MDIO_CMD);
 }
 
-static inline unsigned mdio_busy(void)
-{
-	return mdio_readl(MDIO_CMD) & MDIO_START_BUSY;
-}
+// static inline unsigned mdio_busy(void)
+// {
+// 	return mdio_readl(MDIO_CMD) & MDIO_START_BUSY;
+// }
 
 // Workaround for integrated BCM7xxx Gigabit PHYs which have a problem with
 // their internal MDIO management controller making them fail to successfully
