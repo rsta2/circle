@@ -2,7 +2,7 @@
 // macros.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #define _circle_macros_h
 
 #define PACKED		__attribute__ ((packed))
-#define	ALIGNED		__attribute__ ((aligned))
+#define	MAXALIGN	__attribute__ ((aligned))
 #define	ALIGN(n)	__attribute__ ((aligned (n)))
 #define NORETURN	__attribute__ ((noreturn))
 #ifndef __clang__

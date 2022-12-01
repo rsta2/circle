@@ -40,7 +40,7 @@ PACKED;
 #define WAVE_FILE_HEADER(chans, bits, rate, size)	\
 {							\
 	TWAVEFileHeader::RIFF,				\
-	(size) + sizeof (TWAVEFileHeader) - 8,		\
+	(size) + (u32) sizeof (TWAVEFileHeader) - 8,	\
 	TWAVEFileHeader::WAVE,				\
 	TWAVEFileHeader::fmt,				\
 	16,						\

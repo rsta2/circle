@@ -11,7 +11,7 @@ Circle includes bigger (optional) third-party C-libraries for specific purposes 
 The 45th Step
 -------------
 
-This release comes with the long awaited **support for USB audio streaming devices**. Supported should be devices, which are compliant with the "USB Device Class Definition for Audio Devices", Release 1.0 and 2.0, in output direction on all Raspberry Pi models and in input direction only on the Raspberry Pi 4, 400 and Compute Module 4. Only USB audio interfaces with 16-bit PCM audio and two channels (Stereo) are supported for output and input, and additionally with one channel (Mono) for input. On the Raspberry Pi 1-3 and Zero it is recommended to define the system option `USE_USB_FIQ` for USB better timing. There is no constant chunk size for USB sound devices and it is not configurable here. Some devices may require the option `usbpowerdelay=1000` in the file [cmdline.txt](doc/cmdline.txt) to enumerate successfully.
+This release comes with **support for USB audio streaming devices**, available **for Raspberry Pi 4, 400 and Compute Module 4** only. Supported should be devices, which are compliant with the "USB Device Class Definition for Audio Devices", Release 1.0 and 2.0. Only USB audio interfaces with 16-bit PCM audio and two channels (Stereo) are supported for output and input, and additionally with one channel (Mono) for input. There is no constant chunk size for USB sound devices and it is not configurable here. You should enable the system option `REALTIME` for applications, which use USB sound. Some devices also may require the option `usbpowerdelay=1000` in the file [cmdline.txt](doc/cmdline.txt) to enumerate successfully.
 
 USB audio streaming devices often support multiple jacks for output and input and some method was required to select them. Furthermore these devices have Feature Units, which allow to set the volume for different audio channels or to mute the whole signal. Before there was no common API for such functions. This release adds the new feature of a **sound controller** for that purpose, which is provided by the class `CSoundController`. A pointer to the sound controller of an existing sound device (derived from the class `CSoundBaseDevice`) can be requested by calling `GetController()` on its device object. See the [Circle documentation](https://circle-rpi.readthedocs.io/en/latest/devices/audio-devices.html#sound-controller) for more information.
 
@@ -95,7 +95,7 @@ Circle supports the following features:
 |                       | Driver for on-board Ethernet device (SMSC951x)      |
 |                       | Driver for on-board Ethernet device (LAN7800)       |
 |                       | Driver for USB mass storage devices (bulk only)     |
-|                       | Driver for USB audio streaming devices              |
+|                       | Driver for USB audio streaming devices (RPi 4 only) |
 |                       | Drivers for different USB serial devices            |
 |                       | Audio class MIDI input support                      |
 |                       | Touchscreen driver (digitizer mode)                 |

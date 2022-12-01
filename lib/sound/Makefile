@@ -20,16 +20,21 @@
 
 CIRCLEHOME = ../..
 
+all: libsound.a
+
+include $(CIRCLEHOME)/Rules.mk
+
 OBJS	= dmasoundbuffers.o hdmisoundbasedevice.o i2ssoundbasedevice.o \
 	  pwmsoundbasedevice.o pwmsounddevice.o soundbasedevice.o \
-	  pcm512xsoundcontroller.o wm8960soundcontroller.o \
-	  usbsoundbasedevice.o usbsoundcontroller.o
+	  pcm512xsoundcontroller.o wm8960soundcontroller.o
+
+ifeq ($(strip $(RASPPI)),4)
+OBJS	+= usbsoundbasedevice.o usbsoundcontroller.o
+endif
 
 libsound.a: $(OBJS)
 	@echo "  AR    $@"
 	@rm -f $@
 	@$(AR) cr $@ $(OBJS)
-
-include $(CIRCLEHOME)/Rules.mk
 
 -include $(DEPS)

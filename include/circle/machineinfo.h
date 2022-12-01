@@ -140,17 +140,17 @@ public:
 	static CMachineInfo *Get (void);
 
 private:
-	u32		m_nRevisionRaw	  ALIGNED;	// suppress unaligned access in init stage
-	TMachineModel	m_MachineModel	  ALIGNED;
-	unsigned	m_nModelMajor	  ALIGNED;
-	unsigned	m_nModelRevision  ALIGNED;
-	TSoCType	m_SoCType	  ALIGNED;
-	unsigned	m_nRAMSize	  ALIGNED;
+	u32		m_nRevisionRaw	  MAXALIGN;	// suppress unaligned access in init stage
+	TMachineModel	m_MachineModel	  MAXALIGN;
+	unsigned	m_nModelMajor	  MAXALIGN;
+	unsigned	m_nModelRevision  MAXALIGN;
+	TSoCType	m_SoCType	  MAXALIGN;
+	unsigned	m_nRAMSize	  MAXALIGN;
 
-	u16		m_usDMAChannelMap ALIGNED;	// channel bit set if channel is free
+	u16		m_usDMAChannelMap MAXALIGN;	// channel bit set if channel is free
 
 #if RASPPI >= 4
-	CDeviceTreeBlob	*m_pDTB		  ALIGNED;
+	CDeviceTreeBlob	*m_pDTB		  MAXALIGN;
 #endif
 
 	static CMachineInfo *s_pThis;

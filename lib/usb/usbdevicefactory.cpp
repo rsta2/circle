@@ -154,7 +154,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBMIDIDevice (pParent);
 	}
-#if RASPPI >= 4 || defined (USE_USB_SOF_INTR)
+#if RASPPI >= 4
 	else if (   pName->Compare ("int1-1-0") == 0
 		 || pName->Compare ("int1-1-20") == 0)
 	{

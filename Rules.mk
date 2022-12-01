@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 440500
+CIRCLEVER = 450000
 
 CIRCLEHOME ?= ..
 
@@ -288,4 +288,4 @@ monitor:
 # Monitor in terminal (Linux only)
 cat:
 	stty -F $(SERIALPORT) $(USERBAUD) cs8 -cstopb -parenb -icrnl
-	tail -f $(SERIALPORT)
+	cat $(SERIALPORT)

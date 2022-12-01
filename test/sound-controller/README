@@ -43,7 +43,8 @@ sound of different wave-forms. When the input device is active too, the input
 sound is transferred to the output device. If only the input device is active,
 the input sound data is ignored and can control an VU meter only.
 
-The following example log shows the communication with an USB audio device:
+The following example log shows the communication with an USB audio device (on
+Raspberry Pi 4 only):
 
 
 Sound Shell

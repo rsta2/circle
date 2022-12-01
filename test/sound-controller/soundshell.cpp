@@ -54,7 +54,10 @@ const char CSoundShell::HelpMsg[] =
 	"Command\t\tDescription\t\t\t\t\t\tAlias\n"
 	"\n"
 	"start DEV [MODE] [CLK] [I2C]\n"
-	"\t\tStart sound device (snd{pwm|i2s|hdmi|usb"
+	"\t\tStart sound device (snd{pwm|i2s|hdmi"
+#if RASPPI >= 4
+	"|usb"
+#endif
 #ifdef USE_VCHIQ_SOUND
 	"|vchiq"
 #endif
@@ -427,6 +430,7 @@ boolean CSoundShell::Start (void)
 
 		m_pSound[nMode] = new CHDMISoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
+#if RASPPI >= 4
 	else if (strcmp (Token, "sndusb") == 0)
 	{
 		switch (nMode)
@@ -455,6 +459,7 @@ boolean CSoundShell::Start (void)
 			break;
 		}
 	}
+#endif
 #ifdef USE_VCHIQ_SOUND
 	else if (strcmp (Token, "sndvchiq") == 0)
 	{
