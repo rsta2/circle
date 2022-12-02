@@ -1,5 +1,5 @@
 //
-// usbserialcp2102.h
+// usbserialcp210x.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2020  H. Kocevar <hinxx@protonmail.com>
@@ -17,18 +17,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_usb_usbserialcp2102_h
-#define _circle_usb_usbserialcp2102_h
+#ifndef _circle_usb_usbserialcp210x_h
+#define _circle_usb_usbserialcp210x_h
 
 #include <circle/usb/usbserial.h>
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/types.h>
 
-class CUSBSerialCP2102Device : public CUSBSerialDevice
+class CUSBSerialCP210xDevice : public CUSBSerialDevice
 {
 public:
-	CUSBSerialCP2102Device (CUSBFunction *pFunction);
-	~CUSBSerialCP2102Device (void);
+	CUSBSerialCP210xDevice (CUSBFunction *pFunction);
+	~CUSBSerialCP210xDevice (void);
 
 	boolean Configure (void);
 	boolean SetBaudRate (unsigned nBaudRate);
