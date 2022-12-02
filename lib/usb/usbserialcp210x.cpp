@@ -54,11 +54,25 @@ static const char FromCp210x[] = "cp210x";
 // CP210X_VENDOR_SPECIFIC values
 #define CP210X_GET_PARTNUM	0x370B
 
-// Supported part number
-#define CP210X_PARTNUM_CP2102	0x02
+const CUSBSerialCP210xDevice::TDeviceInfo CUSBSerialCP210xDevice::s_DeviceInfo[] =
+{
+	{0x01,  921600U, USBSerialDataBits8, USBSerialStopBits1, "CP2101"},
+	{0x02,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2102"},
+	{0x03,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2103"},
+	{0x04,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2104"},
+	{0x05,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2105"},
+	{0x08,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2108"},
+	{0x09,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2109"},
+	{0x20, 3000000U, USBSerialDataBits5, USBSerialStopBits2, "CP2102N"},
+	{0x21, 3000000U, USBSerialDataBits5, USBSerialStopBits2, "CP2102N"},
+	{0x22, 3000000U, USBSerialDataBits5, USBSerialStopBits2, "CP2102N"},
+
+	{0x00,       0U}
+};
 
 CUSBSerialCP210xDevice::CUSBSerialCP210xDevice (CUSBFunction *pFunction)
-:	CUSBSerialDevice (pFunction)
+:	CUSBSerialDevice (pFunction),
+	m_pDeviceInfo (0)
 {
 }
 
@@ -90,13 +104,26 @@ boolean CUSBSerialCP210xDevice::Configure (void)
 
 		return FALSE;
 	}
-	if (rxData[0] != CP210X_PARTNUM_CP2102)
+
+	m_pDeviceInfo = 0;
+	for (const TDeviceInfo *pDeviceInfo = s_DeviceInfo; pDeviceInfo->MaxBaudRate; pDeviceInfo++)
 	{
-		CLogger::Get ()->Write (FromCp210x, LogError, "Unsupported part number");
+		if (pDeviceInfo->PartNumber == rxData[0])
+		{
+			m_pDeviceInfo = pDeviceInfo;
+
+			break;
+		}
+	}
+
+	if (m_pDeviceInfo == 0)
+	{
+		CLogger::Get ()->Write (FromCp210x, LogError, "Unsupported part number: 0x%02X",
+					rxData[0]);
 
 		return FALSE;
 	}
-	CLogger::Get ()->Write (FromCp210x, LogNotice, "Part number: CP210%d", rxData[0]);
+	CLogger::Get ()->Write (FromCp210x, LogNotice, "Part number: %s", m_pDeviceInfo->Name);
 
 	if (pHost->ControlMessage (GetEndpoint0 (),
 				   REQUEST_OUT | REQUEST_VENDOR | REQUEST_TO_INTERFACE,
@@ -126,6 +153,15 @@ boolean CUSBSerialCP210xDevice::Configure (void)
 
 boolean CUSBSerialCP210xDevice::SetBaudRate (unsigned nBaudRate)
 {
+	assert (m_pDeviceInfo != 0);
+	if (nBaudRate > m_pDeviceInfo->MaxBaudRate)
+	{
+		CLogger::Get ()->Write (FromCp210x, LogError, "Unsupported baud rate (%u)",
+					nBaudRate);
+
+		return FALSE;
+	}
+
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
@@ -151,6 +187,21 @@ boolean CUSBSerialCP210xDevice::SetLineProperties (TUSBSerialDataBits nDataBits,
 						   TUSBSerialParity nParity,
 						   TUSBSerialStopBits nStopBits)
 {
+	assert (m_pDeviceInfo != 0);
+	if (nDataBits < m_pDeviceInfo->MinDataBits)
+	{
+		CLogger::Get ()->Write (FromCp210x, LogError, "Unsupported data bits %d", nDataBits);
+
+		return FALSE;
+	}
+
+	if (nStopBits > m_pDeviceInfo->MaxStopBits)
+	{
+		CLogger::Get ()->Write (FromCp210x, LogError, "Unsupported stop bits %d", nStopBits);
+
+		return FALSE;
+	}
+
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 

@@ -36,6 +36,20 @@ public:
 				   TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
 
 	static const TUSBDeviceID *GetDeviceIDTable (void);
+
+private:
+	struct TDeviceInfo
+	{
+		u8		    PartNumber;
+		unsigned	    MaxBaudRate;
+		TUSBSerialDataBits  MinDataBits;
+		TUSBSerialStopBits  MaxStopBits;
+		const char	   *Name;
+	};
+
+	const TDeviceInfo *m_pDeviceInfo;
+
+	static const TDeviceInfo s_DeviceInfo[];
 };
 
 #endif
