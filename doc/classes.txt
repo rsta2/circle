@@ -106,7 +106,7 @@ USB library
 * CUSBRequest: A request to an USB device (URB).
 * CUSBSerialCDCDevice: Driver for USB CDC serial devices (e.g. micro:bit)
 * CUSBSerialCH341Device: Driver for CH341 based USB serial devices
-* CUSBSerialCP2102Device: Driver for CP2102 based USB serial devices
+* CUSBSerialCP210xDevice: Driver for CP210x based USB serial devices
 * CUSBSerialDevice: Base class and interface for USB serial device drivers
 * CUSBSerialFT231XDevice: Driver for FTDI based USB serial devices
 * CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices

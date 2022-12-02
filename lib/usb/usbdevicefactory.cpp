@@ -46,7 +46,7 @@
 #include <circle/usb/usbcdcethernet.h>
 #include <circle/usb/usbserialcdc.h>
 #include <circle/usb/usbserialch341.h>
-#include <circle/usb/usbserialcp2102.h>
+#include <circle/usb/usbserialcp210x.h>
 #include <circle/usb/usbserialpl2303.h>
 #include <circle/usb/usbserialft231x.h>
 #include <circle/usb/usbtouchscreen.h>
@@ -179,9 +179,9 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBSerialCH341Device (pParent);
 	}
-	else if (FindDeviceID (pName, CUSBSerialCP2102Device::GetDeviceIDTable ()))
+	else if (FindDeviceID (pName, CUSBSerialCP210xDevice::GetDeviceIDTable ()))
 	{
-		pResult = new CUSBSerialCP2102Device (pParent);
+		pResult = new CUSBSerialCP210xDevice (pParent);
 	}
 	else if (FindDeviceID (pName, CUSBSerialPL2303Device::GetDeviceIDTable ()))
 	{
