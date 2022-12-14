@@ -2,7 +2,7 @@
 // i2cmaster.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // Large portions are:
 //	Copyright (C) 2011-2013 Mike McCauley
@@ -34,7 +34,7 @@
 	#define DEVICES		7
 #endif
 
-#define CONFIGS			2
+#define CONFIGS			3
 
 #define GPIOS			2
 #define GPIO_SDA		0
@@ -84,20 +84,22 @@ static uintptr s_BaseAddress[DEVICES] =
 static unsigned s_GPIOConfig[DEVICES][CONFIGS][GPIOS] =
 {
 	// SDA, SCL
-	{{ 0,  1},   NONE  }, // ALT0
-	{{ 2,  3},   NONE  }, // ALT0
+	{{ 0,  1}, {28, 29}, {44, 45}}, // ALT0, ALT0, ALT1
+	{{ 2,  3},   NONE,     NONE  }, // ALT0
 #if RASPPI >= 4
-	{  NONE,     NONE  }, // unused
-	{{ 2,  3}, { 4,  5}}, // ALT5
-	{{ 6,  7}, { 8,  9}}, // ALT5
-	{{10, 11}, {12, 13}}, // ALT5
-	{{22, 23},   NONE  }  // ALT5
+	{  NONE,     NONE,     NONE  }, // unused
+	{{ 2,  3}, { 4,  5},   NONE  }, // ALT5
+	{{ 6,  7}, { 8,  9},   NONE  }, // ALT5
+	{{10, 11}, {12, 13},   NONE  }, // ALT5
+	{{22, 23},   NONE  ,   NONE  }  // ALT5
 #endif
 };
 
-#define ALT_FUNC(device)	(  (device) < 2			\
-				 ? GPIOModeAlternateFunction0	\
-				 : GPIOModeAlternateFunction5)
+#define ALT_FUNC(device, config)	(  (device) == 0 && (config) == 2	\
+					 ? GPIOModeAlternateFunction1		\
+					 : (  (device) < 2			\
+					    ? GPIOModeAlternateFunction0	\
+					    : GPIOModeAlternateFunction5))
 
 CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode, unsigned nConfig)
 :	m_nDevice (nDevice),
@@ -119,11 +121,11 @@ CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode, unsigned nConfig)
 	assert (m_nBaseAddress != 0);
 
 	m_SDA.AssignPin (s_GPIOConfig[nDevice][nConfig][GPIO_SDA]);
-	m_SDA.SetMode (ALT_FUNC (nDevice));
+	m_SDA.SetMode (ALT_FUNC (nDevice, nConfig));
 	m_SDA.SetPullMode (GPIOPullModeUp);
 
 	m_SCL.AssignPin (s_GPIOConfig[nDevice][nConfig][GPIO_SCL]);
-	m_SCL.SetMode (ALT_FUNC (nDevice));
+	m_SCL.SetMode (ALT_FUNC (nDevice, nConfig));
 	m_SCL.SetPullMode (GPIOPullModeUp);
 
 	assert (m_nCoreClockRate > 0);
