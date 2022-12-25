@@ -41,7 +41,7 @@ public:
 	static const TEntityID MaximumID   = USB_AUDIO_MAXIMUM_UNIT_ID;
 
 	static const unsigned MaximumSourceIndex  = 9;		// 0..9, best guess
-	static const unsigned MaximumChannelIndex = 8;		// 0: reserved for master channel
+	static const unsigned MaximumChannelIndex = 100;	// 0: reserved for master channel
 
 public:
 	CUSBAudioEntity (TEntityType Type);
