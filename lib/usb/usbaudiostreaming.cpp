@@ -102,13 +102,13 @@ Release 1.0 and 2.0, https://usb.org/documents
 #include <circle/usb/usbaudio.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
+#include <circle/koptions.h>
 #include <circle/debug.h>
 #include <circle/util.h>
 #include <assert.h>
 
 // supported format
 #define CHANNELS		2		// Stereo
-#define SUBFRAME_SIZE		2		// 16-bit signed
 #define CHUNK_FREQUENCY		1000		// per second
 
 // convert 3-byte sample rate value to an unsigned
@@ -120,6 +120,8 @@ static const char DeviceNamePattern[] = "uaudio%u-%u";
 
 CUSBAudioStreamingDevice::CUSBAudioStreamingDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
+	m_nBitResolution (CKernelOptions::Get ()->GetSoundOption () == 24 ? 24 : 16),
+	m_nSubframeSize (m_nBitResolution / 8),
 	m_pEndpointData (nullptr),
 	m_pEndpointSync (nullptr),
 	m_nChannels (0),
@@ -163,7 +165,71 @@ boolean CUSBAudioStreamingDevice::Initialize (void)
 		return FALSE;
 	}
 
-	return GetNumEndpoints () >= 1;		// ignore no-endpoint interfaces
+	if (GetNumEndpoints () == 0)		// ignore no-endpoint interfaces
+	{
+		return FALSE;
+	}
+
+	const TUSBInterfaceDescriptor *pUSBInterfaceDesc = GetInterfaceDescriptor ();
+
+	// The USB audio streaming interface descriptor "General" follows on the
+	// USB interface descriptor.
+	const TUSBAudioStreamingInterfaceDescriptor *pAudioInterfaceDesc =
+		reinterpret_cast<const TUSBAudioStreamingInterfaceDescriptor *> (
+			reinterpret_cast<const u8 *> (  pUSBInterfaceDesc)
+						      + pUSBInterfaceDesc->bLength);
+        if (   pAudioInterfaceDesc->bDescriptorType != DESCRIPTOR_CS_INTERFACE
+            || pAudioInterfaceDesc->bDescriptorSubtype != USB_AUDIO_STREAMING_GENERAL)
+	{
+		return FALSE;
+	}
+
+	// The USB audio type I format type descriptor follows on the
+	// USB audio streaming interface descriptor "General".
+	const TUSBAudioTypeIFormatTypeDescriptor *pFormatTypeDesc =
+		reinterpret_cast<const TUSBAudioTypeIFormatTypeDescriptor *> (
+			reinterpret_cast<const u8 *> (  pAudioInterfaceDesc)
+						      + pAudioInterfaceDesc->bLength);
+	if (   pFormatTypeDesc->bDescriptorType != DESCRIPTOR_CS_INTERFACE
+	    || pFormatTypeDesc->bDescriptorSubtype != USB_AUDIO_FORMAT_TYPE
+	    || pFormatTypeDesc->bFormatType != USB_AUDIO_FORMAT_TYPE_I)	// other types are unsupported
+	{
+		return FALSE;
+	}
+
+	// We take the first alternate interface, which meets our expected parameters.
+
+	if (GetInterfaceProtocol () != USB_PROTO_AUDIO_VER_200)
+	{
+		if (   pFormatTypeDesc->Ver100.bNrChannels > CHANNELS
+		    || pFormatTypeDesc->Ver100.bSubframeSize != m_nSubframeSize
+		    || pFormatTypeDesc->Ver100.bBitResolution != m_nBitResolution)
+		{
+			LOGDBG ("Ignore interface (%u chans, %u bits, %u bytes)",
+				pFormatTypeDesc->Ver100.bNrChannels,
+				pFormatTypeDesc->Ver100.bBitResolution,
+				pFormatTypeDesc->Ver100.bSubframeSize);
+
+			return FALSE;
+		}
+	}
+	else
+	{
+		if (   pAudioInterfaceDesc->Ver200.bNrChannels > CHANNELS
+		    || pFormatTypeDesc->Ver200.bSubslotSize != m_nSubframeSize
+		    || pFormatTypeDesc->Ver200.bBitResolution != m_nBitResolution)
+		{
+			LOGDBG ("Ignore interface (%u chans, %u bits, %u bytes)",
+				pAudioInterfaceDesc->Ver200.bNrChannels,
+				pFormatTypeDesc->Ver200.bBitResolution,
+				pFormatTypeDesc->Ver200.bSubslotSize);
+
+			return FALSE;
+		}
+
+	}
+
+	return TRUE;
 }
 
 boolean CUSBAudioStreamingDevice::Configure (void)
@@ -172,8 +238,8 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 
 	m_bVer200 = GetInterfaceProtocol () == USB_PROTO_AUDIO_VER_200;
 
-	CUSBAudioStreamingInterfaceDescriptor *pGeneralDesc;
-	while ((pGeneralDesc = (CUSBAudioStreamingInterfaceDescriptor *)
+	TUSBAudioStreamingInterfaceDescriptor *pGeneralDesc;
+	while ((pGeneralDesc = (TUSBAudioStreamingInterfaceDescriptor *)
 					GetDescriptor (DESCRIPTOR_CS_INTERFACE)) != nullptr)
 	{
 		if (pGeneralDesc->bDescriptorSubtype == USB_AUDIO_STREAMING_GENERAL)
@@ -232,8 +298,8 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		if (   pFormatTypeDesc->bFormatType           != USB_AUDIO_FORMAT_TYPE_I
 		    || pFormatTypeDesc->Ver100.bNrChannels    == 0
 		    || pFormatTypeDesc->Ver100.bNrChannels    > CHANNELS
-		    || pFormatTypeDesc->Ver100.bSubframeSize  != SUBFRAME_SIZE
-		    || pFormatTypeDesc->Ver100.bBitResolution != SUBFRAME_SIZE*8)
+		    || pFormatTypeDesc->Ver100.bSubframeSize  != m_nSubframeSize
+		    || pFormatTypeDesc->Ver100.bBitResolution != m_nBitResolution)
 		{
 			LOGWARN ("Unsupported audio format");
 #ifndef NDEBUG
@@ -248,8 +314,8 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 	else
 	{
 		if (   pFormatTypeDesc->bFormatType           != USB_AUDIO_FORMAT_TYPE_I
-		    || pFormatTypeDesc->Ver200.bSubslotSize   != SUBFRAME_SIZE
-		    || pFormatTypeDesc->Ver200.bBitResolution != SUBFRAME_SIZE*8
+		    || pFormatTypeDesc->Ver200.bSubslotSize   != m_nSubframeSize
+		    || pFormatTypeDesc->Ver200.bBitResolution != m_nBitResolution
 		    || pGeneralDesc->Ver200.bNrChannels       == 0
 		    || pGeneralDesc->Ver200.bNrChannels       > CHANNELS)
 		{
@@ -605,7 +671,7 @@ boolean CUSBAudioStreamingDevice::Setup (unsigned nSampleRate)
 	{
 		if (m_bIsOutput)
 		{
-			m_nChunkSizeBytes =   nSampleRate * m_nChannels * SUBFRAME_SIZE
+			m_nChunkSizeBytes =   nSampleRate * m_nChannels * m_nSubframeSize
 					    / CHUNK_FREQUENCY;
 		}
 		else
@@ -938,7 +1004,7 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 			// Q10.14 format (FS)
 			pThis->m_nSyncAccu += pThis->m_SyncEPBuffer[0] & 0xFFFFFF;
 			pThis->m_nChunkSizeBytes =   (pThis->m_nSyncAccu >> 14)
-						   * CHANNELS * SUBFRAME_SIZE;
+						   * CHANNELS * pThis->m_nSubframeSize;
 			pThis->m_nSyncAccu &= 0x3FFF;
 		}
 		else
@@ -946,7 +1012,7 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 			// Q16.16 format (HS)
 			pThis->m_nSyncAccu += pThis->m_SyncEPBuffer[0];
 			pThis->m_nChunkSizeBytes =   (pThis->m_nSyncAccu >> 16)
-						   * CHANNELS * SUBFRAME_SIZE;
+						   * CHANNELS * pThis->m_nSubframeSize;
 			pThis->m_nSyncAccu &= 0xFFFF;
 		}
 	}
@@ -972,7 +1038,7 @@ void CUSBAudioStreamingDevice::UpdateChunkSize (void)
 		unsigned nFrames = m_nSyncAccu / nUSBFrameRate;
 		m_nSyncAccu %= nUSBFrameRate;
 
-		m_usPacketSizeBytes[i] = nFrames * m_nChannels * SUBFRAME_SIZE;
+		m_usPacketSizeBytes[i] = nFrames * m_nChannels * m_nSubframeSize;
 
 		nChunkSizeBytes += m_usPacketSizeBytes[i];
 	}

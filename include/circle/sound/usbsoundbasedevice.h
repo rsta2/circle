@@ -112,6 +112,9 @@ private:
 	};
 
 private:
+	unsigned m_nBitResolution;
+	unsigned m_nSubframeSize;
+
 	unsigned m_nSampleRate;
 	TDeviceMode m_DeviceMode;
 	unsigned m_nDevice;

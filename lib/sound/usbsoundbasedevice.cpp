@@ -22,6 +22,7 @@
 #include <circle/sched/scheduler.h>
 #include <circle/sysconfig.h>
 #include <circle/string.h>
+#include <circle/koptions.h>
 #include <circle/logger.h>
 #include <circle/atomic.h>
 #include <circle/timer.h>
@@ -32,7 +33,11 @@ static const char DeviceName[] = "sndusb";
 
 CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode DeviceMode,
 					  unsigned nDevice)
-:	CSoundBaseDevice (SoundFormatSigned16, 0, nSampleRate),
+:	CSoundBaseDevice (  CKernelOptions::Get ()->GetSoundOption () == 24
+			  ? SoundFormatSigned24 : SoundFormatSigned16,
+			  0, nSampleRate),
+	m_nBitResolution (CKernelOptions::Get ()->GetSoundOption () == 24 ? 24 : 16),
+	m_nSubframeSize (m_nBitResolution / 8),
 	m_nSampleRate (nSampleRate),
 	m_DeviceMode (DeviceMode),
 	m_nDevice (nDevice),
@@ -318,13 +323,24 @@ boolean CUSBSoundBaseDevice::SendChunk (void)
 	assert (m_pTXUSBDevice);
 	unsigned nChunkSizeBytes = m_pTXUSBDevice->GetChunkSizeBytes ();
 	assert (nChunkSizeBytes);
-	assert (nChunkSizeBytes % sizeof (s16) == 0);
+	assert (nChunkSizeBytes % m_nSubframeSize == 0);
 	assert (nChunkSizeBytes <= m_nTXChunkSizeBytes * 2);
 
 	assert (m_nTXCurrentBuffer < 2);
 	assert (m_pTXBuffer[m_nTXCurrentBuffer]);
-	unsigned nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
-					nChunkSizeBytes / sizeof (s16));
+	unsigned nChunkSize;
+	if (m_nSubframeSize == 2)
+	{
+		nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
+				       nChunkSizeBytes / m_nSubframeSize);
+	}
+	else
+	{
+		assert (m_nSubframeSize == 3);
+		nChunkSize = GetChunk (reinterpret_cast<u32 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
+				       nChunkSizeBytes / m_nSubframeSize);
+	}
+
 	if (!nChunkSize)
 	{
 		return FALSE;
@@ -332,7 +348,7 @@ boolean CUSBSoundBaseDevice::SendChunk (void)
 
 	AtomicIncrement (&m_nOutstanding);
 
-	if (!m_pTXUSBDevice->SendChunk (m_pTXBuffer[m_nTXCurrentBuffer], nChunkSize * sizeof (s16),
+	if (!m_pTXUSBDevice->SendChunk (m_pTXBuffer[m_nTXCurrentBuffer], nChunkSize * m_nSubframeSize,
 				        TXCompletionStub, this))
 	{
 		AtomicDecrement (&m_nOutstanding);
@@ -350,7 +366,7 @@ boolean CUSBSoundBaseDevice::ReceiveChunk (void)
 	assert (m_pRXUSBDevice);
 	unsigned nChunkSizeBytes = m_pRXUSBDevice->GetChunkSizeBytes ();
 	assert (nChunkSizeBytes);
-	assert (nChunkSizeBytes % sizeof (s16) == 0);
+	assert (nChunkSizeBytes % m_nSubframeSize == 0);
 	assert (nChunkSizeBytes <= m_nRXChunkSizeBytes * 2);
 
 	AtomicIncrement (&m_nOutstanding);
@@ -462,7 +478,7 @@ void CUSBSoundBaseDevice::RXCompletionRoutine (unsigned nBytesTransferred)
 
 	if (nBytesTransferred)
 	{
-		assert (nBytesTransferred % sizeof (s16) == 0);
+		assert (nBytesTransferred % m_nSubframeSize == 0);
 		assert (nBytesTransferred <= m_nRXChunkSizeBytes * 2);
 
 		unsigned nRXCurrentBuffer = m_nRXCurrentBuffer ^ 1;
@@ -472,22 +488,53 @@ void CUSBSoundBaseDevice::RXCompletionRoutine (unsigned nBytesTransferred)
 		assert (m_nRXChannels == 1 || m_nRXChannels == 2);
 		if (m_nRXChannels == 2)
 		{
-			PutChunk (reinterpret_cast<s16 *> (m_pRXBuffer[nRXCurrentBuffer]),
-							   nBytesTransferred / sizeof (s16));
+			if (m_nSubframeSize == 2)
+			{
+				PutChunk (reinterpret_cast<s16 *> (m_pRXBuffer[nRXCurrentBuffer]),
+								   nBytesTransferred / m_nSubframeSize);
+			}
+			else
+			{
+				assert (m_nSubframeSize == 3);
+				PutChunk (reinterpret_cast<u32 *> (m_pRXBuffer[nRXCurrentBuffer]),
+								   nBytesTransferred / m_nSubframeSize);
+			}
 		}
 		else
 		{
 			// convert Mono to Stereo, because the upper layer expects it
-			s16 *p = (s16 *) m_pRXBuffer[nRXCurrentBuffer];
-			u32 TempBuffer[nBytesTransferred / sizeof (s16)];
-			for (unsigned i = 0; i < nBytesTransferred / sizeof (s16); i++)
+			if (m_nSubframeSize == 2)
 			{
-				u32 nSample = *p++;
-				nSample |= nSample << 16;
-				TempBuffer[i] = nSample;
-			}
+				s16 *p = (s16 *) m_pRXBuffer[nRXCurrentBuffer];
+				u32 TempBuffer[nBytesTransferred / sizeof (s16)];
+				for (unsigned i = 0; i < nBytesTransferred / sizeof (s16); i++)
+				{
+					u32 nSample = *p++;
+					nSample |= nSample << 16;
+					TempBuffer[i] = nSample;
+				}
 
-			PutChunk (reinterpret_cast<s16 *> (TempBuffer), nBytesTransferred);
+				PutChunk (reinterpret_cast<s16 *> (TempBuffer), nBytesTransferred);
+			}
+			else
+			{
+				assert (m_nSubframeSize == 3);
+				u8 *p = m_pRXBuffer[nRXCurrentBuffer];
+				u8 TempBuffer[nBytesTransferred * 2];
+				u8 *pp = TempBuffer;
+				unsigned nFrames = nBytesTransferred / 3;
+				for (unsigned i = 0; i < nFrames; i++)
+				{
+					pp[0] = pp[3] = p[0];
+					pp[1] = pp[4] = p[1];
+					pp[2] = pp[5] = p[2];
+
+					p += 3;
+					pp += 6;
+				}
+
+				PutChunk (reinterpret_cast<u32 *> (TempBuffer), nFrames * 2);
+			}
 		}
 	}
 

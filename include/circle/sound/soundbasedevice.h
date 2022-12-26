@@ -39,7 +39,7 @@ enum TSoundFormat			/// All supported formats are interleaved little endian
 {
 	SoundFormatUnsigned8,		/// Write/Read, HWFormat none
 	SoundFormatSigned16,		/// Write/Read, HWFormat output only
-	SoundFormatSigned24,		/// Write/Read, HWFormat none (occupies 3 bytes)
+	SoundFormatSigned24,		/// Write/Read, HWFormat output/input (occupies 3 bytes)
 	SoundFormatSigned24_32,		/// Write/Read, HWFormat output/input (occupies 4 bytes)
 	SoundFormatUnsigned32,		/// HWFormat output only
 	SoundFormatIEC958,		/// HWFormat output only

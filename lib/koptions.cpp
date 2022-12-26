@@ -137,7 +137,7 @@ CKernelOptions::CKernelOptions (void)
 		{
 			unsigned nValue;
 			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
-			    && nValue <= 2)
+			    && (nValue <= 2 || nValue == 16 || nValue == 24))
 			{
 				m_nSoundOption = nValue;
 			}

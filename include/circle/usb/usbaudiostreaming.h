@@ -30,7 +30,7 @@
 #include <circle/string.h>
 #include <circle/types.h>
 
-/// \note Supports 16-bit signed Stereo PCM output only
+/// \note Supports 16-bit and 24-bit signed Stereo PCM only
 
 class CUSBAudioStreamingDevice : public CUSBFunction	/// Low-level driver for USB audio streaming devices
 {
@@ -134,6 +134,9 @@ private:
 	void UpdateChunkSize (void);
 
 private:
+	unsigned m_nBitResolution;
+	unsigned m_nSubframeSize;
+
 	boolean m_bVer200;
 
 	CUSBEndpoint *m_pEndpointData;

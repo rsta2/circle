@@ -241,7 +241,7 @@ struct TUSBAudioControlMixerUnitTrailerVer200
 }
 PACKED;
 
-struct CUSBAudioStreamingInterfaceDescriptor
+struct TUSBAudioStreamingInterfaceDescriptor
 {
         unsigned char	bLength;
         unsigned char	bDescriptorType;
