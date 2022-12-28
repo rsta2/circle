@@ -489,6 +489,12 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		m_DeviceInfo.Terminal[0].TerminalType =
 			pControlDevice->GetTerminalType (uchTerminalLink, FALSE);
 
+		// workaround for RME Babyface Pro
+		if (m_DeviceInfo.Terminal[0].TerminalType == USB_AUDIO_TERMINAL_TYPE_USB_UNDEFINED)
+		{
+			m_DeviceInfo.Terminal[0].TerminalType = USB_AUDIO_TERMINAL_TYPE_SPEAKER;
+		}
+
 		// get access to the Feature Unit, to control volume etc.
 		m_uchFeatureUnitID[0] =
 			pControlDevice->GetFeatureUnitID (uchTerminalLink, FALSE);

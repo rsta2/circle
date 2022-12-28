@@ -510,6 +510,13 @@ boolean CUSBAudioFunctionTopology::FindUpstream (CUSBAudioEntity *pCurrentEntity
 	for (unsigned i = 0; i < pCurrentEntity->GetNumSources (); i++)
 	{
 		CUSBAudioEntity *pSource = m_pEntity[pCurrentEntity->GetSourceID (i)];
+		if (!pSource)
+		{
+			LOGWARN ("Source entity not found (%u)", pCurrentEntity->GetSourceID (i));
+
+			continue;
+		}
+
 		if (pSource == pEntityToFind)
 		{
 			return TRUE;
