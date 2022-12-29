@@ -33,8 +33,8 @@ static const char DeviceName[] = "sndusb";
 
 CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode DeviceMode,
 					  unsigned nDevice)
-:	CSoundBaseDevice (  CKernelOptions::Get ()->GetSoundOption () == 24
-			  ? SoundFormatSigned24 : SoundFormatSigned16,
+:	CSoundBaseDevice ((  CKernelOptions::Get ()->GetSoundOption () == 24
+			   ? SoundFormatSigned24 : SoundFormatSigned16),
 			  0, nSampleRate),
 	m_nBitResolution (CKernelOptions::Get ()->GetSoundOption () == 24 ? 24 : 16),
 	m_nSubframeSize (m_nBitResolution / 8),

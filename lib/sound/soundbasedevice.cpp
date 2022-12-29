@@ -230,7 +230,7 @@ int CSoundBaseDevice::Write (const void *pBuffer, size_t nCount)
 		{
 			nBytes = nCount;
 		}
-		nBytes &= ~(m_nWriteFrameSize-1);	// must be a multiple of frame size
+		nBytes -= nBytes % m_nWriteFrameSize;	// must be a multiple of frame size
 
 		if (nBytes > 0)
 		{
@@ -419,7 +419,7 @@ int CSoundBaseDevice::Read (void *pBuffer, size_t nCount)
 		{
 			nBytes = nCount;
 		}
-		nBytes &= ~(m_nReadFrameSize-1);	// must be a multiple of frame size
+		nBytes -= nBytes % m_nReadFrameSize;	// must be a multiple of frame size
 
 		if (nBytes > 0)
 		{
