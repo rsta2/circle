@@ -677,8 +677,11 @@ boolean CUSBAudioStreamingDevice::Setup (unsigned nSampleRate)
 	{
 		if (m_bIsOutput)
 		{
+			unsigned nUSBFrameRate =   GetDevice ()->GetSpeed () == USBSpeedFull
+						 ? 1000 : 8000;
+
 			m_nChunkSizeBytes =   nSampleRate * m_nChannels * m_nSubframeSize
-					    / CHUNK_FREQUENCY;
+					    / nUSBFrameRate;
 		}
 		else
 		{
