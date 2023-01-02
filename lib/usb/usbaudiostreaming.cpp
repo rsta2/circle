@@ -2,7 +2,7 @@
 // usbaudiostreaming.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -421,6 +421,25 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 	}
 	else
 	{
+		// if there is a clock selector unit, select the first clock source
+		u8 uchClockSelectorID = pControlDevice->GetClockSelectorID (0);
+		if (uchClockSelectorID != USB_AUDIO_UNDEFINED_UNIT_ID)
+		{
+			DMA_BUFFER (u8, ClockSource, 1);
+			ClockSource[0] = 1;
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+							REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+							USB_AUDIO_REQ_SET_CUR,
+							USB_AUDIO_CX_SELECTOR_CONTROL << 8,
+							uchClockSelectorID << 8,
+							ClockSource, 1) < 0)
+			{
+				LOGDBG ("Cannot select clock source");
+
+				return FALSE;
+			}
+		}
+
 		// request clock source ID for this Terminal
 		m_uchClockSourceID =
 			pControlDevice->GetClockSourceID (pGeneralDesc->Ver200.bTerminalLink);

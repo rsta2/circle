@@ -2,7 +2,7 @@
 // usbaudiofunctopology.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -362,6 +362,25 @@ CUSBAudioClockSource::CUSBAudioClockSource (const TUSBAudioControlInterfaceDescr
 
 ////////////////////////////////////////////////////////////////////////////////
 
+CUSBAudioClockSelector::CUSBAudioClockSelector (const TUSBAudioControlInterfaceDescriptor *pDesc,
+						boolean bVer200)
+:	CUSBAudioEntity (EntityClockSelector)
+{
+	assert (pDesc);
+	assert (pDesc->bDescriptorSubtype == USB_AUDIO_CTL_IFACE_SUBTYPE_CLOCK_SELECTOR);
+	assert (bVer200);
+
+	SetID (pDesc->Ver200.ClockSelector.bClockID);
+
+	SetNumSources (pDesc->Ver200.ClockSelector.bNrInPins);
+	for (unsigned i = 0; i < GetNumSources (); i++)
+	{
+		SetSourceID (i, pDesc->Ver200.ClockSelector.baCSourceID[i]);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 CUSBAudioFunctionTopology::CUSBAudioFunctionTopology (void)
 {
 	memset (m_pEntity, 0, sizeof m_pEntity);
@@ -433,6 +452,11 @@ boolean CUSBAudioFunctionTopology::Parse (
 			assert (pEntity);
 			break;
 
+		case USB_AUDIO_CTL_IFACE_SUBTYPE_CLOCK_SELECTOR:
+			pEntity = new CUSBAudioClockSelector (pDesc, m_bVer200);
+			assert (pEntity);
+			break;
+
 		default:
 			LOGWARN ("Unsupported entity (%u)", (unsigned) pDesc->bDescriptorSubtype);
 			break;
@@ -495,6 +519,26 @@ CUSBAudioEntity *CUSBAudioFunctionTopology::FindEntity (CUSBAudioEntity::TEntity
 			{
 				return m_pEntity[i];
 			}
+		}
+	}
+
+	return nullptr;
+}
+
+CUSBAudioEntity *CUSBAudioFunctionTopology::FindEntity (CUSBAudioEntity::TEntityType EntityType,
+							unsigned nIndex) const
+{
+	for (unsigned i = 0; i <= CUSBAudioEntity::MaximumID; i++)
+	{
+		if (   !m_pEntity[i]
+		    || m_pEntity[i]->GetEntityType () != EntityType)
+		{
+			continue;
+		}
+
+		if (nIndex-- == 0)
+		{
+			return m_pEntity[i];
 		}
 	}
 

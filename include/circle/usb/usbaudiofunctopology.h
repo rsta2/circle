@@ -2,7 +2,7 @@
 // usbaudiofunctopology.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ public:
 		EntitySelectorUnit,
 		EntityFeatureUnit,
 		EntityClockSource,
+		EntityClockSelector,
 		EntityUnknown
 	};
 
@@ -151,6 +152,12 @@ public:
 	CUSBAudioClockSource (const TUSBAudioControlInterfaceDescriptor *pDesc, boolean bVer200);
 };
 
+class CUSBAudioClockSelector : public CUSBAudioEntity
+{
+public:
+	CUSBAudioClockSelector (const TUSBAudioControlInterfaceDescriptor *pDesc, boolean bVer200);
+};
+
 class CUSBAudioFunctionTopology		/// Topology parser for USB audio class devices
 {
 public:
@@ -169,6 +176,12 @@ public:
 	CUSBAudioEntity *FindEntity (CUSBAudioEntity::TEntityType EntityType,
 				     CUSBAudioEntity *pStartFromEntity,
 				     boolean bUpstream) const;
+
+	/// \param EntityType Entity type to search for
+	/// \param nIndex 0-based index of the entity to search for (in increasing ID order)
+	/// \return Pointer to found entity, or nullptr if not found
+	CUSBAudioEntity *FindEntity (CUSBAudioEntity::TEntityType EntityType,
+				     unsigned nIndex = 0) const;
 
 private:
 	// Is entity *pEntityToFind inside the upstream from *pCurrentEntity

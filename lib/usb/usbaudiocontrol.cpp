@@ -2,7 +2,7 @@
 // usbaudiocontrol.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -119,7 +119,20 @@ u8 CUSBAudioControlDevice::GetClockSourceID (u8 uchTerminalID) const
 
 	CUSBAudioTerminal *pTerminal = static_cast <CUSBAudioTerminal *> (pEntity);
 
-	return pTerminal->GetClockSourceID ();
+	u8 uchClockSourceID = pTerminal->GetClockSourceID ();
+
+	CUSBAudioEntity *pClockEntity = m_Topology.GetEntity (uchClockSourceID);
+	if (!pClockEntity)
+	{
+		return USB_AUDIO_UNDEFINED_UNIT_ID;
+	}
+
+	if (pClockEntity->GetEntityType () == CUSBAudioEntity::EntityClockSelector)
+	{
+		uchClockSourceID = pClockEntity->GetSourceID (0);
+	}
+
+	return uchClockSourceID;
 }
 
 u8 CUSBAudioControlDevice::GetSelectorUnitID (u8 uchOutputTerminalID) const
@@ -176,6 +189,18 @@ u8 CUSBAudioControlDevice::GetFeatureUnitID (u8 uchEntityID, boolean bUpstream) 
 	}
 
 	pEntity = m_Topology.FindEntity (CUSBAudioEntity::EntityFeatureUnit, pEntity, bUpstream);
+	if (!pEntity)
+	{
+		return USB_AUDIO_UNDEFINED_UNIT_ID;
+	}
+
+	return pEntity->GetID ();
+}
+
+u8 CUSBAudioControlDevice::GetClockSelectorID (unsigned nIndex)
+{
+	CUSBAudioEntity *pEntity = m_Topology.FindEntity (CUSBAudioEntity::EntityClockSelector,
+							  nIndex);
 	if (!pEntity)
 	{
 		return USB_AUDIO_UNDEFINED_UNIT_ID;

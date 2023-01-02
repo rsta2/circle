@@ -2,7 +2,7 @@
 // usbaudiocontrol.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,6 +72,12 @@ public:
 	///	    (or USB_AUDIO_UNDEFINED_UNIT_ID)
 	/// \note If uchEntityID references a Feature Unit itself, it is returned.
 	u8 GetFeatureUnitID (u8 uchEntityID, boolean bUpstream) const;
+
+	/// \brief Get the clock selector with index nIndex
+	/// \param nIndex 0-based index of the clock selector
+	/// \return Unit ID of the clock selector (or USB_AUDIO_UNDEFINED_UNIT_ID)
+	/// \note Supported for USB Audio class version 2.00 devices only
+	u8 GetClockSelectorID (unsigned nIndex = 0);
 
 	/// \param uchFeatureUnitID Unit ID of a Feature Unit of the controlled device
 	/// \param nChannel Audio channel (0: master, 1: normally front left, 2: right)
