@@ -1386,6 +1386,13 @@ void CSoundShell::ReadSoundData (void)
 					TYPE nLevel = 0;
 					memcpy (&nLevel, &Buffer[(i*WRITE_CHANNELS + j) * TYPE_SIZE],
 						TYPE_SIZE);
+#if WRITE_FORMAT == 2
+					// sign extension for 24-bit values
+					if (nLevel > 0x7FFFFF)
+					{
+						nLevel |= 0xFF000000U;
+					}
+#endif
 					float fLevel = (float) (nLevel - NULL_LEVEL) / FACTOR;
 
 					m_pVUMeter[j]->PutInputLevel (fLevel);

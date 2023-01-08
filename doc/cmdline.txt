@@ -41,7 +41,9 @@ sounddev=sndpwm			Set device used for sound output
 				 hardware required), default depends on application)
 
 soundopt=0			Select destination for sound output with "sounddev=sndvchiq"
-				(0: detected automatically (default), 1: headphone jack, 2: HDMI)
+				(0: detected automatically (default), 1: headphone jack, 2: HDMI),
+				Select the sample size for "sounddev=sndusb" in bits (16 (default)
+				or 24)
 
 fast=true			Set maximum CPU speed (if class CCPUThrottle is in the system,
 				default is low speed on Raspberry Pi 2/3/4/Zero)

@@ -2,7 +2,7 @@
 // usbsoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,11 +47,6 @@ public:
 			     unsigned nDevice       = 0);
 
 	~CUSBSoundBaseDevice (void);
-
-	/// \return Minium value of one sample
-	int GetRangeMin (void) const override;
-	/// \return Maximum value of one sample
-	int GetRangeMax (void) const override;
 
 	/// \brief Starts USB audio streaming
 	boolean Start (void) override;
@@ -112,6 +107,9 @@ private:
 	};
 
 private:
+	unsigned m_nBitResolution;
+	unsigned m_nSubframeSize;
+
 	unsigned m_nSampleRate;
 	TDeviceMode m_DeviceMode;
 	unsigned m_nDevice;

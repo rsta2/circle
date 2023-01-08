@@ -2,7 +2,7 @@
 // miniorgan.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -247,10 +247,60 @@ void CMiniOrgan::Process (boolean bPlugAndPlayUpdated)
 }
 
 #ifdef USE_USB
+
 unsigned CMiniOrgan::GetChunk (s16 *pBuffer, unsigned nChunkSize)
-#else
-unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
+{
+	unsigned nResult = nChunkSize;
+
+	// reset sample counter if key has changed
+	if (m_nFrequency != m_nPrevFrequency)
+	{
+		m_nSampleCount = 0;
+
+		m_nPrevFrequency = m_nFrequency;
+	}
+
+	// output level has to be changed on every nSampleDelay'th sample (if key is pressed)
+	unsigned nSampleDelay = 0;
+	if (m_nFrequency != 0)
+	{
+		nSampleDelay = (SAMPLE_RATE/2 + m_nFrequency/2) / m_nFrequency;
+	}
+
+	for (; nChunkSize > 0; nChunkSize -= 2)		// fill the whole buffer
+	{
+		s16 nSample = (s16) m_nNullLevel;
+
+		if (m_nFrequency != 0)			// key pressed?
+		{
+			// change output level if required to generate a square wave
+			if (++m_nSampleCount >= nSampleDelay)
+			{
+				m_nSampleCount = 0;
+
+				if (m_nCurrentLevel < m_nHighLevel)
+				{
+					m_nCurrentLevel = m_nHighLevel;
+				}
+				else
+				{
+					m_nCurrentLevel = m_nLowLevel;
+				}
+			}
+
+			nSample = (s16) m_nCurrentLevel;
+		}
+
+		*pBuffer++ = nSample;		// 2 stereo channels
+		*pBuffer++ = nSample;
+	}
+
+	return nResult;
+}
+
 #endif
+
+unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 {
 	unsigned nResult = nChunkSize;
 
@@ -274,11 +324,7 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 #endif
 	for (; nChunkSize > 0; nChunkSize -= 2)		// fill the whole buffer
 	{
-#ifdef USE_USB
-		s16 nSample = (s16) m_nNullLevel;
-#else
 		u32 nSample = (u32) m_nNullLevel;
-#endif
 
 		if (m_nFrequency != 0)			// key pressed?
 		{
@@ -297,11 +343,7 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 				}
 			}
 
-#ifdef USE_USB
-			nSample = (s16) m_nCurrentLevel;
-#else
 			nSample = (u32) m_nCurrentLevel;
-#endif
 		}
 
 #ifdef USE_HDMI
@@ -313,8 +355,15 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 		}
 #endif
 
+#ifdef USE_USB
+		*pBuffer = nSample;
+		pBuffer = (u32 *) ((u8 *) pBuffer + 3);
+		*pBuffer = nSample;
+		pBuffer = (u32 *) ((u8 *) pBuffer + 3);
+#else
 		*pBuffer++ = nSample;		// 2 stereo channels
 		*pBuffer++ = nSample;
+#endif
 	}
 
 	return nResult;

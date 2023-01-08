@@ -55,6 +55,12 @@ CSoundBaseDevice::CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigne
 		m_nRangeMax = 32767;
 		break;
 
+	case SoundFormatSigned24:
+		m_nHWSampleSize = sizeof (u8)*3;
+		m_nRangeMin = -(1 << 23)+1;
+		m_nRangeMax = (1 << 23)-1;
+		break;
+
 	case SoundFormatSigned24_32:
 	case SoundFormatIEC958:
 		m_nHWSampleSize = sizeof (u32);
@@ -224,7 +230,7 @@ int CSoundBaseDevice::Write (const void *pBuffer, size_t nCount)
 		{
 			nBytes = nCount;
 		}
-		nBytes &= ~(m_nWriteFrameSize-1);	// must be a multiple of frame size
+		nBytes -= nBytes % m_nWriteFrameSize;	// must be a multiple of frame size
 
 		if (nBytes > 0)
 		{
@@ -413,7 +419,7 @@ int CSoundBaseDevice::Read (void *pBuffer, size_t nCount)
 		{
 			nBytes = nCount;
 		}
-		nBytes &= ~(m_nReadFrameSize-1);	// must be a multiple of frame size
+		nBytes -= nBytes % m_nReadFrameSize;	// must be a multiple of frame size
 
 		if (nBytes > 0)
 		{
@@ -502,7 +508,8 @@ unsigned CSoundBaseDevice::GetChunk (s16 *pBuffer, unsigned nChunkSize)
 
 unsigned CSoundBaseDevice::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 {
-	assert (   m_HWFormat == SoundFormatSigned24_32
+	assert (   m_HWFormat == SoundFormatSigned24
+		|| m_HWFormat == SoundFormatSigned24_32
 		|| m_HWFormat == SoundFormatUnsigned32
 		|| m_HWFormat == SoundFormatIEC958);
 
@@ -579,6 +586,7 @@ void CSoundBaseDevice::ConvertSoundFormat (void *pTo, const void *pFrom)
 		*pValue = nValue >> 16;
 		} break;
 
+	case SoundFormatSigned24:
 	case SoundFormatSigned24_32: {
 		s32 *pValue = reinterpret_cast<s32 *> (pTo);
 		*pValue = nValue >> 8;
@@ -771,7 +779,8 @@ void CSoundBaseDevice::PutChunk (const s16 *pBuffer, unsigned nChunkSize)
 
 void CSoundBaseDevice::PutChunk (const u32 *pBuffer, unsigned nChunkSize)
 {
-	assert (m_HWFormat == SoundFormatSigned24_32);
+	assert (   m_HWFormat == SoundFormatSigned24
+		|| m_HWFormat == SoundFormatSigned24_32);
 
 	PutChunkInternal (pBuffer, nChunkSize);
 }
@@ -820,6 +829,11 @@ void CSoundBaseDevice::ConvertReadSoundFormat (void *pTo, const void *pFrom)
 		const s16 *pValue = reinterpret_cast<const s16 *> (pFrom);
 		nValue = *pValue;
 		nValue <<= 8;
+		} break;
+
+	case SoundFormatSigned24: {
+		const u32 *pValue = reinterpret_cast<const u32 *> (pFrom);
+		nValue = *pValue & 0xFFFFFFU;
 		} break;
 
 	case SoundFormatSigned24_32: {
