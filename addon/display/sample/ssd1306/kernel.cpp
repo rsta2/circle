@@ -35,13 +35,17 @@
 
 static const char FromKernel[] = "kernel";
 
+// Set to true to enable rotated or mirrored displays
+#define ROTATED   false
+#define MIRRORED  false
+
 CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer),
 	m_I2CMaster (I2C_MASTER_DEVICE),
-	m_LCD (WIDTH, HEIGHT, &m_I2CMaster, I2C_ADDR)
+	m_LCD (WIDTH, HEIGHT, &m_I2CMaster, I2C_ADDR, ROTATED, MIRRORED)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
