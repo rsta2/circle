@@ -2,7 +2,7 @@
 // usbkeyboard.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -135,6 +135,11 @@ void CUSBKeyboardDevice::RegisterKeyStatusHandlerRaw (TKeyStatusHandlerRaw *pKey
 	m_pKeyStatusHandlerRaw = pKeyStatusHandlerRaw;
 
 	m_bMixedMode = bMixedMode;
+}
+
+void CUSBKeyboardDevice::UnregisterKeyStatusHandlerRaw (void)
+{
+	m_pKeyStatusHandlerRaw = 0;
 }
 
 boolean CUSBKeyboardDevice::SetLEDs (u8 ucStatus)
