@@ -28,6 +28,7 @@
 #define K_SHIFTTAB	1
 #define K_ALTTAB	2
 #define K_ALTSHIFTTAB	3
+#define K_CTRL          4
 
 enum TSpecialKey
 {
@@ -83,6 +84,10 @@ enum TSpecialKey
 	KeyKP_Center,
 	KeyKP_Comma,
 	KeyKP_Period,
+	KeyCtrlUp,
+	KeyCtrlDown,
+	KeyCtrlLeft,
+	KeyCtrlRight,
 	KeyMaxCode
 };
 
@@ -125,14 +130,14 @@ private:
 	static const void *LookupDefaultMap (const char *pLocale);
 
 private:
-	u16 m_KeyMap[PHY_MAX_CODE+1][K_ALTSHIFTTAB+1];
+	u16 m_KeyMap[PHY_MAX_CODE+1][K_CTRL+1];
 
 	boolean m_bCapsLock;
 	boolean m_bNumLock;
 	boolean m_bScrollLock;
 	
 	static const char *s_KeyStrings[KeyMaxCode-KeySpace];
-	static const u16 s_DefaultMap[][PHY_MAX_CODE+1][K_ALTSHIFTTAB+1];
+	static const u16 s_DefaultMap[][PHY_MAX_CODE+1][K_CTRL+1];
 	static const char *s_MapDirectory[];
 };
 

@@ -81,11 +81,15 @@ const char *CKeyMap::s_KeyStrings[KeyMaxCode-KeySpace] =
 	"\x1b[G",		// KeyKP_Center
 	",",			// KeyKP_Comma
 	"."			// KeyKP_Period
+	"\x1b[1;5A",		// KeyCtrlUp
+	"\x1b[1;5B",		// KeyCtrlDown
+	"\x1b[1;5D",		// KeyCtrlLeft
+	"\x1b[1;5C",		// KeyCtrlRight
 };
 
 #define C(chr)		((u16) (u8) (chr))
 
-const u16 CKeyMap::s_DefaultMap[][PHY_MAX_CODE+1][K_ALTSHIFTTAB+1] =
+const u16 CKeyMap::s_DefaultMap[][PHY_MAX_CODE+1][K_CTRL+1] =
 {
 	{
 		#include "keymap_de.h"
@@ -142,7 +146,7 @@ CKeyMap::~CKeyMap (void)
 
 boolean CKeyMap::ClearTable (u8 nTable)
 {
-	if (nTable > K_ALTSHIFTTAB)
+	if (nTable > K_CTRL)
 	{
 		return FALSE;
 	}
@@ -157,7 +161,7 @@ boolean CKeyMap::ClearTable (u8 nTable)
 
 boolean CKeyMap::SetEntry (u8 nTable, u8 nPhyCode, u16 nValue)
 {
-	if (   nTable   > K_ALTSHIFTTAB
+	if (   nTable   > K_CTRL
 	    || nPhyCode == 0
 	    || nPhyCode > PHY_MAX_CODE
 	    || nValue   >= KeyMaxCode)
