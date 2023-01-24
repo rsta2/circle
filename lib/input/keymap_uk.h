@@ -73,11 +73,11 @@
 {KeyScrollLock,	KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x47
 {KeyPause,	KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x48
 {KeyInsert,	KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x49
-{KeyHome,	KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x4A
-{KeyPageUp,	KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x4B
+{KeyHome,	KeyNone,	KeyNone,	KeyNone,	KeyCtrlHome},	// 0x4A
+{KeyPageUp,	KeyNone,	KeyNone,	KeyNone,	KeyCtrlPageUp},	// 0x4B
 {KeyDelete,	KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x4C
-{KeyEnd,	KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x4D
-{KeyPageDown,	KeyNone,	KeyNone,	KeyNone,	KeyNone},	// 0x4E
+{KeyEnd,	KeyNone,	KeyNone,	KeyNone,	KeyCtrlEnd},	// 0x4D
+{KeyPageDown,	KeyNone,	KeyNone,	KeyNone,	KeyCtrlPageDown},	// 0x4E
 {KeyRight,	KeyNone,	KeyNone,	KeyNone,	KeyCtrlRight},	// 0x4F
 {KeyLeft,	KeyNone,	KeyNone,	KeyNone,	KeyCtrlLeft},	// 0x50
 {KeyDown,	KeyNone,	KeyNone,	KeyNone,	KeyCtrlDown},	// 0x51
@@ -88,15 +88,15 @@
 {KeyKP_Subtract,KeyKP_Subtract,	KeyNone,	KeyNone,	KeyNone},	// 0x56
 {KeyKP_Add,	KeyKP_Add,	KeyNone,	KeyNone,	KeyNone},	// 0x57
 {KeyKP_Enter,	KeyKP_Enter,	KeyNone,	KeyNone,	KeyNone},	// 0x58
-{KeyEnd,	KeyKP_1,	KeyNone,	KeyNone,	KeyNone},	// 0x59
+{KeyEnd,	KeyKP_1,	KeyNone,	KeyNone,	KeyCtrlEnd},	// 0x59
 {KeyDown,	KeyKP_2,	KeyNone,	KeyNone,	KeyNone},	// 0x5A
-{KeyPageDown,	KeyKP_3,	KeyNone,	KeyNone,	KeyNone},	// 0x5B
+{KeyPageDown,	KeyKP_3,	KeyNone,	KeyNone,	KeyCtrlPageDown},	// 0x5B
 {KeyLeft,	KeyKP_4,	KeyNone,	KeyNone,	KeyNone},	// 0x5C
 {KeyKP_Center,	KeyKP_5,	KeyNone,	KeyNone,	KeyNone},	// 0x5D
 {KeyRight,	KeyKP_6,	KeyNone,	KeyNone,	KeyNone},	// 0x5E
-{KeyHome,	KeyKP_7,	KeyNone,	KeyNone,	KeyNone},	// 0x5F
+{KeyHome,	KeyKP_7,	KeyNone,	KeyNone,	KeyCtrlHome},	// 0x5F
 {KeyUp,		KeyKP_8,	KeyNone,	KeyNone,	KeyNone},	// 0x60
-{KeyPageUp,	KeyKP_9,	KeyNone,	KeyNone,	KeyNone},	// 0x61
+{KeyPageUp,	KeyKP_9,	KeyNone,	KeyNone,	KeyCtrlPageUp},	// 0x61
 {KeyInsert,	KeyKP_0,	KeyNone,	KeyNone,	KeyNone},	// 0x62
 {KeyDelete,	KeyKP_Period,	KeyNone,	KeyNone,	KeyNone},	// 0x63
 {'\\',		'|',		KeyNone,	KeyNone,	KeyNone},	// 0x64

@@ -27,6 +27,11 @@
 #define KEYPAD_FIRST	0x53
 #define KEYPAD_LAST	0x63
 
+// At present, 0x04-0x1D are the basic letter keys on all the 
+//   keymaps defined
+#define LETTER_FIRST    0x04
+#define LETTER_LAST     0x1D
+
 // order must match TSpecialKey beginning at KeySpace
 const char *CKeyMap::s_KeyStrings[KeyMaxCode-KeySpace] =
 {
@@ -37,14 +42,22 @@ const char *CKeyMap::s_KeyStrings[KeyMaxCode-KeySpace] =
 	"\n",			// KeyReturn
 	"\x1b[2~",		// KeyInsert
 	"\x1b[1~",		// KeyHome
+	"\x1b[1;5H",		// KeyCtrlHome
 	"\x1b[5~",		// KeyPageUp
+	"\x1b[5;5~",		// KeyCtrlPageUp
 	"\x1b[3~",		// KeyDelete
 	"\x1b[4~",		// KeyEnd
+	"\x1b[1;5F",		// KeyCtrlEnd
 	"\x1b[6~",		// KeyPageDown
+	"\x1b[6;5~",		// KeyCtrlPageDown
 	"\x1b[A",		// KeyUp
 	"\x1b[B",		// KeyDown
 	"\x1b[D",		// KeyLeft
 	"\x1b[C",		// KeyRight
+	"\x1b[1;5A",		// KeyCtrlUp
+	"\x1b[1;5B",		// KeyCtrlDown
+	"\x1b[1;5D",		// KeyCtrlLeft
+	"\x1b[1;5C",		// KeyCtrlRight
 	"\x1b[[A",		// KeyF1
 	"\x1b[[B",		// KeyF2
 	"\x1b[[C",		// KeyF3
@@ -81,15 +94,11 @@ const char *CKeyMap::s_KeyStrings[KeyMaxCode-KeySpace] =
 	"\x1b[G",		// KeyKP_Center
 	",",			// KeyKP_Comma
 	"."			// KeyKP_Period
-	"\x1b[1;5A",		// KeyCtrlUp
-	"\x1b[1;5B",		// KeyCtrlDown
-	"\x1b[1;5D",		// KeyCtrlLeft
-	"\x1b[1;5C",		// KeyCtrlRight
 };
 
 #define C(chr)		((u16) (u8) (chr))
 
-const u16 CKeyMap::s_DefaultMap[][PHY_MAX_CODE+1][K_CTRL+1] =
+const u16 CKeyMap::s_DefaultMap[][PHY_MAX_CODE+1][K_CTRLTAB+1] =
 {
 	{
 		#include "keymap_de.h"
@@ -146,7 +155,7 @@ CKeyMap::~CKeyMap (void)
 
 boolean CKeyMap::ClearTable (u8 nTable)
 {
-	if (nTable > K_CTRL)
+	if (nTable > K_CTRLTAB)
 	{
 		return FALSE;
 	}
@@ -161,7 +170,7 @@ boolean CKeyMap::ClearTable (u8 nTable)
 
 boolean CKeyMap::SetEntry (u8 nTable, u8 nPhyCode, u16 nValue)
 {
-	if (   nTable   > K_CTRL
+	if (   nTable   > K_CTRLTAB
 	    || nPhyCode == 0
 	    || nPhyCode > PHY_MAX_CODE
 	    || nValue   >= KeyMaxCode)
@@ -225,6 +234,15 @@ u16 CKeyMap::Translate (u8 nPhyCode, u8 nModifiers)
 	else if (nModifiers & (KEY_LSHIFT_MASK | KEY_RSHIFT_MASK))
 	{
 		nTable = K_SHIFTTAB;
+	}
+	// Use the CTRL table is a ctrl key is pressed, unless the key
+	//   is a basic letter. This way we only need to enter the 'special'
+	//   ctrl keys in the mapping table, as GetString will take care of
+	//   the letter keys.
+	else if ((nModifiers & (KEY_LCTRL_MASK | KEY_RCTRL_MASK))
+                 && (nPhyCode < LETTER_FIRST || nPhyCode > LETTER_LAST))
+	{
+		nTable = K_CTRLTAB;
 	}
 
 	u16 nLogCode = m_KeyMap[nPhyCode][nTable];
