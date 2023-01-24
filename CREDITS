@@ -95,3 +95,6 @@ Adding support for SSD1306 OLED display
 
 @nickverlinden
 Testing several USB Audio Pro streaming interfaces
+
+Kevin Boone
+Adding support for Ctrl+navigation keys
