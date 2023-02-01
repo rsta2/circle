@@ -8,6 +8,11 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
+Release 45.1
+------------
+
+This hotfix release fixes the HDMI sound driver (without VCHIQ), which did not work any more on the Raspberry Pi 4 with the recommended firmware. Furthermore is enables the relative path support in the FatFs library.
+
 The 45th Step
 -------------
 
