@@ -3,8 +3,15 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 45.1
+------------
+
+This hotfix release fixes the HDMI sound driver (without VCHIQ), which did not work any more on the Raspberry Pi 4 with the recommended firmware. Furthermore is enables the relative path support in the FatFs library.
+
 The 45th Step
 -------------
+
+2022-12-01
 
 This release comes with **support for USB audio streaming devices**, available **for Raspberry Pi 4, 400 and Compute Module 4** only. Supported should be devices, which are compliant with the "USB Device Class Definition for Audio Devices", Release 1.0 and 2.0. Only USB audio interfaces with 16-bit PCM audio and two channels (Stereo) are supported for output and input, and additionally with one channel (Mono) for input. There is no constant chunk size for USB sound devices and it is not configurable here. You should enable the system option `REALTIME` for applications, which use USB sound. Some devices also may require the option `usbpowerdelay=1000` in the file [cmdline.txt](doc/cmdline.txt) to enumerate successfully.
 

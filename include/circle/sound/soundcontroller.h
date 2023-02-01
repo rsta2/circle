@@ -104,7 +104,7 @@ public:
 	/// \return Info about the control in the selected configuration
 	/// \note A control may be supported for ChannelAll, but not for ChannelLeft/Right.
 	virtual const TControlInfo GetControlInfo (TControl Control, TJack Jack,
-						   TChannel Channel) const { return { FALSE }; }
+						   TChannel Channel) const { return { FALSE, 0, 0 }; }
 	/// \param Control Control selector
 	/// \param Jack Affected jack
 	/// \param Channel Affected channel(s)
