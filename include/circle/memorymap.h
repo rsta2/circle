@@ -39,7 +39,6 @@
 
 #define PAGE_SIZE		4096				// page size used by us
 
-#define KERNEL_STACK_SIZE	0x20000				// all sizes must be a multiple of 16K
 #define EXCEPTION_STACK_SIZE	0x8000
 #define PAGE_TABLE1_SIZE	0x4000
 #define PAGE_RESERVE		(4 * MEGABYTE)
