@@ -38,6 +38,13 @@
 #define KERNEL_MAX_SIZE		(2 * MEGABYTE)
 #endif
 
+// KERNEL_STACK_SIZE is the size of the stack set on startup for the
+// main thread.  This must be a multiple of 16 KByte.
+
+#ifndef KERNEL_STACK_SIZE
+#define KERNEL_STACK_SiZE	0x20000
+#endif
+
 // HEAP_DEFAULT_NEW defines the default heap to be used for the "new"
 // operator, if a memory type is not explicitly specified. Possible
 // values are HEAP_LOW (memory below 1 GByte), HEAP_HIGH (memory above
