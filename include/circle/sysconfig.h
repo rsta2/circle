@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
 // main thread.  This must be a multiple of 16 KByte.
 
 #ifndef KERNEL_STACK_SIZE
-#define KERNEL_STACK_SiZE	0x20000
+#define KERNEL_STACK_SIZE	0x20000
 #endif
 
 // HEAP_DEFAULT_NEW defines the default heap to be used for the "new"
