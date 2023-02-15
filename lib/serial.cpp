@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/serial.h>
+#include <circle/timer.h>
 #include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
 #include <circle/memio.h>
@@ -634,19 +635,31 @@ boolean CSerialDevice::Write (u8 uchChar)
 
 	if (m_pInterruptSystem != 0)
 	{
-		m_SpinLock.Acquire ();
-
-		if (((m_nTxInPtr+1) & SERIAL_BUF_MASK) != m_nTxOutPtr)
+		// We're using an interrupt handler, so the send buffer should
+		// be processed asynchronously.  If it's full, wait a little
+		// while in anticipation of the background processing eventually
+		// freeing up some space.  But don't wait forever, since there's
+		// no guarantee that the background sends will succeed.
+		bOK = FALSE;
+		for (int tries = 0 ; tries < 5 ; ++tries)
 		{
-			m_TxBuffer[m_nTxInPtr++] = uchChar;
-			m_nTxInPtr &= SERIAL_BUF_MASK;
-		}
-		else
-		{
-			bOK = FALSE;
-		}
+			m_SpinLock.Acquire ();
 
-		m_SpinLock.Release ();
+			if (((m_nTxInPtr+1) & SERIAL_BUF_MASK) != m_nTxOutPtr)
+			{
+				m_TxBuffer[m_nTxInPtr++] = uchChar;
+				m_nTxInPtr &= SERIAL_BUF_MASK;
+				bOK = TRUE;
+			}
+
+			m_SpinLock.Release ();
+
+			if (bOK)
+				break;
+
+			// wait briefly to allow pending sends to process
+			CTimer::SimpleusDelay(50);
+		}
 	}
 	else
 	{
