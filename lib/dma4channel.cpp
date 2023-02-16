@@ -108,22 +108,27 @@ CDMA4Channel::CDMA4Channel (unsigned nChannel, CInterruptSystem *pInterruptSyste
 	m_pCompletionParam (0),
 	m_bStatus (FALSE)
 {
+	PeripheralEntry();
+
 	assert (m_nChannel >= DMA4_CHANNEL_MIN);
 	assert (m_nChannel <= DMA4_CHANNEL_MAX);
 	assert (   (read32 (ARM_DMA4CHAN_DEBUG (m_nChannel)) & DEBUG4_VERSION_MASK)
 		>> DEBUG4_VERSION_SHIFT == DMA4_VERSION);
 
-	m_pControlBlockBuffer = new (HEAP_ANY) u8[sizeof (TDMA4ControlBlock) + 255];
+	m_pControlBlockBuffer = new (HEAP_ANY) u8[sizeof (TDMA4ControlBlock) + 31];
 	assert (m_pControlBlockBuffer != 0);
 
-	m_pControlBlock = (TDMA4ControlBlock *) (((uintptr) m_pControlBlockBuffer + 255) & ~255);
+	m_pControlBlock = (TDMA4ControlBlock *) (((uintptr) m_pControlBlockBuffer + 31) & ~31);
 	m_pControlBlock->nReserved = 0;
 
+	write32 (ARM_DMA4CHAN_CONBLK_AD (m_nChannel), 0);
 	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nChannel));
 	CTimer::SimpleusDelay (1000);
 
 	write32 (ARM_DMA4CHAN_DEBUG (m_nChannel), DEBUG4_RESET);
 	CTimer::SimpleusDelay (1000);
+
+	PeripheralExit();
 }
 
 CDMA4Channel::~CDMA4Channel (void)
@@ -166,8 +171,7 @@ void CDMA4Channel::SetupMemCopy (void *pDestination, const void *pSource, size_t
 	assert (m_pControlBlock != 0);
 	assert (nLength <= LEN4_XLENGTH_MAX);
 
-	m_pControlBlock->nTransferInformation     =   TI4_WAIT_RD_RESP
-						    | TI4_WAIT_RESP;
+	m_pControlBlock->nTransferInformation     =   0;
 	m_pControlBlock->nSourceAddress           = ADDRESS4_LOW (pSource);
 	m_pControlBlock->nSourceInformation	  =   (SIZE4_128 << SOURCE4_SIZE_SHIFT)
 						    | SOURCE4_INC
@@ -337,6 +341,8 @@ void CDMA4Channel::Start (void)
 		m_pControlBlock->nTransferInformation |= TI4_INTEN;
 	}
 
+	PeripheralEntry ();
+
 	assert (!(read32 (ARM_DMA4CHAN_CS (m_nChannel)) & CS4_INT));
 	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nChannel)));
 
@@ -349,6 +355,8 @@ void CDMA4Channel::Start (void)
 					      | (DEFAULT_PANIC_QOS4 << CS4_PANIC_QOS_SHIFT)
 					      | (DEFAULT_QOS4 << CS4_QOS_SHIFT)
 					      | CS4_ACTIVE);
+
+	PeripheralExit ();
 }
 
 boolean CDMA4Channel::Wait (void)
@@ -356,6 +364,8 @@ boolean CDMA4Channel::Wait (void)
 	assert (m_nChannel >= DMA4_CHANNEL_MIN);
 	assert (m_nChannel <= DMA4_CHANNEL_MAX);
 	assert (m_pCompletionRoutine == 0);
+
+	PeripheralEntry ();
 
 	u32 nCS;
 	while ((nCS = read32 (ARM_DMA4CHAN_CS (m_nChannel))) & CS4_ACTIVE)
@@ -369,6 +379,8 @@ boolean CDMA4Channel::Wait (void)
 	{
 		CleanAndInvalidateDataCacheRange (m_nDestinationAddress, m_nBufferLength);
 	}
+
+	PeripheralExit();
 
 	return m_bStatus;
 }
