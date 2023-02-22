@@ -34,6 +34,11 @@ usbignore=int3-0-0		Prevent loading a driver for an USB interface or device, whi
 				is normally supported by Circle, but does not functioning with
 				a specific USB device. Can be specified only once.
 
+usbsoundchannels=6,2		Select specific number of sound channels for output,input for
+				"sounddev=sndusb". By default 0,0 is set, which selects the first
+				found USB interfaces. The selected number of channels (max. 32)
+				must be supported by the attached USB audio streaming device.
+
 sounddev=sndpwm			Set device used for sound output
 				("sndpwm" for PWM (via headphone jack), "sndi2s" for I2S (external
 				 hardware required), "sndvchiq" for VCHIQ (HDMI or headphone jack),

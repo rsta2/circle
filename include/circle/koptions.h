@@ -2,7 +2,7 @@
 // koptions.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,8 @@ public:
 	boolean GetUSBBoost (void) const;
 	const char *GetUSBIgnore (void) const;		// defaults to empty string
 
+	const unsigned *GetUSBSoundChannels (void) const; // returns 2 values
+
 	const char *GetSoundDevice (void) const;	// defaults to empty string
 	unsigned GetSoundOption (void) const;
 
@@ -80,6 +82,8 @@ private:
 	boolean m_bUSBFullSpeed;
 	boolean m_bUSBBoost;
 	char m_USBIgnore[20];
+
+	unsigned m_USBSoundChannels[2];
 
 	char m_SoundDevice[20];
 	unsigned m_nSoundOption;

@@ -2,7 +2,7 @@
 // hdmisoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -346,7 +346,7 @@ boolean CHDMISoundBaseDevice::Start (void)
 		 read32 (RegTxPhyPowerDownControl) & ~BitTxPhyPowerDownControlRngGenPowerDown);
 #endif
 
-	write32 (RegMaiControl,  SOUND_HW_CHANNELS << ShiftMaiControlChannelNumber
+	write32 (RegMaiControl,  IEC958_HW_CHANNELS << ShiftMaiControlChannelNumber
 			       | BitMaiControlWholSample
 			       | BitMaiControlChannelAlign
 			       | BitMaiControlEnable);
@@ -446,7 +446,7 @@ void CHDMISoundBaseDevice::WriteSample (s32 nSample)
 
 	PeripheralEntry ();
 
-	write32 (RegMaiData, ConvertIEC958Sample (nSample, m_nSubFrame / SOUND_HW_CHANNELS));
+	write32 (RegMaiData, ConvertIEC958Sample (nSample, m_nSubFrame / IEC958_HW_CHANNELS));
 
 	PeripheralExit ();
 

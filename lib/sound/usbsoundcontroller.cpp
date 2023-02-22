@@ -2,7 +2,7 @@
 // usbsoundcontroller.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -310,25 +310,7 @@ boolean CUSBSoundController::SetVolume (TJack Jack, TChannel Channel, int ndB)
 		}
 		else
 		{
-			if (   Channel == ChannelLeft
-			    || Channel == ChannelAll)
-			{
-				if (!m_pTXStreamingDevice->SetVolume (1, ndB))
-				{
-					return FALSE;
-				}
-			}
-
-			if (   Channel == ChannelRight
-			    || Channel == ChannelAll)
-			{
-				if (!m_pTXStreamingDevice->SetVolume (2, ndB))
-				{
-					return FALSE;
-				}
-			}
-
-			return TRUE;
+			return m_pTXStreamingDevice->SetVolume (Channel, ndB);
 		}
 	}
 	else if (   IsInputJack (Jack)
@@ -343,25 +325,7 @@ boolean CUSBSoundController::SetVolume (TJack Jack, TChannel Channel, int ndB)
 		}
 		else
 		{
-			if (   Channel == ChannelLeft
-			    || Channel == ChannelAll)
-			{
-				if (!m_pRXStreamingDevice->SetVolume (1, ndB))
-				{
-					return FALSE;
-				}
-			}
-
-			if (   Channel == ChannelRight
-			    || Channel == ChannelAll)
-			{
-				if (!m_pRXStreamingDevice->SetVolume (2, ndB))
-				{
-					return FALSE;
-				}
-			}
-
-			return TRUE;
+			return m_pRXStreamingDevice->SetVolume (Channel, ndB);
 		}
 	}
 

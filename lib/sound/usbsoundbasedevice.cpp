@@ -33,10 +33,7 @@ static const char DeviceName[] = "sndusb";
 
 CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode DeviceMode,
 					  unsigned nDevice)
-:	CSoundBaseDevice ((  CKernelOptions::Get ()->GetSoundOption () == 24
-			   ? SoundFormatSigned24 : SoundFormatSigned16),
-			  0, nSampleRate),
-	m_nBitResolution (CKernelOptions::Get ()->GetSoundOption () == 24 ? 24 : 16),
+:	m_nBitResolution (CKernelOptions::Get ()->GetSoundOption () == 24 ? 24 : 16),
 	m_nSubframeSize (m_nBitResolution / 8),
 	m_nSampleRate (nSampleRate),
 	m_DeviceMode (DeviceMode),
@@ -50,6 +47,32 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode Devi
 	m_pSoundController (nullptr),
 	m_hRemoveRegistration (0)
 {
+	unsigned nHWTXChannels = 2;
+	unsigned nHWRXChannels = 2;
+
+	if (m_DeviceMode != DeviceModeRXOnly)
+	{
+		m_pTXUSBDevice = GetStreamingDevice (TRUE, m_nTXInterface);
+		if (m_pTXUSBDevice)
+		{
+			CUSBAudioStreamingDevice::TDeviceInfo Info = m_pTXUSBDevice->GetDeviceInfo ();
+			nHWTXChannels = Info.NumChannels;
+		}
+	}
+
+	if (m_DeviceMode != DeviceModeTXOnly)
+	{
+		m_pRXUSBDevice = GetStreamingDevice (FALSE, 0);
+		if (m_pRXUSBDevice)
+		{
+			CUSBAudioStreamingDevice::TDeviceInfo Info = m_pRXUSBDevice->GetDeviceInfo ();
+			nHWRXChannels = Info.NumChannels;
+		}
+	}
+
+	Setup (m_nBitResolution == 24 ? SoundFormatSigned24 : SoundFormatSigned16, 0,
+		m_nSampleRate, nHWTXChannels, nHWRXChannels, FALSE);
+
 	if (!m_nDevice)
 	{
 		CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
@@ -186,10 +209,6 @@ boolean CUSBSoundBaseDevice::Start (void)
 			assert (!m_pRXBuffer[1]);
 			m_pRXBuffer[0] = new u8[m_nRXChunkSizeBytes * 2];
 			m_pRXBuffer[1] = new u8[m_nRXChunkSizeBytes * 2];
-
-			CUSBAudioStreamingDevice::TDeviceInfo Info =
-				m_pRXUSBDevice->GetDeviceInfo ();
-			m_nRXChannels = Info.NumChannels;
 		}
 
 		assert (!m_hRemoveRegistration);
@@ -475,56 +494,16 @@ void CUSBSoundBaseDevice::RXCompletionRoutine (unsigned nBytesTransferred)
 		assert (nRXCurrentBuffer < 2);
 		assert (m_pRXBuffer[nRXCurrentBuffer]);
 
-		assert (m_nRXChannels == 1 || m_nRXChannels == 2);
-		if (m_nRXChannels == 2)
+		if (m_nSubframeSize == 2)
 		{
-			if (m_nSubframeSize == 2)
-			{
-				PutChunk (reinterpret_cast<s16 *> (m_pRXBuffer[nRXCurrentBuffer]),
-								   nBytesTransferred / m_nSubframeSize);
-			}
-			else
-			{
-				assert (m_nSubframeSize == 3);
-				PutChunk (reinterpret_cast<u32 *> (m_pRXBuffer[nRXCurrentBuffer]),
-								   nBytesTransferred / m_nSubframeSize);
-			}
+			PutChunk (reinterpret_cast<s16 *> (m_pRXBuffer[nRXCurrentBuffer]),
+							   nBytesTransferred / m_nSubframeSize);
 		}
 		else
 		{
-			// convert Mono to Stereo, because the upper layer expects it
-			if (m_nSubframeSize == 2)
-			{
-				s16 *p = (s16 *) m_pRXBuffer[nRXCurrentBuffer];
-				u32 TempBuffer[nBytesTransferred / sizeof (s16)];
-				for (unsigned i = 0; i < nBytesTransferred / sizeof (s16); i++)
-				{
-					u32 nSample = *p++;
-					nSample |= nSample << 16;
-					TempBuffer[i] = nSample;
-				}
-
-				PutChunk (reinterpret_cast<s16 *> (TempBuffer), nBytesTransferred);
-			}
-			else
-			{
-				assert (m_nSubframeSize == 3);
-				u8 *p = m_pRXBuffer[nRXCurrentBuffer];
-				u8 TempBuffer[nBytesTransferred * 2];
-				u8 *pp = TempBuffer;
-				unsigned nFrames = nBytesTransferred / 3;
-				for (unsigned i = 0; i < nFrames; i++)
-				{
-					pp[0] = pp[3] = p[0];
-					pp[1] = pp[4] = p[1];
-					pp[2] = pp[5] = p[2];
-
-					p += 3;
-					pp += 6;
-				}
-
-				PutChunk (reinterpret_cast<u32 *> (TempBuffer), nFrames * 2);
-			}
+			assert (m_nSubframeSize == 3);
+			PutChunk (reinterpret_cast<u32 *> (m_pRXBuffer[nRXCurrentBuffer]),
+							   nBytesTransferred / m_nSubframeSize);
 		}
 	}
 

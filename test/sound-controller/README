@@ -12,9 +12,8 @@ language-depended maps at the moment (UK English (UK), Spanish (ES), French
 (FR), Italian (IT), US International (US) and German (DE)).
 
 It is recommended to enable the system option REALTIME in the file
-include/circle/sysconfig.h before build. Some parameters of the sound device
-(e.g. if a I2S device in slave mode (clocks are GPIO inputs) is used) may have
-to be set in the file config.h before build.
+include/circle/sysconfig.h before build. Some parameters (e.g. WRITE_CHANNELS)
+may have to be modified in the file config.h before build.
 
 By default the sample is built without the VCHIQ option, because this requires
 additional libraries, which have to be built manually. If you want this VCHIQ
@@ -65,8 +64,8 @@ enable JACK     Enable jack (defaultout|lineout|speaker|headphone|hdmi
                 |spdif|defaultin|linein|microphone)
 disable JACK    Disable jack (multi-jack operation only)
 controlinfo CTRL CHAN [JACK]                                            info
-                Display control (mute|volume) info for channel (lr|l|r)
-                [and jack]
+                Display control (mute|volume) info
+                for channel (all|l|r|NUM) [and jack]
 setcontrol CTRL CHAN VAL [JACK]                                         set
                 Set control for channel [and jack] to value
 oscillator WAVE [FREQ] [CHAN]                                           osc
@@ -80,14 +79,14 @@ help            This help
 Sound IO> start sndusb io
 Sound IO!> enable headphone
 Sound IO!> enable microphone
-Sound IO!> info volume lr microphone
+Sound IO!> info volume all microphone
 Control is supported with range -16 to 12
-Sound IO!> set volume lr 12 microphone
+Sound IO!> set volume all 12 microphone
 Sound IO!> cancel
 Sound IO> start sndusb o
 Sound O!> osc noise
-Sound O!> info mute lr
+Sound O!> info mute all
 Control is supported with range 0 to 1
-Sound O!> set mute lr 1
+Sound O!> set mute all 1
 Sound O!> cancel
 Sound IO>

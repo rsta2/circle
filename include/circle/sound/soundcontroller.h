@@ -2,7 +2,7 @@
 // soundcontroller.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,8 +56,40 @@ public:
 	enum TChannel
 	{
 		ChannelAll,
-		ChannelLeft,
-		ChannelRight,
+		Channel1,
+		ChannelLeft	= Channel1,
+		Channel2,
+		ChannelRight	= Channel2,
+		Channel3,
+		Channel4,
+		Channel5,
+		Channel6,
+		Channel7,
+		Channel8,
+		Channel9,
+		Channel10,
+		Channel11,
+		Channel12,
+		Channel13,
+		Channel14,
+		Channel15,
+		Channel16,
+		Channel17,
+		Channel18,
+		Channel19,
+		Channel20,
+		Channel21,
+		Channel22,
+		Channel23,
+		Channel24,
+		Channel25,
+		Channel26,
+		Channel27,
+		Channel28,
+		Channel29,
+		Channel30,
+		Channel31,
+		Channel32,
 		ChannelUnknown
 	};
 

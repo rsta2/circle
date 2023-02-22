@@ -79,8 +79,7 @@ following assumptions were made:
   audio parameters for output (TX).
 
 * Only USB audio streaming interfaces which support the following audio
-  parameters will be used: 16-bit signed audio samples, 2 (Stereo) or 1 (Mono,
-  RX only) channels
+  parameters will be used: 16-bit or 24-bit signed audio samples
 
 * TX: An USB audio streaming interface input terminal (IT) is connected
   downstream to one output terminal (e.g. Speaker) via one optional feature unit,
@@ -106,10 +105,6 @@ Release 1.0 and 2.0, https://usb.org/documents
 #include <circle/debug.h>
 #include <circle/util.h>
 #include <assert.h>
-
-// supported format
-#define CHANNELS		2		// Stereo
-#define CHUNK_FREQUENCY		1000		// per second
 
 // convert 3-byte sample rate value to an unsigned
 #define RATE2UNSIGNED(rate)	(  (unsigned) (rate)[0]		\
@@ -197,11 +192,28 @@ boolean CUSBAudioStreamingDevice::Initialize (void)
 		return FALSE;
 	}
 
+	// An USB endpoint descriptor follows on the
+	// USB audio type I format type descriptor.
+	const TUSBEndpointDescriptor *pEndpointDesc =
+		reinterpret_cast<const TUSBEndpointDescriptor *> (
+			reinterpret_cast<const u8 *> (  pFormatTypeDesc)
+						      + pFormatTypeDesc->bLength);
+        if (pEndpointDesc->bDescriptorType != DESCRIPTOR_ENDPOINT)
+	{
+		return FALSE;
+	}
+
+	// If this endpoint is an output EP, we check the first "usbsoundchannels="
+	// parameter from cmdline.txt, otherwise the second one (if the parameter is not 0).
+	const unsigned *pChannels = CKernelOptions::Get ()->GetUSBSoundChannels ();
+	assert (pChannels);
+	unsigned nChannels = pEndpointDesc->bEndpointAddress & 0x80 ? pChannels[1] : pChannels[0];
+
 	// We take the first alternate interface, which meets our expected parameters.
 
 	if (GetInterfaceProtocol () != USB_PROTO_AUDIO_VER_200)
 	{
-		if (   pFormatTypeDesc->Ver100.bNrChannels > CHANNELS
+		if (   (nChannels && pFormatTypeDesc->Ver100.bNrChannels != nChannels)
 		    || pFormatTypeDesc->Ver100.bSubframeSize != m_nSubframeSize
 		    || pFormatTypeDesc->Ver100.bBitResolution != m_nBitResolution)
 		{
@@ -215,7 +227,7 @@ boolean CUSBAudioStreamingDevice::Initialize (void)
 	}
 	else
 	{
-		if (   pAudioInterfaceDesc->Ver200.bNrChannels > CHANNELS
+		if (   (nChannels && pAudioInterfaceDesc->Ver200.bNrChannels != nChannels)
 		    || pFormatTypeDesc->Ver200.bSubslotSize != m_nSubframeSize
 		    || pFormatTypeDesc->Ver200.bBitResolution != m_nBitResolution)
 		{
@@ -226,7 +238,6 @@ boolean CUSBAudioStreamingDevice::Initialize (void)
 
 			return FALSE;
 		}
-
 	}
 
 	return TRUE;
@@ -297,7 +308,6 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 	{
 		if (   pFormatTypeDesc->bFormatType           != USB_AUDIO_FORMAT_TYPE_I
 		    || pFormatTypeDesc->Ver100.bNrChannels    == 0
-		    || pFormatTypeDesc->Ver100.bNrChannels    > CHANNELS
 		    || pFormatTypeDesc->Ver100.bSubframeSize  != m_nSubframeSize
 		    || pFormatTypeDesc->Ver100.bBitResolution != m_nBitResolution)
 		{
@@ -316,8 +326,7 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		if (   pFormatTypeDesc->bFormatType           != USB_AUDIO_FORMAT_TYPE_I
 		    || pFormatTypeDesc->Ver200.bSubslotSize   != m_nSubframeSize
 		    || pFormatTypeDesc->Ver200.bBitResolution != m_nBitResolution
-		    || pGeneralDesc->Ver200.bNrChannels       == 0
-		    || pGeneralDesc->Ver200.bNrChannels       > CHANNELS)
+		    || pGeneralDesc->Ver200.bNrChannels       == 0)
 		{
 			LOGWARN ("Unsupported audio format (chans %u)",
 				 (unsigned) pGeneralDesc->Ver200.bNrChannels);
@@ -619,8 +628,9 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 
 	From = m_DeviceName;	// for logger
 
-	LOGNOTE ("%sput Terminal type(s): %s", m_bIsOutput ? "Out" : "In",
-					       (const char *) TerminalTypes);
+	LOGNOTE ("%sput Terminal type(s): %s (%u * %u bits)", m_bIsOutput ? "Out" : "In",
+							      (const char *) TerminalTypes,
+							      m_nChannels, m_nBitResolution);
 	LOGNOTE ("Supported sample rate(s): %s Hz", (const char *) SampleRates);
 
 	return TRUE;
@@ -867,16 +877,10 @@ boolean CUSBAudioStreamingDevice::SetMute (boolean bEnable)
 
 boolean CUSBAudioStreamingDevice::SetVolume (unsigned nChannel, int ndB)
 {
-	assert (nChannel <= 2);
+	assert (nChannel <= m_nChannels);
 	assert (m_nActiveTerminal < m_nTerminals);
 
 	if (!m_DeviceInfo.Terminal[m_nActiveTerminal].VolumeSupported)
-	{
-		return FALSE;
-	}
-
-	if (   !m_DeviceInfo.Terminal[m_nActiveTerminal].VolumePerChannel
-	    && nChannel)
 	{
 		return FALSE;
 	}
@@ -886,15 +890,40 @@ boolean CUSBAudioStreamingDevice::SetVolume (unsigned nChannel, int ndB)
 	DMA_BUFFER (s16, VolumeBuffer, 1);
 	VolumeBuffer[0] = ndB << 8;
 
-	// same request for v1.00 and v2.00
-	if (GetHost ()->ControlMessage (GetEndpoint0 (),
-					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-					USB_AUDIO_REQ_SET_CUR,
-					USB_AUDIO_FU_VOLUME_CONTROL << 8 | nChannel,
-					m_uchFeatureUnitID[m_nActiveTerminal] << 8,
-					VolumeBuffer, 2) < 0)
+	if (   !m_DeviceInfo.Terminal[m_nActiveTerminal].VolumePerChannel
+	    && nChannel)
 	{
 		return FALSE;
+	}
+	else if (   m_DeviceInfo.Terminal[m_nActiveTerminal].VolumePerChannel
+		 && !nChannel)
+	{
+		for (unsigned i = 1; i <= m_nChannels; i++)
+		{
+			// same request for v1.00 and v2.00
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+							REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+							USB_AUDIO_REQ_SET_CUR,
+							USB_AUDIO_FU_VOLUME_CONTROL << 8 | i,
+							m_uchFeatureUnitID[m_nActiveTerminal] << 8,
+							VolumeBuffer, 2) < 0)
+			{
+				return FALSE;
+			}
+		}
+	}
+	else
+	{
+		// same request for v1.00 and v2.00
+		if (GetHost ()->ControlMessage (GetEndpoint0 (),
+						REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+						USB_AUDIO_REQ_SET_CUR,
+						USB_AUDIO_FU_VOLUME_CONTROL << 8 | nChannel,
+						m_uchFeatureUnitID[m_nActiveTerminal] << 8,
+						VolumeBuffer, 2) < 0)
+		{
+			return FALSE;
+		}
 	}
 
 	return TRUE;
@@ -919,12 +948,10 @@ boolean CUSBAudioStreamingDevice::InitTerminalControlInfo (CUSBAudioControlDevic
 								CUSBAudioFeatureUnit::MuteControl);
 
 		u8 uchChannel = 0;		// master channel
-		if (   pControlDevice->IsControlSupported (uchFeatureUnitID, 1,
-							   CUSBAudioFeatureUnit::VolumeControl)
-		    && pControlDevice->IsControlSupported (uchFeatureUnitID, 2,
-							   CUSBAudioFeatureUnit::VolumeControl))
+		if (pControlDevice->IsControlSupported (uchFeatureUnitID, 1,
+							CUSBAudioFeatureUnit::VolumeControl))
 		{
-			uchChannel = 1;		// left channel, should be same as right
+			uchChannel = 1;		// left channel, should be same as the others
 		}
 		else if (!pControlDevice->IsControlSupported (uchFeatureUnitID, 0,
 							      CUSBAudioFeatureUnit::VolumeControl))
@@ -1032,7 +1059,7 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 			// Q10.14 format (FS)
 			pThis->m_nSyncAccu += pThis->m_SyncEPBuffer[0] & 0xFFFFFF;
 			pThis->m_nChunkSizeBytes =   (pThis->m_nSyncAccu >> 14)
-						   * CHANNELS * pThis->m_nSubframeSize;
+						   * pThis->m_nChannels * pThis->m_nSubframeSize;
 			pThis->m_nSyncAccu &= 0x3FFF;
 		}
 		else
@@ -1040,7 +1067,7 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 			// Q16.16 format (HS)
 			pThis->m_nSyncAccu += pThis->m_SyncEPBuffer[0];
 			pThis->m_nChunkSizeBytes =   (pThis->m_nSyncAccu >> 16)
-						   * CHANNELS * pThis->m_nSubframeSize;
+						   * pThis->m_nChannels * pThis->m_nSubframeSize;
 			pThis->m_nSyncAccu &= 0xFFFF;
 		}
 	}
@@ -1057,7 +1084,7 @@ void CUSBAudioStreamingDevice::UpdateChunkSize (void)
 
 	m_SpinLock.Acquire ();
 
-	m_nPacketsPerChunk = nUSBFrameRate / CHUNK_FREQUENCY;
+	m_nPacketsPerChunk = nUSBFrameRate / 1000;
 
 	unsigned nChunkSizeBytes = 0;
 	for (unsigned i = 0; i < m_nPacketsPerChunk; i++)
