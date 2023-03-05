@@ -378,18 +378,25 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		return FALSE;
 	}
 
-	// Interface of audio control device is the first in configuration descriptor,
-	// so that the respective function has the index 0.
-	CUSBFunction *pFunction = GetDevice ()->GetFunction (0);
-	CUSBAudioControlDevice *pControlDevice = (CUSBAudioControlDevice *) pFunction;
-	if (   !pFunction
-	    || pControlDevice->GetInterfaceClass ()    != 1
-	    || pControlDevice->GetInterfaceSubClass () != 1)
+	// Find the associated audio control device
+	CUSBAudioControlDevice *pControlDevice;
+	int nControlFunction = -1;
+	do
 	{
-		LOGWARN ("Associated control device not found");
+		nControlFunction++;
 
-		return FALSE;
+		CUSBFunction *pFunction = GetDevice ()->GetFunction (nControlFunction);
+		if (!pFunction)
+		{
+			LOGWARN ("Associated control device not found");
+
+			return FALSE;
+		}
+
+		pControlDevice = (CUSBAudioControlDevice *) pFunction;
 	}
+	while (   pControlDevice->GetInterfaceClass ()    != 1
+	       || pControlDevice->GetInterfaceSubClass () != 1);
 
 	m_DeviceInfo.IsOutput = m_bIsOutput;
 	m_DeviceInfo.NumChannels = m_nChannels;
@@ -663,36 +670,41 @@ boolean CUSBAudioStreamingDevice::Setup (unsigned nSampleRate)
 		return FALSE;
 	}
 
-	DMA_BUFFER (u32, tSampleFreq, 1);
-	tSampleFreq[0] = nSampleRate;
-	if (!m_bVer200)
+	// If the device supports only one discrete sample rate, we do not need to set it.
+	if (   m_DeviceInfo.SampleRateRanges != 1
+	    || m_DeviceInfo.SampleRateRange[0].Min != m_DeviceInfo.SampleRateRange[0].Max)
 	{
-		if (GetHost ()->ControlMessage (GetEndpoint0 (),
-						REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_ENDPOINT,
-						USB_AUDIO_REQ_SET_CUR,
-						USB_AUDIO_CS_SAM_FREQ_CONTROL << 8,
-						  m_pEndpointData->GetNumber ()
-						| (m_pEndpointData->IsDirectionIn () ? 0x80 : 0),
-						tSampleFreq, 3) < 0)
+		DMA_BUFFER (u32, tSampleFreq, 1);
+		tSampleFreq[0] = nSampleRate;
+		if (!m_bVer200)
 		{
-			LOGDBG ("Cannot set sample rate");
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+							REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_ENDPOINT,
+							USB_AUDIO_REQ_SET_CUR,
+							USB_AUDIO_CS_SAM_FREQ_CONTROL << 8,
+							  m_pEndpointData->GetNumber ()
+							| (m_pEndpointData->IsDirectionIn () ? 0x80 : 0),
+							tSampleFreq, 3) < 0)
+			{
+				LOGDBG ("Cannot set sample rate");
 
-			return FALSE;
+				return FALSE;
+			}
 		}
-	}
-	else
-	{
-		assert (m_uchClockSourceID != USB_AUDIO_UNDEFINED_UNIT_ID);
-		if (GetHost ()->ControlMessage (GetEndpoint0 (),
-						REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-						USB_AUDIO_REQ_SET_CUR,
-						USB_AUDIO_CS_SAM_FREQ_CONTROL << 8,
-						m_uchClockSourceID << 8,
-						tSampleFreq, 4) < 0)
+		else
 		{
-			LOGDBG ("Cannot set sample rate");
+			assert (m_uchClockSourceID != USB_AUDIO_UNDEFINED_UNIT_ID);
+			if (GetHost ()->ControlMessage (GetEndpoint0 (),
+							REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+							USB_AUDIO_REQ_SET_CUR,
+							USB_AUDIO_CS_SAM_FREQ_CONTROL << 8,
+							m_uchClockSourceID << 8,
+							tSampleFreq, 4) < 0)
+			{
+				LOGDBG ("Cannot set sample rate");
 
-			return FALSE;
+				return FALSE;
+			}
 		}
 	}
 
