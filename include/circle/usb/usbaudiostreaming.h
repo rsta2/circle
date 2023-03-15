@@ -142,6 +142,8 @@ private:
 	CUSBEndpoint *m_pEndpointData;
 	CUSBEndpoint *m_pEndpointSync;		// feedback EP
 
+	unsigned m_nDataIntervalFactor;
+
 	boolean m_bIsOutput;
 	unsigned m_nChannels;
 

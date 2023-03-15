@@ -297,13 +297,6 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 	}
 #endif
 
-	if (pEndpointDesc->bInterval != 1)			// TODO
-	{
-		LOGWARN ("Unsupported EP timing (%u)", (unsigned) pEndpointDesc->bInterval);
-
-		return FALSE;
-	}
-
 	if (!m_bVer200)
 	{
 		if (   pFormatTypeDesc->bFormatType           != USB_AUDIO_FORMAT_TYPE_I
@@ -370,6 +363,9 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 
 	m_pEndpointData = new CUSBEndpoint (GetDevice (), (TUSBEndpointDescriptor *) pEndpointDesc);
 	assert (m_pEndpointData != 0);
+
+	assert (pEndpointDesc->bInterval >= 1);
+	m_nDataIntervalFactor = 1 << (pEndpointDesc->bInterval-1);
 
 	if (!CUSBFunction::Configure ())
 	{
@@ -718,8 +714,8 @@ boolean CUSBAudioStreamingDevice::Setup (unsigned nSampleRate)
 	{
 		if (m_bIsOutput)
 		{
-			unsigned nUSBFrameRate =   GetDevice ()->GetSpeed () == USBSpeedFull
-						 ? 1000 : 8000;
+			unsigned nUSBFrameRate = (  GetDevice ()->GetSpeed () == USBSpeedFull
+						  ? 1000 : 8000) / m_nDataIntervalFactor;
 
 			m_nChunkSizeBytes =   nSampleRate * m_nChannels * m_nSubframeSize
 					    / nUSBFrameRate;
@@ -1071,6 +1067,7 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 			// Q10.14 format (FS)
 			pThis->m_nSyncAccu += pThis->m_SyncEPBuffer[0] & 0xFFFFFF;
 			pThis->m_nChunkSizeBytes =   (pThis->m_nSyncAccu >> 14)
+						   * pThis->m_nDataIntervalFactor
 						   * pThis->m_nChannels * pThis->m_nSubframeSize;
 			pThis->m_nSyncAccu &= 0x3FFF;
 		}
@@ -1079,6 +1076,7 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 			// Q16.16 format (HS)
 			pThis->m_nSyncAccu += pThis->m_SyncEPBuffer[0];
 			pThis->m_nChunkSizeBytes =   (pThis->m_nSyncAccu >> 16)
+						   * pThis->m_nDataIntervalFactor
 						   * pThis->m_nChannels * pThis->m_nSubframeSize;
 			pThis->m_nSyncAccu &= 0xFFFF;
 		}
@@ -1092,7 +1090,8 @@ void CUSBAudioStreamingDevice::UpdateChunkSize (void)
 	assert (m_bSynchronousSync);
 	assert (m_nSampleRate > 0);
 
-	unsigned nUSBFrameRate = GetDevice ()->GetSpeed () == USBSpeedFull ? 1000 : 8000;
+	unsigned nUSBFrameRate =   (GetDevice ()->GetSpeed () == USBSpeedFull ? 1000 : 8000)
+				 / m_nDataIntervalFactor;
 
 	m_SpinLock.Acquire ();
 

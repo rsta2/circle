@@ -2,7 +2,7 @@
 // xhciendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ CXHCIEndpoint::CXHCIEndpoint (CXHCIUSBDevice *pDevice, CXHCIDevice *pXHCIDevice)
 	m_uchEndpointType (XHCI_EP_CONTEXT_EP_TYPE_CONTROL),
 	m_pURB {0, 0},
 	m_bTransferCompleted (TRUE),
+	m_usLastIsoFrameIndex (0),
 	m_pInputContextBuffer (0)
 {
 	m_pTransferRing = new CXHCIRing (XHCIRingTypeTransfer,
@@ -360,7 +361,7 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 
 			if (!EnqueueTRB (  XHCI_TRB_TYPE_ISOCH << XHCI_TRB_CONTROL_TRB_TYPE__SHIFT
 					 | (i == nPackets-1 ? XHCI_TRANSFER_TRB_CONTROL_IOC : 0)
-					 | XHCI_TRANSFER_TRB_CONTROL_SIA,
+					 | GetIsoFrameID_SIA (i),
 					   usPacketSize
 					 | (nPackets-i-1) << XHCI_TRANSFER_TRB_STATUS_TD_SIZE__SHIFT,
 					 XHCI_TO_DMA_LO (pBuffer),
@@ -589,6 +590,31 @@ void CXHCIEndpoint::FreeInputContext (void)
 
 	delete [] m_pInputContextBuffer;
 	m_pInputContextBuffer = 0;
+}
+
+u32 CXHCIEndpoint::GetIsoFrameID_SIA (unsigned nIndex)
+{
+	static const u16 FrameIndexMask = 0x3FFF;
+
+	m_usLastIsoFrameIndex += 1 << m_uchInterval;
+	m_usLastIsoFrameIndex &= FrameIndexMask;
+
+	u16 usIST = m_pMMIO->cap_read32 (XHCI_REG_CAP_HCSPARAMS2) & XHCI_REG_CAP_HCSPARAMS2_IST__MASK;
+	usIST = usIST & (1 << 3) ? (usIST & 7) << 3 : usIST;
+
+	u16 usMFIndex = m_pMMIO->rt_read32 (XHCI_REG_RT_MFINDEX) & XHCI_REG_RT_MFINDEX_INDEX__MASK;
+
+	u16 usMinIndex = (usMFIndex + usIST + 1 + 7) & FrameIndexMask & ~7;
+	u16 usMaxIndex = (usMFIndex + (895 << 3)) & FrameIndexMask & ~7;
+
+	if (   (m_usLastIsoFrameIndex - usMinIndex) > FrameIndexMask
+	    || (usMaxIndex - m_usLastIsoFrameIndex) > FrameIndexMask)
+	{
+		m_usLastIsoFrameIndex = usMinIndex;
+	}
+
+	return !nIndex ? (m_usLastIsoFrameIndex >> 3) << XHCI_TRANSFER_TRB_CONTROL_FRAME_ID__SHIFT
+		       : XHCI_TRANSFER_TRB_CONTROL_SIA;
 }
 
 u8 CXHCIEndpoint::ConvertInterval (u8 uchInterval, TUSBSpeed Speed)
