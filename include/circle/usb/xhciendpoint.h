@@ -89,6 +89,7 @@ private:
 	CUSBRequest	*m_pURB[2];
 	volatile boolean m_bTransferCompleted;
 
+	boolean		 m_bIsoInSync;
 	u16		 m_usLastIsoFrameIndex;
 
 	u8		*m_pInputContextBuffer;

@@ -43,6 +43,7 @@ CXHCIEndpoint::CXHCIEndpoint (CXHCIUSBDevice *pDevice, CXHCIDevice *pXHCIDevice)
 	m_uchEndpointType (XHCI_EP_CONTEXT_EP_TYPE_CONTROL),
 	m_pURB {0, 0},
 	m_bTransferCompleted (TRUE),
+	m_bIsoInSync (FALSE),
 	m_usLastIsoFrameIndex (0),
 	m_pInputContextBuffer (0)
 {
@@ -421,11 +422,17 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 		pURB->SetResultLen (nBufLen - nTransferLength);
 
 		pURB->SetStatus (1);
+
+		m_bIsoInSync = TRUE;
 	}
 	else if (pURB->GetEndpoint ()->GetType () != EndpointTypeIsochronous)
 	{
 		CLogger::Get ()->Write (From, LogWarning, "Transfer error %u on endpoint %u",
 					(unsigned) uchCompletionCode, (unsigned) m_uchEndpointID);
+	}
+	else
+	{
+		m_bIsoInSync = FALSE;
 	}
 
 	m_SpinLock.Acquire ();
@@ -599,18 +606,23 @@ u32 CXHCIEndpoint::GetIsoFrameID_SIA (unsigned nIndex)
 	m_usLastIsoFrameIndex += 1 << m_uchInterval;
 	m_usLastIsoFrameIndex &= FrameIndexMask;
 
-	u16 usIST = m_pMMIO->cap_read32 (XHCI_REG_CAP_HCSPARAMS2) & XHCI_REG_CAP_HCSPARAMS2_IST__MASK;
-	usIST = usIST & (1 << 3) ? (usIST & 7) << 3 : usIST;
-
-	u16 usMFIndex = m_pMMIO->rt_read32 (XHCI_REG_RT_MFINDEX) & XHCI_REG_RT_MFINDEX_INDEX__MASK;
-
-	u16 usMinIndex = (usMFIndex + usIST + 1 + 7) & FrameIndexMask & ~7;
-	u16 usMaxIndex = (usMFIndex + (895 << 3)) & FrameIndexMask & ~7;
-
-	if (   (m_usLastIsoFrameIndex - usMinIndex) > FrameIndexMask
-	    || (usMaxIndex - m_usLastIsoFrameIndex) > FrameIndexMask)
+	if (!m_bIsoInSync)
 	{
-		m_usLastIsoFrameIndex = usMinIndex;
+		u16 usIST =   m_pMMIO->cap_read32 (XHCI_REG_CAP_HCSPARAMS2)
+			    & XHCI_REG_CAP_HCSPARAMS2_IST__MASK;
+		usIST = usIST & (1 << 3) ? (usIST & 7) << 3 : usIST;
+
+		u16 usMFIndex =   m_pMMIO->rt_read32 (XHCI_REG_RT_MFINDEX)
+				& XHCI_REG_RT_MFINDEX_INDEX__MASK;
+
+		u16 usMinIndex = (usMFIndex + usIST + 1 + 7) & FrameIndexMask & ~7;
+		u16 usMaxIndex = (usMFIndex + (895 << 3)) & FrameIndexMask & ~7;
+
+		if (   (u16) (m_usLastIsoFrameIndex - usMinIndex) > FrameIndexMask
+		    || (u16) (usMaxIndex - m_usLastIsoFrameIndex) > FrameIndexMask)
+		{
+			m_usLastIsoFrameIndex = usMinIndex;
+		}
 	}
 
 	return !nIndex ? (m_usLastIsoFrameIndex >> 3) << XHCI_TRANSFER_TRB_CONTROL_FRAME_ID__SHIFT
