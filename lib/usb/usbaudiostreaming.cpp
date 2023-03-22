@@ -1067,7 +1067,6 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 			// Q10.14 format (FS)
 			pThis->m_nSyncAccu += pThis->m_SyncEPBuffer[0] & 0xFFFFFF;
 			pThis->m_nChunkSizeBytes =   (pThis->m_nSyncAccu >> 14)
-						   * pThis->m_nDataIntervalFactor
 						   * pThis->m_nChannels * pThis->m_nSubframeSize;
 			pThis->m_nSyncAccu &= 0x3FFF;
 		}
@@ -1076,7 +1075,6 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 			// Q16.16 format (HS)
 			pThis->m_nSyncAccu += pThis->m_SyncEPBuffer[0];
 			pThis->m_nChunkSizeBytes =   (pThis->m_nSyncAccu >> 16)
-						   * pThis->m_nDataIntervalFactor
 						   * pThis->m_nChannels * pThis->m_nSubframeSize;
 			pThis->m_nSyncAccu &= 0xFFFF;
 		}
