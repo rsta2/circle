@@ -2,7 +2,7 @@
 // xhciconfig.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,11 +47,13 @@
 #define XHCI_CONFIG_MAX_PORTS		5
 #endif
 
-#define XHCI_CONFIG_EVENT_RING_SIZE	64
+#define XHCI_CONFIG_EVENT_RING_SIZE	256
 #define XHCI_CONFIG_CMD_RING_SIZE	64
 #define XHCI_CONFIG_TRANSFER_RING_SIZE	64
 
 #define XHCI_CONFIG_IMODI		500		// defines maximum interrupt rate
+
+#define XHCI_CONFIG_MAX_EVENTS_PER_INTR	16		// max. events to be handled per interrupt
 
 #define XHCI_PAGE_SHIFT			12
 #define XHCI_PAGE_SIZE			(1 << XHCI_PAGE_SHIFT)
