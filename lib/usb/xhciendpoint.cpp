@@ -262,6 +262,18 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 	void *pBuffer = pURB->GetBuffer ();
 	u32 nBufLen = pURB->GetBufLen ();
 
+	m_SpinLock.Acquire ();
+	if (m_pURB[0] == 0)
+	{
+		m_pURB[0] = pURB;
+	}
+	else
+	{
+		assert (m_pURB[1] == 0);
+		m_pURB[1] = pURB;
+	}
+	m_SpinLock.Release ();
+
 	if (   (m_uchEndpointType & 3) == 2		// bulk EP
 	    || (m_uchEndpointType & 3) == 3)		// interrupt EP
 	{
@@ -277,7 +289,7 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 				 XHCI_TO_DMA_LO (pBuffer),
 				 XHCI_TO_DMA_HI (pBuffer)))
 		{
-			return FALSE;
+			goto EnqueueError;
 		}
 	}
 	else if (m_uchEndpointType == 4)		// control EP
@@ -318,7 +330,7 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 				 | (u32) pSetup->wValue << 16,
 				 pSetup->wIndex | (u32) pSetup->wLength << 16))
 		{
-			return FALSE;
+			goto EnqueueError;
 		}
 
 		// DATA stage
@@ -335,7 +347,7 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 					 XHCI_TO_DMA_LO (pBuffer),
 					 XHCI_TO_DMA_HI (pBuffer)))
 			{
-				return FALSE;
+				goto EnqueueError;
 			}
 		}
 
@@ -343,7 +355,7 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 		if (!EnqueueTRB (  XHCI_TRB_TYPE_STATUS_STAGE << XHCI_TRB_CONTROL_TRB_TYPE__SHIFT
 				 | nDirStatus | XHCI_TRANSFER_TRB_CONTROL_IOC))
 		{
-			return FALSE;
+			goto EnqueueError;
 		}
 	}
 	else
@@ -368,18 +380,12 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 					 XHCI_TO_DMA_LO (pBuffer),
 					 XHCI_TO_DMA_HI (pBuffer)))
 			{
-				return FALSE;
+				goto EnqueueError;
 			}
 
 			pBuffer = (u8 *) pBuffer + usPacketSize;
 		}
 	}
-
-	m_SpinLock.Acquire ();
-	assert (m_pURB[1] == 0);
-	m_pURB[1] = m_pURB[0];
-	m_pURB[0] = pURB;
-	m_SpinLock.Release ();
 
 	DataSyncBarrier ();
 
@@ -388,6 +394,20 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 	m_pMMIO->db_write32 (m_pDevice->GetSlotID (), XHCI_REG_DB_TARGET_EP0 + m_uchEndpointID-1);
 
 	return TRUE;
+
+EnqueueError:
+	m_SpinLock.Acquire ();
+	if (m_pURB[1] != 0)
+	{
+		m_pURB[1] = 0;
+	}
+	else
+	{
+		m_pURB[0] = 0;
+	}
+	m_SpinLock.Release ();
+
+	return FALSE;
 }
 
 void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
