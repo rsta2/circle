@@ -632,6 +632,12 @@ u32 CXHCIEndpoint::GetIsoFrameID_SIA (unsigned nIndex)
 			    & XHCI_REG_CAP_HCSPARAMS2_IST__MASK;
 		usIST = usIST & (1 << 3) ? (usIST & 7) << 3 : usIST;
 
+		// To prevent babble errors, we advance by another frame for full speed devices.
+		if (m_pDevice->GetSpeed () <= USBSpeedFull)
+		{
+			usIST += 8;
+		}
+
 		u16 usMFIndex =   m_pMMIO->rt_read32 (XHCI_REG_RT_MFINDEX)
 				& XHCI_REG_RT_MFINDEX_INDEX__MASK;
 
