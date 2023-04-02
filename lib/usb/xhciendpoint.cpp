@@ -424,6 +424,8 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 	CUSBRequest *pURB = m_pURB[0];
 	if (!pURB)
 	{
+		m_bIsoInSync = FALSE;
+
 		return;
 	}
 
