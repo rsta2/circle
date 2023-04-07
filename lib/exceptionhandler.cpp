@@ -2,7 +2,7 @@
 // exceptionhandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ CExceptionHandler::CExceptionHandler (void)
 	s_pThis = this;
 
 #ifndef USE_RPI_STUB_AT
-	TExceptionTable *pTable = (TExceptionTable *) ARM_EXCEPTION_TABLE_BASE;
+	TExceptionTable * volatile pTable = (TExceptionTable * volatile) ARM_EXCEPTION_TABLE_BASE;
 
 	pTable->UndefinedInstruction = ARM_OPCODE_BRANCH (ARM_DISTANCE (
 					pTable->UndefinedInstruction, UndefinedInstructionStub));

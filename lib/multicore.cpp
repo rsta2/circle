@@ -6,7 +6,7 @@
 //	Licensed under GPL2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ boolean CMultiCoreSupport::Initialize (void)
 
 		DataSyncBarrier ();
 #else
-		TSpinTable *pSpinTable = (TSpinTable *) ARM_SPIN_TABLE_BASE;
+		TSpinTable * volatile pSpinTable = (TSpinTable * volatile) ARM_SPIN_TABLE_BASE;
 #endif
 
 		unsigned nTimeout = 100;
@@ -223,7 +223,7 @@ void CMultiCoreSupport::EntrySecondary (void)
 #if AARCH == 32
 	write32 (ARM_LOCAL_MAILBOX3_CLR0 + 0x10 * nCore, 0);
 #else
-	TSpinTable *pSpinTable = (TSpinTable *) ARM_SPIN_TABLE_BASE;
+	TSpinTable * volatile pSpinTable = (TSpinTable * volatile) ARM_SPIN_TABLE_BASE;
 	pSpinTable->SpinCore[nCore] = 0;
 	DataSyncBarrier ();
 #endif
