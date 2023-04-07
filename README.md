@@ -195,11 +195,11 @@ By default only the latest sample (with the highest number) is build. The ready 
 Installation
 ------------
 
-Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the *kernel.img* (from sample/ subdirectory) to a SD(HC) card with FAT file system. Put the SD(HC) card into the Raspberry Pi.
+Copy the Raspberry Pi firmware (from boot/ directory, do *make* there to get them) files along with the *kernel\*.img* (from sample/ subdirectory) to a SD(HC) card with FAT file system.
 
-The *config32.txt* file, provided in the boot/ directory, is needed to enable FIQ use in 32-bit mode on the Raspberry Pi 4 and has to be copied to the SD card in this case (rename it to config.txt). Furthermore the additional file *armstub7-rpi4.bin* is required on the SD card then. Please see [boot/README](boot/README) for information on how to build this file.
+It is now always recommended to copy the file *config32.txt* (for 32-bit mode) or *config64.txt* (for 64-bit mode) from the boot/ directory to the SD(HC) card and to rename it to *config.txt* there. These files are especially required to enable FIQ use on the Raspberry Pi 4. Furthermore the additional file *armstub7-rpi4.bin* (for 32-bit mode) or *armstub8-rpi4.bin* (for 64-bit mode) is required on the SD card then. Please see [boot/README](boot/README) for information on how to build these files.
 
-The *config64.txt* file, provided in the boot/ directory, is needed to enable 64-bit mode and has to be copied to the SD card in this case (rename it to config.txt). FIQ support for AArch64 on the Raspberry Pi 4 requires an additional file *armstub8-rpi4.bin* on the SD card. Please see [boot/README](boot/README) for information on how to build this file.
+Finally put the SD(HC) card into the Raspberry Pi.
 
 Directories
 -----------
