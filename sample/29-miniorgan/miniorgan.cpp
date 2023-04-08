@@ -250,6 +250,7 @@ void CMiniOrgan::Process (boolean bPlugAndPlayUpdated)
 
 unsigned CMiniOrgan::GetChunk (s16 *pBuffer, unsigned nChunkSize)
 {
+	unsigned nChannels = GetHWTXChannels ();
 	unsigned nResult = nChunkSize;
 
 	// reset sample counter if key has changed
@@ -267,7 +268,7 @@ unsigned CMiniOrgan::GetChunk (s16 *pBuffer, unsigned nChunkSize)
 		nSampleDelay = (SAMPLE_RATE/2 + m_nFrequency/2) / m_nFrequency;
 	}
 
-	for (; nChunkSize > 0; nChunkSize -= 2)		// fill the whole buffer
+	for (; nChunkSize > 0; nChunkSize -= nChannels)		// fill the whole buffer
 	{
 		s16 nSample = (s16) m_nNullLevel;
 
@@ -291,8 +292,10 @@ unsigned CMiniOrgan::GetChunk (s16 *pBuffer, unsigned nChunkSize)
 			nSample = (s16) m_nCurrentLevel;
 		}
 
-		*pBuffer++ = nSample;		// 2 stereo channels
-		*pBuffer++ = nSample;
+		for (unsigned i = 0; i < nChannels; i++)
+		{
+			*pBuffer++ = nSample;
+		}
 	}
 
 	return nResult;
@@ -302,6 +305,7 @@ unsigned CMiniOrgan::GetChunk (s16 *pBuffer, unsigned nChunkSize)
 
 unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 {
+	unsigned nChannels = GetHWTXChannels ();
 	unsigned nResult = nChunkSize;
 
 	// reset sample counter if key has changed
@@ -322,7 +326,7 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 #ifdef USE_HDMI
 	unsigned nFrame = 0;
 #endif
-	for (; nChunkSize > 0; nChunkSize -= 2)		// fill the whole buffer
+	for (; nChunkSize > 0; nChunkSize -= nChannels)		// fill the whole buffer
 	{
 		u32 nSample = (u32) m_nNullLevel;
 
@@ -355,15 +359,15 @@ unsigned CMiniOrgan::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 		}
 #endif
 
+		for (unsigned i = 0; i < nChannels; i++)
+		{
 #ifdef USE_USB
-		*pBuffer = nSample;
-		pBuffer = (u32 *) ((u8 *) pBuffer + 3);
-		*pBuffer = nSample;
-		pBuffer = (u32 *) ((u8 *) pBuffer + 3);
+			*pBuffer = nSample;
+			pBuffer = (u32 *) ((u8 *) pBuffer + 3);
 #else
-		*pBuffer++ = nSample;		// 2 stereo channels
-		*pBuffer++ = nSample;
+			*pBuffer++ = nSample;
 #endif
+		}
 	}
 
 	return nResult;
