@@ -166,6 +166,16 @@ void CSoundBaseDevice::Setup (TSoundFormat HWFormat, u32 nRange32, unsigned nSam
 	}
 }
 
+unsigned CSoundBaseDevice::GetHWTXChannels (void) const
+{
+	return m_nHWTXChannels;
+}
+
+unsigned CSoundBaseDevice::GetHWRXChannels (void) const
+{
+	return m_nHWRXChannels;
+}
+
 int CSoundBaseDevice::GetRangeMin (void) const
 {
 	return m_nRangeMin;

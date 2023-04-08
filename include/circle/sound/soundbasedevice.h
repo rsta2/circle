@@ -91,6 +91,13 @@ public:
 		    unsigned nHWTXChannels, unsigned nHWRXChannels,
 		    boolean bSwapChannels);
 
+	/// \return Number of hardware output channels
+	/// \note Can be called on any core.
+	unsigned GetHWTXChannels (void) const;
+	/// \return Number of hardware input channels
+	/// \note Can be called on any core.
+	unsigned GetHWRXChannels (void) const;
+
 	/// \return Minium value of one sample
 	/// \note Can be called on any core.
 	virtual int GetRangeMin (void) const;
