@@ -1053,7 +1053,7 @@ void CUSBAudioStreamingDevice::SyncCompletionHandler (CUSBRequest *pURB, void *p
 	assert (pThis->m_bIsOutput);
 
 	assert (pURB);
-	boolean bOK = !!pURB->GetStatus ();
+	boolean bOK = !!pURB->GetStatus () && pURB->GetResultLength () >= 3;
 	boolean bFormat10_14 = bOK && pURB->GetResultLength () == 3;
 
 	delete pURB;
