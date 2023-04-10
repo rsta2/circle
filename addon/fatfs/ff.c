@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------/
-/  FatFs - Generic FAT Filesystem Module  R0.15 w/patch1                      /
+/  FatFs - Generic FAT Filesystem Module  R0.15 w/patch2                      /
 /-----------------------------------------------------------------------------/
 /
 / Copyright (C) 2022, ChaN, all right reserved.
@@ -472,10 +472,11 @@ static WORD Fsid;					/* Filesystem mount ID */
 static BYTE CurrVol;				/* Current drive set by f_chdrive() */
 #endif
 
-#if FF_FS_LOCK != 0
+#if FF_FS_LOCK
 static FILESEM Files[FF_FS_LOCK];	/* Open object lock semaphores */
 #if FF_FS_REENTRANT
-static BYTE SysLock;				/* System lock flag (0:no mutex, 1:unlocked, 2:locked) */
+static volatile BYTE SysLock;		/* System lock flag to protect Files[] (0:no mutex, 1:unlocked, 2:locked) */
+static volatile BYTE SysLockVolume;	/* Volume id who is locking Files[] */
 #endif
 #endif
 
@@ -909,6 +910,7 @@ static int lock_volume (	/* 1:Ok, 0:timeout */
 	if (rv && syslock) {			/* System lock reqiered? */
 		rv = ff_mutex_take(FF_VOLUMES);	/* Lock the system */
 		if (rv) {
+			SysLockVolume = fs->ldrv;
 			SysLock = 2;				/* System lock succeeded */
 		} else {
 			ff_mutex_give(fs->ldrv);	/* Failed system lock */
@@ -928,7 +930,7 @@ static void unlock_volume (
 {
 	if (fs && res != FR_NOT_ENABLED && res != FR_INVALID_DRIVE && res != FR_TIMEOUT) {
 #if FF_FS_LOCK
-		if (SysLock == 2) {	/* Is the system locked? */
+		if (SysLock == 2 && SysLockVolume == fs->ldrv) {	/* Unlock system if it has been locked by this task */
 			SysLock = 1;
 			ff_mutex_give(FF_VOLUMES);
 		}
