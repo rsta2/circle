@@ -625,6 +625,11 @@ u32 CXHCIEndpoint::GetIsoFrameID_SIA (unsigned nIndex)
 {
 	static const u16 FrameIndexMask = 0x3FFF;
 
+	if ((m_uchAttributes & 0x30) == 0x10)		// Feedback endpoint?
+	{
+		return XHCI_TRANSFER_TRB_CONTROL_SIA;
+	}
+
 	m_usLastIsoFrameIndex += 1 << m_uchInterval;
 	m_usLastIsoFrameIndex &= FrameIndexMask;
 
