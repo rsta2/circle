@@ -5,7 +5,7 @@
 //	Copyright (C) 2021  Stephane Damo
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -166,6 +166,10 @@ void CGraphicShape::Draw (C2DGraphics* renderer)
 			
 		case GRAPHICSHAPE_SPRITE_TRANSPARENTCOLOR:
 			renderer->DrawImageTransparent(m_nPosX, m_nPosY, 8, 8, spriteData, Black);
+			break;
+
+		case GRAPHICSHAPE_TEXT:
+			renderer->DrawText(m_nPosX, m_nPosY, m_Color, "Hello Circle!", C2DGraphics::AlignCenter);
 			break;
 	}
 	
