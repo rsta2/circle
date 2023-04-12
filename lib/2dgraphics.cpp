@@ -24,7 +24,6 @@
 #include <circle/screen.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/util.h>
-#include "font.h"
 
 C2DGraphics::C2DGraphics (unsigned nWidth, unsigned nHeight, boolean bVSync, unsigned nDisplay)
 : 	m_nWidth(nWidth),
