@@ -4,9 +4,9 @@
 
 CIRCLEHOME = ../../..
 
-OBJS	= myclass.o
+OBJS	= zxsmi.o
 
-libtempl.a: $(OBJS)
+libzxsmi.a: $(OBJS)
 	@echo "  AR    $@"
 	@rm -f $@
 	@$(AR) cr $@ $(OBJS)

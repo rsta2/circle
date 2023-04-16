@@ -6,11 +6,11 @@
 
 #include <circle/types.h>
 
-class CMyClass
+class CZxSmi
 {
 public:
-	CMyClass (void);
-	~CMyClass (void);
+	CZxSmi (void);
+	~CZxSmi (void);
 
 	// methods ...
 

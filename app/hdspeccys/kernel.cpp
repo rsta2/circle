@@ -11,6 +11,7 @@ CKernel::CKernel (void)
 	m_Logger (m_Options.GetLogLevel (), &m_Timer)
 	// TODO: add more member initializers here
 {
+	m_ActLED.Blink (5);	// show we are alive
 }
 
 CKernel::~CKernel (void)

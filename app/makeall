@@ -4,7 +4,7 @@ make="${MAKE:-make}"
 
 cd lib
 
-cd template
+cd zxsmi
 $make $1 $2 || exit
 cd ..
 
@@ -15,7 +15,7 @@ cd ..
 
 cd ..
 
-cd template
+cd hdspeccys
 $make $1 $2 || exit
 cd ..
 

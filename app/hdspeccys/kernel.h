@@ -14,7 +14,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/types.h>
-#include <template/myclass.h>
+#include <zxsmi/zxsmi.h>
 
 enum TShutdownMode
 {
@@ -46,7 +46,7 @@ private:
 	CLogger			m_Logger;
 
 	// TODO: add more members here
-	CMyClass		m_MyObject;
+	CZxSmi		m_ZxSmi;
 };
 
 #endif
