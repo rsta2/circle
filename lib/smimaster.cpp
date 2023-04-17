@@ -143,13 +143,23 @@
 #define CM_SMIDIV_DIVF_OFFS (4)
 
 
+// Tight loop wait for hardware
+#define BUSY_WAIT_WHILE_TIMEOUT(C,T,R) 			{int t = (T); while ((C) && t>0){t--;} (R)=t>0;}
 
 
-CSMIMaster::CSMIMaster(unsigned nSDLinesMask, boolean bUseAddressPins) :
+CSMIMaster::CSMIMaster(
+	unsigned nSDLinesMask, 
+	boolean bUseAddressPins, 
+	boolean bUseSeoSePin, 
+	boolean bUseSweSrwPin,
+	CInterruptSystem *pInterruptSystem
+) :
 	m_nSDLinesMask (nSDLinesMask),
 	m_bUseAddressPins (bUseAddressPins),
-	m_txDMA (DMA_CHANNEL_LITE /*DMA_CHANNEL_NORMAL*/),
-	m_pDMABuffer (0)
+	m_bUseSeoSePin (bUseSeoSePin),
+	m_bUseSweSrwPin (bUseSweSrwPin),
+	m_nLength(0),
+	m_bDMADirRead(FALSE)
 {
 	if (m_bUseAddressPins) {
 		for (unsigned i = 0 ; i < SMI_NUM_ADDRESS_LINES ; i++) {
@@ -162,6 +172,14 @@ CSMIMaster::CSMIMaster(unsigned nSDLinesMask, boolean bUseAddressPins) :
 			m_dataGpios[i].AssignPin(GPIO_FOR_SDx(i));
 			m_dataGpios[i].SetMode(GPIOModeAlternateFunction1);
 		}
+	}
+	if (m_bUseSeoSePin) {
+			m_SoeSeGpio.AssignPin(GPIO_FOR_SEO_SE);
+			m_SoeSeGpio.SetMode(GPIOModeAlternateFunction1);
+	}
+	if (m_bUseSweSrwPin) {
+			m_SweSrwGpio.AssignPin(GPIO_FOR_SWE_SRW);
+			m_SweSrwGpio.SetMode(GPIOModeAlternateFunction1);
 	}
 }
 
@@ -176,6 +194,12 @@ CSMIMaster::~CSMIMaster (void)
 		if (m_nSDLinesMask & (1 << i)) {
 			m_dataGpios[i].SetMode(GPIOModeInput);
 		}
+	}
+	if (m_bUseSeoSePin) {
+			m_SoeSeGpio.SetMode(GPIOModeInput);
+	}
+	if (m_bUseSweSrwPin) {
+			m_SweSrwGpio.SetMode(GPIOModeInput);
 	}
 	PeripheralEntry();
 	write32(ARM_SMI_CS, 0);
@@ -209,16 +233,20 @@ void CSMIMaster::Write (unsigned nValue) {
 	PeripheralExit();
 }
 
-
-void CSMIMaster::WriteDMA(boolean bWaitForCompletion)
+void CSMIMaster::StartDMA(CDMAChannel& dma, void *pDMABuffer)
 {
-	assert (m_pDMABuffer != 0);
-	m_txDMA.SetupIOWrite (ARM_SMI_D, m_pDMABuffer, m_nLength, DREQSourceSMI);
-	m_txDMA.Start();
+	assert (m_nLength > 0);
+	if (m_bDMADirRead) {
+		dma.SetupIORead (pDMABuffer, ARM_SMI_D, m_nLength, DREQSourceSMI);
+	} else {
+		dma.SetupIOWrite (ARM_SMI_D, pDMABuffer, m_nLength, DREQSourceSMI);
+	}
+	
+	dma.Start();
 	PeripheralEntry();
 	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START);
 	PeripheralExit();
-	if (bWaitForCompletion) m_txDMA.Wait();
+	// if (bWaitForCompletion) m_DMA.Wait();
 }
 
 void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned nSetup, unsigned nStrobe, unsigned nHold, unsigned nPace, unsigned nDevice)
@@ -291,17 +319,28 @@ void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned 
 	PeripheralExit ();
 }
 
-void CSMIMaster::SetupDMA(void *pDMABuffer, unsigned nLength)
+void CSMIMaster::SetupDMA(unsigned nLength, boolean bDMADirRead)
 {
-	assert (pDMABuffer != 0);
-	m_pDMABuffer = pDMABuffer;
+	// unsigned success = 0;
+
+	assert(nLength > 0);
 	m_nLength = nLength;
+	m_bDMADirRead = bDMADirRead;
 
 	PeripheralEntry ();
+
+	// Disabled before changing the DMA setup!
+	// write32(ARM_SMI_CS, read32(ARM_SMI_CS) & ~CS_ENABLE);
+	// BUSY_WAIT_WHILE_TIMEOUT((read32(ARM_SMI_CS) | CS_ENABLE) > 0, 10000U, success);
+
 	write32(ARM_SMI_DMC, (DMA_REQUEST_THRESH << DMC_REQW__SHIFT) | (DMA_REQUEST_THRESH << DMC_REQR__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICW__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICR__SHIFT) | DMC_DMAEN);
 	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_ENABLE | CS_CLEAR | CS_PXLDAT); // CS_PXLDAT packs the 8 or 16 bit data into 32-bit double-words
 	write32(ARM_SMI_L, nLength);
-	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_WRITE);
+	if (m_bDMADirRead) {
+		write32(ARM_SMI_CS, read32(ARM_SMI_CS) & ~CS_WRITE);
+	} else {
+		write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_WRITE);
+	}	
 	PeripheralExit ();
 }
 
