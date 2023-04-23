@@ -65,8 +65,6 @@ private:
 	TXHCIInputContext *GetInputContextConfigureEndpoint (void);
 	void FreeInputContext (void);
 
-	u32 GetIsoFrameID_SIA (unsigned nIndex);
-
 	static u8 ConvertInterval (u8 uchInterval, TUSBSpeed Speed);
 
 private:
@@ -88,9 +86,6 @@ private:
 
 	CUSBRequest	*m_pURB[2];
 	volatile boolean m_bTransferCompleted;
-
-	boolean		 m_bIsoInSync;
-	u16		 m_usLastIsoFrameIndex;
 
 	u8		*m_pInputContextBuffer;
 

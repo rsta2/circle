@@ -43,8 +43,6 @@ CXHCIEndpoint::CXHCIEndpoint (CXHCIUSBDevice *pDevice, CXHCIDevice *pXHCIDevice)
 	m_uchEndpointType (XHCI_EP_CONTEXT_EP_TYPE_CONTROL),
 	m_pURB {0, 0},
 	m_bTransferCompleted (TRUE),
-	m_bIsoInSync (FALSE),
-	m_usLastIsoFrameIndex (0),
 	m_pInputContextBuffer (0)
 {
 	m_pTransferRing = new CXHCIRing (XHCIRingTypeTransfer,
@@ -374,7 +372,7 @@ boolean CXHCIEndpoint::TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs)
 
 			if (!EnqueueTRB (  XHCI_TRB_TYPE_ISOCH << XHCI_TRB_CONTROL_TRB_TYPE__SHIFT
 					 | (i == nPackets-1 ? XHCI_TRANSFER_TRB_CONTROL_IOC : 0)
-					 | GetIsoFrameID_SIA (i),
+					 | XHCI_TRANSFER_TRB_CONTROL_SIA,
 					   usPacketSize
 					 | (nPackets-i-1) << XHCI_TRANSFER_TRB_STATUS_TD_SIZE__SHIFT,
 					 XHCI_TO_DMA_LO (pBuffer),
@@ -424,8 +422,6 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 	CUSBRequest *pURB = m_pURB[0];
 	if (!pURB)
 	{
-		m_bIsoInSync = FALSE;
-
 		return;
 	}
 
@@ -444,17 +440,11 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 		pURB->SetResultLen (nBufLen - nTransferLength);
 
 		pURB->SetStatus (1);
-
-		m_bIsoInSync = TRUE;
 	}
 	else if (pURB->GetEndpoint ()->GetType () != EndpointTypeIsochronous)
 	{
 		CLogger::Get ()->Write (From, LogWarning, "Transfer error %u on endpoint %u",
 					(unsigned) uchCompletionCode, (unsigned) m_uchEndpointID);
-	}
-	else
-	{
-		m_bIsoInSync = FALSE;
 	}
 
 	m_SpinLock.Acquire ();
@@ -619,47 +609,6 @@ void CXHCIEndpoint::FreeInputContext (void)
 
 	delete [] m_pInputContextBuffer;
 	m_pInputContextBuffer = 0;
-}
-
-u32 CXHCIEndpoint::GetIsoFrameID_SIA (unsigned nIndex)
-{
-	static const u16 FrameIndexMask = 0x3FFF;
-
-	if ((m_uchAttributes & 0x30) == 0x10)		// Feedback endpoint?
-	{
-		return XHCI_TRANSFER_TRB_CONTROL_SIA;
-	}
-
-	m_usLastIsoFrameIndex += 1 << m_uchInterval;
-	m_usLastIsoFrameIndex &= FrameIndexMask;
-
-	if (!m_bIsoInSync)
-	{
-		u16 usIST =   m_pMMIO->cap_read32 (XHCI_REG_CAP_HCSPARAMS2)
-			    & XHCI_REG_CAP_HCSPARAMS2_IST__MASK;
-		usIST = usIST & (1 << 3) ? (usIST & 7) << 3 : usIST;
-
-		// To prevent babble errors, we advance by another frame for full speed devices.
-		if (m_pDevice->GetSpeed () <= USBSpeedFull)
-		{
-			usIST += 8;
-		}
-
-		u16 usMFIndex =   m_pMMIO->rt_read32 (XHCI_REG_RT_MFINDEX)
-				& XHCI_REG_RT_MFINDEX_INDEX__MASK;
-
-		u16 usMinIndex = (usMFIndex + usIST + 1 + 7) & FrameIndexMask & ~7;
-		u16 usMaxIndex = (usMFIndex + (895 << 3)) & FrameIndexMask & ~7;
-
-		if (   (u16) (m_usLastIsoFrameIndex - usMinIndex) > FrameIndexMask
-		    || (u16) (usMaxIndex - m_usLastIsoFrameIndex) > FrameIndexMask)
-		{
-			m_usLastIsoFrameIndex = usMinIndex;
-		}
-	}
-
-	return !nIndex ? (m_usLastIsoFrameIndex >> 3) << XHCI_TRANSFER_TRB_CONTROL_FRAME_ID__SHIFT
-		       : XHCI_TRANSFER_TRB_CONTROL_SIA;
 }
 
 u8 CXHCIEndpoint::ConvertInterval (u8 uchInterval, TUSBSpeed Speed)
