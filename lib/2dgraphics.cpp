@@ -270,7 +270,7 @@ void C2DGraphics::DrawImageRect (unsigned nX, unsigned nY, unsigned nWidth, unsi
 	{
 		for(unsigned j=0; j<nWidth; j++)
 		{
-			m_Buffer[(nY + i) * m_nWidth + j + nX] = PixelBuffer[(nSourceY + i) * m_nWidth + j + nSourceX];
+			m_Buffer[(nY + i) * m_nWidth + j + nX] = PixelBuffer[(nSourceY + i) * nWidth + j + nSourceX];
 		}
 	}
 }
