@@ -341,25 +341,42 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		return FALSE;
 	}
 
+	// Workaround for Dirtywave M8 Tracker
+	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
+	assert (pDeviceDesc != 0);
 	if (   m_bIsOutput
-	    && (pEndpointDesc->bmAttributes & 0x0C) == 0x04)		// Asynchronous sync
+	    && pDeviceDesc->idVendor  == 0x16C0
+	    && pDeviceDesc->idProduct == 0x048A)
 	{
-		TUSBAudioEndpointDescriptor *pEndpointInDesc;
-		pEndpointInDesc = (TUSBAudioEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT);
-		if (   !pEndpointInDesc
-		    || (pEndpointInDesc->bmAttributes     & 0x3F) != 0x11  // Isochronous, Feedback
-		    || (pEndpointInDesc->bEndpointAddress & 0x80) != 0x80) // Input EP
-		{
-			LOGWARN ("Isochronous feedback input EP expected");
+		LOGDBG ("M8 detected, forcing synchronous");
 
-			return FALSE;
+		m_bSynchronousSync = TRUE;
+	}
+	else
+	{
+		if (   m_bIsOutput
+		    && (pEndpointDesc->bmAttributes & 0x0C) == 0x04)	// Asynchronous sync
+		{
+			TUSBAudioEndpointDescriptor *pEndpointInDesc;
+			pEndpointInDesc = (TUSBAudioEndpointDescriptor *)
+						GetDescriptor (DESCRIPTOR_ENDPOINT);
+			if (   !pEndpointInDesc
+			    || (pEndpointInDesc->bmAttributes     & 0x3F) != 0x11  // Isochronous, Feedback
+			    || (pEndpointInDesc->bEndpointAddress & 0x80) != 0x80) // Input EP
+			{
+				LOGWARN ("Isochronous feedback input EP expected");
+
+				return FALSE;
+			}
+
+			m_pEndpointSync =
+				new CUSBEndpoint (GetDevice (),
+						  (TUSBEndpointDescriptor *) pEndpointInDesc);
+			assert (m_pEndpointSync != 0);
 		}
 
-		m_pEndpointSync = new CUSBEndpoint (GetDevice (), (TUSBEndpointDescriptor *) pEndpointInDesc);
-		assert (m_pEndpointSync != 0);
+		m_bSynchronousSync = (pEndpointDesc->bmAttributes & 0x0C) == 0x0C;
 	}
-
-	m_bSynchronousSync = (pEndpointDesc->bmAttributes & 0x0C) == 0x0C;
 
 	m_pEndpointData = new CUSBEndpoint (GetDevice (), (TUSBEndpointDescriptor *) pEndpointDesc);
 	assert (m_pEndpointData != 0);
