@@ -441,6 +441,12 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 
 		pURB->SetStatus (1);
 	}
+	else if (   uchCompletionCode == XHCI_TRB_COMPLETION_CODE_RING_UNDERRUN
+		 || uchCompletionCode == XHCI_TRB_COMPLETION_CODE_RING_OVERRUN)
+	{
+		// these events are not URB related, so just ignore them
+		return;
+	}
 	else if (pURB->GetEndpoint ()->GetType () != EndpointTypeIsochronous)
 	{
 		CLogger::Get ()->Write (From, LogWarning, "Transfer error %u on endpoint %u",
