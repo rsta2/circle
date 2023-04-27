@@ -490,7 +490,15 @@ void CUSBSoundBaseDevice::RXCompletionRoutine (unsigned nBytesTransferred)
 		assert (nBytesTransferred % m_nSubframeSize == 0);
 		assert (nBytesTransferred <= m_nRXChunkSizeBytes * 2);
 
+#if RASPPI >= 4
+		// on the Raspberry Pi 4 we maintain two outstanding transfers,
+		// so m_nRXCurrentBuffer points to the buffer, which has been recently filled
+		unsigned nRXCurrentBuffer = m_nRXCurrentBuffer;
+#else
+		// on earlier models (if supported at all) there is only one
+		// outstanding transfer, so we have to access the other buffer here
 		unsigned nRXCurrentBuffer = m_nRXCurrentBuffer ^ 1;
+#endif
 		assert (nRXCurrentBuffer < 2);
 		assert (m_pRXBuffer[nRXCurrentBuffer]);
 
