@@ -1,1 +1,1 @@
-loglevel=4
+loglevel=4 logdev=ttyS1

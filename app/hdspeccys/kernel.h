@@ -4,6 +4,7 @@
 #ifndef _kernel_h
 #define _kernel_h
 
+#include <circle/startup.h>
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
@@ -14,7 +15,10 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/types.h>
+#include <shell/shell.h>
 #include <zxsmi/zxsmi.h>
+#include <zxscreen/zxscreen.h>
+
 
 enum TShutdownMode
 {
@@ -33,12 +37,14 @@ public:
 
 	TShutdownMode Run (void);
 
+	static void Reboot (void* pContext);
+
 private:
 	// do not change this order
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
-	CScreenDevice		m_Screen;
+	// CScreenDevice		m_Screen;
 	CSerialDevice		m_Serial;
 	CExceptionHandler	m_ExceptionHandler;
 	CInterruptSystem	m_Interrupt;
@@ -46,7 +52,9 @@ private:
 	CLogger			m_Logger;
 
 	// TODO: add more members here
-	CZxSmi		m_ZxSmi;
+	CShell			m_Shell;
+	CZxSmi			m_ZxSmi;
+	CZxScreen		m_ZxScreen;
 };
 
 #endif

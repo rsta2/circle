@@ -415,6 +415,7 @@ void CDMAChannel::InterruptHandler (void)
 {
 	if (m_nDestinationAddress != 0)
 	{
+		// HACK!!!! This seems to take a while (could do after restarting DMA)
 		CleanAndInvalidateDataCacheRange (m_nDestinationAddress, m_nBufferLength);
 	}
 

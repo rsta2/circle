@@ -278,20 +278,24 @@ function binary_encoder()
 // Send the reboot magic string
 async function sendRebootMagic()
 {   
-    // Open serial port
-    await openSerialPortAsync(userBaud);
+    try {
+        // Open serial port
+        await openSerialPortAsync(userBaud);
 
-    // Send it
-    stdout.write(`Sending reboot magic '${rebootMagic}'...`)
-    await writeSerialPortAsync(rebootMagic);
-    stdout.write(`ok\n`);
-
-    // Delay
-    if (rebootDelay)
-    {
-        stdout.write(`Delaying for ${rebootDelay}ms while rebooting...`);
-        await delay(rebootDelay);
+        // Send it
+        stdout.write(`Sending reboot magic '${rebootMagic}'...`)
+        await writeSerialPortAsync(rebootMagic);
         stdout.write(`ok\n`);
+
+        // Delay
+        if (rebootDelay)
+        {
+            stdout.write(`Delaying for ${rebootDelay}ms while rebooting...`);
+            await delay(rebootDelay);
+            stdout.write(`ok\n`);
+        }
+    } catch (e) {
+        stdout.write(`Could not open serial port for reboot.`);
     }
 }
 

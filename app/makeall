@@ -4,22 +4,34 @@ make="${MAKE:-make}"
 
 cd lib
 
-cd zxsmi
-$make $1 $2 || exit
-cd ..
-
 # TODO: Add new libs here
 #cd subdir
 #$make $1 $2 || exit
 #cd ..
 
-cd ..
-
-cd hdspeccys
+cd zxutil
 $make $1 $2 || exit
 cd ..
 
+cd shell
+$make $1 $2 || exit
+cd ..
+
+cd zxsmi
+$make $1 $2 || exit
+cd ..
+
+cd zxscreen
+$make $1 $2 || exit
+cd ..
+
+
+cd ..
 # TODO: Add new apps here
 #cd subdir
 #$make $1 $2 || exit
 #cd ..
+
+cd hdspeccys
+$make $1 $2 || exit
+cd ..
