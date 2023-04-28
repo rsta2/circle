@@ -5,25 +5,30 @@
 
 LOGMODULE ("kernel");
 
+
 static volatile boolean bRunning = FALSE;
 static volatile boolean bReboot = FALSE;
-
+static CKernel *pKernel = 0;
 
 
 CKernel::CKernel (void)
 :	// m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	// m_Serial (&m_Interrupt),
 	m_Timer (&m_Interrupt),	
-	m_Logger (m_Options.GetLogLevel (), &m_Timer),	
+	m_Logger (m_Options.GetLogLevel(), &m_Timer),	
 	// TODO: add more member initializers here
 	m_Shell (&m_Serial),
 	m_ZxSmi(&m_Interrupt),
 	// m_ZxScreen(m_Options.GetWidth (), m_Options.GetHeight (), FALSE, 0, &m_Interrupt)
 	// 320x256 (32 + 256 + 32 x 32 + 192 + 32) - border is 1/3rd screen (this is about right for original speccy)
-	m_ZxScreen(320, 256, FALSE, 0, &m_Interrupt)
+	m_ZxScreen(320, 256, 0, &m_Interrupt)
+	// m_ZxScreen(320*4, 256*4, 0, &m_Interrupt)
+	//  m_ZxScreen (m_Options.GetWidth (), m_Options.GetHeight (), 0, &m_Interrupt)
 {
 	bRunning = TRUE;
 	bReboot = TRUE;
+
+	pKernel = this;
 
 
 	// m_ActLED.Blink (5);	// show we are alive	
@@ -45,7 +50,7 @@ boolean CKernel::Initialize (void)
 	if (bOK)
 	{
 		bOK = m_ZxScreen.Initialize ();
-		m_ZxSmi.SetActLED(&m_ActLED);
+		m_ZxScreen.SetActLED(&m_ActLED);
 	}
 
 	if (bOK)
@@ -103,6 +108,9 @@ TShutdownMode CKernel::Run (void)
 
 	m_ZxScreen.Start();
 
+	// Set up callback on the timer 100Hz interrupt
+	// m_Timer.RegisterPeriodicHandler(PeriodicTimer100Hz);
+
 	// TScreenStatus screenStatus = m_Screen.GetStatus();
 	// screenStatus.BackgroundColor = BLUE_COLOR;
 	// m_Screen.SetStatus(screenStatus);
@@ -117,20 +125,21 @@ TShutdownMode CKernel::Run (void)
 	// }
 	// x = 0;
 	// y = 0;
-	boolean clear = FALSE;
+	boolean clear = TRUE;
 
 	while (bRunning) {				 
 		// m_ZxSmi.Start();
 		ZX_DMA_T value = m_ZxSmi.GetValue();
 		// LOGDBG("DATA: %04lx", value);
-		// m_Timer.MsDelay(500);
+		m_Timer.MsDelay(500);
+		// m_Timer.MsDelay(5);
 
 		// Read the shell (serial port)
 		m_Shell.Update();
 
 		// m_Screen.SetPixel(x++,y++, RED_COLOR);
 		value = value & 0x7;
-		TScreenColor bc = BLACK_COLOR;
+		TScreenColor bc = clear ? MAGENTA_COLOR : GREEN_COLOR; //BLACK_COLOR;
 		if (value == 1) bc = BLUE_COLOR;
 		if (value == 2) bc = RED_COLOR;
 		if (value == 3) bc = MAGENTA_COLOR;
@@ -140,7 +149,9 @@ TShutdownMode CKernel::Run (void)
 		if (value == 7) bc = WHITE_COLOR;
 
 		m_ZxScreen.SetBorder(bc);
-		m_ZxScreen.SetScreen(clear);
+		m_ZxScreen.SetScreen(TRUE);
+
+		// m_ZxScreen.UpdateScreen();
 
 		clear = !clear;
 
@@ -148,12 +159,24 @@ TShutdownMode CKernel::Run (void)
 		// for (y = 0; y < m_ZxScreen.GetHeight(); y++) {
 		// 	m_Screen.SetPixel(x,y, bc);
 		// }
-		// }
+		// }		
 	}
 
 	LOGNOTE("SHUTDOWN");
 
 	return bReboot ? ShutdownReboot : ShutdownHalt;
+}
+
+// Called once every 10ms
+void CKernel::AnimationFrame ()
+{
+	 m_ZxScreen.UpdateScreen();
+}
+
+// Don't do this here as it takes up way too much time in the IRQ. 
+// Instead use a task that sleeps and wakes
+void CKernel::PeriodicTimer100Hz() {
+	pKernel->AnimationFrame();
 }
 
 void CKernel::Reboot (void* pContext)

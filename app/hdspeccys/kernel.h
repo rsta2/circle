@@ -37,6 +37,12 @@ public:
 
 	TShutdownMode Run (void);
 
+
+private:
+	void AnimationFrame (void);
+
+	// Callbacks
+	static void PeriodicTimer100Hz (void);
 	static void Reboot (void* pContext);
 
 private:

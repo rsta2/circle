@@ -1,5 +1,20 @@
 {
+  "editor.tabSize": 8,
+  "editor.rulers": [120],
+  "editor.wordWrapColumn": 120,
+  "editor.insertSpaces": false,
   "files.associations": {
-    "kernel.h": "c"
+    "kernel.h": "c",
+    "startup.h": "c",
+    "zxscreen.h": "c",
+    "*.tcc": "c",
+    "optional": "cpp",
+    "ostream": "cpp",
+    "system_error": "cpp",
+    "array": "cpp",
+    "functional": "cpp",
+    "tuple": "cpp",
+    "type_traits": "cpp",
+    "utility": "cpp"
   }
 }

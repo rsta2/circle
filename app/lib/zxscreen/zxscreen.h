@@ -8,6 +8,7 @@
 #include <circle/types.h>
 #include <circle/interrupt.h>
 #include <circle/bcmframebuffer.h>
+#include <circle/dmachannel.h>
 #include <circle/logger.h>
 #include <circle/util.h>
 #include <zxutil/zxutil.h>	// For rand_32();
@@ -16,9 +17,11 @@
 #define DEPTH	16		// can be: 8, 16 or 32
 #endif
 
-
 #define ZX_SCREEN_PIXEL_WIDTH	256
 #define ZX_SCREEN_PIXEL_HEIGHT	192
+
+#define ZX_SCREEN_DMA
+#define ZX_SCREEN_DMA_BURST_COUNT	0
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \
@@ -120,8 +123,7 @@
 class CZxScreen
 {
 public:
-	CZxScreen (unsigned nWidth, unsigned nHeight,
-		boolean bDoubleBuffer, unsigned nDisplay, CInterruptSystem *pInterruptSystem);
+	CZxScreen (unsigned nWidth, unsigned nHeight, unsigned nDisplay, CInterruptSystem *pInterruptSystem);
 	~CZxScreen (void);
 
 	// methods ...
@@ -140,7 +142,9 @@ public:
 	void SetBorder (TScreenColor borderColor);
 	void SetScreen (boolean bToggle);
 
+	void UpdateScreen(void);
 private:
+
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 
@@ -151,23 +155,31 @@ private:
 
 	unsigned	 m_nInitWidth;
 	unsigned	 m_nInitHeight;
-	boolean		m_bDoubleBuffer;
 	unsigned	 m_nDisplay;
-
-	TScreenColor  	*m_pBuffer;
-	TScreenColor  	*m_pOffscreenBuffer;
-	unsigned	 m_nSize;
 	unsigned	 m_nPitch;
+		
 	unsigned	 m_nWidth;
 	unsigned	 m_nHeight;
 	unsigned	 m_nBorderWidth;
 	unsigned	 m_nBorderHeight;
 	unsigned	 m_nScreenWidth;
 	unsigned	 m_nScreenHeight;
-	boolean		 m_bUpdated;
+	TScreenColor  	*m_pScreenBuffer;
+	TScreenColor  	*m_pOffscreenBuffer;
+	unsigned	 m_nScreenBufferSize;
+	unsigned	 m_nOffscreenBufferSize;
+	unsigned	 m_nPixelCount;
+	unsigned	 m_nScreenBufferNo;
+	boolean		 m_bDirty;
+
+#ifdef ZX_SCREEN_DMA
+	CDMAChannel	 m_DMA;
+#endif	
+	CSpinLock	 m_SpinLock;
 
 	volatile boolean m_bRunning;
 	CActLED *m_pActLED;
+
 
 	// // Temp
 	// volatile int m_bDMAResult;

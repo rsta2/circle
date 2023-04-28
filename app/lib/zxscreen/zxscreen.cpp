@@ -1,35 +1,48 @@
 //
 // zxscreen.cpp
 //
+// TODO
+// - I am not sure if it is faster to use the offscreen buffer and DMA, or just write 
+//   directly to the offscreen part of the frame buffer? (and then wouldn't need DMA)
+//   - need to test above
+//
+#include <circle/new.h>
 #include <zxscreen/zxscreen.h>
 
 
 LOGMODULE ("ZxScreen");
 
+#define SCREEN_BUFFER_COUNT 2
+#define SPINLOCK_LEVEL      IRQ_LEVEL /* TASK_LEVEL*/
+#define SPINLOCK_LEVEL      TASK_LEVEL
 
 //
 // Class
 //
 
-CZxScreen::CZxScreen (unsigned nWidth, unsigned nHeight,
-		                  boolean bDoubleBuffer, unsigned nDisplay, CInterruptSystem *pInterruptSystem)
+CZxScreen::CZxScreen (unsigned nWidth, unsigned nHeight, unsigned nDisplay, CInterruptSystem *pInterruptSystem)
 : m_pInterruptSystem (pInterruptSystem),
   m_pFrameBuffer (0),
   m_nInitWidth (nWidth),
 	m_nInitHeight (nHeight),  
-  m_bDoubleBuffer(FALSE),
 	m_nDisplay (nDisplay),	
-	m_pBuffer (0),	
-  m_pOffscreenBuffer (0),
-  m_nSize (0),
-	m_nPitch (0),
+  m_nPitch (0),
 	m_nWidth (0),
 	m_nHeight (0),
   m_nBorderWidth (0),
 	m_nBorderHeight (0),
   m_nScreenWidth (0),
 	m_nScreenHeight (0),
-	m_bUpdated (FALSE),
+  m_pScreenBuffer (0),	
+  m_pOffscreenBuffer (0),
+  m_nScreenBufferSize (0),
+  m_nOffscreenBufferSize (0),
+  m_nScreenBufferNo (0),
+	m_bDirty (FALSE),
+#ifdef ZX_SCREEN_DMA  
+  m_DMA(DMA_CHANNEL_NORMAL),
+#endif  
+  m_SpinLock(SPINLOCK_LEVEL),
   m_bRunning(FALSE),  
   m_pActLED(0)
   // m_bDMAResult(0),
@@ -42,7 +55,10 @@ CZxScreen::CZxScreen (unsigned nWidth, unsigned nHeight,
 
 CZxScreen::~CZxScreen (void)
 {
-  m_pBuffer = 0;
+  m_pScreenBuffer = 0;
+
+  delete m_pOffscreenBuffer;
+  m_pOffscreenBuffer = 0;
 	
 	delete m_pFrameBuffer;
 	m_pFrameBuffer = 0;
@@ -63,7 +79,7 @@ boolean CZxScreen::Initialize ()
 
   // Create the framebuffer
   m_pFrameBuffer = new CBcmFrameBuffer (m_nInitWidth, m_nInitHeight, DEPTH,
-						      0, 0, m_nDisplay, m_bDoubleBuffer);
+						      0, 0, m_nDisplay, TRUE);
 
   // Initialize the framebuffer
   if (!m_pFrameBuffer->Initialize ())
@@ -77,14 +93,18 @@ boolean CZxScreen::Initialize ()
     return FALSE;
   }
 
-  // Get pointer to actual buffer
-  m_pBuffer = (TScreenColor *) (uintptr) m_pFrameBuffer->GetBuffer ();
-
-  // Get screen / buffer size
-  m_nSize   = m_pFrameBuffer->GetSize ();
-  m_nPitch  = m_pFrameBuffer->GetPitch ();
+  // Get screen / buffer size   
   m_nWidth  = m_pFrameBuffer->GetWidth ();
   m_nHeight = m_pFrameBuffer->GetHeight ();
+  m_nPitch  = m_pFrameBuffer->GetPitch ();
+  m_nScreenBufferSize   = m_pFrameBuffer->GetSize (); 
+  m_nOffscreenBufferSize = m_nScreenBufferSize / 2;
+  m_nPixelCount = m_nOffscreenBufferSize / sizeof(TScreenColor);
+
+  // Sanity check pixel count
+  if (m_nPixelCount != m_nWidth * m_nHeight) {
+    return FALSE;
+  }
 
   // Ensure that each row is word-aligned so that we can safely use memcpyblk()
   if (m_nPitch % sizeof (u32) != 0)
@@ -93,9 +113,18 @@ boolean CZxScreen::Initialize ()
   }
   m_nPitch /= sizeof (TScreenColor);
 
+  // Get pointer to actual buffer - this buffer size varies depending on the colour depth
+  m_pScreenBuffer = (TScreenColor *) (uintptr) m_pFrameBuffer->GetBuffer ();
+
+  // Create an offscreen buffer that is half the actual screen buffer (which is double the size of the screen)
+  m_pOffscreenBuffer = (TScreenColor *) new u8[m_nOffscreenBufferSize];
 
   // Clear the screen
   Clear(WHITE_COLOR);
+
+
+  // HACK
+  // m_DMA.SetupMemCopy ((void *)m_pScreenBuffer, (void *)m_pOffscreenBuffer, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
 
 
   // PeripheralEntry ();
@@ -108,6 +137,9 @@ boolean CZxScreen::Initialize ()
 void CZxScreen::Start()
 {
   LOGDBG("Starting ZX SCREEN");
+  LOGDBG("Width: %dpx, Height: %dpx, Pitch: %d, PixelCount: %d, Screen buffer: %d bytes, Offscreen buffer: %d bytes",
+   m_nWidth, m_nHeight, m_nPitch, m_nPixelCount, m_nScreenBufferSize, m_nOffscreenBufferSize);
+
 
   // Set running flag
   m_bRunning = TRUE;
@@ -157,20 +189,23 @@ unsigned CZxScreen::GetHeight (void) const
 // }
 
 void CZxScreen::Clear (TScreenColor backgroundColor)
-{	
-	TScreenColor *pBuffer = m_pBuffer;
-	unsigned nSize = m_nSize / sizeof (TScreenColor);
+{
+	TScreenColor *pBuffer = m_pOffscreenBuffer;
+	unsigned nSize = m_nPixelCount;
 	
 	while (nSize--)
 	{
 		*pBuffer++ = backgroundColor;
 	}
+
+  // Mark dirty so will be updated
+  m_bDirty = TRUE;
 }
 
 void CZxScreen::SetBorder (TScreenColor borderColor)
 {	
-	TScreenColor *pBuffer = m_pBuffer;
-	unsigned nSize = m_nSize / sizeof (TScreenColor);
+	TScreenColor *pBuffer = m_pOffscreenBuffer;
+	unsigned nSize = m_nPixelCount;
   unsigned x = 0;
   unsigned y = 0;
 	
@@ -197,19 +232,22 @@ void CZxScreen::SetBorder (TScreenColor borderColor)
       }
     }
 	}
+
+  // Mark dirty so will be updated
+  m_bDirty = TRUE;
 }
 
 // TODO - double buffering, and then DMA
 void CZxScreen::SetScreen (boolean bToggle)
 {
-	TScreenColor *pBuffer = m_pBuffer;
-	unsigned nSize = m_nSize / sizeof (TScreenColor);
+	TScreenColor *pBuffer = m_pOffscreenBuffer;
+	unsigned nSize = m_nPixelCount;
   unsigned x = 0;
   unsigned y = 0;
   unsigned px = 0;
   unsigned py = 0;
   boolean bInScreen = FALSE;
-	
+
 	while (nSize--)
 	{
     px = x - m_nBorderWidth;
@@ -221,7 +259,6 @@ void CZxScreen::SetScreen (boolean bToggle)
     if (bInScreen) { 
       *pBuffer = bToggle ? rand_32() & 0xFFFF : WHITE_COLOR;
     }
-
 
     // Increment pixel pointer
     pBuffer++;
@@ -236,11 +273,49 @@ void CZxScreen::SetScreen (boolean bToggle)
       }
     }
 	}
+
+
+  // Mark dirty so will be updated
+  m_bDirty = TRUE;
 }
 
 //
 // Private
 //
+
+void CZxScreen::UpdateScreen() {
+  if (!m_bDirty) return;
+
+  TScreenColor *pScreenBuffer = m_pScreenBuffer;
+
+  if (m_nScreenBufferNo > 0) {
+    pScreenBuffer += m_nPixelCount;
+  } 
+
+
+  // Copy offscreen screen to framebuffer
+#ifdef ZX_SCREEN_DMA
+    // Have to ensure memory has been written out of the cache to memory before DMA'ing
+    CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer, m_nOffscreenBufferSize);
+
+    m_DMA.SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
+
+    m_DMA.Start ();
+    m_DMA.Wait ();
+#else    
+  memcpy(pScreenBuffer, m_pOffscreenBuffer, m_nOffscreenBufferSize);
+#endif  
+
+
+  // Move the virtual screen to the newly written screen
+  m_pFrameBuffer->SetVirtualOffset(0, m_nHeight * m_nScreenBufferNo);
+
+  // Increment so next update will update the other part of the framebuffer
+  m_nScreenBufferNo = (m_nScreenBufferNo + 1) % SCREEN_BUFFER_COUNT;
+
+  // Mark dirty so will be updated
+  m_bDirty = FALSE;
+}
 
 void CZxScreen::DMAStart()
 {
