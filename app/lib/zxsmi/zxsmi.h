@@ -8,7 +8,7 @@
 #include <circle/types.h>
 #include <circle/interrupt.h>
 #include <circle/logger.h>
-#include <zxsmimaster/smimaster.h>
+#include <circle/smimaster.h>
 
 // SMI Data and address lines
 // #define ZX_SMI_DATA_LINES_MASK		0b001111111111111111

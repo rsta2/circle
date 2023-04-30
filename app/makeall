@@ -13,14 +13,6 @@ cd zxutil
 $make $1 $2 || exit
 cd ..
 
-cd zxdma
-$make $1 $2 || exit
-cd ..
-
-cd zxsmimaster
-$make $1 $2 || exit
-cd ..
-
 cd shell
 $make $1 $2 || exit
 cd ..
