@@ -25,14 +25,6 @@
 #include <circle/synchronize.h>
 #include <circle/new.h>
 #include <assert.h>
-#include <circle/logger.h>
-
-// HACK for strcpy
-#include <circle/util.h>
-
-
-LOGMODULE ("DMA");
-
 
 #define DMA_CHANNELS			(DMA_CHANNEL_MAX + 1)
 
@@ -65,6 +57,12 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 	assert (m_nChannel != DMA_CHANNEL_NONE);
 	assert (m_nChannel < DMA_CHANNELS);
 
+	m_pControlBlockBuffer = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
+	assert (m_pControlBlockBuffer != 0);
+
+	m_pControlBlock = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer + 31) & ~31);
+	m_pControlBlock->nReserved[0] = 0;
+	m_pControlBlock->nReserved[1] = 0;
 
 	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nChannel));
 	CTimer::SimpleusDelay (1000);
@@ -123,6 +121,11 @@ CDMAChannel::~CDMAChannel (void)
 	}
 
 	CMachineInfo::Get ()->FreeDMAChannel (m_nChannel);
+
+	m_pControlBlock = 0;
+
+	delete [] m_pControlBlockBuffer;
+	m_pControlBlockBuffer = 0;
 }
 
 void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t nLength,
@@ -149,60 +152,14 @@ void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t 
 
 	m_pControlBlock->nTransferInformation     =   (nBurstLength << TI_BURST_LENGTH_SHIFT)
 						    | TI_SRC_WIDTH
-						//     | TI_SRC_INC
-						    | TI_DEST_WIDTH;
-						//     | TI_DEST_INC;
+						    | TI_SRC_INC
+						    | TI_DEST_WIDTH
+						    | TI_DEST_INC;
 	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pSource);
 	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDestination);
-	m_pControlBlock->nTransferLength          = nLength/2;
+	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
-
-
-	// Hack in the next control block
-	if (TRUE) {
-		u8 *pControlBlockBuffer = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
-		assert (pControlBlockBuffer != 0);
-
-		TDMAControlBlock *pControlBlock = (TDMAControlBlock *) (((uintptr) pControlBlockBuffer + 31) & ~31);
-		pControlBlock->nReserved[0] = 0;
-		pControlBlock->nReserved[1] = 0;
-		
-		// Prepare some dummy data
-		// unsigned dataLen = 1024 * 1024 * 100;  // 100MB!;
-		// char *pDataIn = new char[dataLen];
-		// char *pDataOut = new char[dataLen];
-		// strcpy(pDataIn, "HELLO WHIRLED!");
-		// CleanAndInvalidateDataCacheRange((uintptr)pDataIn, dataLen);	// Ensure data not cached
-
-		// Configure the control block to do a mem copy
-		pControlBlock->nTransferInformation     =   (0 << TI_BURST_LENGTH_SHIFT)
-							// | TI_SRC_WIDTH
-							// | TI_SRC_INC
-							// | TI_DEST_WIDTH
-							// | TI_DEST_INC
-							| TI_INTEN;	// HACKED IN
-		pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) &pSource);
-		pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) &m_pControlBlock->nDestinationAddress);
-		pControlBlock->nTransferLength          = 1;
-		pControlBlock->n2DModeStride            = 0;
-		pControlBlock->nNextControlBlockAddress = 0;
-
-		uintptr nSMIControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock);
-		uintptr nRestartControlBlockAddress = BUS_ADDRESS ((uintptr) pControlBlock);		
-		
-		LOGDBG("nSourceAddress: 0x%08lx", m_pControlBlock->nSourceAddress);
-		LOGDBG("nDestinationAddress: 0x%08lx", m_pControlBlock->nDestinationAddress);
-		LOGDBG("nSMIControlBlockAddress: 0x%08lx", nSMIControlBlockAddress );
-		LOGDBG("nRestartControlBlockAddress: 0x%08lx", nRestartControlBlockAddress );
-
-		m_pControlBlock->nNextControlBlockAddress = nRestartControlBlockAddress;
-		pControlBlock->nNextControlBlockAddress = nSMIControlBlockAddress;
-
-		CleanAndInvalidateDataCacheRange ((uintptr) pControlBlock, sizeof *pControlBlock); // Ensure cb not cached
-
-	}
-
 
 	if (bCached)
 	{
@@ -251,50 +208,6 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;
-
-	// Hack in the next control block
-	if (TRUE) {
-		u8 *pControlBlockBuffer = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
-		assert (pControlBlockBuffer != 0);
-
-		TDMAControlBlock *pControlBlock = (TDMAControlBlock *) (((uintptr) pControlBlockBuffer + 31) & ~31);
-		pControlBlock->nReserved[0] = 0;
-		pControlBlock->nReserved[1] = 0;
-		
-		// Prepare some dummy data
-		unsigned dataLen = 64;
-		char *pDataIn = new char[dataLen];
-		char *pDataOut = new char[dataLen];
-		strcpy(pDataIn, "HELLO WHIRLED!");
-		CleanAndInvalidateDataCacheRange((uintptr)pDataIn, dataLen);	// Ensure data not cached
-
-		// Configure the control block to do a mem copy
-		pControlBlock->nTransferInformation     =   (0 << TI_BURST_LENGTH_SHIFT)
-							| TI_SRC_WIDTH
-							| TI_SRC_INC
-							| TI_DEST_WIDTH
-							| TI_DEST_INC
-							| TI_INTEN;	// HACKED IN
-		pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pDataIn);
-		pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDataOut);
-		pControlBlock->nTransferLength          = 0; //dataLen;
-		pControlBlock->n2DModeStride            = 0;
-		pControlBlock->nNextControlBlockAddress = 0;
-
-		CleanAndInvalidateDataCacheRange ((uintptr) pControlBlock, sizeof *pControlBlock); // Ensure cb not cached
-
-		uintptr nSMIControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock);
-		uintptr nRestartControlBlockAddress = BUS_ADDRESS ((uintptr) pControlBlock);		
-		
-		LOGDBG("nSourceAddress: 0x%08lx", m_pControlBlock->nSourceAddress);
-		LOGDBG("nDestinationAddress: 0x%08lx", m_pControlBlock->nDestinationAddress);
-		LOGDBG("nSMIControlBlockAddress: 0x%08lx", nSMIControlBlockAddress );
-		LOGDBG("nRestartControlBlockAddress: 0x%08lx", nRestartControlBlockAddress );
-
-		m_pControlBlock->nNextControlBlockAddress = nRestartControlBlockAddress;
-		pControlBlock->nNextControlBlockAddress = nSMIControlBlockAddress;
-	}
-	
 
 	m_nDestinationAddress = (uintptr) pDestination;
 	m_nBufferLength = nLength;
@@ -373,7 +286,7 @@ void CDMAChannel::SetupMemCopy2D (void *pDestination, const void *pSource,
 						    | TI_SRC_INC
 						    | TI_DEST_WIDTH
 						    | TI_DEST_INC
-						    | TI_TDMODE;						    
+						    | TI_TDMODE;
 	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pSource);
 	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDestination);
 	m_pControlBlock->nTransferLength          =   ((nBlockCount-1) << TXFR_LEN_YLENGTH_SHIFT)
@@ -431,7 +344,7 @@ void CDMAChannel::Start (void)
 	{
 		assert (m_pInterruptSystem != 0);
 		assert (m_bIRQConnected);
-		// m_pControlBlock->nTransferInformation |= TI_INTEN;
+		m_pControlBlock->nTransferInformation |= TI_INTEN;
 	}
 
 	PeripheralEntry ();
@@ -461,7 +374,7 @@ boolean CDMAChannel::Wait (void)
 #endif
 
 	assert (m_nChannel < DMA_CHANNELS);
-	// assert (m_pCompletionRoutine == 0);
+	assert (m_pCompletionRoutine == 0);
 
 	PeripheralEntry ();
 
@@ -498,68 +411,10 @@ boolean CDMAChannel::GetStatus (void)
 	return m_bStatus;
 }
 
-ControlBlockInfo_t *CDMAChannel::CreateControlBlock(void) {
-	// Create new control block in DMA aligned memory
-	u8 *pControlBlockBuffer = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
-	assert (pControlBlockBuffer != 0);
-
-	TDMAControlBlock *pControlBlock = (TDMAControlBlock *) (((uintptr) pControlBlockBuffer + 31) & ~31);
-	pControlBlock->nReserved[0] = 0;
-	pControlBlock->nReserved[1] = 0;
-
-	// Create a new list node
-	ControlBlockInfo_t *pControlBlockInfo = new ControlBlockInfo_t();
-	pControlBlockInfo->pControlBlockBuffer = pControlBlockBuffer;
-	pControlBlockInfo->pControlBlock = pControlBlock;
-
-	// Insert new list node
-	if (m_pControlBlocks == 0) {
-		m_pControlBlocks = pControlBlockInfo;
-	} else {
-		ControlBlockInfo_t *pNode = m_pControlBlocks;
-		while (pNode->pNext) pNode = pNode->pNext;
-		
-		pNode->pNext = pControlBlockInfo;
-		pControlBlockInfo->pPrev = pNode;
-	}	
-
-	return pControlBlockInfo;
-}
-
-void CDMAChannel::FreeControlBlock(ControlBlockInfo_t *pControlBlockInfo) {
-	assert(pControlBlockInfo != 0);
-
-	// Remove from list
-	ControlBlockInfo_t *pPrev = pControlBlockInfo->pPrev;
-	ControlBlockInfo_t *pNext = pControlBlockInfo->pNext;
-	if (pPrev) pPrev->pNext = pNext;
-	if (pNext) pNext->pPrev = pPrev;
-
-	// Delete the actual control block
-	delete [] pControlBlockInfo->pControlBlockBuffer;
-
-	// Delete the control block info wrapper
-	delete pControlBlockInfo;
-}
-
-// TDMAControlBlock *CDMAChannel::InsertControlBlock(void) {
-// 	m_pControlBlocks = new ControlBlockInfo_t[1];
-// }
-
-// TDMAControlBlock *CDMAChannel::RemoveControlBlock(void) {
-// 	m_pControlBlocks = new ControlBlockInfo_t[1];
-// }
-
-// TDMAControlBlock *CDMAChannel::DControlBlock(void) {
-// 	m_pControlBlocks = new ControlBlockInfo_t[1];
-// }
-
-
 void CDMAChannel::InterruptHandler (void)
 {
 	if (m_nDestinationAddress != 0)
 	{
-		// HACK!!!! This seems to take a while (could do after restarting DMA)
 		CleanAndInvalidateDataCacheRange (m_nDestinationAddress, m_nBufferLength);
 	}
 
@@ -571,13 +426,12 @@ void CDMAChannel::InterruptHandler (void)
 	u32 nIntStatus = read32 (ARM_DMA_INT_STATUS);
 #endif
 	u32 nIntMask = 1 << m_nChannel;
-	// HACK assert (nIntStatus & nIntMask);
+	assert (nIntStatus & nIntMask);
 	write32 (ARM_DMA_INT_STATUS, nIntMask);
 
 	u32 nCS = read32 (ARM_DMACHAN_CS (m_nChannel));
-	// HACK assert (nCS & CS_INT);
-	// Have to disable this assert as the DMA could still be active
-// 	assert (!(nCS & CS_ACTIVE));
+	assert (nCS & CS_INT);
+	assert (!(nCS & CS_ACTIVE));
 	write32 (ARM_DMACHAN_CS (m_nChannel), CS_INT); 
 
 	PeripheralExit ();
@@ -585,8 +439,7 @@ void CDMAChannel::InterruptHandler (void)
 	m_bStatus = nCS & CS_ERROR ? FALSE : TRUE;
 
 	assert (m_pCompletionRoutine != 0);
-	// (*m_pCompletionRoutine) (m_nChannel, m_bStatus, m_pCompletionParam);
-	(*m_pCompletionRoutine) (nCS, m_bStatus, m_pCompletionParam);
+	(*m_pCompletionRoutine) (m_nChannel, m_bStatus, m_pCompletionParam);
 }
 
 void CDMAChannel::InterruptStub (void *pParam)

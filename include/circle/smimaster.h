@@ -23,7 +23,6 @@
 #ifndef _circle_smimaster_h
 #define _circle_smimaster_h
 
-#include <circle/interrupt.h>
 #include <circle/dmachannel.h>
 #include <circle/gpiopin.h>
 
@@ -33,8 +32,6 @@
 
 #define GPIO_FOR_SAx(line) (5 - line) // SA0 is on GPIO0, SA1 on GPIO4, etc until SA0 on GPIO5
 #define GPIO_FOR_SDx(line) (line + 8) // SD0 is on GPIO8, SD1 on GPIO9, etc until SD17 on GPIO25
-#define GPIO_FOR_SEO_SE		 6 // SEO/SW
-#define GPIO_FOR_SWE_SRW	 7 // SWE/SRW
 
 enum TSMIDataWidth
 {
@@ -65,16 +62,7 @@ class CSMIMaster
 public:
 	/// \param nSDLinesMask		mask determining which SDx lines should be driven. For example (1 << 0) | (1 << 5) for SD0 (GPIO8) and SD5 (GPIO13)
 	/// \param bUseAddressPins	enable use of address pins GPIO0 to GPIO5
-	/// \param bUseSeoSePin	enable use of SEO / SE PIN (GPIO6)
-	/// \param bUseSweSrwPin	enable use of SWE / SRW PIN (GPIO7 / SPI0_CE1)
-	/// \param pInterruptSystem Pointer to the interrupt system object\n
-	///	   (or 0, if SetCompletionRoutine() is not used)
-	CSMIMaster (
-		unsigned nSDLinesMask = SMI_ALL_DATA_LINES_MASK, 
-		boolean bUseAddressPins = TRUE, 
-		boolean bUseSeoSePin = TRUE, 
-		boolean bUseSweSrwPin = TRUE,
-		CInterruptSystem *pInterruptSystem = 0);
+	CSMIMaster (unsigned nSDLinesMask = SMI_ALL_DATA_LINES_MASK, boolean bUseAddressPins = TRUE);
 
 	~CSMIMaster (void);
 
@@ -91,10 +79,10 @@ public:
 	/// \param nDevice		the settings bank to use between 0 and 3
 	void SetupTiming (TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned nSetup, unsigned nStrobe, unsigned nHold, unsigned nPace, unsigned nDevice = 0);
 
-	/// \brief Sets up DMA for (potentially multiple) SMI cycles at the specified length and direction
+	/// \brief Sets up DMA for (potentially multiple) SMI cycles of data from the given buffer
+	/// \param pDMABuffer	the buffer (make sure it's DMA-aligned)
 	/// \param nLength		length of the buffer in bytes
-	/// \param nLength		bDMADirRead direction of the DMA transfer
-	void SetupDMA (unsigned nLength, boolean bDMADirRead = TRUE);
+	void SetupDMA (void *pDMABuffer, unsigned nLength);
 
 	/// \brief Defines the device and address to use for the next Read/Write operation
 	/// \param nDevice	the settings bank to use between 0 and 3
@@ -108,23 +96,18 @@ public:
 	/// \param nValue	the value to be written to the enabled SDx lines
 	void Write (unsigned nValue);
 
-	/// \brief Triggers the DMA transfer with the direction and length specified in SetupDMA
-	/// \param dma	DMA channel to use
-	/// \param pDMABuffer	DMA buffer to write (64-bit word aligned, see /doc/dma-buffer-requirements.txt)
-	void StartDMA (CDMAChannel& dma, void *pDMABuffer);
+	/// \brief Triggers the DMA transfer of a few cycles with the buffer/length specified in SetupDMA
+	/// \param bWaitForCompletion	Whether to wait for DMA completion
+	void WriteDMA (boolean bWaitForCompletion);
 
-	void HackDMA(void);
 protected:
 	unsigned m_nSDLinesMask;
 	boolean m_bUseAddressPins;
-	boolean m_bUseSeoSePin;
-	boolean m_bUseSweSrwPin;
+	CDMAChannel m_txDMA;
 	CGPIOPin m_dataGpios[SMI_NUM_DATA_LINES];
 	CGPIOPin m_addressGpios[SMI_NUM_ADDRESS_LINES];
-	CGPIOPin m_SoeSeGpio;
-	CGPIOPin m_SweSrwGpio;	
+	void *m_pDMABuffer;
 	unsigned m_nLength;
-	boolean m_bDMADirRead;
 };
 
 #endif
