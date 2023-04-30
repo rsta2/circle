@@ -2,6 +2,8 @@
 // zxsmi.cpp
 //
 #include <zxsmi/zxsmi.h>
+#include <circle/util.h>
+
 
 
 LOGMODULE ("ZxSmi");
@@ -14,7 +16,6 @@ CZxSmi::CZxSmi (CInterruptSystem *pInterruptSystem)
 : m_pInterruptSystem (pInterruptSystem),
   m_SMIMaster (ZX_SMI_DATA_LINES_MASK, ZX_SMI_USE_ADDRESS_LINES, ZX_SMI_USE_SOE_SE, ZX_SMI_USE_SWE_SRW, pInterruptSystem),
   m_DMA (ZX_DMA_CHANNEL_TYPE, m_pInterruptSystem),
-  // m_DMA_2 (ZX_DMA_CHANNEL_TYPE, m_pInterruptSystem),
 	m_pDMABuffer(0),
 	m_DMABufferIdx(0),
   m_bRunning(FALSE),  
@@ -23,7 +24,8 @@ CZxSmi::CZxSmi (CInterruptSystem *pInterruptSystem)
   m_counter(0),
   m_value(0),
   m_isIOWrite(0),
-  m_counter2(0)
+  m_counter2(0),
+  m_src(0)
 {
   
 }
@@ -90,17 +92,26 @@ void CZxSmi::Start()
   // Set initial DMA buffer
   m_pDMABuffer = m_pDMABuffers[m_DMABufferIdx];
 
-  // Set DMA completion routine
+  // Set DMA completion routines
   m_DMA.SetCompletionRoutine(DMACompleteInterrupt, this);
-  // m_DMA_2.SetCompletionRoutine(DMACompleteInterrupt, this);
   
   DMAStart();  
+
+  // m_DMA.Wait();
 
   // if (m_pActLED != nullptr) {
   //   m_pActLED->On();
   // }
 
+  
+
+  // DMAStart();  
+
   // m_DMA.Wait();
+
+  // if (m_pActLED != nullptr) {
+  //   m_pActLED->Off();
+  // }
 }
 
 void CZxSmi::Stop()
@@ -128,7 +139,22 @@ void CZxSmi::DMAStart()
 {
   // CDMAChannel dma = m_DMABufferIdx == 0 ? m_DMA : m_DMA_2;
 
-  m_SMIMaster.StartDMA(m_DMA, m_pDMABuffer);  
+  // Configure the DMARestart_1 channel to do something
+  
+  // // Prepare some dummy data
+  unsigned dataLen = 1024 * 1024 * 100;  // 100MB!
+  char *pDataIn = new char[dataLen];
+  char *pDataOut = new char[dataLen];
+  strcpy(pDataIn, "HELLO WHIRLED!");
+  CleanAndInvalidateDataCacheRange((uintptr)pDataIn, dataLen);
+
+  m_DMA.SetupMemCopy(pDataOut, pDataIn, dataLen);
+
+  m_DMA.Start();
+
+  // m_DMARestart_1.Prepare();
+
+  // m_SMIMaster.StartDMA(m_DMA, m_pDMABuffer);  
 
   // if (m_pActLED != nullptr) {
   //   m_pActLED->On();
@@ -143,6 +169,8 @@ void CZxSmi::DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pPar
   CZxSmi *pThis = (CZxSmi *) pParam;
 	assert (pThis != 0);
 
+  // pThis->m_pActLED->On();
+
   // if (pThis->m_pActLED != nullptr) {
   //   pThis->m_pActLED->Off();
   // }
@@ -150,85 +178,115 @@ void CZxSmi::DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pPar
   // Return early if stopped
   if (!pThis->m_bRunning) return;
 
-  // CDMAChannel dma = pThis->m_DMABufferIdx == 0 ? pThis->m_DMA : pThis->m_DMA_2;
+  // // CDMAChannel dma = pThis->m_DMABufferIdx == 0 ? pThis->m_DMA : pThis->m_DMA_2;
 
-  // Save pointer to buffer just filled by DMA
-  ZX_DMA_T *pBuffer = pThis->m_pDMABuffer;
+  // // Save pointer to buffer just filled by DMA
+  // ZX_DMA_T *pBuffer = pThis->m_pDMABuffer;
 
-  // Move to the next DMA buffer
-  pThis->m_DMABufferIdx = (pThis->m_DMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
-  pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_DMABufferIdx];
+  // // Move to the next DMA buffer
+  // pThis->m_DMABufferIdx = (pThis->m_DMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+  // pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_DMABufferIdx];
 
   // (Re-)Start the DMA
-  pThis->DMAStart();
+  // pThis->DMAStart();
+  // pThis->m_SMIMaster.HackDMA();
+  // pThis->m_DMA.Start();
+
+  // // Process the buffer (TODO - this should happen in a bottom half)
+  // // boolean have1 = FALSE;
+  // // for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {    
+  // //   if (pBuffer[i] > 0) {
+  // //     have1 = TRUE;
+  // //   }
+  // // }
+
+  // // if (have1) {
+  // //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
+  // // }
+
+  // // if (pThis->m_bDMAResult) {
+  // //   pThis->m_pActLED->On();
+  // // } else {
+  // //   pThis->m_pActLED->Off();
+  // // }
+
+  // for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
+  //   ZX_DMA_T value = pBuffer[i];
+  //   if (value > 0) {
+  //     pThis->m_counter++;
+
+  //     // pThis->m_value = value;
 
 
-  // Process the buffer (TODO - this should happen in a bottom half)
-  // boolean have1 = FALSE;
-  // for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {    
-  //   if (pBuffer[i] > 0) {
-  //     have1 = TRUE;
+  //     // TODO: BORDER detection is sort of working, but I have reduced the SMI clock duration
+  //     // Instead, there should be an IOWrite counter.
+
+  //     // INT length is 282ns (One scan line is 64us)
+
+  //     // CAS ULA detection works by measuring time between 2 CAS pulses. Should be between 
+  //     // 200ns - 400ns, but NOT longer, otherwise it's a CPU read
+
+  //     // Check for /IOREQ = 0 (/IOREQ = /IORQ | /A0)
+  //     if (!pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 13))) == 0) {
+  //       // pThis->m_value = value; // & 0x07;  // Only interested in first 3 bits
+  //       pThis->m_isIOWrite = true;        
+  //       pThis->m_counter2 = 0;
+  //     }      
+  //     else if (pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 14) | (1 << 13))) == 0) {
+  //       // pThis->m_value = value & 0x07;  // Only interested in first 3 bits for the border colour
+  //       pThis->m_counter2++;
+
+  //       if (pThis->m_counter2 > 5) {
+  //         pThis->m_value = value;
+  //         pThis->m_isIOWrite = false;        
+  //       }
+  //     }    
+  //   }
+  // }
+  
+  // if (pThis->m_counter > 10000000) {
+  //   pThis->m_counter = 0;
+  //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
+   
+  //   if (pThis->m_bDMAResult) {
+  //     pThis->m_pActLED->On();
+  //   } else {
+  //     pThis->m_pActLED->Off();
   //   }
   // }
 
-  // if (have1) {
-  //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
-  // }
+    // CleanAndInvalidateDataCacheRange ((uintptr) pThis->m_DMA.m_pControlBlock, sizeof *(pThis->m_DMA.m_pControlBlock)); // Ensure cb not cached
+    pThis->m_src =nChannel;// bStatus; //pThis->m_DMA.m_pControlBlock->nSourceAddress;
+    // pThis->m_dst = pThis->m_DMA.m_pControlBlock->nDestinationAddress;
 
-  // if (pThis->m_bDMAResult) {
-  //   pThis->m_pActLED->On();
-  // } else {
-  //   pThis->m_pActLED->Off();
-  // }
+    // pThis->m_bDMAResult = !pThis->m_bDMAResult;
+    // if (pThis->m_bDMAResult) {
+    //   pThis->m_pActLED->On();
+    // } else {
+    //   pThis->m_pActLED->Off();
+    // }
 
-  for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
-    ZX_DMA_T value = pBuffer[i];
-    if (value > 0) {
-      pThis->m_counter++;
-
-      // pThis->m_value = value;
-
-
-      // TODO: BORDER detection is sort of working, but I have reduced the SMI clock duration
-      // Instead, there should be an IOWrite counter.
-
-      // INT length is 282ns (One scan line is 64us)
-
-      // CAS ULA detection works by measuring time between 2 CAS pulses. Should be between 
-      // 200ns - 400ns, but NOT longer, otherwise it's a CPU read
-
-      // Check for /IOREQ = 0 (/IOREQ = /IORQ | /A0)
-      if (!pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 13))) == 0) {
-        // pThis->m_value = value; // & 0x07;  // Only interested in first 3 bits
-        pThis->m_isIOWrite = true;        
-        pThis->m_counter2 = 0;
-      }      
-      else if (pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 14) | (1 << 13))) == 0) {
-        // pThis->m_value = value & 0x07;  // Only interested in first 3 bits for the border colour
-        pThis->m_counter2++;
-
-        if (pThis->m_counter2 > 5) {
-          pThis->m_value = value;
-          pThis->m_isIOWrite = false;        
-        }
-      }    
+    
+    if (pThis->m_counter <= 0) {
+      pThis->m_counter = 10;
+      pThis->m_bDMAResult = !pThis->m_bDMAResult;
+    
+      if (pThis->m_bDMAResult) {
+        pThis->m_pActLED->On();
+      } else {
+        pThis->m_pActLED->Off();
+      }
     }
-  }
-  
-  if (pThis->m_counter > 10000000) {
-    pThis->m_counter = 0;
-    pThis->m_bDMAResult = !pThis->m_bDMAResult;
-   
-    if (pThis->m_bDMAResult) {
-      pThis->m_pActLED->On();
-    } else {
-      pThis->m_pActLED->Off();
-    }
-  }
-
+    pThis->m_counter--;
 }
 
+void CZxSmi::DMARestartCompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam)
+{
+    CZxSmi *pThis = (CZxSmi *) pParam;
+  	assert (pThis != 0);
 
+    // pThis->m_pActLED->On();
+}
 
 
 

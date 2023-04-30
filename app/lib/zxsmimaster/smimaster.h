@@ -24,11 +24,11 @@
 #define _circle_smimaster_h
 
 #include <circle/interrupt.h>
-#include <circle/dmachannel.h>
+#include <zxdma/dmachannel.h>
 #include <circle/gpiopin.h>
 
 #define SMI_NUM_ADDRESS_LINES		6
-#define SMI_NUM_DATA_LINES			18
+#define SMI_NUM_DATA_LINES		18
 #define SMI_ALL_DATA_LINES_MASK		0b111111111111111111
 
 #define GPIO_FOR_SAx(line) (5 - line) // SA0 is on GPIO0, SA1 on GPIO4, etc until SA0 on GPIO5

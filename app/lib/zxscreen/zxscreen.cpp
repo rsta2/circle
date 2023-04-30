@@ -13,7 +13,7 @@
 LOGMODULE ("ZxScreen");
 
 #define SCREEN_BUFFER_COUNT 2
-#define SPINLOCK_LEVEL      IRQ_LEVEL /* TASK_LEVEL*/
+// #define SPINLOCK_LEVEL      IRQ_LEVEL /* TASK_LEVEL*/
 #define SPINLOCK_LEVEL      TASK_LEVEL
 
 //

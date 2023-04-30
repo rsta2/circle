@@ -7,8 +7,8 @@
 #include <circle/actled.h>
 #include <circle/types.h>
 #include <circle/interrupt.h>
-#include <circle/smimaster.h>
 #include <circle/logger.h>
+#include <zxsmimaster/smimaster.h>
 
 // SMI Data and address lines
 // #define ZX_SMI_DATA_LINES_MASK		0b001111111111111111
@@ -48,8 +48,8 @@
 #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((32 * 1024) / sizeof(ZX_DMA_T))
 #define ZX_DMA_BUFFER_COUNT			2
-#define ZX_DMA_CHANNEL_TYPE			DMA_CHANNEL_NORMAL
-// #define ZX_DMA_CHANNEL_TYPE			DMA_CHANNEL_LITE
+#define ZX_DMA_CHANNEL_TYPE		DMA_CHANNEL_NORMAL
+// #define ZX_DMA_CHANNEL_TYPE		DMA_CHANNEL_LITE
 
 // ZX SMI PIN MASKS
 #define ZX_PIN_IOREQ		(1 << 15)
@@ -72,13 +72,13 @@ public:
 private:
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
+	static void DMARestartCompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 
 private:
 	// members ...
 	CInterruptSystem *m_pInterruptSystem;
 	CSMIMaster m_SMIMaster;
 	CDMAChannel m_DMA;
-	// CDMAChannel m_DMA_2;
 	ZX_DMA_T *m_pDMABuffers[ZX_DMA_BUFFER_COUNT];
 	/*volatile*/ ZX_DMA_T *m_pDMABuffer;
 	volatile unsigned m_DMABufferIdx;
@@ -89,6 +89,8 @@ private:
 	volatile int m_bDMAResult;
 	volatile unsigned m_counter;
 	volatile ZX_DMA_T m_value;
+	public: volatile u32 m_src;
+	public: volatile u32 m_dst;
 	volatile boolean m_isIOWrite;
 	volatile unsigned m_counter2;
 };

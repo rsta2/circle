@@ -42,14 +42,6 @@ struct TDMAControlBlock
 }
 PACKED;
 
-typedef struct ControlBlockInfo_t
-{
-	u8 *pControlBlockBuffer;
-	TDMAControlBlock *pControlBlock;
-	struct ControlBlockInfo_t *pPrev;
-	struct ControlBlockInfo_t *pNext;	
-} ControlBlockInfo_t;
-
 /// \note Not all DMA channels are available to the ARM.\n
 ///	  Channel assignment is normally made dynamically using the class CMachineInfo.
 
@@ -123,10 +115,6 @@ public:
 	boolean GetStatus (void);
 
 private:
-	ControlBlockInfo_t *CreateControlBlock(void); 
-	void FreeControlBlock(ControlBlockInfo_t *pControlBlockInfo); 
-
-	// Interrupt handler callbacks
 	void InterruptHandler (void);
 	static void InterruptStub (void *pParam);
 
@@ -134,10 +122,8 @@ private:
 public:
 	unsigned m_nChannel;
 
-	ControlBlockInfo_t *m_pControlBlocks;
-
-	// u8 *m_pControlBlockBuffer;
-	// TDMAControlBlock *m_pControlBlock;
+	u8 *m_pControlBlockBuffer;
+	TDMAControlBlock *m_pControlBlock;
 
 	CInterruptSystem *m_pInterruptSystem;
 	boolean m_bIRQConnected;

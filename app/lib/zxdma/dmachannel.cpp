@@ -65,6 +65,12 @@ CDMAChannel::CDMAChannel (unsigned nChannel, CInterruptSystem *pInterruptSystem)
 	assert (m_nChannel != DMA_CHANNEL_NONE);
 	assert (m_nChannel < DMA_CHANNELS);
 
+	m_pControlBlockBuffer = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
+	assert (m_pControlBlockBuffer != 0);
+
+	m_pControlBlock = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer + 31) & ~31);
+	m_pControlBlock->nReserved[0] = 0;
+	m_pControlBlock->nReserved[1] = 0;
 
 	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nChannel));
 	CTimer::SimpleusDelay (1000);
@@ -123,6 +129,11 @@ CDMAChannel::~CDMAChannel (void)
 	}
 
 	CMachineInfo::Get ()->FreeDMAChannel (m_nChannel);
+
+	m_pControlBlock = 0;
+
+	delete [] m_pControlBlockBuffer;
+	m_pControlBlockBuffer = 0;
 }
 
 void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t nLength,
@@ -497,63 +508,6 @@ boolean CDMAChannel::GetStatus (void)
 
 	return m_bStatus;
 }
-
-ControlBlockInfo_t *CDMAChannel::CreateControlBlock(void) {
-	// Create new control block in DMA aligned memory
-	u8 *pControlBlockBuffer = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
-	assert (pControlBlockBuffer != 0);
-
-	TDMAControlBlock *pControlBlock = (TDMAControlBlock *) (((uintptr) pControlBlockBuffer + 31) & ~31);
-	pControlBlock->nReserved[0] = 0;
-	pControlBlock->nReserved[1] = 0;
-
-	// Create a new list node
-	ControlBlockInfo_t *pControlBlockInfo = new ControlBlockInfo_t();
-	pControlBlockInfo->pControlBlockBuffer = pControlBlockBuffer;
-	pControlBlockInfo->pControlBlock = pControlBlock;
-
-	// Insert new list node
-	if (m_pControlBlocks == 0) {
-		m_pControlBlocks = pControlBlockInfo;
-	} else {
-		ControlBlockInfo_t *pNode = m_pControlBlocks;
-		while (pNode->pNext) pNode = pNode->pNext;
-		
-		pNode->pNext = pControlBlockInfo;
-		pControlBlockInfo->pPrev = pNode;
-	}	
-
-	return pControlBlockInfo;
-}
-
-void CDMAChannel::FreeControlBlock(ControlBlockInfo_t *pControlBlockInfo) {
-	assert(pControlBlockInfo != 0);
-
-	// Remove from list
-	ControlBlockInfo_t *pPrev = pControlBlockInfo->pPrev;
-	ControlBlockInfo_t *pNext = pControlBlockInfo->pNext;
-	if (pPrev) pPrev->pNext = pNext;
-	if (pNext) pNext->pPrev = pPrev;
-
-	// Delete the actual control block
-	delete [] pControlBlockInfo->pControlBlockBuffer;
-
-	// Delete the control block info wrapper
-	delete pControlBlockInfo;
-}
-
-// TDMAControlBlock *CDMAChannel::InsertControlBlock(void) {
-// 	m_pControlBlocks = new ControlBlockInfo_t[1];
-// }
-
-// TDMAControlBlock *CDMAChannel::RemoveControlBlock(void) {
-// 	m_pControlBlocks = new ControlBlockInfo_t[1];
-// }
-
-// TDMAControlBlock *CDMAChannel::DControlBlock(void) {
-// 	m_pControlBlocks = new ControlBlockInfo_t[1];
-// }
-
 
 void CDMAChannel::InterruptHandler (void)
 {

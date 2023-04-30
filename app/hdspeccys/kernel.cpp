@@ -159,7 +159,13 @@ TShutdownMode CKernel::Run (void)
 		// for (y = 0; y < m_ZxScreen.GetHeight(); y++) {
 		// 	m_Screen.SetPixel(x,y, bc);
 		// }
-		// }		
+		// }	
+
+		// LOGDBG("nSourceAddress: 0x%08lx", m_ZxSmi.m_src);
+		LOGDBG("status: 0x%08lx", m_ZxSmi.m_src);
+		// LOGDBG("nDestinationAddress: 0x%08lx", m_ZxSmi.m_dst);
+		// LOGDBG(".");
+	
 	}
 
 	LOGNOTE("SHUTDOWN");
