@@ -127,6 +127,11 @@ TShutdownMode CKernel::Run (void)
 	// y = 0;
 	boolean clear = TRUE;
 
+	m_ZxScreen.SetBorder(MAGENTA_COLOR);
+	m_ZxScreen.SetScreen(TRUE);
+
+	m_ZxScreen.UpdateScreen();
+
 	while (bRunning) {				 
 		// m_ZxSmi.Start();
 		ZX_DMA_T value = m_ZxSmi.GetValue();
@@ -148,8 +153,8 @@ TShutdownMode CKernel::Run (void)
 		if (value == 6) bc = YELLOW_COLOR;
 		if (value == 7) bc = WHITE_COLOR;
 
-		m_ZxScreen.SetBorder(bc);
-		m_ZxScreen.SetScreen(TRUE);
+		// m_ZxScreen.SetBorder(bc);
+		// m_ZxScreen.SetScreen(TRUE);
 
 		// m_ZxScreen.UpdateScreen();
 

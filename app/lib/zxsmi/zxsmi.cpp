@@ -95,7 +95,7 @@ void CZxSmi::Start()
   // Set DMA completion routines
   m_DMA.SetCompletionRoutine(DMACompleteInterrupt, this);
   
-  DMAStart();  
+  // DMAStart();  
 
   // m_DMA.Wait();
 

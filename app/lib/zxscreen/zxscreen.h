@@ -166,6 +166,7 @@ private:
 	unsigned	 m_nScreenHeight;
 	TScreenColor  	*m_pScreenBuffer;
 	TScreenColor  	*m_pOffscreenBuffer;
+	TScreenColor  	*m_pOffscreenBuffer2;
 	unsigned	 m_nScreenBufferSize;
 	unsigned	 m_nOffscreenBufferSize;
 	unsigned	 m_nPixelCount;
@@ -174,6 +175,10 @@ private:
 
 #ifdef ZX_SCREEN_DMA
 	CDMAChannel	 m_DMA;
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock;
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock2;
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock3;
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock4;
 #endif	
 	CSpinLock	 m_SpinLock;
 

@@ -46,6 +46,13 @@ enum TDREQ
 #endif
 };
 
+enum TDMADataWidth
+{
+	TDMADataWidth32		= 0,
+	TDMADataWidth128	= 1
+};
+
+
 typedef void TDMACompletionRoutine (unsigned nChannel, boolean bStatus, void *pParam);
 
 //
@@ -65,8 +72,12 @@ typedef void TDMACompletionRoutine (unsigned nChannel, boolean bStatus, void *pP
 	#define CS_ACTIVE			(1 << 0)
 #define ARM_DMACHAN_CONBLK_AD(chan)	(ARM_DMA_BASE + ((chan) * 0x100) + 0x04)
 #define ARM_DMACHAN_TI(chan)		(ARM_DMA_BASE + ((chan) * 0x100) + 0x08)
+	#define TI_WAIT_CYCLES_SHIFT	21
+	#define TI_WAIT_CYCLES_MASK		0b11111
 	#define TI_PERMAP_SHIFT			16
+	#define TI_PERMAP_MASK			0b11111
 	#define TI_BURST_LENGTH_SHIFT		12
+	#define TI_BURST_LENGTH_MASK		0b1111
 		#define DEFAULT_BURST_LENGTH		0
 	#define TI_SRC_IGNORE			(1 << 11)
 	#define TI_SRC_DREQ			(1 << 10)

@@ -30,6 +30,8 @@
 	#include <circle/dma4channel.h>
 #endif
 
+
+
 struct TDMAControlBlock
 {
 	u32	nTransferInformation;
@@ -42,6 +44,8 @@ struct TDMAControlBlock
 }
 PACKED;
 
+
+
 /// \note Not all DMA channels are available to the ARM.\n
 ///	  Channel assignment is normally made dynamically using the class CMachineInfo.
 
@@ -51,6 +55,103 @@ PACKED;
 
 class CDMAChannel	/// Platform DMA controller support
 {
+	public:
+		class CDMAControlBlock {
+			public:
+				CDMAControlBlock (unsigned nChannel);
+
+				~CDMAControlBlock (void);
+
+				/// \brief Prepare a memory copy transfer
+				/// \param pDestination Pointer to the destination buffer
+				/// \param pSource	Pointer to the source buffer
+				/// \param nLength	Number of bytes to be transferred
+				/// \param nBurstLength Number of words to be transferred at once (0 = single transfer)
+				/// \param bCached	Are the destination and source buffers in cached memory regions
+				/// \note nBurstLength > 0 increases speed, but may congest the system bus.
+				void SetupMemCopy (void *pDestination, const void *pSource, size_t nLength,
+						unsigned nBurstLength = 0, boolean bCached = TRUE);
+
+				/// \brief Prepare an I/O read transfer
+				/// \param pDestination Pointer to the destination buffer
+				/// \param nIOAddress	I/O address to be read from (ARM-side or bus address)
+				/// \param nLength	Number of bytes to be transferred
+				/// \param DREQ		DREQ line for pacing the transfer (see dmacommon.h)
+				void SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ);
+
+				/// \brief Prepare an I/O write transfer
+				/// \param nIOAddress	I/O address to be written (ARM-side or bus address)
+				/// \param pSource	Pointer to the source buffer
+				/// \param nLength	Number of bytes to be transferred
+				/// \param DREQ		DREQ line for pacing the transfer (see dmacommon.h)
+				void SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ);
+
+				/// \brief Prepare a 2D memory copy transfer (copy a number of blocks with optional stride)
+				/// \param pDestination Pointer to the destination buffer
+				/// \param pSource	Pointer to the (continuous) source buffer
+				/// \param nBlockLength	Length of the blocks to be transferred
+				/// \param nBlockCount	Number of blocks to be transferred
+				/// \param nBlockStride	Number of bytes to be skipped after each block in destination buffer
+				/// \param nBurstLength Number of words to be transferred at once (0 = single transfer)
+				/// \note The destination cache is not touched.
+				/// \note nBurstLength > 0 increases speed, but may congest the system bus.
+				/// \note This method is not supported with DMA_CHANNEL_LITE.
+				void SetupMemCopy2D (void *pDestination, const void *pSource,
+							size_t nBlockLength, unsigned nBlockCount, size_t nBlockStride,
+							unsigned nBurstLength = 0);				
+
+				void *GetSourceAddress(boolean bAsBusAddress);
+				void SetSourceAddress(void *pSource);
+
+				void *GetDestAddress(boolean bAsBusAddress);
+				void SetDestAddress(void *pDest);
+
+				size_t GetTransferLength();
+				void SetTransferLength(size_t nLength);
+
+				TDREQ GetDREQ();
+				void SetDREQ(TDREQ DREQ);
+
+				boolean GetUseDREQForSrc();
+				void SetUseDREQForSrc(boolean bUseDREQForSrc);
+
+				boolean GetUseDREQForDest();
+				void SetUseDREQForDest(boolean bUseDREQForDest);
+
+				unsigned GetBurstLength();
+				void SetBurstLength(unsigned nBurstLength);
+
+				TDMADataWidth GetSrcWidth();
+				void SetSrcWidth(TDMADataWidth width);
+
+				boolean GetSrcIncrement();
+				void SetSrcIncrement(boolean bIncrement);
+
+				TDMADataWidth GetDestWidth();
+				void SetDestWidth(TDMADataWidth width);
+
+				boolean GetDestIncrement(void);
+				void SetDestIncrement(boolean bIncrement);
+				
+				boolean GetWaitForWriteResponse(void);
+				void SetWaitForWriteResponse(boolean bWaitForWriteResponse);
+				
+				unsigned GetWaitCycles();
+				void SetWaitCycles(unsigned nWaitCycles);
+
+				void *GetNextControlBlockAddress(boolean bAsBusAddress);
+				void SetNextControlBlock(CDMAControlBlock *pNextControlBlock);
+
+				TDMAControlBlock *GetRawControlBlock();
+
+			private:
+				unsigned m_nChannel;
+
+				u8 *m_pControlBlockBuffer;
+				TDMAControlBlock *m_pControlBlock;
+
+		};
+
 public:
 	/// \param nChannel DMA_CHANNEL_NORMAL, _LITE, _EXTENDED or an explicit channel number
 	/// \param pInterruptSystem Pointer to the interrupt system object\n
@@ -103,7 +204,7 @@ public:
 	void SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam);
 
 	/// \brief Start the DMA transfer
-	void Start (void);
+	void Start (CDMAControlBlock *pControlBlock = 0);
 
 	/// \brief Wait for the completion of the DMA transfer
 	/// \return Has the transfer been successful?
@@ -113,6 +214,10 @@ public:
 	/// \brief Get status of the DMA transfer, to be called in the completion routine
 	/// \return Has the transfer been successful?
 	boolean GetStatus (void);
+
+	CDMAControlBlock *CreateDMAControlBlock (void);
+
+	void FreeDMAControlBlock (CDMAControlBlock *pControlBlock);
 
 private:
 	void InterruptHandler (void);
@@ -138,6 +243,8 @@ private:
 #if RASPPI >= 4
 	CDMA4Channel *m_pDMA4Channel;
 #endif
+
+
 };
 
 #endif
