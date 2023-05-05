@@ -127,24 +127,25 @@ TShutdownMode CKernel::Run (void)
 	// y = 0;
 	boolean clear = TRUE;
 
-	m_ZxScreen.SetBorder(MAGENTA_COLOR);
-	m_ZxScreen.SetScreen(TRUE);
+	// m_ZxScreen.SetBorder(MAGENTA_COLOR);
+	// m_ZxScreen.SetScreen(TRUE);
 
-	m_ZxScreen.UpdateScreen();
+	// m_ZxScreen.UpdateScreen();
+
 
 	while (bRunning) {				 
 		// m_ZxSmi.Start();
 		ZX_DMA_T value = m_ZxSmi.GetValue();
 		// LOGDBG("DATA: %04lx", value);
-		m_Timer.MsDelay(500);
-		// m_Timer.MsDelay(5);
+		// m_Timer.MsDelay(500);
+		// m_Timer.MsDelay(1);
 
 		// Read the shell (serial port)
 		m_Shell.Update();
 
 		// m_Screen.SetPixel(x++,y++, RED_COLOR);
 		value = value & 0x7;
-		TScreenColor bc = clear ? MAGENTA_COLOR : GREEN_COLOR; //BLACK_COLOR;
+		TScreenColor bc =MAGENTA_COLOR;// clear ? MAGENTA_COLOR : GREEN_COLOR; //BLACK_COLOR;
 		if (value == 1) bc = BLUE_COLOR;
 		if (value == 2) bc = RED_COLOR;
 		if (value == 3) bc = MAGENTA_COLOR;
@@ -153,10 +154,10 @@ TShutdownMode CKernel::Run (void)
 		if (value == 6) bc = YELLOW_COLOR;
 		if (value == 7) bc = WHITE_COLOR;
 
-		// m_ZxScreen.SetBorder(bc);
-		// m_ZxScreen.SetScreen(TRUE);
+		m_ZxScreen.SetBorder(bc);
+		m_ZxScreen.SetScreen(TRUE);
 
-		// m_ZxScreen.UpdateScreen();
+		m_ZxScreen.UpdateScreen();
 
 		clear = !clear;
 
@@ -167,7 +168,7 @@ TShutdownMode CKernel::Run (void)
 		// }	
 
 		// LOGDBG("nSourceAddress: 0x%08lx", m_ZxSmi.m_src);
-		LOGDBG("status: 0x%08lx", m_ZxSmi.m_src);
+		// LOGDBG("status: 0x%08lx", m_ZxSmi.m_src);
 		// LOGDBG("nDestinationAddress: 0x%08lx", m_ZxSmi.m_dst);
 		// LOGDBG(".");
 	

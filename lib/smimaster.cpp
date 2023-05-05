@@ -22,8 +22,11 @@
 //
 #include <circle/smimaster.h>
 #include <circle/bcm2835.h>
+#include <circle/bcm2835int.h>
 #include <circle/memio.h>
 #include <circle/timer.h>
+// #include <circle/synchronize.h>
+// #include <circle/new.h>
 #include <assert.h>
 
 // Registers - ref the linux driver (bcm2835_smi.h) for documentation
@@ -154,6 +157,11 @@ CSMIMaster::CSMIMaster(
 	boolean bUseSweSrwPin,
 	CInterruptSystem *pInterruptSystem
 ) :
+	m_pInterruptSystem (pInterruptSystem),
+	m_bIRQConnected (FALSE),
+	m_pCompletionRoutine (0),
+	m_pCompletionParam (0),
+	m_bStatus(FALSE),
 	m_nSDLinesMask (nSDLinesMask),
 	m_bUseAddressPins (bUseAddressPins),
 	m_bUseSeoSePin (bUseSeoSePin),
@@ -202,8 +210,22 @@ CSMIMaster::~CSMIMaster (void)
 			m_SweSrwGpio.SetMode(GPIOModeInput);
 	}
 	PeripheralEntry();
+
 	write32(ARM_SMI_CS, 0);
 	CTimer::Get ()->usDelay (50);
+
+	m_pCompletionRoutine = 0;
+
+	if (m_pInterruptSystem != 0)
+	{
+		if (m_bIRQConnected)
+		{
+			m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_SMI);
+		}
+
+		m_pInterruptSystem = 0;
+	}
+
 	PeripheralExit();
 }
 
@@ -243,15 +265,6 @@ void CSMIMaster::StartDMA(CDMAChannel& dma, void *pDMABuffer)
 	}
 	
 	dma.Start();
-	PeripheralEntry();
-	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START);
-	PeripheralExit();
-	// if (bWaitForCompletion) m_DMA.Wait();
-}
-
-void CSMIMaster::HackDMA()
-{
-
 	PeripheralEntry();
 	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START);
 	PeripheralExit();
@@ -362,4 +375,48 @@ void CSMIMaster::SetDeviceAndAddress (unsigned nDevice, unsigned nAddr) {
 	write32(ARM_SMI_A, val);
 	write32(ARM_SMI_DCA, val);
 	PeripheralExit ();
+}
+
+
+void CSMIMaster::SetCompletionRoutine (TSMICompletionRoutine *pRoutine, void *pParam)
+{
+	assert (m_pInterruptSystem != 0);
+
+	if (!m_bIRQConnected)
+	{
+		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_SMI, InterruptStub, this);
+
+		m_bIRQConnected = TRUE;
+	}
+
+	m_pCompletionRoutine = pRoutine;
+	assert (m_pCompletionRoutine != 0);
+
+	m_pCompletionParam = pParam;
+}
+
+
+void CSMIMaster::InterruptHandler (void)
+{
+	PeripheralEntry ();
+
+	// Read and clear interrupt status
+	u32 nCS = read32 (ARM_SMI_CS);
+	assert (nCS & CS_INTD);
+	write32 (ARM_DMA_INT_STATUS, nCS & ~CS_INTD);
+
+	PeripheralExit ();
+
+	m_bStatus = nCS & CS_AFERR ? FALSE : TRUE;
+
+	assert (m_pCompletionRoutine != 0);
+	(*m_pCompletionRoutine) (m_bStatus, m_pCompletionParam);
+}
+
+void CSMIMaster::InterruptStub (void *pParam)
+{
+	CSMIMaster *pThis = (CSMIMaster *) pParam;
+	assert (pThis != 0);
+
+	pThis->InterruptHandler ();
 }

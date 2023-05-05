@@ -23,9 +23,12 @@
 #ifndef _circle_smimaster_h
 #define _circle_smimaster_h
 
-#include <circle/interrupt.h>
 #include <circle/dmachannel.h>
+#include <circle/interrupt.h>
 #include <circle/gpiopin.h>
+
+typedef void TSMICompletionRoutine (boolean bStatus, void *pParam);
+
 
 #define SMI_NUM_ADDRESS_LINES		6
 #define SMI_NUM_DATA_LINES		18
@@ -113,8 +116,21 @@ public:
 	/// \param pDMABuffer	DMA buffer to write (64-bit word aligned, see /doc/dma-buffer-requirements.txt)
 	void StartDMA (CDMAChannel& dma, void *pDMABuffer);
 
-	void HackDMA(void);
+	void SetCompletionRoutine (TSMICompletionRoutine *pRoutine, void *pParam);
+
+private:
+	void InterruptHandler (void);
+	static void InterruptStub (void *pParam);
+
 protected:
+	CInterruptSystem *m_pInterruptSystem;
+	boolean m_bIRQConnected;
+	
+	TSMICompletionRoutine *m_pCompletionRoutine;
+	void *m_pCompletionParam;
+
+	boolean m_bStatus;
+
 	unsigned m_nSDLinesMask;
 	boolean m_bUseAddressPins;
 	boolean m_bUseSeoSePin;

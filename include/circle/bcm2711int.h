@@ -46,6 +46,7 @@
 #define ARM_IRQ_DMA12		GIC_SPI (90)
 #define ARM_IRQ_DMA13		GIC_SPI (91)
 #define ARM_IRQ_DMA14		GIC_SPI (92)
+#define ARM_IRQ_SMI			GIC_SPI (112)	// RA Sewell
 #define ARM_IRQ_GPIO0		GIC_SPI (113)
 #define ARM_IRQ_GPIO1		GIC_SPI (114)
 #define ARM_IRQ_GPIO2		GIC_SPI (115)

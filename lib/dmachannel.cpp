@@ -360,10 +360,15 @@ void CDMAChannel::Start (CDMAControlBlock *pControlBlock)
 
 	CleanAndInvalidateDataCacheRange ((uintptr) pCB, sizeof *pCB);
 
+	// write32 (ARM_DMACHAN_CS (m_nChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
+	// 				      | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
+	// 				      | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
+	// 				      | CS_ACTIVE);
+
 	write32 (ARM_DMACHAN_CS (m_nChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
-					      | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
-					      | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
-					      | CS_ACTIVE);
+		| (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
+		| (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
+		| CS_ACTIVE);
 
 	PeripheralExit ();
 }
@@ -764,7 +769,7 @@ unsigned CDMAChannel::CDMAControlBlock::GetBurstLength()
 
 void CDMAChannel::CDMAControlBlock::SetBurstLength(unsigned nBurstLength)
 {
-	assert((nBurstLength & TI_BURST_LENGTH_MASK) > 0);
+	assert((nBurstLength & ~TI_BURST_LENGTH_MASK) > 0);
 
 	m_pControlBlock->nTransferInformation |= (nBurstLength << TI_BURST_LENGTH_SHIFT);
 }
@@ -846,7 +851,7 @@ unsigned CDMAChannel::CDMAControlBlock::GetWaitCycles()
 
 void CDMAChannel::CDMAControlBlock::SetWaitCycles(unsigned nWaitCycles)
 {
-	assert((nWaitCycles & TI_WAIT_CYCLES_MASK) > 0);
+	assert((nWaitCycles & ~TI_WAIT_CYCLES_MASK) > 0);
 
 	m_pControlBlock->nTransferInformation |= (nWaitCycles << TI_WAIT_CYCLES_SHIFT);
 }

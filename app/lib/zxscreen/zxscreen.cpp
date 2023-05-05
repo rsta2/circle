@@ -35,17 +35,17 @@ CZxScreen::CZxScreen (unsigned nWidth, unsigned nHeight, unsigned nDisplay, CInt
 	m_nScreenHeight (0),
   m_pScreenBuffer (0),	
   m_pOffscreenBuffer (0),
-  m_pOffscreenBuffer2 (0),
+  // m_pOffscreenBuffer2 (0),
   m_nScreenBufferSize (0),
   m_nOffscreenBufferSize (0),
   m_nScreenBufferNo (0),
 	m_bDirty (FALSE),
 #ifdef ZX_SCREEN_DMA  
   m_DMA(DMA_CHANNEL_NORMAL),
-  m_pDMAControlBlock(0),
-  m_pDMAControlBlock2(0),
-  m_pDMAControlBlock3(0),
-  m_pDMAControlBlock4(0),
+  // m_pDMAControlBlock(0),
+  // m_pDMAControlBlock2(0),
+  // m_pDMAControlBlock3(0),
+  // m_pDMAControlBlock4(0),
 #endif  
   m_SpinLock(SPINLOCK_LEVEL),
   m_bRunning(FALSE),  
@@ -55,26 +55,23 @@ CZxScreen::CZxScreen (unsigned nWidth, unsigned nHeight, unsigned nDisplay, CInt
   // m_value(0),
   // m_isIOWrite(0)
 {
-  m_pDMAControlBlock = m_DMA.CreateDMAControlBlock();
-  m_pDMAControlBlock2 = m_DMA.CreateDMAControlBlock();
-  m_pDMAControlBlock3 = m_DMA.CreateDMAControlBlock();
-  m_pDMAControlBlock4 = m_DMA.CreateDMAControlBlock();
+
 }
 
 CZxScreen::~CZxScreen (void)
 {
-  m_DMA.FreeDMAControlBlock(m_pDMAControlBlock);
-  m_DMA.FreeDMAControlBlock(m_pDMAControlBlock2);
-  m_DMA.FreeDMAControlBlock(m_pDMAControlBlock3);
-  m_DMA.FreeDMAControlBlock(m_pDMAControlBlock4);
+  // m_DMA.FreeDMAControlBlock(m_pDMAControlBlock);
+  // m_DMA.FreeDMAControlBlock(m_pDMAControlBlock2);
+  // m_DMA.FreeDMAControlBlock(m_pDMAControlBlock3);
+  // m_DMA.FreeDMAControlBlock(m_pDMAControlBlock4);
 
   m_pScreenBuffer = 0;
 
   delete m_pOffscreenBuffer;
   m_pOffscreenBuffer = 0;
 
-  delete m_pOffscreenBuffer2;
-  m_pOffscreenBuffer2 = 0;
+  // delete m_pOffscreenBuffer2;
+  // m_pOffscreenBuffer2 = 0;
 	
 	delete m_pFrameBuffer;
 	m_pFrameBuffer = 0;
@@ -87,6 +84,11 @@ boolean CZxScreen::Initialize ()
   // unsigned dmaBufferLenBytes = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
   
   LOGNOTE("Initializing ZX SCREEN");
+
+  // m_pDMAControlBlock = m_DMA.CreateDMAControlBlock();
+  // m_pDMAControlBlock2 = m_DMA.CreateDMAControlBlock();
+  // m_pDMAControlBlock3 = m_DMA.CreateDMAControlBlock();
+  // m_pDMAControlBlock4 = m_DMA.CreateDMAControlBlock();
 
   m_nScreenWidth = ZX_SCREEN_PIXEL_WIDTH;
   m_nScreenHeight = ZX_SCREEN_PIXEL_HEIGHT;
@@ -135,7 +137,7 @@ boolean CZxScreen::Initialize ()
   // Create an offscreen buffer that is half the actual screen buffer (which is double the size of the screen)
   m_pOffscreenBuffer = (TScreenColor *) new u8[m_nOffscreenBufferSize];
 
-  m_pOffscreenBuffer2 = (TScreenColor *) new u8[m_nOffscreenBufferSize];
+  // m_pOffscreenBuffer2 = (TScreenColor *) new u8[m_nOffscreenBufferSize];
 
   // Clear the screen
   Clear(WHITE_COLOR);
@@ -208,8 +210,8 @@ unsigned CZxScreen::GetHeight (void) const
 
 void CZxScreen::Clear (TScreenColor backgroundColor)
 {
-	// TScreenColor *pBuffer = m_pOffscreenBuffer;
-  TScreenColor *pBuffer = m_pOffscreenBuffer2;  
+	TScreenColor *pBuffer = m_pOffscreenBuffer;
+  // TScreenColor *pBuffer = m_pOffscreenBuffer2;  
 	unsigned nSize = m_nPixelCount;
 	
 	while (nSize--)
@@ -315,31 +317,33 @@ void CZxScreen::UpdateScreen() {
   // Copy offscreen screen to framebuffer
 #ifdef ZX_SCREEN_DMA
     // Have to ensure memory has been written out of the cache to memory before DMA'ing
-    // CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer, m_nOffscreenBufferSize);    
+    CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer, m_nOffscreenBufferSize);    
 
-    // m_DMA.SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
+    m_DMA.SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
 
-    // m_DMA.Start ();
-    // m_DMA.Wait ();
-
-    CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer, m_nOffscreenBufferSize);
-    CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer2, m_nOffscreenBufferSize);
-
-    m_pDMAControlBlock->SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
-    m_pDMAControlBlock2->SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer2, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
-    
-    // Chain
-    m_pDMAControlBlock->SetNextControlBlock (m_pDMAControlBlock2);
-    m_pDMAControlBlock2->SetNextControlBlock (m_pDMAControlBlock);
-
-    // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
-    TDMAControlBlock *pCB1 = m_pDMAControlBlock->GetRawControlBlock();
-    TDMAControlBlock *pCB2 = m_pDMAControlBlock2->GetRawControlBlock();
-    CleanAndInvalidateDataCacheRange ((uintptr) pCB1, sizeof *pCB1); // Ensure cb not cached
-    CleanAndInvalidateDataCacheRange ((uintptr) pCB2, sizeof *pCB2); // Ensure cb not cached
-
-    m_DMA.Start (m_pDMAControlBlock);
+    m_DMA.Start ();
     m_DMA.Wait ();
+
+    // CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer, m_nOffscreenBufferSize);
+    // CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer2, m_nOffscreenBufferSize);
+
+    // m_pDMAControlBlock->SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
+    // m_pDMAControlBlock->SetWaitCycles(32);
+    // m_pDMAControlBlock2->SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer2, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
+    // m_pDMAControlBlock2->SetWaitCycles(32);
+    
+    // // Chain
+    // m_pDMAControlBlock->SetNextControlBlock (m_pDMAControlBlock2);
+    // m_pDMAControlBlock2->SetNextControlBlock (m_pDMAControlBlock);
+
+    // // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
+    // TDMAControlBlock *pCB1 = m_pDMAControlBlock->GetRawControlBlock();
+    // TDMAControlBlock *pCB2 = m_pDMAControlBlock2->GetRawControlBlock();
+    // CleanAndInvalidateDataCacheRange ((uintptr) pCB1, sizeof *pCB1); // Ensure cb not cached
+    // CleanAndInvalidateDataCacheRange ((uintptr) pCB2, sizeof *pCB2); // Ensure cb not cached
+
+    // m_DMA.Start (m_pDMAControlBlock);
+    // m_DMA.Wait ();
 #else    
   memcpy(pScreenBuffer, m_pOffscreenBuffer, m_nOffscreenBufferSize);
 #endif  

@@ -31,22 +31,29 @@
 #define ZX_SMI_STROBE	30
 #define ZX_SMI_HOLD		15
 #else
-// #define ZX_SMI_NS			4
-// #define ZX_SMI_SETUP	5
-// #define ZX_SMI_STROBE	9
-// #define ZX_SMI_HOLD		5
-
-#define ZX_SMI_NS			4
-#define ZX_SMI_SETUP	7
+#define ZX_SMI_NS		4
+#define ZX_SMI_SETUP	5
 #define ZX_SMI_STROBE	9
-#define ZX_SMI_HOLD		7
+#define ZX_SMI_HOLD		5
+
+// #define ZX_SMI_NS		4
+// #define ZX_SMI_SETUP	7
+// #define ZX_SMI_STROBE	9
+// #define ZX_SMI_HOLD		7
+
+// #define ZX_SMI_NS		10
+// #define ZX_SMI_SETUP	15
+// #define ZX_SMI_STROBE	30
+// #define ZX_SMI_HOLD		15
 #endif
 
 // SMI DMA
 #define ZX_DMA_T								u16
+// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((32 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((1 * 1024) / sizeof(ZX_DMA_T))
 #define ZX_DMA_BUFFER_COUNT			2
 #define ZX_DMA_CHANNEL_TYPE		DMA_CHANNEL_NORMAL
 // #define ZX_DMA_CHANNEL_TYPE		DMA_CHANNEL_LITE
@@ -73,12 +80,19 @@ private:
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 	static void DMARestartCompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
+	static void SMICompleteInterrupt(boolean bStatus, void *pParam);	
 
 private:
 	// members ...
 	CInterruptSystem *m_pInterruptSystem;
 	CSMIMaster m_SMIMaster;
+
 	CDMAChannel m_DMA;
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock1;
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock2;
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock3;
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock4;
+
 	ZX_DMA_T *m_pDMABuffers[ZX_DMA_BUFFER_COUNT];
 	/*volatile*/ ZX_DMA_T *m_pDMABuffer;
 	volatile unsigned m_DMABufferIdx;
