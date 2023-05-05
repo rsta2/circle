@@ -15,9 +15,13 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/types.h>
+#include <circle/sched/scheduler.h>
+#include <circle/sched/synchronizationevent.h>
 #include <shell/shell.h>
 #include <zxsmi/zxsmi.h>
 #include <zxscreen/zxscreen.h>
+#include "backgroundtask.h"
+#include "screenprocessortask.h"
 
 
 enum TShutdownMode
@@ -58,9 +62,13 @@ private:
 	CLogger			m_Logger;
 
 	// TODO: add more members here
+	CScheduler		m_Scheduler;
+	CSynchronizationEvent	m_Event;
+	
 	CShell			m_Shell;
 	CZxSmi			m_ZxSmi;
 	CZxScreen		m_ZxScreen;
+	
 };
 
 #endif

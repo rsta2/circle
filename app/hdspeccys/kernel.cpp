@@ -6,8 +6,8 @@
 LOGMODULE ("kernel");
 
 
-static volatile boolean bRunning = FALSE;
-static volatile boolean bReboot = FALSE;
+
+static volatile boolean bReboot = TRUE;
 static CKernel *pKernel = 0;
 
 
@@ -25,7 +25,6 @@ CKernel::CKernel (void)
 	// m_ZxScreen(320*4, 256*4, 0, &m_Interrupt)
 	//  m_ZxScreen (m_Options.GetWidth (), m_Options.GetHeight (), 0, &m_Interrupt)
 {
-	bRunning = TRUE;
 	bReboot = TRUE;
 
 	pKernel = this;
@@ -100,79 +99,16 @@ TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE("Compile time: " __DATE__ " " __TIME__);
 
-	// Set the reboot callback 
-	m_Shell.SetRebootCallback(Reboot, this);
-
-	// TODO: add your code here
-	m_ZxSmi.Start();
-
-	m_ZxScreen.Start();
-
 	// Set up callback on the timer 100Hz interrupt
 	// m_Timer.RegisterPeriodicHandler(PeriodicTimer100Hz);
 
-	// TScreenStatus screenStatus = m_Screen.GetStatus();
-	// screenStatus.BackgroundColor = BLUE_COLOR;
-	// m_Screen.SetStatus(screenStatus);
-	// m_Screen.ClearDisplayEnd();
-	// unsigned x = 0, y = 0;
-	// m_Screen.SetPixel(0,0, BRIGHT_GREEN_COLOR);
 
-	// for (x = 0; x < m_Screen.GetWidth(); x++) {
-	// 	for (y = 0; y < m_Screen.GetHeight(); y++) {
-	// 		m_Screen.SetPixel(x,y, BRIGHT_GREEN_COLOR);
-	// 	}
-	// }
-	// x = 0;
-	// y = 0;
-	boolean clear = TRUE;
+	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
+	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
 
-	// m_ZxScreen.SetBorder(MAGENTA_COLOR);
-	// m_ZxScreen.SetScreen(TRUE);
-
-	// m_ZxScreen.UpdateScreen();
-
-
-	while (bRunning) {				 
-		// m_ZxSmi.Start();
-		ZX_DMA_T value = m_ZxSmi.GetValue();
-		// LOGDBG("DATA: %04lx", value);
-		// m_Timer.MsDelay(500);
-		// m_Timer.MsDelay(1);
-
-		// Read the shell (serial port)
-		m_Shell.Update();
-
-		// m_Screen.SetPixel(x++,y++, RED_COLOR);
-		value = value & 0x7;
-		TScreenColor bc =MAGENTA_COLOR;// clear ? MAGENTA_COLOR : GREEN_COLOR; //BLACK_COLOR;
-		if (value == 1) bc = BLUE_COLOR;
-		if (value == 2) bc = RED_COLOR;
-		if (value == 3) bc = MAGENTA_COLOR;
-		if (value == 4) bc = GREEN_COLOR;
-		if (value == 5) bc = CYAN_COLOR;
-		if (value == 6) bc = YELLOW_COLOR;
-		if (value == 7) bc = WHITE_COLOR;
-
-		m_ZxScreen.SetBorder(bc);
-		m_ZxScreen.SetScreen(TRUE);
-
-		m_ZxScreen.UpdateScreen();
-
-		clear = !clear;
-
-		// for (x = 0; x < m_ZxScreen.GetWidth(); x++) {
-		// for (y = 0; y < m_ZxScreen.GetHeight(); y++) {
-		// 	m_Screen.SetPixel(x,y, bc);
-		// }
-		// }	
-
-		// LOGDBG("nSourceAddress: 0x%08lx", m_ZxSmi.m_src);
-		// LOGDBG("status: 0x%08lx", m_ZxSmi.m_src);
-		// LOGDBG("nDestinationAddress: 0x%08lx", m_ZxSmi.m_dst);
-		// LOGDBG(".");
-	
-	}
+	// Wait here forever until shutdown
+	m_Event.Clear();
+	m_Event.Wait();
 
 	LOGNOTE("SHUTDOWN");
 
@@ -191,12 +127,15 @@ void CKernel::PeriodicTimer100Hz() {
 	pKernel->AnimationFrame();
 }
 
-void CKernel::Reboot (void* pContext)
-{
-	// CKernel *pThis = (CKernel *) pContext;
+// void CKernel::Reboot (void* pContext)
+// {
+// 	// CKernel *pThis = (CKernel *) pContext;
 
-	// Performs a reboot, by exiting the main loop
-	bReboot = TRUE;
-	bRunning = FALSE;
-}
+// 	// Performs a reboot, by exiting the main loop
+// 	bReboot = TRUE;
+// 	bRunning = FALSE;
+
+// 	// Signal main loop
+// 	pKernel->m_Event.Set();
+// }
 

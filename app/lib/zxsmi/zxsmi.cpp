@@ -10,6 +10,8 @@
 
 LOGMODULE ("ZxSmi");
 
+#define GPIO_FIQ_PIN    27
+
 // HACK - direct access to SMI
 #define ARM_SMI_BASE	(ARM_IO_BASE + 0x600000)
 #define ARM_SMI_CS		(ARM_SMI_BASE + 0x00)	// Control & status
@@ -63,8 +65,10 @@ LOGMODULE ("ZxSmi");
 
 CZxSmi::CZxSmi (CInterruptSystem *pInterruptSystem)
 : m_pInterruptSystem (pInterruptSystem),
+  m_GpioFiqPin (GPIO_FIQ_PIN, GPIOModeInput, pInterruptSystem),
   m_SMIMaster (ZX_SMI_DATA_LINES_MASK, ZX_SMI_USE_ADDRESS_LINES, ZX_SMI_USE_SOE_SE, ZX_SMI_USE_SWE_SRW, pInterruptSystem),
   m_DMA (ZX_DMA_CHANNEL_TYPE, m_pInterruptSystem),
+	m_pDMAControlBlock(0),
   m_pDMAControlBlock1(0),
   m_pDMAControlBlock2(0),
   m_pDMAControlBlock3(0),
@@ -84,16 +88,26 @@ CZxSmi::CZxSmi (CInterruptSystem *pInterruptSystem)
 }
 
 CZxSmi::~CZxSmi (void)
-{
+{  
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock1);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock2);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock3);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock4);
+
+    // Deallocate DMA buffers and control blocks
+  for (unsigned i = 0; i < ZX_DMA_BUFFER_COUNT; i++) {
+    // DMA control block
+    m_DMA.FreeDMAControlBlock(m_pDMAControlBlocks[i]);
+
+    // Target data buffer
+    delete m_pDMABuffers[i];
+  }
+
+  m_GpioFiqPin.DisableInterrupt ();
 }
 
 boolean CZxSmi::Initialize ()
 {
-  unsigned i;
   unsigned dmaBufferLenWords = ZX_DMA_BUFFER_LENGTH;
   unsigned dmaBufferLenBytes = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
   
@@ -107,8 +121,12 @@ boolean CZxSmi::Initialize ()
   m_pDMAControlBlock3 = m_DMA.CreateDMAControlBlock();
   m_pDMAControlBlock4 = m_DMA.CreateDMAControlBlock();
 
-  // Allocate DMA buffers
-  for (i = 0; i < ZX_DMA_BUFFER_COUNT; i++) {
+  // Allocate DMA buffers and control blocks
+  for (unsigned i = 0; i < ZX_DMA_BUFFER_COUNT; i++) {
+    // DMA control block
+    m_pDMAControlBlocks[i] = m_DMA.CreateDMAControlBlock();
+
+    // Target data buffer
     m_pDMABuffers[i] = new ZX_DMA_T[dmaBufferLenWords]; // using new makes the buffer cache-aligned, so suitable for DMA
   }
 
@@ -135,9 +153,21 @@ boolean CZxSmi::Initialize ()
   // Setup SMI DMA and buffers (must be 64-bit word aligned, see /doc/dma-buffer-requirements.txt)  
   LOGDBG("Setting SMI DMA: Buffer length: %d bytes", dmaBufferLenBytes);
 
+  // Configure GPIO FIQ interrupt
+  m_GpioFiqPin.ConnectInterrupt(GpioFiqHandler, this);
+
   // Configure SMI DMA
   m_SMIMaster.SetupDMA(dmaBufferLenBytes, TRUE);
 
+  // Configure DMA control blocks
+  for (unsigned i = 0; i < ZX_DMA_BUFFER_COUNT; i++) {
+    // Set up reads in separate control blocks
+    m_pDMAControlBlocks[i]->SetupIORead (m_pDMABuffers[0], ARM_SMI_D, dmaBufferLenBytes, DREQSourceSMI);  
+
+    // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
+    TDMAControlBlock *pCB = m_pDMAControlBlocks[i]->GetRawControlBlock();
+    CleanAndInvalidateDataCacheRange ((uintptr) pCB, sizeof *pCB); // Ensure cb not cached
+  }
 
   // PeripheralExit ();
 
@@ -151,8 +181,9 @@ void CZxSmi::Start()
   // Set running flag
   m_bRunning = TRUE;
 
-  // Set initial DMA buffer
+  // Set initial DMA buffer and control block  
   m_pDMABuffer = m_pDMABuffers[m_DMABufferIdx];
+  m_pDMAControlBlock = m_pDMAControlBlocks[m_DMABufferIdx];
 
   // Set DMA completion routines
   // m_DMA.SetCompletionRoutine(DMACompleteInterrupt, this);
@@ -161,6 +192,9 @@ void CZxSmi::Start()
   m_SMIMaster.SetCompletionRoutine(SMICompleteInterrupt, this);
   
   DMAStart();  
+
+  // Only start interrupt after DMA has been configured
+  m_GpioFiqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
 
   // m_DMA.Wait();
 
@@ -200,112 +234,118 @@ ZX_DMA_T CZxSmi::GetValue() {
 // Private
 //
 
+// TODO - rename to DMAConfigure
 void CZxSmi::DMAStart()
 {
-  // CDMAChannel dma = m_DMABufferIdx == 0 ? m_DMA : m_DMA_2;
-
-  // Configure the DMARestart_1 channel to do something
-  
-  // // Prepare some dummy data
-  // unsigned dataLen = 1024 * 1024 * 100;  // 100MB!
-  // char *pDataIn = new char[dataLen];
-  // char *pDataOut = new char[dataLen];
-  // strcpy(pDataIn, "HELLO WHIRLED!");
-  // CleanAndInvalidateDataCacheRange((uintptr)pDataIn, dataLen);
-
-  // m_DMA.SetupMemCopy(pDataOut, pDataIn, dataLen);
-
-  // m_DMA.Start();
-
-  // m_DMARestart_1.Prepare();
-
-  // m_SMIMaster.StartDMA(m_DMA, m_pDMABuffer);  
-
-
-
-  // CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer, m_nOffscreenBufferSize);
-  //   CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer2, m_nOffscreenBufferSize);
-
-  //   m_pDMAControlBlock->SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
-  //   m_pDMAControlBlock->SetWaitCycles(32);
-  //   m_pDMAControlBlock2->SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer2, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
-  //   m_pDMAControlBlock2->SetWaitCycles(32);
-    
-  //   // Chain
-  //   m_pDMAControlBlock->SetNextControlBlock (m_pDMAControlBlock2);
-  //   // m_pDMAControlBlock2->SetNextControlBlock (m_pDMAControlBlock);
-
-  //   // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
-  //   TDMAControlBlock *pCB1 = m_pDMAControlBlock->GetRawControlBlock();
-  //   TDMAControlBlock *pCB2 = m_pDMAControlBlock2->GetRawControlBlock();
-  //   CleanAndInvalidateDataCacheRange ((uintptr) pCB1, sizeof *pCB1); // Ensure cb not cached
-  //   CleanAndInvalidateDataCacheRange ((uintptr) pCB2, sizeof *pCB2); // Ensure cb not cached
-
-  //   m_DMA.Start (m_pDMAControlBlock);
-
-  // // Prepare some dummy data
-  unsigned dataLen = 1024 * 1024 * 1;  // 1MB!
-  char *pDataIn = new char[dataLen];
-  char *pDataOut = new char[dataLen];
-  strcpy(pDataIn, "HELLO WHIRLED!");
-
-  // Calculate the ARM_SM_CS address for the GPU
-  u32 ARM_SMI_CS_GPU = ARM_SMI_CS;
-	ARM_SMI_CS_GPU = ARM_SMI_CS_GPU &= 0xFFFFFF;
-	ARM_SMI_CS_GPU += GPU_IO_BASE;
-
-  u32 *pARM_SMI_CS = (u32 *)ARM_SMI_CS_GPU;
-  // *((u32 *)pDataIn) = read32(ARM_SMI_CS) | CS_START;
-  *((u32 *)pDataIn) = read32(ARM_SMI_CS) | CS_START | CS_INTD;  // Enable the DONE interrupt
-
-  CleanAndInvalidateDataCacheRange((uintptr)pDataIn, dataLen);
-
-  unsigned dmaBufferLenWords = ZX_DMA_BUFFER_LENGTH;
-  unsigned dmaBufferLenBytes = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
-  
-  // m_pDMAControlBlock1->SetupMemCopy (pDataOut, pDataIn, 4);
-  m_pDMAControlBlock1->SetupIOWrite (ARM_SMI_CS, pDataIn, 4, DREQSourceNone);
-  m_pDMAControlBlock2->SetupIORead (m_pDMABuffer, ARM_SMI_D, dmaBufferLenBytes, DREQSourceSMI);
-
-  // Chain
-  m_pDMAControlBlock1->SetNextControlBlock (m_pDMAControlBlock2);
-  m_pDMAControlBlock2->SetNextControlBlock (m_pDMAControlBlock1);
-
-  // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
-  TDMAControlBlock *pCB1 = m_pDMAControlBlock1->GetRawControlBlock();
-  TDMAControlBlock *pCB2 = m_pDMAControlBlock2->GetRawControlBlock();
-  CleanAndInvalidateDataCacheRange ((uintptr) pCB1, sizeof *pCB1); // Ensure cb not cached
-  CleanAndInvalidateDataCacheRange ((uintptr) pCB2, sizeof *pCB2); // Ensure cb not cached
-
-
-  // PeripheralEntry();
-	// write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START);
-	// PeripheralExit();
-
-  CTimer::SimpleMsDelay(5);
-
-  m_DMA.Start (m_pDMAControlBlock1);
-
-  
-  CTimer::SimpleMsDelay(500);
-  CleanAndInvalidateDataCacheRange((uintptr)pDataOut, dataLen);
-  LOGDBG("pARM_SMI_CS: 0x%08lx", pARM_SMI_CS);
-  LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn));
-  LOGDBG("ARM_SMI_CS: 0x%08lx", read32(ARM_SMI_CS));
-  // LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn+1));
-  // LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn+2));
-  // LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn+3));
-  // LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn+4));
-  // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut));
-  // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut+1));
-  // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut+2));
-  // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut+3));
-  // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut+4));
-
-  if (m_pActLED != nullptr) {
-    m_pActLED->On();
-  }
+//
 }
+
+// void CZxSmi::DMAStart()
+// {
+//   // CDMAChannel dma = m_DMABufferIdx == 0 ? m_DMA : m_DMA_2;
+
+//   // Configure the DMARestart_1 channel to do something
+  
+//   // // Prepare some dummy data
+//   // unsigned dataLen = 1024 * 1024 * 100;  // 100MB!
+//   // char *pDataIn = new char[dataLen];
+//   // char *pDataOut = new char[dataLen];
+//   // strcpy(pDataIn, "HELLO WHIRLED!");
+//   // CleanAndInvalidateDataCacheRange((uintptr)pDataIn, dataLen);
+
+//   // m_DMA.SetupMemCopy(pDataOut, pDataIn, dataLen);
+
+//   // m_DMA.Start();
+
+//   // m_DMARestart_1.Prepare();
+
+//   // m_SMIMaster.StartDMA(m_DMA, m_pDMABuffer);  
+
+
+
+//   // CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer, m_nOffscreenBufferSize);
+//   //   CleanAndInvalidateDataCacheRange((uintptr)m_pOffscreenBuffer2, m_nOffscreenBufferSize);
+
+//   //   m_pDMAControlBlock->SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
+//   //   m_pDMAControlBlock->SetWaitCycles(32);
+//   //   m_pDMAControlBlock2->SetupMemCopy (pScreenBuffer, m_pOffscreenBuffer2, m_nOffscreenBufferSize, ZX_SCREEN_DMA_BURST_COUNT, FALSE);
+//   //   m_pDMAControlBlock2->SetWaitCycles(32);
+    
+//   //   // Chain
+//   //   m_pDMAControlBlock->SetNextControlBlock (m_pDMAControlBlock2);
+//   //   // m_pDMAControlBlock2->SetNextControlBlock (m_pDMAControlBlock);
+
+//   //   // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
+//   //   TDMAControlBlock *pCB1 = m_pDMAControlBlock->GetRawControlBlock();
+//   //   TDMAControlBlock *pCB2 = m_pDMAControlBlock2->GetRawControlBlock();
+//   //   CleanAndInvalidateDataCacheRange ((uintptr) pCB1, sizeof *pCB1); // Ensure cb not cached
+//   //   CleanAndInvalidateDataCacheRange ((uintptr) pCB2, sizeof *pCB2); // Ensure cb not cached
+
+//   //   m_DMA.Start (m_pDMAControlBlock);
+
+//   // // Prepare some dummy data
+//   unsigned dataLen = 1024 * 1024 * 1;  // 1MB!
+//   char *pDataIn = new char[dataLen];
+//   char *pDataOut = new char[dataLen];
+//   strcpy(pDataIn, "HELLO WHIRLED!");
+
+//   // Calculate the ARM_SM_CS address for the GPU
+//   u32 ARM_SMI_CS_GPU = ARM_SMI_CS;
+// 	ARM_SMI_CS_GPU = ARM_SMI_CS_GPU &= 0xFFFFFF;
+// 	ARM_SMI_CS_GPU += GPU_IO_BASE;
+
+//   u32 *pARM_SMI_CS = (u32 *)ARM_SMI_CS_GPU;
+//   // *((u32 *)pDataIn) = read32(ARM_SMI_CS) | CS_START;
+//   *((u32 *)pDataIn) = read32(ARM_SMI_CS) | CS_START | CS_INTD;  // Enable the DONE interrupt
+
+//   CleanAndInvalidateDataCacheRange((uintptr)pDataIn, dataLen);
+
+//   unsigned dmaBufferLenWords = ZX_DMA_BUFFER_LENGTH;
+//   unsigned dmaBufferLenBytes = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
+  
+//   // m_pDMAControlBlock1->SetupMemCopy (pDataOut, pDataIn, 4);
+//   m_pDMAControlBlock1->SetupIOWrite (ARM_SMI_CS, pDataIn, 4, DREQSourceNone);
+//   m_pDMAControlBlock2->SetupIORead (m_pDMABuffer, ARM_SMI_D, dmaBufferLenBytes, DREQSourceSMI);
+
+//   // Chain
+//   m_pDMAControlBlock1->SetNextControlBlock (m_pDMAControlBlock2);
+//   m_pDMAControlBlock2->SetNextControlBlock (m_pDMAControlBlock1);
+
+//   // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
+//   TDMAControlBlock *pCB1 = m_pDMAControlBlock1->GetRawControlBlock();
+//   TDMAControlBlock *pCB2 = m_pDMAControlBlock2->GetRawControlBlock();
+//   CleanAndInvalidateDataCacheRange ((uintptr) pCB1, sizeof *pCB1); // Ensure cb not cached
+//   CleanAndInvalidateDataCacheRange ((uintptr) pCB2, sizeof *pCB2); // Ensure cb not cached
+
+
+//   // PeripheralEntry();
+// 	// write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START);
+// 	// PeripheralExit();
+
+//   CTimer::SimpleMsDelay(5);
+
+  // m_DMA.Start (m_pDMAControlBlock1);
+
+  
+//   CTimer::SimpleMsDelay(500);
+//   CleanAndInvalidateDataCacheRange((uintptr)pDataOut, dataLen);
+//   LOGDBG("pARM_SMI_CS: 0x%08lx", pARM_SMI_CS);
+//   LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn));
+//   LOGDBG("ARM_SMI_CS: 0x%08lx", read32(ARM_SMI_CS));
+//   // LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn+1));
+//   // LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn+2));
+//   // LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn+3));
+//   // LOGDBG("pDataIn: 0x%08lx", *((u32 *)pDataIn+4));
+//   // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut));
+//   // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut+1));
+//   // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut+2));
+//   // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut+3));
+//   // LOGDBG("pDataOut: 0x%08lx", *((u32 *)pDataOut+4));
+
+//   if (m_pActLED != nullptr) {
+//     m_pActLED->On();
+//   }
+// }
 
 void CZxSmi::DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam)
 {
@@ -457,3 +497,58 @@ void CZxSmi::SMICompleteInterrupt(boolean bStatus, void *pParam)
     }
     pThis->m_counter--;
 }
+
+void CZxSmi::GpioFiqHandler (void *pParam) 
+{
+  CZxSmi *pThis = (CZxSmi *) pParam;
+  assert (pThis != 0);
+
+  // Toggle LED for debug
+  pThis->m_pActLED->On();
+
+
+  // Save pointer to buffer just filled by DMA
+  ZX_DMA_T *pBuffer = pThis->m_pDMABuffer;
+
+  // Move to the next DMA buffer and control block
+  pThis->m_DMABufferIdx = (pThis->m_DMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+  pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_DMABufferIdx];
+  pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_DMABufferIdx];
+
+
+  pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
+
+  // Start the SMI for DMA (DMA should already be ready to go)
+  PeripheralEntry();
+	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START);
+	PeripheralExit();
+
+
+  // Loop all the data in the buffer
+  for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
+      ZX_DMA_T value = pBuffer[i];
+      if (value > 0) {
+        pThis->m_counter++;
+      }
+  }
+
+
+
+  // Toggle LED for debug
+  pThis->m_pActLED->Off();
+
+  // TODO - hand off the buffer to the main thread
+
+    // if (pThis->m_counter <= 0) {
+    //   pThis->m_counter = 10;
+    //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
+    
+    //   if (pThis->m_bDMAResult) {
+    //     pThis->m_pActLED->On();
+    //   } else {
+    //     pThis->m_pActLED->Off();
+    //   }
+    // }
+    // pThis->m_counter--;
+}
+	

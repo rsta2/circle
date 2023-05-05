@@ -7,6 +7,7 @@
 #include <circle/actled.h>
 #include <circle/types.h>
 #include <circle/interrupt.h>
+#include <circle/gpiopinfiq.h>
 #include <circle/logger.h>
 #include <circle/smimaster.h>
 
@@ -51,7 +52,8 @@
 #define ZX_DMA_T								u16
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
-#define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
+#define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((32 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1 * 1024) / sizeof(ZX_DMA_T))
 #define ZX_DMA_BUFFER_COUNT			2
@@ -81,13 +83,18 @@ private:
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 	static void DMARestartCompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 	static void SMICompleteInterrupt(boolean bStatus, void *pParam);	
-
+	static void GpioFiqHandler (void *pParam);
+	
 private:
 	// members ...
 	CInterruptSystem *m_pInterruptSystem;
+	CGPIOPinFIQ	m_GpioFiqPin;
 	CSMIMaster m_SMIMaster;
 
 	CDMAChannel m_DMA;
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlocks[ZX_DMA_BUFFER_COUNT];
+	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock;
+
 	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock1;
 	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock2;
 	CDMAChannel::CDMAControlBlock *m_pDMAControlBlock3;
