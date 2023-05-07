@@ -397,6 +397,28 @@
 
 ///////////////////////////////////////////////////////////////////////
 
+// GNU-C 12.x uses floating point registers for optimization. This may
+// occur anywhere in the code, even in IRQ and FIQ handlers.
+
+#if RASPPI >= 2 && __GNUC__ >= 12
+
+#ifndef SAVE_VFP_REGS_ON_IRQ
+#define SAVE_VFP_REGS_ON_IRQ
+#endif
+
+#ifndef SAVE_VFP_REGS_ON_FIQ
+#define SAVE_VFP_REGS_ON_FIQ
+#endif
+
+// save all VFP regs in exceptionstub.S
+#ifndef __FAST_MATH__
+#define __FAST_MATH__
+#endif
+
+#endif
+
+///////////////////////////////////////////////////////////////////////
+
 #include <circle/memorymap.h>
 
 #endif
