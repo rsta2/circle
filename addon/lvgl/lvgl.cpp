@@ -2,7 +2,7 @@
 // lvgl.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -98,8 +98,10 @@ boolean CLVGL::Initialize (void)
 
 	lv_log_register_print_cb (LogPrint);
 
-	m_pBuffer1 = new (HEAP_DMA30) lv_color_t[nWidth*10];
-	m_pBuffer2 = new (HEAP_DMA30) lv_color_t[nWidth*10];
+	unsigned nBufSizePixels = nWidth * nHeight/10;
+
+	m_pBuffer1 = new (HEAP_DMA30) lv_color_t[nBufSizePixels];
+	m_pBuffer2 = new (HEAP_DMA30) lv_color_t[nBufSizePixels];
 	if (   m_pBuffer1 == 0
 	    || m_pBuffer2 == 0)
 	{
@@ -107,7 +109,7 @@ boolean CLVGL::Initialize (void)
 	}
 
 	static lv_disp_draw_buf_t disp_buf;
-	lv_disp_draw_buf_init (&disp_buf, m_pBuffer1, m_pBuffer2, nWidth*10);
+	lv_disp_draw_buf_init (&disp_buf, m_pBuffer1, m_pBuffer2, nBufSizePixels);
 
 	static lv_disp_drv_t disp_drv;
 	lv_disp_drv_init (&disp_drv);
@@ -155,6 +157,8 @@ boolean CLVGL::Initialize (void)
 	indev_drv.read_cb = PointerRead;
 	lv_indev_drv_register (&indev_drv);
 
+	CTimer::Get ()->RegisterPeriodicHandler (PeriodicTickHandler);
+
 	return TRUE;
 }
 
@@ -180,12 +184,10 @@ void CLVGL::Update (boolean bPlugAndPlayUpdated)
 		}
 	}
 
-	lv_task_handler ();
-
 	unsigned nTicks = CTimer::Get ()->GetClockTicks ();
-	if (nTicks - m_nLastUpdate >= CLOCKHZ/1000)
+	if (nTicks - m_nLastUpdate >= 5*CLOCKHZ/1000)
 	{
-		lv_tick_inc ((nTicks - m_nLastUpdate) / (CLOCKHZ/1000));
+		lv_timer_handler ();
 
 		m_nLastUpdate = nTicks;
 	}
@@ -333,4 +335,9 @@ void CLVGL::MouseRemovedHandler (CDevice *pDevice, void *pContext)
 {
 	assert (s_pThis != 0);
 	s_pThis->m_pMouseDevice = 0;
+}
+
+void CLVGL::PeriodicTickHandler (void)
+{
+	lv_tick_inc (1000 / HZ);
 }
