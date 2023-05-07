@@ -211,6 +211,8 @@ public:
 	/// \note This is for synchronous calls without completion routine.
 	boolean Wait (void);
 
+	void Stop (void);
+
 	/// \brief Get status of the DMA transfer, to be called in the completion routine
 	/// \return Has the transfer been successful?
 	boolean GetStatus (void);

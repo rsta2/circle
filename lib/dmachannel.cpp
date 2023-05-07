@@ -405,6 +405,30 @@ boolean CDMAChannel::Wait (void)
 	return m_bStatus;
 }
 
+void CDMAChannel::Stop ()
+{
+// #if RASPPI >= 4
+// 	if (m_pDMA4Channel != 0)
+// 	{
+// 		m_pDMA4Channel->Start ();
+
+// 		return;
+// 	}
+// #endif
+
+	assert (m_nChannel < DMA_CHANNELS);
+
+	PeripheralEntry ();
+
+	write32 (ARM_DMACHAN_CS (m_nChannel), CS_RESET);
+	while (read32 (ARM_DMACHAN_CS (m_nChannel)) & CS_RESET)
+	{
+		// do nothing
+	}
+
+	PeripheralExit ();
+}
+
 boolean CDMAChannel::GetStatus (void)
 {
 #if RASPPI >= 4

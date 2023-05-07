@@ -29,6 +29,11 @@
 // #include <circle/new.h>
 #include <assert.h>
 
+#include <circle/logger.h>
+
+LOGMODULE ("smimaster");
+
+
 // Registers - ref the linux driver (bcm2835_smi.h) for documentation
 #define ARM_SMI_BASE	(ARM_IO_BASE + 0x600000)
 #define ARM_SMI_CS		(ARM_SMI_BASE + 0x00)	// Control & status
@@ -166,6 +171,7 @@ CSMIMaster::CSMIMaster(
 	m_bUseAddressPins (bUseAddressPins),
 	m_bUseSeoSePin (bUseSeoSePin),
 	m_bUseSweSrwPin (bUseSweSrwPin),
+	m_nDevice(0),
 	m_nLength(0),
 	m_bDMADirRead(FALSE)
 {
@@ -266,18 +272,34 @@ void CSMIMaster::StartDMA(CDMAChannel& dma, void *pDMABuffer)
 	
 	dma.Start();
 	PeripheralEntry();
-	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START);
+	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE);
 	PeripheralExit();
 	// if (bWaitForCompletion) m_DMA.Wait();
 }
 
-void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned nSetup, unsigned nStrobe, unsigned nHold, unsigned nPace, unsigned nDevice)
+void CSMIMaster::StopDMA(CDMAChannel& dma)
+{
+	// Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
+	dma.Stop();
+	
+	PeripheralEntry();
+
+	// Stop the SMI
+	write32(ARM_SMI_CS, read32(ARM_SMI_CS) & ~CS_ENABLE);
+
+	// Wait for SMI to stop
+	while (read32(ARM_SMI_CS) & CS_ACTIVE); 
+
+	PeripheralExit();
+}
+
+void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned nSetup, unsigned nStrobe, unsigned nHold, unsigned nPace, unsigned nDevice, unsigned bExternalDREQ)
 {
 	uintptr readReg, writeReg;
 	switch (nDevice) {
 	case 0:
 		readReg = ARM_SMI_DSR0;
-		writeReg = ARM_SMI_DSW0;
+		writeReg = ARM_SMI_DSW0;		
 		break;
 	case 1:
 		readReg = ARM_SMI_DSR1;
@@ -297,6 +319,10 @@ void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned 
 		writeReg = ARM_SMI_DSW0;
 		break;
 	}
+
+	// Save external DREQ setting
+	m_bExternalDREQ[nDevice] = bExternalDREQ;
+
 	PeripheralEntry ();
 
 	// Reset SMI regs
@@ -334,7 +360,14 @@ void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned 
 	// Initialise SMI with data width, time step, and setup/hold/strobe counts
 	u32 tmp = read32(ARM_SMI_CS);
 	if (tmp & CS_SETERR) write32(ARM_SMI_CS, tmp | CS_SETERR); // clear error flag
-	u32 timing = (nWidth << DSR_RWIDTH__SHIFT) | (nSetup << DSR_RSETUP__SHIFT) | (nStrobe << DSR_RSTROBE__SHIFT) | (nHold << DSR_RHOLD__SHIFT) | (nPace << DSR_RPACE__SHIFT);
+	u32 timing = (nWidth << DSR_RWIDTH__SHIFT) | 
+		(nSetup << DSR_RSETUP__SHIFT) | 
+		(nStrobe << DSR_RSTROBE__SHIFT) | 
+		(nHold << DSR_RHOLD__SHIFT) | 
+		(nPace << DSR_RPACE__SHIFT);
+	if (bExternalDREQ) timing |= DSR_RDREQ;
+	LOGDBG("timing: 0x%08lx", timing);
+
 	write32(writeReg, timing);
 	write32(readReg, timing); // DSR and DSW have the same fields, so we can reuse timing above
 
@@ -355,7 +388,10 @@ void CSMIMaster::SetupDMA(unsigned nLength, boolean bDMADirRead)
 	// write32(ARM_SMI_CS, read32(ARM_SMI_CS) & ~CS_ENABLE);
 	// BUSY_WAIT_WHILE_TIMEOUT((read32(ARM_SMI_CS) | CS_ENABLE) > 0, 10000U, success);
 
-	write32(ARM_SMI_DMC, (DMA_REQUEST_THRESH << DMC_REQW__SHIFT) | (DMA_REQUEST_THRESH << DMC_REQR__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICW__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICR__SHIFT) | DMC_DMAEN);
+	u32 nDmc = (DMA_REQUEST_THRESH << DMC_REQW__SHIFT) | (DMA_REQUEST_THRESH << DMC_REQR__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICW__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICR__SHIFT) | DMC_DMAEN;
+	if (m_bExternalDREQ[m_nDevice]) nDmc |= DMC_DMAP;
+
+	write32(ARM_SMI_DMC, nDmc);
 	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_ENABLE | CS_CLEAR | CS_PXLDAT); // CS_PXLDAT packs the 8 or 16 bit data into 32-bit double-words
 	write32(ARM_SMI_L, nLength);
 	if (m_bDMADirRead) {
@@ -367,8 +403,12 @@ void CSMIMaster::SetupDMA(unsigned nLength, boolean bDMADirRead)
 }
 
 void CSMIMaster::SetDeviceAndAddress (unsigned nDevice, unsigned nAddr) {
-	assert(nDevice <= 3);
+	assert(nDevice < SMI_NUM_DEVICES);
 	assert(nAddr <= 0b111111);
+
+	// Save current device address for later use
+	m_nDevice = nDevice;
+
 	unsigned val = (nAddr << A_ADDR__SHIFT) | (nDevice << A_DEV__SHIFT);
 
 	PeripheralEntry ();

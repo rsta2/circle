@@ -33,6 +33,7 @@ typedef void TSMICompletionRoutine (boolean bStatus, void *pParam);
 #define SMI_NUM_ADDRESS_LINES		6
 #define SMI_NUM_DATA_LINES		18
 #define SMI_ALL_DATA_LINES_MASK		0b111111111111111111
+#define SMI_NUM_DEVICES		4
 
 #define GPIO_FOR_SAx(line) (5 - line) // SA0 is on GPIO0, SA1 on GPIO4, etc until SA0 on GPIO5
 #define GPIO_FOR_SDx(line) (line + 8) // SD0 is on GPIO8, SD1 on GPIO9, etc until SD17 on GPIO25
@@ -92,7 +93,7 @@ public:
 	/// \param nHold		the hold time that keeps the signals stable after the transfer, in units of nCycle_ns
 	/// \param nPace		the pace time in between two cycles, in units of nCycle_ns
 	/// \param nDevice		the settings bank to use between 0 and 3
-	void SetupTiming (TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned nSetup, unsigned nStrobe, unsigned nHold, unsigned nPace, unsigned nDevice = 0);
+	void SetupTiming (TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned nSetup, unsigned nStrobe, unsigned nHold, unsigned nPace, unsigned nDevice = 0, unsigned bExternalDREQ = FALSE);
 
 	/// \brief Sets up DMA for (potentially multiple) SMI cycles at the specified length and direction
 	/// \param nLength		length of the buffer in bytes
@@ -115,6 +116,8 @@ public:
 	/// \param dma	DMA channel to use
 	/// \param pDMABuffer	DMA buffer to write (64-bit word aligned, see /doc/dma-buffer-requirements.txt)
 	void StartDMA (CDMAChannel& dma, void *pDMABuffer);
+
+	void StopDMA(CDMAChannel& dma);
 
 	void SetCompletionRoutine (TSMICompletionRoutine *pRoutine, void *pParam);
 
@@ -139,6 +142,8 @@ protected:
 	CGPIOPin m_addressGpios[SMI_NUM_ADDRESS_LINES];
 	CGPIOPin m_SoeSeGpio;
 	CGPIOPin m_SweSrwGpio;	
+	unsigned m_bExternalDREQ[SMI_NUM_DEVICES];
+	unsigned m_nDevice;
 	unsigned m_nLength;
 	boolean m_bDMADirRead;
 };

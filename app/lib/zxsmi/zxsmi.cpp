@@ -74,7 +74,9 @@ CZxSmi::CZxSmi (CInterruptSystem *pInterruptSystem)
   m_pDMAControlBlock3(0),
   m_pDMAControlBlock4(0),
 	m_pDMABuffer(0),
-	m_DMABufferIdx(0),
+	m_nDMABufferIdx(0),
+  m_nDMABufferLenBytes(0),
+	m_nDMABufferLenWords(0),
   m_bRunning(FALSE),  
   m_pActLED(0),
   m_bDMAResult(0),
@@ -82,9 +84,11 @@ CZxSmi::CZxSmi (CInterruptSystem *pInterruptSystem)
   m_value(0),
   m_isIOWrite(0),
   m_counter2(0),
+  m_pDebugBuffer(0),
   m_src(0)
 {
-
+  m_nDMABufferLenBytes = ZX_DMA_BUFFER_LENGTH;
+	m_nDMABufferLenWords = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
 }
 
 CZxSmi::~CZxSmi (void)
@@ -108,9 +112,6 @@ CZxSmi::~CZxSmi (void)
 
 boolean CZxSmi::Initialize ()
 {
-  unsigned dmaBufferLenWords = ZX_DMA_BUFFER_LENGTH;
-  unsigned dmaBufferLenBytes = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
-  
   LOGNOTE("Initializing SMI");
 
   // PeripheralEntry ();
@@ -127,13 +128,15 @@ boolean CZxSmi::Initialize ()
     m_pDMAControlBlocks[i] = m_DMA.CreateDMAControlBlock();
 
     // Target data buffer
-    m_pDMABuffers[i] = new ZX_DMA_T[dmaBufferLenWords]; // using new makes the buffer cache-aligned, so suitable for DMA
+    m_pDMABuffers[i] = new ZX_DMA_T[m_nDMABufferLenWords]; // using new makes the buffer cache-aligned, so suitable for DMA
   }
 
+  // Debug buffer
+  m_pDebugBuffer = new ZX_DMA_T[ZX_SMI_DEBUG_BUFFER_LENGTH];
 
 
   // Setup SMI timing
-  LOGDBG("Setting SMI timing: width: %d, ns: %d, setup: %d, strobe: %d, hold: %d, pace: %d", 
+  LOGDBG("Setting SMI timing: width: %d, ns: %d, setup: %d, strobe: %d, hold: %d, pace: %d, external: %d", 
     ZX_SMI_WIDTH, 
     ZX_SMI_NS, 
     ZX_SMI_SETUP, 
@@ -147,22 +150,24 @@ boolean CZxSmi::Initialize ()
     ZX_SMI_SETUP, 
     ZX_SMI_STROBE, 
     ZX_SMI_HOLD, 
-    ZX_SMI_PACE
+    ZX_SMI_PACE,
+    0,
+    ZX_SMI_EXTERNAL_DREQ
   );
 
   // Setup SMI DMA and buffers (must be 64-bit word aligned, see /doc/dma-buffer-requirements.txt)  
-  LOGDBG("Setting SMI DMA: Buffer length: %d bytes", dmaBufferLenBytes);
+  LOGDBG("Setting SMI DMA: Buffer length: %d bytes", m_nDMABufferLenBytes);
 
   // Configure GPIO FIQ interrupt
   m_GpioFiqPin.ConnectInterrupt(GpioFiqHandler, this);
 
   // Configure SMI DMA
-  m_SMIMaster.SetupDMA(dmaBufferLenBytes, TRUE);
+  m_SMIMaster.SetupDMA(m_nDMABufferLenBytes, TRUE);
 
   // Configure DMA control blocks
   for (unsigned i = 0; i < ZX_DMA_BUFFER_COUNT; i++) {
     // Set up reads in separate control blocks
-    m_pDMAControlBlocks[i]->SetupIORead (m_pDMABuffers[0], ARM_SMI_D, dmaBufferLenBytes, DREQSourceSMI);  
+    m_pDMAControlBlocks[i]->SetupIORead (m_pDMABuffers[i], ARM_SMI_D, m_nDMABufferLenBytes, DREQSourceSMI);  
 
     // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
     TDMAControlBlock *pCB = m_pDMAControlBlocks[i]->GetRawControlBlock();
@@ -182,8 +187,8 @@ void CZxSmi::Start()
   m_bRunning = TRUE;
 
   // Set initial DMA buffer and control block  
-  m_pDMABuffer = m_pDMABuffers[m_DMABufferIdx];
-  m_pDMAControlBlock = m_pDMAControlBlocks[m_DMABufferIdx];
+  m_pDMABuffer = m_pDMABuffers[m_nDMABufferIdx];
+  m_pDMAControlBlock = m_pDMAControlBlocks[m_nDMABufferIdx];
 
   // Set DMA completion routines
   // m_DMA.SetCompletionRoutine(DMACompleteInterrupt, this);
@@ -226,7 +231,7 @@ void CZxSmi::SetActLED(CActLED *pActLED) {
   m_pActLED = pActLED;
 }
 
-ZX_DMA_T CZxSmi::GetValue() {
+volatile ZX_DMA_T CZxSmi::GetValue() {
   return m_value;
 }
 
@@ -498,6 +503,10 @@ void CZxSmi::SMICompleteInterrupt(boolean bStatus, void *pParam)
     pThis->m_counter--;
 }
 
+unsigned _loops = 0;
+boolean inIOREQ = FALSE;
+boolean inWR = FALSE;
+
 void CZxSmi::GpioFiqHandler (void *pParam) 
 {
   CZxSmi *pThis = (CZxSmi *) pParam;
@@ -506,31 +515,110 @@ void CZxSmi::GpioFiqHandler (void *pParam)
   // Toggle LED for debug
   pThis->m_pActLED->On();
 
+  // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
+  // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
+
+  // // Stop the DMA and SMI
+  pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
+  
+
+  // CTimer::SimpleusDelay(1);
 
   // Save pointer to buffer just filled by DMA
   ZX_DMA_T *pBuffer = pThis->m_pDMABuffer;
 
-  // Move to the next DMA buffer and control block
-  pThis->m_DMABufferIdx = (pThis->m_DMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
-  pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_DMABufferIdx];
-  pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_DMABufferIdx];
+  // Ensure DMA buffer is not cached
+  CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
+
+  // if (_loops < 2) {
+
+    // Move to the next DMA buffer and control block
+    pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+    pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
+    pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
 
 
-  pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
+    pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
 
-  // Start the SMI for DMA (DMA should already be ready to go)
-  PeripheralEntry();
-	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START);
-	PeripheralExit();
+    // // Start the SMI for DMA (DMA should already be ready to go)
+    PeripheralEntry();
+    write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
+    PeripheralExit();
+  // }
 
+
+  // pThis->m_counter2 = read32(ARM_SMI_CS);
+
+  // GPIO27 (      PIN13) = IRQ - IRQ for frame timing
+  // SD17 (GPI025, PIN22) = DREQ_ACK - UNUSED
+  // SD16 (GPI024, PIN18) = DREQ = /(IORQ & CAS) - triggers the SMI reads to DMA
+  // SD15 (GPI023, PIN16) = D7
+  // SD14 (GPI022, PIN15) = D6
+  // SD13 (GPI021, PIN40) = D5
+  // SD12 (GPIO20, PIN38) = D4
+  // SD11 (GPIO19, PIN35) = D3
+  // SD10 (GPIO18, PIN12) = D2
+  // SD9  (GPIO17, PIN11) = D1
+  // SD8  (GPI016, PIN36) = D0
+  // SD7  (RXD0,   PIN10) = UART for debug
+  // SD6  (TXD0,   PIN8 ) = UART for debug 
+  // SD5  (PWM1,   PIN33) = UNUSED
+  // SD4  (PWM0,   PIN32) = UNUSED
+  // SD3  (SCLK,   PIN23) = UNUSED
+  // SD2  (MOSI,   PIN19) = A0 - Address bit 0 (/IOREQ = /IORQ | A0) ? is A0 inverted?
+  // SD1  (MISO,   PIN21) = /WR - When low, indicates a write
+  // SD0  (CE0   , PIN24) = /IORQ - When low, indicates an IO read or write
+
+  // For debug
+  memcpy(pThis->m_pDebugBuffer, pBuffer, ZX_SMI_DEBUG_BUFFER_LENGTH * sizeof(ZX_DMA_T));
 
   // Loop all the data in the buffer
   for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
+      // Read the value from the buffer
       ZX_DMA_T value = pBuffer[i];
-      if (value > 0) {
-        pThis->m_counter++;
-      }
+
+      // Clear out the buffer as we read it (might be quicker than a memset(), but may well be slower too!! TODO: CHECK)
+      // pBuffer[i] = 0xFFFF;
+
+      if (value != 0xFFFF) {
+        // pThis->m_value = value;
+
+        boolean IORQ = (value & (1 << 0)) == 0;
+        boolean WR = (value & (1 << 1)) == 0;
+        boolean A0 = (value & (1 << 2)) == 0;
+        boolean IOREQ = IOREQ & A0;
+
+        // if (IORQ) {
+        //   pThis->m_value = 0xDDDD;
+        // }
+
+        if (A0) {
+          pThis->m_value = 0xDDDD;
+        }
+
+        // // Check for /IOREQ = 0 (/IOREQ = /IORQ | /A0)
+        // if (!pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 13))) == 0) {
+        //   // pThis->m_value = value; // & 0x07;  // Only interested in first 3 bits
+        //   pThis->m_isIOWrite = true;        
+        //   pThis->m_counter2 = 0;
+        //   }      
+        //   else if (pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 14) | (1 << 13))) == 0) {
+        //   // pThis->m_value = value & 0x07;  // Only interested in first 3 bits for the border colour
+        //   pThis->m_counter2++;
+
+        //   if (pThis->m_counter2 > 5) {
+        //   pThis->m_value = value;
+        //   pThis->m_isIOWrite = false;        
+        //   }
+        // }
+      }      
+      // if (value > 0) {
+      //   pThis->m_counter++;
+      // }
   }
+
+  memset(pBuffer, 0xFF, pThis->m_nDMABufferLenBytes);
+  CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
 
 
 
@@ -550,5 +638,7 @@ void CZxSmi::GpioFiqHandler (void *pParam)
     //   }
     // }
     // pThis->m_counter--;
+
+    _loops++;
 }
 	

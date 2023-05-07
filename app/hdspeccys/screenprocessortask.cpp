@@ -3,6 +3,12 @@
 //
 #include "screenprocessortask.h"
 #include <circle/sched/scheduler.h>
+#include <circle/logger.h>
+
+LOGMODULE ("screenprocessingtask");
+
+
+
 
 CScreenProcessorTask::CScreenProcessorTask (CZxScreen *pZxScreen, CZxSmi *pZxSmi, CActLED *pActLED)
 :	m_pZxScreen (pZxScreen),
@@ -23,13 +29,22 @@ void CScreenProcessorTask::Run (void)
 	m_pZxScreen->Start();
 
 	while (1)
-	{		 
+	{	
+		// CScheduler::Get ()->MsSleep (5000);
+
 		// m_ZxSmi.Start();
 		ZX_DMA_T value = m_pZxSmi->GetValue();
-		// LOGDBG("DATA: %04lx", value);
-		// m_Timer.MsDelay(500);
-		// m_Timer.MsDelay(1);
+		LOGDBG("DATA: %04lx", value);
 
+		// ZX_DMA_T value2 = m_pZxSmi->m_counter2;
+		// LOGDBG("Reg: %08lx", value2);
+
+		for (unsigned i = 0; i < 25/*ZX_SMI_DEBUG_BUFFER_LENGTH*/; i++){
+			ZX_DMA_T v =m_pZxSmi->m_pDebugBuffer[i];
+			LOGDBG("%04lx", v);
+		}
+
+		
 
 		// m_Screen.SetPixel(x++,y++, RED_COLOR);
 		value = value & 0x7;
@@ -54,7 +69,10 @@ void CScreenProcessorTask::Run (void)
 		// LOGDBG("nDestinationAddress: 0x%08lx", m_ZxSmi.m_dst);
 		// LOGDBG(".");
 		
-		// CScheduler::Get ()->MsSleep (1000);
-		CScheduler::Get ()->Yield ();
+		// CScheduler::Get ()->MsSleep (500);
+		// CScheduler::Get ()->Yield ();
+		// m_Timer.MsDelay(500);
+		// m_Timer.MsDelay(1);
+		CScheduler::Get ()->MsSleep (500);
 	}
 }

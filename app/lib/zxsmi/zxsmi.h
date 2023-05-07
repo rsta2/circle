@@ -11,14 +11,17 @@
 #include <circle/logger.h>
 #include <circle/smimaster.h>
 
+#define ZX_SMI_DEBUG_BUFFER_LENGTH		256
+
 // SMI Data and address lines
 // #define ZX_SMI_DATA_LINES_MASK		0b001111111111111111
 // NOTE: pins SD6 and SD7 are used for the serial UART used for debugging!
 #define ZX_SMI_DATA_LINES_MASK		0b111111111100111111
 #define ZX_SMI_USE_ADDRESS_LINES	FALSE
 #define ZX_SMI_USE_SOE_SE					TRUE
-#define ZX_SMI_USE_SWE_SRW				TRUE
+#define ZX_SMI_USE_SWE_SRW				FALSE
 #define ZX_SMI_WIDTH							SMI16Bits
+#define ZX_SMI_EXTERNAL_DREQ			TRUE
 
 // SMI Timing (for a 50 ns cycle time, 20MHz)
 // Timings for RPi v4 (1.5 GHz) - (10 * (15+30+15) / 1.5GHZ) = 400ns
@@ -52,8 +55,13 @@
 #define ZX_DMA_T								u16
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
-#define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((160 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((144 * 1024) / sizeof(ZX_DMA_T))
+#define ZX_DMA_BUFFER_LENGTH		((128 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((96 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((64 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((32 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1 * 1024) / sizeof(ZX_DMA_T))
 #define ZX_DMA_BUFFER_COUNT			2
@@ -76,7 +84,7 @@ public:
 	void Start(void);
 	void Stop(void);
 	void SetActLED(CActLED *pActLED);
-	ZX_DMA_T GetValue(void);
+	volatile ZX_DMA_T GetValue(void);
 
 private:
 	void DMAStart(void);
@@ -86,6 +94,8 @@ private:
 	static void GpioFiqHandler (void *pParam);
 	
 private:
+// HACK
+public:
 	// members ...
 	CInterruptSystem *m_pInterruptSystem;
 	CGPIOPinFIQ	m_GpioFiqPin;
@@ -102,7 +112,9 @@ private:
 
 	ZX_DMA_T *m_pDMABuffers[ZX_DMA_BUFFER_COUNT];
 	/*volatile*/ ZX_DMA_T *m_pDMABuffer;
-	volatile unsigned m_DMABufferIdx;
+	volatile unsigned m_nDMABufferIdx;
+	u32 m_nDMABufferLenBytes;
+	u32 m_nDMABufferLenWords;
 	volatile boolean m_bRunning;
 	CActLED *m_pActLED;
 
@@ -114,6 +126,7 @@ private:
 	public: volatile u32 m_dst;
 	volatile boolean m_isIOWrite;
 	volatile unsigned m_counter2;
+	ZX_DMA_T *m_pDebugBuffer;
 };
 
 #endif // _zxsmi_h
