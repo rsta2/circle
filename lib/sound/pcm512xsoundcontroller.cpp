@@ -2,7 +2,7 @@
 // pcm512xsoundcontroller.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -110,8 +110,7 @@ boolean CPCM512xSoundController::SetMute (TJack Jack, TChannel Channel, boolean 
 	case ChannelRight:	uchMask = 0x01;		break;
 
 	default:
-		assert (0);
-		break;
+		return FALSE;
 	}
 
 	if (bEnable)
@@ -133,6 +132,11 @@ boolean CPCM512xSoundController::SetVolume (TJack Jack, TChannel Channel, int nd
 	assert (m_uchI2CAddress);
 
 	if (!IsOutputJack (Jack))
+	{
+		return FALSE;
+	}
+
+	if (Channel > ChannelRight)
 	{
 		return FALSE;
 	}

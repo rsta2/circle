@@ -2,7 +2,7 @@
 // soundshell.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include <circle/screen.h>
 #include <circle/string.h>
 #include <circle/types.h>
+#include "config.h"
 #include "oscillator.h"
 #include "vumeter.h"
 
@@ -80,6 +81,8 @@ private:
 	};
 	static unsigned ConvertString (const CString &rString, const TStringMapping *pMap);
 
+	CSoundController::TChannel ConvertChannel (const CString &rString);
+
 	void Print (const char *pFormat, ...);
 
 private:
@@ -120,10 +123,9 @@ private:
 	unsigned m_nMode;
 	boolean m_bI2SDevice[2];
 	CSoundBaseDevice *m_pSound[2];
-	COscillator m_VCOLeft;
-	COscillator m_VCORight;
+	COscillator m_VCO[WRITE_CHANNELS];
 
-	CVUMeter *m_pVUMeter[2];
+	CVUMeter *m_pVUMeter[WRITE_CHANNELS];
 	unsigned m_nLastTicks;
 
 	char m_LineBuffer[SOUNDSHELL_MAX_LINE+1];

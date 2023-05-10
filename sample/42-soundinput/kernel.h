@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -85,11 +85,11 @@ private:
 #endif
 
 #ifndef USE_USB
-	CI2SSoundBaseDevice	m_SoundIn;
+	CI2SSoundBaseDevice	*m_pSoundIn;
 #else
-	CUSBSoundBaseDevice	m_SoundIn;
+	CUSBSoundBaseDevice	*m_pSoundIn;
 #endif
-	CPWMSoundBaseDevice	m_SoundOut;
+	CPWMSoundBaseDevice	*m_pSoundOut;
 };
 
 #endif

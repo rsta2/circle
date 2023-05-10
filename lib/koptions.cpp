@@ -2,7 +2,7 @@
 // koptions.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ CKernelOptions::CKernelOptions (void)
 	m_nUSBPowerDelay (0),
 	m_bUSBFullSpeed (FALSE),
 	m_bUSBBoost (FALSE),
+	m_USBSoundChannels {0, 0},
 	m_nSoundOption (0),
 	m_CPUSpeed (CPUSpeedLow),
 	m_nSoCMaxTemp (60),
@@ -128,6 +129,14 @@ CKernelOptions::CKernelOptions (void)
 			strncpy (m_USBIgnore, pValue, sizeof m_USBIgnore-1);
 			m_USBIgnore[sizeof m_USBIgnore-1] = '\0';
 		}
+		else if (strcmp (pOption, "usbsoundchannels") == 0)
+		{
+			if (!GetDecimals (pValue, m_USBSoundChannels, 2))
+			{
+				m_USBSoundChannels[0] = 0;
+				m_USBSoundChannels[1] = 0;
+			}
+		}
 		else if (strcmp (pOption, "sounddev") == 0)
 		{
 			strncpy (m_SoundDevice, pValue, sizeof m_SoundDevice-1);
@@ -222,6 +231,11 @@ boolean CKernelOptions::GetUSBBoost (void) const
 const char *CKernelOptions::GetUSBIgnore (void) const
 {
 	return m_USBIgnore;
+}
+
+const unsigned *CKernelOptions::GetUSBSoundChannels (void) const
+{
+	return m_USBSoundChannels;
 }
 
 const char *CKernelOptions::GetSoundDevice (void) const

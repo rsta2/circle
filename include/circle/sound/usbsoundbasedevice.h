@@ -123,7 +123,6 @@ private:
 	u8 *m_pTXBuffer[2];
 	unsigned m_nTXCurrentBuffer;
 
-	unsigned m_nRXChannels;
 	unsigned m_nRXChunkSizeBytes;
 	u8 *m_pRXBuffer[2];
 	unsigned m_nRXCurrentBuffer;

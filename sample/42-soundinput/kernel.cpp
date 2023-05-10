@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -63,13 +63,8 @@ CKernel::CKernel (void)
 #ifdef ENABLE_RECORDER
 	m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
 #endif
-#ifndef USE_USB
-	m_SoundIn (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, TRUE, 0, 0,
-		   CI2SSoundBaseDevice::DeviceModeRXOnly),
-#else
-	m_SoundIn (SAMPLE_RATE, CUSBSoundBaseDevice::DeviceModeRXOnly),
-#endif
-	m_SoundOut (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE)
+	m_pSoundIn (0),
+	m_pSoundOut (0)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -146,35 +141,47 @@ TShutdownMode CKernel::Run (void)
 	assert (pRecorder != 0);
 #endif
 
-	// configure sound device
-	if (!m_SoundIn.AllocateReadQueue (QUEUE_SIZE_MSECS))
+	// create sound devices
+#ifndef USE_USB
+	m_pSoundIn = new CI2SSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, TRUE, 0, 0,
+					      CI2SSoundBaseDevice::DeviceModeRXOnly);
+#else
+	m_pSoundIn = new CUSBSoundBaseDevice (SAMPLE_RATE, CUSBSoundBaseDevice::DeviceModeRXOnly);
+#endif
+	assert (m_pSoundIn != 0);
+
+	m_pSoundOut = new CPWMSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
+	assert (m_pSoundOut != 0);
+
+	// configure sound devices
+	if (!m_pSoundIn->AllocateReadQueue (QUEUE_SIZE_MSECS))
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Cannot allocate input sound queue");
 	}
 
-	m_SoundIn.SetReadFormat (FORMAT, WRITE_CHANNELS);
+	m_pSoundIn->SetReadFormat (FORMAT, WRITE_CHANNELS);
 
-	if (!m_SoundOut.AllocateQueue (QUEUE_SIZE_MSECS))
+	if (!m_pSoundOut->AllocateQueue (QUEUE_SIZE_MSECS))
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Cannot allocate output sound queue");
 	}
 
-	m_SoundOut.SetWriteFormat (FORMAT, WRITE_CHANNELS);
+	m_pSoundOut->SetWriteFormat (FORMAT, WRITE_CHANNELS);
 
 	// start sound devices
-	if (!m_SoundIn.Start ())
+	if (!m_pSoundIn->Start ())
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Cannot start input sound device");
 	}
 
-	if (!m_SoundOut.Start ())
+	if (!m_pSoundOut->Start ())
 	{
 		m_Logger.Write (FromKernel, LogPanic, "Cannot start output sound device");
 	}
 
 #ifdef INPUT_JACK
 	// enable input jack and set volume
-	CSoundController *pController = m_SoundIn.GetController ();
+	CSoundController *pController = m_pSoundIn->GetController ();
 	if (pController)
 	{
 		pController->EnableJack (INPUT_JACK);
@@ -197,10 +204,10 @@ TShutdownMode CKernel::Run (void)
 	for (unsigned nCount = 0; 1; nCount++)
 	{
 		u8 Buffer[TYPE_SIZE*WRITE_CHANNELS*4096];
-		int nBytes = m_SoundIn.Read (Buffer, sizeof Buffer);
+		int nBytes = m_pSoundIn->Read (Buffer, sizeof Buffer);
 		if (nBytes > 0)
 		{
-			int nResult = m_SoundOut.Write (Buffer, nBytes);
+			int nResult = m_pSoundOut->Write (Buffer, nBytes);
 			if (nResult != nBytes)
 			{
 				m_Logger.Write (FromKernel, LogWarning, "Sound data dropped");
