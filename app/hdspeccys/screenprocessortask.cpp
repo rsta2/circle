@@ -48,7 +48,8 @@ void CScreenProcessorTask::Run (void)
 
 		// m_Screen.SetPixel(x++,y++, RED_COLOR);
 		value = value & 0x7;
-		TScreenColor bc =MAGENTA_COLOR;// clear ? MAGENTA_COLOR : GREEN_COLOR; //BLACK_COLOR;
+		TScreenColor bc =BRIGHT_MAGENTA_COLOR;// clear ? MAGENTA_COLOR : GREEN_COLOR; //BLACK_COLOR;
+		if (value == 0) bc = BLACK_COLOR;
 		if (value == 1) bc = BLUE_COLOR;
 		if (value == 2) bc = RED_COLOR;
 		if (value == 3) bc = MAGENTA_COLOR;

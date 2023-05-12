@@ -19,6 +19,7 @@
 #define ZX_SMI_DATA_LINES_MASK		0b111111111100111111
 #define ZX_SMI_USE_ADDRESS_LINES	FALSE
 #define ZX_SMI_USE_SOE_SE					TRUE
+// #define ZX_SMI_USE_SOE_SE					FALSE
 #define ZX_SMI_USE_SWE_SRW				FALSE
 #define ZX_SMI_WIDTH							SMI16Bits
 #define ZX_SMI_EXTERNAL_DREQ			TRUE
@@ -37,7 +38,7 @@
 #else
 #define ZX_SMI_NS		4
 #define ZX_SMI_SETUP	5
-#define ZX_SMI_STROBE	9
+#define ZX_SMI_STROBE	14
 #define ZX_SMI_HOLD		5
 
 // #define ZX_SMI_NS		4

@@ -504,8 +504,11 @@ void CZxSmi::SMICompleteInterrupt(boolean bStatus, void *pParam)
 }
 
 unsigned _loops = 0;
-boolean inIOREQ = FALSE;
-boolean inWR = FALSE;
+// u32 lastValue = 0;
+// u32 inIOWR = 0;
+// u32 inCAS = 0;
+// u32 screenValue0 = 0;
+// u32 screenValue1 = 0;
 
 void CZxSmi::GpioFiqHandler (void *pParam) 
 {
@@ -549,28 +552,48 @@ void CZxSmi::GpioFiqHandler (void *pParam)
 
   // pThis->m_counter2 = read32(ARM_SMI_CS);
 
-  // GPIO27 (      PIN13) = IRQ - IRQ for frame timing
-  // SD17 (GPI025, PIN22) = DREQ_ACK - UNUSED
-  // SD16 (GPI024, PIN18) = DREQ = /(IORQ & CAS) - triggers the SMI reads to DMA
-  // SD15 (GPI023, PIN16) = D7
-  // SD14 (GPI022, PIN15) = D6
-  // SD13 (GPI021, PIN40) = D5
-  // SD12 (GPIO20, PIN38) = D4
-  // SD11 (GPIO19, PIN35) = D3
-  // SD10 (GPIO18, PIN12) = D2
-  // SD9  (GPIO17, PIN11) = D1
-  // SD8  (GPI016, PIN36) = D0
-  // SD7  (RXD0,   PIN10) = UART for debug
-  // SD6  (TXD0,   PIN8 ) = UART for debug 
-  // SD5  (PWM1,   PIN33) = UNUSED
-  // SD4  (PWM0,   PIN32) = UNUSED
-  // SD3  (SCLK,   PIN23) = UNUSED
-  // SD2  (MOSI,   PIN19) = A0 - Address bit 0 (/IOREQ = /IORQ | A0) ? is A0 inverted?
-  // SD1  (MISO,   PIN21) = /WR - When low, indicates a write
-  // SD0  (CE0   , PIN24) = /IORQ - When low, indicates an IO read or write
+  // GPIO27 (GPIO27, PIN13) => IRQ - IRQ for frame timing - !3S
+  // SD17   (GPI025, PIN22) => DREQ_ACK - UNUSED
+  // SD16   (GPI024, PIN18) => DREQ = /(/IORQ & /CAS) - triggers the SMI reads to DMA - !3S
+  // SD15   (GPI023, PIN16) => D7 - 3S
+  // SD14   (GPI022, PIN15) => D6 - 3S
+  // SD13   (GPI021, PIN40) => D5 - 3S
+  // SD12   (GPIO20, PIN38) => D4 - 3S
+  // SD11   (GPIO19, PIN35) => D3 - 3S
+  // SD10   (GPIO18, PIN12) => D2 - 3S
+  // SD9    (GPIO17, PIN11) => D1 - 3S
+  // SD8    (GPI016, PIN36) => D0 - 3S
+  // SD7    (RXD0,   PIN10) <= UART for debug
+  // SD6    (TXD0,   PIN8 ) => UART for debug 
+  // SD5    (PWM1,   PIN33) == UNUSED
+  // SD4    (PWM0,   PIN32) == UNUSED
+  // SD3    (SCLK,   PIN23) => CAS - Used to detect writes to video memory - 3S
+  // SD2    (MOSI,   PIN19) => A0 - Address bit 0 (/IOREQ = /IORQ | A0) ? is A0 inverted? - 3S
+  // SD1    (MISO,   PIN21) => /WR - When low, indicates a write - 3S
+  // SD0    (CE0,    PIN24) => /IORQ - When low, indicates an IO read or write - 3S
+  // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+
+  // NOTES
+  // - The /OE for the buffers should be generated before the DREQ for the SMI, so that the data is
+  //   available when the SMI is triggered. ACTUALLY, the timing is good the other way around....
+  //   The data will be valid at the 3rd sample, which is the sample before a high on /CAS which
+  //   indicates the end of the read.
+  // - If there are 4 samples between the /CAS highs, then it is a video read. If there are more
+  //   then it is NOT a video read. There should never be less.
+  // - There are 256*192 / 8 = 6144 bytes of pixels and 32*24 = 768 bytes of attributes. 
+  //   giving a total of 6912 bytes per frame (0x1B00).
 
   // For debug
   memcpy(pThis->m_pDebugBuffer, pBuffer, ZX_SMI_DEBUG_BUFFER_LENGTH * sizeof(ZX_DMA_T));
+
+  // Reset state before processing data (this interrupt occurs at start of screen refresh)
+  u32 lastValue = 0;
+  u32 inIOWR = 0;
+  u32 inCAS = 0;
+  u32 videoByteCount = 0;
+  u32 screenValue0 = 0;
+  u32 screenValue1 = 0;
+  u32 casReadIdx = 0;
 
   // Loop all the data in the buffer
   for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
@@ -585,16 +608,57 @@ void CZxSmi::GpioFiqHandler (void *pParam)
 
         boolean IORQ = (value & (1 << 0)) == 0;
         boolean WR = (value & (1 << 1)) == 0;
-        boolean A0 = (value & (1 << 2)) == 0;
-        boolean IOREQ = IOREQ & A0;
+        boolean A0 = (value & (1 << 2)) != 0;
+        boolean CAS = (value & (1 << 3)) == 0;
+        boolean IOREQ = IOREQ & A0;                
+        u32 data = (value >> 8) & 0x7;
 
-        // if (IORQ) {
+        // Test
+        // if (CAS) {
         //   pThis->m_value = 0xDDDD;
         // }
 
-        if (A0) {
-          pThis->m_value = 0xDDDD;
+        // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
+        if (i > 10000) {
+          if (CAS) {
+            // Entered or in CAS
+            inCAS++;
+          } else {
+            // if (inCAS == 3) {
+            //   if (casReadIdx == 0) {
+            //     screenValue0 = lastValue;
+            //   } else {
+            //     screenValue1 = lastValue;
+            //     videoByteCount +=2;
+            //   }
+            // } else if (inCAS > 3) {
+            //   casReadIdx = 0;
+            // }
+            if (inCAS == 3) {
+              // // pThis->m_value = lastValue;   
+              videoByteCount++;  
+              // pThis->m_value = inCAS;   
+              // pThis->m_value =  0xDDDD;                 
+            } 
+            inCAS = 0;
+          }
         }
+
+        // // Handle IO write (border colour)
+        // if (IORQ & WR) {          
+        //   // Entered or in IO write
+        //   inIOWR++;          
+        // } else {
+        //   if (inIOWR > 5) {
+        //     // Exited IO write, use the last value
+        //     // pThis->m_value = lastValue;// 0xDDDD;
+        //     // pThis->m_value =  0xDDDD;
+        //   }
+        //   inIOWR = 0;
+        // }
+
+
+        lastValue = data;
 
         // // Check for /IOREQ = 0 (/IOREQ = /IORQ | /A0)
         // if (!pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 13))) == 0) {
@@ -616,6 +680,8 @@ void CZxSmi::GpioFiqHandler (void *pParam)
       //   pThis->m_counter++;
       // }
   }
+
+  pThis->m_value = videoByteCount;
 
   memset(pBuffer, 0xFF, pThis->m_nDMABufferLenBytes);
   CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
