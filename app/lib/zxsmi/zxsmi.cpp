@@ -10,7 +10,7 @@
 
 LOGMODULE ("ZxSmi");
 
-#define GPIO_FIQ_PIN    27
+#define GPIO_IRQ_PIN    27
 
 // HACK - direct access to SMI
 #define ARM_SMI_BASE	(ARM_IO_BASE + 0x600000)
@@ -59,13 +59,24 @@ LOGMODULE ("ZxSmi");
 #define CS_RXF			(1 << 31)
 
 
+
+u16 *pDEBUG_BUFFER;
+volatile u16 *pVIDEO_BUFFER;
+u16 borderValue;
+u32 videoByteCount;
+
 //
 // Class
 //
 
-CZxSmi::CZxSmi (CInterruptSystem *pInterruptSystem)
-: m_pInterruptSystem (pInterruptSystem),
-  m_GpioFiqPin (GPIO_FIQ_PIN, GPIOModeInput, pInterruptSystem),
+CZxSmi::CZxSmi (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem)
+: m_pGPIOManager(pGPIOManager),
+  m_pInterruptSystem (pInterruptSystem),
+#if (ZX_SMI_USE_FIQ)
+  m_GpioFiqPin (GPIO_IRQ_PIN, GPIOModeInput, pInterruptSystem),
+#else  
+  m_GpioIrqPin(GPIO_IRQ_PIN, GPIOModeInput, m_pGPIOManager),
+#endif  
   m_SMIMaster (ZX_SMI_DATA_LINES_MASK, ZX_SMI_USE_ADDRESS_LINES, ZX_SMI_USE_SOE_SE, ZX_SMI_USE_SWE_SRW, pInterruptSystem),
   m_DMA (ZX_DMA_CHANNEL_TYPE, m_pInterruptSystem),
 	m_pDMAControlBlock(0),
@@ -77,22 +88,30 @@ CZxSmi::CZxSmi (CInterruptSystem *pInterruptSystem)
 	m_nDMABufferIdx(0),
   m_nDMABufferLenBytes(0),
 	m_nDMABufferLenWords(0),
+  m_pFrameEvent(0),
+  m_pScreenDataBuffer(0),
+	m_nScreenDataBufferLength(0),
   m_bRunning(FALSE),  
   m_pActLED(0),
   m_bDMAResult(0),
   m_counter(0),
   m_value(0),
+  m_src(0),
   m_isIOWrite(0),
   m_counter2(0),
-  m_pDebugBuffer(0),
-  m_src(0)
+  m_pDebugBuffer(0)
 {
+  m_nScreenDataBufferLength = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);  
   m_nDMABufferLenBytes = ZX_DMA_BUFFER_LENGTH;
 	m_nDMABufferLenWords = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
 }
 
 CZxSmi::~CZxSmi (void)
 {  
+  // Deallocate screen data buffer
+  delete m_pScreenDataBuffer;
+  m_pScreenDataBuffer = nullptr;
+
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock1);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock2);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock3);
@@ -107,7 +126,11 @@ CZxSmi::~CZxSmi (void)
     delete m_pDMABuffers[i];
   }
 
+#if (ZX_SMI_USE_FIQ)
   m_GpioFiqPin.DisableInterrupt ();
+#else
+  m_GpioIrqPin.DisableInterrupt ();
+#endif  
 }
 
 boolean CZxSmi::Initialize ()
@@ -115,6 +138,10 @@ boolean CZxSmi::Initialize ()
   LOGNOTE("Initializing SMI");
 
   // PeripheralEntry ();
+
+  // Allocate screen data buffer
+  m_pScreenDataBuffer = new ZX_DMA_T[m_nScreenDataBufferLength];
+  pVIDEO_BUFFER = m_pScreenDataBuffer;
   
   // Allocate DMA control blocks
   m_pDMAControlBlock1 = m_DMA.CreateDMAControlBlock();
@@ -158,8 +185,12 @@ boolean CZxSmi::Initialize ()
   // Setup SMI DMA and buffers (must be 64-bit word aligned, see /doc/dma-buffer-requirements.txt)  
   LOGDBG("Setting SMI DMA: Buffer length: %d bytes", m_nDMABufferLenBytes);
 
-  // Configure GPIO FIQ interrupt
-  m_GpioFiqPin.ConnectInterrupt(GpioFiqHandler, this);
+  // Configure GPIO interrupt
+#if (ZX_SMI_USE_FIQ)  
+  m_GpioFiqPin.ConnectInterrupt(GpioIrqHandler, this);
+#else
+  m_GpioIrqPin.ConnectInterrupt(GpioIrqHandler, this);
+#endif  
 
   // Configure SMI DMA
   m_SMIMaster.SetupDMA(m_nDMABufferLenBytes, TRUE);
@@ -168,6 +199,7 @@ boolean CZxSmi::Initialize ()
   for (unsigned i = 0; i < ZX_DMA_BUFFER_COUNT; i++) {
     // Set up reads in separate control blocks
     m_pDMAControlBlocks[i]->SetupIORead (m_pDMABuffers[i], ARM_SMI_D, m_nDMABufferLenBytes, DREQSourceSMI);  
+    // m_pDMAControlBlocks[i]->SetBurstLength(15);
 
     // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
     TDMAControlBlock *pCB = m_pDMAControlBlocks[i]->GetRawControlBlock();
@@ -179,12 +211,15 @@ boolean CZxSmi::Initialize ()
 	return TRUE;
 }
 
-void CZxSmi::Start()
+void CZxSmi::Start(CSynchronizationEvent *pFrameEvent)
 {
   LOGDBG("Starting SMI DMA");
 
   // Set running flag
   m_bRunning = TRUE;
+
+  // Set frame event
+  m_pFrameEvent = pFrameEvent;
 
   // Set initial DMA buffer and control block  
   m_pDMABuffer = m_pDMABuffers[m_nDMABufferIdx];
@@ -199,7 +234,11 @@ void CZxSmi::Start()
   DMAStart();  
 
   // Only start interrupt after DMA has been configured
+#if (ZX_SMI_USE_FIQ)    
   m_GpioFiqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+#else
+  m_GpioIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+#endif  
 
   // m_DMA.Wait();
 
@@ -223,6 +262,7 @@ void CZxSmi::Stop()
   LOGDBG("Stopping SMI DMA");
 
   m_bRunning = FALSE;
+  m_pFrameEvent = nullptr;
 
   // TODO - stop the hardware / cancel the DMA if possible
 }
@@ -233,6 +273,14 @@ void CZxSmi::SetActLED(CActLED *pActLED) {
 
 volatile ZX_DMA_T CZxSmi::GetValue() {
   return m_value;
+}
+
+volatile ZX_DMA_T *CZxSmi::GetScreenDataBuffer(void) {
+  return m_pScreenDataBuffer;
+}
+
+u32 CZxSmi::GetScreenDataBufferLength(void) {
+  return m_nScreenDataBufferLength;
 }
 
 //
@@ -510,10 +558,14 @@ unsigned _loops = 0;
 // u32 screenValue0 = 0;
 // u32 screenValue1 = 0;
 
-void CZxSmi::GpioFiqHandler (void *pParam) 
+void CZxSmi::GpioIrqHandler (void *pParam) 
 {
   CZxSmi *pThis = (CZxSmi *) pParam;
   assert (pThis != 0);
+
+  // Return early if stopped
+  if (!pThis->m_bRunning) return;
+
 
   // Toggle LED for debug
   pThis->m_pActLED->On();
@@ -530,24 +582,29 @@ void CZxSmi::GpioFiqHandler (void *pParam)
   // Save pointer to buffer just filled by DMA
   ZX_DMA_T *pBuffer = pThis->m_pDMABuffer;
 
-  // Ensure DMA buffer is not cached
+
+  // Move to the next DMA buffer and control block
+  pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+  pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
+  pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
+
+  // Start the DMA using the next control block
+  pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
+
+  // // Start the SMI for DMA (DMA should already be ready to go)
+  PeripheralEntry();
+  write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
+  PeripheralExit();
+
+  // Ensure previous DMA buffer is not cached
   CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
 
-  // if (_loops < 2) {
+  // Copy the DMA buffer to the screen buffer
+  // memcpy(pThis->m_pScreenDataBuffer, pBuffer, pThis->m_nDMABufferLenBytes);
 
-    // Move to the next DMA buffer and control block
-    pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
-    pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
-    pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
-
-
-    pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
-
-    // // Start the SMI for DMA (DMA should already be ready to go)
-    PeripheralEntry();
-    write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
-    PeripheralExit();
-  // }
+  // Clear the old DMA buffer
+  // memset(pBuffer, 0x00, pThis->m_nDMABufferLenBytes);
+  // CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
 
 
   // pThis->m_counter2 = read32(ARM_SMI_CS);
@@ -583,17 +640,24 @@ void CZxSmi::GpioFiqHandler (void *pParam)
   // - There are 256*192 / 8 = 6144 bytes of pixels and 32*24 = 768 bytes of attributes. 
   //   giving a total of 6912 bytes per frame (0x1B00).
 
-  // For debug
-  memcpy(pThis->m_pDebugBuffer, pBuffer, ZX_SMI_DEBUG_BUFFER_LENGTH * sizeof(ZX_DMA_T));
+  // Do the rest is the bottom half!
+
+
+  // // For debug
+  // memcpy(pThis->m_pDebugBuffer, pBuffer, ZX_SMI_DEBUG_BUFFER_LENGTH * sizeof(ZX_DMA_T));
+  pDEBUG_BUFFER = pBuffer;
 
   // Reset state before processing data (this interrupt occurs at start of screen refresh)
+  u32 lastlastValue = 0;
   u32 lastValue = 0;
   u32 inIOWR = 0;
   u32 inCAS = 0;
-  u32 videoByteCount = 0;
+  videoByteCount = 0;
   u32 screenValue0 = 0;
   u32 screenValue1 = 0;
   u32 casReadIdx = 0;
+  volatile ZX_DMA_T *pScreenBuffer = pThis->m_pScreenDataBuffer;
+  boolean isPixels = true;
 
   // Loop all the data in the buffer
   for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
@@ -603,7 +667,7 @@ void CZxSmi::GpioFiqHandler (void *pParam)
       // Clear out the buffer as we read it (might be quicker than a memset(), but may well be slower too!! TODO: CHECK)
       // pBuffer[i] = 0xFFFF;
 
-      if (value != 0xFFFF) {
+      // if (value != 0xFFFF) {
         // pThis->m_value = value;
 
         boolean IORQ = (value & (1 << 0)) == 0;
@@ -611,7 +675,7 @@ void CZxSmi::GpioFiqHandler (void *pParam)
         boolean A0 = (value & (1 << 2)) != 0;
         boolean CAS = (value & (1 << 3)) == 0;
         boolean IOREQ = IOREQ & A0;                
-        u32 data = (value >> 8) & 0x7;
+        u32 data = (value >> 8);// & 0x7;
 
         // Test
         // if (CAS) {
@@ -619,7 +683,7 @@ void CZxSmi::GpioFiqHandler (void *pParam)
         // }
 
         // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
-        if (i > 10000) {
+        if (i > 1000) {
           if (CAS) {
             // Entered or in CAS
             inCAS++;
@@ -627,11 +691,12 @@ void CZxSmi::GpioFiqHandler (void *pParam)
             // if (inCAS == 3) {
             //   if (casReadIdx == 0) {
             //     screenValue0 = lastValue;
+            //     casReadIdx = 1;
             //   } else {
             //     screenValue1 = lastValue;
             //     videoByteCount +=2;
             //   }
-            // } else if (inCAS > 3) {
+            // } else {
             //   casReadIdx = 0;
             // }
             if (inCAS == 3) {
@@ -639,26 +704,34 @@ void CZxSmi::GpioFiqHandler (void *pParam)
               videoByteCount++;  
               // pThis->m_value = inCAS;   
               // pThis->m_value =  0xDDDD;                 
+
+              if (isPixels) {
+                borderValue = lastValue;
+                *pScreenBuffer++ = data;                
+              }
+              isPixels = !isPixels;
             } 
             inCAS = 0;
           }
         }
 
-        // // Handle IO write (border colour)
+        // Handle IO write (border colour)
         // if (IORQ & WR) {          
         //   // Entered or in IO write
         //   inIOWR++;          
         // } else {
         //   if (inIOWR > 5) {
         //     // Exited IO write, use the last value
-        //     // pThis->m_value = lastValue;// 0xDDDD;
+        //     // pThis->m_value = lastValue;
         //     // pThis->m_value =  0xDDDD;
+        //     borderValue = lastValue;
         //   }
         //   inIOWR = 0;
         // }
 
 
-        lastValue = data;
+        lastlastValue = lastValue;
+        lastValue = data;        
 
         // // Check for /IOREQ = 0 (/IOREQ = /IORQ | /A0)
         // if (!pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 13))) == 0) {
@@ -675,13 +748,13 @@ void CZxSmi::GpioFiqHandler (void *pParam)
         //   pThis->m_isIOWrite = false;        
         //   }
         // }
-      }      
+      // }      
       // if (value > 0) {
       //   pThis->m_counter++;
       // }
   }
 
-  pThis->m_value = videoByteCount;
+  // pThis->m_value = videoByteCount;
 
   memset(pBuffer, 0xFF, pThis->m_nDMABufferLenBytes);
   CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
@@ -692,6 +765,11 @@ void CZxSmi::GpioFiqHandler (void *pParam)
   pThis->m_pActLED->Off();
 
   // TODO - hand off the buffer to the main thread
+
+    // Signal the bottom half
+  // if (pThis->m_pFrameEvent) {
+  //   pThis->m_pFrameEvent->Set();
+  // }
 
     // if (pThis->m_counter <= 0) {
     //   pThis->m_counter = 10;

@@ -793,7 +793,7 @@ unsigned CDMAChannel::CDMAControlBlock::GetBurstLength()
 
 void CDMAChannel::CDMAControlBlock::SetBurstLength(unsigned nBurstLength)
 {
-	assert((nBurstLength & ~TI_BURST_LENGTH_MASK) > 0);
+	assert((nBurstLength & ~TI_BURST_LENGTH_MASK) == 0);
 
 	m_pControlBlock->nTransferInformation |= (nBurstLength << TI_BURST_LENGTH_SHIFT);
 }
@@ -875,7 +875,7 @@ unsigned CDMAChannel::CDMAControlBlock::GetWaitCycles()
 
 void CDMAChannel::CDMAControlBlock::SetWaitCycles(unsigned nWaitCycles)
 {
-	assert((nWaitCycles & ~TI_WAIT_CYCLES_MASK) > 0);
+	assert((nWaitCycles & ~TI_WAIT_CYCLES_MASK) == 0);
 
 	m_pControlBlock->nTransferInformation |= (nWaitCycles << TI_WAIT_CYCLES_SHIFT);
 }

@@ -14,6 +14,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
+#include <circle/gpiomanager.h>
 #include <circle/types.h>
 #include <circle/sched/scheduler.h>
 #include <circle/sched/synchronizationevent.h>
@@ -62,6 +63,7 @@ private:
 	CLogger			m_Logger;
 
 	// TODO: add more members here
+	CGPIOManager	m_GPIOManager;	
 	CScheduler		m_Scheduler;
 	CSynchronizationEvent	m_Event;
 	

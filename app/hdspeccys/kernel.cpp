@@ -17,8 +17,9 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),	
 	m_Logger (m_Options.GetLogLevel(), &m_Timer),	
 	// TODO: add more member initializers here
+	m_GPIOManager(&m_Interrupt),
 	m_Shell (&m_Serial),
-	m_ZxSmi(&m_Interrupt),
+	m_ZxSmi(&m_GPIOManager, &m_Interrupt),
 	// m_ZxScreen(m_Options.GetWidth (), m_Options.GetHeight (), FALSE, 0, &m_Interrupt)
 	// 320x256 (32 + 256 + 32 x 32 + 192 + 32) - border is 1/3rd screen (this is about right for original speccy)
 	m_ZxScreen(320, 256, 0, &m_Interrupt)
@@ -85,6 +86,11 @@ boolean CKernel::Initialize (void)
 	}
 
 	// TODO: call Initialize () of added members here (if required)
+	if (bOK)
+	{
+		bOK = m_GPIOManager.Initialize ();
+	}
+
 	if (bOK)
 	{
 		bOK = m_ZxSmi.Initialize ();

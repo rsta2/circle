@@ -3,6 +3,16 @@
 //
 #include "backgroundtask.h"
 #include <circle/sched/scheduler.h>
+#include <circle/logger.h>
+
+LOGMODULE ("screenprocessingtask");
+
+
+extern "C"	u16 *pDEBUG_BUFFER;
+extern "C" volatile u16 *pVIDEO_BUFFER;
+extern "C" u16 borderValue;
+extern "C" u32 videoByteCount;
+
 
 CBackgroundTask::CBackgroundTask (CShell *pShell, CActLED *pActLED, CSynchronizationEvent *pRebootEvent)
 :	
@@ -33,6 +43,32 @@ void CBackgroundTask::Run (void)
 		// 	m_pActLED->Off ();
 		// 	CScheduler::Get ()->MsSleep (200);
 		// }
+
+		
+		// u32 len = 0;
+		// for (unsigned i = 0; i < (128*1024); i++){
+		// 	if (pDEBUG_BUFFER[i] != 0x0000) {
+		// 		len++;
+		// 	} else {
+		// 		break;
+		// 	}				
+		// }
+		// LOGDBG("Buffer len: %04ld", len);
+		// LOGDBG("Border value: %04ld", borderValue);		
+		LOGDBG("Video bytes: 0x%04lx", videoByteCount);		
+		// // if (pDEBUG_BUFFER) {	
+		// // 	for (unsigned i = 0; i < 25/*ZX_SMI_DEBUG_BUFFER_LENGTH*/; i++){
+		// // 		u16 v = pDEBUG_BUFFER[i];
+		// // 		LOGDBG("%04lx", v);
+		// // 	}
+		// // }
+		// if (pVIDEO_BUFFER) {	
+		// 	for (unsigned i = 0; i < 25/*ZX_SMI_DEBUG_BUFFER_LENGTH*/; i++){
+		// 		u16 v = pVIDEO_BUFFER[i];
+		// 		LOGDBG("%04lx", v);
+		// 	}
+		// }
+
 
 		CScheduler::Get ()->MsSleep (500);
 	}

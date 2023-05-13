@@ -18,9 +18,11 @@ public:
 	void Run (void);
 
 private:
+	CSynchronizationEvent	m_FrameEvent;
+
 	CZxScreen		*m_pZxScreen;
 	CZxSmi			*m_pZxSmi;	
-	CActLED			*m_pActLED;
+	CActLED			*m_pActLED;	
 };
 
 #endif

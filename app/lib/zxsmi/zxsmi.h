@@ -7,9 +7,12 @@
 #include <circle/actled.h>
 #include <circle/types.h>
 #include <circle/interrupt.h>
+#include <circle/gpiomanager.h>
+#include <circle/gpiopin.h>
 #include <circle/gpiopinfiq.h>
 #include <circle/logger.h>
 #include <circle/smimaster.h>
+#include <circle/sched/synchronizationevent.h>
 
 #define ZX_SMI_DEBUG_BUFFER_LENGTH		256
 
@@ -23,6 +26,7 @@
 #define ZX_SMI_USE_SWE_SRW				FALSE
 #define ZX_SMI_WIDTH							SMI16Bits
 #define ZX_SMI_EXTERNAL_DREQ			TRUE
+#define ZX_SMI_USE_FIQ					FALSE
 
 // SMI Timing (for a 50 ns cycle time, 20MHz)
 // Timings for RPi v4 (1.5 GHz) - (10 * (15+30+15) / 1.5GHZ) = 400ns
@@ -37,9 +41,19 @@
 #define ZX_SMI_HOLD		15
 #else
 #define ZX_SMI_NS		4
-#define ZX_SMI_SETUP	5
-#define ZX_SMI_STROBE	14
-#define ZX_SMI_HOLD		5
+#define ZX_SMI_SETUP	6
+#define ZX_SMI_STROBE	7
+#define ZX_SMI_HOLD		6
+
+// #define ZX_SMI_NS		4
+// #define ZX_SMI_SETUP	9
+// #define ZX_SMI_STROBE	1
+// #define ZX_SMI_HOLD		9
+
+// #define ZX_SMI_NS		4
+// #define ZX_SMI_SETUP	5
+// #define ZX_SMI_STROBE	14
+// #define ZX_SMI_HOLD		5
 
 // #define ZX_SMI_NS		4
 // #define ZX_SMI_SETUP	7
@@ -53,14 +67,16 @@
 #endif
 
 // SMI DMA
-#define ZX_DMA_T								u16
+#define ZX_DMA_T					u16
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))
+#define ZX_DMA_BUFFER_LENGTH		((512 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((220 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((160 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((144 * 1024) / sizeof(ZX_DMA_T))
-#define ZX_DMA_BUFFER_LENGTH		((128 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((128 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((96 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((64 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((32 * 1024) / sizeof(ZX_DMA_T))
@@ -73,33 +89,41 @@
 #define ZX_PIN_IOREQ		(1 << 15)
 #define ZX_PIN_WR				(1 << 14)
 
+
 class CZxSmi
 {
 public:
-	CZxSmi (CInterruptSystem *pInterruptSystem);
+	CZxSmi (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem);
 	~CZxSmi (void);
 
 	// methods ...
 	boolean Initialize(void);
 	
-	void Start(void);
+	void Start(CSynchronizationEvent *pFrameEvent);
 	void Stop(void);
 	void SetActLED(CActLED *pActLED);
 	volatile ZX_DMA_T GetValue(void);
+	volatile ZX_DMA_T *GetScreenDataBuffer(void);
+	u32 GetScreenDataBufferLength(void);
 
 private:
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 	static void DMARestartCompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 	static void SMICompleteInterrupt(boolean bStatus, void *pParam);	
-	static void GpioFiqHandler (void *pParam);
+	static void GpioIrqHandler (void *pParam);
 	
 private:
 // HACK
 public:
 	// members ...
+	CGPIOManager *m_pGPIOManager;
 	CInterruptSystem *m_pInterruptSystem;
+#if (ZX_SMI_USE_FIQ)	
 	CGPIOPinFIQ	m_GpioFiqPin;
+#else		
+	CGPIOPin	m_GpioIrqPin;
+#endif	
 	CSMIMaster m_SMIMaster;
 
 	CDMAChannel m_DMA;
@@ -116,6 +140,10 @@ public:
 	volatile unsigned m_nDMABufferIdx;
 	u32 m_nDMABufferLenBytes;
 	u32 m_nDMABufferLenWords;
+	CSynchronizationEvent	*m_pFrameEvent;
+	volatile ZX_DMA_T *m_pScreenDataBuffer;
+	u32 m_nScreenDataBufferLength;
+
 	volatile boolean m_bRunning;
 	CActLED *m_pActLED;
 

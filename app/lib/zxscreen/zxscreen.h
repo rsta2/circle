@@ -141,6 +141,7 @@ public:
 	void Clear (TScreenColor backgroundColor);
 	void SetBorder (TScreenColor borderColor);
 	void SetScreen (boolean bToggle);
+	void SetScreenFromBuffer(u16 *pPixelBuffer, u32 len);
 
 	void UpdateScreen(void);
 private:

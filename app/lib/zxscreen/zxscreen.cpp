@@ -300,6 +300,57 @@ void CZxScreen::SetScreen (boolean bToggle)
   m_bDirty = TRUE;
 }
 
+void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u32 len) {
+  TScreenColor *pBuffer = m_pOffscreenBuffer;
+	unsigned nSize = m_nPixelCount;
+  unsigned x = 0;
+  unsigned y = 0;
+  unsigned px = 0;
+  unsigned py = 0;
+  unsigned pixel = 0;
+  unsigned pixelWord = 0;
+  unsigned pixelBit = 0;
+  unsigned pixelSet = 0;
+  boolean bInScreen = FALSE;
+
+	while (nSize--)
+	{
+    px = x - m_nBorderWidth;
+    py = y - m_nBorderHeight;
+    bInScreen = (px >= 0 && px < (m_nScreenWidth)) && 
+                (py >= 0 && py < (m_nScreenHeight));
+
+    // In the screen
+    if (bInScreen) { 
+      pixelWord = pixel / 8;
+      pixelBit = (pixel % 8);
+      pixelSet = (pPixelBuffer[pixelWord] >> pixelBit) & 0x01;
+      *pBuffer = pixelSet ? BLACK_COLOR : WHITE_COLOR;
+
+
+      pixel++;
+    }
+
+    // Increment pixel pointer
+    pBuffer++;
+
+    // Track pixel position in buffer
+    x++;
+    if (x >= m_nWidth) {
+      x = 0;
+      y++;
+      if (y >= m_nHeight) {
+        y = 0;
+      }
+    }
+	}
+
+
+  // Mark dirty so will be updated
+  m_bDirty = TRUE;
+}
+
+
 //
 // Private
 //
