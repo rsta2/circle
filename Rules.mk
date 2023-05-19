@@ -50,7 +50,7 @@ FLOAT_ABI ?= hard
 # set this to 1 to enable garbage collection on sections, may cause side effects
 GC_SECTIONS ?= 0
 
-# set this to 1 to gzip-compress the kernel
+# set this to 1 to gzip-compress the kernel (AArch64 only)
 GZIP_KERNEL ?= 0
 
 ifneq ($(strip $(CLANG)),1)
@@ -221,11 +221,13 @@ endif
 	@$(OBJCOPY) $(TARGET).elf -O binary $(TARGET).img
 	@echo -n "  WC    $(TARGET).img => "
 	@wc -c < $(TARGET).img
+ifeq ($(strip $(AARCH)),64)
 ifeq ($(strip $(GZIP_KERNEL)),1)
 	@gzip -9 -f -n $(TARGET).img
 	@mv $(TARGET).img.gz $(TARGET).img
 	@echo -n "  GZIP  $(TARGET).img => "
 	@wc -c < $(TARGET).img
+endif
 endif
 
 clean:
