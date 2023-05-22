@@ -2,7 +2,7 @@
 // soundshell.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "soundshell.h"
-#include "config.h"
 #include <circle/sound/pwmsoundbasedevice.h>
 #include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/sound/hdmisoundbasedevice.h>
@@ -71,8 +70,8 @@ const char CSoundShell::HelpMsg[] =
 	"\t\t|spdif|defaultin|linein|microphone)\n"
 	"disable JACK\tDisable jack (multi-jack operation only)\n"
 	"controlinfo CTRL CHAN [JACK]\t\t\t\t\t\tinfo\n"
-	"\t\tDisplay control (mute|volume) info for channel (lr|l|r)\n"
-	"\t\t[and jack]\n"
+	"\t\tDisplay control (mute|volume) info\n"
+	"\t\tfor channel (all|l|r|NUM) [and jack]\n"
 	"setcontrol CTRL CHAN VAL [JACK]\t\t\t\t\t\tset\n"
 	"\t\tSet control for channel [and jack] to value\n"
 	"oscillator WAVE [FREQ] [CHAN]\t\t\t\t\t\tosc\n"
@@ -115,7 +114,7 @@ const CSoundShell::TStringMapping CSoundShell::s_JackMap[] =
 
 const CSoundShell::TStringMapping CSoundShell::s_ChannelMap[] =
 {
-	{"lr",		CSoundController::ChannelAll},
+	{"all",		CSoundController::ChannelAll},
 	{"l",		CSoundController::ChannelLeft},
 	{"r",		CSoundController::ChannelRight},
 	{0,		CSoundController::ChannelUnknown}
@@ -158,15 +157,16 @@ CSoundShell::CSoundShell (CConsole *pConsole, CInterruptSystem *pInterrupt,
 	m_nMode (ModeOutput),
 	m_bI2SDevice {FALSE, FALSE},
 	m_pSound {0, 0},
-	m_pVUMeter {0, 0},
 	m_nLastTicks (0)
 {
-	// initialize oscillators
-	m_VCOLeft.SetWaveform (WaveformSine);
-	m_VCOLeft.SetFrequency (440.0);
+	for (unsigned i = 0; i < WRITE_CHANNELS; i++)
+	{
+		m_pVUMeter[i] = 0;
 
-	m_VCORight.SetWaveform (WaveformSine);
-	m_VCORight.SetFrequency (440.0);
+		// initialize oscillators
+		m_VCO[i].SetWaveform (WaveformSine);
+		m_VCO[i].SetFrequency (440.0);
+	}
 }
 
 CSoundShell::~CSoundShell (void)
@@ -177,8 +177,6 @@ CSoundShell::~CSoundShell (void)
 	m_pUSBHCI = 0;
 	m_pSound[ModeOutput] = 0;
 	m_pSound[ModeInput] = 0;
-	m_pVUMeter[0] = 0;
-	m_pVUMeter[1] = 0;
 }
 
 void CSoundShell::Run (void)
@@ -757,8 +755,7 @@ boolean CSoundShell::ControlInfo (void)
 		return FALSE;
 	}
 
-	CSoundController::TChannel Channel =
-		(CSoundController::TChannel) ConvertString (Token, s_ChannelMap);
+	CSoundController::TChannel Channel = ConvertChannel (Token);
 	if (Channel == CSoundController::ChannelUnknown)
 	{
 		Print ("Unknown channel: %s\n", (const char *) Token);
@@ -839,8 +836,7 @@ boolean CSoundShell::SetControl (void)
 		return FALSE;
 	}
 
-	CSoundController::TChannel Channel =
-		(CSoundController::TChannel) ConvertString (Token, s_ChannelMap);
+	CSoundController::TChannel Channel = ConvertChannel (Token);
 	if (Channel == CSoundController::ChannelUnknown)
 	{
 		Print ("Unknown channel: %s\n", (const char *) Token);
@@ -938,7 +934,7 @@ boolean CSoundShell::Oscillator (void)
 	{
 		if (GetToken (&Token))
 		{
-			Channel = (CSoundController::TChannel) ConvertString (Token, s_ChannelMap);
+			Channel = ConvertChannel (Token);
 			if (Channel == CSoundController::ChannelUnknown)
 			{
 				Channel = CSoundController::ChannelAll;
@@ -952,18 +948,18 @@ boolean CSoundShell::Oscillator (void)
 		nFrequency = 440;
 	}
 
-	if (   Channel == CSoundController::ChannelLeft
-	    || Channel == CSoundController::ChannelAll)
+	if (Channel != CSoundController::ChannelAll)
 	{
-		m_VCOLeft.SetWaveform (Waveform);
-		m_VCOLeft.SetFrequency ((float) nFrequency);
+		m_VCO[Channel-1].SetWaveform (Waveform);
+		m_VCO[Channel-1].SetFrequency ((float) nFrequency);
 	}
-
-	if (   Channel == CSoundController::ChannelRight
-	    || Channel == CSoundController::ChannelAll)
+	else
 	{
-		m_VCORight.SetWaveform (Waveform);
-		m_VCORight.SetFrequency ((float) nFrequency);
+		for (unsigned i = 0; i < WRITE_CHANNELS; i++)
+		{
+			m_VCO[i].SetWaveform (Waveform);
+			m_VCO[i].SetFrequency ((float) nFrequency);
+		}
 	}
 
 	return TRUE;
@@ -1187,6 +1183,23 @@ unsigned CSoundShell::ConvertString (const CString &rString, const TStringMappin
 	return pMap->nID;
 }
 
+CSoundController::TChannel CSoundShell::ConvertChannel (const CString &rString)
+{
+	CSoundController::TChannel Channel =
+		(CSoundController::TChannel) ConvertString (rString, s_ChannelMap);
+	if (Channel == CSoundController::ChannelUnknown)
+	{
+		int nChannel = ConvertNumber (rString);
+		if (   nChannel != INVALID_NUMBER
+		    && nChannel <= WRITE_CHANNELS)
+		{
+			Channel = (CSoundController::TChannel) nChannel;
+		}
+	}
+
+	return Channel;
+}
+
 void CSoundShell::Print (const char *pFormat, ...)
 {
 	assert (pFormat != 0);
@@ -1279,10 +1292,9 @@ void CSoundShell::ProcessSound (void)
 		if (   m_pSound[0] == 0
 		    && m_pSound[1] == 0)
 		{
-			m_pVUMeter[0]->PutInputLevel (0.0f);
-			if (m_pVUMeter[1] != 0)
+			for (unsigned i = 0; i < WRITE_CHANNELS; i++)
 			{
-				m_pVUMeter[1]->PutInputLevel (0.0f);
+				m_pVUMeter[i]->PutInputLevel (0.0f);
 			}
 		}
 
@@ -1291,10 +1303,9 @@ void CSoundShell::ProcessSound (void)
 		{
 			m_nLastTicks = nTicks;
 
-			m_pVUMeter[0]->Update ();
-			if (m_pVUMeter[1] != 0)
+			for (unsigned i = 0; i < WRITE_CHANNELS; i++)
 			{
-				m_pVUMeter[1]->Update ();
+				m_pVUMeter[i]->Update ();
 			}
 		}
 	}
@@ -1339,28 +1350,19 @@ void CSoundShell::GetSoundData (void *pBuffer, unsigned nFrames)
 
 	for (unsigned i = 0; i < nSamples;)
 	{
-		m_VCOLeft.NextSample ();
-		m_VCORight.NextSample ();
-
-		float fLevel = m_VCOLeft.GetOutputLevel () * VOLUME;
-		TYPE nLevel = (TYPE) (fLevel * FACTOR + NULL_LEVEL);
-		memcpy (&pBuffer8[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
-
-		if (m_pVUMeter[0] != 0)
+		for (unsigned j = 0; j < WRITE_CHANNELS; j++)
 		{
-			m_pVUMeter[0]->PutInputLevel (fLevel);
-		}
+			m_VCO[j].NextSample ();
 
-#if WRITE_CHANNELS == 2
-		fLevel = m_VCORight.GetOutputLevel () * VOLUME;
-		nLevel = (TYPE) (fLevel * FACTOR + NULL_LEVEL);
-		memcpy (&pBuffer8[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
+			float fLevel = m_VCO[j].GetOutputLevel () * VOLUME;
+			TYPE nLevel = (TYPE) (fLevel * FACTOR + NULL_LEVEL);
+			memcpy (&pBuffer8[i++ * TYPE_SIZE], &nLevel, TYPE_SIZE);
 
-		if (m_pVUMeter[1] != 0)
-		{
-			m_pVUMeter[1]->PutInputLevel (fLevel);
+			if (m_pVUMeter[j] != 0)
+			{
+				m_pVUMeter[j]->PutInputLevel (fLevel);
+			}
 		}
-#endif
 	}
 }
 

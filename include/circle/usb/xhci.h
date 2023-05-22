@@ -2,7 +2,7 @@
 // xhci.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -387,6 +387,9 @@ PACKED;
 #define XHCI_TRANSFER_TRB_CONTROL_IOC				(1 << 5)
 #define XHCI_TRANSFER_TRB_CONTROL_IDT				(1 << 6)
 #define XHCI_TRANSFER_TRB_CONTROL_DIR_IN			(1 << 16)
+
+#define XHCI_TRANSFER_TRB_CONTROL_FRAME_ID__SHIFT		20		// Isoch TRB
+#define XHCI_TRANSFER_TRB_CONTROL_FRAME_ID__MASK		(0x7FF << 20)
 #define XHCI_TRANSFER_TRB_CONTROL_SIA				(1 << 31)
 
 //

@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 450100
+CIRCLEVER = 450200
 
 CIRCLEHOME ?= ..
 
@@ -49,6 +49,9 @@ FLOAT_ABI ?= hard
 
 # set this to 1 to enable garbage collection on sections, may cause side effects
 GC_SECTIONS ?= 0
+
+# set this to 1 to gzip-compress the kernel (AArch64 only)
+GZIP_KERNEL ?= 0
 
 ifneq ($(strip $(CLANG)),1)
 CC	= $(PREFIX)gcc
@@ -169,6 +172,9 @@ CPPFLAGS+= $(CFLAGS) $(STANDARD)
 
 ifneq ($(strip $(CLANG)),1)
 LDFLAGS	+= --section-start=.init=$(LOADADDR)
+ifneq ($(strip $(shell $(LD) --help | fgrep no-warn-rwx-segments | wc -l)),0)
+LDFLAGS	+= --no-warn-rwx-segments
+endif
 else
 LDFLAGS	+= -Wl,--section-start=.init=$(LOADADDR)
 endif
@@ -215,6 +221,14 @@ endif
 	@$(OBJCOPY) $(TARGET).elf -O binary $(TARGET).img
 	@echo -n "  WC    $(TARGET).img => "
 	@wc -c < $(TARGET).img
+ifeq ($(strip $(AARCH)),64)
+ifeq ($(strip $(GZIP_KERNEL)),1)
+	@gzip -9 -f -n $(TARGET).img
+	@mv $(TARGET).img.gz $(TARGET).img
+	@echo -n "  GZIP  $(TARGET).img => "
+	@wc -c < $(TARGET).img
+endif
+endif
 
 clean:
 	@echo "  CLEAN " `pwd`

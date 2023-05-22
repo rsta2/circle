@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -682,7 +682,11 @@ void CUSBDevice::ConfigurationError (const char *pSource) const
 
 CUSBFunction *CUSBDevice::GetFunction (unsigned nIndex)
 {
-	assert (nIndex < USBDEV_MAX_FUNCTIONS);
+	if (nIndex >= USBDEV_MAX_FUNCTIONS)
+	{
+		return 0;
+	}
+
 	return m_pFunction[nIndex];
 }
 

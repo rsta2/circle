@@ -8,8 +8,8 @@
 # Use most recent firmware test revision
 #FIRMWARE = master
 
-# Use firmware revision built/committed on: Aug 26 2022
-FIRMWARE ?= ecc243c52789f4d8e837c7300b6effb059dc18c0
+# Use firmware revision built/committed on: Mar 17 2023
+FIRMWARE ?= a585b376a2e7e657287543d196ae1f8881ede559
 
 BASEURL = https://github.com/raspberrypi/firmware/blob/$(FIRMWARE)/boot
 
@@ -25,6 +25,7 @@ firmware: clean
 	wget -q -O fixup4cd.dat $(BASEURL)/fixup4cd.dat?raw=true
 	wget -q -O start4.elf $(BASEURL)/start4.elf?raw=true
 	wget -q -O start4cd.elf $(BASEURL)/start4cd.elf?raw=true
+	wget -q -O bcm2710-rpi-zero-2-w.dtb $(BASEURL)/bcm2710-rpi-zero-2-w.dtb?raw=true
 	wget -q -O bcm2711-rpi-400.dtb $(BASEURL)/bcm2711-rpi-400.dtb?raw=true
 	wget -q -O bcm2711-rpi-4-b.dtb $(BASEURL)/bcm2711-rpi-4-b.dtb?raw=true
 	wget -q -O bcm2711-rpi-cm4.dtb $(BASEURL)/bcm2711-rpi-cm4.dtb?raw=true

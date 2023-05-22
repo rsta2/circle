@@ -4,7 +4,7 @@
 // Driver for the GIC-400 interrupt controller of the Raspberry Pi 4
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -109,7 +109,7 @@ CInterruptSystem::~CInterruptSystem (void)
 boolean CInterruptSystem::Initialize (void)
 {
 #if AARCH == 32
-	TExceptionTable *pTable = (TExceptionTable *) ARM_EXCEPTION_TABLE_BASE;
+	TExceptionTable * volatile pTable = (TExceptionTable * volatile) ARM_EXCEPTION_TABLE_BASE;
 	pTable->IRQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->IRQ, IRQStub));
 	pTable->FIQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->FIQ, FIQStub));
 
@@ -118,7 +118,7 @@ boolean CInterruptSystem::Initialize (void)
 
 	SyncDataAndInstructionCache ();
 #else
-	TVectorTable *pTable = (TVectorTable *) VECTOR_TABLE_EL3;
+	TVectorTable * volatile pTable = (TVectorTable * volatile) VECTOR_TABLE_EL3;
 	for (unsigned i = 0; i < 16; i++)
 	{
 		pTable->Vector[i].Branch =
@@ -234,7 +234,7 @@ void CInterruptSystem::DisableIRQ (unsigned nIRQ)
 void CInterruptSystem::EnableFIQ (unsigned nFIQ)
 {
 #if AARCH == 64
-	u32 *pMagic = (u32 *) ARMSTUB_FIQ_MAGIC_ADDR;
+	u32 * volatile pMagic = (u32 * volatile) ARMSTUB_FIQ_MAGIC_ADDR;
 	if (*pMagic != ARMSTUB_FIQ_MAGIC)
 	{
 		CLogger::Get ()->Write ("intgic", LogPanic, "FIQ not supported, ARM stub not found");
@@ -251,7 +251,7 @@ void CInterruptSystem::EnableFIQ (unsigned nFIQ)
 void CInterruptSystem::DisableFIQ (void)	// may be called, when FIQ is not enabled
 {
 #if AARCH == 64
-	u32 *pMagic = (u32 *) ARMSTUB_FIQ_MAGIC_ADDR;
+	u32 * volatile pMagic = (u32 * volatile) ARMSTUB_FIQ_MAGIC_ADDR;
 	if (*pMagic != ARMSTUB_FIQ_MAGIC)
 	{
 		return;

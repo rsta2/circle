@@ -8,11 +8,13 @@
 
 enum TGPIOClock
 {
-	GPIOClock0   = 0,			// on GPIO4 Alt0 or GPIO20 Alt5
-	GPIOClock1   = 1,			// RPi 4: on GPIO5 Alt0 or GPIO21 Alt5
-	GPIOClock2   = 2,			// on GPIO6 Alt0
-	GPIOClockPCM = 5,
-	GPIOClockPWM = 6
+	GPIOClockCAM0 = 8,
+	GPIOClockCAM1 = 9,
+	GPIOClock0    = 14,			// on GPIO4 Alt0 or GPIO20 Alt5
+	GPIOClock1    = 15,			// RPi 4: on GPIO5 Alt0 or GPIO21 Alt5
+	GPIOClock2    = 16,			// on GPIO6 Alt0
+	GPIOClockPCM  = 19,
+	GPIOClockPWM  = 20
 };
 
 enum TGPIOClockSource

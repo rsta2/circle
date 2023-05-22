@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -222,8 +222,8 @@ boolean CUSBMIDIDevice::SendPlainMIDI (unsigned nCable, const u8 *pData, unsigne
 	u8 *pBuffer = Buffer;
 
 	unsigned nState = 0;
-	unsigned nPacketLength;
-	u8 *pSysExStart;
+	unsigned nPacketLength = 0;
+	u8 *pSysExStart = 0;
 	while (nLength--)
 	{
 		u8 uchByte = *pData++;

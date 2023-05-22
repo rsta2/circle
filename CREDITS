@@ -72,6 +72,7 @@ Providing RPi 3A+ hardware
 Helping to fix several USB issues
 Testing HDMI sound support and 4K monitors
 Modifications for Raspberry Pi Zero 2 W
+Testing and tracing USB Audio streaming with Dirtywave M8
 
 Brad Robinson
 Improving scheduler library
@@ -92,3 +93,9 @@ Adding WM8960 support to I2S sound driver
 @diyelectromusic
 Adding I2C support to HD44780 display driver
 Adding support for SSD1306 OLED display
+
+@nickverlinden
+Testing several USB Audio Pro streaming interfaces
+
+Kevin Boone
+Adding support for Ctrl+navigation keys

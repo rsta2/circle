@@ -2,7 +2,7 @@
 // usbaudiostreaming.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include <circle/string.h>
 #include <circle/types.h>
 
-/// \note Supports 16-bit signed Stereo PCM output only
+/// \note Supports 16-bit and 24-bit signed Stereo PCM only
 
 class CUSBAudioStreamingDevice : public CUSBFunction	/// Low-level driver for USB audio streaming devices
 {
@@ -42,7 +42,7 @@ public:
 	struct TDeviceInfo
 	{
 		boolean IsOutput;		///< Direction output (or input)
-		unsigned NumChannels;		///< 1 (input only) or 2
+		unsigned NumChannels;		///< Number of audio channels
 
 		unsigned SampleRateRanges;	///< Number of valid entries in SampleRateRange[]
 		struct
@@ -119,7 +119,7 @@ public:
 	/// \note Can be called from TASK_LEVEL only.
 	boolean SetMute (boolean bEnable);
 
-	/// \param nChannel Addressed audio channel (0: both, 1: left, 2: right)
+	/// \param nChannel Addressed audio channel (0: all, 1: front left, 2: front right, ...)
 	/// \param ndB Volume value to be set (in dB)
 	/// \return Operation successful?
 	/// \note Can be called from TASK_LEVEL only.
@@ -134,10 +134,15 @@ private:
 	void UpdateChunkSize (void);
 
 private:
+	unsigned m_nBitResolution;
+	unsigned m_nSubframeSize;
+
 	boolean m_bVer200;
 
 	CUSBEndpoint *m_pEndpointData;
 	CUSBEndpoint *m_pEndpointSync;		// feedback EP
+
+	unsigned m_nDataIntervalFactor;
 
 	boolean m_bIsOutput;
 	unsigned m_nChannels;

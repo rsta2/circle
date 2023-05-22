@@ -2,7 +2,7 @@
 // usbsoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/sched/scheduler.h>
 #include <circle/sysconfig.h>
 #include <circle/string.h>
+#include <circle/koptions.h>
 #include <circle/logger.h>
 #include <circle/atomic.h>
 #include <circle/timer.h>
@@ -32,7 +33,8 @@ static const char DeviceName[] = "sndusb";
 
 CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode DeviceMode,
 					  unsigned nDevice)
-:	CSoundBaseDevice (SoundFormatSigned16, 0, nSampleRate),
+:	m_nBitResolution (CKernelOptions::Get ()->GetSoundOption () == 24 ? 24 : 16),
+	m_nSubframeSize (m_nBitResolution / 8),
 	m_nSampleRate (nSampleRate),
 	m_DeviceMode (DeviceMode),
 	m_nDevice (nDevice),
@@ -45,6 +47,32 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode Devi
 	m_pSoundController (nullptr),
 	m_hRemoveRegistration (0)
 {
+	unsigned nHWTXChannels = 2;
+	unsigned nHWRXChannels = 2;
+
+	if (m_DeviceMode != DeviceModeRXOnly)
+	{
+		m_pTXUSBDevice = GetStreamingDevice (TRUE, m_nTXInterface);
+		if (m_pTXUSBDevice)
+		{
+			CUSBAudioStreamingDevice::TDeviceInfo Info = m_pTXUSBDevice->GetDeviceInfo ();
+			nHWTXChannels = Info.NumChannels;
+		}
+	}
+
+	if (m_DeviceMode != DeviceModeTXOnly)
+	{
+		m_pRXUSBDevice = GetStreamingDevice (FALSE, 0);
+		if (m_pRXUSBDevice)
+		{
+			CUSBAudioStreamingDevice::TDeviceInfo Info = m_pRXUSBDevice->GetDeviceInfo ();
+			nHWRXChannels = Info.NumChannels;
+		}
+	}
+
+	Setup (m_nBitResolution == 24 ? SoundFormatSigned24 : SoundFormatSigned16, 0,
+		m_nSampleRate, nHWTXChannels, nHWRXChannels, FALSE);
+
 	if (!m_nDevice)
 	{
 		CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
@@ -91,16 +119,6 @@ CUSBSoundBaseDevice::~CUSBSoundBaseDevice (void)
 	delete [] m_pRXBuffer[1];
 	m_pRXBuffer[0] = nullptr;
 	m_pRXBuffer[1] = nullptr;
-}
-
-int CUSBSoundBaseDevice::GetRangeMin (void) const
-{
-	return -32768;
-}
-
-int CUSBSoundBaseDevice::GetRangeMax (void) const
-{
-	return 32767;
 }
 
 boolean CUSBSoundBaseDevice::Start (void)
@@ -191,10 +209,6 @@ boolean CUSBSoundBaseDevice::Start (void)
 			assert (!m_pRXBuffer[1]);
 			m_pRXBuffer[0] = new u8[m_nRXChunkSizeBytes * 2];
 			m_pRXBuffer[1] = new u8[m_nRXChunkSizeBytes * 2];
-
-			CUSBAudioStreamingDevice::TDeviceInfo Info =
-				m_pRXUSBDevice->GetDeviceInfo ();
-			m_nRXChannels = Info.NumChannels;
 		}
 
 		assert (!m_hRemoveRegistration);
@@ -318,13 +332,24 @@ boolean CUSBSoundBaseDevice::SendChunk (void)
 	assert (m_pTXUSBDevice);
 	unsigned nChunkSizeBytes = m_pTXUSBDevice->GetChunkSizeBytes ();
 	assert (nChunkSizeBytes);
-	assert (nChunkSizeBytes % sizeof (s16) == 0);
+	assert (nChunkSizeBytes % m_nSubframeSize == 0);
 	assert (nChunkSizeBytes <= m_nTXChunkSizeBytes * 2);
 
 	assert (m_nTXCurrentBuffer < 2);
 	assert (m_pTXBuffer[m_nTXCurrentBuffer]);
-	unsigned nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
-					nChunkSizeBytes / sizeof (s16));
+	unsigned nChunkSize;
+	if (m_nSubframeSize == 2)
+	{
+		nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
+				       nChunkSizeBytes / m_nSubframeSize);
+	}
+	else
+	{
+		assert (m_nSubframeSize == 3);
+		nChunkSize = GetChunk (reinterpret_cast<u32 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
+				       nChunkSizeBytes / m_nSubframeSize);
+	}
+
 	if (!nChunkSize)
 	{
 		return FALSE;
@@ -332,7 +357,7 @@ boolean CUSBSoundBaseDevice::SendChunk (void)
 
 	AtomicIncrement (&m_nOutstanding);
 
-	if (!m_pTXUSBDevice->SendChunk (m_pTXBuffer[m_nTXCurrentBuffer], nChunkSize * sizeof (s16),
+	if (!m_pTXUSBDevice->SendChunk (m_pTXBuffer[m_nTXCurrentBuffer], nChunkSize * m_nSubframeSize,
 				        TXCompletionStub, this))
 	{
 		AtomicDecrement (&m_nOutstanding);
@@ -350,7 +375,7 @@ boolean CUSBSoundBaseDevice::ReceiveChunk (void)
 	assert (m_pRXUSBDevice);
 	unsigned nChunkSizeBytes = m_pRXUSBDevice->GetChunkSizeBytes ();
 	assert (nChunkSizeBytes);
-	assert (nChunkSizeBytes % sizeof (s16) == 0);
+	assert (nChunkSizeBytes % m_nSubframeSize == 0);
 	assert (nChunkSizeBytes <= m_nRXChunkSizeBytes * 2);
 
 	AtomicIncrement (&m_nOutstanding);
@@ -462,32 +487,31 @@ void CUSBSoundBaseDevice::RXCompletionRoutine (unsigned nBytesTransferred)
 
 	if (nBytesTransferred)
 	{
-		assert (nBytesTransferred % sizeof (s16) == 0);
+		assert (nBytesTransferred % m_nSubframeSize == 0);
 		assert (nBytesTransferred <= m_nRXChunkSizeBytes * 2);
 
+#if RASPPI >= 4
+		// on the Raspberry Pi 4 we maintain two outstanding transfers,
+		// so m_nRXCurrentBuffer points to the buffer, which has been recently filled
+		unsigned nRXCurrentBuffer = m_nRXCurrentBuffer;
+#else
+		// on earlier models (if supported at all) there is only one
+		// outstanding transfer, so we have to access the other buffer here
 		unsigned nRXCurrentBuffer = m_nRXCurrentBuffer ^ 1;
+#endif
 		assert (nRXCurrentBuffer < 2);
 		assert (m_pRXBuffer[nRXCurrentBuffer]);
 
-		assert (m_nRXChannels == 1 || m_nRXChannels == 2);
-		if (m_nRXChannels == 2)
+		if (m_nSubframeSize == 2)
 		{
 			PutChunk (reinterpret_cast<s16 *> (m_pRXBuffer[nRXCurrentBuffer]),
-							   nBytesTransferred / sizeof (s16));
+							   nBytesTransferred / m_nSubframeSize);
 		}
 		else
 		{
-			// convert Mono to Stereo, because the upper layer expects it
-			s16 *p = (s16 *) m_pRXBuffer[nRXCurrentBuffer];
-			u32 TempBuffer[nBytesTransferred / sizeof (s16)];
-			for (unsigned i = 0; i < nBytesTransferred / sizeof (s16); i++)
-			{
-				u32 nSample = *p++;
-				nSample |= nSample << 16;
-				TempBuffer[i] = nSample;
-			}
-
-			PutChunk (reinterpret_cast<s16 *> (TempBuffer), nBytesTransferred);
+			assert (m_nSubframeSize == 3);
+			PutChunk (reinterpret_cast<u32 *> (m_pRXBuffer[nRXCurrentBuffer]),
+							   nBytesTransferred / m_nSubframeSize);
 		}
 	}
 

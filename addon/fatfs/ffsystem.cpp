@@ -12,134 +12,92 @@
 #include <assert.h>
 
 
-#if FF_FS_REENTRANT
+#if FF_FS_REENTRANT	/* Mutal exclusion */
 /*------------------------------------------------------------------------*/
-/* Create a Synchronization Object                                        */
+/* Definitions of Mutex                                                   */
 /*------------------------------------------------------------------------*/
-/* This function is called in f_mount() function to create a new
-/  synchronization object, such as semaphore and mutex. When a 0 is returned,
-/  the f_mount() function fails with FR_INT_ERR.
+
+static CGenericLock *s_pMutex[FF_VOLUMES + 1] = {0};
+
+
+/*------------------------------------------------------------------------*/
+/* Create a Mutex                                                         */
+/*------------------------------------------------------------------------*/
+/* This function is called in f_mount function to create a new mutex
+/  or semaphore for the volume. When a 0 is returned, the f_mount function
+/  fails with FR_INT_ERR.
 */
 
-int ff_cre_syncobj (	/* 1:Function succeeded, 0:Could not create the sync object */
-	BYTE vol,			/* Corresponding volume (logical drive number) */
-	FF_SYNC_t *sobj		/* Pointer to return the created sync object */
+int ff_mutex_create (	/* Returns 1:Function succeeded or 0:Could not create the mutex */
+	int vol		/* Mutex ID: Volume mutex (0 to FF_VOLUMES - 1) or system mutex (FF_VOLUMES) */
 )
 {
-	int ret;
+	assert (vol <= FF_VOLUMES);
+	assert (s_pMutex[vol] == 0);
 
+	s_pMutex[vol] = new CGenericLock ();
+	assert (s_pMutex[vol] != 0);
 
-	*sobj = new CGenericLock ();		/* Circle */
-	assert (*sobj != 0);
-	ret = 1;
-
-//	*sobj = CreateMutex(NULL, FALSE, NULL);		/* Win32 */
-//	ret = (int)(*sobj != INVALID_HANDLE_VALUE);
-
-//	*sobj = SyncObjects[vol];			/* uITRON (give a static sync object) */
-//	ret = 1;							/* The initial value of the semaphore must be 1. */
-
-//	*sobj = OSMutexCreate(0, &err);		/* uC/OS-II */
-//	ret = (int)(err == OS_NO_ERR);
-
-//	*sobj = xSemaphoreCreateMutex();	/* FreeRTOS */
-//	ret = (int)(*sobj != NULL);
-
-	return ret;
+	return 1;
 }
 
 
-
 /*------------------------------------------------------------------------*/
-/* Delete a Synchronization Object                                        */
+/* Delete a Mutex                                                         */
 /*------------------------------------------------------------------------*/
-/* This function is called in f_mount() function to delete a synchronization
-/  object that created with ff_cre_syncobj() function. When a 0 is returned,
-/  the f_mount() function fails with FR_INT_ERR.
+/* This function is called in f_mount function to delete a mutex or
+/  semaphore of the volume created with ff_mutex_create function.
 */
 
-int ff_del_syncobj (	/* 1:Function succeeded, 0:Could not delete due to any error */
-	FF_SYNC_t sobj		/* Sync object tied to the logical drive to be deleted */
+void ff_mutex_delete (
+	int vol		/* Mutex ID: Volume mutex (0 to FF_VOLUMES - 1) or system mutex (FF_VOLUMES) */
 )
 {
-	int ret;
+	assert (vol <= FF_VOLUMES);
+	assert (s_pMutex[vol] != 0);
 
-
-	CGenericLock *pLock = (CGenericLock *) sobj;		/* Circle */
-	delete pLock;
-	ret = 1;
-
-//	ret = CloseHandle(sobj);	/* Win32 */
-
-//	ret = 1;					/* uITRON (nothing to do) */
-
-//	OSMutexDel(sobj, OS_DEL_ALWAYS, &err);	/* uC/OS-II */
-//	ret = (int)(err == OS_NO_ERR);
-
-//  vSemaphoreDelete(sobj);		/* FreeRTOS */
-//	ret = 1;
-
-	return ret;
+	delete s_pMutex[vol];
+	s_pMutex[vol] = 0;
 }
 
 
-
 /*------------------------------------------------------------------------*/
-/* Request Grant to Access the Volume                                     */
+/* Request a Grant to Access the Volume                                   */
 /*------------------------------------------------------------------------*/
-/* This function is called on entering file functions to lock the volume.
+/* This function is called on enter file functions to lock the volume.
 /  When a 0 is returned, the file function fails with FR_TIMEOUT.
 */
 
-int ff_req_grant (	/* 1:Got a grant to access the volume, 0:Could not get a grant */
-	FF_SYNC_t sobj	/* Sync object to wait */
+int ff_mutex_take (	/* Returns 1:Succeeded or 0:Timeout */
+	int vol		/* Mutex ID: Volume mutex (0 to FF_VOLUMES - 1) or system mutex (FF_VOLUMES) */
 )
 {
-	int ret;
+	assert (vol <= FF_VOLUMES);
+	assert (s_pMutex[vol] != 0);
 
-	CGenericLock *pLock = (CGenericLock *) sobj;		/* Circle */
-	assert (pLock != 0);
-	pLock->Acquire ();
-	ret = 1;
+	s_pMutex[vol]->Acquire ();
 
-//	ret = (int)(WaitForSingleObject(sobj, _FS_TIMEOUT) == WAIT_OBJECT_0);	/* Win32 */
-
-//	ret = (int)(wai_sem(sobj) == E_OK);			/* uITRON */
-
-//	OSMutexPend(sobj, _FS_TIMEOUT, &err));		/* uC/OS-II */
-//	ret = (int)(err == OS_NO_ERR);
-
-//	ret = (int)(xSemaphoreTake(sobj, _FS_TIMEOUT) == pdTRUE);	/* FreeRTOS */
-
-	return ret;
+	return 1;
 }
 
 
-
 /*------------------------------------------------------------------------*/
-/* Release Grant to Access the Volume                                     */
+/* Release a Grant to Access the Volume                                   */
 /*------------------------------------------------------------------------*/
-/* This function is called on leaving file functions to unlock the volume.
+/* This function is called on leave file functions to unlock the volume.
 */
 
-void ff_rel_grant (
-	FF_SYNC_t sobj	/* Sync object to be signaled */
+void ff_mutex_give (
+	int vol		/* Mutex ID: Volume mutex (0 to FF_VOLUMES - 1) or system mutex (FF_VOLUMES) */
 )
 {
-	CGenericLock *pLock = (CGenericLock *) sobj;	/* Circle */
-	assert (pLock != 0);
-	pLock->Release ();
+	assert (vol <= FF_VOLUMES);
+	assert (s_pMutex[vol] != 0);
 
-//	ReleaseMutex(sobj);		/* Win32 */
-
-//	sig_sem(sobj);			/* uITRON */
-
-//	OSMutexPost(sobj);		/* uC/OS-II */
-
-//	xSemaphoreGive(sobj);	/* FreeRTOS */
+	s_pMutex[vol]->Release ();
 }
 
-#endif
+#endif	/* FF_FS_REENTRANT */
 
 
 

@@ -26,6 +26,14 @@ The listed special keys return the following sequences in cooked mode:
 \E[19~		F8
 \E[20~		F9
 \E[G		KP_Center
+\E[1;5A		Ctrl-Up
+\E[1;5B		Ctrl-Down
+\E[1;5D		Ctrl-Left
+\E[1;5C		Ctrl-Right
+\E[1;5H		Ctrl-Home
+\E[1;5F		Ctrl-End
+\E[5;5~		Ctrl-PageUp
+\E[6;5~		Ctrl-PageDown
 
 ^X = Control character
 \E = Escape (\x1b)

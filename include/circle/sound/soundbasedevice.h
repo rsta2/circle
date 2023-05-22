@@ -2,7 +2,7 @@
 // soundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,22 +24,26 @@
 #include <circle/sound/soundcontroller.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
+#include <assert.h>
 
-#define SOUND_HW_CHANNELS	2
+#define SOUND_MAX_CHANNELS	32
 #define SOUND_MAX_SAMPLE_SIZE	(sizeof (u32))
-#define SOUND_MAX_FRAME_SIZE	(SOUND_HW_CHANNELS * SOUND_MAX_SAMPLE_SIZE)
+#define SOUND_MAX_FRAME_SIZE	(SOUND_MAX_CHANNELS * SOUND_MAX_SAMPLE_SIZE)
+
+ASSERT_STATIC (SOUND_MAX_CHANNELS+1 == CSoundController::ChannelUnknown);
 
 // IEC958 (S/PDIF)
+#define IEC958_HW_CHANNELS		2		// more channels unsupported
 #define IEC958_FRAMES_PER_BLOCK		192
-#define IEC958_SUBFRAMES_PER_BLOCK	(SOUND_HW_CHANNELS * IEC958_FRAMES_PER_BLOCK)
+#define IEC958_SUBFRAMES_PER_BLOCK	(IEC958_HW_CHANNELS * IEC958_FRAMES_PER_BLOCK)
 #define IEC958_STATUS_BYTES		5
 #define IEC958_B_FRAME_PREAMBLE		0x0F
 
 enum TSoundFormat			/// All supported formats are interleaved little endian
 {
 	SoundFormatUnsigned8,		/// Write/Read, HWFormat none
-	SoundFormatSigned16,		/// Write/Read, HWFormat output only
-	SoundFormatSigned24,		/// Write/Read, HWFormat none (occupies 3 bytes)
+	SoundFormatSigned16,		/// Write/Read, HWFormat output/input
+	SoundFormatSigned24,		/// Write/Read, HWFormat output/input (occupies 3 bytes)
 	SoundFormatSigned24_32,		/// Write/Read, HWFormat output/input (occupies 4 bytes)
 	SoundFormatUnsigned32,		/// HWFormat output only
 	SoundFormatIEC958,		/// HWFormat output only
@@ -62,15 +66,37 @@ typedef void TSoundDataCallback (void *pParam);
 class CSoundBaseDevice : public CDevice		/// Base class of sound devices
 {
 public:
+	/// \note Call Setup() afterwards to set-up device, before calling any other method.
+	CSoundBaseDevice (void);
+
 	/// \param HWFormat    Selects the sound format used by the hardware
 	/// \param nRange32    Defines the maximum range value for SoundFormatUnsigned32\n
 	///		       (must be 0 otherwise)
 	/// \param nSampleRate Sample rate in Hz
 	/// \param bSwapChannels Swap stereo channels on output?
+	/// \note Sets up device for Stereo on output and input.
 	CSoundBaseDevice (TSoundFormat HWFormat, u32 nRange32, unsigned nSampleRate,
 			  boolean bSwapChannels = FALSE);
 
 	virtual ~CSoundBaseDevice (void);
+
+	/// \param HWFormat    Selects the sound format used by the hardware
+	/// \param nRange32    Defines the maximum range value for SoundFormatUnsigned32\n
+	///		       (must be 0 otherwise)
+	/// \param nSampleRate Sample rate in Hz
+	/// \param nHWTXChannels Number of hardware TX channels (1 .. SOUND_MAX_CHANNELS)
+	/// \param nHWRXChannels Number of hardware RX channels (1 .. SOUND_MAX_CHANNELS)
+	/// \param bSwapChannels Swap stereo channels on output?
+	void Setup (TSoundFormat HWFormat, u32 nRange32, unsigned nSampleRate,
+		    unsigned nHWTXChannels, unsigned nHWRXChannels,
+		    boolean bSwapChannels);
+
+	/// \return Number of hardware output channels
+	/// \note Can be called on any core.
+	unsigned GetHWTXChannels (void) const;
+	/// \return Number of hardware input channels
+	/// \note Can be called on any core.
+	unsigned GetHWRXChannels (void) const;
 
 	/// \return Minium value of one sample
 	/// \note Can be called on any core.
@@ -229,10 +255,13 @@ private:
 private:
 	TSoundFormat m_HWFormat;
 	unsigned m_nSampleRate;
+	unsigned m_nHWTXChannels;
+	unsigned m_nHWRXChannels;
 	boolean m_bSwapChannels;
 
 	unsigned m_nHWSampleSize;
-	unsigned m_nHWFrameSize;
+	unsigned m_nHWTXFrameSize;
+	unsigned m_nHWRXFrameSize;
 	unsigned m_nQueueSize;
 	unsigned m_nNeedDataThreshold;
 

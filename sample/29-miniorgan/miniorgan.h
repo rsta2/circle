@@ -2,7 +2,7 @@
 // miniorgan.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,9 +72,8 @@ public:
 
 #ifdef USE_USB
 	unsigned GetChunk (s16 *pBuffer, unsigned nChunkSize);
-#else
-	unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 #endif
+	unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
 	static void MIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength);

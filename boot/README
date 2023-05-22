@@ -1,14 +1,15 @@
 README
 
 In this directory you can download the Raspberry Pi firmware files, which are
-required to boot a Circle kernel image on a Raspberry Pi computer. For 32-bit
-operation (AArch32) on the Raspberry Pi 4 the configuration file config32.txt is
-required, which is provided in this directory. For 64-bit operation (AArch64)
-the configuration file config64.txt is required, which is provided here too. The
-corresponding file has to be renamed to config.txt on the SD card. If you want
-to use the FIQ on a Raspberry Pi 4, you need an additional Circle-specific ARM
-stub file, which will be loaded by the firmware. This ARM stub can be built in
-this directory.
+required to boot a Circle kernel image on a Raspberry Pi computer.
+
+It is now always recommended to copy the file config32.txt (for 32-bit
+operation, AArch32) or config64.txt (for 64-bit operation, AArch64) from this
+directory to the SD card and to rename it to config.txt there.
+
+If you want to use the FIQ on a Raspberry Pi 4, you need an additional
+Circle-specific ARM stub file, which will be loaded by the firmware. This ARM
+stub can be built in this directory.
 
 FIRMWARE
 
@@ -24,7 +25,9 @@ This will provide the following files:
 	fixup.dat		relocation information for start.elf
 	fixup4.dat		relocation information for start4.elf
 	bcm2711-rpi-4-b.dtb	device tree binary needed for Raspberry Pi 4
+	bcm2711-rpi-400.dtb	device tree binary needed for Raspberry Pi 400
 	bcm2711-rpi-cm4.dtb	device tree binary needed for Compute Module 4
+	bcm2710-rpi-zero-2-w.dtb device tree binary needed for Raspberry Pi Zero 2 W
 	LICENCE.broadcom	firmware license
 	COPYING.linux		license for the device tree binaries
 	start_cd.elf		cut-down firmware for Raspberry Pi 1-3 (option)
@@ -40,42 +43,17 @@ needed.
 In any case you have to copy these files onto the first FAT partition on a SD
 card along with the kernel*.img file of your Circle application.
 
-For 32-bit operation (AArch32) on the Raspberry Pi 1-3 and Zero that's all. You
-can put the SD card into you Raspberry Pi computer and power it on.
+FIQ SUPPORT ON RASPBERRY PI 4, 400, CM4
 
-AARCH32 ON RASPBERRY PI 4 WITH FIQ
+FIQ (fast interrupt request) support on the Raspberry Pi 4, 400 and CM4 requires
+an additional Circle-specific ARM stub file armstub7-rpi4.bin (AArch32) or
+armstub8-rpi4.bin (AArch64). These files will be built when you enter the
+following commands in this directory:
 
-32-bit operation (AArch32) with FIQ (fast interrupt request) on the Raspberry Pi
-4 requires an additional Circle-specific ARM stub file armstub7-rpi4.bin. This
-file will be built when you enter the following command in this directory:
-
-	make armstub
-
-The build process uses the same toolchain, which is used to build Circle kernel
-images. The toolchain prefix (PREFIX =) can be configured in the file
-Config.mk in the Circle root directory. You have to copy the created file
-armstub7-rpi4.bin to the SD card together with the other files (see above).
-
-To tell the firmware, that the file armstub7-rpi4.bin has to be loaded, you have
-to copy the configuration file config32.txt from this directory along with the
-firmware files (see above) to the SD card. The file has to be renamed to
-config.txt on the SD card.
-
-AARCH64
-
-For 64-bit operation (AArch64) use have to copy the configuration file
-config64.txt from this directory additionally along with the firmware files (see
-above) to the SD card. The file has to be renamed to config.txt on the SD card.
-
-AARCH64 ON RASPBERRY PI 4 WITH FIQ
-
-64-bit operation (AArch64) with FIQ (fast interrupt request) on the Raspberry Pi
-4 requires an additional Circle-specific ARM stub file armstub8-rpi4.bin. This
-file will be built when you enter the following command in this directory:
-
-	make armstub64
+	make armstub		# armstub7-rpi4.bin for AArch32
+	make armstub64		# armstub8-rpi4.bin for AArch64
 
 The build process uses the same toolchain, which is used to build Circle kernel
-images. The toolchain prefix (PREFIX64 =) can be configured in the file
-Config.mk in the Circle root directory. You have to copy the created file
-armstub8-rpi4.bin to the SD card together with the other files (see above).
+images. The toolchain prefix (PREFIX= or PREFIX64=) can be configured in the
+file Config.mk in the Circle root directory. You have to copy the created file
+armstub?-rpi4.bin to the SD card together with the other files (see above).

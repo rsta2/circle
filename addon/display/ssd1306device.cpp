@@ -111,13 +111,15 @@ constexpr auto FontDouble = Font<FONT_SIZE, decltype(DoubleColumn)>(Font6x8, Dou
 
 
 CSSD1306Device::CSSD1306Device (unsigned nWidth, unsigned nHeight,
-				CI2CMaster *pI2CMaster, u8 nAddress)
+				CI2CMaster *pI2CMaster, u8 nAddress,
+			    bool rotated, bool mirrored)
 :	CCharDevice (SSD1306_COLUMNS, SSD1306_ROWS),
 	m_nWidth (nWidth),
 	m_nHeight (nHeight),
 	m_pI2CMaster (pI2CMaster),
 	m_nAddress (nAddress),
-
+	m_bRotated (rotated),
+	m_bMirrored (mirrored),
 	m_FrameBuffers{{0x40, {0}}, {0x40, {0}}},
 	m_nCurrentFrameBuffer(0)
 {
@@ -143,8 +145,8 @@ boolean CSSD1306Device::Initialize (void)
 	//            normal    inverted
 	// normal     A1 C8       A0 C0
 	// mirrored   A0 C8       A1 C0
-	const u8 nSegRemap        = 0xA1;
-	const u8 nCOMScanDir      = 0xC8;
+	const u8 nSegRemap        = (m_bRotated && !m_bMirrored) || (!m_bRotated && m_bMirrored) ? 0xA0 : 0xA1;
+	const u8 nCOMScanDir      = m_bRotated ? 0xC0 : 0xC8;
 
 	const u8 InitSequence[] =
 	{

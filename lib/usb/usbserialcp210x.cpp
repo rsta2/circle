@@ -1,5 +1,5 @@
 //
-// usbserialcp2102.cpp
+// usbserialcp210x.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2020  H. Kocevar <hinxx@protonmail.com>
@@ -17,14 +17,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/usb/usbserialcp2102.h>
+#include <circle/usb/usbserialcp210x.h>
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <assert.h>
 
-static const char FromCp2102[] = "cp2102";
+static const char FromCp210x[] = "cp210x";
 
 #define DEFAULT_BAUD_RATE	9600
 
@@ -54,23 +54,37 @@ static const char FromCp2102[] = "cp2102";
 // CP210X_VENDOR_SPECIFIC values
 #define CP210X_GET_PARTNUM	0x370B
 
-// Supported part number
-#define CP210X_PARTNUM_CP2102	0x02
+const CUSBSerialCP210xDevice::TDeviceInfo CUSBSerialCP210xDevice::s_DeviceInfo[] =
+{
+	{0x01,  921600U, USBSerialDataBits8, USBSerialStopBits1, "CP2101"},
+	{0x02,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2102"},
+	{0x03,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2103"},
+	{0x04,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2104"},
+	{0x05,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2105"},
+	{0x08,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2108"},
+	{0x09,  921600U, USBSerialDataBits5, USBSerialStopBits2, "CP2109"},
+	{0x20, 3000000U, USBSerialDataBits5, USBSerialStopBits2, "CP2102N"},
+	{0x21, 3000000U, USBSerialDataBits5, USBSerialStopBits2, "CP2102N"},
+	{0x22, 3000000U, USBSerialDataBits5, USBSerialStopBits2, "CP2102N"},
 
-CUSBSerialCP2102Device::CUSBSerialCP2102Device (CUSBFunction *pFunction)
-:	CUSBSerialDevice (pFunction)
+	{0x00,       0U}
+};
+
+CUSBSerialCP210xDevice::CUSBSerialCP210xDevice (CUSBFunction *pFunction)
+:	CUSBSerialDevice (pFunction),
+	m_pDeviceInfo (0)
 {
 }
 
-CUSBSerialCP2102Device::~CUSBSerialCP2102Device (void)
+CUSBSerialCP210xDevice::~CUSBSerialCP210xDevice (void)
 {
 }
 
-boolean CUSBSerialCP2102Device::Configure (void)
+boolean CUSBSerialCP210xDevice::Configure (void)
 {
 	if (!CUSBSerialDevice::Configure ())
 	{
-		CLogger::Get ()->Write (FromCp2102, LogError, "Cannot configure serial device");
+		CLogger::Get ()->Write (FromCp210x, LogError, "Cannot configure serial device");
 
 		return FALSE;
 	}
@@ -86,17 +100,30 @@ boolean CUSBSerialCP2102Device::Configure (void)
 				   0,
 				   rxData, 1) != (int) 1)
 	{
-		CLogger::Get ()->Write (FromCp2102, LogError, "Cannot get part number byte");
+		CLogger::Get ()->Write (FromCp210x, LogError, "Cannot get part number byte");
 
 		return FALSE;
 	}
-	if (rxData[0] != CP210X_PARTNUM_CP2102)
+
+	m_pDeviceInfo = 0;
+	for (const TDeviceInfo *pDeviceInfo = s_DeviceInfo; pDeviceInfo->MaxBaudRate; pDeviceInfo++)
 	{
-		CLogger::Get ()->Write (FromCp2102, LogError, "Unsupported part number");
+		if (pDeviceInfo->PartNumber == rxData[0])
+		{
+			m_pDeviceInfo = pDeviceInfo;
+
+			break;
+		}
+	}
+
+	if (m_pDeviceInfo == 0)
+	{
+		CLogger::Get ()->Write (FromCp210x, LogError, "Unsupported part number: 0x%02X",
+					rxData[0]);
 
 		return FALSE;
 	}
-	CLogger::Get ()->Write (FromCp2102, LogNotice, "Part number: CP210%d", rxData[0]);
+	CLogger::Get ()->Write (FromCp210x, LogNotice, "Part number: %s", m_pDeviceInfo->Name);
 
 	if (pHost->ControlMessage (GetEndpoint0 (),
 				   REQUEST_OUT | REQUEST_VENDOR | REQUEST_TO_INTERFACE,
@@ -105,11 +132,11 @@ boolean CUSBSerialCP2102Device::Configure (void)
 				   0,
 				   0, 0) < 0)
 	{
-		CLogger::Get ()->Write (FromCp2102, LogError, "Cannot enable serial port");
+		CLogger::Get ()->Write (FromCp210x, LogError, "Cannot enable serial port");
 
 		return FALSE;
 	}
-	//CLogger::Get ()->Write (FromCp2102, LogDebug, "Serial port enabled!");
+	//CLogger::Get ()->Write (FromCp210x, LogDebug, "Serial port enabled!");
 
 	if (!SetBaudRate (DEFAULT_BAUD_RATE))
 	{
@@ -124,8 +151,17 @@ boolean CUSBSerialCP2102Device::Configure (void)
 	return TRUE;
 }
 
-boolean CUSBSerialCP2102Device::SetBaudRate (unsigned nBaudRate)
+boolean CUSBSerialCP210xDevice::SetBaudRate (unsigned nBaudRate)
 {
+	assert (m_pDeviceInfo != 0);
+	if (nBaudRate > m_pDeviceInfo->MaxBaudRate)
+	{
+		CLogger::Get ()->Write (FromCp210x, LogError, "Unsupported baud rate (%u)",
+					nBaudRate);
+
+		return FALSE;
+	}
+
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
@@ -136,21 +172,36 @@ boolean CUSBSerialCP2102Device::SetBaudRate (unsigned nBaudRate)
 				   0,
 				   &nBaudRate, 4) < 0)
 	{
-		CLogger::Get ()->Write (FromCp2102, LogError, "Cannot set baud rate");
+		CLogger::Get ()->Write (FromCp210x, LogError, "Cannot set baud rate");
 
 		return FALSE;
 	}
 
 	m_nBaudRate = nBaudRate;
-	CLogger::Get ()->Write (FromCp2102, LogDebug, "Baud rate %d", m_nBaudRate);
+	CLogger::Get ()->Write (FromCp210x, LogDebug, "Baud rate %d", m_nBaudRate);
 
 	return TRUE;
 }
 
-boolean CUSBSerialCP2102Device::SetLineProperties (TUSBSerialDataBits nDataBits,
+boolean CUSBSerialCP210xDevice::SetLineProperties (TUSBSerialDataBits nDataBits,
 						   TUSBSerialParity nParity,
 						   TUSBSerialStopBits nStopBits)
 {
+	assert (m_pDeviceInfo != 0);
+	if (nDataBits < m_pDeviceInfo->MinDataBits)
+	{
+		CLogger::Get ()->Write (FromCp210x, LogError, "Unsupported data bits %d", nDataBits);
+
+		return FALSE;
+	}
+
+	if (nStopBits > m_pDeviceInfo->MaxStopBits)
+	{
+		CLogger::Get ()->Write (FromCp210x, LogError, "Unsupported stop bits %d", nStopBits);
+
+		return FALSE;
+	}
+
 	CUSBHostController *pHost = GetHost ();
 	assert (pHost != 0);
 
@@ -171,7 +222,7 @@ boolean CUSBSerialCP2102Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 		lcr |= BITS_DATA_8;
 		break;
 	default:
-		CLogger::Get ()->Write (FromCp2102, LogError, "Invalid data bits %d", nDataBits);
+		CLogger::Get ()->Write (FromCp210x, LogError, "Invalid data bits %d", nDataBits);
 		return FALSE;
 		break;
 	}
@@ -190,7 +241,7 @@ boolean CUSBSerialCP2102Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 		framing.Append ("E");
 		break;
 	default:
-		CLogger::Get ()->Write (FromCp2102, LogError, "Invalid parity %d", nParity);
+		CLogger::Get ()->Write (FromCp210x, LogError, "Invalid parity %d", nParity);
 		return FALSE;
 		break;
 	}
@@ -204,7 +255,7 @@ boolean CUSBSerialCP2102Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 		framing.Append ("2");
 		break;
 	default:
-		CLogger::Get ()->Write (FromCp2102, LogError, "Invalid stop bits %d", nStopBits);
+		CLogger::Get ()->Write (FromCp210x, LogError, "Invalid stop bits %d", nStopBits);
 		return FALSE;
 		break;
 	}
@@ -216,7 +267,7 @@ boolean CUSBSerialCP2102Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 				   0,
 				   0, 0) < 0)
 	{
-		CLogger::Get ()->Write (FromCp2102, LogError, "Cannot set line properties");
+		CLogger::Get ()->Write (FromCp210x, LogError, "Cannot set line properties");
 
 		return FALSE;
 	}
@@ -225,12 +276,12 @@ boolean CUSBSerialCP2102Device::SetLineProperties (TUSBSerialDataBits nDataBits,
 	m_nParity = nParity;
 	m_nStopBits = nStopBits;
 
-	//CLogger::Get ()->Write (FromCp2102, LogDebug, "Framing %s", (const char *)framing);
+	//CLogger::Get ()->Write (FromCp210x, LogDebug, "Framing %s", (const char *)framing);
 
 	return TRUE;
 }
 
-const TUSBDeviceID *CUSBSerialCP2102Device::GetDeviceIDTable (void)
+const TUSBDeviceID *CUSBSerialCP210xDevice::GetDeviceIDTable (void)
 {
 	static const TUSBDeviceID DeviceIDTable[] =
 	{

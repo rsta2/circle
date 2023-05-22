@@ -555,14 +555,16 @@ void CMachineInfo::FreeDMAChannel (unsigned nChannel)
 
 void CMachineInfo::FetchDTB (void)
 {
-	const void *pDTB = (const void *) (uintptr) ARM_DTB_PTR32;
+	u32 * volatile pDTBPtr = (u32 * volatile) ARM_DTB_PTR32;
+
+	const void *pDTB = (const void *) (uintptr) *pDTBPtr;
 	if (pDTB != 0)
 	{
 		assert (m_pDTB == 0);
 		m_pDTB = new CDeviceTreeBlob (pDTB);
 		assert (m_pDTB != 0);
 
-		ARM_DTB_PTR32 = 0;	// does not work with chain boot, disable it
+		*pDTBPtr = 0;		// does not work with chain boot, disable it
 	}
 }
 

@@ -37,8 +37,11 @@ public:
 	/// \param nHeight Display size in pixels (32 or 64)
 	/// \param pI2CMaster I2C master to be used
 	/// \param nAddress I2C slave address of the display controller
+	/// \param rotated Display rotated?
+	/// \param mirrored Display mirrored?
 	CSSD1306Device (unsigned nWidth, unsigned nHeight,
-					CI2CMaster *pI2CMaster, u8 nAddress);
+			CI2CMaster *pI2CMaster, u8 nAddress,
+			bool rotated=false, bool mirrored=false);
 	~CSSD1306Device (void);
 
 	/// \return Operation successful?
@@ -67,6 +70,8 @@ private:
 	CI2CMaster *m_pI2CMaster;
 	u8 m_nAddress;
 	bool m_bBacklightEnabled;
+    bool m_bRotated;
+    bool m_bMirrored;
 
 	struct TFrameBufferUpdatePacket
 	{

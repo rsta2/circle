@@ -27,7 +27,6 @@ CGPIOClock::CGPIOClock (TGPIOClock Clock, TGPIOClockSource Source)
 :	m_Clock (Clock),
 	m_Source (Source)
 {
-	assert (m_Clock <= GPIOClockPWM);
 	assert (m_Source <= GPIOClockSourceUnknown);
 }
 
@@ -46,8 +45,8 @@ void CGPIOClock::Start (unsigned nDivI, unsigned nDivF, unsigned nMASH)
 	assert (nDivF <= 4095);
 #endif
 
-	unsigned nCtlReg = ARM_CM_GP0CTL + (m_Clock * 8);
-	unsigned nDivReg  = ARM_CM_GP0DIV + (m_Clock * 8);
+	unsigned nCtlReg = ARM_CM_BASE + (m_Clock * 8);
+	unsigned nDivReg  = nCtlReg + 4;
 
 	Stop ();
 

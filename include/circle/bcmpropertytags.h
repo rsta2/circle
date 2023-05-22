@@ -2,7 +2,7 @@
 // bcmpropertytags.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@
 #define PROPTAG_NOTIFY_XHCI_RESET	0x00030058
 #define PROPTAG_SET_CLOCK_RATE		0x00038002
 #define PROPTAG_SET_TURBO		0x00038009
+#define PROPTAG_SET_DOMAIN_STATE	0x00038030
 #define PROPTAG_SET_SET_GPIO_STATE	0x00038041
 #define PROPTAG_SET_SDHOST_CLOCK	0x00038042
 #define PROPTAG_ALLOCATE_BUFFER		0x00040001
@@ -157,6 +158,18 @@ struct TPropertyTagPowerState
 	#define POWER_STATE_ON		(1 << 0)
 	#define POWER_STATE_WAIT	(1 << 1)
 	#define POWER_STATE_NO_DEVICE	(1 << 1)	// in response
+}
+PACKED;
+
+struct TPropertyTagDomainState
+{
+	TPropertyTag	Tag;
+	u32		nDomainId;
+	#define DOMAIN_ID_UNICAM0	13
+	#define DOMAIN_ID_UNICAM1	14
+	u32		nOn;
+	#define DOMAIN_STATE_OFF	0
+	#define DOMAIN_STATE_ON		1
 }
 PACKED;
 
