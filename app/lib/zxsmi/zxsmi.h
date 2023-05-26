@@ -34,44 +34,28 @@
 // Timings for RPi v4 (1.5 GHz) - (4 * (5+9+5) / 1.5GHZ)     = 50.7ns
 // Timings for RPi v0-3 (1 GHz) - (10 * (10+20+10) / 1GHZ)   = 400ns
 #define ZX_SMI_PACE		0
-#if RASPI > 3
-#define ZX_SMI_NS			10
-#define ZX_SMI_SETUP	15
-#define ZX_SMI_STROBE	30
-#define ZX_SMI_HOLD		15
-#else
+#if RASPPI > 3
+// 4 * (6+7+6) / 1.5GHz = 50.7ns
 #define ZX_SMI_NS		4
 #define ZX_SMI_SETUP	6
 #define ZX_SMI_STROBE	7
 #define ZX_SMI_HOLD		6
-
-// #define ZX_SMI_NS		4
-// #define ZX_SMI_SETUP	9
-// #define ZX_SMI_STROBE	1
-// #define ZX_SMI_HOLD		9
-
-// #define ZX_SMI_NS		4
-// #define ZX_SMI_SETUP	5
-// #define ZX_SMI_STROBE	14
-// #define ZX_SMI_HOLD		5
-
-// #define ZX_SMI_NS		4
-// #define ZX_SMI_SETUP	7
-// #define ZX_SMI_STROBE	9
-// #define ZX_SMI_HOLD		7
-
-// #define ZX_SMI_NS		10
-// #define ZX_SMI_SETUP	15
-// #define ZX_SMI_STROBE	30
-// #define ZX_SMI_HOLD		15
+#else
+// 2 * (8+9+8) / 1GHz = 50.0ns
+#define ZX_SMI_NS		4
+#define ZX_SMI_SETUP	3
+#define ZX_SMI_STROBE	3
+#define ZX_SMI_HOLD		3
 #endif
 
 // SMI DMA
 #define ZX_DMA_T					u16
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 2) / sizeof(ZX_DMA_T))
+#define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))
-#define ZX_DMA_BUFFER_LENGTH		((512 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((512 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((220 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((160 * 1024) / sizeof(ZX_DMA_T))

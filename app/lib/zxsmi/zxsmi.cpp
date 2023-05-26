@@ -189,7 +189,7 @@ boolean CZxSmi::Initialize ()
 #if (ZX_SMI_USE_FIQ)  
   m_GpioFiqPin.ConnectInterrupt(GpioIrqHandler, this);
 #else
-  m_GpioIrqPin.ConnectInterrupt(GpioIrqHandler, this);
+  m_GpioIrqPin.ConnectInterrupt(GpioIrqHandler, this, false);
 #endif  
 
   // Configure SMI DMA
@@ -199,6 +199,7 @@ boolean CZxSmi::Initialize ()
   for (unsigned i = 0; i < ZX_DMA_BUFFER_COUNT; i++) {
     // Set up reads in separate control blocks
     m_pDMAControlBlocks[i]->SetupIORead (m_pDMABuffers[i], ARM_SMI_D, m_nDMABufferLenBytes, DREQSourceSMI);  
+    // m_pDMAControlBlocks[i]->SetWaitForWriteResponse(TRUE);
     // m_pDMAControlBlocks[i]->SetBurstLength(15);
 
     // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
@@ -238,6 +239,7 @@ void CZxSmi::Start(CSynchronizationEvent *pFrameEvent)
   m_GpioFiqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
 #else
   m_GpioIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+  // m_GpioIrqPin.EnableInterrupt(GPIOInterruptOnAsyncFallingEdge);
 #endif  
 
   // m_DMA.Wait();
@@ -558,10 +560,25 @@ unsigned _loops = 0;
 // u32 screenValue0 = 0;
 // u32 screenValue1 = 0;
 
+unsigned char reverseBits(unsigned char b) {
+   b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+   b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+   b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+   return b;
+}
+
 void CZxSmi::GpioIrqHandler (void *pParam) 
 {
   CZxSmi *pThis = (CZxSmi *) pParam;
   assert (pThis != 0);
+
+// #if (ZX_SMI_USE_FIQ)    
+//   // TODO - auto-ack?
+// #else
+//   pThis->m_GpioIrqPin.AcknowledgeInterrupt();
+// #endif  
+
+  
 
   // Return early if stopped
   if (!pThis->m_bRunning) return;
@@ -570,6 +587,9 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   // Toggle LED for debug
   pThis->m_pActLED->On();
 
+
+  // CTimer::SimpleusDelay(2000);
+
   // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
   // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
 
@@ -577,7 +597,7 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
   
 
-  // CTimer::SimpleusDelay(1);
+  
 
   // Save pointer to buffer just filled by DMA
   ZX_DMA_T *pBuffer = pThis->m_pDMABuffer;
@@ -612,18 +632,25 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   // GPIO27 (GPIO27, PIN13) => IRQ - IRQ for frame timing - !3S
   // SD17   (GPI025, PIN22) => DREQ_ACK - UNUSED
   // SD16   (GPI024, PIN18) => DREQ = /(/IORQ & /CAS) - triggers the SMI reads to DMA - !3S
-  // SD15   (GPI023, PIN16) => D7 - 3S
-  // SD14   (GPI022, PIN15) => D6 - 3S
-  // SD13   (GPI021, PIN40) => D5 - 3S
-  // SD12   (GPIO20, PIN38) => D4 - 3S
-  // SD11   (GPIO19, PIN35) => D3 - 3S
-  // SD10   (GPIO18, PIN12) => D2 - 3S
-  // SD9    (GPIO17, PIN11) => D1 - 3S
-  // SD8    (GPI016, PIN36) => D0 - 3S
+  // SD15   (GPI023, PIN16) => D0 - 3S
+  // SD14   (GPI022, PIN15) => D1 - 3S
+  // SD13   (GPI021, PIN40) => D2 - 3S
+  // SD12   (GPIO20, PIN38) => D3 - 3S
+  // SD11   (GPIO19, PIN35) => D4 - 3S
+  // SD10   (GPIO18, PIN12) => D5 - 3S
+  // SD9    (GPIO17, PIN11) => D6 - 3S
+  // SD8    (GPI016, PIN36) => D7 - 3S
   // SD7    (RXD0,   PIN10) <= UART for debug
   // SD6    (TXD0,   PIN8 ) => UART for debug 
   // SD5    (PWM1,   PIN33) == UNUSED
   // SD4    (PWM0,   PIN32) == UNUSED
+  // SD3    (SCLK,   PIN23) => 
+  // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
+  // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
+  // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
+  // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+
+  // OLD!!
   // SD3    (SCLK,   PIN23) => CAS - Used to detect writes to video memory - 3S
   // SD2    (MOSI,   PIN19) => A0 - Address bit 0 (/IOREQ = /IORQ | A0) ? is A0 inverted? - 3S
   // SD1    (MISO,   PIN21) => /WR - When low, indicates a write - 3S
@@ -638,7 +665,12 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   // - If there are 4 samples between the /CAS highs, then it is a video read. If there are more
   //   then it is NOT a video read. There should never be less.
   // - There are 256*192 / 8 = 6144 bytes of pixels and 32*24 = 768 bytes of attributes. 
-  //   giving a total of 6912 bytes per frame (0x1B00).
+  //   giving a total of 6912 bytes (0x1B00) of video memory.
+  // - The Speccy reads the video memory in 2 byte chunks. 1 byte is the 8 pixesl, and the other
+  //   byte is the attribute bits for those pixel. This should result in 6144 * 2 = 12288 reads (0x3000)
+  // - ULA CAS pluse is [~204ns (gap ~60ns) 226ns] x2 (with 86ns gap)
+  // - Shortest Z80 read is ~296ns
+  // - Therefore we only have a window of ~70ns difference to differentiate the 2 :/
 
   // Do the rest is the bottom half!
 
@@ -648,8 +680,10 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   pDEBUG_BUFFER = pBuffer;
 
   // Reset state before processing data (this interrupt occurs at start of screen refresh)
+  u32 lastlastlastValue = 0;
   u32 lastlastValue = 0;
   u32 lastValue = 0;
+  u32 lastCasValue = 0;
   u32 inIOWR = 0;
   u32 inCAS = 0;
   videoByteCount = 0;
@@ -670,12 +704,21 @@ void CZxSmi::GpioIrqHandler (void *pParam)
       // if (value != 0xFFFF) {
         // pThis->m_value = value;
 
-        boolean IORQ = (value & (1 << 0)) == 0;
-        boolean WR = (value & (1 << 1)) == 0;
-        boolean A0 = (value & (1 << 2)) != 0;
-        boolean CAS = (value & (1 << 3)) == 0;
-        boolean IOREQ = IOREQ & A0;                
+  // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
+  // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
+  // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
+  // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+
+
+        boolean IORQ = (value & (1 << 2)) == 0;
+        boolean WR = (value & (1 << 0)) == 0;
+        // boolean A0 = (value & (1 << 2)) != 0;
+        boolean CAS = (value & (1 << 1)) == 0;
+        // boolean IOREQ = IORQ & A0;                
+        boolean IOREQ = IORQ;                
         u32 data = (value >> 8);// & 0x7;
+
+        
 
         // Test
         // if (CAS) {
@@ -683,9 +726,10 @@ void CZxSmi::GpioIrqHandler (void *pParam)
         // }
 
         // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
-        if (i > 1000) {
+        if (i > 0) {
           if (CAS) {
             // Entered or in CAS
+            lastCasValue = data;
             inCAS++;
           } else {
             // if (inCAS == 3) {
@@ -699,24 +743,31 @@ void CZxSmi::GpioIrqHandler (void *pParam)
             // } else {
             //   casReadIdx = 0;
             // }
-            if (inCAS == 3) {
+            if (inCAS >= 3 && inCAS <= 6) {
               // // pThis->m_value = lastValue;   
-              videoByteCount++;  
-              // pThis->m_value = inCAS;   
-              // pThis->m_value =  0xDDDD;                 
+              // if (videoByteCount < 0x3000) {
+                videoByteCount++;                
+                // pThis->m_value = inCAS;   
+                // pThis->m_value =  0xDDDD;                 
 
-              if (isPixels) {
-                borderValue = lastValue;
-                *pScreenBuffer++ = data;                
-              }
-              isPixels = !isPixels;
+                if (isPixels) {
+                  // HW Fix, rotate the 8 bits
+                  lastCasValue = reverseBits(lastCasValue);
+
+                  borderValue = lastCasValue;                  
+
+                  *pScreenBuffer++ = lastCasValue;                
+                }
+                isPixels = !isPixels;                 
+              // }
+              // if (videoByteCount >= 0x3000) break;
             } 
             inCAS = 0;
           }
         }
 
         // Handle IO write (border colour)
-        // if (IORQ & WR) {          
+        // if (IOREQ & WR) {          
         //   // Entered or in IO write
         //   inIOWR++;          
         // } else {
@@ -729,7 +780,7 @@ void CZxSmi::GpioIrqHandler (void *pParam)
         //   inIOWR = 0;
         // }
 
-
+        lastlastlastValue = lastlastValue;
         lastlastValue = lastValue;
         lastValue = data;        
 
@@ -754,9 +805,10 @@ void CZxSmi::GpioIrqHandler (void *pParam)
       // }
   }
 
+
   // pThis->m_value = videoByteCount;
 
-  memset(pBuffer, 0xFF, pThis->m_nDMABufferLenBytes);
+  memset(pBuffer, 0, pThis->m_nDMABufferLenBytes);
   CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
 
 
@@ -766,10 +818,10 @@ void CZxSmi::GpioIrqHandler (void *pParam)
 
   // TODO - hand off the buffer to the main thread
 
-    // Signal the bottom half
-  // if (pThis->m_pFrameEvent) {
-  //   pThis->m_pFrameEvent->Set();
-  // }
+  // Signal the bottom half
+  if (pThis->m_pFrameEvent) {
+    pThis->m_pFrameEvent->Set();
+  }
 
     // if (pThis->m_counter <= 0) {
     //   pThis->m_counter = 10;
@@ -784,5 +836,11 @@ void CZxSmi::GpioIrqHandler (void *pParam)
     // pThis->m_counter--;
 
     _loops++;
+
+  #if (ZX_SMI_USE_FIQ)    
+  // TODO - auto-ack?
+  #else
+    pThis->m_GpioIrqPin.AcknowledgeInterrupt();
+  #endif  
 }
 	

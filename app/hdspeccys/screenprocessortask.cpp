@@ -33,8 +33,8 @@ void CScreenProcessorTask::Run (void)
 
 	while (1)
 	{	
-		// m_FrameEvent.Clear();
-		// m_FrameEvent.Wait();
+		m_FrameEvent.Clear();
+		m_FrameEvent.Wait();
 
 		// CScheduler::Get ()->Yield ();
 
@@ -180,9 +180,10 @@ void CScreenProcessorTask::Run (void)
 		// // LOGDBG(".");
 		
 		// // CScheduler::Get ()->MsSleep (500);
-		CScheduler::Get ()->Yield ();
+		// CScheduler::Get ()->Yield ();
 		// // m_Timer.MsDelay(500);
 		// // m_Timer.MsDelay(1);
-		// CScheduler::Get ()->MsSleep (500);
+		// CScheduler::Get ()->MsSleep (20);
 	}
 }
+ 

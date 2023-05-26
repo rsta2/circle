@@ -1,0 +1,17 @@
+#
+# Allow FIQ use in 32-bit mode on Raspberry Pi 4
+#
+# This file must be copied along with the generated kernel7l.img
+# onto a SDHC card with FAT file system, if the FIQ is used in 32-bit mode.
+#
+# This file also enables the possibility to use two displays with
+# the Raspberry Pi 4 and selects the required mode for the USB host
+# controller of the Compute Module 4.
+#
+
+[pi4]
+armstub=armstub7-rpi4.bin
+max_framebuffers=2
+
+[cm4]
+otg_mode=1
