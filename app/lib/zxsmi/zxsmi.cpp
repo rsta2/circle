@@ -61,9 +61,10 @@ LOGMODULE ("ZxSmi");
 
 
 u16 *pDEBUG_BUFFER;
-volatile u16 *pVIDEO_BUFFER;
 u16 borderValue;
 u32 videoByteCount;
+u32 loopCount = 0;
+u32 skippedFrameCount = 0;
 
 //
 // Class
@@ -88,9 +89,10 @@ CZxSmi::CZxSmi (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem)
 	m_nDMABufferIdx(0),
   m_nDMABufferLenBytes(0),
 	m_nDMABufferLenWords(0),
+    m_pDMABufferRead (0),
+	m_nDMABufferIdxRead (0),
+  m_DMABufferReadSemaphore (1),
   m_pFrameEvent(0),
-  m_pScreenDataBuffer(0),
-	m_nScreenDataBufferLength(0),
   m_bRunning(FALSE),  
   m_pActLED(0),
   m_bDMAResult(0),
@@ -101,17 +103,12 @@ CZxSmi::CZxSmi (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem)
   m_counter2(0),
   m_pDebugBuffer(0)
 {
-  m_nScreenDataBufferLength = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);  
   m_nDMABufferLenBytes = ZX_DMA_BUFFER_LENGTH;
 	m_nDMABufferLenWords = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
 }
 
 CZxSmi::~CZxSmi (void)
 {  
-  // Deallocate screen data buffer
-  delete m_pScreenDataBuffer;
-  m_pScreenDataBuffer = nullptr;
-
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock1);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock2);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock3);
@@ -138,10 +135,6 @@ boolean CZxSmi::Initialize ()
   LOGNOTE("Initializing SMI");
 
   // PeripheralEntry ();
-
-  // Allocate screen data buffer
-  m_pScreenDataBuffer = new ZX_DMA_T[m_nScreenDataBufferLength];
-  pVIDEO_BUFFER = m_pScreenDataBuffer;
   
   // Allocate DMA control blocks
   m_pDMAControlBlock1 = m_DMA.CreateDMAControlBlock();
@@ -273,16 +266,34 @@ void CZxSmi::SetActLED(CActLED *pActLED) {
   m_pActLED = pActLED;
 }
 
+// void CZxSmi::SetBufferReadyRoutine (TSMICompletionRoutine *pRoutine, void *pParam) {
+
+// }
+
 volatile ZX_DMA_T CZxSmi::GetValue() {
   return m_value;
 }
 
-volatile ZX_DMA_T *CZxSmi::GetScreenDataBuffer(void) {
-  return m_pScreenDataBuffer;
+ZX_DMA_T *CZxSmi::LockDataBuffer(void) {
+  // Lock the buffer
+  m_DMABufferReadSemaphore.Down();
+
+  // Ensure DMA buffer is not cached
+  CleanAndInvalidateDataCacheRange((uintptr)m_pDMABufferRead, m_nDMABufferLenBytes);
+
+
+  // Return the buffer
+  return m_pDMABufferRead;
 }
 
-u32 CZxSmi::GetScreenDataBufferLength(void) {
-  return m_nScreenDataBufferLength;
+void CZxSmi::ReleaseDataBuffer(void) {
+    // Zero out the DMA buffer, read for next fill
+  memset(m_pDMABufferRead, 0, m_nDMABufferLenBytes);
+  CleanAndInvalidateDataCacheRange((uintptr)m_pDMABufferRead, m_nDMABufferLenBytes); // Necessary?
+
+
+  // Release the buffer
+  m_DMABufferReadSemaphore.Up();
 }
 
 //
@@ -553,32 +564,11 @@ void CZxSmi::SMICompleteInterrupt(boolean bStatus, void *pParam)
     pThis->m_counter--;
 }
 
-unsigned _loops = 0;
-// u32 lastValue = 0;
-// u32 inIOWR = 0;
-// u32 inCAS = 0;
-// u32 screenValue0 = 0;
-// u32 screenValue1 = 0;
-
-unsigned char reverseBits(unsigned char b) {
-   b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
-   b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
-   b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
-   return b;
-}
 
 void CZxSmi::GpioIrqHandler (void *pParam) 
 {
   CZxSmi *pThis = (CZxSmi *) pParam;
   assert (pThis != 0);
-
-// #if (ZX_SMI_USE_FIQ)    
-//   // TODO - auto-ack?
-// #else
-//   pThis->m_GpioIrqPin.AcknowledgeInterrupt();
-// #endif  
-
-  
 
   // Return early if stopped
   if (!pThis->m_bRunning) return;
@@ -590,257 +580,338 @@ void CZxSmi::GpioIrqHandler (void *pParam)
 
   // CTimer::SimpleusDelay(2000);
 
-  // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
-  // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
+  // Attempt to get the buffer lock - if it is still in use, we need to drop a frame
+  bool haveLock = pThis->m_DMABufferReadSemaphore.TryDown();
 
-  // // Stop the DMA and SMI
-  pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
-  
+  if (haveLock) {
+    // We have the lock
 
-  
+    // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
+    // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
 
-  // Save pointer to buffer just filled by DMA
-  ZX_DMA_T *pBuffer = pThis->m_pDMABuffer;
+    // Stop the DMA and SMI
+    pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
+    
 
-
-  // Move to the next DMA buffer and control block
-  pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
-  pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
-  pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
-
-  // Start the DMA using the next control block
-  pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
-
-  // // Start the SMI for DMA (DMA should already be ready to go)
-  PeripheralEntry();
-  write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
-  PeripheralExit();
-
-  // Ensure previous DMA buffer is not cached
-  CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
-
-  // Copy the DMA buffer to the screen buffer
-  // memcpy(pThis->m_pScreenDataBuffer, pBuffer, pThis->m_nDMABufferLenBytes);
-
-  // Clear the old DMA buffer
-  // memset(pBuffer, 0x00, pThis->m_nDMABufferLenBytes);
-  // CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
+    // Save pointer to buffer just filled by DMA
+    pThis->m_pDMABufferRead = pThis->m_pDMABuffer;
 
 
-  // pThis->m_counter2 = read32(ARM_SMI_CS);
+    // Move to the next DMA buffer and control block
+    pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+    pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
+    pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
 
-  // GPIO27 (GPIO27, PIN13) => IRQ - IRQ for frame timing - !3S
-  // SD17   (GPI025, PIN22) => DREQ_ACK - UNUSED
-  // SD16   (GPI024, PIN18) => DREQ = /(/IORQ & /CAS) - triggers the SMI reads to DMA - !3S
-  // SD15   (GPI023, PIN16) => D0 - 3S
-  // SD14   (GPI022, PIN15) => D1 - 3S
-  // SD13   (GPI021, PIN40) => D2 - 3S
-  // SD12   (GPIO20, PIN38) => D3 - 3S
-  // SD11   (GPIO19, PIN35) => D4 - 3S
-  // SD10   (GPIO18, PIN12) => D5 - 3S
-  // SD9    (GPIO17, PIN11) => D6 - 3S
-  // SD8    (GPI016, PIN36) => D7 - 3S
-  // SD7    (RXD0,   PIN10) <= UART for debug
-  // SD6    (TXD0,   PIN8 ) => UART for debug 
-  // SD5    (PWM1,   PIN33) == UNUSED
-  // SD4    (PWM0,   PIN32) == UNUSED
-  // SD3    (SCLK,   PIN23) => 
-  // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
-  // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
-  // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
-  // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+    // Start the DMA using the next control block
+    pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
 
-  // OLD!!
-  // SD3    (SCLK,   PIN23) => CAS - Used to detect writes to video memory - 3S
-  // SD2    (MOSI,   PIN19) => A0 - Address bit 0 (/IOREQ = /IORQ | A0) ? is A0 inverted? - 3S
-  // SD1    (MISO,   PIN21) => /WR - When low, indicates a write - 3S
-  // SD0    (CE0,    PIN24) => /IORQ - When low, indicates an IO read or write - 3S
-  // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+    // // Start the SMI for DMA (DMA should already be ready to go)
+    PeripheralEntry();
+    write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
+    PeripheralExit();
 
-  // NOTES
-  // - The /OE for the buffers should be generated before the DREQ for the SMI, so that the data is
-  //   available when the SMI is triggered. ACTUALLY, the timing is good the other way around....
-  //   The data will be valid at the 3rd sample, which is the sample before a high on /CAS which
-  //   indicates the end of the read.
-  // - If there are 4 samples between the /CAS highs, then it is a video read. If there are more
-  //   then it is NOT a video read. There should never be less.
-  // - There are 256*192 / 8 = 6144 bytes of pixels and 32*24 = 768 bytes of attributes. 
-  //   giving a total of 6912 bytes (0x1B00) of video memory.
-  // - The Speccy reads the video memory in 2 byte chunks. 1 byte is the 8 pixesl, and the other
-  //   byte is the attribute bits for those pixel. This should result in 6144 * 2 = 12288 reads (0x3000)
-  // - ULA CAS pluse is [~204ns (gap ~60ns) 226ns] x2 (with 86ns gap)
-  // - Shortest Z80 read is ~296ns
-  // - Therefore we only have a window of ~70ns difference to differentiate the 2 :/
+    // Release the lock
+    pThis->m_DMABufferReadSemaphore.Up();
 
-  // Do the rest is the bottom half!
+    // Signal the screen processor task
+    if (pThis->m_pFrameEvent) {
+      pThis->m_pFrameEvent->Set();
+    }
 
-
-  // // For debug
-  // memcpy(pThis->m_pDebugBuffer, pBuffer, ZX_SMI_DEBUG_BUFFER_LENGTH * sizeof(ZX_DMA_T));
-  pDEBUG_BUFFER = pBuffer;
-
-  // Reset state before processing data (this interrupt occurs at start of screen refresh)
-  u32 lastlastlastValue = 0;
-  u32 lastlastValue = 0;
-  u32 lastValue = 0;
-  u32 lastCasValue = 0;
-  u32 inIOWR = 0;
-  u32 inCAS = 0;
-  videoByteCount = 0;
-  u32 screenValue0 = 0;
-  u32 screenValue1 = 0;
-  u32 casReadIdx = 0;
-  volatile ZX_DMA_T *pScreenBuffer = pThis->m_pScreenDataBuffer;
-  boolean isPixels = true;
-
-  // Loop all the data in the buffer
-  for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
-      // Read the value from the buffer
-      ZX_DMA_T value = pBuffer[i];
-
-      // Clear out the buffer as we read it (might be quicker than a memset(), but may well be slower too!! TODO: CHECK)
-      // pBuffer[i] = 0xFFFF;
-
-      // if (value != 0xFFFF) {
-        // pThis->m_value = value;
-
-  // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
-  // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
-  // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
-  // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
-
-
-        boolean IORQ = (value & (1 << 2)) == 0;
-        boolean WR = (value & (1 << 0)) == 0;
-        // boolean A0 = (value & (1 << 2)) != 0;
-        boolean CAS = (value & (1 << 1)) == 0;
-        // boolean IOREQ = IORQ & A0;                
-        boolean IOREQ = IORQ;                
-        u32 data = (value >> 8);// & 0x7;
-
-        
-
-        // Test
-        // if (CAS) {
-        //   pThis->m_value = 0xDDDD;
-        // }
-
-        // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
-        if (i > 0) {
-          if (CAS) {
-            // Entered or in CAS
-            lastCasValue = data;
-            inCAS++;
-          } else {
-            // if (inCAS == 3) {
-            //   if (casReadIdx == 0) {
-            //     screenValue0 = lastValue;
-            //     casReadIdx = 1;
-            //   } else {
-            //     screenValue1 = lastValue;
-            //     videoByteCount +=2;
-            //   }
-            // } else {
-            //   casReadIdx = 0;
-            // }
-            if (inCAS >= 3 && inCAS <= 6) {
-              // // pThis->m_value = lastValue;   
-              // if (videoByteCount < 0x3000) {
-                videoByteCount++;                
-                // pThis->m_value = inCAS;   
-                // pThis->m_value =  0xDDDD;                 
-
-                if (isPixels) {
-                  // HW Fix, rotate the 8 bits
-                  lastCasValue = reverseBits(lastCasValue);
-
-                  borderValue = lastCasValue;                  
-
-                  *pScreenBuffer++ = lastCasValue;                
-                }
-                isPixels = !isPixels;                 
-              // }
-              // if (videoByteCount >= 0x3000) break;
-            } 
-            inCAS = 0;
-          }
-        }
-
-        // Handle IO write (border colour)
-        // if (IOREQ & WR) {          
-        //   // Entered or in IO write
-        //   inIOWR++;          
-        // } else {
-        //   if (inIOWR > 5) {
-        //     // Exited IO write, use the last value
-        //     // pThis->m_value = lastValue;
-        //     // pThis->m_value =  0xDDDD;
-        //     borderValue = lastValue;
-        //   }
-        //   inIOWR = 0;
-        // }
-
-        lastlastlastValue = lastlastValue;
-        lastlastValue = lastValue;
-        lastValue = data;        
-
-        // // Check for /IOREQ = 0 (/IOREQ = /IORQ | /A0)
-        // if (!pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 13))) == 0) {
-        //   // pThis->m_value = value; // & 0x07;  // Only interested in first 3 bits
-        //   pThis->m_isIOWrite = true;        
-        //   pThis->m_counter2 = 0;
-        //   }      
-        //   else if (pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 14) | (1 << 13))) == 0) {
-        //   // pThis->m_value = value & 0x07;  // Only interested in first 3 bits for the border colour
-        //   pThis->m_counter2++;
-
-        //   if (pThis->m_counter2 > 5) {
-        //   pThis->m_value = value;
-        //   pThis->m_isIOWrite = false;        
-        //   }
-        // }
-      // }      
-      // if (value > 0) {
-      //   pThis->m_counter++;
-      // }
+  } else {
+    // Drop a frame - the screen processor can't keep up
+    skippedFrameCount++;
   }
-
-
-  // pThis->m_value = videoByteCount;
-
-  memset(pBuffer, 0, pThis->m_nDMABufferLenBytes);
-  CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
-
 
 
   // Toggle LED for debug
   pThis->m_pActLED->Off();
 
-  // TODO - hand off the buffer to the main thread
+  // Increment the loop count
+  loopCount++;
 
-  // Signal the bottom half
-  if (pThis->m_pFrameEvent) {
-    pThis->m_pFrameEvent->Set();
-  }
-
-    // if (pThis->m_counter <= 0) {
-    //   pThis->m_counter = 10;
-    //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
-    
-    //   if (pThis->m_bDMAResult) {
-    //     pThis->m_pActLED->On();
-    //   } else {
-    //     pThis->m_pActLED->Off();
-    //   }
-    // }
-    // pThis->m_counter--;
-
-    _loops++;
-
+  // Acknowledge the interrupt
   #if (ZX_SMI_USE_FIQ)    
   // TODO - auto-ack?
   #else
     pThis->m_GpioIrqPin.AcknowledgeInterrupt();
   #endif  
 }
+
+// void CZxSmi::GpioIrqHandler (void *pParam) 
+// {
+//   CZxSmi *pThis = (CZxSmi *) pParam;
+//   assert (pThis != 0);
+
+// // #if (ZX_SMI_USE_FIQ)    
+// //   // TODO - auto-ack?
+// // #else
+// //   pThis->m_GpioIrqPin.AcknowledgeInterrupt();
+// // #endif  
+
+  
+
+//   // Return early if stopped
+//   if (!pThis->m_bRunning) return;
+
+
+//   // Toggle LED for debug
+//   pThis->m_pActLED->On();
+
+
+//   // CTimer::SimpleusDelay(2000);
+
+//   // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
+//   // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
+
+//   // // Stop the DMA and SMI
+//   pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
+  
+
+  
+
+//   // Save pointer to buffer just filled by DMA
+//   ZX_DMA_T *pBuffer = pThis->m_pDMABuffer;
+
+
+//   // Move to the next DMA buffer and control block
+//   pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+//   pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
+//   pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
+
+//   // Start the DMA using the next control block
+//   pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
+
+//   // // Start the SMI for DMA (DMA should already be ready to go)
+//   PeripheralEntry();
+//   write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
+//   PeripheralExit();
+
+//   // Ensure previous DMA buffer is not cached
+//   CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
+
+//   // Copy the DMA buffer to the screen buffer
+//   // memcpy(pThis->m_pScreenDataBuffer, pBuffer, pThis->m_nDMABufferLenBytes);
+
+//   // Clear the old DMA buffer
+//   // memset(pBuffer, 0x00, pThis->m_nDMABufferLenBytes);
+//   // CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
+
+
+//   // pThis->m_counter2 = read32(ARM_SMI_CS);
+
+//   // GPIO27 (GPIO27, PIN13) => IRQ - IRQ for frame timing - !3S
+//   // SD17   (GPI025, PIN22) => DREQ_ACK - UNUSED
+//   // SD16   (GPI024, PIN18) => DREQ = /(/IORQ & /CAS) - triggers the SMI reads to DMA - !3S
+//   // SD15   (GPI023, PIN16) => D0 - 3S
+//   // SD14   (GPI022, PIN15) => D1 - 3S
+//   // SD13   (GPI021, PIN40) => D2 - 3S
+//   // SD12   (GPIO20, PIN38) => D3 - 3S
+//   // SD11   (GPIO19, PIN35) => D4 - 3S
+//   // SD10   (GPIO18, PIN12) => D5 - 3S
+//   // SD9    (GPIO17, PIN11) => D6 - 3S
+//   // SD8    (GPI016, PIN36) => D7 - 3S
+//   // SD7    (RXD0,   PIN10) <= UART for debug
+//   // SD6    (TXD0,   PIN8 ) => UART for debug 
+//   // SD5    (PWM1,   PIN33) == UNUSED
+//   // SD4    (PWM0,   PIN32) == UNUSED
+//   // SD3    (SCLK,   PIN23) => 
+//   // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
+//   // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
+//   // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
+//   // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+
+//   // OLD!!
+//   // SD3    (SCLK,   PIN23) => CAS - Used to detect writes to video memory - 3S
+//   // SD2    (MOSI,   PIN19) => A0 - Address bit 0 (/IOREQ = /IORQ | A0) ? is A0 inverted? - 3S
+//   // SD1    (MISO,   PIN21) => /WR - When low, indicates a write - 3S
+//   // SD0    (CE0,    PIN24) => /IORQ - When low, indicates an IO read or write - 3S
+//   // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+
+//   // NOTES
+//   // - The /OE for the buffers should be generated before the DREQ for the SMI, so that the data is
+//   //   available when the SMI is triggered. ACTUALLY, the timing is good the other way around....
+//   //   The data will be valid at the 3rd sample, which is the sample before a high on /CAS which
+//   //   indicates the end of the read.
+//   // - If there are 4 samples between the /CAS highs, then it is a video read. If there are more
+//   //   then it is NOT a video read. There should never be less.
+//   // - There are 256*192 / 8 = 6144 bytes of pixels and 32*24 = 768 bytes of attributes. 
+//   //   giving a total of 6912 bytes (0x1B00) of video memory.
+//   // - The Speccy reads the video memory in 2 byte chunks. 1 byte is the 8 pixesl, and the other
+//   //   byte is the attribute bits for those pixel. This should result in 6144 * 2 = 12288 reads (0x3000)
+//   // - ULA CAS pluse is [~204ns (gap ~60ns) 226ns] x2 (with 86ns gap)
+//   // - Shortest Z80 read is ~296ns
+//   // - Therefore we only have a window of ~70ns difference to differentiate the 2 :/
+
+//   // Do the rest is the bottom half!
+
+
+//   // // For debug
+//   // memcpy(pThis->m_pDebugBuffer, pBuffer, ZX_SMI_DEBUG_BUFFER_LENGTH * sizeof(ZX_DMA_T));
+//   pDEBUG_BUFFER = pBuffer;
+
+//   // Reset state before processing data (this interrupt occurs at start of screen refresh)
+//   u32 lastlastlastValue = 0;
+//   u32 lastlastValue = 0;
+//   u32 lastValue = 0;
+//   u32 lastCasValue = 0;
+//   u32 inIOWR = 0;
+//   u32 inCAS = 0;
+//   videoByteCount = 0;
+//   u32 screenValue0 = 0;
+//   u32 screenValue1 = 0;
+//   u32 casReadIdx = 0;
+//   volatile ZX_DMA_T *pScreenBuffer = pThis->m_pScreenDataBuffer;
+//   boolean isPixels = true;
+
+//   // Loop all the data in the buffer
+//   for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
+//       // Read the value from the buffer
+//       ZX_DMA_T value = pBuffer[i];
+
+//       // Clear out the buffer as we read it (might be quicker than a memset(), but may well be slower too!! TODO: CHECK)
+//       // pBuffer[i] = 0xFFFF;
+
+//       // if (value != 0xFFFF) {
+//         // pThis->m_value = value;
+
+//   // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
+//   // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
+//   // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
+//   // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+
+
+//         boolean IORQ = (value & (1 << 2)) == 0;
+//         boolean WR = (value & (1 << 0)) == 0;
+//         // boolean A0 = (value & (1 << 2)) != 0;
+//         boolean CAS = (value & (1 << 1)) == 0;
+//         // boolean IOREQ = IORQ & A0;                
+//         boolean IOREQ = IORQ;                
+//         u32 data = (value >> 8);// & 0x7;
+
+        
+
+//         // Test
+//         // if (CAS) {
+//         //   pThis->m_value = 0xDDDD;
+//         // }
+
+//         // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
+//         if (i > 0) {
+//           if (CAS) {
+//             // Entered or in CAS
+//             lastCasValue = data;
+//             inCAS++;
+//           } else {
+//             // if (inCAS == 3) {
+//             //   if (casReadIdx == 0) {
+//             //     screenValue0 = lastValue;
+//             //     casReadIdx = 1;
+//             //   } else {
+//             //     screenValue1 = lastValue;
+//             //     videoByteCount +=2;
+//             //   }
+//             // } else {
+//             //   casReadIdx = 0;
+//             // }
+//             if (inCAS >= 3 && inCAS <= 6) {
+//               // // pThis->m_value = lastValue;   
+//               // if (videoByteCount < 0x3000) {
+//                 videoByteCount++;                
+//                 // pThis->m_value = inCAS;   
+//                 // pThis->m_value =  0xDDDD;                 
+
+//                 if (isPixels) {
+//                   // HW Fix, rotate the 8 bits
+//                   lastCasValue = reverseBits(lastCasValue);
+
+//                   borderValue = lastCasValue;                  
+
+//                   *pScreenBuffer++ = lastCasValue;                
+//                 }
+//                 isPixels = !isPixels;                 
+//               // }
+//               // if (videoByteCount >= 0x3000) break;
+//             } 
+//             inCAS = 0;
+//           }
+//         }
+
+//         // Handle IO write (border colour)
+//         // if (IOREQ & WR) {          
+//         //   // Entered or in IO write
+//         //   inIOWR++;          
+//         // } else {
+//         //   if (inIOWR > 5) {
+//         //     // Exited IO write, use the last value
+//         //     // pThis->m_value = lastValue;
+//         //     // pThis->m_value =  0xDDDD;
+//         //     borderValue = lastValue;
+//         //   }
+//         //   inIOWR = 0;
+//         // }
+
+//         lastlastlastValue = lastlastValue;
+//         lastlastValue = lastValue;
+//         lastValue = data;        
+
+//         // // Check for /IOREQ = 0 (/IOREQ = /IORQ | /A0)
+//         // if (!pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 13))) == 0) {
+//         //   // pThis->m_value = value; // & 0x07;  // Only interested in first 3 bits
+//         //   pThis->m_isIOWrite = true;        
+//         //   pThis->m_counter2 = 0;
+//         //   }      
+//         //   else if (pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 14) | (1 << 13))) == 0) {
+//         //   // pThis->m_value = value & 0x07;  // Only interested in first 3 bits for the border colour
+//         //   pThis->m_counter2++;
+
+//         //   if (pThis->m_counter2 > 5) {
+//         //   pThis->m_value = value;
+//         //   pThis->m_isIOWrite = false;        
+//         //   }
+//         // }
+//       // }      
+//       // if (value > 0) {
+//       //   pThis->m_counter++;
+//       // }
+//   }
+
+
+//   // pThis->m_value = videoByteCount;
+
+//   memset(pBuffer, 0, pThis->m_nDMABufferLenBytes);
+//   CleanAndInvalidateDataCacheRange((uintptr)pBuffer, pThis->m_nDMABufferLenBytes);
+
+
+
+//   // Toggle LED for debug
+//   pThis->m_pActLED->Off();
+
+//   // TODO - hand off the buffer to the main thread
+
+//   // Signal the bottom half
+//   if (pThis->m_pFrameEvent) {
+//     pThis->m_pFrameEvent->Set();
+//   }
+
+//     // if (pThis->m_counter <= 0) {
+//     //   pThis->m_counter = 10;
+//     //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
+    
+//     //   if (pThis->m_bDMAResult) {
+//     //     pThis->m_pActLED->On();
+//     //   } else {
+//     //     pThis->m_pActLED->Off();
+//     //   }
+//     // }
+//     // pThis->m_counter--;
+
+//     _loops++;
+
+//   #if (ZX_SMI_USE_FIQ)    
+//   // TODO - auto-ack?
+//   #else
+//     pThis->m_GpioIrqPin.AcknowledgeInterrupt();
+//   #endif  
+// }
 	

@@ -23,6 +23,9 @@ private:
 	CZxScreen		*m_pZxScreen;
 	CZxSmi			*m_pZxSmi;	
 	CActLED			*m_pActLED;	
+
+	volatile ZX_DMA_T *m_pScreenDataBuffer;
+	u32 m_nScreenDataBufferLength;
 };
 
 #endif

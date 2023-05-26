@@ -7,11 +7,16 @@
 
 LOGMODULE ("screenprocessingtask");
 
+#define BACKGROUND_LOOP_PERIOD_MS 500
 
 extern "C"	u16 *pDEBUG_BUFFER;
 extern "C" volatile u16 *pVIDEO_BUFFER;
 extern "C" u16 borderValue;
 extern "C" u32 videoByteCount;
+extern "C" u32 loopCount;
+extern "C" u32 skippedFrameCount;
+u32 backgroundTime = 0;
+u32 prevLoopCount = 0;
 
 
 CBackgroundTask::CBackgroundTask (CShell *pShell, CActLED *pActLED, CSynchronizationEvent *pRebootEvent)
@@ -33,6 +38,10 @@ void CBackgroundTask::Run (void)
 
 	while (1)
 	{
+		backgroundTime += BACKGROUND_LOOP_PERIOD_MS;
+		float fps = (float)((loopCount - prevLoopCount) * 1000) / (float)BACKGROUND_LOOP_PERIOD_MS;
+		prevLoopCount = loopCount;
+
 		// Read the shell (serial port)
 		m_pShell->Update();
 		// for (unsigned i = 1; i <= 5; i++)
@@ -55,7 +64,7 @@ void CBackgroundTask::Run (void)
 		// }
 		// LOGDBG("Buffer len: %04ld", len);
 		// LOGDBG("Border value: %04ld", borderValue);		
-		LOGDBG("Video bytes: 0x%04lx", videoByteCount);		
+		LOGDBG("Video bytes: 0x%04lx, Skipped: 0x%04lx, Loops: 0x%04lx, FPS: %.1f", videoByteCount, skippedFrameCount, loopCount, fps);		
 		// // if (pDEBUG_BUFFER) {	
 		// // 	for (unsigned i = 0; i < 25/*ZX_SMI_DEBUG_BUFFER_LENGTH*/; i++){
 		// // 		u16 v = pDEBUG_BUFFER[i];
@@ -70,7 +79,8 @@ void CBackgroundTask::Run (void)
 		// }
 
 
-		CScheduler::Get ()->MsSleep (500);
+		CScheduler::Get ()->MsSleep (BACKGROUND_LOOP_PERIOD_MS);
+		
 	}
 }
 

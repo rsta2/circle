@@ -13,6 +13,7 @@
 #include <circle/logger.h>
 #include <circle/smimaster.h>
 #include <circle/sched/synchronizationevent.h>
+#include <circle/sched/semaphore.h>
 
 #define ZX_SMI_DEBUG_BUFFER_LENGTH		256
 
@@ -44,7 +45,7 @@
 // 2 * (8+9+8) / 1GHz = 50.0ns
 #define ZX_SMI_NS		4
 #define ZX_SMI_SETUP	3
-#define ZX_SMI_STROBE	3
+#define ZX_SMI_STROBE	4
 #define ZX_SMI_HOLD		3
 #endif
 
@@ -52,8 +53,8 @@
 #define ZX_DMA_T					u16
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 2) / sizeof(ZX_DMA_T))
-#define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
+#define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((512 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
@@ -74,6 +75,9 @@
 #define ZX_PIN_WR				(1 << 14)
 
 
+// typedef void ZXSMIBufferReadyRoutine (boolean bStatus, void *pParam);
+
+
 class CZxSmi
 {
 public:
@@ -87,8 +91,9 @@ public:
 	void Stop(void);
 	void SetActLED(CActLED *pActLED);
 	volatile ZX_DMA_T GetValue(void);
-	volatile ZX_DMA_T *GetScreenDataBuffer(void);
-	u32 GetScreenDataBufferLength(void);
+
+	ZX_DMA_T *LockDataBuffer(void);
+	void ReleaseDataBuffer(void);
 
 private:
 	void DMAStart(void);
@@ -124,9 +129,11 @@ public:
 	volatile unsigned m_nDMABufferIdx;
 	u32 m_nDMABufferLenBytes;
 	u32 m_nDMABufferLenWords;
+	/*volatile*/ ZX_DMA_T *m_pDMABufferRead;
+	volatile unsigned m_nDMABufferIdxRead;
+	CSemaphore m_DMABufferReadSemaphore;
 	CSynchronizationEvent	*m_pFrameEvent;
-	volatile ZX_DMA_T *m_pScreenDataBuffer;
-	u32 m_nScreenDataBufferLength;
+
 
 	volatile boolean m_bRunning;
 	CActLED *m_pActLED;
