@@ -300,7 +300,9 @@ void CZxScreen::SetScreen (boolean bToggle)
   m_bDirty = TRUE;
 }
 
-void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u32 len) {
+
+
+void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len) {
   TScreenColor *pBuffer = m_pOffscreenBuffer;
 	unsigned nSize = m_nPixelCount;
   unsigned x = 0;
@@ -311,6 +313,8 @@ void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u32 len) {
   unsigned pixelWord = 0;
   unsigned pixelBit = 0;
   unsigned pixelSet = 0;
+  unsigned attr = 0;
+  unsigned pixelColor = 0;
   boolean bInScreen = FALSE;
 
 	while (nSize--)
@@ -325,7 +329,11 @@ void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u32 len) {
       pixelWord = pixel / 8;
       pixelBit = (pixel % 8);
       pixelSet = (pPixelBuffer[pixelWord] >> pixelBit) & 0x01;
-      *pBuffer = pixelSet ? BLACK_COLOR : WHITE_COLOR;
+      attr = pAttrBuffer[pixelWord];
+      pixelColor = getPixelColor(attr, pixelSet);
+
+      // *pBuffer = pixelSet ? BLACK_COLOR : WHITE_COLOR;
+      *pBuffer = pixelColor;
 
 
       pixel++;
@@ -409,6 +417,31 @@ void CZxScreen::UpdateScreen() {
   // Mark dirty so will be updated
   m_bDirty = FALSE;
 }
+
+TScreenColor CZxScreen::getPixelColor(u8 attr, bool set) {
+  u8 colour = 0;
+  if (set) {
+    colour = attr & 0x07;
+  } else {
+    colour = (attr >> 3) & 0x07;
+  }
+  bool bright = attr & 0x40;
+  bool flash = attr & 0x80;
+
+  switch (colour) {
+    case 0: return bright ? BLACK_COLOR : BLACK_COLOR;
+    case 1: return bright ? BRIGHT_BLUE_COLOR : BLUE_COLOR;
+    case 2: return bright ? BRIGHT_RED_COLOR : RED_COLOR;
+    case 3: return bright ? BRIGHT_MAGENTA_COLOR : MAGENTA_COLOR;
+    case 4: return bright ? BRIGHT_GREEN_COLOR : GREEN_COLOR;
+    case 5: return bright ? BRIGHT_CYAN_COLOR : CYAN_COLOR;
+    case 6: return bright ? BRIGHT_YELLOW_COLOR : YELLOW_COLOR;
+    case 7: return bright ? BRIGHT_WHITE_COLOR : WHITE_COLOR;
+  }
+
+  return BLACK_COLOR;
+}
+
 
 void CZxScreen::DMAStart()
 {

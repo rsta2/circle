@@ -27,21 +27,25 @@ CScreenProcessorTask::CScreenProcessorTask (CZxScreen *pZxScreen, CZxSmi *pZxSmi
 	m_pZxScreen (pZxScreen),
 	m_pZxSmi (pZxSmi),
 	m_pActLED (pActLED),
-	m_pScreenDataBuffer(0),
+	m_pScreenPixelDataBuffer(0),
+	m_pScreenAttrDataBuffer(0),
 	m_nScreenDataBufferLength(0)
 {
 	// TODO: This is way too big
 	m_nScreenDataBufferLength = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);  
 
-	// Allocate screen data buffer (Do in run?)
-  	m_pScreenDataBuffer = new ZX_DMA_T[m_nScreenDataBufferLength];
+	// Allocate screen data buffers (Do in run?)
+  	m_pScreenPixelDataBuffer = new ZX_DMA_T[m_nScreenDataBufferLength];
+	m_pScreenAttrDataBuffer = new ZX_DMA_T[m_nScreenDataBufferLength];
 }
 
 CScreenProcessorTask::~CScreenProcessorTask (void)
 {
   // Deallocate screen data buffer
-  delete m_pScreenDataBuffer;
-  m_pScreenDataBuffer = nullptr;
+  delete m_pScreenPixelDataBuffer;
+  m_pScreenPixelDataBuffer = nullptr;
+  delete m_pScreenAttrDataBuffer;
+  m_pScreenAttrDataBuffer = nullptr;
 }
 
 void CScreenProcessorTask::Run (void)
@@ -62,10 +66,8 @@ void CScreenProcessorTask::Run (void)
 		ZX_DMA_T *pBuffer = m_pZxSmi->LockDataBuffer();
 
 		// Reset state before processing data (this interrupt occurs at start of screen refresh)
-		u32 lastlastlastValue = 0;
-		u32 lastlastValue = 0;
-		u32 lastValue = 0;
 		u32 lastCasValue = 0;
+		u32 lastIOWRValue = 0;
 		u32 inIOWR = 0;
 		u32 inCAS = 0;
 		videoByteCount = 0;
@@ -75,7 +77,8 @@ void CScreenProcessorTask::Run (void)
 		boolean isPixels = true;
 		boolean wasOutOfCAS = false;
 
-		volatile u16 *pScreenBuffer = m_pScreenDataBuffer;
+		volatile u16 *pScreenPixelBuffer = m_pScreenPixelDataBuffer;
+		volatile u16 *pScreenAttrBuffer = m_pScreenAttrDataBuffer;
 
 		// Loop all the data in the buffer
 		for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
@@ -122,23 +125,26 @@ void CScreenProcessorTask::Run (void)
 				} else {
 					if (inCAS >= 3 && inCAS <= 5) {
 					// // pThis->m_value = lastValue;   
-					// if (videoByteCount < 0x3000) {
-						videoByteCount++;                
-						// pThis->m_value = inCAS;   
-						// pThis->m_value =  0xDDDD;                 
+						if (videoByteCount < 0x3000) {
+							videoByteCount++;                
+							// pThis->m_value = inCAS;   
+							// pThis->m_value =  0xDDDD;                 
 
-						if (isPixels) {
-							// HW Fix, rotate the 8 bits
-							lastCasValue = reverseBits(lastCasValue);
-
-							borderValue = lastCasValue;                  
-
-							*pScreenBuffer++ = lastCasValue;                
-						}
-						isPixels = !isPixels;                 
-						// }
-						if (videoByteCount == 0x3000-1)  {
-							videoValue = lastCasValue;
+							if (isPixels) {
+								// HW Fix, rotate the 8 bits
+								lastCasValue = reverseBits(lastCasValue);
+					
+								*pScreenPixelBuffer++ = lastCasValue;                
+							} else {
+								// HW Fix, rotate the 8 bits
+								// lastCasValue = reverseBits(lastCasValue);
+								*pScreenAttrBuffer++ = lastCasValue;                
+							}
+							isPixels = !isPixels;                 
+							
+							if (videoByteCount == 0x3000-1)  {
+								videoValue = lastCasValue;
+							}
 						}
 					} 
 					inCAS = 0;
@@ -146,22 +152,22 @@ void CScreenProcessorTask::Run (void)
 			}
 
 			// Handle IO write (border colour)
-			// if (IOREQ & WR) {          
-			//   // Entered or in IO write
-			//   inIOWR++;          
-			// } else {
-			//   if (inIOWR > 5) {
-			//     // Exited IO write, use the last value
-			//     // pThis->m_value = lastValue;
-			//     // pThis->m_value =  0xDDDD;
-			//     borderValue = lastValue;
-			//   }
-			//   inIOWR = 0;
-			// }
+			if (IOREQ & WR) {          
+			  // Entered or in IO write
+			  lastIOWRValue = data;
+			  inIOWR++;          
+			} else {
+			  if (inIOWR > 5 && inIOWR < 40) {
+			    // Exited IO write, use the last value
+			    // pThis->m_value = lastValue;
+			    // pThis->m_value =  0xDDDD;
+			    borderValue = lastIOWRValue;
+				// borderValue = inIOWR;
+			  }
+			  inIOWR = 0;
+			}
 
-			lastlastlastValue = lastlastValue;
-			lastlastValue = lastValue;
-			lastValue = data;        
+   
 
 			// // Check for /IOREQ = 0 (/IOREQ = /IORQ | /A0)
 			// if (!pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 13))) == 0) {
@@ -318,13 +324,13 @@ void CScreenProcessorTask::Run (void)
 		if (value == 6) bc = YELLOW_COLOR;
 		if (value == 7) bc = WHITE_COLOR;
 
-		// m_pZxScreen->SetBorder(bc);
+		m_pZxScreen->SetBorder(bc);
 		// m_pZxScreen->SetScreen(TRUE);
 
 
-		// if (videoByteCount == 0x3000) {
-			m_pZxScreen->SetScreenFromBuffer((u16 *)m_pScreenDataBuffer, 0x3000 / 2);
-		// }
+		
+		m_pZxScreen->SetScreenFromBuffer((u16 *)m_pScreenPixelDataBuffer, (u16 *)m_pScreenAttrDataBuffer, 0x3000 / 2);
+		
 		m_pZxScreen->UpdateScreen();
 
 		// Release the SMI DMA buffer pointer

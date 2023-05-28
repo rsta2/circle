@@ -80,21 +80,21 @@
 #elif DEPTH == 16
 	typedef u16 TScreenColor;
 
-	#define RED_COLOR			COLOR16 (170 >> 3, 0, 0)
-	#define GREEN_COLOR			COLOR16 (0, 170 >> 3, 0)
-	#define YELLOW_COLOR			COLOR16 (170 >> 3, 85 >> 3, 0)
-	#define BLUE_COLOR			COLOR16 (0, 0, 170 >> 3)
-	#define MAGENTA_COLOR			COLOR16 (170 >> 3, 0, 170 >> 3)
-	#define CYAN_COLOR			COLOR16 (0, 170 >> 3, 170 >> 3)
-	#define WHITE_COLOR			COLOR16 (170 >> 3, 170 >> 3, 170 >> 3)
+	#define RED_COLOR				COLOR16 (0xCD >> 3, 0 >> 3, 0 >> 3)
+	#define GREEN_COLOR				COLOR16 (0 >> 3, 0xCD >> 3, 0 >> 3)
+	#define YELLOW_COLOR			COLOR16 (0xCD >> 3, 0xCD >> 3, 0 >> 3)
+	#define BLUE_COLOR				COLOR16 (0 >> 3, 0 >> 3, 0xCD >> 3)
+	#define MAGENTA_COLOR			COLOR16 (0xCD >> 3, 0, 0xCD >> 3)
+	#define CYAN_COLOR				COLOR16 (0 >> 3, 0xCD >> 3, 0xCD >> 3)
+	#define WHITE_COLOR				COLOR16 (0xCD >> 3, 0xCD >> 3, 0xCD >> 3)
 
 	#define BRIGHT_BLACK_COLOR		COLOR16 (85 >> 3, 85 >> 3, 85 >> 3)
-	#define BRIGHT_RED_COLOR		COLOR16 (255 >> 3, 85 >> 3, 85 >> 3)
-	#define BRIGHT_GREEN_COLOR		COLOR16 (85 >> 3, 255 >> 3, 85 >> 3)
-	#define BRIGHT_YELLOW_COLOR		COLOR16 (255 >> 3, 255 >> 3, 85 >> 3)
-	#define BRIGHT_BLUE_COLOR		COLOR16 (85 >> 3, 85 >> 3, 255 >> 3)
-	#define BRIGHT_MAGENTA_COLOR		COLOR16 (255 >> 3, 85 >> 3, 255 >> 3)
-	#define BRIGHT_CYAN_COLOR		COLOR16 (85 >> 3, 255 >> 3, 255 >> 3)
+	#define BRIGHT_RED_COLOR		COLOR16 (255 >> 3, 0 >> 3, 0 >> 3)
+	#define BRIGHT_GREEN_COLOR		COLOR16 (0 >> 3, 255 >> 3, 0 >> 3)
+	#define BRIGHT_YELLOW_COLOR		COLOR16 (255 >> 3, 255 >> 3, 0 >> 3)
+	#define BRIGHT_BLUE_COLOR		COLOR16 (0 >> 3, 0 >> 3, 255 >> 3)
+	#define BRIGHT_MAGENTA_COLOR	COLOR16 (255 >> 3, 0 >> 3, 255 >> 3)
+	#define BRIGHT_CYAN_COLOR		COLOR16 (0 >> 3, 255 >> 3, 255 >> 3)
 	#define BRIGHT_WHITE_COLOR		COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
 #elif DEPTH == 32
 	typedef u32 TScreenColor;
@@ -141,11 +141,12 @@ public:
 	void Clear (TScreenColor backgroundColor);
 	void SetBorder (TScreenColor borderColor);
 	void SetScreen (boolean bToggle);
-	void SetScreenFromBuffer(u16 *pPixelBuffer, u32 len);
+	void SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len);
 
 	void UpdateScreen(void);
 private:
 
+	TScreenColor getPixelColor(u8 attr, bool set);
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 

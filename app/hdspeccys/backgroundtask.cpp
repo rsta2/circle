@@ -63,8 +63,8 @@ void CBackgroundTask::Run (void)
 		// }
 		// LOGDBG("Buffer len: %04ld", len);
 		// LOGDBG("Border value: %04ld", borderValue);		
-		LOGDBG("Video bytes: 0x%04lx, value: 0x%04lx Skipped: 0x%04lx, Loops: 0x%04lx, FPS: %.1f", 
-			videoByteCount, videoValue, skippedFrameCount, loopCount, fps);		
+		LOGDBG("Video bytes: 0x%04lx, border: 0x%04lx Skipped: 0x%04lx, Loops: 0x%04lx, FPS: %.1f", 
+			videoByteCount, borderValue, skippedFrameCount, loopCount, fps);		
 		// // if (pDEBUG_BUFFER) {	
 		// // 	for (unsigned i = 0; i < 25/*ZX_SMI_DEBUG_BUFFER_LENGTH*/; i++){
 		// // 		u16 v = pDEBUG_BUFFER[i];
