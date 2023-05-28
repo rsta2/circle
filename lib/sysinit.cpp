@@ -251,8 +251,8 @@ void sysinit (void)
 		(**pFunc) ();
 	}
 
-	extern int main (void);
-	if (main () == EXIT_REBOOT)
+	extern int MAINPROC (void);
+	if (MAINPROC () == EXIT_REBOOT)
 	{
 		if (IsChainBootEnabled ())
 		{
