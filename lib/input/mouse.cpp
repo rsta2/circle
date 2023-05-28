@@ -28,6 +28,7 @@ static const char DevicePrefix[] = "mouse";
 
 CMouseDevice::CMouseDevice (unsigned nButtons, boolean bHasWheel)
 :	m_pStatusHandler (0),
+	m_pStatusHandlerArg (0),
 	m_nDeviceNumber (s_DeviceNumberPool.AllocateNumber (TRUE, FromMouse)),
 	m_nButtons (nButtons),
 	m_bHasWheel (bHasWheel)
@@ -38,6 +39,7 @@ CMouseDevice::CMouseDevice (unsigned nButtons, boolean bHasWheel)
 CMouseDevice::~CMouseDevice (void)
 {
 	m_pStatusHandler = 0;
+	m_pStatusHandlerArg = 0;
 
 	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
 
@@ -72,12 +74,25 @@ void CMouseDevice::UpdateCursor (void)
 	}
 }
 
-void CMouseDevice::RegisterStatusHandler (TMouseStatusHandler *pStatusHandler)
+void CMouseDevice::RegisterStatusHandler (TMouseStatusHandlerEx *pStatusHandler, void* pArg)
 {
 	assert (m_pStatusHandler == 0);
 	m_pStatusHandler = pStatusHandler;
+	m_pStatusHandlerArg = pArg;
 	assert (m_pStatusHandler != 0);
 }
+
+static void proxy_handler(unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove, void* pArg)
+{
+	((TMouseStatusHandler*)pArg)(nButtons, nDisplacementX, nDisplacementY, nWheelMove);
+}
+
+
+void CMouseDevice::RegisterStatusHandler (TMouseStatusHandler *pStatusHandler)
+{
+	RegisterStatusHandler(proxy_handler, (void*)pStatusHandler);
+}
+
 
 void CMouseDevice::ReportHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove)
 {
@@ -85,7 +100,7 @@ void CMouseDevice::ReportHandler (unsigned nButtons, int nDisplacementX, int nDi
 
 	if (m_pStatusHandler != 0)
 	{
-		(*m_pStatusHandler) (nButtons, nDisplacementX, nDisplacementY, nWheelMove);
+		(*m_pStatusHandler) (nButtons, nDisplacementX, nDisplacementY, nWheelMove, m_pStatusHandlerArg);
 	}
 }
 
