@@ -28,6 +28,7 @@
 #define MOUSE_DISPLACEMENT_MIN	-127
 #define MOUSE_DISPLACEMENT_MAX	127
 
+typedef void TMouseStatusHandlerEx (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove, void* pArg);
 typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove);
 
 class CMouseDevice : public CDevice	/// Generic mouse interface device ("mouse1")
@@ -64,6 +65,7 @@ public:
 
 	/// \brief Register mouse status handler in raw mode
 	/// \param pStatusHandler Pointer to the mouse status handler
+	void RegisterStatusHandler (TMouseStatusHandlerEx *pStatusHandler, void* pArg);
 	void RegisterStatusHandler (TMouseStatusHandler *pStatusHandler);
 
 	/// \return Number of supported mouse buttons
@@ -79,7 +81,8 @@ public:
 private:
 	CMouseBehaviour m_Behaviour;
 
-	TMouseStatusHandler *m_pStatusHandler;
+	TMouseStatusHandlerEx *m_pStatusHandler;
+	void* m_pStatusHandlerArg;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;
