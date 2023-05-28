@@ -13,6 +13,7 @@
 #include <circle/util.h>
 #include <zxutil/zxutil.h>	// For rand_32();
 
+
 #ifndef DEPTH
 #define DEPTH	16		// can be: 8, 16 or 32
 #endif
@@ -142,11 +143,12 @@ public:
 	void SetBorder (TScreenColor borderColor);
 	void SetScreen (boolean bToggle);
 	void SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len);
+	void SetScreenFromULABuffer(u16 *pULABuffer, size_t len);
 
 	void UpdateScreen(void);
 private:
-
-	TScreenColor getPixelColor(u8 attr, bool set);
+	void ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, size_t nULABufferLen);
+	TScreenColor getPixelColor(u32 attr, bool bright, bool flash, bool ink);
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 

@@ -8,7 +8,7 @@
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
-#include <circle/screen.h>
+// #include <circle/screen.h>
 #include <circle/serial.h>
 #include <circle/exceptionhandler.h>
 #include <circle/interrupt.h>

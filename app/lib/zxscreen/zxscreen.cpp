@@ -16,6 +16,12 @@ LOGMODULE ("ZxScreen");
 // #define SPINLOCK_LEVEL      IRQ_LEVEL /* TASK_LEVEL*/
 #define SPINLOCK_LEVEL      TASK_LEVEL
 
+
+u16 borderValue;
+u32 videoByteCount;
+u16 videoValue;
+
+
 //
 // Class
 //
@@ -330,7 +336,9 @@ void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len
       pixelBit = (pixel % 8);
       pixelSet = (pPixelBuffer[pixelWord] >> pixelBit) & 0x01;
       attr = pAttrBuffer[pixelWord];
-      pixelColor = getPixelColor(attr, pixelSet);
+      bool bright = attr & 0x40;
+      bool flash = attr & 0x80;
+      pixelColor = getPixelColor(attr, bright, flash, pixelSet);
 
       // *pBuffer = pixelSet ? BLACK_COLOR : WHITE_COLOR;
       *pBuffer = pixelColor;
@@ -353,6 +361,14 @@ void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len
     }
 	}
 
+
+  // Mark dirty so will be updated
+  m_bDirty = TRUE;
+}
+
+void CZxScreen::SetScreenFromULABuffer(u16 *pULABuffer, size_t len) {
+  // Update offscreen buffer
+  ULADataToScreen(m_pOffscreenBuffer, pULABuffer, len);
 
   // Mark dirty so will be updated
   m_bDirty = TRUE;
@@ -418,15 +434,128 @@ void CZxScreen::UpdateScreen() {
   m_bDirty = FALSE;
 }
 
-TScreenColor CZxScreen::getPixelColor(u8 attr, bool set) {
+
+
+// TODO: Pass in all the sizes
+void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, size_t nULABufferLen) {
+  // Reset state before processing data (this interrupt occurs at start of screen refresh)
+  u32 lastCasValue = 0;
+  u32 lastIOWRValue = 0;
+  u32 inIOWR = 0;
+  u32 inCAS = 0;
+  boolean isPixels = TRUE;
+  boolean wasOutOfCAS = FALSE;
+  videoByteCount = 0;
+  u32 pixelData = 0;
+  u32 attrData = 0;
+  boolean pixelAttrDataValid = FALSE;  
+  u32 px = 0; // Start after the border (TODO: Need to pass in sizes!)
+  u32 py = 0;
+
+  // Loop all the data in the buffer
+  for (unsigned i = 0; i < nULABufferLen; i++) {   
+    // Read the value from the ULA data buffer
+    u16 value = pULABuffer[i];
+
+
+    // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
+    // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
+    // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
+    // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+
+    // Extract the state of the signals
+    boolean IORQ = (value & (1 << 2)) == 0;
+    boolean WR = (value & (1 << 0)) == 0;
+    boolean CAS = (value & (1 << 1)) == 0;           
+    boolean IOREQ = IORQ;
+  
+    // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
+    if (i > 100) {
+      if (!wasOutOfCAS) {
+        wasOutOfCAS = !CAS;
+      }
+
+      if (wasOutOfCAS && CAS) {
+        // Entered or in CAS
+        lastCasValue = value >> 8;
+        inCAS++;
+      } else {
+        if (inCAS >= 3 && inCAS <= 5) {
+        // // pThis->m_value = lastValue;   
+          if (videoByteCount < 0x3000) {
+            videoByteCount++;                
+
+            if (isPixels) {
+              // HW Fix, reverse the 8 bits
+              // lastCasValue = reverseBits(lastCasValue);
+        
+              pixelData = lastCasValue;                
+            } else {
+              // HW Fix, reverse the 8 bits
+              // lastCasValue = reverseBits(lastCasValue);
+              attrData = lastCasValue;                
+              pixelAttrDataValid = TRUE;
+            }
+            isPixels = !isPixels;
+          }
+        } 
+        inCAS = 0;
+      }
+    }
+
+    // // Handle IO write (border colour)
+    // if (IOREQ & WR) {          
+    //   // Entered or in IO write
+    //   lastIOWRValue = value >> 8;
+    //   inIOWR++;          
+    // } else {
+    //   if (inIOWR > 5 && inIOWR < 40) {
+    //     // Exited IO write, use the last value
+    //     // pThis->m_value = lastValue;
+    //     // pThis->m_value =  0xDDDD;
+    //     borderValue = lastIOWRValue;
+    // 	// borderValue = inIOWR;
+    //   }
+    //   inIOWR = 0;
+    // }
+
+
+    if (pixelAttrDataValid) {
+      pixelAttrDataValid = FALSE;
+
+      // Proces the pixel and attribute data
+      bool bright = attrData & 0x40;
+      bool flash = attrData & 0x80;
+      TScreenColor fgColor = getPixelColor(attrData, bright, flash, true);
+      TScreenColor bgColor = getPixelColor(attrData, bright, flash, false);
+
+      u32 bytePos = py * m_nWidth + px;
+
+      for (int i = 0; i < 8; i++) {
+        // 7-i to flip the data lines
+        TScreenColor pixelColor = (pixelData & (1 << (7-i))) ? fgColor : bgColor;
+        pScreenBuffer[bytePos + i] = pixelColor;
+      }
+
+
+      // Move to the next pixel
+      px += 8;
+      if (px >= m_nScreenWidth) {
+        px = 0;
+        py++;
+      }      
+    }
+  }
+}
+
+inline TScreenColor CZxScreen::getPixelColor(u32 attr, bool bright, bool flash, bool ink) {
   u8 colour = 0;
-  if (set) {
+  if (ink) {
     colour = attr & 0x07;
   } else {
     colour = (attr >> 3) & 0x07;
   }
-  bool bright = attr & 0x40;
-  bool flash = attr & 0x80;
+
 
   switch (colour) {
     case 0: return bright ? BLACK_COLOR : BLACK_COLOR;
