@@ -52,6 +52,13 @@ public:
 	/// \note Supported by block devices only
 	virtual u64 GetSize (void) const;
 
+    /// \param cmd The IOCtl command to invoke
+	/// \param data Depends on command, used to return command specific data
+	/// \return Zero on success, or error code on failure
+	/// \note Provides ability to invoke device specific I/O control comands
+	///       See FatFS `disk_ioctl` for how this might be used.
+	virtual int IOCtl (unsigned long cmd, void* data) { return -1; }; 
+
 	/// \return TRUE on successful device removal
 	virtual boolean RemoveDevice (void);
 
