@@ -60,11 +60,10 @@ LOGMODULE ("ZxSmi");
 
 
 
-u16 *pDEBUG_BUFFER;
-u16 borderValue;
-u32 videoByteCount;
 u32 loopCount = 0;
 u32 skippedFrameCount = 0;
+
+u32 skippy = 0;
 
 //
 // Class
@@ -180,9 +179,9 @@ boolean CZxSmi::Initialize ()
 
   // Configure GPIO interrupt
 #if (ZX_SMI_USE_FIQ)  
-  m_GpioFiqPin.ConnectInterrupt(GpioIrqHandler, this);
+  m_GpioFiqPin.ConnectInterrupt(GpioIrqHandler, this, FALSE);
 #else
-  m_GpioIrqPin.ConnectInterrupt(GpioIrqHandler, this, false);
+  m_GpioIrqPin.ConnectInterrupt(GpioIrqHandler, this, FALSE);
 #endif  
 
   // Configure SMI DMA
@@ -192,8 +191,8 @@ boolean CZxSmi::Initialize ()
   for (unsigned i = 0; i < ZX_DMA_BUFFER_COUNT; i++) {
     // Set up reads in separate control blocks
     m_pDMAControlBlocks[i]->SetupIORead (m_pDMABuffers[i], ARM_SMI_D, m_nDMABufferLenBytes, DREQSourceSMI);  
-    // m_pDMAControlBlocks[i]->SetWaitForWriteResponse(TRUE);
-    // m_pDMAControlBlocks[i]->SetBurstLength(15);
+    m_pDMAControlBlocks[i]->SetWaitForWriteResponse(TRUE);
+    m_pDMAControlBlocks[i]->SetBurstLength(8);
 
     // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
     TDMAControlBlock *pCB = m_pDMAControlBlocks[i]->GetRawControlBlock();
@@ -577,8 +576,11 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   // Toggle LED for debug
   pThis->m_pActLED->On();
 
-
-  // CTimer::SimpleusDelay(2000);
+  // This delay is important to ensure that the last video bytes are flushed out of the SMI FIFO when running
+  // at slower sample rates. Without this, the last few bytes of the frame are lost.
+  // At higher sample rates the delay is not needed, but it makes more sense to have a lower sample rate and
+  // therefore lower power consumption.
+  CTimer::SimpleusDelay(1);
 
   // Attempt to get the buffer lock - if it is still in use, we need to drop a frame
   bool haveLock = pThis->m_DMABufferReadSemaphore.TryDown();
@@ -596,19 +598,24 @@ void CZxSmi::GpioIrqHandler (void *pParam)
     // Save pointer to buffer just filled by DMA
     pThis->m_pDMABufferRead = pThis->m_pDMABuffer;
 
+    skippy++;
 
-    // Move to the next DMA buffer and control block
-    pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
-    pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
-    pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
+    if (skippy % 1 == 0) {
 
-    // Start the DMA using the next control block
-    pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
+      // Move to the next DMA buffer and control block
+      pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+      pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
+      pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
 
-    // // Start the SMI for DMA (DMA should already be ready to go)
-    PeripheralEntry();
-    write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
-    PeripheralExit();
+      // Start the DMA using the next control block
+      pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
+
+      // // Start the SMI for DMA (DMA should already be ready to go)
+      PeripheralEntry();
+      write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
+      PeripheralExit();
+
+    }
 
     // Release the lock
     pThis->m_DMABufferReadSemaphore.Up();
@@ -632,7 +639,7 @@ void CZxSmi::GpioIrqHandler (void *pParam)
 
   // Acknowledge the interrupt
   #if (ZX_SMI_USE_FIQ)    
-  // TODO - auto-ack?
+    pThis->m_GpioFiqPin.AcknowledgeInterrupt();
   #else
     pThis->m_GpioIrqPin.AcknowledgeInterrupt();
   #endif  

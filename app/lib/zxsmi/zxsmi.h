@@ -28,6 +28,7 @@
 #define ZX_SMI_WIDTH							SMI16Bits
 #define ZX_SMI_EXTERNAL_DREQ			TRUE
 #define ZX_SMI_USE_FIQ					FALSE
+// #define ZX_SMI_USE_FIQ					TRUE
 
 // SMI Timing (for a 50 ns cycle time, 20MHz)
 // Timings for RPi v4 (1.5 GHz) - (10 * (15+30+15) / 1.5GHZ) = 400ns
@@ -45,16 +46,31 @@
 // 2 * (8+9+8) / 1GHz = 50.0ns
 #define ZX_SMI_NS		4
 #define ZX_SMI_SETUP	3
-#define ZX_SMI_STROBE	4
+#define ZX_SMI_STROBE	5
 #define ZX_SMI_HOLD		3
+
+
+// Pretty good timing for real ULA
+// #define ZX_SMI_NS		4
+// #define ZX_SMI_SETUP	3
+// #define ZX_SMI_STROBE	2
+// #define ZX_SMI_HOLD		3
+// inCAS (5-7)
+
+// Also ok
+// #define ZX_SMI_NS		4
+// #define ZX_SMI_SETUP	3
+// #define ZX_SMI_STROBE	5
+// #define ZX_SMI_HOLD		3
+// inCAS (3-5)
 #endif
 
 // SMI DMA
 #define ZX_DMA_T					u16
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 2) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((512 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))

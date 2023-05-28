@@ -9,8 +9,9 @@ LOGMODULE ("screenprocessingtask");
 
 
 extern "C"	u16 *pDEBUG_BUFFER;
-extern "C" u16 borderValue;
-extern "C" u32 videoByteCount;
+u16 borderValue;
+u32 videoByteCount;
+u16 videoValue;
 
 unsigned char reverseBits(unsigned char b) {
    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
@@ -72,6 +73,7 @@ void CScreenProcessorTask::Run (void)
 		u32 screenValue1 = 0;
 		u32 casReadIdx = 0;
 		boolean isPixels = true;
+		boolean wasOutOfCAS = false;
 
 		volatile u16 *pScreenBuffer = m_pScreenDataBuffer;
 
@@ -105,16 +107,20 @@ void CScreenProcessorTask::Run (void)
 			// Test
 			// if (CAS) {
 			//   pThis->m_value = 0xDDDD;
-			// }
+			// }			
 
 			// Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
-			if (i > 0) {
-				if (CAS) {
+			if (i > 100) {
+				if (!wasOutOfCAS) {
+					wasOutOfCAS = !CAS;
+				}
+
+				if (wasOutOfCAS && CAS) {
 					// Entered or in CAS
 					lastCasValue = data;
 					inCAS++;
 				} else {
-					if (inCAS >= 5 && inCAS <= 5) {
+					if (inCAS >= 3 && inCAS <= 5) {
 					// // pThis->m_value = lastValue;   
 					// if (videoByteCount < 0x3000) {
 						videoByteCount++;                
@@ -130,8 +136,10 @@ void CScreenProcessorTask::Run (void)
 							*pScreenBuffer++ = lastCasValue;                
 						}
 						isPixels = !isPixels;                 
-					// }
-					// if (videoByteCount >= 0x3000) break;
+						// }
+						if (videoByteCount == 0x3000-1)  {
+							videoValue = lastCasValue;
+						}
 					} 
 					inCAS = 0;
 				}
@@ -314,7 +322,9 @@ void CScreenProcessorTask::Run (void)
 		// m_pZxScreen->SetScreen(TRUE);
 
 
-		m_pZxScreen->SetScreenFromBuffer((u16 *)m_pScreenDataBuffer, 0x3000 / 2);
+		// if (videoByteCount == 0x3000) {
+			m_pZxScreen->SetScreenFromBuffer((u16 *)m_pScreenDataBuffer, 0x3000 / 2);
+		// }
 		m_pZxScreen->UpdateScreen();
 
 		// Release the SMI DMA buffer pointer

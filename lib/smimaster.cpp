@@ -134,7 +134,9 @@ LOGMODULE ("smimaster");
 
 
 // DMA
-#define DMA_REQUEST_THRESH  2
+// #define DMA_REQUEST_THRESH  2
+// #define DMA_PANIC_LEVEL		8
+#define DMA_REQUEST_THRESH  8
 #define DMA_PANIC_LEVEL		8
 
 // Clock
