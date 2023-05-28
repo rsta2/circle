@@ -5,10 +5,21 @@ library features to build bare metal applications. This is configured using the
 build option STDLIB_SUPPORT, which can be defined in the files Config.mk or
 Rules.mk as follows:
 
+* STDLIB_SUPPORT=-1 for no stdlib management
 * STDLIB_SUPPORT=0 to build without external libs (old setting)
 * STDLIB_SUPPORT=1 to build with libgcc.a only (default now)
 * STDLIB_SUPPORT=2 to build with C standard library (external newlib) too
 * STDLIB_SUPPORT=3 to build with C++ standard library too
+
+For the option STDLIB_SUPPORT=-1 Circle doesn't do any automatic standard library
+management and requires external implementations of any standard functions used by
+Circle and by your application.  Further, the circle build rules don't automatically
+link to any of the standard libraries. Basically stdlib support is left completely
+to the client application.
+
+For options STDLIB_SUPPORT=0 and STDLIB_SUPPORT=1 Circle links to libgcc.a only and 
+includes its own implementations of any stdlib functions it requires that aren't 
+included with just libgcc.
 
 Please note that Circle needs support from external projects to implement the
 options STDLIB_SUPPORT=2 and STDLIB_SUPPORT=3. This is mainly realized by the

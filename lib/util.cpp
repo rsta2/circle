@@ -41,7 +41,8 @@ void *memmove (void *pDest, const void *pSrc, size_t nLength)
 	return memcpy (pDest, pSrc, nLength);
 }
 
-#if STDLIB_SUPPORT <= 1
+
+#if STDLIB_SUPPORT <= 1 && STDLIB_SUPPORT >= 0
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength)
 {

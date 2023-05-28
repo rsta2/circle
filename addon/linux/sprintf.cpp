@@ -3,7 +3,7 @@
 #include <circle/stdarg.h>
 #include <circle/util.h>
 
-#if STDLIB_SUPPORT <= 1
+#if STDLIB_SUPPORT <= 1 && STDLIB_SUPPORT >= 0
 
 int sprintf (char *buf, const char *fmt, ...)
 {

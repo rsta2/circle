@@ -138,19 +138,23 @@ CPPFLAGS  += -nostdinc++
 endif
 endif
 
-ifeq ($(strip $(STDLIB_SUPPORT)),0)
-CFLAGS	  += -nostdinc
-else
-LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
-EXTRALIBS += $(LIBGCC)
-endif
+ifneq ($(strip $(STDLIB_SUPPORT)),-1)
 
-ifeq ($(strip $(STDLIB_SUPPORT)),1)
-LIBM	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libm.a)"
-ifneq ($(strip $(LIBM)),"libm.a")
-EXTRALIBS += $(LIBM)
-endif
-endif
+	ifeq ($(strip $(STDLIB_SUPPORT)),0)
+	CFLAGS	  += -nostdinc
+	else
+	LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
+	EXTRALIBS += $(LIBGCC)
+	endif
+
+	ifeq ($(strip $(STDLIB_SUPPORT)),1)
+	LIBM	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libm.a)"
+	ifneq ($(strip $(LIBM)),"libm.a")
+	EXTRALIBS += $(LIBM)
+	endif
+	endif
+
+endif		# STDLIB_SUPPORT != -1
 
 ifeq ($(strip $(GC_SECTIONS)),1)
 CFLAGS	+= -ffunction-sections -fdata-sections
