@@ -417,6 +417,19 @@
 
 #endif
 
+
+// Sets the name of the "main()" entry point function that will be
+// called by circle after system initialization has completed.
+//
+// 	extern int MAINPROC (void);
+//
+// Can be used by wrapper libraries that need to inject their
+// own startup/shutdown code before calling their client's main().
+
+#ifndef MAINPROC
+#define MAINPROC main
+#endif
+
 ///////////////////////////////////////////////////////////////////////
 
 #include <circle/memorymap.h>
