@@ -292,7 +292,7 @@ const unsigned *CKernelOptions::GetTouchScreen (void) const
 	return m_bTouchScreenValid ? m_TouchScreen : nullptr;
 }
 
-const char *CKernelOptions::GetAppOptionString (const char *pOption) const
+const char *CKernelOptions::GetAppOptionString (const char *pOption, const char *pDefault) const
 {
 	for (TAppOption *pAppOption = m_pAppOptionList; pAppOption; pAppOption = pAppOption->pNext)
 	{
@@ -302,18 +302,24 @@ const char *CKernelOptions::GetAppOptionString (const char *pOption) const
 		}
 	}
 
-	return nullptr;
+	return pDefault;
 }
 
-unsigned CKernelOptions::GetAppOptionDecimal (const char *pOption) const
+unsigned CKernelOptions::GetAppOptionDecimal (const char *pOption, unsigned nDefault) const
 {
-	const char *pValue = GetAppOptionString (pOption);
+	const char *pValue = GetAppOptionString (pOption, nullptr);
 	if (!pValue)
 	{
-		return INVALID_VALUE;
+		return nDefault;
 	}
 
-	return GetDecimal (pValue);
+	unsigned nValue = GetDecimal (pValue);
+	if (nValue == INVALID_VALUE)
+	{
+		return nDefault;
+	}
+
+	return nValue;
 }
 
 CKernelOptions *CKernelOptions::Get (void)

@@ -55,8 +55,8 @@ public:
 	const unsigned *GetTouchScreen (void) const;	// returns 4 values (nullptr if unset)
 
 	// for application-defined options:
-	const char *GetAppOptionString (const char *pOption) const;	// returns nullptr if unset
-	unsigned GetAppOptionDecimal (const char *pOption) const;	// returns -1 if unset
+	const char *GetAppOptionString (const char *pOption, const char *pDefault = nullptr) const;
+	unsigned GetAppOptionDecimal (const char *pOption, unsigned nDefault = -1) const;
 
 	static CKernelOptions *Get (void);
 
