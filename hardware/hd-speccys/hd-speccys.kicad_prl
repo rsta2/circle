@@ -65,7 +65,7 @@
       40
     ],
     "visible_layers": "803d0e0_ffffffff",
-    "zone_display_mode": 0
+    "zone_display_mode": 1
   },
   "meta": {
     "filename": "hd-speccys.kicad_prl",
