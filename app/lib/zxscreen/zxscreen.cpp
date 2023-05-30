@@ -462,6 +462,7 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
     // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
     // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
     // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+    // NOTE: Currently if a frame is dropped, it will glitch the next frame - this should be fixed.
 
     // Extract the state of the signals
     boolean IORQ = (value & (1 << 2)) == 0;
@@ -470,14 +471,14 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
     boolean IOREQ = IORQ;
   
     // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
-    if (i > 100) {
+    if (i > 20) {
       if (!wasOutOfCAS) {
         wasOutOfCAS = !CAS;
       }
 
       if (wasOutOfCAS && CAS) {
         // Entered or in CAS
-        lastCasValue = value >> 8;
+        lastCasValue = value;
         inCAS++;
       } else {
         if (inCAS >= 3 && inCAS <= 5) {
@@ -489,11 +490,11 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
               // HW Fix, reverse the 8 bits
               // lastCasValue = reverseBits(lastCasValue);
         
-              pixelData = lastCasValue;                
+              pixelData = lastCasValue >> 8;                
             } else {
               // HW Fix, reverse the 8 bits
               // lastCasValue = reverseBits(lastCasValue);
-              attrData = lastCasValue;                
+              attrData = lastCasValue >> 8;                
               pixelAttrDataValid = TRUE;
             }
             isPixels = !isPixels;
@@ -503,21 +504,21 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
       }
     }
 
-    // // Handle IO write (border colour)
-    // if (IOREQ & WR) {          
-    //   // Entered or in IO write
-    //   lastIOWRValue = value >> 8;
-    //   inIOWR++;          
-    // } else {
-    //   if (inIOWR > 5 && inIOWR < 40) {
-    //     // Exited IO write, use the last value
-    //     // pThis->m_value = lastValue;
-    //     // pThis->m_value =  0xDDDD;
-    //     borderValue = lastIOWRValue;
-    // 	// borderValue = inIOWR;
-    //   }
-    //   inIOWR = 0;
-    // }
+    // Handle IO write (border colour)
+    if (IOREQ & WR) {          
+      // Entered or in IO write
+      lastIOWRValue = value;
+      inIOWR++;          
+    } else {
+      if (inIOWR > 5 && inIOWR < 40) {
+        // Exited IO write, use the last value
+        // pThis->m_value = lastValue;
+        // pThis->m_value =  0xDDDD;
+        borderValue = lastIOWRValue >> 8;
+    	// borderValue = inIOWR;
+      }
+      inIOWR = 0;
+    }
 
 
     if (pixelAttrDataValid) {
@@ -537,6 +538,9 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
         pScreenBuffer[bytePos + i] = pixelColor;
       }
 
+      // TODO - should try to standardise all buffers and buffer pointers to u32 as it is MUCH faster than
+      // operating on u16 or u8 - this should be possible because the SMI data is 16 bit attr (+control)
+      // and 16 bit pixel data (+control)
 
       // Move to the next pixel
       px += 8;

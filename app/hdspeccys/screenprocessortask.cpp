@@ -9,13 +9,15 @@ LOGMODULE ("screenprocessingtask");
 
 
 
+extern "C" u32 screenLoopTicks;
+extern "C" u32 screenLoopCount;
 
-unsigned char reverseBits(unsigned char b) {
-   b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
-   b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
-   b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
-   return b;
-}
+// unsigned char reverseBits(unsigned char b) {
+//    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+//    b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+//    b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+//    return b;
+// }
 
 
 
@@ -57,7 +59,7 @@ void CScreenProcessorTask::Run (void)
 		m_FrameEvent.Clear();
 		m_FrameEvent.Wait();
 
-		// TODO
+		unsigned startTicks = CTimer::Get()->GetClockTicks();
 
 		// Get pointer to screen buffer
 		ZX_DMA_T *pULABuffer = m_pZxSmi->LockDataBuffer();
@@ -86,10 +88,17 @@ void CScreenProcessorTask::Run (void)
 		
 		// m_pZxScreen->SetScreenFromBuffer((u16 *)m_pScreenPixelDataBuffer, (u16 *)m_pScreenAttrDataBuffer, 0x3000 / 2);
 		
-		m_pZxScreen->UpdateScreen();
 
 		// Release the SMI DMA buffer pointer
 		m_pZxSmi->ReleaseDataBuffer();
+
+		screenLoopCount++;
+		// screenLoopTicks = (screenLoopTicks + (CTimer::Get()->GetTicks() - startTicks)) / screenLoopCount;
+		screenLoopTicks = (CTimer::Get()->GetClockTicks() - startTicks);
+
+
+		m_pZxScreen->UpdateScreen();
+
 
 		// clear = !clear;
 

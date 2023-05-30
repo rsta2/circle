@@ -69,9 +69,9 @@
 #define ZX_DMA_T					u16
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 2) / sizeof(ZX_DMA_T))
-#define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
+#define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))	// This is long enough for the test cart - not sure in real situations
 // #define ZX_DMA_BUFFER_LENGTH		((512 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((220 * 1024) / sizeof(ZX_DMA_T))

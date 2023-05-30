@@ -14,6 +14,7 @@ extern "C" u32 videoByteCount;
 extern "C" u16 videoValue;
 extern "C" u32 loopCount;
 extern "C" u32 skippedFrameCount;
+extern "C" u32 screenLoopTicks;
 u32 backgroundTime = 0;
 u32 prevLoopCount = 0;
 
@@ -62,9 +63,9 @@ void CBackgroundTask::Run (void)
 		// 	}				
 		// }
 		// LOGDBG("Buffer len: %04ld", len);
-		// LOGDBG("Border value: %04ld", borderValue);		
-		LOGDBG("Video bytes: 0x%04lx, border: 0x%04lx Skipped: 0x%04lx, Loops: 0x%04lx, FPS: %.1f", 
-			videoByteCount, borderValue, skippedFrameCount, loopCount, fps);		
+		// LOGDBG("Border value: %04ld", borderValue);				
+		LOGDBG("Video bytes: 0x%04lx, border: 0x%04lx Skipped: 0x%04lx, FPS: %.1f, Loop Time: %.1f ms", 
+			videoByteCount, borderValue, skippedFrameCount, fps, (float)screenLoopTicks / 1000);		
 		// // if (pDEBUG_BUFFER) {	
 		// // 	for (unsigned i = 0; i < 25/*ZX_SMI_DEBUG_BUFFER_LENGTH*/; i++){
 		// // 		u16 v = pDEBUG_BUFFER[i];
