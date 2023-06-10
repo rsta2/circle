@@ -39,6 +39,8 @@ public:
 	virtual boolean FileClose (void) = 0;
 	virtual int FileRead (void *pBuffer, unsigned nCount) = 0;
 	virtual int FileWrite (const void *pBuffer, unsigned nCount) = 0;
+	virtual boolean isXferInProgress();  // returns true while a transer is in progress
+	virtual boolean isKernelImageReceived();  // returns true if a "kernel*"" file is received.
 
 private:
 	boolean DoRead (const char *pFileName);
@@ -53,6 +55,10 @@ private:
 
 	CSocket *m_pRequestSocket;
 	CSocket *m_pTransferSocket;
+
+	volatile int m_xferInProgress;
+	bool         m_kernelImageReceived;
+	volatile int m_kernelImageCompleted;
 };
 
 #endif

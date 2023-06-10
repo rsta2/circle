@@ -25,6 +25,7 @@
 #include <circle/timer.h>
 #include <circle/util.h>
 #include <circle/macros.h>
+#include <circle/atomic.h>
 #include <assert.h>
 
 #define TFTP_PORT		69
@@ -98,6 +99,9 @@ CTFTPDaemon::CTFTPDaemon (CNetSubSystem *pNetSubSystem)
 	m_pTransferSocket (0)
 {
 	SetName (FromTFPTDaemon);
+	AtomicSet(&m_xferInProgress, 0);
+	AtomicSet(&m_kernelImageCompleted, 0);
+	m_kernelImageReceived = false;
 }
 
 CTFTPDaemon::~CTFTPDaemon (void)
@@ -110,6 +114,25 @@ CTFTPDaemon::~CTFTPDaemon (void)
 
 	m_pNetSubSystem = 0;
 }
+
+boolean CTFTPDaemon::isXferInProgress()
+{
+	if (AtomicGet(&m_xferInProgress)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+boolean CTFTPDaemon::isKernelImageReceived()
+{
+	if (AtomicGet(&m_kernelImageCompleted)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 
 void CTFTPDaemon::Run (void)
 {
@@ -225,6 +248,11 @@ void CTFTPDaemon::Run (void)
 						usOpCode == OP_CODE_RRQ ? "to" : "from",
 						(const char *) IPString);
 		}
+
+		if (m_kernelImageReceived) {
+			AtomicSet(&m_kernelImageCompleted, 1);
+			CLogger::Get ()->Write (FromTFPTDaemon, LogNotice, "Received a kernel image, a reboot is recommended");
+		}
 	}
 }
 
@@ -268,6 +296,9 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 
 		TIMER TransferTimer;
 		START_TIMER (TransferTimer);
+
+		AtomicSet(&m_xferInProgress, 1);
+
 		while (!TIMER_EXPIRED (TransferTimer, MAX_TIMEOUT_HZ))
 		{
 			if (m_pTransferSocket->Send (&DataPacket, nPacketLength, MSG_DONTWAIT) < 0)
@@ -275,6 +306,8 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 				CLogger::Get ()->Write (FromTFPTDaemon, LogError, "Cannot send data");
 
 				FileClose ();
+
+				AtomicSet(&m_xferInProgress, 0);
 
 				return FALSE;
 			}
@@ -296,6 +329,8 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 								"Cannot receive ACK");
 
 					FileClose ();
+
+					AtomicSet(&m_xferInProgress, 0);
 
 					return FALSE;
 				}
@@ -326,11 +361,15 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 
 			FileClose ();
 
+			AtomicSet(&m_xferInProgress, 0);
+
 			return FALSE;
 		}
 	}
 
 	FileClose ();
+
+	AtomicSet(&m_xferInProgress, 0);
 
 	return TRUE;
 }
@@ -340,6 +379,7 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 	assert (m_pTransferSocket != 0);
 
 	assert (pFileName != 0);
+
 	if (FileCreate (pFileName))
 	{
 		TTFTPAckPacket AckPacket;
@@ -366,6 +406,9 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 	unsigned nTimeout = RECEIVE_TIMEOUT_HZ;
 
 	int nLength = MAX_DATA_LEN;
+
+	AtomicSet(&m_xferInProgress, 1);
+
 	for (u16 usBlockNumber = 1; nLength == MAX_DATA_LEN; usBlockNumber++)
 	{
 		TTFTPDataPacket DataPacket;
@@ -386,6 +429,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 
 						FileClose ();
 
+						AtomicSet(&m_xferInProgress, 0);
+
 						return FALSE;
 					}
 
@@ -400,6 +445,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 									"Cannot receive data");
 
 						FileClose ();
+
+						AtomicSet(&m_xferInProgress, 0);
 
 						return FALSE;
 					}
@@ -425,6 +472,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 
 					FileClose ();
 
+					AtomicSet(&m_xferInProgress, 0);
+
 					return FALSE;
 				}
 			}
@@ -433,6 +482,7 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 
 		if (nLength > 0)
 		{
+
 			if (FileWrite (DataPacket.Data, (unsigned) nLength) != nLength)
 			{
 				CLogger::Get ()->Write (FromTFPTDaemon, LogError, "Cannot write");
@@ -441,6 +491,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 
 				FileClose ();
 
+				AtomicSet(&m_xferInProgress, 0);
+				
 				return FALSE;
 			}
 		}
@@ -449,6 +501,14 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 	}
 
 	FileClose ();
+	CLogger::Get ()->Write (FromTFPTDaemon, LogError, "Closing filename %s", pFileName);
+
+	AtomicSet(&m_xferInProgress, 0);
+
+	// Check if this is a kernel image. I.e. first 6 letters are "kernel"
+	if (strncmp("kernel", pFileName, 6) == 0 || strncmp("KERNEL", pFileName, 6) == 0) {
+		m_kernelImageReceived = true;
+	}
 
 	return TRUE;
 }
