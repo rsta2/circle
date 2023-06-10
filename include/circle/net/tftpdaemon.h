@@ -41,6 +41,7 @@ public:
 	virtual int FileWrite (const void *pBuffer, unsigned nCount) = 0;
 	virtual boolean isXferInProgress();  // returns true while a transer is in progress
 	virtual boolean isKernelImageReceived();  // returns true if a "kernel*"" file is received.
+	virtual void ClearKernelImageReceived();  // clears the sticky flag for when a kernel is received
 
 private:
 	boolean DoRead (const char *pFileName);

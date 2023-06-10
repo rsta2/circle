@@ -133,6 +133,11 @@ boolean CTFTPDaemon::isKernelImageReceived()
 	}
 }
 
+void CTFTPDaemon::ClearKernelImageReceived()
+{
+	m_kernelImageReceived = false;
+	AtomicSet(&m_kernelImageCompleted,0);
+}
 
 void CTFTPDaemon::Run (void)
 {
@@ -492,7 +497,7 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 				FileClose ();
 
 				AtomicSet(&m_xferInProgress, 0);
-				
+
 				return FALSE;
 			}
 		}
