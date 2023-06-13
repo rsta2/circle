@@ -34,9 +34,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.762,
-          "height": 1.524,
-          "width": 1.524
+          "drill": 2.75,
+          "height": 2.75,
+          "width": 2.75
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -63,7 +63,7 @@
         "annular_width": "error",
         "clearance": "error",
         "connection_width": "warning",
-        "copper_edge_clearance": "error",
+        "copper_edge_clearance": "warning",
         "copper_sliver": "warning",
         "courtyards_overlap": "warning",
         "diff_pair_gap_out_of_range": "error",
@@ -173,8 +173,11 @@
       ],
       "track_widths": [
         0.0,
+        0.0,
         0.25,
         0.3,
+        0.5,
+        0.7,
         1.0
       ],
       "via_dimensions": [
