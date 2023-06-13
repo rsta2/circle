@@ -17,6 +17,10 @@ cd shell
 $make $1 $2 || exit
 cd ..
 
+cd zxtape
+$make $1 $2 || exit
+cd ..
+
 cd zxsmi
 $make $1 $2 || exit
 cd ..
