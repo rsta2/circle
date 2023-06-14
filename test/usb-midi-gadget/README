@@ -1,0 +1,17 @@
+README
+
+This test program works on the Raspberry Pi (3)A(+), Zero (2) (W) and 4B only.
+These models allow to connect the on-board DW USB controller directly to an USB
+host for USB gadget (aka device) operation. The Raspberry Pi 4B uses the USB-C
+power connector for that purpose. You need a suitable USB cable. The Raspberry
+Pi is bus-powered via the USB host in any case for this test. A separate power
+supply must NOT be connected. Be careful!
+
+First blink 5 times to show the image was loaded right. The provided USB MIDI
+device sends MIDI "Note On" and "Note Off" events with a continuously increasing
+note number (0-127) every 500ms and dumps received MIDI events to the logger.
+After 10 seconds the device is disconnected and restarts.
+
+A configuration is required for this test. You have to define the macro
+USB_GADGET_VENDOR_ID with your USB Vendor ID to be used for the USB device. See
+the file include/circle/sysconfig.h for details!

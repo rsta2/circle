@@ -125,6 +125,12 @@ USB library
 * CXHCISlotManager: Manages the USB device slots of the xHCI controller.
 * CXHCIUSBDevice: Encapsulates a single USB device, attached to the xHCI controller.
 
+USB gadget library
+
+* CDWUSBGadget: DW USB gadget on Raspberry Pi (3)A(+), Zero (2) (W), 4B
+* CDWUSBGadgetEndpoint: Endpoint of a DW USB gadget
+* CDWUSBGadgetEndpoint0: Endpoint 0 of a DW USB gadget
+
 Input library
 
 * CConsole: Console device using screen/USB keyboard or alternate device (e.g. CSerialDevice)
