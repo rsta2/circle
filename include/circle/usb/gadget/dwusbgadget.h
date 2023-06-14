@@ -74,6 +74,7 @@ private:
 	void FlushTxFIFO (unsigned nFIFO);
 	void FlushRxFIFO (void);
 
+	void HandleUSBSuspend (void);
 	void HandleUSBReset (void);
 	void HandleEnumerationDone (void);
 	void HandleInEPInterrupt (void);

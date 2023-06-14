@@ -370,12 +370,11 @@ void CDWUSBGadget::EnableDeviceInterrupts (void)
 	IntStatus.Write ();
 
 	// Enable interrupts
+	IntMask.Or (DWHCI_CORE_INT_MASK_USB_SUSPEND);
 	IntMask.Or (DWHCI_CORE_INT_MASK_USB_RESET_INTR);
 	IntMask.Or (DWHCI_CORE_INT_MASK_ENUM_DONE);
-	//IntMask.And (~DWHCI_CORE_INT_MASK_DISCONNECT);
 	IntMask.Or (DWHCI_CORE_INT_MASK_IN_EP_INTR);
 	IntMask.Or (DWHCI_CORE_INT_MASK_OUT_EP_INTR);
-	//IntMask.Or (DWHCI_CORE_INT_MASK_EARLY_SUSPEND);
 	IntMask.Or (DWHCI_CORE_INT_MASK_IN_EP_MISMATCH);
 	IntMask.Write ();
 }
@@ -434,6 +433,18 @@ boolean CDWUSBGadget::WaitForBit (CDWHCIRegister *pRegister,
 	}
 
 	return TRUE;
+}
+
+void CDWUSBGadget::HandleUSBSuspend (void)
+{
+#ifdef USB_GADGET_DEBUG
+	LOGDBG ("USB suspend");
+#endif
+
+	m_State = StatePowered;
+
+	CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT, DWHCI_CORE_INT_MASK_USB_SUSPEND);
+	IntStatus.Write ();
 }
 
 void CDWUSBGadget::HandleUSBReset (void)
@@ -587,6 +598,11 @@ void CDWUSBGadget::InterruptHandler (void)
 #ifdef USB_GADGET_DEBUG
 	LOGDBG ("IRQ (status 0x%08X)", nIntStatus);
 #endif
+
+	if (nIntStatus & DWHCI_CORE_INT_MASK_USB_SUSPEND)
+	{
+		HandleUSBSuspend ();
+	}
 
 	if (nIntStatus & DWHCI_CORE_INT_MASK_USB_RESET_INTR)
 	{
