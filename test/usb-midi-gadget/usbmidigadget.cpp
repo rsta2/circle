@@ -164,9 +164,9 @@ const CUSBMIDIGadget::TUSBMIDIGadgetConfigurationDescriptor
 
 const char *const CUSBMIDIGadget::s_StringDescriptor[] =
 {
-	"\x04\x03\x09\x04",
-	"\x0E\x03""C\0i\0r\0c\0l\0e\0",
-	"\x18\x03M\0I\0D\0I\0 \0G\0a\0d\0g\0e\0t\0"
+	"\x04\x03\x09\x04",		// Language ID
+	"Circle",
+	"MIDI Gadget"
 };
 
 CUSBMIDIGadget::CUSBMIDIGadget (CInterruptSystem *pInterruptSystem)
@@ -185,7 +185,7 @@ boolean CUSBMIDIGadget::Initialize (void)
 	return CDWUSBGadget::Initialize ();
 }
 
-const void *CUSBMIDIGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength) const
+const void *CUSBMIDIGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength)
 {
 	assert (pLength);
 
@@ -210,10 +210,14 @@ const void *CUSBMIDIGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLeng
 		break;
 
 	case DESCRIPTOR_STRING:
-		if (uchDescIndex < sizeof s_StringDescriptor / sizeof s_StringDescriptor[0])
+		if (!uchDescIndex)
 		{
-			*pLength = (u8) s_StringDescriptor[uchDescIndex][0];
-			return s_StringDescriptor[uchDescIndex];
+			*pLength = (u8) s_StringDescriptor[0][0];
+			return s_StringDescriptor[0];
+		}
+		else if (uchDescIndex < sizeof s_StringDescriptor / sizeof s_StringDescriptor[0])
+		{
+			return ToStringDescriptor (s_StringDescriptor[uchDescIndex], pLength);
 		}
 		break;
 
@@ -237,4 +241,28 @@ void CUSBMIDIGadget::AddEndpoints (void)
 				reinterpret_cast<const TUSBEndpointDescriptor *> (
 					&s_ConfigurationDescriptor.EndpointIn), this);
 	assert (m_pEP[EPIn]);
+}
+
+const void *CUSBMIDIGadget::ToStringDescriptor (const char *pString, size_t *pLength)
+{
+	assert (pString);
+
+	size_t nLength = 2;
+	for (u8 *p = m_StringDescriptorBuffer+2; *pString; pString++)
+	{
+		assert (nLength < sizeof m_StringDescriptorBuffer-1);
+
+		*p++ = (u8) *pString;		// convert to UTF-16
+		*p++ = '\0';
+
+		nLength += 2;
+	}
+
+	m_StringDescriptorBuffer[0] = (u8) nLength;
+	m_StringDescriptorBuffer[1] = DESCRIPTOR_STRING;
+
+	assert (pLength);
+	*pLength = nLength;
+
+	return m_StringDescriptorBuffer;
 }

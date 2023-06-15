@@ -41,9 +41,11 @@ public:
 	boolean Initialize (void) override;
 
 private:
-	const void *GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength) const override;
+	const void *GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength) override;
 
 	void AddEndpoints (void) override;
+
+	const void *ToStringDescriptor (const char *pString, size_t *pLength);
 
 private:
 	enum TEPNumber
@@ -54,6 +56,8 @@ private:
 	};
 
 	CUSBMIDIGadgetEndpoint *m_pEP[NumEPs];
+
+	u8 m_StringDescriptorBuffer[50];
 
 private:
 	static const TUSBDeviceDescriptor s_DeviceDescriptor;

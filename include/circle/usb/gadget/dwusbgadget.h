@@ -52,7 +52,7 @@ public:
 	/// \param wIndex Parameter from setup packet (e.g. language ID for string descriptors)
 	/// \param pLength Pointer to variable, which receives the descriptor size
 	/// \return Pointer to descriptor or nullptr, if not available
-	virtual const void *GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength) const = 0;
+	virtual const void *GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength) = 0;
 
 	/// \brief Create device-specific EPs
 	virtual void AddEndpoints (void) = 0;
