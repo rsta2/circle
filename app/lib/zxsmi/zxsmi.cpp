@@ -61,7 +61,7 @@ LOGMODULE ("ZxSmi");
 
 u32 screenLoopTicks = 0;
 u32 screenLoopCount = 0;
-u32 loopCount = 0;
+u32 frameInterruptCount = 0;
 u32 skippedFrameCount = 0;
 
 u32 skippy = 0;
@@ -636,7 +636,7 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   pThis->m_pActLED->Off();
 
   // Increment the loop count
-  loopCount++;
+  frameInterruptCount++;
 
   // Acknowledge the interrupt
   #if (ZX_SMI_USE_FIQ)    

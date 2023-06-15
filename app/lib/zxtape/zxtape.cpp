@@ -3,7 +3,7 @@
 //
 
 #include "zxtape.h"
-#include "tzx.h"
+#include "tzx-api.h"
 #include "chuckie-egg.h"
 
 
@@ -13,25 +13,56 @@ LOGMODULE ("ZxTape");
 /* Definitions */
 // NONE
 
+/* External global variables */
+extern "C" bool PauseAtStart;					        // Set to true to pause at start of file
+extern "C" byte currpct;			                // Current percentage of file played (in file bytes, so not 100% accurate)
 
+/* Exported global variables */
+char fileName[ZX_TAPE_MAX_FILENAME_LEN + 1];  // Current filename     
+uint16_t fileIndex;                    	      // Index of current file, relative to current directory (generally set to 0)
+FILETYPE entry, dir;        		              // SD card current file (=entry) and current directory (=dir) objects
+unsigned long filesize;             		      // filesize used for dimensioning files
+TIMER Timer;								                  // Timer configure a timer to fire interrupts to control the output wave (call wave())
+
+
+
+/* Local variables */
+CZxTape *pZxTape = nullptr;                   // Pointer to ZX Tape singleton instance
+
+
+/* Local functions */
+// File API
+static void initializeFileType(FILETYPE *pFileType);
+static bool filetype_open(FILETYPE* dir, uint32_t index, oflag_t oflag);
+static void filetype_close();
+static int filetype_read(void* buf, unsigned long count);
+static bool filetype_seekSet(uint64_t pos);	
+
+// Timer API
+static void initializeTimer(TIMER *pTimer);
+static void timer_initialize();
+static void timer_stop();
+static void timer_setPeriod(unsigned long period);
 
 //
 // Class
 //
 
-CZxTape::CZxTape (CInterruptSystem *pInterruptSystem)
-: m_pInterruptSystem (pInterruptSystem),
+CZxTape::CZxTape (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem)
+: m_pGPIOManager(pGPIOManager),
+  m_pInterruptSystem (pInterruptSystem),
+  m_GpioOutputPin(ZX_TAPE_GPIO_OUTPUT_PIN, GPIOModeInput, m_pGPIOManager),
   m_bRunning (false),
   m_bPauseOn (false),
 	m_bButtonPlayPause (false),  
 	m_bButtonStop (false)
 {
-
+  pZxTape = this;
 }
 
 CZxTape::~CZxTape (void)
 {
-  // NOTHING TO DO
+  pZxTape = nullptr;
 }
 
 /**
@@ -39,11 +70,17 @@ CZxTape::~CZxTape (void)
  */
 boolean CZxTape::Initialize ()
 {
-  // unsigned i;
-  // unsigned dmaBufferLenWords = ZX_DMA_BUFFER_LENGTH;
-  // unsigned dmaBufferLenBytes = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
-  
   LOGNOTE("Initializing ZX TAPE");
+
+  // Initialise the TZX API
+  strncpy(fileName, "ChuckieEgg.tzx", ZX_TAPE_MAX_FILENAME_LEN); // TODO: This is a hack
+  fileIndex = 0;
+  initializeFileType(&dir);
+  initializeFileType(&entry);
+  filesize = sizeof(ChuckieEgg);
+  initializeTimer(&Timer);
+  currpct = 0;
+  PauseAtStart = false;
 
   TZXSetup();
 
@@ -169,4 +206,109 @@ bool CZxTape::check_button_stop() {
   return false;
 }
 
+//
+// TZX API
+//
 
+// Disable interrupts
+void noInterrupts() {
+  // TODO
+}
+
+
+// Enable interrupts
+void interrupts() {
+  // TODO
+}
+
+
+// Set the mode of a GPIO pin (i.e. set correct pin to output)
+void pinMode(unsigned pin, unsigned mode) {
+  // TODO
+}
+
+
+// Set the GPIO output pin low
+void LowWrite() {
+  // TODO
+}
+
+
+// Set the GPIO output pin high
+void HighWrite() {
+  // TODO
+}
+
+
+// Delay for a number of milliseconds
+void delay(unsigned long time) {
+  // TODO
+}
+
+
+// Stop the current file playback
+void stopFile() {
+  // TODO
+}
+
+
+// Called to display the playback percent (at start)
+void lcdTime() {
+  // TODO
+}
+
+
+// Called to display the playback percent (during playback)
+void Counter2() {
+  // TODO
+}
+
+
+//
+// File API
+//
+
+static void initializeFileType(FILETYPE *pFileType) {
+  pFileType->open = filetype_open;
+  pFileType->close = filetype_close;
+  pFileType->read = filetype_read;
+  pFileType->seekSet = filetype_seekSet;
+}
+
+static bool filetype_open(FILETYPE* dir, uint32_t index, oflag_t oflag) {
+  return false;
+}
+
+static void filetype_close() {
+
+}
+
+static int filetype_read(void* buf, unsigned long count) {
+  return 0;
+}
+
+static bool filetype_seekSet(uint64_t pos) {
+  return false;
+}
+
+//
+// Timer API
+//
+
+static void initializeTimer(TIMER *pTimer) {
+  pTimer->initialize = timer_initialize;
+  pTimer->stop = timer_stop;
+  pTimer->setPeriod = timer_setPeriod;
+}
+
+static void timer_initialize() {
+
+}
+
+static void timer_stop() {
+
+}
+
+static void timer_setPeriod(unsigned long period) {
+
+}

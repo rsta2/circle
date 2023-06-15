@@ -4,7 +4,7 @@
   "editor.wordWrapColumn": 120,
   "editor.insertSpaces": false,
   "files.associations": {
-    "kernel.h": "c",
+    "kernel.h": "cpp",
     "startup.h": "c",
     "zxscreen.h": "c",
     "*.tcc": "c",

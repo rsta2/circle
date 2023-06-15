@@ -9,14 +9,15 @@ LOGMODULE ("screenprocessingtask");
 
 #define BACKGROUND_LOOP_PERIOD_MS 500
 
+// Global variable hacks
 extern "C" u16 borderValue;
 extern "C" u32 videoByteCount;
 extern "C" u16 videoValue;
-extern "C" u32 loopCount;
+extern "C" u32 frameInterruptCount;
 extern "C" u32 skippedFrameCount;
 extern "C" u32 screenLoopTicks;
 u32 backgroundTime = 0;
-u32 prevLoopCount = 0;
+u32 prevFrameInterruptCount = 0;
 
 
 CBackgroundTask::CBackgroundTask (CShell *pShell, CActLED *pActLED, CSynchronizationEvent *pRebootEvent)
@@ -39,8 +40,8 @@ void CBackgroundTask::Run (void)
 	while (1)
 	{
 		backgroundTime += BACKGROUND_LOOP_PERIOD_MS;
-		float fps = (float)((loopCount - prevLoopCount) * 1000) / (float)BACKGROUND_LOOP_PERIOD_MS;
-		prevLoopCount = loopCount;
+		float fps = (float)((frameInterruptCount - prevFrameInterruptCount) * 1000) / (float)BACKGROUND_LOOP_PERIOD_MS;
+		prevFrameInterruptCount = frameInterruptCount;
 
 		// Read the shell (serial port)
 		m_pShell->Update();

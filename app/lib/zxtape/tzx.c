@@ -2,14 +2,23 @@
 
 // Source: https://github.com/sadken/TZXDuino/blob/master/TZXProcessing.ino
 
-#include <circle/util.h>
 
-#include "tzx.h"
+
+#include "tzx-types.h"
 #include "tzx-utils.h"
+#include "tzx-api.h"
+#include "tzx.h"
 
 /* HD_SPECCYS: END */
 
 #ifdef HD_SPECCYS_TZXDUINO
+
+// There are lots of these warnings in the TZXDuiino code, so we'll ignore them
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wparentheses"
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#pragma GCC diagnostic ignored "-Warray-bounds"
+
 
 static bool pauseOn = true;
 
@@ -39,7 +48,7 @@ void ZX8081DataBlock();
 void ZX80ByteWrite();
 void writeData();
 void writeHeader();
-void wave();
+// void wave();
 int ReadByte(unsigned long pos);
 int ReadWord(unsigned long pos);
 int ReadLong(unsigned long pos);
@@ -48,7 +57,7 @@ void ReadTZXHeader();
 void ReadAYHeader();
 void writeSampleData();
 
-#endif  // HD_SPECCYS_TZXDUINO
+#endif // HD_SPECCYS_TZXDUINO
 
 void clearBuffer()
 {
@@ -1669,6 +1678,7 @@ void ReadTZXHeader() {
   
   if(entry.seekSet(0)) {
     i = entry.read(tzxHeader,10);
+    i = i; // HD_SPECCYS - unused
     if(memcmp_P(tzxHeader,TZXTape,7)!=0) {
       printtextF(PSTR("Not TZXTape"),1);
       //lcd_clearline(1);
@@ -1690,6 +1700,7 @@ void ReadAYHeader() {
   
   if(entry.seekSet(0)) {
     i = entry.read(ayHeader,8);
+    i = i; // HD_SPECCYS - unused
     if(memcmp_P(ayHeader,AYFile,8)!=0) {
       printtextF(PSTR("Not AY File"),1);
       //lcd_clearline(0);
@@ -1758,3 +1769,10 @@ if(pass==2) {
     pass=0;  
   }
 }
+
+
+#ifdef HD_SPECCYS_TZXDUINO
+
+#pragma GCC diagnostic pop
+
+#endif // HD_SPECCYS_TZXDUINO

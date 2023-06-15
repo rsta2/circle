@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../../..
 
-OBJS	= tzx.o zxtape.o
+OBJS	= tzx-utils.o tzx.o zxtape.o
 
 libzxtape.a: $(OBJS)
 	@echo "  AR    $@"

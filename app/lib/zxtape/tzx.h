@@ -247,17 +247,9 @@ byte bitChecksum = 0;     // 0:Even 1:Odd number of one bits
 
 /* HD_SPECCYS: START */
 
-
 #ifdef __cplusplus
 }
 #endif
-
-/* External Function Prototypes */
-void TZXSetup();
-void TZXLoop();
-void TZXPlay();
-void TZXPause();
-void TZXStop();
 
 #endif // _tzx_h
 

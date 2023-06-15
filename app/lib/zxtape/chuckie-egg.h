@@ -4,37 +4,20 @@
  * as needed and embed in the code library.
  */
 
-#ifndef __chuckie-egg_h__
-#define __chuckie-egg_h__
+#ifndef __chuckie_egg_h__
+#define __chuckie_egg_h__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdio.h>
-#include <stdint.h>
-#include <time.h>
-
-/*
- * Time tagging of the module through the 'struct tm' structure 
- *     Date: 2023-06-13
- *     Time: 20:47:53
- */
-struct tm ChuckieEgg_date_time = {
-   .tm_sec = 53,
-   .tm_min = 47,
-   .tm_hour = 20,
-   .tm_mday = 13,
-   .tm_mon = 5,   /* +1    */
-   .tm_year = 123,  /* +1900 */
-};
 
 /*
  * Data blob of variable ChuckieEgg:
  *     Size: 20585 bytes
  *     Original filename: ChuckieEgg.tzx
  */
-uint8_t ChuckieEgg[] = {
+unsigned char ChuckieEgg[] = {
 	0x5A, 0x58, 0x54, 0x61, 0x70, 0x65, 0x21, 0x1A, 0x01, 0x0A, 0x10, 0xE8, 0x03, 0x13, 0x00, 0x00, 
 	0x00, 0x63, 0x68, 0x75, 0x63, 0x6B, 0x69, 0x65, 0x20, 0x20, 0x20, 0x58, 0x06, 0x0A, 0x00, 0x12, 
 	0x00, 0x1C, 0x10, 0xD0, 0x07, 0x5A, 0x06, 0xFF, 0x00, 0x0A, 0x0E, 0x00, 0xF9, 0xC0, 0x32, 0x34, 
@@ -1328,4 +1311,4 @@ uint8_t ChuckieEgg[] = {
 }
 #endif
 
-#endif // __chuckie-egg_h__
+#endif // __chuckie_egg_h__
