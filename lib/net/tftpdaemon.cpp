@@ -2,7 +2,7 @@
 // tftpdaemon.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ struct TTFTPReqPacket
 #define OP_CODE_RRQ		1
 #define OP_CODE_WRQ		2
 
-#define MAX_FILENAME_LEN	128
+#define MAX_FILENAME_LEN	CTFTPDaemon::MaxFilenameLen
 #define MAX_MODE_LEN		16
 #define MIN_FILENAME_MODE_LEN	(1+1+1+1)
 #define MAX_FILENAME_MODE_LEN	(MAX_FILENAME_LEN+1+MAX_MODE_LEN+1)
@@ -127,6 +127,8 @@ void CTFTPDaemon::Run (void)
 
 	while (1)
 	{
+		UpdateStatus (StatusIdle, nullptr);
+
 		TTFTPReqPacket ReqPacket;
 		CIPAddress ForeignIP;
 		u16 usForeignPort;
@@ -166,6 +168,8 @@ void CTFTPDaemon::Run (void)
 
 			continue;
 		}
+
+		strcpy (m_Filename, pFileName);
 
 		const char *pMode = pFileName+nNameLen+1;
 		if (   strcmp (pMode, "octet") != 0
@@ -246,6 +250,8 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 	int nDataLength = MAX_DATA_LEN;
 	for (u16 usBlockNumber = 1; nDataLength == MAX_DATA_LEN; usBlockNumber++)
 	{
+		UpdateStatus (StatusReadInProgress, m_Filename);
+
 		TTFTPDataPacket DataPacket;
 		DataPacket.OpCode = BE (OP_CODE_DATA);
 		DataPacket.BlockNumber = le2be16 (usBlockNumber);
@@ -258,6 +264,8 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 			SendError (ERROR_CODE_OTHER, "Error reading file");
 
 			FileClose ();
+
+			UpdateStatus (StatusReadAborted, m_Filename);
 
 			return FALSE;
 		}
@@ -275,6 +283,8 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 				CLogger::Get ()->Write (FromTFPTDaemon, LogError, "Cannot send data");
 
 				FileClose ();
+
+				UpdateStatus (StatusReadAborted, m_Filename);
 
 				return FALSE;
 			}
@@ -296,6 +306,8 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 								"Cannot receive ACK");
 
 					FileClose ();
+
+					UpdateStatus (StatusReadAborted, m_Filename);
 
 					return FALSE;
 				}
@@ -326,11 +338,15 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 
 			FileClose ();
 
+			UpdateStatus (StatusReadAborted, m_Filename);
+
 			return FALSE;
 		}
 	}
 
 	FileClose ();
+
+	UpdateStatus (StatusReadCompleted, m_Filename);
 
 	return TRUE;
 }
@@ -368,6 +384,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 	int nLength = MAX_DATA_LEN;
 	for (u16 usBlockNumber = 1; nLength == MAX_DATA_LEN; usBlockNumber++)
 	{
+		UpdateStatus (StatusWriteInProgress, m_Filename);
+
 		TTFTPDataPacket DataPacket;
 		do
 		{
@@ -386,6 +404,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 
 						FileClose ();
 
+						UpdateStatus (StatusWriteAborted, m_Filename);
+
 						return FALSE;
 					}
 
@@ -400,6 +420,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 									"Cannot receive data");
 
 						FileClose ();
+
+						UpdateStatus (StatusWriteAborted, m_Filename);
 
 						return FALSE;
 					}
@@ -425,6 +447,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 
 					FileClose ();
 
+					UpdateStatus (StatusWriteAborted, m_Filename);
+
 					return FALSE;
 				}
 			}
@@ -441,6 +465,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 
 				FileClose ();
 
+				UpdateStatus (StatusWriteAborted, m_Filename);
+
 				return FALSE;
 			}
 		}
@@ -449,6 +475,8 @@ boolean CTFTPDaemon::DoWrite (const char *pFileName)
 	}
 
 	FileClose ();
+
+	UpdateStatus (StatusWriteCompleted, m_Filename);
 
 	return TRUE;
 }
