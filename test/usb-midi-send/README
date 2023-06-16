@@ -1,0 +1,5 @@
+README 
+
+This test program continuously sends "Note On" and "Note Off" MIDI events to an
+attached USB MIDI tone generator, which can be connected and removed from the
+system (USB plug-and-play). After (re-)connect the tone sequence starts again.
