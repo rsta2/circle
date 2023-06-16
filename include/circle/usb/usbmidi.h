@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,10 +23,7 @@
 #ifndef _circle_usb_usbmidi_h
 #define _circle_usb_usbmidi_h
 
-#include <circle/usb/usbfunction.h>
-#include <circle/usb/usbendpoint.h>
-#include <circle/usb/usbrequest.h>
-#include <circle/timer.h>
+#include <circle/device.h>
 #include <circle/numberpool.h>
 #include <circle/types.h>
 
@@ -35,13 +32,11 @@
 /// \param nLength Number of valid bytes in packet (1-3)
 typedef void TMIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength);
 
-class CUSBMIDIDevice : public CUSBFunction	/// Driver for USB Audio Class MIDI 1.0 devices
+class CUSBMIDIDevice : public CDevice	/// Interface device for USB Audio Class MIDI 1.0 devices
 {
 public:
-	CUSBMIDIDevice (CUSBFunction *pFunction);
+	CUSBMIDIDevice (void);
 	~CUSBMIDIDevice (void);
-
-	boolean Configure (void);
 
 	/// \brief Register a handler, which is called, when a MIDI packet arrives
 	/// \param pPacketHandler Pointer to the handler
@@ -69,24 +64,21 @@ public:
 	void SetAllSoundOffOnUSBError (boolean bEnable);
 
 private:
-	boolean StartRequest (void);
+	// returns TRUE, if valid MIDI data has been received
+	boolean CallPacketHandler (u8 *pData, unsigned nLength);
 
-	void CompletionRoutine (CUSBRequest *pURB);
-	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);
+	typedef boolean TSendEventsHandler (const u8 *pData, unsigned nLength, void *pParam);
+	void RegisterSendEventsHandler (TSendEventsHandler *pHandler, void *pParam);
 
-	void TimerHandler (TKernelTimerHandle hTimer);
-	static void TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext);
+	boolean GetAllSoundOffOnUSBError (void) const;
+
+	friend class CUSBMIDIHostDevice;
 
 private:
-	CUSBEndpoint *m_pEndpointIn;
-	CUSBEndpoint *m_pEndpointOut;
-
 	TMIDIPacketHandler *m_pPacketHandler;
 
-	u16 m_usBufferSize;
-	u8 *m_pPacketBuffer;
-
-	TKernelTimerHandle m_hTimer;
+	TSendEventsHandler *m_pSendEventsHandler;
+	void *m_pSendEventsParam;
 
 	boolean m_bAllSoundOff;
 
