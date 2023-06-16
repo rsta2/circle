@@ -9,6 +9,8 @@
 #include "tzx-api.h"
 #include "tzx.h"
 
+
+
 /* HD_SPECCYS: END */
 
 #ifdef HD_SPECCYS_TZXDUINO
@@ -18,9 +20,6 @@
 #pragma GCC diagnostic ignored "-Wparentheses"
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #pragma GCC diagnostic ignored "-Warray-bounds"
-
-
-static bool pauseOn = true;
 
 // Private functions
 void clearBuffer();
@@ -1514,6 +1513,9 @@ void wave() {
   byte pauseFlipBit = false;
   unsigned long newTime=1;
   intError = false;
+
+  Log("wave: isStopped=%d pos=%d, workingBuffer=%d, workingPeriod=%d", isStopped, pos, workingBuffer, workingPeriod);
+
   if(isStopped==0 && workingPeriod >= 1)
   {
       if bitRead(workingPeriod, 15)          

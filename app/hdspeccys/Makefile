@@ -6,8 +6,9 @@ CIRCLEHOME = ../..
 
 OBJS	= main.o \
           kernel.o \
-          screenprocessortask.o \
-          backgroundtask.o
+          backgroundtask.o \
+          tapetask.o \
+          screenprocessortask.o          
 
 LIBS	= $(CIRCLEHOME)/app/lib/zxutil/libzxutil.a \
           $(CIRCLEHOME)/app/lib/shell/libshell.a \

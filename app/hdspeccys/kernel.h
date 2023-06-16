@@ -24,6 +24,7 @@
 #include <zxscreen/zxscreen.h>
 #include "backgroundtask.h"
 #include "screenprocessortask.h"
+#include "tapetask.h"
 
 
 enum TShutdownMode

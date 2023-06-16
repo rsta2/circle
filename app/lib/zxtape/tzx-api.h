@@ -12,9 +12,7 @@
 extern "C" {
 #endif
 
-#define outputPin           9               // Audio Output PIN - Set accordingly to your hardware.
-#define maxFilenameLength   1024       		// Maximum length for long filename support (ideally as large as possible to support very long filenames)
-
+#define outputPin           0               	// Audio Output PIN - Ignore this value and set in pinMode callback
 
 /* External Variables (to be implemented by consumer) */
 extern char fileName[];							// Current filename     
@@ -22,6 +20,8 @@ extern uint16_t fileIndex;                    	// Index of current file, relativ
 extern FILETYPE entry, dir;        				// SD card current file (=entry) and current directory (=dir) objects
 extern unsigned long filesize;             		// filesize used for dimensioning AY files
 extern TIMER Timer;								// Timer configure a timer to fire interrupts to control the output wave (call wave())
+extern bool pauseOn;  							// Control pause state
+
 
 /* External Variables (implemented in library) */
 extern byte currpct;							// Current percentage of file played (in file bytes, so not 100% accurate)
@@ -37,6 +37,7 @@ extern void delay(unsigned long time);	// Delay for a number of milliseconds
 extern void stopFile();	// Stop the current file playback
 extern void lcdTime(); 	// Called to display the playback percent (at start)
 extern void Counter2(); // Called to display the playback percent (during playback)
+extern void Log(const char *pMessage, ...); 		// Log a message
 
 /* API function prototypes */
 void TZXSetup();

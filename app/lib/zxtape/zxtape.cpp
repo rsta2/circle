@@ -5,6 +5,7 @@
 #include "zxtape.h"
 #include "tzx-api.h"
 #include "chuckie-egg.h"
+#include <circle/stdarg.h>
 
 
 LOGMODULE ("ZxTape");
@@ -23,11 +24,13 @@ uint16_t fileIndex;                    	      // Index of current file, relative
 FILETYPE entry, dir;        		              // SD card current file (=entry) and current directory (=dir) objects
 unsigned long filesize;             		      // filesize used for dimensioning files
 TIMER Timer;								                  // Timer configure a timer to fire interrupts to control the output wave (call wave())
+bool pauseOn;  						                  	// Control pause state
 
 
 
 /* Local variables */
 CZxTape *pZxTape = nullptr;                   // Pointer to ZX Tape singleton instance
+unsigned char *pFileSeek;                     // Pointer to current file seek position
 
 
 /* Local functions */
@@ -53,16 +56,17 @@ CZxTape::CZxTape (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem
   m_pInterruptSystem (pInterruptSystem),
   m_GpioOutputPin(ZX_TAPE_GPIO_OUTPUT_PIN, GPIOModeInput, m_pGPIOManager),
   m_bRunning (false),
-  m_bPauseOn (false),
 	m_bButtonPlayPause (false),  
-	m_bButtonStop (false)
+	m_bButtonStop (false),
+  m_nLastControlTicks(0)
 {
   pZxTape = this;
+  pFileSeek = nullptr;
 }
 
 CZxTape::~CZxTape (void)
 {
-  pZxTape = nullptr;
+  pZxTape = nullptr;  
 }
 
 /**
@@ -79,8 +83,9 @@ boolean CZxTape::Initialize ()
   initializeFileType(&entry);
   filesize = sizeof(ChuckieEgg);
   initializeTimer(&Timer);
+  pauseOn = false;
   currpct = 0;
-  PauseAtStart = false;
+  PauseAtStart = false;  
 
   TZXSetup();
 
@@ -126,10 +131,16 @@ void CZxTape::Update()
 void CZxTape::loop_playback()
 {
   if(m_bRunning /* Tape running */) {
+    // TODO - switch GPIO pin to output when playing
+
     // TZXLoop only runs if a file is playing, and keeps the buffer full.
     TZXLoop();
+
+    // Hacked in here for now
+    wave();
   } else {
-    // TODO digitalWrite(outputPin, LOW);    // Keep output LOW while no file is playing.
+    LowWrite();    // Keep output LOW while no file is playing.
+    // TODO - switch GPIO pin to input when not playing
   }
 }  
 
@@ -139,45 +150,53 @@ void CZxTape::loop_playback()
  * Handle control
  */
 void CZxTape::loop_control() {
-  if(true /* 50ms has passed */) {
+  const unsigned ticks = CTimer::Get()->GetTicks();
+  const unsigned elapsedMs = (ticks - m_nLastControlTicks) * 1000 / HZ;
 
-    // Handle Play / pause button
-    if (check_button_play_pause()) {
-      if (m_bRunning) {
-        // Play pressed, and stopped, so start playing
-        play_file();
-        // delay(200);
+  // Only run every 100ms
+  if (elapsedMs < 100) return;
+  // LOGDBG("loop_control: %d", elapsedMs);
+  
+  m_nLastControlTicks = ticks;
+
+  // Handle Play / pause button
+  if (check_button_play_pause()) {
+    if (!m_bRunning) {
+      // Play pressed, and stopped, so start playing
+      play_file();
+      // delay(200);
+    } else {
+      // Play pressed, and playing, so pause / unpause
+      if (pauseOn) {
+        // Unpause playback
+        pauseOn = false;
       } else {
-        // Play pressed, and playing, so pause / unpause
-        if (m_bPauseOn) {
-          // Unpause playback
-          m_bPauseOn = false;
-        } else {
-          // Pause playback
-          m_bPauseOn = true;
-        }
-        
+        // Pause playback
+        pauseOn = true;
       }
-    }
-    
-    // Handle stop button
-    if (check_button_stop()) {
-      if (m_bRunning) {
-        // Playing and stop pressed, so stop playing
-        stop_file();
-      }
+      
     }
   }
+  
+  // Handle stop button
+  if (check_button_stop()) {
+    if (m_bRunning) {
+      // Playing and stop pressed, so stop playing
+      stop_file();
+    }
+  }
+  
 }
 
 void CZxTape::play_file() {
+  pauseOn = false;
   currpct = 100;
 
   TZXPlay(); 
   m_bRunning = true; 
 
   if (PauseAtStart) {
-    m_bPauseOn = true;
+    pauseOn = true;
     TZXPause();
   }
 }
@@ -210,57 +229,71 @@ bool CZxTape::check_button_stop() {
 // TZX API
 //
 
+// Log a message
+void Log(const char *pMessage, ...) {
+  va_list var;
+	va_start (var, pMessage);
+
+  CLogger::Get ()->WriteV ("TZX", LogDebug, pMessage, var);
+
+	va_end (var);
+}	
+
 // Disable interrupts
 void noInterrupts() {
-  // TODO
+  // LOGDBG("noInterrupts");
 }
 
 
 // Enable interrupts
 void interrupts() {
-  // TODO
+  // LOGDBG("interrupts");
 }
 
 
 // Set the mode of a GPIO pin (i.e. set correct pin to output)
 void pinMode(unsigned pin, unsigned mode) {
-  // TODO
+  LOGDBG("pinMode(%d, %d)", pin, mode);
 }
 
 
 // Set the GPIO output pin low
 void LowWrite() {
-  // TODO
+  LOGDBG("LowWrite");
 }
 
 
 // Set the GPIO output pin high
 void HighWrite() {
-  // TODO
+  LOGDBG("HighWrite");
 }
 
 
 // Delay for a number of milliseconds
 void delay(unsigned long time) {
-  // TODO
+  LOGDBG("delay(%lu)", time);
 }
 
 
 // Stop the current file playback
 void stopFile() {
-  // TODO
+  if (!pZxTape) return;
+
+  LOGDBG("stopFile");
+
+  pZxTape->stop_file();
 }
 
 
 // Called to display the playback percent (at start)
 void lcdTime() {
-  // TODO
+  LOGDBG("lcdTime");
 }
 
 
 // Called to display the playback percent (during playback)
 void Counter2() {
-  // TODO
+  LOGDBG("Counter2");
 }
 
 
@@ -276,19 +309,40 @@ static void initializeFileType(FILETYPE *pFileType) {
 }
 
 static bool filetype_open(FILETYPE* dir, uint32_t index, oflag_t oflag) {
-  return false;
+  LOGDBG("filetype_open");
+
+  pFileSeek = ChuckieEgg;
+
+  return true;
 }
 
 static void filetype_close() {
-
+  LOGDBG("filetype_close");
+  pFileSeek = nullptr;
 }
 
 static int filetype_read(void* buf, unsigned long count) {
-  return 0;
+  LOGDBG("filetype_read(%lu)", count);
+
+  for (unsigned long i = 0; i < count; i++) {
+    if (pFileSeek >= ChuckieEgg + filesize) {
+      break;
+    }
+    LOGDBG("%02x ", pFileSeek[i]);
+  }
+
+  memcpy(buf, pFileSeek, count);
+  pFileSeek += count;
+
+  return count;
 }
 
 static bool filetype_seekSet(uint64_t pos) {
-  return false;
+  LOGDBG("filetype_seekSet(%lu)", pos);
+
+  pFileSeek = ChuckieEgg + pos;
+
+  return true;
 }
 
 //
@@ -302,13 +356,13 @@ static void initializeTimer(TIMER *pTimer) {
 }
 
 static void timer_initialize() {
-
+  LOGDBG("timer_initialize");
 }
 
 static void timer_stop() {
-
+  LOGDBG("timer_stop");
 }
 
 static void timer_setPeriod(unsigned long period) {
-
+  LOGDBG("timer_setPeriod(%lu)", period);
 }

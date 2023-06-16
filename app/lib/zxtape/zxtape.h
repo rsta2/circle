@@ -36,6 +36,8 @@ private:
 	bool check_button_play_pause(void);
 	bool check_button_stop(void);
 	void play_file(void);
+public:
+	// Do not call these methods directly, they are called internally from C code
 	void stop_file(void);	
 
 private:
@@ -45,9 +47,10 @@ private:
 	CGPIOPin	m_GpioOutputPin;
 
 	bool m_bRunning;
-	bool m_bPauseOn;
 	bool m_bButtonPlayPause;
 	bool m_bButtonStop;
+
+	unsigned m_nLastControlTicks;
 };
 
 #endif // _zxtape_h
