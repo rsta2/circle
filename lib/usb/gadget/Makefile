@@ -20,7 +20,8 @@
 
 CIRCLEHOME = ../../..
 
-OBJS	= dwusbgadget.o dwusbgadgetendpoint.o dwusbgadgetendpoint0.o
+OBJS	= dwusbgadget.o dwusbgadgetendpoint.o dwusbgadgetendpoint0.o \
+	  usbmidigadget.o usbmidigadgetendpoint.o
 
 libusbgadget.a: $(OBJS)
 	@echo "  AR    $@"

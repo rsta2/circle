@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include "usbmidigadgetendpoint.h"
-#include "usbmidigadget.h"
+#include <circle/usb/gadget/usbmidigadgetendpoint.h>
+#include <circle/usb/gadget/usbmidigadget.h>
 #include <circle/logger.h>
 #include <circle/debug.h>
 #include <circle/util.h>

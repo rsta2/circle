@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= main.o kernel.o usbmidigadget.o usbmidigadgetendpoint.o
+OBJS	= main.o kernel.o
 
 LIBS	= $(CIRCLEHOME)/lib/usb/gadget/libusbgadget.a \
 	  $(CIRCLEHOME)/lib/usb/libusb.a \

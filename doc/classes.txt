@@ -131,6 +131,8 @@ USB gadget library
 * CDWUSBGadget: DW USB gadget on Raspberry Pi (3)A(+), Zero (2) (W), 4B
 * CDWUSBGadgetEndpoint: Endpoint of a DW USB gadget
 * CDWUSBGadgetEndpoint0: Endpoint 0 of a DW USB gadget
+* CUSBMIDIGadget: USB MIDI (v1.0) gadget
+* CUSBMIDIGadgetEndpoint: Endpoint of the USB MIDI gadget
 
 Input library
 

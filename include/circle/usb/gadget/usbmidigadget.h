@@ -21,7 +21,7 @@
 #define _circle_usb_gadget_usbmidigadget_h
 
 #include <circle/usb/gadget/dwusbgadget.h>
-#include "usbmidigadgetendpoint.h"
+#include <circle/usb/gadget/usbmidigadgetendpoint.h>
 #include <circle/usb/usb.h>
 #include <circle/usb/usbaudio.h>
 #include <circle/interrupt.h>

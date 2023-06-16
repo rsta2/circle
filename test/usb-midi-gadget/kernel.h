@@ -30,7 +30,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/types.h>
-#include "usbmidigadget.h"
+#include <circle/usb/gadget/usbmidigadget.h>
 
 enum TShutdownMode
 {
