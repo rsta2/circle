@@ -27,9 +27,11 @@ class CExceptionHandler
 {
 public:
 	CExceptionHandler (void);
-	~CExceptionHandler (void);
-	
+	virtual ~CExceptionHandler (void);
+
+#if AARCH == 32
 	virtual void Throw (unsigned nException);
+#endif
 
 	virtual void Throw (unsigned nException, TAbortFrame *pFrame);
 	
