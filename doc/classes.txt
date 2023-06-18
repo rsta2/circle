@@ -84,6 +84,7 @@ USB library
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
 * CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU.
 * CUSBConfigurationParser: Parses and validates an USB configuration descriptor.
+* CUSBController: Generic USB (host or gadget) controller
 * CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
 * CUSBDeviceFactory: Creates the function objects of the different supported USB functions.
 * CUSBEndpoint: Encapsulates an endpoint of an USB device (supports control, bulk and interrupt EPs).

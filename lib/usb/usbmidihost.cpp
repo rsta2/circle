@@ -33,8 +33,6 @@
 #include <circle/util.h>
 #include <assert.h>
 
-#define EVENT_PACKET_SIZE	4
-
 static const char FromMIDI[] = "umidihost";
 
 CUSBMIDIHostDevice::CUSBMIDIHostDevice (CUSBFunction *pFunction)
@@ -122,7 +120,8 @@ boolean CUSBMIDIHostDevice::Configure (void)
 			assert (m_pEndpointIn != 0);
 
 			m_usBufferSize  = pEndpointDesc->wMaxPacketSize;
-			m_usBufferSize -= pEndpointDesc->wMaxPacketSize % EVENT_PACKET_SIZE;
+			m_usBufferSize -=   pEndpointDesc->wMaxPacketSize
+					  % CUSBMIDIDevice::EventPacketSize;
 
 			assert (m_pPacketBuffer == 0);
 			m_pPacketBuffer = new u8[m_usBufferSize];
@@ -209,7 +208,7 @@ void CUSBMIDIHostDevice::CompletionRoutine (CUSBRequest *pURB)
 	boolean bRestart = FALSE;
 
 	if (   pURB->GetStatus () != 0
-	    && pURB->GetResultLength () % EVENT_PACKET_SIZE == 0)
+	    && pURB->GetResultLength () % CUSBMIDIDevice::EventPacketSize == 0)
 	{
 		assert (m_pPacketBuffer != 0);
 

@@ -22,6 +22,7 @@
 
 #include <circle/usb/gadget/dwusbgadget.h>
 #include <circle/usb/gadget/usbmidigadgetendpoint.h>
+#include <circle/usb/usbmidi.h>
 #include <circle/usb/usb.h>
 #include <circle/usb/usbaudio.h>
 #include <circle/interrupt.h>
@@ -36,10 +37,6 @@ public:
 
 	~CUSBMIDIGadget (void);
 
-	/// \brief Initialize the gadget
-	/// \return Operation successful?
-	boolean Initialize (void) override;
-
 private:
 	const void *GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength) override;
 
@@ -48,6 +45,8 @@ private:
 	const void *ToStringDescriptor (const char *pString, size_t *pLength);
 
 private:
+	CUSBMIDIDevice *m_pInterface;
+
 	enum TEPNumber
 	{
 		EPOut = 1,

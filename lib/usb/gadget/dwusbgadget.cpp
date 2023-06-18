@@ -42,7 +42,8 @@ LOGMODULE ("dwgadget");
 CDWUSBGadget::CDWUSBGadget (CInterruptSystem *pInterruptSystem, TDeviceSpeed DeviceSpeed)
 :	m_pInterruptSystem (pInterruptSystem),
 	m_DeviceSpeed (DeviceSpeed),
-	m_State (StatePowered)
+	m_State (StatePowered),
+	m_bPnPUpdated (TRUE)
 {
 	for (unsigned i = 0; i <= NumberOfEPs; i++)
 	{
@@ -55,7 +56,7 @@ CDWUSBGadget::~CDWUSBGadget (void)
 	assert (0);
 }
 
-boolean CDWUSBGadget::Initialize (void)
+boolean CDWUSBGadget::Initialize (boolean bScanDevices)
 {
 	// Check Vendor ID
 	size_t nDescLength;
@@ -137,6 +138,15 @@ boolean CDWUSBGadget::SetConfiguration (u8 uchConfiguration)
 	LOGNOTE ("%u Endpoint(s) activated", nEPCount);
 
 	return TRUE;
+}
+
+boolean CDWUSBGadget::UpdatePlugAndPlay (void)
+{
+	boolean bResult = m_bPnPUpdated;
+
+	m_bPnPUpdated = FALSE;
+
+	return bResult;
 }
 
 boolean CDWUSBGadget::PowerOn (void)

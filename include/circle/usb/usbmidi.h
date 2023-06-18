@@ -35,6 +35,9 @@ typedef void TMIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength)
 class CUSBMIDIDevice : public CDevice	/// Interface device for USB Audio Class MIDI 1.0 devices
 {
 public:
+	static const size_t EventPacketSize = 4;
+
+public:
 	CUSBMIDIDevice (void);
 	~CUSBMIDIDevice (void);
 
@@ -73,6 +76,7 @@ private:
 	boolean GetAllSoundOffOnUSBError (void) const;
 
 	friend class CUSBMIDIHostDevice;
+	friend class CUSBMIDIGadgetEndpoint;
 
 private:
 	TMIDIPacketHandler *m_pPacketHandler;

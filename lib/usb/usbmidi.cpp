@@ -29,8 +29,6 @@
 #include <circle/util.h>
 #include <assert.h>
 
-#define EVENT_PACKET_SIZE	4
-
 static const char FromMIDI[] = "umidi";
 static const char DevicePrefix[] = "umidi";
 
@@ -220,12 +218,12 @@ void CUSBMIDIDevice::SetAllSoundOffOnUSBError (boolean bEnable)
 boolean CUSBMIDIDevice::CallPacketHandler (u8 *pData, unsigned nLength)
 {
 	assert (pData);
-	assert (nLength % EVENT_PACKET_SIZE == 0);
+	assert (nLength % EventPacketSize == 0);
 
 	boolean bResult = FALSE;
 
 	u8 *pEnd = pData + nLength;
-	for (u8 *pPacket = pData; pPacket < pEnd; pPacket += EVENT_PACKET_SIZE)
+	for (u8 *pPacket = pData; pPacket < pEnd; pPacket += EventPacketSize)
 	{
 		// Follow the Linux driver's example and ignore packets with Cable
 		// Number == Code Index Number == 0, which some devices seem to

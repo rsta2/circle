@@ -20,10 +20,7 @@
 #include <circle/usb/gadget/usbmidigadget.h>
 #include <circle/usb/gadget/usbmidigadgetendpoint.h>
 #include <circle/sysconfig.h>
-#include <circle/logger.h>
 #include <assert.h>
-
-LOGMODULE ("midigadget");
 
 const TUSBDeviceDescriptor CUSBMIDIGadget::s_DeviceDescriptor =
 {
@@ -68,7 +65,7 @@ const CUSBMIDIGadget::TUSBMIDIGadgetConfigurationDescriptor
 		USB_AUDIO_CTL_IFACE_BCDADC_100,
 		sizeof (TUSBAudioControlInterfaceDescriptorHeader),
 		1,
-		1
+		{1}
 	},
 	{
 		sizeof (TUSBInterfaceDescriptor),
@@ -171,6 +168,7 @@ const char *const CUSBMIDIGadget::s_StringDescriptor[] =
 
 CUSBMIDIGadget::CUSBMIDIGadget (CInterruptSystem *pInterruptSystem)
 :	CDWUSBGadget (pInterruptSystem, FullSpeed),
+	m_pInterface (nullptr),
 	m_pEP {nullptr, nullptr, nullptr}
 {
 }
@@ -178,11 +176,6 @@ CUSBMIDIGadget::CUSBMIDIGadget (CInterruptSystem *pInterruptSystem)
 CUSBMIDIGadget::~CUSBMIDIGadget (void)
 {
 	assert (0);
-}
-
-boolean CUSBMIDIGadget::Initialize (void)
-{
-	return CDWUSBGadget::Initialize ();
 }
 
 const void *CUSBMIDIGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength)
@@ -230,16 +223,20 @@ const void *CUSBMIDIGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLeng
 
 void CUSBMIDIGadget::AddEndpoints (void)
 {
+	assert (!m_pInterface);
+	m_pInterface = new CUSBMIDIDevice;
+	assert (m_pInterface);
+
 	assert (!m_pEP[EPOut]);
 	m_pEP[EPOut] = new CUSBMIDIGadgetEndpoint (
 				reinterpret_cast<const TUSBEndpointDescriptor *> (
-					&s_ConfigurationDescriptor.EndpointOut), this);
+					&s_ConfigurationDescriptor.EndpointOut), m_pInterface, this);
 	assert (m_pEP[EPOut]);
 
 	assert (!m_pEP[EPIn]);
 	m_pEP[EPIn] = new CUSBMIDIGadgetEndpoint (
 				reinterpret_cast<const TUSBEndpointDescriptor *> (
-					&s_ConfigurationDescriptor.EndpointIn), this);
+					&s_ConfigurationDescriptor.EndpointIn), m_pInterface, this);
 	assert (m_pEP[EPIn]);
 }
 

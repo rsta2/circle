@@ -23,15 +23,17 @@
 #include <circle/usb/gadget/dwusbgadgetendpoint.h>
 #include <circle/usb/usb.h>
 #include <circle/synchronize.h>
-#include <circle/timer.h>
 #include <circle/types.h>
 
 class CUSBMIDIGadget;
+class CUSBMIDIDevice;
 
 class CUSBMIDIGadgetEndpoint : public CDWUSBGadgetEndpoint	/// Endpoint of the USB MIDI gadget
 {
 public:
-	CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pDesc, CUSBMIDIGadget *pGadget);
+	CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
+				CUSBMIDIDevice *pInterface,
+				CUSBMIDIGadget *pGadget);
 	~CUSBMIDIGadgetEndpoint (void);
 
 	void OnActivate (void) override;
@@ -39,16 +41,18 @@ public:
 	void OnTransferComplete (boolean bIn, size_t nLength) override;
 
 private:
-	void TimerHandler (void);
-	static void TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext);
+	boolean SendEventsHandler (const u8 *pData, unsigned nLength);
+	static boolean SendEventsHandler (const u8 *pData, unsigned nLength, void *pParam);
 
 private:
-	static const size_t MaxMessageSize = 64;
-	DMA_BUFFER (u8, m_OutBuffer, MaxMessageSize);
-	DMA_BUFFER (u8, m_InBuffer, MaxMessageSize);
+	CUSBMIDIDevice *m_pInterface;
 
-	boolean m_bNoteOn;
-	u8 m_uchNote;
+	volatile int m_nInBytesRemaining;
+
+	static const size_t MaxOutMessageSize = 64;
+	static const size_t MaxInMessageSize = 8192;
+	DMA_BUFFER (u8, m_OutBuffer, MaxOutMessageSize);
+	DMA_BUFFER (u8, m_InBuffer, MaxInMessageSize);
 };
 
 #endif

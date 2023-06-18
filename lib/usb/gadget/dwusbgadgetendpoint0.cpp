@@ -21,11 +21,8 @@
 #include <circle/usb/gadget/dwusbgadget.h>
 #include <circle/usb/dwhci.h>
 #include <circle/usb/usb.h>
-#include <circle/logger.h>
 #include <circle/util.h>
 #include <assert.h>
-
-LOGMODULE ("dwgadgetep0");
 
 CDWUSBGadgetEndpoint0::CDWUSBGadgetEndpoint0 (size_t nMaxPacketSize, CDWUSBGadget *pGadget)
 :	CDWUSBGadgetEndpoint (nMaxPacketSize, pGadget),

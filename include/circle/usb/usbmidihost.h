@@ -55,8 +55,6 @@ private:
 	CUSBEndpoint *m_pEndpointIn;
 	CUSBEndpoint *m_pEndpointOut;
 
-	TMIDIPacketHandler *m_pPacketHandler;
-
 	u16 m_usBufferSize;
 	u8 *m_pPacketBuffer;
 

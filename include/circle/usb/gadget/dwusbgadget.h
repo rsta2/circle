@@ -20,14 +20,13 @@
 #ifndef _circle_usb_gadget_dwusbgadget_h
 #define _circle_usb_gadget_dwusbgadget_h
 
+#include <circle/usb/usbcontroller.h>
 #include <circle/usb/gadget/dwusbgadgetendpoint.h>
 #include <circle/usb/dwhciregister.h>
 #include <circle/interrupt.h>
 #include <circle/types.h>
 
-/// \note Derive your own gadget class from this one.
-
-class CDWUSBGadget	/// DW USB gadget on Raspberry Pi (3)A(+), Zero (2) (W), 4B
+class CDWUSBGadget : public CUSBController	/// DW USB gadget on Raspberry Pi (3)A(+), Zero (2) (W), 4B
 {
 public:
 	enum TDeviceSpeed
@@ -44,8 +43,9 @@ public:
 	virtual ~CDWUSBGadget (void);
 
 	/// \return Operation successful?
+	/// \param bScanDevices Immediately scan for connected devices?
 	/// \note May override this for device-specific initialization.
-	virtual boolean Initialize (void);
+	boolean Initialize (boolean bScanDevices = TRUE) override;
 
 	/// \brief Get device-specific descriptor
 	/// \param wValue Parameter from setup packet (descriptor type (MSB) and index (LSB))
@@ -62,6 +62,9 @@ public:
 	/// \return Operation successful?
 	/// \note May override this for device-specific configuration.
 	virtual boolean SetConfiguration (u8 uchConfiguration);
+
+	/// \return TRUE if connection status has been changed (always TRUE on first call)
+	boolean UpdatePlugAndPlay (void) override;
 
 private:
 	boolean PowerOn (void);
@@ -107,6 +110,8 @@ private:
 	};
 
 	TState m_State;
+
+	boolean m_bPnPUpdated;
 
 	CDWUSBGadgetEndpoint *m_pEP[NumberOfEPs+1];
 };

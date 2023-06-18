@@ -19,7 +19,11 @@
 //
 #include <circle/usb/gadget/usbmidigadgetendpoint.h>
 #include <circle/usb/gadget/usbmidigadget.h>
+#include <circle/usb/usbmidi.h>
+#include <circle/sched/scheduler.h>
+#include <circle/sysconfig.h>
 #include <circle/logger.h>
+#include <circle/atomic.h>
 #include <circle/debug.h>
 #include <circle/util.h>
 #include <assert.h>
@@ -27,26 +31,29 @@
 LOGMODULE ("midigadgetep");
 
 CUSBMIDIGadgetEndpoint::CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
+						CUSBMIDIDevice *pInterface,
 						CUSBMIDIGadget *pGadget)
 :	CDWUSBGadgetEndpoint (pDesc, pGadget),
-	m_bNoteOn (TRUE),
-	m_uchNote (0)
+	m_pInterface (pInterface),
+	m_nInBytesRemaining (0)
 {
+	if (GetDirection () == DirectionIn)
+	{
+		assert (m_pInterface);
+		m_pInterface->RegisterSendEventsHandler (SendEventsHandler, this);
+	}
 }
 
 CUSBMIDIGadgetEndpoint::~CUSBMIDIGadgetEndpoint (void)
 {
+	assert (0);
 }
 
 void CUSBMIDIGadgetEndpoint::OnActivate (void)
 {
 	if (GetDirection () == DirectionOut)
 	{
-		BeginTransfer (TransferDataOut, m_OutBuffer, MaxMessageSize);
-	}
-	else
-	{
-		TimerHandler ();
+		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
 	}
 }
 
@@ -55,49 +62,60 @@ void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 	if (!bIn)
 	{
 #ifndef NDEBUG
-		debug_hexdump (m_OutBuffer, nLength, From);
+		//debug_hexdump (m_OutBuffer, nLength, From);
 #endif
 
-		BeginTransfer (TransferDataOut, m_OutBuffer, MaxMessageSize);
-	}
-	else
-	{
-		assert (nLength == 4);
-
-		CTimer::Get ()->StartKernelTimer (MSEC2HZ (500), TimerHandler, 0, this);
-	}
-}
-
-void CUSBMIDIGadgetEndpoint::TimerHandler (void)
-{
-	static const size_t EventSize = 4;
-
-	if (m_bNoteOn)
-	{
-		const u8 NoteOn[EventSize] = {0x09, 0x90, m_uchNote, 0x64};
-
-		memcpy (m_InBuffer, NoteOn, EventSize);
-	}
-	else
-	{
-		const u8 NoteOff[EventSize] = {0x08, 0x80, m_uchNote, 0x00};
-		if (++m_uchNote > 0x7F)
+		if (!(nLength % CUSBMIDIDevice::EventPacketSize))
 		{
-			m_uchNote = 0;
+			assert (m_pInterface);
+			m_pInterface->CallPacketHandler (m_OutBuffer, nLength);
 		}
 
-		memcpy (m_InBuffer, NoteOff, EventSize);
+		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
 	}
-
-	m_bNoteOn = !m_bNoteOn;
-
-	BeginTransfer (TransferDataIn, m_InBuffer, EventSize);
+	else
+	{
+		AtomicSub (&m_nInBytesRemaining, (int) nLength);
+	}
 }
 
-void CUSBMIDIGadgetEndpoint::TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext)
+boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLength)
 {
-	CUSBMIDIGadgetEndpoint *pThis = static_cast<CUSBMIDIGadgetEndpoint *> (pContext);
+	assert (pData != 0);
+	assert (nLength > 0);
+	assert (!(nLength % CUSBMIDIDevice::EventPacketSize));
+
+	if (nLength > MaxInMessageSize)
+	{
+		LOGWARN ("Trying to send %u bytes (max %lu)", nLength, MaxInMessageSize);
+
+		return FALSE;
+	}
+
+	memcpy (m_InBuffer, pData, nLength);
+
+#ifndef NDEBUG
+	int nInBytesRemaining =
+#endif
+		AtomicExchange (&m_nInBytesRemaining, (int) nLength);
+	assert (!nInBytesRemaining);
+
+	BeginTransfer (TransferDataIn, m_InBuffer, nLength);
+
+	while (AtomicGet (&m_nInBytesRemaining))
+	{
+#ifdef NO_BUSY_WAIT
+		CScheduler::Get ()->Yield ();
+#endif
+	}
+
+	return TRUE;
+}
+
+boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLength, void *pParam)
+{
+	CUSBMIDIGadgetEndpoint *pThis = static_cast<CUSBMIDIGadgetEndpoint *> (pParam);
 	assert (pThis);
 
-	pThis->TimerHandler ();
+	return pThis->SendEventsHandler (pData, nLength);
 }
