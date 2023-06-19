@@ -462,9 +462,16 @@ void TZXProcess() {
           
         case IDCHUNKEOF:
         if(!count==0) {
+#ifdef HD_SPECCYS_TZXDUINO
+            // Pause for a long time at EOF
+            // 32767 * 1000 * 100 = 3276.7 seconds ~= 1hr 
+            currentPeriod = 32767;
+            bitSet(currentPeriod, 15);
+#else          
             //currentPeriod = 32767;
             currentPeriod = 10;
             bitSet(currentPeriod, 15); //bitSet(currentPeriod, 12);
+#endif            
             count += -1;
           } else {
             bytesRead+=bytesToRead;
@@ -1087,9 +1094,16 @@ void TZXProcess() {
         case EOF:
           //Handle end of file
           if(!count==0) {
+#ifdef HD_SPECCYS_TZXDUINO
+            // Pause for a long time at EOF
+            // 32767 * 1000 * 100 = 3276.7 seconds ~= 1hr 
+            currentPeriod = 32767;
+            bitSet(currentPeriod, 15);
+#else
             currentPeriod = 32767;
             //currentPeriod = 2000;
             //bitSet(currentPeriod, 15); bitSet(currentPeriod, 12);
+#endif
             count += -1;
           } else {
             stopFile();
@@ -1521,7 +1535,7 @@ void wave() {
   unsigned long newTime=1;
   intError = false;
 
-  Log("wave: isStopped=%d pos=%d, workingBuffer=%d, workingPeriod=%d", isStopped, pos, workingBuffer, workingPeriod);
+  // Log("wave: isStopped=%d pos=%d, workingBuffer=%d, workingPeriod=%d", isStopped, pos, workingBuffer, workingPeriod);
 
   if(isStopped==0 && workingPeriod >= 1)
   {

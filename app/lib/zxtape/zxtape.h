@@ -19,6 +19,9 @@
 // Maximum length for long filename support (ideally as large as possible to support very long filenames)
 #define ZX_TAPE_MAX_FILENAME_LEN   			1023      		
 
+#define ZX_TAPE_CONTROL_UPDATE_MS			100		// 3 seconds (could be 0)
+#define ZX_TAPE_END_PLAYBACK_DELAY_MS		3000	// 3 seconds (could be longer by up to ZX_TAPE_CONTROL_UPDATE_MS)
+
 class CZxTape
 {
 public:
@@ -41,9 +44,10 @@ private:
 	bool check_button_play_pause(void);
 	bool check_button_stop(void);
 	void play_file(void);
+	void stop_file(void);
 public:
 	// Do not call these methods directly, they are called internally from C code
-	void stop_file(void);	
+	void end_playback(void);
 	void wave_isr_set_period(unsigned long periodUs);
 	void wave_set_low();
 	void wave_set_high();
@@ -60,6 +64,8 @@ private:
 	bool m_bRunning;
 	bool m_bButtonPlayPause;
 	bool m_bButtonStop;
+	bool m_bEndPlayback;
+	unsigned m_nEndPlaybackDelay;
 
 	unsigned m_nLastControlTicks;
 };

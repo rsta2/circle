@@ -95,9 +95,8 @@ PROGMEM const char UEFFile[9] = {'U','E','F',' ','F','i','l','e','!'};
 
 //Buffer size
 #ifdef HD_SPECCYS_TZXDUINO
-// Any bigger buffer and nothing works (have to investigate why!)
-#define buffsize              128+64+32
-// #define buffsize              128
+// Had to change buffer index type from byte to support buffers > 255 bytes
+#define buffsize              1024
 // #define buffsize              64
 #else
 #define buffsize              64
@@ -169,7 +168,11 @@ byte currentBlockTask = 0;
 word currentPeriod=1;
 
 //ISR Variables
+#ifdef HD_SPECCYS_TZXDUINO
+volatile unsigned int pos = 0;
+#else
 volatile byte pos = 0;
+#endif
 volatile word wbuffer[buffsize+1][2];
 volatile byte morebuff = HIGH;
 volatile byte workingBuffer=0;
@@ -184,7 +187,11 @@ byte AYPASS = 0;
 byte hdrptr = 0;
 byte blkchksum = 0;
 word ayblklen = 0;
+#ifdef HD_SPECCYS_TZXDUINO
+unsigned int btemppos = 0;
+#else
 byte btemppos = 0;
+#endif
 byte copybuff = LOW;
 unsigned long bytesRead=0;
 unsigned long bytesToRead=0;

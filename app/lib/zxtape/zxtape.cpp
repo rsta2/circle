@@ -13,7 +13,7 @@
 // #include "games/dynamitedan2Tap.h" // TAP, OK (not original loader)
 // #include "games/greenberet.h" // TAP, OK
 // #include "games/spellbound.h" // TZX, OK
-// #include "games/dynamitedan2.h" // TZX, OK!
+#include "games/dynamitedan2.h" // TZX, OK!
 // #include "games/jetpac.h" // TAP, OK!
 // #include "games/brianbloodaxe.h" // TZX, OK!
 // #include "games/arkanoidSpeedlock4.h" // TZX, OK!
@@ -23,10 +23,13 @@
 // #include "games/720Degrees.h" // TZX, OK!
 // #include "games/starquake.h" // TZX, OK!
 // #include "games/dynamitedan.h" // TZX, OK!
-#include "games/back2school.h" // TZX, OK! Fast baud rate, fails if buffer less than 128+64+32 (e.g. 128+64)
+// #include "games/back2school.h" // TZX, OK! Fast baud rate, fails if buffer less than 128+64+32 (e.g. 128+64)
+// #include "games/cauldron.h" // TZX, OK!
 #include <circle/stdarg.h>
 
 // Tape loading failures might be to do with the HW - the capacitor is taking too long to charge / discharge
+
+// TODO: Add reset function / connector to the HD-Speccys final design
 
 
 LOGMODULE ("ZxTape");
@@ -56,8 +59,8 @@ uint64_t nFileSeekIdx;                        // Current file seek position
 unsigned tzxLoopCount = 0;                    // HACK to call wave less than loop count at start
 
 // HACK
-unsigned char* GAME = Back2School;
-unsigned long GAME_SIZE = sizeof(Back2School);
+unsigned char* GAME = DD2;
+unsigned long GAME_SIZE = sizeof(DD2);
 
 
 /* Local functions */
@@ -86,6 +89,8 @@ CZxTape::CZxTape (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem
   m_bRunning (false),
 	m_bButtonPlayPause (false),  
 	m_bButtonStop (false),
+  m_bEndPlayback (false),
+  m_nEndPlaybackDelay (0),
   m_nLastControlTicks(0)
 {
   pZxTape = this;
@@ -191,17 +196,14 @@ void CZxTape::Update()
  */
 void CZxTape::loop_playback()
 {
-  if(m_bRunning /* Tape running */) {
-    // TODO - switch GPIO pin to output when playing
+  if(m_bRunning && !m_bEndPlayback) {
+    // If tape is running, and we are not ending playback, then run the TZX loop
 
     // TZXLoop only runs if a file is playing, and keeps the buffer full.
     TZXLoop();
 
-    // Hacked in here for now
-    // if (tzxLoopCount++ > 100) {
-      // tzxLoopCount = 0;
-      // wave();
-    // }    
+    // Hacked in here for testing
+    // wave();
   }
 }  
 
@@ -215,8 +217,8 @@ void CZxTape::loop_control() {
   const unsigned elapsedMs = (ticks - m_nLastControlTicks) * 1000 / HZ;
 
   // Only run every 100ms
-  if (elapsedMs < 100) return;
-  // LOGDBG("loop_control: %d", elapsedMs);
+  if (elapsedMs < ZX_TAPE_CONTROL_UPDATE_MS) return;
+  //  LOGDBG("loop_control: %d, m_bEndPlayback: %d, m_nEndPlaybackDelay: %d", elapsedMs, m_bEndPlayback, m_nEndPlaybackDelay);
   
   m_nLastControlTicks = ticks;
 
@@ -246,10 +248,22 @@ void CZxTape::loop_control() {
       stop_file();
     }
   }
-  
+
+  // Handle end of playback (allowing buffer to empty)
+  if (m_bEndPlayback) {
+    if (m_nEndPlaybackDelay <= 0) {
+      // End of playback delay has expired, buffer should be empty, so stop playing
+      stop_file();
+    }
+    m_nEndPlaybackDelay -= elapsedMs;
+  }  
 }
 
 void CZxTape::play_file() {
+  // Ensure stopped
+  stop_file();
+
+  // Set initial playback state
   pauseOn = false;
   currpct = 100;
 
@@ -270,21 +284,39 @@ void CZxTape::play_file() {
 }
 
 void CZxTape::stop_file() {
-  // Ensure last bits are written
-  CTimer::Get()->SimpleMsDelay(100);  // TODO - this will glitch the video, need a better way! (could use control loop)
-
-  TZXStop();
-
-  // Stop the output timer
-  m_OutputTimer.Stop();
+  LOGDBG("stop_file");
 
   // Set GPIO pin to input mode
   m_GpioOutputPin.SetMode(GPIOModeInput);
 
+
   if(m_bRunning){
-    
+    LOGDBG("m_OutputTimer.Stop()");
+
+    // Stop the output timer (only if it was initialised)
+    m_OutputTimer.Stop();
   }
+
+  // Stop tzx library
+  TZXStop();
+  
   m_bRunning = false;
+  m_bEndPlayback = false;
+  m_nEndPlaybackDelay = 0;
+}
+
+void CZxTape::end_playback() {
+  m_bEndPlayback = true;
+  m_nEndPlaybackDelay = ZX_TAPE_END_PLAYBACK_DELAY_MS;
+
+  // Ensure last bits are written
+  // This is not handled correctly in the TZXDuino code. 'count=255;' is decremented, and the buffer filled with junk,
+  // but this happens much faster than the buffer can empty itself, so the last bytes/bits are not played back.
+  // Ideally the buffer would notify the code here when it is empty, but the TZXDuino code is not structured that way.
+ 
+  // Rather than implementing a simple delay here, we count down in the update loop a delay until the buffer should
+  // be empty, and then stop the tape.
+  // This avoids blocking any thread.
 }
 
 /**
@@ -411,17 +443,17 @@ void delay(unsigned long time) {
 }
 
 
-// Stop the current file playback
+// End the current file playback (EOF or error)
 void stopFile() {
   if (!pZxTape) return;
 
   LOGDBG("stopFile");
 
-  pZxTape->stop_file();
+  pZxTape->end_playback();
 }
 
 
-// Called to display the playback percent (at start)
+// Called to display the playback time (at start)
 void lcdTime() {
   // LOGDBG("lcdTime");
 }
@@ -473,7 +505,7 @@ static int filetype_read(void* buf, unsigned long count) {
   }
 
   // for (unsigned long i = 0; i < count; i++) {
-  //   LOGDBG("%02x ", *(pFile + i));
+  //   LOGDBG("%02x ", *(pFile + nFileSeekIdx + i));
   // }
 
   memcpy(buf, pFile + nFileSeekIdx, count);
