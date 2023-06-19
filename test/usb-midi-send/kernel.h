@@ -30,7 +30,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/types.h>
-#include <circle/usb/usbhcidevice.h>
+#include <circle/usb/usbcontroller.h>
 #include <circle/usb/usbmidi.h>
 
 enum TShutdownMode
@@ -64,7 +64,7 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
-	CUSBHCIDevice		m_USBHCI;
+	CUSBController		*m_pUSB;
 
 	CUSBMIDIDevice * volatile m_pMIDIDevice;
 

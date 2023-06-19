@@ -18,7 +18,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include <circle/usb/usbhcidevice.h>
+#include <circle/usb/gadget/usbmidigadget.h>
 #include <assert.h>
+
+//#define USB_GADGET_MODE
 
 LOGMODULE ("kernel");
 
@@ -28,7 +32,11 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),		// TRUE: enable plug-and-play
+#ifndef USB_GADGET_MODE
+	m_pUSB (new CUSBHCIDevice (&m_Interrupt, &m_Timer, TRUE)), // TRUE: enable plug-and-play
+#else
+	m_pUSB (new CUSBMIDIGadget (&m_Interrupt)),
+#endif
 	m_pMIDIDevice (nullptr)
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -75,7 +83,8 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_USBHCI.Initialize ();
+		assert (m_pUSB);
+		bOK = m_pUSB->Initialize ();
 	}
 
 	return bOK;
@@ -92,7 +101,8 @@ TShutdownMode CKernel::Run (void)
 	for (unsigned nCount = 0; 1; nCount++)
 	{
 		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
-		boolean bUpdated = m_USBHCI.UpdatePlugAndPlay ();
+		assert (m_pUSB);
+		boolean bUpdated = m_pUSB->UpdatePlugAndPlay ();
 
 		if (   bUpdated
 		    && !m_pMIDIDevice)
