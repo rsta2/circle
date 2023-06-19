@@ -31,6 +31,13 @@
 /// \param pPacket Pointer to one received MIDI packet
 /// \param nLength Number of valid bytes in packet (1-3)
 typedef void TMIDIPacketHandler (unsigned nCable, u8 *pPacket, unsigned nLength);
+/// \param nCable  Cable number (0-15)
+/// \param pPacket Pointer to one received MIDI packet
+/// \param nLength Number of valid bytes in packet (1-3)
+/// \param nDevice Device number of the MIDI device (e.g. 1 for "umidi1")
+/// \param pParam User parameter
+typedef void TMIDIPacketHandlerEx (unsigned nCable, u8 *pPacket, unsigned nLength,
+				   unsigned nDevice, void *pParam);
 
 class CUSBMIDIDevice : public CDevice	/// Interface device for USB Audio Class MIDI 1.0 devices
 {
@@ -44,6 +51,10 @@ public:
 	/// \brief Register a handler, which is called, when a MIDI packet arrives
 	/// \param pPacketHandler Pointer to the handler
 	void RegisterPacketHandler (TMIDIPacketHandler *pPacketHandler);
+	/// \brief Register a handler, which is called, when a MIDI packet arrives
+	/// \param pPacketHandler Pointer to the handler
+	/// \param pParam User parameter, handed over to the handler
+	void RegisterPacketHandler (TMIDIPacketHandlerEx *pPacketHandler, void *pParam);
 
 	/// \brief Send one or more packets in encoded USB MIDI event packet format
 	/// \param pData Pointer to the packet buffer
@@ -79,7 +90,8 @@ private:
 	friend class CUSBMIDIGadgetEndpoint;
 
 private:
-	TMIDIPacketHandler *m_pPacketHandler;
+	TMIDIPacketHandlerEx *m_pPacketHandler;
+	void *m_pPacketHandlerParam;
 
 	TSendEventsHandler *m_pSendEventsHandler;
 	void *m_pSendEventsParam;

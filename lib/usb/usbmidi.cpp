@@ -56,8 +56,23 @@ CUSBMIDIDevice::~CUSBMIDIDevice (void)
 	s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 }
 
+static void ProxyHandler (unsigned nCable, u8 *pPacket, unsigned nLength,
+			  unsigned nDevice, void *pParam)
+{
+	assert (pParam);
+	((TMIDIPacketHandler *) pParam) (nCable, pPacket, nLength);
+}
+
 void CUSBMIDIDevice::RegisterPacketHandler (TMIDIPacketHandler *pPacketHandler)
 {
+	assert (pPacketHandler);
+	RegisterPacketHandler (ProxyHandler, (void *) pPacketHandler);
+}
+
+void CUSBMIDIDevice::RegisterPacketHandler (TMIDIPacketHandlerEx *pPacketHandler, void *pParam)
+{
+	m_pPacketHandlerParam = pParam;
+
 	assert (m_pPacketHandler == 0);
 	m_pPacketHandler = pPacketHandler;
 	assert (m_pPacketHandler != 0);
@@ -234,7 +249,8 @@ boolean CUSBMIDIDevice::CallPacketHandler (u8 *pData, unsigned nLength)
 			{
 				unsigned nCable = pPacket[0] >> 4;
 				unsigned nLength = cin_to_length[pPacket[0] & 0x0F];
-				(*m_pPacketHandler) (nCable, pPacket+1, nLength);
+				(*m_pPacketHandler) (nCable, pPacket+1, nLength,
+						     m_nDeviceNumber, m_pPacketHandlerParam);
 			}
 
 			bResult = TRUE;
