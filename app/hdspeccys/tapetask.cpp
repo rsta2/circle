@@ -32,14 +32,13 @@ void CTapeTask::Run (void)
 	{	
 		m_pZxTape->Update();
 
-
-		// Not sure how often we will need to call the Tape loop to keep up with playing
-		// The buffer that is read into is 64 words (128 bytes) long
-		CScheduler::Get ()->MsSleep (50);
-		// CScheduler::Get ()->Yield ();
-		// // m_Timer.MsDelay(500);
-		// // m_Timer.MsDelay(1);
-		// CScheduler::Get ()->MsSleep (20);
+		if (m_pZxTape->IsPlaying()) {
+			// If playing, loop as fast as possible
+			CScheduler::Get ()->Yield ();
+		} else {
+			// If not playing, loop more slowly to save CPU
+			CScheduler::Get ()->MsSleep (250);
+		}		
 	}
 }
  

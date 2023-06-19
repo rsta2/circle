@@ -4,8 +4,29 @@
 
 #include "zxtape.h"
 #include "tzx-api.h"
-#include "chuckie-egg.h"
+// #include "games/chuckie-egg.h" // TZX, OK
+// #include "games/jsw.h" // TZX, OK
+// #include "games/jsw2.h" // TZX, OK
+// #include "games/gyro.h" // TAP, OK
+// #include "games/spy-hunter.h" // TZX, OK
+// #include "games/exolon.h" // TZX, OK
+// #include "games/dynamitedan2Tap.h" // TAP, OK (not original loader)
+// #include "games/greenberet.h" // TAP, OK
+// #include "games/spellbound.h" // TZX, OK
+// #include "games/dynamitedan2.h" // TZX, OK!
+// #include "games/jetpac.h" // TAP, OK!
+// #include "games/brianbloodaxe.h" // TZX, OK!
+// #include "games/arkanoidSpeedlock4.h" // TZX, OK!
+// #include "games/arkanoid2Speedlock7.h" // TZX, OK!
+// #include "games/bubblebobbleBleepload.h" // TZX, OK!
+// #include "games/rainbowislands.h" // TZX, OK! (has multi-loader (STOP the tape not yet implemented))
+// #include "games/720Degrees.h" // TZX, OK!
+// #include "games/starquake.h" // TZX, OK!
+// #include "games/dynamitedan.h" // TZX, OK!
+#include "games/back2school.h" // TZX, OK! Fast baud rate, fails if buffer less than 128+64+32 (e.g. 128+64)
 #include <circle/stdarg.h>
+
+// Tape loading failures might be to do with the HW - the capacitor is taking too long to charge / discharge
 
 
 LOGMODULE ("ZxTape");
@@ -30,7 +51,13 @@ bool pauseOn;  						                  	// Control pause state
 
 /* Local variables */
 CZxTape *pZxTape = nullptr;                   // Pointer to ZX Tape singleton instance
-unsigned char *pFileSeek;                     // Pointer to current file seek position
+unsigned char *pFile;                         // Pointer to current file
+uint64_t nFileSeekIdx;                        // Current file seek position
+unsigned tzxLoopCount = 0;                    // HACK to call wave less than loop count at start
+
+// HACK
+unsigned char* GAME = Back2School;
+unsigned long GAME_SIZE = sizeof(Back2School);
 
 
 /* Local functions */
@@ -45,7 +72,7 @@ static bool filetype_seekSet(uint64_t pos);
 static void initializeTimer(TIMER *pTimer);
 static void timer_initialize();
 static void timer_stop();
-static void timer_setPeriod(unsigned long period);
+static void timer_setPeriod(unsigned long periodUs);
 
 //
 // Class
@@ -55,13 +82,14 @@ CZxTape::CZxTape (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem
 : m_pGPIOManager(pGPIOManager),
   m_pInterruptSystem (pInterruptSystem),
   m_GpioOutputPin(ZX_TAPE_GPIO_OUTPUT_PIN, GPIOModeInput, m_pGPIOManager),
+  m_OutputTimer(pInterruptSystem, CZxTape::wave_isr, this, ZX_TAPE_USE_FIQ),
   m_bRunning (false),
 	m_bButtonPlayPause (false),  
 	m_bButtonStop (false),
   m_nLastControlTicks(0)
 {
   pZxTape = this;
-  pFileSeek = nullptr;
+  nFileSeekIdx = 0;
 }
 
 CZxTape::~CZxTape (void)
@@ -78,10 +106,11 @@ boolean CZxTape::Initialize ()
 
   // Initialise the TZX API
   strncpy(fileName, "ChuckieEgg.tzx", ZX_TAPE_MAX_FILENAME_LEN); // TODO: This is a hack
+  // strncpy(fileName, "ChuckieEgg.tap", ZX_TAPE_MAX_FILENAME_LEN); // TODO: This is a hack
   fileIndex = 0;
   initializeFileType(&dir);
   initializeFileType(&entry);
-  filesize = sizeof(ChuckieEgg);
+  filesize = 0;
   initializeTimer(&Timer);
   pauseOn = false;
   currpct = 0;
@@ -107,6 +136,38 @@ void CZxTape::Stop()
   // Stop the tape
   m_bButtonStop = true;
 }  
+
+/**
+ * The tape is started (it may still be paused)
+ * 
+ */
+bool CZxTape::IsStarted(void) {
+  return m_bRunning;
+}
+
+/**
+ * The tape is playing (started and NOT paused)
+ * 
+ */
+bool CZxTape::IsPlaying(void) {
+  return m_bRunning && !pauseOn;
+}
+
+/**
+ * The tape is paused (started AND paused)
+ * 
+ */
+bool CZxTape::IsPaused(void) {
+  return m_bRunning && pauseOn;
+}
+
+/**
+ * The tape is stopped (!IsPlaying())
+ * 
+ */
+bool CZxTape::IsStopped(void) {
+  return !m_bRunning;
+}
 
 /**
  * Run the tape loop 
@@ -137,10 +198,10 @@ void CZxTape::loop_playback()
     TZXLoop();
 
     // Hacked in here for now
-    wave();
-  } else {
-    LowWrite();    // Keep output LOW while no file is playing.
-    // TODO - switch GPIO pin to input when not playing
+    // if (tzxLoopCount++ > 100) {
+      // tzxLoopCount = 0;
+      // wave();
+    // }    
   }
 }  
 
@@ -192,6 +253,13 @@ void CZxTape::play_file() {
   pauseOn = false;
   currpct = 100;
 
+  // Set GPIO pin to output mode (ensuring it is LOW)
+  m_GpioOutputPin.Write(LOW);
+  m_GpioOutputPin.SetMode(GPIOModeOutput);
+
+  // Initialise the output timer
+  m_OutputTimer.Initialize();
+
   TZXPlay(); 
   m_bRunning = true; 
 
@@ -202,11 +270,62 @@ void CZxTape::play_file() {
 }
 
 void CZxTape::stop_file() {
+  // Ensure last bits are written
+  CTimer::Get()->SimpleMsDelay(100);  // TODO - this will glitch the video, need a better way! (could use control loop)
+
   TZXStop();
+
+  // Stop the output timer
+  m_OutputTimer.Stop();
+
+  // Set GPIO pin to input mode
+  m_GpioOutputPin.SetMode(GPIOModeInput);
+
   if(m_bRunning){
     
   }
   m_bRunning = false;
+}
+
+/**
+ * Re(start) the output timer.
+ * 
+ * Will be called from the timer ISR, and ZxTape::Update() contexts.
+ * 
+ * @param periodUs 
+ */
+void CZxTape::wave_isr_set_period(unsigned long periodUs) {
+  m_OutputTimer.Start(periodUs);
+}
+
+/**
+ * Set the output pin LOW.
+ * 
+ * Will be called from the timer ISR, and ZxTape::Update() contexts.
+ */
+void CZxTape::wave_set_low() {
+  m_GpioOutputPin.Write(LOW);
+}
+
+/**
+ * Set the output pin HIGH.
+ * 
+ * Will be called from the timer ISR, and ZxTape::Update() contexts.
+ */
+void CZxTape::wave_set_high() {
+  m_GpioOutputPin.Write(HIGH);
+}
+
+/**
+ * The the wave ISR.
+ * 
+ * Will be called from the timer ISR context.
+ * 
+ * @param pUserTimer 
+ * @param pParam 
+ */
+void CZxTape::wave_isr(CUserTimer *pUserTimer, void *pParam) {
+  wave();
 }
 
 bool CZxTape::check_button_play_pause() {
@@ -225,6 +344,8 @@ bool CZxTape::check_button_stop() {
   return false;
 }
 
+
+
 //
 // TZX API
 //
@@ -242,12 +363,22 @@ void Log(const char *pMessage, ...) {
 // Disable interrupts
 void noInterrupts() {
   // LOGDBG("noInterrupts");
+
+  // Disable IRQ
+#if ZX_TAPE_USE_FIQ
+  EnterCritical(FIQ_LEVEL);
+#else
+  EnterCritical(IRQ_LEVEL);
+#endif    
 }
 
 
 // Enable interrupts
 void interrupts() {
   // LOGDBG("interrupts");
+
+  // Reenable Interrupts
+  LeaveCritical();
 }
 
 
@@ -259,19 +390,24 @@ void pinMode(unsigned pin, unsigned mode) {
 
 // Set the GPIO output pin low
 void LowWrite() {
-  LOGDBG("LowWrite");
+  // LOGDBG("LowWrite");
+  pZxTape->wave_set_low();
 }
 
 
 // Set the GPIO output pin high
 void HighWrite() {
-  LOGDBG("HighWrite");
+  // LOGDBG("HighWrite");
+  pZxTape->wave_set_high();
 }
 
 
 // Delay for a number of milliseconds
 void delay(unsigned long time) {
-  LOGDBG("delay(%lu)", time);
+  // LOGDBG("delay(%lu)", time);
+  // CTimer::Get()->SimpleMsDelay(time);
+  // Ignore TXZ delays as they will mess up screen timing.
+  // Have to handle in other ways!
 }
 
 
@@ -287,13 +423,13 @@ void stopFile() {
 
 // Called to display the playback percent (at start)
 void lcdTime() {
-  LOGDBG("lcdTime");
+  // LOGDBG("lcdTime");
 }
 
 
 // Called to display the playback percent (during playback)
 void Counter2() {
-  LOGDBG("Counter2");
+  // LOGDBG("Counter2");
 }
 
 
@@ -311,36 +447,47 @@ static void initializeFileType(FILETYPE *pFileType) {
 static bool filetype_open(FILETYPE* dir, uint32_t index, oflag_t oflag) {
   LOGDBG("filetype_open");
 
-  pFileSeek = ChuckieEgg;
+  pFile = GAME;
+  filesize = GAME_SIZE;
+
+  nFileSeekIdx = 0;  
+
+  LOGDBG("filesize: %d", filesize);
+
 
   return true;
 }
 
 static void filetype_close() {
   LOGDBG("filetype_close");
-  pFileSeek = nullptr;
+
+  pFile = nullptr;
+  nFileSeekIdx = 0;
 }
 
 static int filetype_read(void* buf, unsigned long count) {
-  LOGDBG("filetype_read(%lu)", count);
+  // LOGDBG("filetype_read(%lu)", count);
 
-  for (unsigned long i = 0; i < count; i++) {
-    if (pFileSeek >= ChuckieEgg + filesize) {
-      break;
-    }
-    LOGDBG("%02x ", pFileSeek[i]);
+  if (nFileSeekIdx + count > filesize) {
+    count = filesize - nFileSeekIdx;
   }
 
-  memcpy(buf, pFileSeek, count);
-  pFileSeek += count;
+  // for (unsigned long i = 0; i < count; i++) {
+  //   LOGDBG("%02x ", *(pFile + i));
+  // }
+
+  memcpy(buf, pFile + nFileSeekIdx, count);
+  nFileSeekIdx += count;
 
   return count;
 }
 
 static bool filetype_seekSet(uint64_t pos) {
-  LOGDBG("filetype_seekSet(%lu)", pos);
+  // LOGDBG("filetype_seekSet(%lu)", pos);
 
-  pFileSeek = ChuckieEgg + pos;
+  if (pos >= filesize) return false;
+
+  nFileSeekIdx = pos;
 
   return true;
 }
@@ -356,13 +503,16 @@ static void initializeTimer(TIMER *pTimer) {
 }
 
 static void timer_initialize() {
-  LOGDBG("timer_initialize");
+  // LOGDBG("timer_initialize");
+  // Ignore
 }
 
 static void timer_stop() {
-  LOGDBG("timer_stop");
+  // LOGDBG("timer_stop");
+  // Ignore
 }
 
-static void timer_setPeriod(unsigned long period) {
-  LOGDBG("timer_setPeriod(%lu)", period);
+static void timer_setPeriod(unsigned long periodUs) {
+  // LOGDBG("timer_setPeriod(%lu)", periodUs);
+  pZxTape->wave_isr_set_period(periodUs);
 }

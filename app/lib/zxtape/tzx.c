@@ -135,8 +135,13 @@ void TZXPlay() {
   {
     HighWrite();
   }
-    
+
+#ifdef HD_SPECCYS_TZXDUINO    
+  Timer.setPeriod(1000);                   //set 1ms wait at start of a file (to fill initial buffer).
+#else
   Timer.setPeriod(1000);                     //set 1ms wait at start of a file.
+#endif
+
 }
 
 bool checkForTap(char *filename) {
@@ -501,9 +506,11 @@ void TZXProcess() {
             case READPARAM:
               if(r=ReadWord(bytesRead)==2) {
                 pauseLength = outWord;
+                // Log("pauseLength: %d", pauseLength);
               }
               if(r=ReadWord(bytesRead)==2) {
                 bytesToRead = outWord +1;
+                // Log("bytesToRead: %d", bytesToRead);
               }
               if(r=ReadByte(bytesRead)==1) {
                 if(outByte == 0) {
@@ -1613,10 +1620,18 @@ void wave() {
   } else {
     newTime = 1000000;                         //Just in case we have a 0 in the buffer
   }
+
+#ifdef HD_SPECCYS_TZXDUINO
+// TODO - call a function to get the fudge time
+  unsigned long nextPeriod = newTime - 19;
+  if (nextPeriod <= 0) nextPeriod = 1;
+  Timer.setPeriod(nextPeriod);    //Finally set the next pulse length
+#else
   //newTime += 12;
   //fudgeTime = micros() - fudgeTime;         //Compensate for stupidly long ISR
   //Timer.setPeriod(newTime - fudgeTime);    //Finally set the next pulse length
   Timer.setPeriod(newTime +4);    //Finally set the next pulse length
+#endif  
 }
 
 int ReadByte(unsigned long pos) {

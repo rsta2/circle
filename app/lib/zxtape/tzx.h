@@ -94,7 +94,14 @@ PROGMEM const char UEFFile[9] = {'U','E','F',' ','F','i','l','e','!'};
 #define NAMELAST              10
 
 //Buffer size
+#ifdef HD_SPECCYS_TZXDUINO
+// Any bigger buffer and nothing works (have to investigate why!)
+#define buffsize              128+64+32
+// #define buffsize              128
+// #define buffsize              64
+#else
 #define buffsize              64
+#endif
 
 //Spectrum Standards
 #define PILOTLENGTH           619

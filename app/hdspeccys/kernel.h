@@ -73,7 +73,6 @@ private:
 	CZxTape			m_ZxTape;
 	CZxSmi			m_ZxSmi;
 	CZxScreen		m_ZxScreen;
-	
 };
 
 #endif

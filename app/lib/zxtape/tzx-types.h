@@ -35,7 +35,7 @@ typedef	unsigned long long	uint64_t;	// 64-bit
 #define bitToggle(value, bit) ((value) ^= (1UL << (bit)))
 #define bitWrite(value, bit, bitvalue) ((bitvalue) ? bitSet(value, bit) : bitClear(value, bit))
 
-#define word(x0, x1)		(((x0 << 16) & 0xFF00) & (x1 & 0xFF))
+#define word(x0, x1)		(((x0 << 8) & 0xFF00) | (x1 & 0xFF))
 #define long(x)				((x) & 0xFFFFFFFF)
 #define highByte(x)			((x >> 8) & 0xFF)
 #define lowByte(x)			((x) & 0xFF)
