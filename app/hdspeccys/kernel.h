@@ -4,6 +4,12 @@
 #ifndef _kernel_h
 #define _kernel_h
 
+// #define HD_SPECCYS_SERIAL_BAUD_RATE		921600
+#define HD_SPECCYS_SERIAL_BAUD_RATE		115200
+// #define HD_SPECCYS_FEATURE_NETWORK 		TRUE
+#define HD_SPECCYS_FEATURE_NETWORK 		FALSE
+#define HD_SPECCYS_DHCP			 		TRUE
+
 #include <circle/startup.h>
 #include <circle/actled.h>
 #include <circle/koptions.h>
@@ -26,6 +32,10 @@
 #include "screenprocessortask.h"
 #include "tapetask.h"
 
+#if HD_SPECCYS_FEATURE_NETWORK
+#include <circle/usb/usbhcidevice.h>
+#include <circle/net/netsubsystem.h>
+#endif
 
 enum TShutdownMode
 {
@@ -49,7 +59,7 @@ private:
 	void AnimationFrame (void);
 
 	// Callbacks
-	static void PeriodicTimer100Hz (void);
+	// static void PeriodicTimer100Hz (void);
 	static void Reboot (void* pContext);
 
 private:
@@ -68,7 +78,12 @@ private:
 	CGPIOManager	m_GPIOManager;	
 	CScheduler		m_Scheduler;
 	CSynchronizationEvent	m_Event;
-	
+
+#if HD_SPECCYS_FEATURE_NETWORK
+	CUSBHCIDevice		m_USBHCI;	
+	CNetSubSystem		m_Net;
+#endif
+
 	CShell			m_Shell;
 	CZxTape			m_ZxTape;
 	CZxSmi			m_ZxSmi;
