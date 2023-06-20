@@ -19,6 +19,7 @@ CKernel::CKernel (void)
 	// TODO: add more member initializers here
 	m_GPIOManager(&m_Interrupt),
 	m_Shell (&m_Serial),
+	m_ZxTape(&m_GPIOManager, &m_Interrupt),
 	m_ZxSmi(&m_GPIOManager, &m_Interrupt),
 	// m_ZxScreen(m_Options.GetWidth (), m_Options.GetHeight (), FALSE, 0, &m_Interrupt)
 	// 320x256 (32 + 256 + 32 x 32 + 192 + 32) - border is 1/3rd screen (this is about right for original speccy)
@@ -90,6 +91,11 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_GPIOManager.Initialize ();
 	}
+	
+	if (bOK)
+	{
+		bOK = m_ZxTape.Initialize ();
+	}
 
 	if (bOK)
 	{
@@ -111,6 +117,7 @@ TShutdownMode CKernel::Run (void)
 
 	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
 	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
+	new CTapeTask (&m_ZxTape);
 
 	// Wait here forever until shutdown
 	m_Event.Clear();

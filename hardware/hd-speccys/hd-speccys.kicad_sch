@@ -3669,6 +3669,11 @@
     (uuid ffebab04-3125-44a1-bcf3-61647f3192b1)
   )
 
+  (text "Probably need a pull down on audio circuit" (at 132.08 163.83 0)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid 8cea782a-770f-4bdb-9f23-a6985e9b2cb0)
+  )
+
   (symbol (lib_id "power:GND") (at 81.28 35.56 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0383e532-5943-4dd1-bd1d-db7d977390d5)

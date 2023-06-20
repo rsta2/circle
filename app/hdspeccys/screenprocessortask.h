@@ -29,4 +29,4 @@ private:
 	u32 m_nScreenDataBufferLength;
 };
 
-#endif
+#endif // #ifndef _screenprocessortask_h

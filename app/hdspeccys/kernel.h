@@ -19,10 +19,12 @@
 #include <circle/sched/scheduler.h>
 #include <circle/sched/synchronizationevent.h>
 #include <shell/shell.h>
+#include <zxtape/zxtape.h>
 #include <zxsmi/zxsmi.h>
 #include <zxscreen/zxscreen.h>
 #include "backgroundtask.h"
 #include "screenprocessortask.h"
+#include "tapetask.h"
 
 
 enum TShutdownMode
@@ -68,9 +70,9 @@ private:
 	CSynchronizationEvent	m_Event;
 	
 	CShell			m_Shell;
+	CZxTape			m_ZxTape;
 	CZxSmi			m_ZxSmi;
 	CZxScreen		m_ZxScreen;
-	
 };
 
 #endif

@@ -27,4 +27,4 @@ private:
 	CSynchronizationEvent		*m_pRebootEvent;
 };
 
-#endif
+#endif // #ifndef _backgroundtask_h

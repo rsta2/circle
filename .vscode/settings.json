@@ -4,9 +4,6 @@
   "editor.wordWrapColumn": 120,
   "editor.insertSpaces": false,
   "files.associations": {
-    "kernel.h": "c",
-    "startup.h": "c",
-    "zxscreen.h": "c",
     "*.tcc": "c",
     "optional": "cpp",
     "ostream": "cpp",
@@ -16,6 +13,10 @@
     "tuple": "cpp",
     "type_traits": "cpp",
     "utility": "cpp",
-    "__config": "cpp"
+    "__config": "cpp",
+    "tzx.h": "c",
+    "tzx-types.h": "c",
+    "util.h": "c",
+    "*.h": "cpp"
   }
 }

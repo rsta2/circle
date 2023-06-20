@@ -49,7 +49,7 @@ CScreenProcessorTask::~CScreenProcessorTask (void)
 
 void CScreenProcessorTask::Run (void)
 {
-	boolean clear = TRUE;
+	// boolean clear = TRUE;
 
 	m_pZxSmi->Start(&m_FrameEvent);
 	m_pZxScreen->Start();
