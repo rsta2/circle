@@ -55,7 +55,7 @@ public:
 	virtual int FileRead (void *pBuffer, unsigned nCount) = 0;
 	virtual int FileWrite (const void *pBuffer, unsigned nCount) = 0;
 
-	virtual void UpdateStatus (TStatus Status, const char *pFileName) const {}
+	virtual void UpdateStatus (TStatus Status, const char *pFileName) {}
 
 private:
 	boolean DoRead (const char *pFileName);
