@@ -1,0 +1,12 @@
+# PREFIX = arm-none-eabi-
+AARCH = 32
+RASPPI = 2
+DEFINE += -DREALTIME
+DEFINE += -DDEFAULT_KEYMAP=\"US\"
+# STDLIB_SUPPORT = 1
+USEFLASHY = 1
+REBOOTMAGIC = __reboot__
+FLASHYFLAGS = --monitor --rebootdelay:0
+SERIALPORT = /dev/cu.usbserial-2240
+FLASHBAUD = 115200
+USERBAUD = 115200
