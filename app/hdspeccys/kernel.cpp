@@ -3,12 +3,25 @@
 //
 #include "kernel.h"
 
+#if HD_SPECCYS_FEATURE_NETWORK
+#include "webserver.h"
+#endif // HD_SPECCYS_FEATURE_NETWORK
+
 LOGMODULE ("kernel");
-
-
 
 static volatile boolean bReboot = TRUE;
 static CKernel *pKernel = 0;
+
+#if HD_SPECCYS_FEATURE_NETWORK
+#if HD_SPECCYS_DHCP
+#else
+static const u8 IPAddress[]      = {192, 168, 0, 250};
+static const u8 NetMask[]        = {255, 255, 255, 0};
+static const u8 DefaultGateway[] = {192, 168, 0, 1};
+static const u8 DNSServer[]      = {192, 168, 0, 1};
+#endif // HD_SPECCYS_DHCP
+#endif // HD_SPECCYS_FEATURE_NETWORK
+
 
 
 CKernel::CKernel (void)
@@ -18,6 +31,13 @@ CKernel::CKernel (void)
 	m_Logger (m_Options.GetLogLevel(), &m_Timer),	
 	// TODO: add more member initializers here
 	m_GPIOManager(&m_Interrupt),
+#if HD_SPECCYS_FEATURE_NETWORK
+	m_USBHCI (&m_Interrupt, &m_Timer),
+#if HD_SPECCYS_DHCP
+#else
+	m_Net (IPAddress, NetMask, DefaultGateway, DNSServer),
+#endif
+#endif	
 	m_Shell (&m_Serial),
 	m_ZxTape(&m_GPIOManager, &m_Interrupt),
 	m_ZxSmi(&m_GPIOManager, &m_Interrupt),
@@ -56,8 +76,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		// bOK = m_Serial.Initialize (921600);
-		bOK = m_Serial.Initialize (115200);
+		bOK = m_Serial.Initialize (HD_SPECCYS_SERIAL_BAUD_RATE);
 	}
 
 	if (bOK)
@@ -91,6 +110,18 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_GPIOManager.Initialize ();
 	}
+
+#if HD_SPECCYS_FEATURE_NETWORK
+	if (bOK)
+	{
+		bOK = m_USBHCI.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = m_Net.Initialize ();
+	}
+#endif	
 	
 	if (bOK)
 	{
@@ -110,6 +141,15 @@ boolean CKernel::Initialize (void)
 TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE("Compile time: " __DATE__ " " __TIME__);
+
+#if HD_SPECCYS_FEATURE_NETWORK
+	CString IPString;
+	m_Net.GetConfig ()->GetIPAddress ()->Format (&IPString);
+	LOGNOTE("Open \"http://%s/\" in your web browser!", (const char *) IPString);
+
+	new CWebServer (&m_Net, &m_ActLED);
+
+#endif	
 
 	// Set up callback on the timer 100Hz interrupt
 	// m_Timer.RegisterPeriodicHandler(PeriodicTimer100Hz);
@@ -136,9 +176,9 @@ void CKernel::AnimationFrame ()
 
 // Don't do this here as it takes up way too much time in the IRQ. 
 // Instead use a task that sleeps and wakes
-void CKernel::PeriodicTimer100Hz() {
-	pKernel->AnimationFrame();
-}
+// void CKernel::PeriodicTimer100Hz() {
+// 	pKernel->AnimationFrame();
+// }
 
 // void CKernel::Reboot (void* pContext)
 // {
