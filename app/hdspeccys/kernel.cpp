@@ -3,11 +3,13 @@
 //
 #include "kernel.h"
 
-#if HD_SPECCYS_FEATURE_NETWORK
-#include "webserver.h"
-#endif // HD_SPECCYS_FEATURE_NETWORK
 
 LOGMODULE ("kernel");
+
+#define HOSTNAME						"hd-speccys"
+#define DRIVE							"SD:"
+#define FIRMWARE_PATH					DRIVE "/firmware/"		// firmware files must be provided here
+#define WPA_SUPPLICANT_CONFIG_FILE		DRIVE "/wpa_supplicant.conf"
 
 static volatile boolean bReboot = TRUE;
 static CKernel *pKernel = 0;
@@ -15,6 +17,7 @@ static CKernel *pKernel = 0;
 #if HD_SPECCYS_FEATURE_NETWORK
 #if HD_SPECCYS_DHCP
 #else
+// TODO get from options string or read from file
 static const u8 IPAddress[]      = {192, 168, 0, 250};
 static const u8 NetMask[]        = {255, 255, 255, 0};
 static const u8 DefaultGateway[] = {192, 168, 0, 1};
@@ -25,7 +28,8 @@ static const u8 DNSServer[]      = {192, 168, 0, 1};
 
 
 CKernel::CKernel (void)
-:	// m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
+:	m_CPUThrottle(CPUSpeedLow),
+	// m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	// m_Serial (&m_Interrupt),
 	m_Timer (&m_Interrupt),	
 	m_Logger (m_Options.GetLogLevel(), &m_Timer),	
@@ -33,11 +37,15 @@ CKernel::CKernel (void)
 	m_GPIOManager(&m_Interrupt),
 #if HD_SPECCYS_FEATURE_NETWORK
 	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
+	m_WLAN (FIRMWARE_PATH),
 #if HD_SPECCYS_DHCP
+	m_Net (0, 0, 0, 0, HOSTNAME, NetDeviceTypeWLAN),
 #else
-	m_Net (IPAddress, NetMask, DefaultGateway, DNSServer),
-#endif
-#endif	
+	m_Net (IPAddress, NetMask, DefaultGateway, DNSServer, NetDeviceTypeWLAN),
+#endif // HD_SPECCYS_DHCP
+	m_WPASupplicant (WPA_SUPPLICANT_CONFIG_FILE),
+#endif // HD_SPECCYS_FEATURE_NETWORK
 	m_Shell (&m_Serial),
 	m_ZxTape(&m_GPIOManager, &m_Interrupt),
 	m_ZxSmi(&m_GPIOManager, &m_Interrupt),
@@ -119,9 +127,43 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_Net.Initialize ();
+		bOK = m_EMMC.Initialize ();
 	}
-#endif	
+
+	if (bOK)
+	{
+		if (f_mount (&m_FileSystem, DRIVE, 1) != FR_OK)
+		{
+			LOGERR("Cannot mount drive: %s", DRIVE);
+
+			bOK = FALSE;
+		}
+	}
+
+	if (bOK)
+	{
+		bOK = m_WLAN.Initialize ();
+	}
+
+#ifdef USE_OPEN_NET // TODO - get from options string
+	if (bOK)
+	{
+		bOK = m_WLAN.JoinOpenNet (USE_OPEN_NET);
+	}
+#endif // USE_OPEN_NET
+
+	if (bOK)
+	{
+		bOK = m_Net.Initialize (FALSE);
+	}
+
+#ifndef USE_OPEN_NET
+	if (bOK)
+	{
+		bOK = m_WPASupplicant.Initialize ();
+	}
+#endif // USE_OPEN_NET
+#endif // HD_SPECCYS_FEATURE_NETWORK
 	
 	if (bOK)
 	{
@@ -143,11 +185,20 @@ TShutdownMode CKernel::Run (void)
 	LOGNOTE("Compile time: " __DATE__ " " __TIME__);
 
 #if HD_SPECCYS_FEATURE_NETWORK
+	// DO NOT LEAVE RUNNING WITH THIS!
+	// m_CPUThrottle.SetSpeed(CPUSpeedMaximum);
+
+	while (!m_Net.IsRunning ())
+	{
+		m_Scheduler.MsSleep (100);
+	}
+
 	CString IPString;
 	m_Net.GetConfig ()->GetIPAddress ()->Format (&IPString);
 	LOGNOTE("Open \"http://%s/\" in your web browser!", (const char *) IPString);
 
-	new CWebServer (&m_Net, &m_ActLED);
+	// Create the web server (task)
+	new CZxWeb (&m_Net);
 
 #endif	
 

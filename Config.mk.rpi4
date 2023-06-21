@@ -2,6 +2,13 @@
 AARCH = 32
 RASPPI = 4
 DEFINE += -DREALTIME
+# FILESYSTEM 
+# WLAN does not work without USE_SDHOST.
+# USE_SDHOST is not really compatible with REALTIME, but probably networking isn't either :( 
+# Could rewrite file access to remove the need of SDCard and FatFS modules, but probably not
+# worth the effort as file access only happens at startup so probably isn't really an issue.
+# Best just to compile in and test!
+DEFINE += -DUSE_SDHOST
 DEFINE += -DDEFAULT_KEYMAP=\"US\"
 # STDLIB_SUPPORT = 1
 USEFLASHY = 1

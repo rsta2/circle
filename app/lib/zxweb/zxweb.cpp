@@ -24,6 +24,15 @@
 #include <assert.h>
 
 #define MAX_CONTENT_SIZE	4000
+#define PATH_ACTION 		"/action/"
+#define PATH_ACTION_LEN		sizeof(PATH_ACTION) - 1
+
+#define CONTENT_TYPE_JSON	"application/json; charset=iso-8859-1"
+
+#define JSON_STATUS_OK	    "{\"status\":\"OK\"}"
+
+LOGMODULE ("ZxWeb");
+
 
 // our content
 static const char s_Index[] =
@@ -51,23 +60,27 @@ static const u8 s_Favicon[] =
 
 static const char FromWebServer[] = "zxweb";
 
-CWebServer::CWebServer (CNetSubSystem *pNetSubSystem, CActLED *pActLED, CSocket *pSocket)
-:	CHTTPDaemon (pNetSubSystem, pSocket, MAX_CONTENT_SIZE),
-	m_pActLED (pActLED)
+CZxWeb::CZxWeb (CNetSubSystem *pNetSubSystem, CSocket *pSocket):
+	CHTTPDaemon (pNetSubSystem, pSocket, MAX_CONTENT_SIZE),
+	m_pWebActionRoutine (0),
+	m_pWebActionParam (0)
 {
+	//
 }
 
-CWebServer::~CWebServer (void)
+CZxWeb::~CZxWeb (void)
 {
-	m_pActLED = 0;
+	//
 }
 
-CHTTPDaemon *CWebServer::CreateWorker (CNetSubSystem *pNetSubSystem, CSocket *pSocket)
+CHTTPDaemon *CZxWeb::CreateWorker (CNetSubSystem *pNetSubSystem, CSocket *pSocket)
 {
-	return new CWebServer (pNetSubSystem, m_pActLED, pSocket);
+	return new CZxWeb (pNetSubSystem, pSocket);
 }
 
-THTTPStatus CWebServer::GetContent (const char  *pPath,
+
+
+THTTPStatus CZxWeb::GetContent (const char  *pPath,
 				    const char  *pParams,
 				    const char  *pFormData,
 				    u8	        *pBuffer,
@@ -76,7 +89,6 @@ THTTPStatus CWebServer::GetContent (const char  *pPath,
 {
 	assert (pPath != 0);
 	assert (ppContentType != 0);
-	assert (m_pActLED != 0);
 
 	CString String;
 	const u8 *pContent = 0;
@@ -88,14 +100,12 @@ THTTPStatus CWebServer::GetContent (const char  *pPath,
 		assert (pFormData != 0);
 		if (strcmp (pFormData, "actled=1") == 0)
 		{
-			m_pActLED->On ();
-
+			// m_pActLED->On ();
 			String.Format (s_Index, "", "checked", "ledon.png");	// must match index.html
 		}
 		else
 		{
-			m_pActLED->Off ();
-
+			// m_pActLED->Off ();
 			String.Format (s_Index, "checked", "", "ledoff.png");
 		}
 
@@ -127,6 +137,20 @@ THTTPStatus CWebServer::GetContent (const char  *pPath,
 		nLength = sizeof s_Favicon;
 		*ppContentType = "image/x-icon";
 	}
+	else if (strlen(pPath) > PATH_ACTION_LEN && strncmp (pPath, PATH_ACTION, PATH_ACTION_LEN) == 0)
+	{
+		const char *pAction = pPath + PATH_ACTION_LEN;
+		// TODO get pData;
+
+		// TODO queue action routine (don't callback in this context!)
+
+		// Return OK
+		String.Format(JSON_STATUS_OK);
+
+		pContent = (const u8 *) (const char *) String;
+		nLength = String.GetLength ();
+		*ppContentType = CONTENT_TYPE_JSON;
+	}
 	else
 	{
 		return HTTPNotFound;
@@ -135,7 +159,7 @@ THTTPStatus CWebServer::GetContent (const char  *pPath,
 	assert (pLength != 0);
 	if (*pLength < nLength)
 	{
-		CLogger::Get ()->Write (FromWebServer, LogError, "Increase MAX_CONTENT_SIZE to at least %u", nLength);
+		LOGERR("Increase MAX_CONTENT_SIZE to at least %u", nLength);
 
 		return HTTPInternalServerError;
 	}
@@ -148,4 +172,10 @@ THTTPStatus CWebServer::GetContent (const char  *pPath,
 	*pLength = nLength;
 
 	return HTTPOK;
+}
+
+void CZxWeb::SetWebActionRoutine (TZxWebActionCallback *pRoutine, void *pParam)
+{
+	m_pWebActionRoutine = pRoutine;
+	m_pWebActionParam = pParam;
 }
