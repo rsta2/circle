@@ -340,8 +340,8 @@ void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len
       bool flash = attr & 0x80;
       pixelColor = getPixelColor(attr, bright, flash, pixelSet);
 
-      // *pBuffer = pixelSet ? BLACK_COLOR : WHITE_COLOR;
-      *pBuffer = pixelColor;
+      *pBuffer = pixelSet ? BLACK_COLOR : WHITE_COLOR;  // B&W
+      // *pBuffer = pixelColor; // Colour
 
 
       pixel++;

@@ -25,7 +25,6 @@ void CTapeTask::Run (void)
 {
 	// Init
 
-#if 0
 	// HACK
 	m_pZxTape->PlayPause();
 
@@ -41,6 +40,5 @@ void CTapeTask::Run (void)
 			CScheduler::Get ()->MsSleep (250);
 		}		
 	}
-#endif	
 }
  
