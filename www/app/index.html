@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>HD-Speccys</title>
+    <base href="/" />
+
+    <script>
+      if (!window.hdspeccys) window.hdspeccys = {};
+
+      // Early query string parsing
+      // prettier-ignore
+      queryString=(function(r){if(""==r)return{};for(var e={},n=0;n<r.length;++n){var t=r[n].split("=",2);1==t.length?(e[t[0]]=""):(e[t[0]]=decodeURIComponent(t[1].replace(/\\+/g," ")))}return e})(window.location.search.substr(1).split("&"));
+
+      // On DOM ready
+      window.addEventListener('DOMContentLoaded', (event) => {
+        //
+      });
+    </script>
+
+    <style></style>
+  </head>
+
+  <body>
+    <div id="content"></div>
+    <div id="pageOuter">
+      <div id="pageInner">
+        <canvas id="webglcanvas"></canvas>
+      </div>
+    </div>
+    <div id="touchOverlay"></div>
+    <div id="controlOverlay">
+      <button style="z-index: 10" id="buttonStart" onclick="javascript:window.initGame()">START</button>
+    </div>
+    <script type="module" src="/src/entry.ts"></script>
+  </body>
+</html>

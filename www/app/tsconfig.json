@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES6", "DOM"],
+    "outDir": "./dist/esm" /* Redirect output structure to the directory. */
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/node_modules"]
+}

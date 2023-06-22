@@ -1,0 +1,188 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "1.0.0",
+  "configurations": [
+    // jsw-tool
+    {
+      "name": "jsw-tool",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["esr", "--cache"],
+      "args": ["${workspaceFolder}/packages/tool/src/jsw-tool.ts"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "jsw-tool: convertXml mm",
+      "type": "node",
+      "request": "launch",
+      // "protocol": "inspector",
+      "env": {
+        //
+      },
+      // "cwd": "${workspaceRoot}/packages/jsw-tool",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@jsw/tool", "convert-xml-mm"],
+      "stopOnEntry": false,
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    },
+    {
+      "name": "jsw-tool: exportGame mm",
+      "type": "node",
+      "request": "launch",
+      // "protocol": "inspector",
+      "env": {
+        //
+      },
+      // "cwd": "${workspaceRoot}/packages/jsw-tool",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@jsw/tool", "export-game-mm"],
+      "stopOnEntry": false,
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    },
+    {
+      "name": "jsw-tool: convertXml jsw",
+      "type": "node",
+      "request": "launch",
+      // "protocol": "inspector",
+      "env": {
+        //
+      },
+      // "cwd": "${workspaceRoot}/packages/jsw-tool",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@jsw/tool", "convert-xml-jsw"],
+      "stopOnEntry": false,
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    },
+    {
+      "name": "jsw-tool: exportGame jsw",
+      "type": "node",
+      "request": "launch",
+      // "protocol": "inspector",
+      "env": {
+        //
+      },
+      // "cwd": "${workspaceRoot}/packages/jsw-tool",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@jsw/tool", "export-game-jsw"],
+      "stopOnEntry": false,
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    },
+    {
+      "name": "jsw-tool: exportGfx jsw",
+      "type": "node",
+      "request": "launch",
+      // "protocol": "inspector",
+      "env": {
+        //
+      },
+      // "cwd": "${workspaceRoot}/packages/jsw-tool",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@jsw/tool", "export-gfx-jsw"],
+      "stopOnEntry": false,
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    },
+    {
+      "name": "jsw-tool: createSpritesheet jsw",
+      "type": "node",
+      "request": "launch",
+      // "protocol": "inspector",
+      "env": {
+        //
+      },
+      // "cwd": "${workspaceRoot}/packages/jsw-tool",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@jsw/tool", "create-spritesheet-jsw"],
+      "stopOnEntry": false,
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    },
+    {
+      "name": "jsw-tool: convertXml wee",
+      "type": "node",
+      "request": "launch",
+      // "protocol": "inspector",
+      "env": {
+        //
+      },
+      // "cwd": "${workspaceRoot}/packages/jsw-tool",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@jsw/tool", "start", "convertXml", "wee"],
+      "stopOnEntry": false,
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    },
+    {
+      "name": "jsw-tool: exportGame wee",
+      "type": "node",
+      "request": "launch",
+      // "protocol": "inspector",
+      "env": {
+        //
+      },
+      // "cwd": "${workspaceRoot}/packages/jsw-tool",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["workspace", "@jsw/tool", "start", "exportGame", "wee"],
+      "stopOnEntry": false,
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    },
+    {
+      "name": "Jest: ALL  Tests",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "args": ["-i"],
+      // "preLaunchTask": "build",
+      "console": "integratedTerminal"
+      // "disableOptimisticBPs": true,
+      // "internalConsoleOptions": "openOnSessionStart",
+      // "outFiles": ["${workspaceRoot}/dist/**/*"],
+      // "envFile": "${workspaceRoot}/.env",
+    },
+    {
+      "name": "Jest: Current file",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "args": ["${fileBasenameNoExtension}"],
+      // "preLaunchTask": "build",
+      "console": "integratedTerminal"
+      // "disableOptimisticBPs": true,
+      // "internalConsoleOptions": "openOnSessionStart",
+      // "outFiles": ["${workspaceRoot}/dist/**/*"],
+      // "envFile": "${workspaceRoot}/.env",
+    }
+  ]
+}

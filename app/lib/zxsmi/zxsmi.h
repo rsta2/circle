@@ -15,6 +15,10 @@
 #include <circle/sched/synchronizationevent.h>
 #include <circle/sched/semaphore.h>
 
+// NOTE: If FIQ can be made to work, then the problem with the screen flicker 
+// could be sovled, as all IRQs have same proio (or defined by SW, no preemption)
+// except FIQ which pre-empts all other IRQs!!!
+
 #define ZX_SMI_DEBUG_BUFFER_LENGTH		256
 
 // SMI Data and address lines

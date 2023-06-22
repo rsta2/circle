@@ -565,6 +565,9 @@ void CZxSmi::SMICompleteInterrupt(boolean bStatus, void *pParam)
 }
 
 
+// Try NO_USB_SOF_INTR to improve timing (use this option if it works!!)
+// Try NO_BUSY_WAIT to deactivate busywaits - check note for multicore (we shouldn't need multicore)
+// Might have to use CriticalSection and flags to pass data to tasks for FIQ
 void CZxSmi::GpioIrqHandler (void *pParam) 
 {
   CZxSmi *pThis = (CZxSmi *) pParam;

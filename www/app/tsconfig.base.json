@@ -1,0 +1,67 @@
+{
+  "compilerOptions": {
+    // "explainFiles": true,
+    // "extendedDiagnostics": true,
+    // "listFiles": true,
+    // "listEmittedFiles": true,
+
+    /* Project Options */
+    "target": "ES6" /* Specify ECMAScript target version */,
+    "declaration": true,
+    "declarationMap": true,
+    "declarationDir": "dist/types",
+    "lib": ["ES6"],
+    "allowJs": false,
+    "skipLibCheck": true /* Skip type checking of declaration files. */,
+    "esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */,
+    // "experimentalDecorators": true,
+    "downlevelIteration": false,
+    // "importHelpers": true,
+    // "jsx": "react",
+    "noEmit": true,
+
+    /* Strict Checks */
+    "alwaysStrict": true,
+    "strict": true /* Enable all strict type-checking options. */,
+    "strictNullChecks": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    "noImplicitAny": false,
+    "noImplicitThis": true,
+
+    /* Linter Checks */
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    // "noUncheckedIndexedAccess": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+
+    /* Source Maps */
+    "sourceMap": true,
+    // "inlineSourceMap": true,
+    // "inlineSources": true,
+
+    /* Advanced */
+    "forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */,
+
+    /* Module Resolution */
+    "module": "CommonJS" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', 'es2020', or 'ESNext'. */,
+    // "module": "es2020",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    "outDir": "./dist/esm",
+
+    // "typeRoots": ["./@types", "./node_modules/@types"]
+    // "baseUrl": "./packages", // this must be specified if "paths" is specified.
+    // "paths": {
+    //   "@jsw/common": ["common/src/jsw-common.ts"],
+    //   "@jsw/converter": ["converter/src/jsw-converter.ts"],
+    //   "@jsw/loader": ["loader/src/loader.ts"],
+    //   "@jsw/eventbus": ["eventbus/src/EventBus.ts"]
+    // }
+  }
+}
