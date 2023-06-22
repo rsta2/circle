@@ -719,4 +719,5 @@ function parseCommandLine()
     // Finished
     await closeSerialPortAsync();
     stdout.write(`Done!\n`);
+    process.exit(0);
 })();
