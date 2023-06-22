@@ -2,7 +2,7 @@
 // i2cslave.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <circle/memio.h>
 #include <circle/bcm2835.h>
 #include <circle/synchronize.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 #define DR_DATA__MASK		0xFF
@@ -97,7 +98,7 @@ boolean CI2CSlave::Initialize (void)
 	return TRUE;
 }
 
-int CI2CSlave::Read (void *pBuffer, unsigned nCount)
+int CI2CSlave::Read (void *pBuffer, unsigned nCount, unsigned nTimeout_us)
 {
 	if (nCount == 0)
 	{
@@ -114,11 +115,18 @@ int CI2CSlave::Read (void *pBuffer, unsigned nCount)
 
 	int nResult = 0;
 
-	while (nCount-- > 0)
+	unsigned nTimeoutTicks = nTimeout_us * (CLOCKHZ / 1000000U);
+	unsigned nStartTicks = CTimer::GetClockTicks ();
+
+	while (nCount > 0)
 	{
 		while (read32 (ARM_BSC_SPI_SLAVE_FR) & FR_RXFE)
 		{
-			// do nothing
+			if (   nTimeout_us != TimeoutForEver
+			    && CTimer::GetClockTicks () - nStartTicks >= nTimeoutTicks)
+			{
+				goto Timeout;
+			}
 		}
 
 		if (read32 (ARM_BSC_SPI_SLAVE_RSR) & RSR_OE)
@@ -131,8 +139,10 @@ int CI2CSlave::Read (void *pBuffer, unsigned nCount)
 		*pData++ = read32 (ARM_BSC_SPI_SLAVE_DR) & DR_DATA__MASK;
 
 		nResult++;
+		nCount--;
 	}
 
+Timeout:
 	if (nResult > 0)
 	{
 		// wait for transfer to stop
@@ -154,7 +164,7 @@ int CI2CSlave::Read (void *pBuffer, unsigned nCount)
 	return nResult;
 }
 
-int CI2CSlave::Write (const void *pBuffer, unsigned nCount)
+int CI2CSlave::Write (const void *pBuffer, unsigned nCount, unsigned nTimeout_us)
 {
 	if (nCount == 0)
 	{
@@ -172,7 +182,10 @@ int CI2CSlave::Write (const void *pBuffer, unsigned nCount)
 	int nResult = 0;
 	boolean bTxActive = FALSE;
 
-	while (nCount-- > 0)
+	unsigned nTimeoutTicks = nTimeout_us * (CLOCKHZ / 1000000U);
+	unsigned nStartTicks = CTimer::GetClockTicks ();
+
+	while (nCount > 0)
 	{
 		if (read32 (ARM_BSC_SPI_SLAVE_FR) & FR_TXBUSY)
 		{
@@ -181,7 +194,11 @@ int CI2CSlave::Write (const void *pBuffer, unsigned nCount)
 
 		while (read32 (ARM_BSC_SPI_SLAVE_FR) & FR_TXFF)
 		{
-			// do nothing
+			if (   nTimeout_us != TimeoutForEver
+			    && CTimer::GetClockTicks () - nStartTicks >= nTimeoutTicks)
+			{
+				goto Timeout;
+			}
 		}
 
 		write32 (ARM_BSC_SPI_SLAVE_DR, *pData++);
@@ -194,8 +211,10 @@ int CI2CSlave::Write (const void *pBuffer, unsigned nCount)
 		}
 
 		nResult++;
+		nCount--;
 	}
 
+Timeout:
 	if (nResult > 0)
 	{
 		if (!bTxActive)
