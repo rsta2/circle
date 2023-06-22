@@ -340,8 +340,8 @@ void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len
       bool flash = attr & 0x80;
       pixelColor = getPixelColor(attr, bright, flash, pixelSet);
 
-      *pBuffer = pixelSet ? BLACK_COLOR : WHITE_COLOR;  // B&W
-      // *pBuffer = pixelColor; // Colour
+      // *pBuffer = pixelSet ? BLACK_COLOR : WHITE_COLOR;  // B&W
+      *pBuffer = pixelColor; // Colour
 
 
       pixel++;
@@ -471,7 +471,7 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
     boolean IOREQ = IORQ;
   
     // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
-    if (i > 20) {
+    if (i > 50) {
       if (!wasOutOfCAS) {
         wasOutOfCAS = !CAS;
       }
@@ -534,8 +534,13 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
 
       for (int i = 0; i < 8; i++) {
         // 7-i to flip the data lines
+#if ZX_SCREEN_COLOUR        
         TScreenColor pixelColor = (pixelData & (1 << (7-i))) ? fgColor : bgColor;
         pScreenBuffer[bytePos + i] = pixelColor;
+#else
+      bool pixelSet = (pixelData & (1 << (7-i))) ? TRUE : FALSE;
+      pScreenBuffer[bytePos + i] = pixelSet ? BLACK_COLOR : WHITE_COLOR;
+#endif        
       }
 
       // TODO - should try to standardise all buffers and buffer pointers to u32 as it is MUCH faster than
