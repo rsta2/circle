@@ -184,6 +184,10 @@ TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE("Compile time: " __DATE__ " " __TIME__);
 
+	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
+	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
+	new CTapeTask (&m_ZxTape);
+
 #if HD_SPECCYS_FEATURE_NETWORK
 	// DO NOT LEAVE RUNNING WITH THIS!
 	// m_CPUThrottle.SetSpeed(CPUSpeedMaximum);
@@ -205,10 +209,6 @@ TShutdownMode CKernel::Run (void)
 	// Set up callback on the timer 100Hz interrupt
 	// m_Timer.RegisterPeriodicHandler(PeriodicTimer100Hz);
 
-
-	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
-	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
-	new CTapeTask (&m_ZxTape);
 
 	// Wait here forever until shutdown
 	m_Event.Clear();

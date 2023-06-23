@@ -9,6 +9,8 @@ DEFINE += -DREALTIME
 # worth the effort as file access only happens at startup so probably isn't really an issue.
 # Best just to compile in and test!
 DEFINE += -DUSE_SDHOST
+# Allow scheduler calls in the FIQ handler
+DEFINE += -DSCHEDULER_IN_FIQ
 DEFINE += -DDEFAULT_KEYMAP=\"US\"
 # STDLIB_SUPPORT = 1
 USEFLASHY = 1

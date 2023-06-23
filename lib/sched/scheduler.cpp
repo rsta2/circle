@@ -282,7 +282,11 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 	assert (m_pCurrent != 0);
 	assert (m_pCurrent->GetState () == TaskStateReady);
 
+#ifdef SCHEDULER_IN_FIQ
+	EnterCritical(FIQ_LEVEL);
+#else
 	m_SpinLock.Acquire ();
+#endif
 
 	// Add current task to waiting task list
 	m_pCurrent->m_pWaitListNext = *ppWaitListHead;
@@ -301,11 +305,19 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 		m_pCurrent->SetState (TaskStateBlockedWithTimeout);
 	}
 	
+#ifdef SCHEDULER_IN_FIQ
+	LeaveCritical();
+#else
 	m_SpinLock.Release ();
+#endif
 
 	Yield ();
 
+#ifdef SCHEDULER_IN_FIQ
+	EnterCritical(FIQ_LEVEL);
+#else
 	m_SpinLock.Acquire ();
+#endif
 
 	// Remove this task from the wait list in case was woken by timeout and
 	// not by the event signalling (in which case the list will already be 
@@ -326,7 +338,11 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 	}
 	m_pCurrent->m_pWaitListNext = nullptr;
 
+#ifdef SCHEDULER_IN_FIQ
+	LeaveCritical();
+#else
 	m_SpinLock.Release ();
+#endif
 
 	// GetWakeTicks Will be zero if timeout expired, non-zero if event signalled
 	return m_pCurrent->GetWakeTicks() == 0;		
@@ -336,7 +352,11 @@ void CScheduler::WakeTasks (CTask **ppWaitListHead)
 {
 	assert (ppWaitListHead != 0);
 
+#ifdef SCHEDULER_IN_FIQ
+	EnterCritical(FIQ_LEVEL);
+#else
 	m_SpinLock.Acquire ();
+#endif
 
 	CTask *pTask = *ppWaitListHead;
 	*ppWaitListHead = 0;
@@ -363,7 +383,11 @@ void CScheduler::WakeTasks (CTask **ppWaitListHead)
 		pTask = pNext;
 	}
 
+#ifdef SCHEDULER_IN_FIQ
+	LeaveCritical();
+#else
 	m_SpinLock.Release ();
+#endif
 }
 
 unsigned CScheduler::GetNextTask (void)
