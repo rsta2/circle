@@ -448,9 +448,17 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
   videoByteCount = 0;
   u32 pixelData = 0;
   u32 attrData = 0;
+  u32 nBorderTime;
+  boolean inBorder = TRUE;
   boolean pixelAttrDataValid = FALSE;  
-  u32 px = 0; // Start after the border (TODO: Need to pass in sizes!)
-  u32 py = 0;
+  boolean borderDrawComplete = FALSE;
+  boolean pixelDrawComplete = FALSE;
+  
+  
+  u32 bx = 0; // border x
+  u32 by = 0; // border y
+  u32 px = m_nBorderWidth; // pixel x
+  u32 py = m_nBorderHeight; // pixel y
 
   // Loop all the data in the buffer
   for (unsigned i = 0; i < nULABufferLen; i++) {   
@@ -520,8 +528,33 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
       inIOWR = 0;
     }
 
+    // Draw border
+    if (nBorderTime % 1 == 0 && !borderDrawComplete) {
+      inBorder = (bx < m_nBorderWidth || bx >= m_nWidth - m_nBorderWidth || by < m_nBorderHeight || by >= m_nHeight - m_nBorderHeight);
 
-    if (pixelAttrDataValid) {
+      if (inBorder /*&& nBorderTime % 100 == 0*/) {
+        TScreenColor borderColor = getPixelColor(borderValue, 0, 0, true);
+        u32 bytePos = by * m_nWidth + bx;
+        pScreenBuffer[bytePos] = borderColor;
+      }
+
+      bx++;
+      if (bx >= m_nWidth) {
+        bx = 0;
+        by++;
+        if (by >= m_nHeight) {
+          // End of screen, break out of loop
+          borderDrawComplete = TRUE;
+          // break;
+        }
+      } 
+    }
+    nBorderTime++;
+
+
+
+    // Draw pixels
+    if (pixelAttrDataValid && !pixelDrawComplete) {
       pixelAttrDataValid = FALSE;
 
       // Proces the pixel and attribute data
@@ -538,8 +571,8 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
         TScreenColor pixelColor = (pixelData & (1 << (7-i))) ? fgColor : bgColor;
         pScreenBuffer[bytePos + i] = pixelColor;
 #else
-      bool pixelSet = (pixelData & (1 << (7-i))) ? TRUE : FALSE;
-      pScreenBuffer[bytePos + i] = pixelSet ? BLACK_COLOR : WHITE_COLOR;
+        bool pixelSet = (pixelData & (1 << (7-i))) ? TRUE : FALSE;
+        pScreenBuffer[bytePos + i] = pixelSet ? BLACK_COLOR : WHITE_COLOR;
 #endif        
       }
 
@@ -547,13 +580,28 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
       // operating on u16 or u8 - this should be possible because the SMI data is 16 bit attr (+control)
       // and 16 bit pixel data (+control)
 
-      // Move to the next pixel
+      // Move to the next pixels (byte)
+      // px += 8;
+      // if (px >= m_nScreenWidth) {
+      //   px = 0;
+      //   py++;
+      // }      
       px += 8;
-      if (px >= m_nScreenWidth) {
-        px = 0;
+      if (px >= (m_nWidth - m_nBorderWidth)) {
+        px = m_nBorderWidth;
         py++;
+        if (py >= m_nHeight - m_nBorderHeight) {
+          // End of screen, break out of loop
+          pixelDrawComplete = TRUE;
+        }
       }      
+
+      // Recalculate if we are in the border
+      // inBorder = (px < m_nBorderWidth || px >= m_nWidth - m_nBorderWidth || py < m_nBorderHeight || py >= m_nHeight - m_nBorderHeight);
     }
+
+    // Break out of loop if screen is drawn
+    if (borderDrawComplete && pixelDrawComplete) break;
   }
 }
 

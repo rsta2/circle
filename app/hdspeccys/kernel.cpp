@@ -184,6 +184,9 @@ TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE("Compile time: " __DATE__ " " __TIME__);
 
+	// DO NOT LEAVE RUNNING WITH THIS!
+	// m_CPUThrottle.SetSpeed(CPUSpeedMaximum);
+
 	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
 	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
 	new CTapeTask (&m_ZxTape);
