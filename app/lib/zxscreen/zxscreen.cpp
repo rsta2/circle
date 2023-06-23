@@ -449,7 +449,9 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
   u32 pixelData = 0;
   u32 attrData = 0;
   u32 nBorderTime;
+  u32 nBorderTimeMultiplier = 4;
   boolean inBorder = TRUE;
+  boolean inTopBottomBorder = TRUE;
   boolean pixelAttrDataValid = FALSE;  
   boolean borderDrawComplete = FALSE;
   boolean pixelDrawComplete = FALSE;
@@ -529,27 +531,31 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
     }
 
     // Draw border
-    if (nBorderTime % 1 == 0 && !borderDrawComplete) {
-      inBorder = (bx < m_nBorderWidth || bx >= m_nWidth - m_nBorderWidth || by < m_nBorderHeight || by >= m_nHeight - m_nBorderHeight);
+    if (!borderDrawComplete) {
+      for (u32 i=0; i<nBorderTimeMultiplier; i++) {
+        inTopBottomBorder = by < m_nBorderHeight || by >= m_nHeight - m_nBorderHeight;
+        inBorder = (bx < m_nBorderWidth || bx >= m_nWidth - m_nBorderWidth || inTopBottomBorder);
+        nBorderTimeMultiplier = inTopBottomBorder ? 4 : 1;
 
-      if (inBorder /*&& nBorderTime % 100 == 0*/) {
-        TScreenColor borderColor = getPixelColor(borderValue, 0, 0, true);
-        u32 bytePos = by * m_nWidth + bx;
-        pScreenBuffer[bytePos] = borderColor;
-      }
-
-      bx++;
-      if (bx >= m_nWidth) {
-        bx = 0;
-        by++;
-        if (by >= m_nHeight) {
-          // End of screen, break out of loop
-          borderDrawComplete = TRUE;
-          // break;
+        if (inBorder /*&& nBorderTime % 100 == 0*/) {
+          TScreenColor borderColor = getPixelColor(borderValue, 0, 0, true);
+          u32 bytePos = by * m_nWidth + bx;
+          pScreenBuffer[bytePos] = borderColor;
         }
-      } 
+
+        bx++;
+        if (bx >= m_nWidth) {
+          bx = 0;
+          by++;
+          if (by >= m_nHeight) {
+            // End of screen, break out of loop
+            borderDrawComplete = TRUE;
+            break;
+          }
+        } 
+      }
     }
-    nBorderTime++;
+    // nBorderTime++;
 
 
 
