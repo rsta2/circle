@@ -1,6 +1,6 @@
 # PREFIX = arm-none-eabi-
 AARCH = 32
-RASPPI = 4
+RASPPI = 2
 DEFINE += -DREALTIME
 # FILESYSTEM 
 # WLAN does not work without USE_SDHOST.
@@ -16,6 +16,6 @@ DEFINE += -DDEFAULT_KEYMAP=\"US\"
 USEFLASHY = 1
 REBOOTMAGIC = __reboot__
 FLASHYFLAGS = --monitor --rebootdelay:0
-SERIALPORT = /dev/cu.usbserial-240
+SERIALPORT = /dev/cu.usbserial-2240
 FLASHBAUD = 115200
 USERBAUD = 115200

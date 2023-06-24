@@ -15,6 +15,10 @@
 #include <circle/sched/synchronizationevent.h>
 #include <circle/sched/semaphore.h>
 
+// NOTE: If FIQ can be made to work, then the problem with the screen flicker 
+// could be sovled, as all IRQs have same proio (or defined by SW, no preemption)
+// except FIQ which pre-empts all other IRQs!!!
+
 #define ZX_SMI_DEBUG_BUFFER_LENGTH		256
 
 // SMI Data and address lines
@@ -27,8 +31,8 @@
 #define ZX_SMI_USE_SWE_SRW				FALSE
 #define ZX_SMI_WIDTH							SMI16Bits
 #define ZX_SMI_EXTERNAL_DREQ			TRUE
-#define ZX_SMI_USE_FIQ					FALSE
-// #define ZX_SMI_USE_FIQ					TRUE
+// #define ZX_SMI_USE_FIQ					FALSE
+#define ZX_SMI_USE_FIQ					TRUE
 
 // SMI Timing (for a 50 ns cycle time, 20MHz)
 // Timings for RPi v4 (1.5 GHz) - (10 * (15+30+15) / 1.5GHZ) = 400ns
@@ -70,8 +74,9 @@
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 2) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
-#define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))	// This is long enough for the test cart - not sure in real situations
+// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))  // This currently uses up our entire loop time!
+#define ZX_DMA_BUFFER_LENGTH		((820 * 1024) / sizeof(ZX_DMA_T))	// Solid in DD2, should try really complex game
+// #define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))	// This is long enough for the test cart - not sure in real situations (not for DD2!)
 // #define ZX_DMA_BUFFER_LENGTH		((512 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((220 * 1024) / sizeof(ZX_DMA_T))
@@ -115,9 +120,13 @@ private:
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 	static void DMARestartCompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
-	static void SMICompleteInterrupt(boolean bStatus, void *pParam);	
-	static void GpioIrqHandler (void *pParam);
-	
+	static void SMICompleteInterrupt(boolean bStatus, void *pParam);		
+#if (ZX_SMI_USE_FIQ)		
+	static void FiqIrqHandler (void *pParam);	
+#else
+	static void GpioIrqHandler (void *pParam);	
+#endif	
+
 private:
 // HACK
 public:

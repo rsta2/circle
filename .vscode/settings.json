@@ -17,6 +17,6 @@
     "tzx.h": "c",
     "tzx-types.h": "c",
     "util.h": "c",
-    "*.h": "cpp"
+    "**/*.h": "cpp"
   }
 }

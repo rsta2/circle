@@ -1,0 +1,22 @@
+#!/bin/bash
+
+make="${MAKE:-make}"
+
+cd ..
+./makeall $1 $2 || exit
+
+cd addon
+
+cd fatfs
+$make $1 $2 || exit
+cd ..
+
+cd SDCard
+$make $1 $2 || exit
+cd ..
+
+cd wlan
+./makeall $1 $2 || exit
+cd ..
+
+cd ../app

@@ -1,0 +1,42 @@
+body
+{
+	background: #ffffff;
+	color: #000000;
+	font-family: helvetica,arial,sans-serif;
+	font-size: 14px;
+}
+
+h1
+{
+	font-size: 18px;
+}
+
+h2
+{
+	font-size: 16px;
+}
+
+th
+{
+	background: #eeeeff;
+	padding: 10px;
+	text-align: center;
+}
+
+td
+{
+	background: #eeeeee;
+	padding: 10px;
+	text-align: center;
+}
+
+a
+{
+	color: #8888ff;
+	text-decoration: none;
+}
+
+.small
+{
+	font-size: 11px;
+}

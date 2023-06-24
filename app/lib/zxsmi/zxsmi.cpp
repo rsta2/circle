@@ -59,6 +59,8 @@ LOGMODULE ("ZxSmi");
 #define CS_RXF			(1 << 31)
 
 
+u32 ulaBufferTicks = 0;
+u32 screenUpdateTicks = 0;
 u32 screenLoopTicks = 0;
 u32 screenLoopCount = 0;
 u32 frameInterruptCount = 0;
@@ -180,7 +182,7 @@ boolean CZxSmi::Initialize ()
 
   // Configure GPIO interrupt
 #if (ZX_SMI_USE_FIQ)  
-  m_GpioFiqPin.ConnectInterrupt(GpioIrqHandler, this, FALSE);
+  m_GpioFiqPin.ConnectInterrupt(FiqIrqHandler, this, FALSE);
 #else
   m_GpioIrqPin.ConnectInterrupt(GpioIrqHandler, this, FALSE);
 #endif  
@@ -518,17 +520,17 @@ void CZxSmi::DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pPar
     // }
 
     
-    if (pThis->m_counter <= 0) {
-      pThis->m_counter = 10;
-      pThis->m_bDMAResult = !pThis->m_bDMAResult;
+    // if (pThis->m_counter <= 0) {
+    //   pThis->m_counter = 10;
+    //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
     
-      if (pThis->m_bDMAResult) {
-        pThis->m_pActLED->On();
-      } else {
-        pThis->m_pActLED->Off();
-      }
-    }
-    pThis->m_counter--;
+    //   if (pThis->m_bDMAResult) {
+    //     pThis->m_pActLED->On();
+    //   } else {
+    //     pThis->m_pActLED->Off();
+    //   }
+    // }
+    // pThis->m_counter--;
 }
 
 void CZxSmi::DMARestartCompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam)
@@ -551,27 +553,148 @@ void CZxSmi::SMICompleteInterrupt(boolean bStatus, void *pParam)
   //   pThis->m_pActLED->Off();
   // }
 
-    if (pThis->m_counter <= 0) {
-      pThis->m_counter = 10;
-      pThis->m_bDMAResult = !pThis->m_bDMAResult;
+    // if (pThis->m_counter <= 0) {
+    //   pThis->m_counter = 10;
+    //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
     
-      if (pThis->m_bDMAResult) {
-        pThis->m_pActLED->On();
-      } else {
-        pThis->m_pActLED->Off();
-      }
-    }
-    pThis->m_counter--;
+    //   if (pThis->m_bDMAResult) {
+    //     pThis->m_pActLED->On();
+    //   } else {
+    //     pThis->m_pActLED->Off();
+    //   }
+    // }
+    // pThis->m_counter--;
 }
 
+
+#if (ZX_SMI_USE_FIQ)	
+
+// Try NO_USB_SOF_INTR to improve timing (use this option if it works!!)
+// Try NO_BUSY_WAIT to deactivate busywaits - check note for multicore (we shouldn't need multicore)
+// Might have to use CriticalSection and flags to pass data to tasks for FIQ
+
+/**
+ * FIQ Handler
+ * 
+ * When using FIQ, have to ACK the interrupt early, and the handler must also take at least a few cycles
+ * otherwise the FIQ will be retriggered. 1us is definitely long enough.
+ * 
+ * Scheduling code cannot be used from the FIQ, unlike the standard IRQ handler.
+ * Therefore any atomic protection / signalling must be done using CriticalSection.
+ * 
+ * @param pParam 
+ */
+void CZxSmi::FiqIrqHandler (void *pParam) 
+{
+  CZxSmi *pThis = (CZxSmi *) pParam;
+  // assert (pThis != 0);
+
+  // Acknowledge the interrupt (early otherwise FIQ will be retriggered)
+  pThis->m_GpioFiqPin.AcknowledgeInterrupt();
+
+  // Toggle LED for debug
+  pThis->m_pActLED->On();
+
+  // This delay is important to ensure that the last video bytes are flushed out of the SMI FIFO when running
+  // at slower sample rates. Without this, the last few bytes of the frame are lost.
+  // At higher sample rates the delay is not needed, but it makes more sense to have a lower sample rate and
+  // therefore lower power consumption.
+  // NOTE: This delay needs to be longer when using FIQ rather than IRQ because it is faster so this code happens
+  // earlier in the spectrum's INT pulse and there is not time for the SMI FIFO to flush out the last few bytes.
+  CTimer::SimpleusDelay(2);
+
+  // Attempt to get the buffer lock - if it is still in use, we need to drop a frame
+  bool haveLock = pThis->m_DMABufferReadSemaphore.TryDown();
+
+  if (haveLock) {
+    // We have the lock
+
+    // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
+    // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
+
+    // Stop the DMA and SMI
+    pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
+    
+
+    // Save pointer to buffer just filled by DMA
+    pThis->m_pDMABufferRead = pThis->m_pDMABuffer;
+
+    skippy++;
+
+    if (skippy % 1 == 0) {
+
+      // Move to the next DMA buffer and control block
+      pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+      pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
+      pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
+
+      // Start the DMA using the next control block
+      pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
+
+      // // Start the SMI for DMA (DMA should already be ready to go)
+      PeripheralEntry();
+      write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
+      PeripheralExit();
+
+    }
+
+    // Release the lock
+    pThis->m_DMABufferReadSemaphore.Up();
+
+    // Signal the screen processor task
+    if (pThis->m_pFrameEvent) {
+      pThis->m_pFrameEvent->Set();
+    }
+
+  } else {
+    // Drop a frame - the screen processor can't keep up
+    skippedFrameCount++;
+  }
+
+
+  // Toggle LED for debug
+  pThis->m_pActLED->Off();
+
+  // Increment the loop count
+  frameInterruptCount++;  
+}
+
+#else
+
+// void CZxSmi::GpioIrqHandler (void *pParam) 
+// {
+//   CZxSmi *pThis = (CZxSmi *) pParam;
+//   // assert (pThis != 0);
+
+//   // // Return early if stopped (fix - have to ack interrupt in this case)
+//   // if (!pThis->m_bRunning) return;
+
+//   // if (pThis->m_counter <= 0) {
+//   //   pThis->m_counter = 10;
+//   //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
+  
+//   //   if (pThis->m_bDMAResult) {
+//   //     pThis->m_pActLED->On();
+//   //   } else {
+//   //     pThis->m_pActLED->Off();
+//   //   }
+//   // }
+//   // pThis->m_counter--;  
+
+//   // Increment the loop count
+//   frameInterruptCount++;
+
+//   // Acknowledge the interrupt
+//   pThis->m_GpioIrqPin.AcknowledgeInterrupt();
+// }
 
 void CZxSmi::GpioIrqHandler (void *pParam) 
 {
   CZxSmi *pThis = (CZxSmi *) pParam;
   assert (pThis != 0);
 
-  // Return early if stopped
-  if (!pThis->m_bRunning) return;
+  // Return early if stopped (fix - have to ack interrupt in this case)
+  // if (!pThis->m_bRunning) return;
 
 
   // Toggle LED for debug
@@ -639,12 +762,10 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   frameInterruptCount++;
 
   // Acknowledge the interrupt
-  #if (ZX_SMI_USE_FIQ)    
-    pThis->m_GpioFiqPin.AcknowledgeInterrupt();
-  #else
-    pThis->m_GpioIrqPin.AcknowledgeInterrupt();
-  #endif  
+  pThis->m_GpioIrqPin.AcknowledgeInterrupt();
 }
+
+#endif
 
 // void CZxSmi::GpioIrqHandler (void *pParam) 
 // {

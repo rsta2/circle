@@ -1,0 +1,6 @@
+#!/bin/bash
+
+make="${MAKE:-make}"
+
+$make flash || exit
+

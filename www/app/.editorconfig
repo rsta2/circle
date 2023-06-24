@@ -1,0 +1,24 @@
+# EditorConfig is awesome!
+
+# Mark this as the root editorconfig file
+root = true
+
+# Base ruleset for all files
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 120
+
+
+# Override rules for markdown
+[*.md]
+# trailing whitespace is significant in markdown -> do not remove
+trim_trailing_whitespace = false
+
+[*.patch]
+trim_trailing_whitespace = false
+insert_final_newline = false

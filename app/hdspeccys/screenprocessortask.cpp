@@ -8,9 +8,10 @@
 LOGMODULE ("screenprocessingtask");
 
 
-
-extern "C" u32 screenLoopTicks;
 extern "C" u32 screenLoopCount;
+extern "C" u32 screenLoopTicks;
+extern "C" u32 ulaBufferTicks;
+extern "C" u32 screenUpdateTicks;
 
 // unsigned char reverseBits(unsigned char b) {
 //    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
@@ -92,12 +93,19 @@ void CScreenProcessorTask::Run (void)
 		// Release the SMI DMA buffer pointer
 		m_pZxSmi->ReleaseDataBuffer();
 
-		screenLoopCount++;
-		// screenLoopTicks = (screenLoopTicks + (CTimer::Get()->GetTicks() - startTicks)) / screenLoopCount;
-		screenLoopTicks = (CTimer::Get()->GetClockTicks() - startTicks);
+		// Timing
+		ulaBufferTicks = (CTimer::Get()->GetClockTicks() - startTicks);
 
-
+		// Update the screen
 		m_pZxScreen->UpdateScreen();
+
+		// Time the loop
+		screenLoopCount++;
+		
+		// Timing		
+		screenUpdateTicks = (CTimer::Get()->GetClockTicks() - startTicks) - ulaBufferTicks;
+		screenLoopTicks = ulaBufferTicks + screenUpdateTicks;
+
 
 
 		// clear = !clear;

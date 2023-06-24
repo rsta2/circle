@@ -3,28 +3,58 @@
 //
 #include "kernel.h"
 
+
 LOGMODULE ("kernel");
 
-
+#define HOSTNAME						"hd-speccys"
+#define DRIVE							"SD:"
+#define FIRMWARE_PATH					DRIVE "/firmware/"		// firmware files must be provided here
+#define WPA_SUPPLICANT_CONFIG_FILE		DRIVE "/wpa_supplicant.conf"
 
 static volatile boolean bReboot = TRUE;
 static CKernel *pKernel = 0;
 
+#if HD_SPECCYS_FEATURE_NETWORK
+#if HD_SPECCYS_DHCP
+#else
+// TODO get from options string or read from file
+static const u8 IPAddress[]      = {192, 168, 0, 250};
+static const u8 NetMask[]        = {255, 255, 255, 0};
+static const u8 DefaultGateway[] = {192, 168, 0, 1};
+static const u8 DNSServer[]      = {192, 168, 0, 1};
+#endif // HD_SPECCYS_DHCP
+#endif // HD_SPECCYS_FEATURE_NETWORK
+
+
 
 CKernel::CKernel (void)
-:	// m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
+:	m_CPUThrottle(CPUSpeedLow),
+	// m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	// m_Serial (&m_Interrupt),
 	m_Timer (&m_Interrupt),	
 	m_Logger (m_Options.GetLogLevel(), &m_Timer),	
 	// TODO: add more member initializers here
 	m_GPIOManager(&m_Interrupt),
+#if HD_SPECCYS_FEATURE_NETWORK
+	m_USBHCI (&m_Interrupt, &m_Timer),
+	m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
+	m_WLAN (FIRMWARE_PATH),
+#if HD_SPECCYS_DHCP
+	m_Net (0, 0, 0, 0, HOSTNAME, NetDeviceTypeWLAN),
+#else
+	m_Net (IPAddress, NetMask, DefaultGateway, DNSServer, NetDeviceTypeWLAN),
+#endif // HD_SPECCYS_DHCP
+	m_WPASupplicant (WPA_SUPPLICANT_CONFIG_FILE),
+#endif // HD_SPECCYS_FEATURE_NETWORK
 	m_Shell (&m_Serial),
 	m_ZxTape(&m_GPIOManager, &m_Interrupt),
 	m_ZxSmi(&m_GPIOManager, &m_Interrupt),
 	// m_ZxScreen(m_Options.GetWidth (), m_Options.GetHeight (), FALSE, 0, &m_Interrupt)
 	// 320x256 (32 + 256 + 32 x 32 + 192 + 32) - border is 1/3rd screen (this is about right for original speccy)
 	m_ZxScreen(320, 256, 0, &m_Interrupt)
-	// m_ZxScreen(320*4, 256*4, 0, &m_Interrupt)
+	// m_ZxScreen(320 + 128, 256, 0, &m_Interrupt)
+	// m_ZxScreen(320 + 144, 256, 0, &m_Interrupt)
+	// m_ZxScreen(320*2, 256*2, 0, &m_Interrupt)
 	//  m_ZxScreen (m_Options.GetWidth (), m_Options.GetHeight (), 0, &m_Interrupt)
 {
 	bReboot = TRUE;
@@ -56,8 +86,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		// bOK = m_Serial.Initialize (921600);
-		bOK = m_Serial.Initialize (115200);
+		bOK = m_Serial.Initialize (HD_SPECCYS_SERIAL_BAUD_RATE);
 	}
 
 	if (bOK)
@@ -91,6 +120,52 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_GPIOManager.Initialize ();
 	}
+
+#if HD_SPECCYS_FEATURE_NETWORK
+	if (bOK)
+	{
+		bOK = m_USBHCI.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = m_EMMC.Initialize ();
+	}
+
+	if (bOK)
+	{
+		if (f_mount (&m_FileSystem, DRIVE, 1) != FR_OK)
+		{
+			LOGERR("Cannot mount drive: %s", DRIVE);
+
+			bOK = FALSE;
+		}
+	}
+
+	if (bOK)
+	{
+		bOK = m_WLAN.Initialize ();
+	}
+
+#ifdef USE_OPEN_NET // TODO - get from options string
+	if (bOK)
+	{
+		bOK = m_WLAN.JoinOpenNet (USE_OPEN_NET);
+	}
+#endif // USE_OPEN_NET
+
+	if (bOK)
+	{
+		bOK = m_Net.Initialize (FALSE);
+	}
+
+#ifndef USE_OPEN_NET
+	if (bOK)
+	{
+		bOK = m_WPASupplicant.Initialize ();
+	}
+#endif // USE_OPEN_NET
+#endif // HD_SPECCYS_FEATURE_NETWORK
 	
 	if (bOK)
 	{
@@ -111,13 +186,34 @@ TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE("Compile time: " __DATE__ " " __TIME__);
 
-	// Set up callback on the timer 100Hz interrupt
-	// m_Timer.RegisterPeriodicHandler(PeriodicTimer100Hz);
-
+	// DO NOT LEAVE RUNNING WITH THIS!
+	// m_CPUThrottle.SetSpeed(CPUSpeedMaximum);
 
 	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
 	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
 	new CTapeTask (&m_ZxTape);
+
+#if HD_SPECCYS_FEATURE_NETWORK
+	// DO NOT LEAVE RUNNING WITH THIS!
+	// m_CPUThrottle.SetSpeed(CPUSpeedMaximum);
+
+	while (!m_Net.IsRunning ())
+	{
+		m_Scheduler.MsSleep (100);
+	}
+
+	CString IPString;
+	m_Net.GetConfig ()->GetIPAddress ()->Format (&IPString);
+	LOGNOTE("Open \"http://%s/\" in your web browser!", (const char *) IPString);
+
+	// Create the web server (task)
+	new CZxWeb (&m_Net);
+
+#endif	
+
+	// Set up callback on the timer 100Hz interrupt
+	// m_Timer.RegisterPeriodicHandler(PeriodicTimer100Hz);
+
 
 	// Wait here forever until shutdown
 	m_Event.Clear();
@@ -136,9 +232,9 @@ void CKernel::AnimationFrame ()
 
 // Don't do this here as it takes up way too much time in the IRQ. 
 // Instead use a task that sleeps and wakes
-void CKernel::PeriodicTimer100Hz() {
-	pKernel->AnimationFrame();
-}
+// void CKernel::PeriodicTimer100Hz() {
+// 	pKernel->AnimationFrame();
+// }
 
 // void CKernel::Reboot (void* pContext)
 // {

@@ -18,10 +18,17 @@
 #define DEPTH	16		// can be: 8, 16 or 32
 #endif
 
+#define ZX_SCREEN_COLOUR		TRUE
+
 #define ZX_SCREEN_PIXEL_WIDTH	256
 #define ZX_SCREEN_PIXEL_HEIGHT	192
+#define ZX_SCREEN_BORDER_WIDTH	32
+#define ZX_SCREEN_BORDER_HEIGHT	32
+#define ZX_SCREEN_WIDTH			(ZX_SCREEN_BORDER_WIDTH + ZX_SCREEN_PIXEL_WIDTH + ZX_SCREEN_BORDER_WIDTH)
+#define ZX_SCREEN_HEIGHT		(ZX_SCREEN_BORDER_HEIGHT + ZX_SCREEN_PIXEL_HEIGHT + ZX_SCREEN_BORDER_HEIGHT)
 
-#define ZX_SCREEN_DMA
+
+// #define ZX_SCREEN_DMA // Disabled as waiting for DMA to complete is slower than just doing a memcpy().
 #define ZX_SCREEN_DMA_BURST_COUNT	0
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
@@ -164,16 +171,21 @@ private:
 		
 	unsigned	 m_nWidth;
 	unsigned	 m_nHeight;
-	unsigned	 m_nBorderWidth;
-	unsigned	 m_nBorderHeight;
-	unsigned	 m_nScreenWidth;
-	unsigned	 m_nScreenHeight;
+	unsigned	 m_nZxScreenPixelWidth;
+	unsigned	 m_nZxScreenPixelHeight;
+	unsigned	 m_nZxScreenBorderWidth;
+	unsigned	 m_nZxScreenBorderHeight;	
+	unsigned	 m_nZxScreenWidth;
+	unsigned	 m_nZxScreenHeight;
+	TScreenColor  	*m_pZxScreenBuffer;
 	TScreenColor  	*m_pScreenBuffer;
 	TScreenColor  	*m_pOffscreenBuffer;
 	// TScreenColor  	*m_pOffscreenBuffer2;
 	unsigned	 m_nScreenBufferSize;
 	unsigned	 m_nOffscreenBufferSize;
+	unsigned	 m_nZxScreenBufferSize;
 	unsigned	 m_nPixelCount;
+	unsigned	 m_nZxScreenPixelCount;
 	unsigned	 m_nScreenBufferNo;
 	boolean		 m_bDirty;
 

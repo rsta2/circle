@@ -1,0 +1,30 @@
+# BUILD
+/artifacts
+/dist
+package.tgz
+/packages/*/bundles
+/packages/*/dist/*
+/vscode-case-study
+.history
+junit.xml
+coverage
+tsconfig.tsbuildinfo
+
+
+# YARN
+**/.yarn/*
+!**/.yarn/releases
+!**/.yarn/plugins
+!**/.yarn/sdks
+**/yarn-error.log
+node_modules
+
+# Swap the comments on the following lines if you don't wish to use zero-installs
+# Documentation here: https://yarnpkg.com/features/zero-installs
+# !/.yarn/cache
+**/.pnp.*
+
+# PACKAGE SPECIFIC
+
+# @jsw/web
+/packages/web/public/games/*
