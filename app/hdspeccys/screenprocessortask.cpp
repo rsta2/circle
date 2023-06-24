@@ -85,9 +85,8 @@ void CScreenProcessorTask::Run (void)
 		// // m_pZxScreen->SetScreen(TRUE);
 
 
+		// Set screen data from ULA buffer
 		m_pZxScreen->SetScreenFromULABuffer(pULABuffer, ZX_DMA_BUFFER_LENGTH);
-		
-		// m_pZxScreen->SetScreenFromBuffer((u16 *)m_pScreenPixelDataBuffer, (u16 *)m_pScreenAttrDataBuffer, 0x3000 / 2);
 		
 
 		// Release the SMI DMA buffer pointer

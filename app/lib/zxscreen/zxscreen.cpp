@@ -21,9 +21,12 @@ LOGMODULE ("ZxScreen");
 #define WIDESCREEN_WIDTH_RATIO  (64 / 45) // 5:4 => 16:9 ((5*9) / (4*16))
 
 
-u16 borderValue;
+
+
+u32 borderValue;
 u32 videoByteCount;
-u16 videoValue;
+u32 videoValue;
+
 
 
 //
@@ -70,6 +73,7 @@ CZxScreen::CZxScreen (unsigned nWidth, unsigned nHeight, unsigned nDisplay, CInt
   // m_value(0),
   // m_isIOWrite(0)
 {
+
 
 }
 
@@ -163,6 +167,8 @@ boolean CZxScreen::Initialize ()
   m_pZxScreenBuffer = (TScreenColor *) new u8[m_nZxScreenBufferSize];
 
 
+  // Initialise the zx color LUT
+  InitZxColorLUT();
 
 
   // Clear the screen
@@ -329,65 +335,6 @@ void CZxScreen::SetScreen (boolean bToggle)
 }
 
 
-
-void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len) {
-  TScreenColor *pBuffer = m_pOffscreenBuffer;
-	unsigned nSize = m_nPixelCount;
-  unsigned x = 0;
-  unsigned y = 0;
-  unsigned px = 0;
-  unsigned py = 0;
-  unsigned pixel = 0;
-  unsigned pixelWord = 0;
-  unsigned pixelBit = 0;
-  unsigned pixelSet = 0;
-  unsigned attr = 0;
-  unsigned pixelColor = 0;
-  boolean bInScreen = FALSE;
-
-	while (nSize--)
-	{
-    px = x - m_nZxScreenBorderWidth;
-    py = y - m_nZxScreenBorderHeight;
-    bInScreen = (px >= 0 && px < (m_nZxScreenWidth)) && 
-                (py >= 0 && py < (m_nZxScreenHeight));
-
-    // In the screen
-    if (bInScreen) { 
-      pixelWord = pixel / 8;
-      pixelBit = (pixel % 8);
-      pixelSet = (pPixelBuffer[pixelWord] >> pixelBit) & 0x01;
-      attr = pAttrBuffer[pixelWord];
-      bool bright = attr & 0x40;
-      bool flash = attr & 0x80;
-      pixelColor = getPixelColor(attr, bright, flash, pixelSet);
-
-      // *pBuffer = pixelSet ? BLACK_COLOR : WHITE_COLOR;  // B&W
-      *pBuffer = pixelColor; // Colour
-
-
-      pixel++;
-    }
-
-    // Increment pixel pointer
-    pBuffer++;
-
-    // Track pixel position in buffer
-    x++;
-    if (x >= m_nZxScreenWidth) {
-      x = 0;
-      y++;
-      if (y >= m_nZxScreenHeight) {
-        y = 0;
-      }
-    }
-	}
-
-
-  // Mark dirty so will be updated
-  m_bDirty = TRUE;
-}
-
 void CZxScreen::SetScreenFromULABuffer(u16 *pULABuffer, size_t len) {
   // Update offscreen buffer
   ULADataToScreen(m_pZxScreenBuffer, pULABuffer, len);
@@ -469,6 +416,68 @@ void CZxScreen::UpdateScreen() {
   m_bDirty = FALSE;
 }
 
+void CZxScreen::InitZxColorLUT(void) {
+  // Init ZX colour LUT - TODO move to function
+  for (u32 attr = 0; attr < ZX_COLOR_LUT_SIZE; attr++) {
+    u32 ink = 0;
+    u32 paper = 0;
+    u32 bright = attr & 0x40;
+    u32 flash = attr & 0x80;
+
+    for (u32 i = 0; i < 2; i++) {
+      u32 colourIn = 0;
+      u32 colourOut = 0;
+      if (i == 0) {
+        // ink
+        colourIn = attr & 0x07;
+      } else {
+        // paper
+        colourIn = (attr >> 3) & 0x07;
+      }
+
+      switch (colourIn) {
+        case 0: default: colourOut = bright ? BLACK_COLOR : BLACK_COLOR; break;
+        case 1: colourOut = bright ? BRIGHT_BLUE_COLOR : BLUE_COLOR; break;
+        case 2: colourOut = bright ? BRIGHT_RED_COLOR : RED_COLOR; break;
+        case 3: colourOut = bright ? BRIGHT_MAGENTA_COLOR : MAGENTA_COLOR; break;
+        case 4: colourOut = bright ? BRIGHT_GREEN_COLOR : GREEN_COLOR; break;
+        case 5: colourOut = bright ? BRIGHT_CYAN_COLOR : CYAN_COLOR; break;
+        case 6: colourOut = bright ? BRIGHT_YELLOW_COLOR : YELLOW_COLOR; break;
+        case 7: colourOut = bright ? BRIGHT_WHITE_COLOR : WHITE_COLOR; break;
+      }
+
+      if (i == 0) {
+        // ink
+        ink = colourOut;
+      } else {
+        // paper
+        paper = colourOut;
+      }
+    }
+
+    ZX_COLORS *pColor = &zxColors[attr];
+    pColor->ink = ink;
+    pColor->paper = paper;
+    pColor->flash = flash;
+    pColor->bright = bright;
+	}	
+}
+
+ZX_COLORS CZxScreen::ZxAttrToScreenColors(u32 attr) {
+  return zxColors[(u8)attr];
+}
+
+TScreenColor CZxScreen::ZxColorToScreenColor(u32 color) {
+  return zxColors[(u8)color].ink;
+}
+
+TScreenColor CZxScreen::ZxColorInkToScreenColor(u32 ink) {
+  return zxColors[(u8)ink].paper;
+}
+
+TScreenColor CZxScreen::ZxColorPaperToScreenColor(u32 paper) {
+  return zxColors[(u8)paper].ink;
+}
 
 
 // TODO: Pass in all the sizes
@@ -478,30 +487,34 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
   u32 lastIOWRValue = 0;
   u32 inIOWR = 0;
   u32 inCAS = 0;
-  boolean isPixels = TRUE;
-  boolean wasOutOfCAS = FALSE;
+  u32 isPixels = TRUE;
+  u32 wasOutOfCAS = FALSE;
   videoByteCount = 0;
   u32 pixelData = 0;
   u32 attrData = 0;
-  u32 nBorderTime;
+  // u32 nBorderTime;
   u32 nBorderTimeMultiplier = 1;
-  boolean inBorder = TRUE;
-  boolean inTopBottomBorder = TRUE;
-  boolean pixelAttrDataValid = FALSE;  
-  boolean borderDrawComplete = FALSE;
-  boolean pixelDrawComplete = FALSE;
+  u32 inBorder = TRUE;
+  u32 inTopBottomBorder = TRUE;
+  u32 pixelAttrDataValid = FALSE;  
+  u32 borderDrawComplete = FALSE;
+  u32 pixelDrawComplete = FALSE;
   
   
   u32 bx = 0; // border x
   u32 by = 0; // border y
   u32 px = m_nZxScreenBorderWidth; // pixel x
   u32 py = m_nZxScreenBorderHeight; // pixel y
+  u32 nEndOfZxPixelsY = m_nZxScreenHeight - m_nZxScreenBorderHeight;
+  u32 nEndOfZxPixelsX = m_nZxScreenWidth - m_nZxScreenBorderWidth;
+  u32 IORQ_MASK = (1 << 2);
+  u32 WR_MASK = (1 << 0);
+  u32 CAS_MASK = (1 << 1);
 
   // Loop all the data in the buffer
   for (unsigned i = 0; i < nULABufferLen; i++) {   
     // Read the value from the ULA data buffer
     u16 value = pULABuffer[i];
-
 
     // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
     // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
@@ -510,15 +523,18 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
     // NOTE: Currently if a frame is dropped, it will glitch the next frame - this should be fixed.
 
     // Extract the state of the signals
-    boolean IORQ = (value & (1 << 2)) == 0;
-    boolean WR = (value & (1 << 0)) == 0;
-    boolean CAS = (value & (1 << 1)) == 0;           
-    boolean IOREQ = IORQ;
+    u32 IORQ = (value & IORQ_MASK) == 0;
+    u32 WR = (value & WR_MASK) == 0;
+    u32 CAS = (value & CAS_MASK) == 0;           
+    u32 IOREQ = IORQ;
   
     // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
+    
+    // At start of frame, de-glitching is necssary to ensure the first CAS detected is not a glitch
+    // This is achieved by using the INT signal as part of the DREQ, and discarding the first CAS
     if (i > 50) {
-      if (!wasOutOfCAS) {
-        wasOutOfCAS = !CAS;
+      if (!wasOutOfCAS) {            
+        wasOutOfCAS = !CAS;      
       }
 
       if (wasOutOfCAS && CAS) {
@@ -548,7 +564,7 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
         inCAS = 0;
       }
     }
-
+    
     // Handle IO write (border colour)
     if (IOREQ & WR) {          
       // Entered or in IO write
@@ -557,10 +573,7 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
     } else {
       if (inIOWR > 5 && inIOWR < 40) {
         // Exited IO write, use the last value
-        // pThis->m_value = lastValue;
-        // pThis->m_value =  0xDDDD;
         borderValue = lastIOWRValue >> 8;
-    	// borderValue = inIOWR;
       }
       inIOWR = 0;
     }
@@ -568,12 +581,13 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
     // Draw border
     if (!borderDrawComplete) {
       for (u32 i=0; i<nBorderTimeMultiplier; i++) {
-        inTopBottomBorder = by < m_nZxScreenBorderHeight || by >= m_nZxScreenHeight - m_nZxScreenBorderHeight;
-        inBorder = (bx < m_nZxScreenBorderWidth || bx >= m_nZxScreenWidth - m_nZxScreenBorderWidth || inTopBottomBorder);
+        inTopBottomBorder = by < m_nZxScreenBorderHeight || by >= nEndOfZxPixelsY;
+        inBorder = (bx < m_nZxScreenBorderWidth || bx >= nEndOfZxPixelsX || inTopBottomBorder);
         // nBorderTimeMultiplier = inTopBottomBorder ? 4 : 1;
 
         if (inBorder /*&& nBorderTime % 100 == 0*/) {
-          TScreenColor borderColor = getPixelColor(borderValue, 0, 0, true);
+          // TScreenColor borderColor = getPixelColor(borderValue, 0, 0, 1);
+          TScreenColor borderColor = ZxColorToScreenColor(borderValue);
           u32 bytePos = by * m_nZxScreenWidth + bx;
           pZxScreenBuffer[bytePos] = borderColor;
         }
@@ -599,17 +613,14 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
       pixelAttrDataValid = FALSE;
 
       // Proces the pixel and attribute data
-      bool bright = attrData & 0x40;
-      bool flash = attrData & 0x80;
-      TScreenColor fgColor = getPixelColor(attrData, bright, flash, true);
-      TScreenColor bgColor = getPixelColor(attrData, bright, flash, false);
-
+      ZX_COLORS colours = ZxAttrToScreenColors(attrData);
+      
       u32 bytePos = py * m_nZxScreenWidth + px;
 
       for (int i = 0; i < 8; i++) {
         // 7-i to flip the data lines
 #if ZX_SCREEN_COLOUR        
-        TScreenColor pixelColor = (pixelData & (1 << (7-i))) ? fgColor : bgColor;
+        TScreenColor pixelColor = (pixelData & (1 << (7-i))) ? colours.ink : colours.paper;
         pZxScreenBuffer[bytePos + i] = pixelColor;
 #else
         bool pixelSet = (pixelData & (1 << (7-i))) ? TRUE : FALSE;
@@ -622,11 +633,6 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
       // and 16 bit pixel data (+control)
 
       // Move to the next pixels (byte)
-      // px += 8;
-      // if (px >= m_nScreenWidth) {
-      //   px = 0;
-      //   py++;
-      // }      
       px += 8;
       if (px >= (m_nZxScreenWidth - m_nZxScreenBorderWidth)) {
         px = m_nZxScreenBorderWidth;
@@ -641,29 +647,6 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
     // Break out of loop if screen is drawn
     if (borderDrawComplete && pixelDrawComplete) break;
   }
-}
-
-inline TScreenColor CZxScreen::getPixelColor(u32 attr, bool bright, bool flash, bool ink) {
-  u8 colour = 0;
-  if (ink) {
-    colour = attr & 0x07;
-  } else {
-    colour = (attr >> 3) & 0x07;
-  }
-
-
-  switch (colour) {
-    case 0: return bright ? BLACK_COLOR : BLACK_COLOR;
-    case 1: return bright ? BRIGHT_BLUE_COLOR : BLUE_COLOR;
-    case 2: return bright ? BRIGHT_RED_COLOR : RED_COLOR;
-    case 3: return bright ? BRIGHT_MAGENTA_COLOR : MAGENTA_COLOR;
-    case 4: return bright ? BRIGHT_GREEN_COLOR : GREEN_COLOR;
-    case 5: return bright ? BRIGHT_CYAN_COLOR : CYAN_COLOR;
-    case 6: return bright ? BRIGHT_YELLOW_COLOR : YELLOW_COLOR;
-    case 7: return bright ? BRIGHT_WHITE_COLOR : WHITE_COLOR;
-  }
-
-  return BLACK_COLOR;
 }
 
 

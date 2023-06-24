@@ -631,11 +631,10 @@ void CZxSmi::FiqIrqHandler (void *pParam)
       // Start the DMA using the next control block
       pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
 
-      // // Start the SMI for DMA (DMA should already be ready to go)
+      // Start the SMI for DMA (DMA should already be ready to go)
       PeripheralEntry();
       write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
       PeripheralExit();
-
     }
 
     // Release the lock

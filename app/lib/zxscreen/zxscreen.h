@@ -18,7 +18,9 @@
 #define DEPTH	16		// can be: 8, 16 or 32
 #endif
 
+
 #define ZX_SCREEN_COLOUR		TRUE
+// #define ZX_SCREEN_COLOUR		FALSE
 
 #define ZX_SCREEN_PIXEL_WIDTH	256
 #define ZX_SCREEN_PIXEL_HEIGHT	192
@@ -30,6 +32,7 @@
 
 // #define ZX_SCREEN_DMA // Disabled as waiting for DMA to complete is slower than just doing a memcpy().
 #define ZX_SCREEN_DMA_BURST_COUNT	0
+
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define COLOR16(red, green, blue)	  (((red) & 0x1F) << 11 \
@@ -127,6 +130,17 @@
 	#error DEPTH must be 8, 16 or 32
 #endif
 
+#define ZX_COLOR_LUT_SIZE 	256 	// (8 * 8 * 2 * 2) ink * paper * flash * bright
+
+
+// Data types
+typedef struct ZX_COLORS {
+	TScreenColor ink;
+	TScreenColor paper;
+	u32 flash;
+	u32 bright;
+} ZX_COLORS;
+
 
 class CZxScreen
 {
@@ -149,13 +163,17 @@ public:
 	void Clear (TScreenColor backgroundColor);
 	void SetBorder (TScreenColor borderColor);
 	void SetScreen (boolean bToggle);
-	void SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len);
 	void SetScreenFromULABuffer(u16 *pULABuffer, size_t len);
 
 	void UpdateScreen(void);
 private:
+	void InitZxColorLUT(void);
+	ZX_COLORS ZxAttrToScreenColors(u32 attr);
+	TScreenColor ZxColorToScreenColor(u32 color);
+	TScreenColor ZxColorInkToScreenColor(u32 ink);
+	TScreenColor ZxColorPaperToScreenColor(u32 paper);
+
 	void ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, size_t nULABufferLen);
-	TScreenColor getPixelColor(u32 attr, bool bright, bool flash, bool ink);
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 
@@ -188,6 +206,8 @@ private:
 	unsigned	 m_nZxScreenPixelCount;
 	unsigned	 m_nScreenBufferNo;
 	boolean		 m_bDirty;
+
+	ZX_COLORS zxColors[ZX_COLOR_LUT_SIZE];
 
 #ifdef ZX_SCREEN_DMA
 	CDMAChannel	 m_DMA;
