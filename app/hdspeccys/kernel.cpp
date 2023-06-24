@@ -52,7 +52,9 @@ CKernel::CKernel (void)
 	// m_ZxScreen(m_Options.GetWidth (), m_Options.GetHeight (), FALSE, 0, &m_Interrupt)
 	// 320x256 (32 + 256 + 32 x 32 + 192 + 32) - border is 1/3rd screen (this is about right for original speccy)
 	m_ZxScreen(320, 256, 0, &m_Interrupt)
-	// m_ZxScreen(320*4, 256*4, 0, &m_Interrupt)
+	// m_ZxScreen(320 + 128, 256, 0, &m_Interrupt)
+	// m_ZxScreen(320 + 144, 256, 0, &m_Interrupt)
+	// m_ZxScreen(320*2, 256*2, 0, &m_Interrupt)
 	//  m_ZxScreen (m_Options.GetWidth (), m_Options.GetHeight (), 0, &m_Interrupt)
 {
 	bReboot = TRUE;

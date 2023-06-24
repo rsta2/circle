@@ -59,6 +59,8 @@ LOGMODULE ("ZxSmi");
 #define CS_RXF			(1 << 31)
 
 
+u32 ulaBufferTicks = 0;
+u32 screenUpdateTicks = 0;
 u32 screenLoopTicks = 0;
 u32 screenLoopCount = 0;
 u32 frameInterruptCount = 0;

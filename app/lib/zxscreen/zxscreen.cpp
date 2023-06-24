@@ -12,9 +12,13 @@
 
 LOGMODULE ("ZxScreen");
 
+#define ZX_SCREEN_WIDESCREEN    TRUE
+// #define ZX_SCREEN_WIDESCREEN    FALSE
 #define SCREEN_BUFFER_COUNT 2
 // #define SPINLOCK_LEVEL      IRQ_LEVEL /* TASK_LEVEL*/
-#define SPINLOCK_LEVEL      TASK_LEVEL
+#define SPINLOCK_LEVEL      TASK_LEVEL  // UNUSED?
+
+#define WIDESCREEN_WIDTH_RATIO  (64 / 45) // 5:4 => 16:9 ((5*9) / (4*16))
 
 
 u16 borderValue;
@@ -35,15 +39,20 @@ CZxScreen::CZxScreen (unsigned nWidth, unsigned nHeight, unsigned nDisplay, CInt
   m_nPitch (0),
 	m_nWidth (0),
 	m_nHeight (0),
-  m_nBorderWidth (0),
-	m_nBorderHeight (0),
-  m_nScreenWidth (0),
-	m_nScreenHeight (0),
+  m_nZxScreenPixelWidth (0),
+	m_nZxScreenPixelHeight (0),
+	m_nZxScreenBorderWidth (0),
+	m_nZxScreenBorderHeight (0),
+	m_nZxScreenWidth (0),
+	m_nZxScreenHeight (0),
   m_pScreenBuffer (0),	
   m_pOffscreenBuffer (0),
   // m_pOffscreenBuffer2 (0),
   m_nScreenBufferSize (0),
   m_nOffscreenBufferSize (0),
+  m_nZxScreenBufferSize (0),
+  m_nPixelCount (0),
+  m_nZxScreenPixelCount (0),
   m_nScreenBufferNo (0),
 	m_bDirty (FALSE),
 #ifdef ZX_SCREEN_DMA  
@@ -96,11 +105,6 @@ boolean CZxScreen::Initialize ()
   // m_pDMAControlBlock3 = m_DMA.CreateDMAControlBlock();
   // m_pDMAControlBlock4 = m_DMA.CreateDMAControlBlock();
 
-  m_nScreenWidth = ZX_SCREEN_PIXEL_WIDTH;
-  m_nScreenHeight = ZX_SCREEN_PIXEL_HEIGHT;
-  m_nBorderWidth = (m_nInitWidth - m_nScreenWidth) / 2;
-  m_nBorderHeight = (m_nInitHeight - m_nScreenHeight) / 2;
-
   // Create the framebuffer
   m_pFrameBuffer = new CBcmFrameBuffer (m_nInitWidth, m_nInitHeight, DEPTH,
 						      0, 0, m_nDisplay, TRUE);
@@ -124,7 +128,7 @@ boolean CZxScreen::Initialize ()
   m_nScreenBufferSize   = m_pFrameBuffer->GetSize (); 
   m_nOffscreenBufferSize = m_nScreenBufferSize / 2;
   m_nPixelCount = m_nOffscreenBufferSize / sizeof(TScreenColor);
-
+  
   // Sanity check pixel count
   if (m_nPixelCount != m_nWidth * m_nHeight) {
     return FALSE;
@@ -145,6 +149,22 @@ boolean CZxScreen::Initialize ()
 
   // m_pOffscreenBuffer2 = (TScreenColor *) new u8[m_nOffscreenBufferSize];
 
+  // ZX Screen
+  m_nZxScreenPixelWidth = ZX_SCREEN_PIXEL_WIDTH;
+	m_nZxScreenPixelHeight = ZX_SCREEN_PIXEL_HEIGHT;
+	m_nZxScreenBorderWidth = ZX_SCREEN_BORDER_WIDTH;
+	m_nZxScreenBorderHeight = ZX_SCREEN_BORDER_HEIGHT;
+	m_nZxScreenWidth = ZX_SCREEN_WIDTH;
+	m_nZxScreenHeight = ZX_SCREEN_HEIGHT;
+  m_nZxScreenBufferSize = m_nZxScreenWidth * m_nZxScreenHeight * sizeof(TScreenColor);
+  m_nZxScreenPixelCount = m_nZxScreenBufferSize / sizeof(TScreenColor);
+
+  // Create a ZX screen buffer (which has ZX screen dimensions, which may be to the visible screen)
+  m_pZxScreenBuffer = (TScreenColor *) new u8[m_nZxScreenBufferSize];
+
+
+
+
   // Clear the screen
   Clear(WHITE_COLOR);
 
@@ -163,7 +183,9 @@ boolean CZxScreen::Initialize ()
 void CZxScreen::Start()
 {
   LOGDBG("Starting ZX SCREEN");
-  LOGDBG("Width: %dpx, Height: %dpx, Pitch: %d, PixelCount: %d, Screen buffer: %d bytes, Offscreen buffer: %d bytes",
+  LOGDBG("ZxScreen: Width: %dpx, Height: %dpx, PixelCount: %d, ZxScreen buffer: %d bytes",
+   m_nZxScreenWidth, m_nZxScreenHeight, m_nZxScreenPixelCount, m_nZxScreenBufferSize);
+  LOGDBG("Screen: Width: %dpx, Height: %dpx, Pitch: %d, PixelCount: %d, Screen buffer: %d bytes, Offscreen buffer: %d bytes",
    m_nWidth, m_nHeight, m_nPitch, m_nPixelCount, m_nScreenBufferSize, m_nOffscreenBufferSize);
 
 
@@ -231,8 +253,8 @@ void CZxScreen::Clear (TScreenColor backgroundColor)
 
 void CZxScreen::SetBorder (TScreenColor borderColor)
 {	
-	TScreenColor *pBuffer = m_pOffscreenBuffer;
-	unsigned nSize = m_nPixelCount;
+	TScreenColor *pBuffer = m_pZxScreenBuffer;
+	unsigned nSize = m_nZxScreenPixelCount;
   unsigned x = 0;
   unsigned y = 0;
 	
@@ -240,8 +262,8 @@ void CZxScreen::SetBorder (TScreenColor borderColor)
 	{
     // TScreenColor color = WHITE_COLOR;
 
-    if (x < m_nBorderWidth || x >= m_nWidth - m_nBorderWidth || 
-        y < m_nBorderHeight || y >= m_nHeight - m_nBorderHeight) {
+    if (x < m_nZxScreenBorderWidth || x >= m_nZxScreenWidth - m_nZxScreenBorderWidth || 
+        y < m_nZxScreenBorderHeight || y >= m_nZxScreenHeight - m_nZxScreenBorderHeight) {
       // Set pixel to colour
       *pBuffer = borderColor;
     }
@@ -251,10 +273,10 @@ void CZxScreen::SetBorder (TScreenColor borderColor)
 
     // Track pixel position in buffer
     x++;
-    if (x >= m_nWidth) {
+    if (x >= m_nZxScreenWidth) {
       x = 0;
       y++;
-      if (y >= m_nHeight) {
+      if (y >= m_nZxScreenHeight) {
         y = 0;
       }
     }
@@ -267,8 +289,8 @@ void CZxScreen::SetBorder (TScreenColor borderColor)
 // TODO - double buffering, and then DMA
 void CZxScreen::SetScreen (boolean bToggle)
 {
-	TScreenColor *pBuffer = m_pOffscreenBuffer;
-	unsigned nSize = m_nPixelCount;
+	TScreenColor *pBuffer = m_pZxScreenBuffer;
+	unsigned nSize = m_nZxScreenPixelCount;
   unsigned x = 0;
   unsigned y = 0;
   unsigned px = 0;
@@ -277,10 +299,10 @@ void CZxScreen::SetScreen (boolean bToggle)
 
 	while (nSize--)
 	{
-    px = x - m_nBorderWidth;
-    py = y - m_nBorderHeight;
-    bInScreen = (px >= 0 && px < (m_nScreenWidth)) && 
-                (py >= 0 && py < (m_nScreenHeight));
+    px = x - m_nZxScreenBorderWidth;
+    py = y - m_nZxScreenBorderHeight;
+    bInScreen = (px >= 0 && px < (m_nZxScreenWidth)) && 
+                (py >= 0 && py < (m_nZxScreenHeight));
 
     // In the screen
     if (bInScreen) { 
@@ -292,10 +314,10 @@ void CZxScreen::SetScreen (boolean bToggle)
 
     // Track pixel position in buffer
     x++;
-    if (x >= m_nWidth) {
+    if (x >= m_nZxScreenWidth) {
       x = 0;
       y++;
-      if (y >= m_nHeight) {
+      if (y >= m_nZxScreenHeight) {
         y = 0;
       }
     }
@@ -325,10 +347,10 @@ void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len
 
 	while (nSize--)
 	{
-    px = x - m_nBorderWidth;
-    py = y - m_nBorderHeight;
-    bInScreen = (px >= 0 && px < (m_nScreenWidth)) && 
-                (py >= 0 && py < (m_nScreenHeight));
+    px = x - m_nZxScreenBorderWidth;
+    py = y - m_nZxScreenBorderHeight;
+    bInScreen = (px >= 0 && px < (m_nZxScreenWidth)) && 
+                (py >= 0 && py < (m_nZxScreenHeight));
 
     // In the screen
     if (bInScreen) { 
@@ -352,10 +374,10 @@ void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len
 
     // Track pixel position in buffer
     x++;
-    if (x >= m_nWidth) {
+    if (x >= m_nZxScreenWidth) {
       x = 0;
       y++;
-      if (y >= m_nHeight) {
+      if (y >= m_nZxScreenHeight) {
         y = 0;
       }
     }
@@ -368,7 +390,7 @@ void CZxScreen::SetScreenFromBuffer(u16 *pPixelBuffer, u16 *pAttrBuffer, u32 len
 
 void CZxScreen::SetScreenFromULABuffer(u16 *pULABuffer, size_t len) {
   // Update offscreen buffer
-  ULADataToScreen(m_pOffscreenBuffer, pULABuffer, len);
+  ULADataToScreen(m_pZxScreenBuffer, pULABuffer, len);
 
   // Mark dirty so will be updated
   m_bDirty = TRUE;
@@ -382,11 +404,24 @@ void CZxScreen::SetScreenFromULABuffer(u16 *pULABuffer, size_t len) {
 void CZxScreen::UpdateScreen() {
   if (!m_bDirty) return;
 
+  TScreenColor *pZxScreenBuffer = m_pZxScreenBuffer;
   TScreenColor *pScreenBuffer = m_pScreenBuffer;
 
   if (m_nScreenBufferNo > 0) {
     pScreenBuffer += m_nPixelCount;
   } 
+
+  // TODO - Post-process, scale and filter
+  // for (unsigned x=0; x<m_nWidth; x++) {
+  //   for (unsigned y=0; y<m_nHeight; y++) {
+  //     unsigned idx = (y * m_nWidth) + x;
+  //     unsigned zxx = ((unsigned)x / (1.4));
+  //     unsigned zxy = ((unsigned)y / 1);      
+  //     unsigned zxIdx = (zxy * m_nZxScreenWidth) + zxx;
+  //     m_pOffscreenBuffer[idx] = pZxScreenBuffer[zxIdx]; // * rand_32();
+  //   } 
+  // }
+  memcpy(m_pOffscreenBuffer, pZxScreenBuffer, m_nZxScreenBufferSize);
 
 
   // Copy offscreen screen to framebuffer
@@ -430,14 +465,14 @@ void CZxScreen::UpdateScreen() {
   // Increment so next update will update the other part of the framebuffer
   m_nScreenBufferNo = (m_nScreenBufferNo + 1) % SCREEN_BUFFER_COUNT;
 
-  // Mark dirty so will be updated
+  // Mark non-dirty so will not be updated unless dirty again
   m_bDirty = FALSE;
 }
 
 
 
 // TODO: Pass in all the sizes
-void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, size_t nULABufferLen) {
+void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, size_t nULABufferLen) {
   // Reset state before processing data (this interrupt occurs at start of screen refresh)
   u32 lastCasValue = 0;
   u32 lastIOWRValue = 0;
@@ -449,7 +484,7 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
   u32 pixelData = 0;
   u32 attrData = 0;
   u32 nBorderTime;
-  u32 nBorderTimeMultiplier = 4;
+  u32 nBorderTimeMultiplier = 1;
   boolean inBorder = TRUE;
   boolean inTopBottomBorder = TRUE;
   boolean pixelAttrDataValid = FALSE;  
@@ -459,8 +494,8 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
   
   u32 bx = 0; // border x
   u32 by = 0; // border y
-  u32 px = m_nBorderWidth; // pixel x
-  u32 py = m_nBorderHeight; // pixel y
+  u32 px = m_nZxScreenBorderWidth; // pixel x
+  u32 py = m_nZxScreenBorderHeight; // pixel y
 
   // Loop all the data in the buffer
   for (unsigned i = 0; i < nULABufferLen; i++) {   
@@ -533,21 +568,21 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
     // Draw border
     if (!borderDrawComplete) {
       for (u32 i=0; i<nBorderTimeMultiplier; i++) {
-        inTopBottomBorder = by < m_nBorderHeight || by >= m_nHeight - m_nBorderHeight;
-        inBorder = (bx < m_nBorderWidth || bx >= m_nWidth - m_nBorderWidth || inTopBottomBorder);
-        nBorderTimeMultiplier = inTopBottomBorder ? 4 : 1;
+        inTopBottomBorder = by < m_nZxScreenBorderHeight || by >= m_nZxScreenHeight - m_nZxScreenBorderHeight;
+        inBorder = (bx < m_nZxScreenBorderWidth || bx >= m_nZxScreenWidth - m_nZxScreenBorderWidth || inTopBottomBorder);
+        // nBorderTimeMultiplier = inTopBottomBorder ? 4 : 1;
 
         if (inBorder /*&& nBorderTime % 100 == 0*/) {
           TScreenColor borderColor = getPixelColor(borderValue, 0, 0, true);
-          u32 bytePos = by * m_nWidth + bx;
-          pScreenBuffer[bytePos] = borderColor;
+          u32 bytePos = by * m_nZxScreenWidth + bx;
+          pZxScreenBuffer[bytePos] = borderColor;
         }
 
         bx++;
-        if (bx >= m_nWidth) {
+        if (bx >= m_nZxScreenWidth) {
           bx = 0;
           by++;
-          if (by >= m_nHeight) {
+          if (by >= m_nZxScreenHeight) {
             // End of screen, break out of loop
             borderDrawComplete = TRUE;
             break;
@@ -569,16 +604,16 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
       TScreenColor fgColor = getPixelColor(attrData, bright, flash, true);
       TScreenColor bgColor = getPixelColor(attrData, bright, flash, false);
 
-      u32 bytePos = py * m_nWidth + px;
+      u32 bytePos = py * m_nZxScreenWidth + px;
 
       for (int i = 0; i < 8; i++) {
         // 7-i to flip the data lines
 #if ZX_SCREEN_COLOUR        
         TScreenColor pixelColor = (pixelData & (1 << (7-i))) ? fgColor : bgColor;
-        pScreenBuffer[bytePos + i] = pixelColor;
+        pZxScreenBuffer[bytePos + i] = pixelColor;
 #else
         bool pixelSet = (pixelData & (1 << (7-i))) ? TRUE : FALSE;
-        pScreenBuffer[bytePos + i] = pixelSet ? BLACK_COLOR : WHITE_COLOR;
+        pZxScreenBuffer[bytePos + i] = pixelSet ? BLACK_COLOR : WHITE_COLOR;
 #endif        
       }
 
@@ -593,17 +628,14 @@ void CZxScreen::ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, si
       //   py++;
       // }      
       px += 8;
-      if (px >= (m_nWidth - m_nBorderWidth)) {
-        px = m_nBorderWidth;
+      if (px >= (m_nZxScreenWidth - m_nZxScreenBorderWidth)) {
+        px = m_nZxScreenBorderWidth;
         py++;
-        if (py >= m_nHeight - m_nBorderHeight) {
+        if (py >= m_nZxScreenHeight - m_nZxScreenBorderHeight) {
           // End of screen, break out of loop
           pixelDrawComplete = TRUE;
         }
       }      
-
-      // Recalculate if we are in the border
-      // inBorder = (px < m_nBorderWidth || px >= m_nWidth - m_nBorderWidth || py < m_nBorderHeight || py >= m_nHeight - m_nBorderHeight);
     }
 
     // Break out of loop if screen is drawn
