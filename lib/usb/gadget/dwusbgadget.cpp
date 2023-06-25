@@ -41,7 +41,7 @@ CDWUSBGadget::CDWUSBGadget (CInterruptSystem *pInterruptSystem, TDeviceSpeed Dev
 :	m_pInterruptSystem (pInterruptSystem),
 	m_DeviceSpeed (DeviceSpeed),
 	m_State (StatePowered),
-	m_PnPEvent (PnPEventUnknown)
+	m_bPnPEvent {FALSE, FALSE}
 {
 	for (unsigned i = 0; i <= NumberOfEPs; i++)
 	{
@@ -138,8 +138,7 @@ boolean CDWUSBGadget::SetConfiguration (u8 uchConfiguration)
 
 	LOGNOTE ("%u Endpoint(s) activated", nEPCount);
 
-	assert (m_PnPEvent == PnPEventUnknown);
-	m_PnPEvent = PnPEventConfigured;
+	m_bPnPEvent[PnPEventConfigured] = TRUE;
 
 	return TRUE;
 }
@@ -148,14 +147,9 @@ boolean CDWUSBGadget::UpdatePlugAndPlay (void)
 {
 	boolean bResult = FALSE;
 
-	if (m_PnPEvent == PnPEventConfigured)
+	if (m_bPnPEvent[PnPEventSuspend])
 	{
-		m_PnPEvent = PnPEventUnknown;
-		bResult = TRUE;
-	}
-	else if (m_PnPEvent == PnPEventSuspend)
-	{
-		m_PnPEvent = PnPEventUnknown;
+		m_bPnPEvent[PnPEventSuspend] = FALSE;
 		bResult = TRUE;
 
 		// Remove EPs
@@ -190,6 +184,11 @@ boolean CDWUSBGadget::UpdatePlugAndPlay (void)
 		AHBConfig.Read ();
 		AHBConfig.Or (DWHCI_CORE_AHB_CFG_GLOBALINT_MASK);
 		AHBConfig.Write ();
+	}
+	else if (m_bPnPEvent[PnPEventConfigured])
+	{
+		m_bPnPEvent[PnPEventConfigured] = FALSE;
+		bResult = TRUE;
 	}
 
 	return bResult;
@@ -497,8 +496,7 @@ void CDWUSBGadget::HandleUSBSuspend (void)
 	LOGDBG ("USB suspend");
 #endif
 
-	assert (m_PnPEvent == PnPEventUnknown);
-	m_PnPEvent = PnPEventSuspend;
+	m_bPnPEvent[PnPEventSuspend] = TRUE;
 
 	CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT, DWHCI_CORE_INT_MASK_USB_SUSPEND);
 	IntStatus.Write ();

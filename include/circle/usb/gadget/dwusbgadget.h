@@ -125,7 +125,7 @@ private:
 		PnPEventUnknown
 	};
 
-	TPnPEvent m_PnPEvent;
+	boolean m_bPnPEvent[PnPEventUnknown];
 
 	CDWUSBGadgetEndpoint *m_pEP[NumberOfEPs+1];
 };
