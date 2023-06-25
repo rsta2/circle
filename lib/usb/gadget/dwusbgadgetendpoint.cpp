@@ -38,6 +38,9 @@ CDWUSBGadgetEndpoint::CDWUSBGadgetEndpoint (size_t nMaxPacketSize, CDWUSBGadget 
 	m_nMaxPacketSize (nMaxPacketSize)
 {
 	InitTransfer ();
+
+	assert (m_pGadget);
+	m_pGadget->AssignEndpoint (m_nEP, this);
 }
 
 CDWUSBGadgetEndpoint::CDWUSBGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
@@ -58,7 +61,8 @@ CDWUSBGadgetEndpoint::CDWUSBGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
 
 CDWUSBGadgetEndpoint::~CDWUSBGadgetEndpoint (void)
 {
-	assert (0);
+	assert (m_pGadget);
+	m_pGadget->RemoveEndpoint (m_nEP);
 }
 
 void CDWUSBGadgetEndpoint::OnUSBReset (void)
@@ -291,10 +295,11 @@ void CDWUSBGadgetEndpoint::Stall (void)
 {
 	LOGWARN ("EP%u: Send STALL response", m_nEP);
 
-	CDWHCIRegister InEPCtrl (DWHCI_DEV_IN_EP_CTRL (m_nEP));
-	InEPCtrl.Read ();
-	InEPCtrl.Or (DWHCI_DEV_EP_CTRL_STALL);
-	InEPCtrl.Write ();
+	CDWHCIRegister OutEPCtrl (DWHCI_DEV_OUT_EP_CTRL (m_nEP));
+	OutEPCtrl.Read ();
+	OutEPCtrl.Or (DWHCI_DEV_EP_CTRL_STALL);
+	OutEPCtrl.Or (DWHCI_DEV_EP_CTRL_CLEAR_NAK);
+	OutEPCtrl.Write ();
 }
 
 void CDWUSBGadgetEndpoint::OnControlMessage (void)
@@ -328,6 +333,8 @@ void CDWUSBGadgetEndpoint::HandleOutInterrupt (void)
 		assert (nLength == sizeof (TSetupData));
 
 		OnControlMessage ();
+
+		OutEPInt.And (~DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE);
 	}
 
 	if (OutEPInt.Get () & DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE)

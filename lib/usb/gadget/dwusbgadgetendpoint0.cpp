@@ -32,7 +32,6 @@ CDWUSBGadgetEndpoint0::CDWUSBGadgetEndpoint0 (size_t nMaxPacketSize, CDWUSBGadge
 
 CDWUSBGadgetEndpoint0::~CDWUSBGadgetEndpoint0 (void)
 {
-	assert (0);
 }
 
 void CDWUSBGadgetEndpoint0::OnActivate (void)
@@ -60,6 +59,8 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			if (!pDesc)
 			{
 				Stall ();
+
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 
 				return;
 			}
@@ -89,6 +90,8 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			{
 				Stall ();
 
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+
 				return;
 			}
 
@@ -97,11 +100,14 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 
 			m_State = StateInDataPhase;
 
-			BeginTransfer (TransferDataIn, m_InBuffer, 2);
+			m_nBytesLeft = 2;
+			m_pBufPtr = m_InBuffer;
+			BeginTransfer (TransferDataIn, m_pBufPtr, m_nBytesLeft);
 			break;
 
 		default:
 			Stall ();
+			BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 			break;
 		}
 	}
@@ -122,6 +128,8 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			{
 				Stall ();
 
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+
 				return;
 			}
 
@@ -132,6 +140,7 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 
 		default:
 			Stall ();
+			BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 			break;
 		}
 	}

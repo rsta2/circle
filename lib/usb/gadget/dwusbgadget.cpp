@@ -2,9 +2,7 @@
 // dwusbgadget.cpp
 //
 // Limits:
-//	Device must be bus-powered.
 //	Does only support Control EP0 and Bulk EPs.
-//	Does not recover from STALL conditions yet.
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023  R. Stange <rsta2@o2online.de>
@@ -43,7 +41,7 @@ CDWUSBGadget::CDWUSBGadget (CInterruptSystem *pInterruptSystem, TDeviceSpeed Dev
 :	m_pInterruptSystem (pInterruptSystem),
 	m_DeviceSpeed (DeviceSpeed),
 	m_State (StatePowered),
-	m_bPnPUpdated (TRUE)
+	m_PnPEvent (PnPEventUnknown)
 {
 	for (unsigned i = 0; i <= NumberOfEPs; i++)
 	{
@@ -101,11 +99,11 @@ boolean CDWUSBGadget::Initialize (boolean bScanDevices)
 	}
 
 	// Create EPs
-	assert (!m_pEP[0]);
-	m_pEP[0] = new CDWUSBGadgetEndpoint0 (pDeviceDesc->bMaxPacketSize0, this);
-	assert (m_pEP[0]);
+	new CDWUSBGadgetEndpoint0 (pDeviceDesc->bMaxPacketSize0, this);
 
 	AddEndpoints ();
+
+	m_State = StateSuspended;
 
 	// Enable all interrupts
 	AHBConfig.Read ();
@@ -124,6 +122,9 @@ boolean CDWUSBGadget::SetConfiguration (u8 uchConfiguration)
 		return FALSE;
 	}
 
+	assert (m_State == StateEnumDone);
+	m_State = StateConfigured;
+
 	unsigned nEPCount = 0;
 	for (unsigned i = 1; i <= NumberOfEPs; i++)
 	{
@@ -137,14 +138,59 @@ boolean CDWUSBGadget::SetConfiguration (u8 uchConfiguration)
 
 	LOGNOTE ("%u Endpoint(s) activated", nEPCount);
 
+	assert (m_PnPEvent == PnPEventUnknown);
+	m_PnPEvent = PnPEventConfigured;
+
 	return TRUE;
 }
 
 boolean CDWUSBGadget::UpdatePlugAndPlay (void)
 {
-	boolean bResult = m_bPnPUpdated;
+	boolean bResult = FALSE;
 
-	m_bPnPUpdated = FALSE;
+	if (m_PnPEvent == PnPEventConfigured)
+	{
+		m_PnPEvent = PnPEventUnknown;
+		bResult = TRUE;
+	}
+	else if (m_PnPEvent == PnPEventSuspend)
+	{
+		m_PnPEvent = PnPEventUnknown;
+		bResult = TRUE;
+
+		// Remove EPs
+		OnSuspend ();
+
+		delete m_pEP[0];
+
+		// Disable all interrupts
+		CDWHCIRegister AHBConfig (DWHCI_CORE_AHB_CFG);
+		AHBConfig.Read ();
+		AHBConfig.And (~DWHCI_CORE_AHB_CFG_GLOBALINT_MASK);
+		AHBConfig.Write ();
+
+		if (!InitCore ())
+		{
+			LOGPANIC ("Cannot initialize core");
+		}
+
+		// Re-create EPs
+		size_t nDescLength;
+		const TUSBDeviceDescriptor *pDeviceDesc =
+			reinterpret_cast<const TUSBDeviceDescriptor *> (
+				GetDescriptor (DESCRIPTOR_DEVICE << 8, 0, &nDescLength));
+		assert (pDeviceDesc);
+		new CDWUSBGadgetEndpoint0 (pDeviceDesc->bMaxPacketSize0, this);
+
+		AddEndpoints ();
+
+		m_State = StateSuspended;
+
+		// Enable all interrupts
+		AHBConfig.Read ();
+		AHBConfig.Or (DWHCI_CORE_AHB_CFG_GLOBALINT_MASK);
+		AHBConfig.Write ();
+	}
 
 	return bResult;
 }
@@ -451,7 +497,8 @@ void CDWUSBGadget::HandleUSBSuspend (void)
 	LOGDBG ("USB suspend");
 #endif
 
-	m_State = StatePowered;
+	assert (m_PnPEvent == PnPEventUnknown);
+	m_PnPEvent = PnPEventSuspend;
 
 	CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT, DWHCI_CORE_INT_MASK_USB_SUSPEND);
 	IntStatus.Write ();
@@ -542,6 +589,9 @@ void CDWUSBGadget::HandleEnumerationDone (void)
 	USBConfig.Or (9 << DWHCI_CORE_USB_CFG_TURNAROUND_TIME__SHIFT);
 	USBConfig.Write ();
 
+	// TODO: Without this may receive an empty SETUP packet afterwards.
+	CTimer::Get ()->MsDelay (50);
+
 	assert (m_pEP[0]);
 	m_pEP[0]->OnActivate ();
 
@@ -557,7 +607,8 @@ void CDWUSBGadget::HandleInEPInterrupt (void)
 	LOGDBG ("In EP interrupt");
 #endif
 
-	assert (m_State == StateEnumDone);
+	assert (   m_State == StateEnumDone
+		|| m_State == StateConfigured);
 
 	CDWHCIRegister AllEPsIntStat (DWHCI_DEV_ALL_EPS_INT_STAT);
 	CDWHCIRegister AllEPsIntMask (DWHCI_DEV_ALL_EPS_INT_MASK);
@@ -580,7 +631,8 @@ void CDWUSBGadget::HandleOutEPInterrupt (void)
 	LOGDBG ("Out EP interrupt");
 #endif
 
-	assert (m_State == StateEnumDone);
+	assert (   m_State == StateEnumDone
+		|| m_State == StateConfigured);
 
 	CDWHCIRegister AllEPsIntStat (DWHCI_DEV_ALL_EPS_INT_STAT);
 	CDWHCIRegister AllEPsIntMask (DWHCI_DEV_ALL_EPS_INT_MASK);
@@ -624,14 +676,14 @@ void CDWUSBGadget::InterruptHandler (void)
 		HandleEnumerationDone ();
 	}
 
-	if (nIntStatus & DWHCI_CORE_INT_MASK_IN_EP_INTR)
-	{
-		HandleInEPInterrupt ();
-	}
-
 	if (nIntStatus & DWHCI_CORE_INT_MASK_OUT_EP_INTR)
 	{
 		HandleOutEPInterrupt ();
+	}
+
+	if (nIntStatus & DWHCI_CORE_INT_MASK_IN_EP_INTR)
+	{
+		HandleInEPInterrupt ();
 	}
 
 	assert (!(nIntStatus & DWHCI_CORE_INT_MASK_IN_EP_MISMATCH));
@@ -658,6 +710,13 @@ void CDWUSBGadget::AssignEndpoint (unsigned nEP, CDWUSBGadgetEndpoint *pEP)
 
 	m_pEP[nEP] = pEP;
 	assert (m_pEP[nEP]);
+}
+
+void CDWUSBGadget::RemoveEndpoint (unsigned nEP)
+{
+	assert (nEP <= NumberOfEPs);
+	assert (m_pEP[nEP]);
+	m_pEP[nEP] = nullptr;
 }
 
 void CDWUSBGadget::SetDeviceAddress (u8 uchAddress)

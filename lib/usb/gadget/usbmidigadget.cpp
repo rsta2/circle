@@ -240,6 +240,18 @@ void CUSBMIDIGadget::AddEndpoints (void)
 	assert (m_pEP[EPIn]);
 }
 
+void CUSBMIDIGadget::OnSuspend (void)
+{
+	delete m_pInterface;
+	m_pInterface = nullptr;
+
+	delete m_pEP[EPOut];
+	m_pEP[EPOut] = nullptr;
+
+	delete m_pEP[EPIn];
+	m_pEP[EPIn] = nullptr;
+}
+
 const void *CUSBMIDIGadget::ToStringDescriptor (const char *pString, size_t *pLength)
 {
 	assert (pString);

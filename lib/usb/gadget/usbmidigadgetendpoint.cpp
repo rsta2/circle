@@ -46,7 +46,6 @@ CUSBMIDIGadgetEndpoint::CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pD
 
 CUSBMIDIGadgetEndpoint::~CUSBMIDIGadgetEndpoint (void)
 {
-	assert (0);
 }
 
 void CUSBMIDIGadgetEndpoint::OnActivate (void)

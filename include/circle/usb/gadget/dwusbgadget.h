@@ -63,6 +63,10 @@ public:
 	/// \note May override this for device-specific configuration.
 	virtual boolean SetConfiguration (u8 uchConfiguration);
 
+	/// \brief Device connection has been suspended / removed
+	/// \note Have to undo AddEndpoints() here.
+	virtual void OnSuspend (void) = 0;
+
 	/// \return TRUE if connection status has been changed (always TRUE on first call)
 	boolean UpdatePlugAndPlay (void) override;
 
@@ -89,6 +93,7 @@ private:
 			    unsigned nMsTimeout);
 
 	void AssignEndpoint (unsigned nEP, CDWUSBGadgetEndpoint *pEP);
+	void RemoveEndpoint (unsigned nEP);
 	void SetDeviceAddress (u8 uchAddress);
 	friend class CDWUSBGadgetEndpoint;
 	friend class CDWUSBGadgetEndpoint0;
@@ -105,13 +110,22 @@ private:
 	enum TState
 	{
 		StatePowered,
+		StateSuspended,
 		StateResetDone,
-		StateEnumDone
+		StateEnumDone,
+		StateConfigured
 	};
 
 	TState m_State;
 
-	boolean m_bPnPUpdated;
+	enum TPnPEvent
+	{
+		PnPEventConfigured,
+		PnPEventSuspend,
+		PnPEventUnknown
+	};
+
+	TPnPEvent m_PnPEvent;
 
 	CDWUSBGadgetEndpoint *m_pEP[NumberOfEPs+1];
 };
