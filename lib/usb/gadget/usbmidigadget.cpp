@@ -26,7 +26,7 @@ const TUSBDeviceDescriptor CUSBMIDIGadget::s_DeviceDescriptor =
 {
 	sizeof (TUSBDeviceDescriptor),
 	DESCRIPTOR_DEVICE,
-	0x100,				// bcdUSB
+	0x110,				// bcdUSB
 	0, 0, 0,
 	64,				// wMaxPacketSize0
 	USB_GADGET_VENDOR_ID,
