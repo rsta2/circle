@@ -29,7 +29,10 @@
 #define ZX_SMI_USE_SOE_SE					TRUE
 // #define ZX_SMI_USE_SOE_SE					FALSE
 #define ZX_SMI_USE_SWE_SRW				FALSE
-#define ZX_SMI_WIDTH							SMI16Bits
+#define ZX_SMI_WIDTH					SMI16Bits
+#define ZX_SMI_PACK_DATA				TRUE
+// #define ZX_SMI_WIDTH					SMI16Bits
+// #define ZX_SMI_PACK_DATA				FALSE
 #define ZX_SMI_EXTERNAL_DREQ			TRUE
 // #define ZX_SMI_USE_FIQ					FALSE
 #define ZX_SMI_USE_FIQ					TRUE

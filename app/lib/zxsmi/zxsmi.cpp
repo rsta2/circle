@@ -174,7 +174,8 @@ boolean CZxSmi::Initialize ()
     ZX_SMI_HOLD, 
     ZX_SMI_PACE,
     0,
-    ZX_SMI_EXTERNAL_DREQ
+    ZX_SMI_EXTERNAL_DREQ,
+    ZX_SMI_PACK_DATA
   );
 
   // Setup SMI DMA and buffers (must be 64-bit word aligned, see /doc/dma-buffer-requirements.txt)  

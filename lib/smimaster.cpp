@@ -295,7 +295,17 @@ void CSMIMaster::StopDMA(CDMAChannel& dma)
 	PeripheralExit();
 }
 
-void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned nSetup, unsigned nStrobe, unsigned nHold, unsigned nPace, unsigned nDevice, unsigned bExternalDREQ)
+void CSMIMaster::SetupTiming(
+	TSMIDataWidth nWidth, 
+	unsigned nCycle_ns, 
+	unsigned nSetup, 
+	unsigned nStrobe, 
+	unsigned nHold, 
+	unsigned nPace, 
+	unsigned nDevice, 
+	unsigned bExternalDREQ,
+	unsigned bPackData
+)
 {
 	uintptr readReg, writeReg;
 	switch (nDevice) {
@@ -322,8 +332,9 @@ void CSMIMaster::SetupTiming(TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned 
 		break;
 	}
 
-	// Save external DREQ setting
+	// Save external DREQ setting & data packing (pxldat)
 	m_bExternalDREQ[nDevice] = bExternalDREQ;
+	m_bPackData[nDevice] = bPackData;
 
 	PeripheralEntry ();
 
@@ -392,9 +403,10 @@ void CSMIMaster::SetupDMA(unsigned nLength, boolean bDMADirRead)
 
 	u32 nDmc = (DMA_REQUEST_THRESH << DMC_REQW__SHIFT) | (DMA_REQUEST_THRESH << DMC_REQR__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICW__SHIFT) | (DMA_PANIC_LEVEL << DMC_PANICR__SHIFT) | DMC_DMAEN;
 	if (m_bExternalDREQ[m_nDevice]) nDmc |= DMC_DMAP;
+	u32 nPxlDat = m_bPackData[m_nDevice] ? CS_PXLDAT : 0;
 
 	write32(ARM_SMI_DMC, nDmc);
-	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_ENABLE | CS_CLEAR | CS_PXLDAT); // CS_PXLDAT packs the 8 or 16 bit data into 32-bit double-words
+	write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_ENABLE | CS_CLEAR | nPxlDat); // CS_PXLDAT packs the 8 or 16 bit data into 32-bit double-words
 	write32(ARM_SMI_L, nLength);
 	if (m_bDMADirRead) {
 		write32(ARM_SMI_CS, read32(ARM_SMI_CS) & ~CS_WRITE);

@@ -514,7 +514,8 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
   // Loop all the data in the buffer
   for (unsigned i = 0; i < nULABufferLen; i++) {   
     // Read the value from the ULA data buffer
-    u16 value = pULABuffer[i];
+    // u16 value = pULABuffer[i];
+    u32 value = pULABuffer[i];
 
     // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
     // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
@@ -577,6 +578,10 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
       }
       inIOWR = 0;
     }
+
+    // if (i == 400) {
+    // borderValue = value;
+    // }
 
     // Draw border
     if (!borderDrawComplete) {

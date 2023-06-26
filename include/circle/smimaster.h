@@ -93,7 +93,17 @@ public:
 	/// \param nHold		the hold time that keeps the signals stable after the transfer, in units of nCycle_ns
 	/// \param nPace		the pace time in between two cycles, in units of nCycle_ns
 	/// \param nDevice		the settings bank to use between 0 and 3
-	void SetupTiming (TSMIDataWidth nWidth, unsigned nCycle_ns, unsigned nSetup, unsigned nStrobe, unsigned nHold, unsigned nPace, unsigned nDevice = 0, unsigned bExternalDREQ = FALSE);
+	void SetupTiming (
+		TSMIDataWidth nWidth, 
+		unsigned nCycle_ns, 
+		unsigned nSetup, 
+		unsigned nStrobe, 
+		unsigned nHold, 
+		unsigned nPace,
+		unsigned nDevice = 0, 
+		unsigned bExternalDREQ = FALSE,
+		unsigned bPackData = TRUE
+	);
 
 	/// \brief Sets up DMA for (potentially multiple) SMI cycles at the specified length and direction
 	/// \param nLength		length of the buffer in bytes
@@ -143,6 +153,7 @@ protected:
 	CGPIOPin m_SoeSeGpio;
 	CGPIOPin m_SweSrwGpio;	
 	unsigned m_bExternalDREQ[SMI_NUM_DEVICES];
+	unsigned m_bPackData[SMI_NUM_DEVICES];
 	unsigned m_nDevice;
 	unsigned m_nLength;
 	boolean m_bDMADirRead;
