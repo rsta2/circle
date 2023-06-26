@@ -191,7 +191,7 @@ TShutdownMode CKernel::Run (void)
 
 	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
 	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
-	new CTapeTask (&m_ZxTape);
+	// new CTapeTask (&m_ZxTape);
 
 #if HD_SPECCYS_FEATURE_NETWORK
 	// DO NOT LEAVE RUNNING WITH THIS!

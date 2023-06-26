@@ -280,8 +280,10 @@ ZX_DMA_T *CZxSmi::LockDataBuffer(void) {
   // Lock the buffer
   m_DMABufferReadSemaphore.Down();
 
-  // Ensure DMA buffer is not cached
-  CleanAndInvalidateDataCacheRange((uintptr)m_pDMABufferRead, m_nDMABufferLenBytes);
+  if (m_pDMABufferRead) {
+    // Ensure DMA buffer is not cached
+    CleanAndInvalidateDataCacheRange((uintptr)m_pDMABufferRead, m_nDMABufferLenBytes);
+  }
 
 
   // Return the buffer
@@ -289,10 +291,16 @@ ZX_DMA_T *CZxSmi::LockDataBuffer(void) {
 }
 
 void CZxSmi::ReleaseDataBuffer(void) {
-    // Zero out the DMA buffer, read for next fill
-  memset(m_pDMABufferRead, 0, m_nDMABufferLenBytes);
-  CleanAndInvalidateDataCacheRange((uintptr)m_pDMABufferRead, m_nDMABufferLenBytes); // Necessary?
+  if (m_pDMABufferRead) {
+    // Fewer corruptions if we don't zero out the buffer
+    // If just memset and no CleanAndInvalidateDataCacheRange, then we get bad corruption
+    // With both, only corruption when dropping frames.
+    // With neither, no corruption ?!!
 
+    // Zero out the DMA buffer, read for next fill
+    // memset(m_pDMABufferRead, 0, m_nDMABufferLenBytes);
+    // CleanAndInvalidateDataCacheRange((uintptr)m_pDMABufferRead, m_nDMABufferLenBytes); // Necessary?
+  }
 
   // Release the buffer
   m_DMABufferReadSemaphore.Up();
@@ -603,52 +611,48 @@ void CZxSmi::FiqIrqHandler (void *pParam)
   // earlier in the spectrum's INT pulse and there is not time for the SMI FIFO to flush out the last few bytes.
   CTimer::SimpleusDelay(2);
 
-  // Attempt to get the buffer lock - if it is still in use, we need to drop a frame
+
+  // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
+  // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
+
+  // Stop the DMA and SMI
+  pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
+
+  // Attempt to get the m_pDMABufferRead lock - if it is still in use, we need to drop this frame
+  // To drop the frame, we just restart the DMA and SMI on the same buffer
   bool haveLock = pThis->m_DMABufferReadSemaphore.TryDown();
 
   if (haveLock) {
-    // We have the lock
-
-    // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
-    // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
-
-    // Stop the DMA and SMI
-    pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
-    
+    // We have the m_pDMABufferRead lock
 
     // Save pointer to buffer just filled by DMA
     pThis->m_pDMABufferRead = pThis->m_pDMABuffer;
 
-    skippy++;
+    // Move to the next DMA buffer and control block
+    pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+    pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
+    pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
 
-    if (skippy % 1 == 0) {
-
-      // Move to the next DMA buffer and control block
-      pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
-      pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
-      pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
-
-      // Start the DMA using the next control block
-      pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
-
-      // Start the SMI for DMA (DMA should already be ready to go)
-      PeripheralEntry();
-      write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
-      PeripheralExit();
-    }
-
-    // Release the lock
+    // Release the m_pDMABufferRead lock
     pThis->m_DMABufferReadSemaphore.Up();
 
     // Signal the screen processor task
     if (pThis->m_pFrameEvent) {
       pThis->m_pFrameEvent->Set();
     }
-
   } else {
-    // Drop a frame - the screen processor can't keep up
+    // Dropped a frame - the screen processor can't keep up
+    pThis->m_pDMABufferRead = nullptr;
     skippedFrameCount++;
   }
+
+  // Start the DMA using the next control block
+  pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
+
+  // Start the SMI for DMA (DMA should already be ready to go)
+  PeripheralEntry();
+  write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
+  PeripheralExit();
 
 
   // Toggle LED for debug
@@ -703,62 +707,56 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   // at slower sample rates. Without this, the last few bytes of the frame are lost.
   // At higher sample rates the delay is not needed, but it makes more sense to have a lower sample rate and
   // therefore lower power consumption.
-  CTimer::SimpleusDelay(1);
+  // NOTE: This delay needs to be longer when using FIQ rather than IRQ because it is faster so this code happens
+  // earlier in the spectrum's INT pulse and there is not time for the SMI FIFO to flush out the last few bytes.
+  CTimer::SimpleusDelay(2);
 
-  // Attempt to get the buffer lock - if it is still in use, we need to drop a frame
+
+  // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
+  // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
+
+  // Stop the DMA and SMI
+  pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
+
+  // Attempt to get the m_pDMABufferRead lock - if it is still in use, we need to drop this frame
+  // To drop the frame, we just restart the DMA and SMI on the same buffer
   bool haveLock = pThis->m_DMABufferReadSemaphore.TryDown();
 
   if (haveLock) {
-    // We have the lock
-
-    // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
-    // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
-
-    // Stop the DMA and SMI
-    pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
-    
+    // We have the m_pDMABufferRead lock
 
     // Save pointer to buffer just filled by DMA
     pThis->m_pDMABufferRead = pThis->m_pDMABuffer;
 
-    skippy++;
+    // Move to the next DMA buffer and control block
+    pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+    pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
+    pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
 
-    if (skippy % 1 == 0) {
-
-      // Move to the next DMA buffer and control block
-      pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
-      pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
-      pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
-
-      // Start the DMA using the next control block
-      pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
-
-      // // Start the SMI for DMA (DMA should already be ready to go)
-      PeripheralEntry();
-      write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
-      PeripheralExit();
-
-    }
-
-    // Release the lock
+    // Release the m_pDMABufferRead lock
     pThis->m_DMABufferReadSemaphore.Up();
 
     // Signal the screen processor task
     if (pThis->m_pFrameEvent) {
       pThis->m_pFrameEvent->Set();
     }
-
   } else {
-    // Drop a frame - the screen processor can't keep up
+    // Dropped a frame - the screen processor can't keep up
+    pThis->m_pDMABufferRead = nullptr;
     skippedFrameCount++;
   }
+
+  // Start the DMA using the next control block
+  pThis->m_DMA.Start (pThis->m_pDMAControlBlock);
+
+  // Start the SMI for DMA (DMA should already be ready to go)
+  PeripheralEntry();
+  write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
+  PeripheralExit();
 
 
   // Toggle LED for debug
   pThis->m_pActLED->Off();
-
-  // Increment the loop count
-  frameInterruptCount++;
 
   // Acknowledge the interrupt
   pThis->m_GpioIrqPin.AcknowledgeInterrupt();

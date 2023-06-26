@@ -62,32 +62,31 @@ void CScreenProcessorTask::Run (void)
 
 		unsigned startTicks = CTimer::Get()->GetClockTicks();
 
-		// Get pointer to screen buffer
+		// Get pointer to screen buffer (will be null if no new frame available)
 		ZX_DMA_T *pULABuffer = m_pZxSmi->LockDataBuffer();
 
-				
+		if (pULABuffer) {		
+			// ZX_DMA_T value = borderValue;
 
-		// ZX_DMA_T value = borderValue;
+			// // m_Screen.SetPixel(x++,y++, RED_COLOR);
+			// value = value & 0x7;
+			// TScreenColor bc =BRIGHT_MAGENTA_COLOR;// clear ? MAGENTA_COLOR : GREEN_COLOR; //BLACK_COLOR;
+			// if (value == 0) bc = BLACK_COLOR;
+			// if (value == 1) bc = BLUE_COLOR;
+			// if (value == 2) bc = RED_COLOR;
+			// if (value == 3) bc = MAGENTA_COLOR;
+			// if (value == 4) bc = GREEN_COLOR;
+			// if (value == 5) bc = CYAN_COLOR;
+			// if (value == 6) bc = YELLOW_COLOR;
+			// if (value == 7) bc = WHITE_COLOR;
 
-		// // m_Screen.SetPixel(x++,y++, RED_COLOR);
-		// value = value & 0x7;
-		// TScreenColor bc =BRIGHT_MAGENTA_COLOR;// clear ? MAGENTA_COLOR : GREEN_COLOR; //BLACK_COLOR;
-		// if (value == 0) bc = BLACK_COLOR;
-		// if (value == 1) bc = BLUE_COLOR;
-		// if (value == 2) bc = RED_COLOR;
-		// if (value == 3) bc = MAGENTA_COLOR;
-		// if (value == 4) bc = GREEN_COLOR;
-		// if (value == 5) bc = CYAN_COLOR;
-		// if (value == 6) bc = YELLOW_COLOR;
-		// if (value == 7) bc = WHITE_COLOR;
-
-		// m_pZxScreen->SetBorder(bc);
-		// // m_pZxScreen->SetScreen(TRUE);
+			// m_pZxScreen->SetBorder(bc);
+			// // m_pZxScreen->SetScreen(TRUE);
 
 
-		// Set screen data from ULA buffer
-		m_pZxScreen->SetScreenFromULABuffer(pULABuffer, ZX_DMA_BUFFER_LENGTH);
-		
+			// Set screen data from ULA buffer
+			m_pZxScreen->SetScreenFromULABuffer(pULABuffer, ZX_DMA_BUFFER_LENGTH);
+		}
 
 		// Release the SMI DMA buffer pointer
 		m_pZxSmi->ReleaseDataBuffer();
@@ -104,8 +103,7 @@ void CScreenProcessorTask::Run (void)
 		// Timing		
 		screenUpdateTicks = (CTimer::Get()->GetClockTicks() - startTicks) - ulaBufferTicks;
 		screenLoopTicks = ulaBufferTicks + screenUpdateTicks;
-
-
+	
 
 		// clear = !clear;
 

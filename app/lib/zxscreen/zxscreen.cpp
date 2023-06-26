@@ -620,10 +620,10 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
       for (int i = 0; i < 8; i++) {
         // 7-i to flip the data lines
 #if ZX_SCREEN_COLOUR        
-        TScreenColor pixelColor = (pixelData & (1 << (7-i))) ? colours.ink : colours.paper;
+        TScreenColor pixelColor = (pixelData << i & 0x80) ? colours.ink : colours.paper;
         pZxScreenBuffer[bytePos + i] = pixelColor;
 #else
-        bool pixelSet = (pixelData & (1 << (7-i))) ? TRUE : FALSE;
+        bool pixelSet = pixelData << i & 0x80;
         pZxScreenBuffer[bytePos + i] = pixelSet ? BLACK_COLOR : WHITE_COLOR;
 #endif        
       }
