@@ -58,7 +58,7 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 								      &nLength);
 			if (!pDesc)
 			{
-				Stall ();
+				Stall (TRUE);
 
 				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 
@@ -88,7 +88,7 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 		case GET_STATUS:
 			if (pSetupData->wLength != 2)
 			{
-				Stall ();
+				Stall (TRUE);
 
 				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 
@@ -106,7 +106,7 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			break;
 
 		default:
-			Stall ();
+			Stall (TRUE);
 			BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 			break;
 		}
@@ -126,7 +126,7 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 		case SET_CONFIGURATION:
 			if (!m_pGadget->SetConfiguration (pSetupData->wValue & 0xFF))
 			{
-				Stall ();
+				Stall (TRUE);
 
 				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 
@@ -139,7 +139,7 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			break;
 
 		default:
-			Stall ();
+			Stall (TRUE);
 			BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 			break;
 		}

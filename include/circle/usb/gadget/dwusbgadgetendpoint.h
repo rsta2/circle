@@ -112,7 +112,8 @@ protected:
 	void BeginTransfer (TTransferMode Mode, void *pBuffer, size_t nLength);
 
 	/// \brief Send STALL response
-	void Stall (void);
+	/// \param bIn STALL next IN request, or OUT otherwise?
+	void Stall (boolean bIn);
 
 private:
 	size_t FinishTransfer (void);

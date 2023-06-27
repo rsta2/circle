@@ -291,15 +291,16 @@ void CDWUSBGadgetEndpoint::InitTransfer (void)
 	m_nTransferLength = -1;
 }
 
-void CDWUSBGadgetEndpoint::Stall (void)
+void CDWUSBGadgetEndpoint::Stall (boolean bIn)
 {
 	LOGWARN ("EP%u: Send STALL response", m_nEP);
 
-	CDWHCIRegister OutEPCtrl (DWHCI_DEV_OUT_EP_CTRL (m_nEP));
-	OutEPCtrl.Read ();
-	OutEPCtrl.Or (DWHCI_DEV_EP_CTRL_STALL);
-	OutEPCtrl.Or (DWHCI_DEV_EP_CTRL_CLEAR_NAK);
-	OutEPCtrl.Write ();
+	CDWHCIRegister EPCtrl (bIn ? DWHCI_DEV_IN_EP_CTRL (m_nEP)
+				   : DWHCI_DEV_OUT_EP_CTRL (m_nEP));
+	EPCtrl.Read ();
+	EPCtrl.Or (DWHCI_DEV_EP_CTRL_STALL);
+	EPCtrl.Or (DWHCI_DEV_EP_CTRL_CLEAR_NAK);
+	EPCtrl.Write ();
 }
 
 void CDWUSBGadgetEndpoint::OnControlMessage (void)
