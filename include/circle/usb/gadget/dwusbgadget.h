@@ -47,6 +47,9 @@ public:
 	/// \note May override this for device-specific initialization.
 	boolean Initialize (boolean bScanDevices = TRUE) override;
 
+	/// \return TRUE if connection status has been changed (always TRUE on first call)
+	boolean UpdatePlugAndPlay (void) override;
+
 	/// \brief Get device-specific descriptor
 	/// \param wValue Parameter from setup packet (descriptor type (MSB) and index (LSB))
 	/// \param wIndex Parameter from setup packet (e.g. language ID for string descriptors)
@@ -57,18 +60,12 @@ public:
 	/// \brief Create device-specific EPs
 	virtual void AddEndpoints (void) = 0;
 
-	/// \brief Set device configuration
-	/// \param uchConfiguration Configuration value from configuration descriptor
-	/// \return Operation successful?
-	/// \note May override this for device-specific configuration.
-	virtual boolean SetConfiguration (u8 uchConfiguration);
+	/// \brief Create application interface device (API)
+	virtual void CreateDevice (void) = 0;
 
 	/// \brief Device connection has been suspended / removed
-	/// \note Have to undo AddEndpoints() here.
+	/// \note Have to undo AddEndpoints() and CreateDevice() here.
 	virtual void OnSuspend (void) = 0;
-
-	/// \return TRUE if connection status has been changed (always TRUE on first call)
-	boolean UpdatePlugAndPlay (void) override;
 
 private:
 	boolean PowerOn (void);
@@ -95,6 +92,7 @@ private:
 	void AssignEndpoint (unsigned nEP, CDWUSBGadgetEndpoint *pEP);
 	void RemoveEndpoint (unsigned nEP);
 	void SetDeviceAddress (u8 uchAddress);
+	boolean SetConfiguration (u8 uchConfiguration);
 	friend class CDWUSBGadgetEndpoint;
 	friend class CDWUSBGadgetEndpoint0;
 

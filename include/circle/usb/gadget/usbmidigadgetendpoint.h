@@ -23,6 +23,7 @@
 #include <circle/usb/gadget/dwusbgadgetendpoint.h>
 #include <circle/usb/usb.h>
 #include <circle/synchronize.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
 
 class CUSBMIDIGadget;
@@ -31,28 +32,42 @@ class CUSBMIDIDevice;
 class CUSBMIDIGadgetEndpoint : public CDWUSBGadgetEndpoint	/// Endpoint of the USB MIDI gadget
 {
 public:
-	CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
-				CUSBMIDIDevice *pInterface,
-				CUSBMIDIGadget *pGadget);
+	CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pDesc, CUSBMIDIGadget *pGadget);
 	~CUSBMIDIGadgetEndpoint (void);
+
+	void AttachInterface (CUSBMIDIDevice *pInterface);
 
 	void OnActivate (void) override;
 
 	void OnTransferComplete (boolean bIn, size_t nLength) override;
 
+	void OnSuspend (void) override;
+
 private:
 	boolean SendEventsHandler (const u8 *pData, unsigned nLength);
 	static boolean SendEventsHandler (const u8 *pData, unsigned nLength, void *pParam);
 
+	unsigned GetQueueBytesFree (void);
+	unsigned GetQueueBytesAvail (void);
+	void Enqueue (const void *pBuffer, unsigned nCount);
+	void Dequeue (void *pBuffer, unsigned nCount);
+
 private:
 	CUSBMIDIDevice *m_pInterface;
 
-	volatile int m_nInBytesRemaining;
+	volatile boolean m_bInActive;
+
+	static const size_t QueueSize = 8192+1;
+	u8 *m_pQueue;
+	volatile unsigned m_nInPtr;
+	volatile unsigned m_nOutPtr;
 
 	static const size_t MaxOutMessageSize = 64;
-	static const size_t MaxInMessageSize = 8192;
+	static const size_t MaxInMessageSize = 64;
 	DMA_BUFFER (u8, m_OutBuffer, MaxOutMessageSize);
 	DMA_BUFFER (u8, m_InBuffer, MaxInMessageSize);
+
+	CSpinLock m_SpinLock;
 };
 
 #endif

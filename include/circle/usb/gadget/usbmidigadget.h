@@ -42,6 +42,8 @@ private:
 
 	void AddEndpoints (void) override;
 
+	void CreateDevice (void) override;
+
 	void OnSuspend (void) override;
 
 	const void *ToStringDescriptor (const char *pString, size_t *pLength);

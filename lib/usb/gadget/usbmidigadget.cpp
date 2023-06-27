@@ -223,21 +223,30 @@ const void *CUSBMIDIGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLeng
 
 void CUSBMIDIGadget::AddEndpoints (void)
 {
-	assert (!m_pInterface);
-	m_pInterface = new CUSBMIDIDevice;
-	assert (m_pInterface);
-
 	assert (!m_pEP[EPOut]);
 	m_pEP[EPOut] = new CUSBMIDIGadgetEndpoint (
 				reinterpret_cast<const TUSBEndpointDescriptor *> (
-					&s_ConfigurationDescriptor.EndpointOut), m_pInterface, this);
+					&s_ConfigurationDescriptor.EndpointOut), this);
 	assert (m_pEP[EPOut]);
 
 	assert (!m_pEP[EPIn]);
 	m_pEP[EPIn] = new CUSBMIDIGadgetEndpoint (
 				reinterpret_cast<const TUSBEndpointDescriptor *> (
-					&s_ConfigurationDescriptor.EndpointIn), m_pInterface, this);
+					&s_ConfigurationDescriptor.EndpointIn), this);
 	assert (m_pEP[EPIn]);
+}
+
+void CUSBMIDIGadget::CreateDevice (void)
+{
+	assert (!m_pInterface);
+	m_pInterface = new CUSBMIDIDevice;
+	assert (m_pInterface);
+
+	assert (m_pEP[EPOut]);
+	m_pEP[EPOut]->AttachInterface (m_pInterface);
+
+	assert (m_pEP[EPIn]);
+	m_pEP[EPIn]->AttachInterface (m_pInterface);
 }
 
 void CUSBMIDIGadget::OnSuspend (void)

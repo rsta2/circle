@@ -115,34 +115,6 @@ boolean CDWUSBGadget::Initialize (boolean bScanDevices)
 	return TRUE;
 }
 
-boolean CDWUSBGadget::SetConfiguration (u8 uchConfiguration)
-{
-	if (uchConfiguration != 1)
-	{
-		return FALSE;
-	}
-
-	assert (m_State == StateEnumDone);
-	m_State = StateConfigured;
-
-	unsigned nEPCount = 0;
-	for (unsigned i = 1; i <= NumberOfEPs; i++)
-	{
-		if (m_pEP[i])
-		{
-			m_pEP[i]->OnActivate ();
-
-			nEPCount++;
-		}
-	}
-
-	LOGNOTE ("%u Endpoint(s) activated", nEPCount);
-
-	m_bPnPEvent[PnPEventConfigured] = TRUE;
-
-	return TRUE;
-}
-
 boolean CDWUSBGadget::UpdatePlugAndPlay (void)
 {
 	boolean bResult = FALSE;
@@ -189,6 +161,8 @@ boolean CDWUSBGadget::UpdatePlugAndPlay (void)
 	{
 		m_bPnPEvent[PnPEventConfigured] = FALSE;
 		bResult = TRUE;
+
+		CreateDevice ();
 	}
 
 	return bResult;
@@ -498,6 +472,14 @@ void CDWUSBGadget::HandleUSBSuspend (void)
 
 	m_bPnPEvent[PnPEventSuspend] = TRUE;
 
+	for (unsigned i = 0; i <= NumberOfEPs; i++)
+	{
+		if (m_pEP[i])
+		{
+			m_pEP[i]->OnSuspend ();
+		}
+	}
+
 	CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT, DWHCI_CORE_INT_MASK_USB_SUSPEND);
 	IntStatus.Write ();
 }
@@ -728,4 +710,32 @@ void CDWUSBGadget::SetDeviceAddress (u8 uchAddress)
 	DeviceConfig.And (~DWHCI_DEV_CFG_DEV_ADDR__MASK);
 	DeviceConfig.Or (uchAddress << DWHCI_DEV_CFG_DEV_ADDR__SHIFT);
 	DeviceConfig.Write ();
+}
+
+boolean CDWUSBGadget::SetConfiguration (u8 uchConfiguration)
+{
+	if (uchConfiguration != 1)
+	{
+		return FALSE;
+	}
+
+	assert (m_State == StateEnumDone);
+	m_State = StateConfigured;
+
+	unsigned nEPCount = 0;
+	for (unsigned i = 1; i <= NumberOfEPs; i++)
+	{
+		if (m_pEP[i])
+		{
+			m_pEP[i]->OnActivate ();
+
+			nEPCount++;
+		}
+	}
+
+	LOGNOTE ("%u Endpoint(s) activated", nEPCount);
+
+	m_bPnPEvent[PnPEventConfigured] = TRUE;
+
+	return TRUE;
 }

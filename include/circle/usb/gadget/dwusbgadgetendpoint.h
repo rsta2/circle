@@ -57,6 +57,10 @@ public:
 	/// \note Override this to process received data and/or restart transfer.
 	virtual void OnTransferComplete (boolean bIn, size_t nLength) = 0;
 
+	/// \brief Device connection has been suspended / removed
+	/// \note Override this to abort pending transfers.
+	virtual void OnSuspend (void) {}
+
 protected:
 	/// \return Endpoint number (0-15)
 	unsigned GetEPNumber (void) const
