@@ -26,7 +26,7 @@ const TUSBDeviceDescriptor CUSBMIDIGadget::s_DeviceDescriptor =
 {
 	sizeof (TUSBDeviceDescriptor),
 	DESCRIPTOR_DEVICE,
-	0x110,				// bcdUSB
+	0x200,				// bcdUSB
 	0, 0, 0,
 	64,				// wMaxPacketSize0
 	USB_GADGET_VENDOR_ID,
@@ -47,7 +47,7 @@ const CUSBMIDIGadget::TUSBMIDIGadgetConfigurationDescriptor
 		1,
 		0,
 		0x80,			// bmAttributes (bus-powered)
-		100 / 2			// bMaxPower (100mA)
+		500 / 2			// bMaxPower (500mA)
 	},
 	{
 		sizeof (TUSBInterfaceDescriptor),
@@ -130,7 +130,7 @@ const CUSBMIDIGadget::TUSBMIDIGadgetConfigurationDescriptor
 		DESCRIPTOR_ENDPOINT,
 		EPOut,
 		2,			// bmAttributes (Bulk)
-		64,			// wMaxPacketSize
+		512,			// wMaxPacketSize
 		0,
 		0, 0
 	},
@@ -146,7 +146,7 @@ const CUSBMIDIGadget::TUSBMIDIGadgetConfigurationDescriptor
 		DESCRIPTOR_ENDPOINT,
 		EPIn | 0x80,
 		2,			// bmAttributes (Bulk)
-		64,			// wMaxPacketSize
+		512,			// wMaxPacketSize
 		0,
 		0, 0
 	},
@@ -167,7 +167,7 @@ const char *const CUSBMIDIGadget::s_StringDescriptor[] =
 };
 
 CUSBMIDIGadget::CUSBMIDIGadget (CInterruptSystem *pInterruptSystem)
-:	CDWUSBGadget (pInterruptSystem, FullSpeed),
+:	CDWUSBGadget (pInterruptSystem, HighSpeed),
 	m_pInterface (nullptr),
 	m_pEP {nullptr, nullptr, nullptr}
 {

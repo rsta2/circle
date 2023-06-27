@@ -62,8 +62,8 @@ private:
 	volatile unsigned m_nInPtr;
 	volatile unsigned m_nOutPtr;
 
-	static const size_t MaxOutMessageSize = 64;
-	static const size_t MaxInMessageSize = 64;
+	static const size_t MaxOutMessageSize = 512;
+	static const size_t MaxInMessageSize = 512;
 	DMA_BUFFER (u8, m_OutBuffer, MaxOutMessageSize);
 	DMA_BUFFER (u8, m_InBuffer, MaxInMessageSize);
 
