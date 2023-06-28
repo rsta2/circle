@@ -12,6 +12,7 @@ extern "C" u32 screenLoopCount;
 extern "C" u32 screenLoopTicks;
 extern "C" u32 ulaBufferTicks;
 extern "C" u32 screenUpdateTicks;
+extern "C" u32 frameInterruptCount;
 
 // unsigned char reverseBits(unsigned char b) {
 //    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
@@ -85,7 +86,7 @@ void CScreenProcessorTask::Run (void)
 
 
 			// Set screen data from ULA buffer
-			m_pZxScreen->SetScreenFromULABuffer(pULABuffer, ZX_DMA_BUFFER_LENGTH);
+			m_pZxScreen->SetScreenFromULABuffer(frameInterruptCount, pULABuffer, ZX_DMA_BUFFER_LENGTH);
 		}
 
 		// Release the SMI DMA buffer pointer

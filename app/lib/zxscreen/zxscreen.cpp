@@ -98,7 +98,7 @@ CZxScreen::CZxScreen (unsigned nWidth, unsigned nHeight, unsigned nDisplay, CInt
   // m_value(0),
   // m_isIOWrite(0)
 {
-
+  
 
 }
 
@@ -194,7 +194,6 @@ boolean CZxScreen::Initialize ()
 
   // Initialise the zx color LUT
   InitZxColorLUT();
-
 
   // Clear the screen
   Clear(WHITE_COLOR);
@@ -360,9 +359,9 @@ void CZxScreen::SetScreen (boolean bToggle)
 }
 
 
-void CZxScreen::SetScreenFromULABuffer(u16 *pULABuffer, size_t len) {
+void CZxScreen::SetScreenFromULABuffer(u32 frameNo, u16 *pULABuffer, size_t len) {
   // Update offscreen buffer
-  ULADataToScreen(m_pZxScreenBuffer, pULABuffer, len);
+  ULADataToScreen(frameNo, m_pZxScreenBuffer, pULABuffer, len);
 
   // Mark dirty so will be updated
   m_bDirty = TRUE;
@@ -506,7 +505,7 @@ TScreenColor CZxScreen::ZxColorPaperToScreenColor(u32 paper) {
 
 
 // TODO: Pass in all the sizes
-void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, size_t nULABufferLen) {
+void CZxScreen::ULADataToScreen(u32 frameNo, TScreenColor *pZxScreenBuffer, u16 *pULABuffer, size_t nULABufferLen) {
   // Reset state before processing data (this interrupt occurs at start of screen refresh)
   u32 lastCasValue = 0;
   u32 lastIOWRValue = 0;
@@ -516,7 +515,7 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
   u32 wasOutOfCAS = FALSE;
   videoByteCount = 0;
   u32 pixelData = 0;
-  u32 attrData = 0;
+  u32 attrData = 0;  
   // u32 nBorderTime;
   u32 nBorderTimeMultiplier = 1;
   u32 inBorder = TRUE;
@@ -535,6 +534,9 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
   u32 IORQ_MASK = (1 << 2);
   u32 WR_MASK = (1 << 0);
   u32 CAS_MASK = (1 << 1);
+
+  // Update the flash state (on/off every 16 frames)
+  u32 flashState = ((frameNo / ZX_SCREEN_FLASH_FRAMES) & 0x01) == 0 ? FALSE : TRUE;
 
   // Loop all the data in the buffer
   for (unsigned i = 0; i < nULABufferLen; i++) {   
@@ -656,7 +658,11 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
         bool pixelSet = pixelData >> i & 0x01;
 #else        
         bool pixelSet = pixelData << i & 0x80;
-#endif        
+#endif      
+        // Flip the pixel state if flash and in flash state
+        if (colours.flash && flashState) {
+          pixelSet = !pixelSet;
+        }
 #if ZX_SCREEN_COLOUR     
         TScreenColor pixelColor = pixelSet ? colours.ink : colours.paper;
         pZxScreenBuffer[bytePos + i] = pixelColor;
