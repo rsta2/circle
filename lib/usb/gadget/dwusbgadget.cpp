@@ -569,9 +569,6 @@ void CDWUSBGadget::HandleEnumerationDone (void)
 	USBConfig.Or (9 << DWHCI_CORE_USB_CFG_TURNAROUND_TIME__SHIFT);
 	USBConfig.Write ();
 
-	// TODO: Without this may receive an empty SETUP packet afterwards.
-	CTimer::Get ()->MsDelay (50);
-
 	assert (m_pEP[0]);
 	m_pEP[0]->OnActivate ();
 
