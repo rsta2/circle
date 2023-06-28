@@ -28,6 +28,31 @@ u32 videoByteCount;
 u32 videoValue;
 
 
+// Reverse bits (TODO - move to util)
+
+//Index 1==0b0001 => 0b1000
+//Index 7==0b0111 => 0b1110
+//etc
+static unsigned char lookup[16] = {
+0x0, 0x8, 0x4, 0xc, 0x2, 0xa, 0x6, 0xe,
+0x1, 0x9, 0x5, 0xd, 0x3, 0xb, 0x7, 0xf, };
+
+u8 reverseBits(u8 n) {
+   // Reverse the top and bottom nibble then swap them.
+   return (lookup[n&0b1111] << 4) | lookup[n>>4];
+}
+
+// Detailed breakdown of the math
+//  + lookup reverse of bottom nibble
+//  |       + grab bottom nibble
+//  |       |        + move bottom result into top nibble
+//  |       |        |     + combine the bottom and top results 
+//  |       |        |     | + lookup reverse of top nibble
+//  |       |        |     | |       + grab top nibble
+//  V       V        V     V V       V
+// (lookup[n&0b1111] << 4) | lookup[n>>4]
+
+
 
 //
 // Class
@@ -548,15 +573,14 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
           if (videoByteCount < 0x3000) {
             videoByteCount++;                
 
-            if (isPixels) {
-              // HW Fix, reverse the 8 bits
-              // lastCasValue = reverseBits(lastCasValue);
-        
-              pixelData = lastCasValue >> 8;                
+            if (isPixels) {              
+              pixelData = lastCasValue >> 8;    
             } else {
-              // HW Fix, reverse the 8 bits
-              // lastCasValue = reverseBits(lastCasValue);
               attrData = lastCasValue >> 8;                
+#if (HD_SPECCYS_BOARD_REV == 1)
+              // HW Fix, reverse the 8 bits
+              attrData = reverseBits(attrData);
+#endif               
               pixelAttrDataValid = TRUE;
             }
             isPixels = !isPixels;
@@ -575,6 +599,10 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
       if (inIOWR > 5 && inIOWR < 40) {
         // Exited IO write, use the last value
         borderValue = lastIOWRValue >> 8;
+#if (HD_SPECCYS_BOARD_REV == 1)
+        // HW Fix, reverse the 8 bits
+        borderValue = reverseBits(borderValue);
+#endif        
       }
       inIOWR = 0;
     }
@@ -624,11 +652,15 @@ void CZxScreen::ULADataToScreen(TScreenColor *pZxScreenBuffer, u16 *pULABuffer, 
 
       for (int i = 0; i < 8; i++) {
         // 7-i to flip the data lines
-#if ZX_SCREEN_COLOUR        
-        TScreenColor pixelColor = (pixelData << i & 0x80) ? colours.ink : colours.paper;
+#if (HD_SPECCYS_BOARD_REV == 1)
+        bool pixelSet = pixelData >> i & 0x01;
+#else        
+        bool pixelSet = pixelData << i & 0x80;
+#endif        
+#if ZX_SCREEN_COLOUR     
+        TScreenColor pixelColor = pixelSet ? colours.ink : colours.paper;
         pZxScreenBuffer[bytePos + i] = pixelColor;
 #else
-        bool pixelSet = pixelData << i & 0x80;
         pZxScreenBuffer[bytePos + i] = pixelSet ? BLACK_COLOR : WHITE_COLOR;
 #endif        
       }

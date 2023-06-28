@@ -4,6 +4,7 @@
 #ifndef _zxscreen_h
 #define _zxscreen_h
 
+#include "../../hdspeccys/config.h"
 #include <circle/actled.h>
 #include <circle/types.h>
 #include <circle/interrupt.h>
