@@ -37,16 +37,27 @@ public:
 
 	~CUSBMIDIGadget (void);
 
-private:
+protected:
+	/// \brief Get device-specific descriptor
+	/// \param wValue Parameter from setup packet (descriptor type (MSB) and index (LSB))
+	/// \param wIndex Parameter from setup packet (e.g. language ID for string descriptors)
+	/// \param pLength Pointer to variable, which receives the descriptor size
+	/// \return Pointer to descriptor or nullptr, if not available
+	/// \note May override this to personalize device.
 	const void *GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength) override;
 
+	/// \brief Convert string to UTF-16 string descriptor
+	/// \param pString Pointer to ASCII C-string
+	/// \param pLength Pointer to variable, which receives the descriptor size
+	/// \return Pointer to string descriptor in class-internal buffer
+	const void *ToStringDescriptor (const char *pString, size_t *pLength);
+
+private:
 	void AddEndpoints (void) override;
 
 	void CreateDevice (void) override;
 
 	void OnSuspend (void) override;
-
-	const void *ToStringDescriptor (const char *pString, size_t *pLength);
 
 private:
 	CUSBMIDIDevice *m_pInterface;
@@ -60,7 +71,7 @@ private:
 
 	CUSBMIDIGadgetEndpoint *m_pEP[NumEPs];
 
-	u8 m_StringDescriptorBuffer[50];
+	u8 m_StringDescriptorBuffer[80];
 
 private:
 	static const TUSBDeviceDescriptor s_DeviceDescriptor;

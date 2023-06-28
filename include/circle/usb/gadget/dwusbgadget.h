@@ -43,7 +43,7 @@ public:
 	virtual ~CDWUSBGadget (void);
 
 	/// \return Operation successful?
-	/// \param bScanDevices Immediately scan for connected devices?
+	/// \param bScanDevices Parameter has no function here
 	/// \note May override this for device-specific initialization.
 	boolean Initialize (boolean bScanDevices = TRUE) override;
 
