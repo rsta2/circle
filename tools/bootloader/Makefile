@@ -9,6 +9,8 @@ ARMGNU ?= $(PREFIX)
 ARMGNU64 ?= $(PREFIX64)
 
 COPS = -Wall -O2 -nostdlib -nostartfiles -ffreestanding -DDEFAULTBAUD=$(FLASHBAUD)
+COPS32 = -mno-unaligned-access
+COPS64 = -mstrict-align
 
 all: kernel.img kernel7.img kernel7l.img
 
@@ -25,25 +27,25 @@ vectors64.o : vectors64.s
 	$(ARMGNU64)as vectors64.s -o vectors64.o
 
 bootloader07.o : bootloader07.c
-	$(ARMGNU)gcc $(COPS) -c bootloader07.c -o bootloader07.o -DAARCH=32
+	$(ARMGNU)gcc $(COPS) $(COPS32) -c bootloader07.c -o bootloader07.o -DAARCH=32
 
 bootloader07_64.o : bootloader07.c
-	$(ARMGNU64)gcc $(COPS) -c bootloader07.c -o bootloader07_64.o -DAARCH=64
+	$(ARMGNU64)gcc $(COPS) $(COPS64) -c bootloader07.c -o bootloader07_64.o -DAARCH=64
 
 periph.o : periph.c BCM2835.h
-	$(ARMGNU)gcc $(COPS) -c periph.c -o periph.o -DAARCH=32
+	$(ARMGNU)gcc $(COPS) $(COPS32) -c periph.c -o periph.o -DAARCH=32
 
 periph7.o : periph.c BCM2836.h
-	$(ARMGNU)gcc $(COPS) -c periph.c -o periph7.o -DRPI2 -DAARCH=32
+	$(ARMGNU)gcc $(COPS) $(COPS32) -c periph.c -o periph7.o -DRPI2 -DAARCH=32
 
 periph7_rpi4.o : periph.c BCM2711.h
-	$(ARMGNU)gcc $(COPS) -c periph.c -o periph7_rpi4.o -DRPI4 -DAARCH=32
+	$(ARMGNU)gcc $(COPS) $(COPS32) -c periph.c -o periph7_rpi4.o -DRPI4 -DAARCH=32
 
 periph64.o : periph.c BCM2836.h
-	$(ARMGNU64)gcc $(COPS) -c periph.c -o periph64.o -DAARCH=64
+	$(ARMGNU64)gcc $(COPS) $(COPS64) -c periph.c -o periph64.o -DAARCH=64
 
 periph64_rpi4.o : periph.c BCM2711.h
-	$(ARMGNU64)gcc $(COPS) -c periph.c -o periph64_rpi4.o -DRPI4 -DAARCH=64
+	$(ARMGNU64)gcc $(COPS) $(COPS64) -c periph.c -o periph64_rpi4.o -DRPI4 -DAARCH=64
 
 kernel.img : loader vectors.o periph.o bootloader07.o
 	$(ARMGNU)ld vectors.o periph.o bootloader07.o -T loader -o bootloader07_rpi1.elf
