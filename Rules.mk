@@ -284,8 +284,14 @@ endif
 else
 
 # Flash with flashy
+ifeq ($(strip $(USEFLASHY)),1)
+	FLASHY ?= $(NODE) $(CIRCLEHOME)/tools/flashy/flashy.js
+else
+	FLASHY ?= flashy
+endif
+
 flash: $(TARGET).hex
-	$(NODE) $(CIRCLEHOME)/tools/flashy/flashy.js \
+	$(FLASHY) \
 		$(SERIALPORT) \
 		--flashBaud:$(FLASHBAUD) \
 		--userBaud:$(USERBAUD) \

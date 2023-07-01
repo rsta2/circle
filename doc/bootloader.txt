@@ -56,8 +56,8 @@ right communication parameters.
 after rebuilding do again "make flash".
 
 
-Using the New New Flash Tool "Flashy"
--------------------------------------
+Using the Flash Tool "Flashy"
+-----------------------------
 
 The above procedure describes flashing the device using the traditional python3 based flash
 tool and bootloader.  There is also a new flash tool and bootloader that provide improved 
@@ -130,3 +130,19 @@ For details on using this under WSL, see the [Windows build instructions](window
 
 If you want to use Flashy with the Bluetooth modules HC-05 or HC-06, please see
 [these instructions](https://github.com/rsta2/circle/pull/312).
+
+
+Using "Flashy" v2
+-----------------
+
+There is a new improved version of Flashy, which is maintained in a separate
+project:
+
+	https://github.com/toptensoftware/flashy
+
+Details about the features of this version and its installation can be found in
+the project README. The configuration in Circle to use this version is very
+similar as described above, with one difference. In your Config.mk you have to
+specify:
+
+	USEFLASHY = 2
