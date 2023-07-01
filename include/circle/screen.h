@@ -2,7 +2,7 @@
 // screen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -163,6 +163,14 @@ public:
 	/// \return Operation successful?
 	boolean Initialize (void);
 
+	/// \param nWidth  New screen width in pixels
+	/// \param nHeight New screen height in pixels
+	/// \return Operation successful?
+	/// \note When FALSE is returned, the width and/or height are not supported.\n
+	///	  The object is in an uninitialized state then and must not be used,\n
+	///	  but Resize() can be called again with other parameters.
+	boolean Resize (unsigned nWidth, unsigned nHeight);
+
 	/// \return Screen width in pixels
 	unsigned GetWidth (void) const;
 	/// \return Screen height in pixels
@@ -247,7 +255,9 @@ private:
 	unsigned	 m_nInitHeight;
 #ifndef SCREEN_HEADLESS
 	boolean		 m_bVirtual;
+#endif
 	unsigned	 m_nDisplay;
+#ifndef SCREEN_HEADLESS
 	CBcmFrameBuffer	*m_pFrameBuffer;
 #endif
 	CCharGenerator	 m_CharGen;
