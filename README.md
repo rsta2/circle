@@ -173,6 +173,8 @@ The following table gives support for selecting the right *RASPPI* value:
 
 For a binary distribution you should do one build with *RASPPI = 1*, one with *RASPPI = 2* and one build with *RASPPI = 4* and include the created files *kernel.img*, *kernel7.img* and *kernel7l.img*. Optionally you can do a build with *RASPPI = 3* and add the created file *kernel8-32.img* to provide an optimized version for the Raspberry Pi 3.
 
+> The target *kernel8-32.img* is not officially documented. There have been problems reported, when this file is on the SD card, and it is used to boot Raspberry Pi models, which are not supported by the target *kernel8-32.img*.
+
 The configuration file *Config.mk* can be created using the `configure` tool too. Please enter `./configure -h` for help on using it!
 
 > There are a number of configurable system options in the file [include/circle/sysconfig.h](include/circle/sysconfig.h). Please have a look into this file to learn, how you can configure Circle for your purposes. Some hardware configurations may require modifications to these options (e.g. using USB on the CM4).
