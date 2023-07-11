@@ -17,9 +17,10 @@ First you have to download and install the following software:
 * GNU make for Windows (Complete package, except sources, Setup)
   from: http://gnuwin32.sourceforge.net/packages/make.htm
 * Toolchain
-  from: https://developer.arm.com/tools-and-software/open-source-software/ \
-	developer-tools/gnu-toolchain/gnu-rm/downloads
-  (e.g. gcc-arm-none-eabi-9-2020-q2-update-win32.exe, Windows Installer)
+  from: https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads/
+	Windows (mingw-w64-i686) hosted cross toolchains .exe installer for
+		AArch32 bare-metal target (arm-none-eabi)
+		AArch64 bare-metal target (aarch64-none-elf)
 
 Then create a file \Users\Your Name\.bash_profile with this contents:
 
