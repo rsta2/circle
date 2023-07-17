@@ -7,7 +7,7 @@ Rules.mk as follows:
 
 * STDLIB_SUPPORT=0 to build without external libs (old setting)
 * STDLIB_SUPPORT=1 to build with libgcc.a only (default now)
-* STDLIB_SUPPORT=2 to build with C standard library (external newlib) too
+* STDLIB_SUPPORT=2 to build with C standard library too
 * STDLIB_SUPPORT=3 to build with C++ standard library too
 
 Please note that Circle needs support from external projects to implement the
@@ -25,22 +25,12 @@ be used. Please see the documentation of this project for details!
 Some toolchains provide C++ standard library support, which have been build
 using newlib, like those which can be downloaded here:
 
-	https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads
+	https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
 
 With these toolchains and the newlib port by Stephan Muehlstrasser it is
 possible, to develop Circle applications, which use the features of the C++
-standard library. This is supported by the build.bash script in the
+standard library. This is supported by the configure script in the
 circle-stdlib project too and is the default case. Only if you encounter
-problems when building applications (e.g. when building on Raspbian itself), you
-can fall back to the C standard library only case using the build.bash option
---no-cpp.
-
-
-NOTE
-
-With STDLIB_SUPPORT=2 or STDLIB_SUPPORT=3 set, an instance of the class
-CMemorySystem will be created in Circle's sysinit() before calling the static
-constructors. That's why there should not be an instance of CMemorySystem in the
-class CKernel then. Because this may be error prone, a second instance of
-CMemorySystem will be ignored, but this does not need to be the case in the
-future.
+problems when building applications (e.g. when building on Raspberry Pi OS
+itself), you can fall back to the C standard library only case using the
+configure option --no-cpp.
