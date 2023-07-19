@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +40,14 @@ else
 OBJS	+= xhcicommandmanager.o xhcidevice.o xhciendpoint.o xhcieventmanager.o xhcimmiospace.o \
 	   xhciring.o xhciroothub.o xhcirootport.o xhcisharedmemallocator.o xhcislotmanager.o \
 	   xhciusbdevice.o usbaudiocontrol.o usbaudiostreaming.o usbaudiofunctopology.o
+
+# using coherent memory region
+ifeq ($(strip $(AARCH)),32)
+CFLAGS += -mno-unaligned-access
+else
+CFLAGS += -mstrict-align
+endif
+
 endif
 
 libusb.a: $(OBJS)
