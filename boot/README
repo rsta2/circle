@@ -57,3 +57,20 @@ The build process uses the same toolchain, which is used to build Circle kernel
 images. The toolchain prefix (PREFIX= or PREFIX64=) can be configured in the
 file Config.mk in the Circle root directory. You have to copy the created file
 armstub?-rpi4.bin to the SD card together with the other files (see above).
+
+QUICK INSTALL
+
+If you have defined the path to the mount point of your SD card as follows in
+the file Config.mk or Config2.mk, you can quickly create a boot-able SD card
+with all required files and the serial bootloader:
+
+	SDCARD = /path/to/your/sd/card
+
+Enter one of the following commands to create the SD card. The SD card must
+contain a FAT partition as first partition, which should be empty.
+
+	make install		# for 32 and 64 bit operation
+	make install32		# for 32 bit operation only
+	make install64		# for 64 bit operation only
+
+For "make install" both toolchains (32- and 64-bit) must be available.
