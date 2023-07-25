@@ -7,6 +7,8 @@ cd ..
 
 cd addon
 
+## Following required for WLAN
+
 cd fatfs
 $make $1 $2 || exit
 cd ..
@@ -18,5 +20,20 @@ cd ..
 cd wlan
 ./makeall $1 $2 || exit
 cd ..
+
+## Following required for OpenGL ES
+
+cd linux
+$make $1 $2 || exit
+cd ..
+
+cd vc4
+./makeall $1 $2 || exit
+cd ..
+
+# cd vc4/vchiq
+# $make $1 $2 || exit
+# cd ../..
+
 
 cd ../app

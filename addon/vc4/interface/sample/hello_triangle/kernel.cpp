@@ -48,7 +48,8 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_Serial.Initialize (115200);
+		// bOK = m_Serial.Initialize (115200);
+		bOK = m_Serial.Initialize (460800);		
 	}
 
 	if (bOK)

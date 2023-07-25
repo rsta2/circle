@@ -34,8 +34,11 @@
 // #define ZX_SMI_WIDTH					SMI16Bits
 // #define ZX_SMI_PACK_DATA				FALSE
 #define ZX_SMI_EXTERNAL_DREQ			TRUE
-// #define ZX_SMI_USE_FIQ					FALSE
-#define ZX_SMI_USE_FIQ					TRUE
+
+// Use FIQ - if FIQ  is enabled AND border interrupt is enabled, crashes for some reason unknown
+// Otherwise, FIQ works fine. We might need to solve this as FIQ might be needed when WiFi is enabled
+#define ZX_SMI_USE_FIQ					FALSE
+// #define ZX_SMI_USE_FIQ					TRUE
 
 // SMI Timing (for a 50 ns cycle time, 20MHz)
 // Timings for RPi v4 (1.5 GHz) - (10 * (15+30+15) / 1.5GHZ) = 400ns
@@ -129,6 +132,7 @@ private:
 #else
 	static void GpioIrqHandler (void *pParam);	
 #endif	
+	static void GpioBorderHandler (void *pParam);
 
 private:
 // HACK
@@ -141,6 +145,7 @@ public:
 #else		
 	CGPIOPin	m_GpioIrqPin;
 #endif	
+	CGPIOPin	m_GpioBorderPin;
 	CSMIMaster m_SMIMaster;
 
 	CDMAChannel m_DMA;

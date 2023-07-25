@@ -4,16 +4,7 @@
 #ifndef _kernel_h
 #define _kernel_h
 
-// TODO - move all this configuration out into the makefile(s)
-
-// #define HD_SPECCYS_SERIAL_BAUD_RATE		921600
-// #define HD_SPECCYS_SERIAL_BAUD_RATE		576000
-#define HD_SPECCYS_SERIAL_BAUD_RATE		460800
-// #define HD_SPECCYS_SERIAL_BAUD_RATE		230400
-// #define HD_SPECCYS_SERIAL_BAUD_RATE		115200
-// #define HD_SPECCYS_FEATURE_NETWORK 		TRUE
-#define HD_SPECCYS_FEATURE_NETWORK 		FALSE
-#define HD_SPECCYS_DHCP			 		TRUE
+#include "config.h"
 
 #include <circle/startup.h>
 #include <circle/actled.h>
@@ -33,7 +24,6 @@
 #include <shell/shell.h>
 #include <zxtape/zxtape.h>
 #include <zxsmi/zxsmi.h>
-#include <zxscreen/zxscreen.h>
 #include "backgroundtask.h"
 #include "screenprocessortask.h"
 #include "tapetask.h"
@@ -47,7 +37,14 @@
 #include <circle/net/netsubsystem.h>
 
 #include <zxweb/zxweb.h>
-#endif
+#endif // HD_SPECCYS_FEATURE_NETWORK
+
+#if HD_SPECCYS_FEATURE_OPENGL
+#include <vc4/vchiq/vchiqdevice.h>
+#else
+#include <zxscreen/zxscreen.h>
+#endif // HD_SPECCYS_FEATURE_OPENGL
+
 
 enum TShutdownMode
 {
@@ -68,7 +65,7 @@ public:
 
 
 private:
-	void AnimationFrame (void);
+	// void AnimationFrame (void);
 
 	// Callbacks
 	// static void PeriodicTimer100Hz (void);
@@ -104,7 +101,12 @@ private:
 	CShell			m_Shell;
 	CZxTape			m_ZxTape;
 	CZxSmi			m_ZxSmi;
+
+#if HD_SPECCYS_FEATURE_OPENGL
+	CVCHIQDevice		m_VCHIQ;
+#else
 	CZxScreen		m_ZxScreen;
+#endif	
 };
 
-#endif
+#endif // _kernel_h

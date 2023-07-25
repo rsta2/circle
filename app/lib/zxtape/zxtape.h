@@ -12,7 +12,11 @@
 #include <circle/gpiopinfiq.h>
 #include <circle/logger.h>
 
-#define ZX_TAPE_GPIO_OUTPUT_PIN				0	// GPIO 26 (HW PIN 37), GPIO 0 (HW PIN 27)
+// TEST BOARD
+// #define ZX_TAPE_GPIO_OUTPUT_PIN				0	// GPIO 0 (HW PIN 27)
+
+// REV 1.0a
+#define ZX_TAPE_GPIO_OUTPUT_PIN				7	// GPIO 7 (HW PIN 26)
 #define ZX_TAPE_USE_FIQ						FALSE
 // #define ZX_TAPE_USE_FIQ					TRUE
 

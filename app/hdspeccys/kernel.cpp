@@ -14,6 +14,10 @@ LOGMODULE ("kernel");
 static volatile boolean bReboot = TRUE;
 static CKernel *pKernel = 0;
 
+#if HD_SPECCYS_FEATURE_OPENGL
+extern "C" int _main (void);
+#endif // HD_SPECCYS_FEATURE_OPENGL
+
 #if HD_SPECCYS_FEATURE_NETWORK
 #if HD_SPECCYS_DHCP
 #else
@@ -49,6 +53,9 @@ CKernel::CKernel (void)
 	m_Shell (&m_Serial),
 	m_ZxTape(&m_GPIOManager, &m_Interrupt),
 	m_ZxSmi(&m_GPIOManager, &m_Interrupt),
+#if HD_SPECCYS_FEATURE_OPENGL
+	m_VCHIQ (CMemorySystem::Get (), &m_Interrupt)
+#else
 	// m_ZxScreen(m_Options.GetWidth (), m_Options.GetHeight (), FALSE, 0, &m_Interrupt)
 	// 320x256 (32 + 256 + 32 x 32 + 192 + 32) - border is 1/3rd screen (this is about right for original speccy)
 	m_ZxScreen(320, 256, 0, &m_Interrupt)
@@ -56,6 +63,7 @@ CKernel::CKernel (void)
 	// m_ZxScreen(320 + 144, 256, 0, &m_Interrupt)
 	// m_ZxScreen(320*2, 256*2, 0, &m_Interrupt)
 	//  m_ZxScreen (m_Options.GetWidth (), m_Options.GetHeight (), 0, &m_Interrupt)
+#endif // !(HD_SPECCYS_FEATURE_OPENGL)
 {
 	bReboot = TRUE;
 
@@ -77,12 +85,6 @@ boolean CKernel::Initialize (void)
 	// {
 	// 	bOK = m_Screen.Initialize ();
 	// }
-
-	if (bOK)
-	{
-		bOK = m_ZxScreen.Initialize ();
-		m_ZxScreen.SetActLED(&m_ActLED);
-	}
 
 	if (bOK)
 	{
@@ -120,6 +122,19 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_GPIOManager.Initialize ();
 	}
+
+#if HD_SPECCYS_FEATURE_OPENGL
+	if (bOK)
+	{
+		bOK = m_VCHIQ.Initialize ();
+	}
+#else
+	if (bOK)
+	{
+		bOK = m_ZxScreen.Initialize ();
+		m_ZxScreen.SetActLED(&m_ActLED);
+	}
+#endif // HD_SPECCYS_FEATURE_OPENGL
 
 #if HD_SPECCYS_FEATURE_NETWORK
 	if (bOK)
@@ -190,8 +205,15 @@ TShutdownMode CKernel::Run (void)
 	// m_CPUThrottle.SetSpeed(CPUSpeedMaximum);
 
 	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
-	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
 	// new CTapeTask (&m_ZxTape);
+
+#if HD_SPECCYS_FEATURE_OPENGL
+	// OpenGL ES test
+	_main ();
+#else
+	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
+#endif	
+	
 
 #if HD_SPECCYS_FEATURE_NETWORK
 	// DO NOT LEAVE RUNNING WITH THIS!
@@ -214,7 +236,6 @@ TShutdownMode CKernel::Run (void)
 	// Set up callback on the timer 100Hz interrupt
 	// m_Timer.RegisterPeriodicHandler(PeriodicTimer100Hz);
 
-
 	// Wait here forever until shutdown
 	m_Event.Clear();
 	m_Event.Wait();
@@ -224,11 +245,11 @@ TShutdownMode CKernel::Run (void)
 	return bReboot ? ShutdownReboot : ShutdownHalt;
 }
 
-// Called once every 10ms
-void CKernel::AnimationFrame ()
-{
-	 m_ZxScreen.UpdateScreen();
-}
+// // Called once every 10ms
+// void CKernel::AnimationFrame ()
+// {
+// 	 m_ZxScreen.UpdateScreen();
+// }
 
 // Don't do this here as it takes up way too much time in the IRQ. 
 // Instead use a task that sleeps and wakes

@@ -4,6 +4,7 @@
 #ifndef _zxscreen_h
 #define _zxscreen_h
 
+#include "../../hdspeccys/config.h"
 #include <circle/actled.h>
 #include <circle/types.h>
 #include <circle/interrupt.h>
@@ -130,6 +131,8 @@
 	#error DEPTH must be 8, 16 or 32
 #endif
 
+#define ZX_SCREEN_FLASH_FRAMES	16	// Frames between flash changes
+
 #define ZX_COLOR_LUT_SIZE 	256 	// (8 * 8 * 2 * 2) ink * paper * flash * bright
 
 
@@ -163,7 +166,7 @@ public:
 	void Clear (TScreenColor backgroundColor);
 	void SetBorder (TScreenColor borderColor);
 	void SetScreen (boolean bToggle);
-	void SetScreenFromULABuffer(u16 *pULABuffer, size_t len);
+	void SetScreenFromULABuffer(u32 frameNo, u16 *pULABuffer, size_t len);
 
 	void UpdateScreen(void);
 private:
@@ -173,7 +176,7 @@ private:
 	TScreenColor ZxColorInkToScreenColor(u32 ink);
 	TScreenColor ZxColorPaperToScreenColor(u32 paper);
 
-	void ULADataToScreen(TScreenColor *pScreenBuffer, u16 *pULABuffer, size_t nULABufferLen);
+	void ULADataToScreen(u32 frameNo, TScreenColor *pScreenBuffer, u16 *pULABuffer, size_t nULABufferLen);
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 
