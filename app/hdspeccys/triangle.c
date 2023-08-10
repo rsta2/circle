@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "./config.h"
 
-#if 0// HD_SPECCYS_FEATURE_OPENGL
+#if 1// HD_SPECCYS_FEATURE_OPENGL
 
 #ifdef __circle__
 #include <linux/kernel.h>
@@ -559,7 +559,7 @@ static void exit_func(void)
 
 //==============================================================================
 
-int _main ()
+int _opengl_main ()
 {
    bcm_host_init();
 

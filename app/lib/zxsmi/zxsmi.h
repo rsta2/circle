@@ -37,8 +37,8 @@
 
 // Use FIQ - if FIQ  is enabled AND border interrupt is enabled, crashes for some reason unknown
 // Otherwise, FIQ works fine. We might need to solve this as FIQ might be needed when WiFi is enabled
-#define ZX_SMI_USE_FIQ					FALSE
-// #define ZX_SMI_USE_FIQ					TRUE
+// #define ZX_SMI_USE_FIQ					FALSE
+#define ZX_SMI_USE_FIQ					TRUE
 
 // SMI Timing (for a 50 ns cycle time, 20MHz)
 // Timings for RPi v4 (1.5 GHz) - (10 * (15+30+15) / 1.5GHZ) = 400ns

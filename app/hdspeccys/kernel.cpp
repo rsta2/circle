@@ -15,7 +15,7 @@ static volatile boolean bReboot = TRUE;
 static CKernel *pKernel = 0;
 
 #if HD_SPECCYS_FEATURE_OPENGL
-extern "C" int _main (void);
+extern "C" int _opengl_main (void);
 #endif // HD_SPECCYS_FEATURE_OPENGL
 
 #if HD_SPECCYS_FEATURE_NETWORK
@@ -205,11 +205,11 @@ TShutdownMode CKernel::Run (void)
 	// m_CPUThrottle.SetSpeed(CPUSpeedMaximum);
 
 	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
-	// new CTapeTask (&m_ZxTape);
+	new CTapeTask (&m_ZxTape);
 
 #if HD_SPECCYS_FEATURE_OPENGL
 	// OpenGL ES test
-	_main ();
+	_opengl_main ();
 #else
 	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
 #endif	
