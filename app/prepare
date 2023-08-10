@@ -35,5 +35,9 @@ cd ..
 # $make $1 $2 || exit
 # cd ../..
 
+cd vc4/interface
+./makeall $1 $2 || exit
+cd ../..
+
 
 cd ../app
