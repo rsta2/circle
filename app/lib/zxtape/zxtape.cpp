@@ -13,7 +13,7 @@
 // #include "games/dynamitedan2Tap.h" // TAP, OK (not original loader)
 // #include "games/greenberet.h" // TAP, OK
 // #include "games/spellbound.h" // TZX, OK
-#include "games/dynamitedan2.h" // TZX, OK!
+// #include "games/dynamitedan2.h" // TZX, OK!
 // #include "games/jetpac.h" // TAP, OK!
 // #include "games/brianbloodaxe.h" // TZX, OK!
 // #include "games/arkanoidSpeedlock4.h" // TZX, OK!
@@ -23,7 +23,7 @@
 // #include "games/720Degrees.h" // TZX, OK!
 // #include "games/starquake.h" // TZX, OK!
 // #include "games/dynamitedan.h" // TZX, OK!
-// #include "games/back2school.h" // TZX, OK! Fast baud rate, fails if buffer less than 128+64+32 (e.g. 128+64)
+#include "games/back2school.h" // TZX, OK! Fast baud rate, fails if buffer less than 128+64+32 (e.g. 128+64)
 // #include "games/cauldron.h" // TZX, OK!
 #include <circle/stdarg.h>
 
@@ -59,8 +59,8 @@ uint64_t nFileSeekIdx;                        // Current file seek position
 unsigned tzxLoopCount = 0;                    // HACK to call wave less than loop count at start
 
 // HACK
-unsigned char* GAME = DD2;
-unsigned long GAME_SIZE = sizeof(DD2);
+unsigned char* GAME = Back2School;
+unsigned long GAME_SIZE = sizeof(Back2School);
 
 
 /* Local functions */
