@@ -20,10 +20,10 @@
 #define HD_SPECCYS_BOARD_PROTOTYPE_1		1
 #define HD_SPECCYS_BOARD_REV_1_0A			2
 
-// IRQ definitions (do not change)
-#define HD_SPECCYS_ZX_SMI_INT_IRQ			1
-#define HD_SPECCYS_ZX_SMI_BORDER_IRQ		2
-#define HD_SPECCYS_ZX_TAPE_TIMER_IRQ		3
+// FIQ definitions (do not change)
+#define HD_SPECCYS_NO_FIQ			0
+#define HD_SPECCYS_GPIO_FIQ			1
+#define HD_SPECCYS_TIMER_FIQ		2
 
 
 /**
@@ -46,10 +46,9 @@
  * Defines which hardware is connected to the single available FIQ
  * 
  * Set to one of:
- * HD_SPECCYS_ZX_SMI_INT_IRQ <-- hangs as soon as border IRQ occurs
- * HD_SPECCYS_ZX_SMI_BORDER_IRQ <-- no screen hangs for some reason?
- * HD_SPECCYS_ZX_TAPE_TIMER_IRQ <-- works
- * FALSE - No hardware connected to the FIQ <-- hangs as soon as border IRQ occurs
+ * HD_SPECCYS_NO_FIQ <-- No hardware connected to the FIQ
+ * HD_SPECCYS_GPIO_FIQ <-- default
+ * HD_SPECCYS_TIMER_FIQ <-- use FIQ for the timer used by the tape loader
  * 
  * If tape is disabled, the behaviour is actually the same, tape was a red herring - it just triggered border IRQs:
  * 
@@ -70,7 +69,7 @@
  * 
  */
 #ifndef HD_SPECCYS_FIQ
-#define HD_SPECCYS_FIQ FALSE
+#define HD_SPECCYS_FIQ HD_SPECCYS_GPIO_FIQ
 #endif
 
 //
@@ -220,13 +219,13 @@
  * 
  * DO NOT SET DIRECTLY
  * 
- * Selects whether to use a FIQ or a standard IRQ for the tape timer
+ * Selects whether to use a FIQ or a standard IRQ for the tape timer interrupt
  * 
  * TRUE - Use FIQ 
  * FALSE - Use a standard IRQ
  */
 #ifndef ZX_TAPE_USE_FIQ
-#define ZX_TAPE_USE_FIQ 	(HD_SPECCYS_FIQ == HD_SPECCYS_ZX_TAPE_TIMER_IRQ)
+#define ZX_TAPE_USE_FIQ 	(HD_SPECCYS_FIQ == HD_SPECCYS_TIMER_FIQ)
 #endif
 
 //
@@ -260,31 +259,18 @@
 #endif
 
 /**
- * ZX_SMI_INT_USE_FIQ
+ * ZX_SMI_GPIO_USE_FIQ
  * 
  * DO NOT SET DIRECTLY
  * 
- * Selects whether to use a FIQ or a standard IRQ for the SMI screen vsync interrupt (Zx Spectrum INT signal)
+ * Selects whether to use a FIQ or a standard IRQ for the SMI GPIO interrupt
  * 
  * TRUE - Use FIQ 
  * FALSE - Use a standard IRQ
  */
-#ifndef ZX_SMI_INT_USE_FIQ
-#define ZX_SMI_INT_USE_FIQ 	(HD_SPECCYS_FIQ == HD_SPECCYS_ZX_SMI_INT_IRQ)
+#ifndef ZX_SMI_GPIO_USE_FIQ
+#define ZX_SMI_GPIO_USE_FIQ 	(HD_SPECCYS_FIQ == HD_SPECCYS_GPIO_FIQ)
 #endif
 
-/**
- * ZX_SMI_BORDER_USE_FIQ
- * 
- * DO NOT SET DIRECTLY
- * 
- * Selects whether to use a FIQ or a standard IRQ for the SMI border interrupt (Zx Spectrum IOREQ & WR signal)
- * 
- * TRUE - Use FIQ 
- * FALSE - Use a standard IRQ
- */
-#ifndef ZX_SMI_BORDER_USE_FIQ
-#define ZX_SMI_BORDER_USE_FIQ 	(HD_SPECCYS_FIQ == HD_SPECCYS_ZX_SMI_BORDER_IRQ)
-#endif
 
 // #endif // _config_h

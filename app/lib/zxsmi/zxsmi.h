@@ -39,28 +39,17 @@
 #endif
 
 /**
- * ZX_SMI_INT_USE_FIQ
+ * ZX_SMI_GPIO_USE_FIQ
  * 
- * Selects whether to use a FIQ or a standard IRQ for the SMI screen interrupt (Zx Spectrum INT signal)
+ * Selects whether to use a FIQ or a standard IRQ for the SMI GPIO interrupt
  * 
  * TRUE - Use FIQ 
  * FALSE - Use a standard IRQ
  */
-#ifndef ZX_SMI_INT_USE_FIQ
-#define ZX_SMI_INT_USE_FIQ 	TRUE
+#ifndef ZX_SMI_GPIO_USE_FIQ
+#define ZX_SMI_GPIO_USE_FIQ 	TRUE
 #endif
 
-/**
- * ZX_SMI_BORDER_USE_FIQ
- * 
- * Selects whether to use a FIQ or a standard IRQ for the SMI border interrupt (Zx Spectrum IOREQ & WR signal)
- * 
- * TRUE - Use FIQ 
- * FALSE - Use a standard IRQ
- */
-#ifndef ZX_SMI_BORDER_USE_FIQ
-#define ZX_SMI_BORDER_USE_FIQ 	FALSE
-#endif
 
 
 
@@ -187,18 +176,10 @@ private:
 public:
 	// members ...
 	CGPIOManager *m_pGPIOManager;
-	CInterruptSystem *m_pInterruptSystem;
-#if (ZX_SMI_INT_USE_FIQ)	
-	CGPIOPinFIQ	m_GpioIntFiqPin;
-#else		
-	CGPIOPin	m_GpioIntIrqPin;
-#endif
-#if (ZX_SMI_BORDER_USE_FIQ)	
-	CGPIOPinFIQ	m_GpioBorderFiqPin;
-#else		
+	CInterruptSystem *m_pInterruptSystem;	
+	CGPIOPin	m_GpioIntIrqPin;	
 	CGPIOPin	m_GpioBorderIrqPin;
-#endif
-	
+
 	CSMIMaster m_SMIMaster;
 
 	CDMAChannel m_DMA;
