@@ -25,10 +25,12 @@
 #include <assert.h>
 
 #define GPIO_IRQ	ARM_IRQ_GPIO3		// shared IRQ line for all GPIOs
+#define GPIO_FIQ	ARM_FIQ_GPIO3		// shared IRQ line for all GPIOs
 
-CGPIOManager::CGPIOManager (CInterruptSystem *pInterrupt)
+CGPIOManager::CGPIOManager (CInterruptSystem *pInterrupt, bool bUseFIQ)
 :	m_pInterrupt (pInterrupt),
-	m_bIRQConnected (FALSE)
+	m_bIRQConnected (FALSE),
+	m_bUseFIQ (bUseFIQ)
 {
 	for (unsigned nPin = 0; nPin < GPIO_PINS; nPin++)
 	{
@@ -48,17 +50,25 @@ CGPIOManager::~CGPIOManager (void)
 	if (m_bIRQConnected)
 	{
 		assert (m_pInterrupt != 0);
-		m_pInterrupt->DisconnectIRQ (GPIO_IRQ);
+		if (m_bUseFIQ) {
+			m_pInterrupt->DisconnectFIQ ();
+		} else {
+			m_pInterrupt->DisconnectIRQ (GPIO_IRQ);
+		}
 	}
 
 	m_pInterrupt = 0;
 }
 
-boolean CGPIOManager::Initialize (void)
+boolean CGPIOManager::Initialize ()
 {
 	assert (!m_bIRQConnected);
 	assert (m_pInterrupt != 0);
-	m_pInterrupt->ConnectIRQ (GPIO_IRQ, InterruptStub, this);
+	if (m_bUseFIQ) {
+		m_pInterrupt->ConnectFIQ (GPIO_FIQ, InterruptStub, this);
+	} else {
+		m_pInterrupt->ConnectIRQ (GPIO_IRQ, InterruptStub, this);
+	}
 	m_bIRQConnected = TRUE;
 	
 	return TRUE;

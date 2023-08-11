@@ -38,7 +38,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),	
 	m_Logger (m_Options.GetLogLevel(), &m_Timer),	
 	// TODO: add more member initializers here
-	m_GPIOManager(&m_Interrupt),
+	m_GPIOManager(&m_Interrupt, TRUE),
 #if HD_SPECCYS_FEATURE_NETWORK
 	m_USBHCI (&m_Interrupt, &m_Timer),
 	m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),

@@ -17,12 +17,12 @@
 //
 
 // Board definitions (do not change)
-#define HD_SPECCYS_BOARD_PROTOTYPE_1		0
-#define HD_SPECCYS_BOARD_REV_1_0A			1
+#define HD_SPECCYS_BOARD_PROTOTYPE_1		1
+#define HD_SPECCYS_BOARD_REV_1_0A			2
 
 // IRQ definitions (do not change)
-#define HD_SPECCYS_ZX_SMI_INT_IRQ			0
-#define HD_SPECCYS_ZX_SMI_BORDER_IRQ		1
+#define HD_SPECCYS_ZX_SMI_INT_IRQ			1
+#define HD_SPECCYS_ZX_SMI_BORDER_IRQ		2
 #define HD_SPECCYS_ZX_TAPE_TIMER_IRQ		3
 
 
@@ -70,7 +70,7 @@
  * 
  */
 #ifndef HD_SPECCYS_FIQ
-#define HD_SPECCYS_FIQ HD_SPECCYS_ZX_SMI_INT_IRQ
+#define HD_SPECCYS_FIQ FALSE
 #endif
 
 //

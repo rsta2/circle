@@ -27,10 +27,10 @@
 class CGPIOManager
 {
 public:
-	CGPIOManager (CInterruptSystem *pInterrupt);
+	CGPIOManager (CInterruptSystem *pInterrupt, bool bUseFIQ = false);
 	~CGPIOManager (void);
 
-	boolean Initialize (void);
+	boolean Initialize ();
 
 private:
 	void ConnectInterrupt (CGPIOPin *pPin);
@@ -43,6 +43,7 @@ private:
 private:
 	CInterruptSystem *m_pInterrupt;
 	boolean m_bIRQConnected;
+	boolean m_bUseFIQ;
 
 	CGPIOPin *m_apPin[GPIO_PINS];
 };
