@@ -10,8 +10,6 @@
 
 LOGMODULE ("ZxSmi");
 
-#define GPIO_IRQ_PIN       27 // GPIO 27 (HW PIN 13)
-#define GPIO_BORDER_PIN    26 // GPIO 26 (HW PIN 37)
 
 // HACK - direct access to SMI
 #define ARM_SMI_BASE	(ARM_IO_BASE + 0x600000)
@@ -76,12 +74,16 @@ u32 skippy = 0;
 CZxSmi::CZxSmi (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem)
 : m_pGPIOManager(pGPIOManager),
   m_pInterruptSystem (pInterruptSystem),
-#if (ZX_SMI_USE_FIQ)
-  m_GpioFiqPin (GPIO_IRQ_PIN, GPIOModeInput, pInterruptSystem),
+#if (ZX_SMI_INT_USE_FIQ)
+  m_GpioIntFiqPin (ZX_SMI_GPIO_INT_INPUT_PIN, GPIOModeInput, pInterruptSystem),
 #else  
-  m_GpioIrqPin(GPIO_IRQ_PIN, GPIOModeInput, m_pGPIOManager),
+  m_GpioIntIrqPin(ZX_SMI_GPIO_INT_INPUT_PIN, GPIOModeInput, m_pGPIOManager),
 #endif  
-  m_GpioBorderPin(GPIO_BORDER_PIN, GPIOModeInput, m_pGPIOManager),
+#if (ZX_SMI_BORDER_USE_FIQ)	
+	m_GpioBorderFiqPin(ZX_SMI_GPIO_BORDER_INPUT_PIN, GPIOModeInput, pInterruptSystem),
+#else		
+	m_GpioBorderIrqPin(ZX_SMI_GPIO_BORDER_INPUT_PIN, GPIOModeInput, m_pGPIOManager),
+#endif
   m_SMIMaster (ZX_SMI_DATA_LINES_MASK, ZX_SMI_USE_ADDRESS_LINES, ZX_SMI_USE_SOE_SE, ZX_SMI_USE_SWE_SRW, pInterruptSystem),
   m_DMA (ZX_DMA_CHANNEL_TYPE, m_pInterruptSystem),
 	m_pDMAControlBlock(0),
@@ -127,12 +129,16 @@ CZxSmi::~CZxSmi (void)
     delete m_pDMABuffers[i];
   }
 
-#if (ZX_SMI_USE_FIQ)
-  m_GpioFiqPin.DisableInterrupt ();
+#if (ZX_SMI_INT_USE_FIQ)
+  m_GpioIntFiqPin.DisableInterrupt ();
 #else
-  m_GpioIrqPin.DisableInterrupt ();
-#endif  
-  m_GpioBorderPin.DisableInterrupt ();
+  m_GpioIntIrqPin.DisableInterrupt ();
+#endif
+#if (ZX_SMI_BORDER_USE_FIQ)	
+	m_GpioBorderFiqPin.DisableInterrupt ();
+#else		
+	m_GpioBorderIrqPin.DisableInterrupt ();
+#endif
 }
 
 boolean CZxSmi::Initialize ()
@@ -185,12 +191,17 @@ boolean CZxSmi::Initialize ()
   LOGDBG("Setting SMI DMA: Buffer length: %d bytes", m_nDMABufferLenBytes);
 
   // Configure GPIO interrupts
-#if (ZX_SMI_USE_FIQ)  
-  m_GpioFiqPin.ConnectInterrupt(FiqIrqHandler, this, FALSE);
+#if (ZX_SMI_INT_USE_FIQ)  
+  m_GpioIntFiqPin.ConnectInterrupt(GpioIntIrqHandler, this, FALSE);
 #else
-  m_GpioIrqPin.ConnectInterrupt(GpioIrqHandler, this, FALSE);
+  m_GpioIntIrqPin.ConnectInterrupt(GpioIntIrqHandler, this, FALSE);
 #endif  
-  m_GpioBorderPin.ConnectInterrupt(GpioBorderHandler, this, FALSE);
+#if (ZX_SMI_BORDER_USE_FIQ)	
+	m_GpioBorderFiqPin.ConnectInterrupt(GpioBorderIrqHandler, this, FALSE);
+#else		
+	m_GpioBorderIrqPin.ConnectInterrupt(GpioBorderIrqHandler, this, FALSE);
+#endif
+  
 
   // Configure SMI DMA
   m_SMIMaster.SetupDMA(m_nDMABufferLenBytes, TRUE);
@@ -235,13 +246,18 @@ void CZxSmi::Start(CSynchronizationEvent *pFrameEvent)
   DMAStart();  
 
   // Only start interrupt after DMA has been configured
-#if (ZX_SMI_USE_FIQ)    
-  m_GpioFiqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+#if (ZX_SMI_INT_USE_FIQ)    
+  m_GpioIntFiqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
 #else
-  m_GpioIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
-  // m_GpioIrqPin.EnableInterrupt(GPIOInterruptOnAsyncFallingEdge);
+  m_GpioIntIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+  // m_GpioIntIrqPin.EnableInterrupt(GPIOInterruptOnAsyncFallingEdge);
 #endif  
-  m_GpioBorderPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+#if (ZX_SMI_BORDER_USE_FIQ)	
+	m_GpioBorderFiqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+#else		
+	m_GpioBorderIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+#endif
+  
 
   // m_DMA.Wait();
 
@@ -587,7 +603,7 @@ void CZxSmi::SMICompleteInterrupt(boolean bStatus, void *pParam)
 // Might have to use CriticalSection and flags to pass data to tasks for FIQ
 
 /**
- * FIQ Handler
+ * Screen vsync (ZX Spectrum INT) IRQ/FIQ Handler
  * 
  * When using FIQ, have to ACK the interrupt early, and the handler must also take at least a few cycles
  * otherwise the FIQ will be retriggered. 1us is definitely long enough.
@@ -597,24 +613,20 @@ void CZxSmi::SMICompleteInterrupt(boolean bStatus, void *pParam)
  * 
  * @param pParam 
  */
-#if (ZX_SMI_USE_FIQ)
-void CZxSmi::FiqIrqHandler (void *pParam) 
-#else
-void CZxSmi::GpioIrqHandler (void *pParam) 
-#endif
+void CZxSmi::GpioIntIrqHandler (void *pParam) 
 {
   CZxSmi *pThis = (CZxSmi *) pParam;
   // assert (pThis != 0);
 
-#if (ZX_SMI_USE_FIQ)
+#if (ZX_SMI_INT_USE_FIQ)
   // Acknowledge the interrupt (early otherwise FIQ will be retriggered)
-  pThis->m_GpioFiqPin.AcknowledgeInterrupt();
+  pThis->m_GpioIntFiqPin.AcknowledgeInterrupt();
 #endif  
 
   // Toggle LED for debug
   // pThis->m_pActLED->On();
 
-#if (ZX_SMI_USE_FIQ)
+#if (ZX_SMI_INT_USE_FIQ)
   // This delay is important to ensure that the last video bytes are flushed out of the SMI FIFO when running
   // at slower sample rates. Without this, the last few bytes of the frame are lost.
   // At higher sample rates the delay is not needed, but it makes more sense to have a lower sample rate and
@@ -675,18 +687,33 @@ void CZxSmi::GpioIrqHandler (void *pParam)
   // Increment the loop count
   frameInterruptCount++;  
 
-#if !(ZX_SMI_USE_FIQ)
+#if !(ZX_SMI_INT_USE_FIQ)
   // Acknowledge the interrupt
-  pThis->m_GpioIrqPin.AcknowledgeInterrupt();
+  pThis->m_GpioIntIrqPin.AcknowledgeInterrupt();
 #endif  
 }
 
 
-
-void CZxSmi::GpioBorderHandler (void *pParam) 
+/**
+ * Screen border (ZX Spectrum IOREQ & WR) IRQ/FIQ Handler
+ * 
+ * When using FIQ, have to ACK the interrupt early, and the handler must also take at least a few cycles
+ * otherwise the FIQ will be retriggered. 1us is definitely long enough.
+ * 
+ * Scheduling code cannot be used from the FIQ, unlike the standard IRQ handler.
+ * Therefore any atomic protection / signalling must be done using CriticalSection.
+ * 
+ * @param pParam 
+ */
+void CZxSmi::GpioBorderIrqHandler (void *pParam) 
 {
   CZxSmi *pThis = (CZxSmi *) pParam;
   assert (pThis != 0);
+
+#if (ZX_SMI_BORDER_USE_FIQ)
+  // Acknowledge the interrupt (early otherwise FIQ will be retriggered)
+  pThis->m_GpioBorderFiqPin.AcknowledgeInterrupt();
+#endif  
 
   // Return early if stopped (fix - have to ack interrupt in this case)
   // if (!pThis->m_bRunning) return;
@@ -713,12 +740,17 @@ void CZxSmi::GpioBorderHandler (void *pParam)
   // Toggle LED for debug
   // pThis->m_pActLED->Off();
 
+  
+
+#if !(ZX_SMI_BORDER_USE_FIQ)
   // Acknowledge the interrupt
-  pThis->m_GpioBorderPin.AcknowledgeInterrupt();
+  pThis->m_GpioBorderIrqPin.AcknowledgeInterrupt();
+#endif
+  
 }
 
 
-// void CZxSmi::GpioIrqHandler (void *pParam) 
+// void CZxSmi::GpioIntIrqHandler (void *pParam) 
 // {
 //   CZxSmi *pThis = (CZxSmi *) pParam;
 //   // assert (pThis != 0);
@@ -742,19 +774,19 @@ void CZxSmi::GpioBorderHandler (void *pParam)
 //   frameInterruptCount++;
 
 //   // Acknowledge the interrupt
-//   pThis->m_GpioIrqPin.AcknowledgeInterrupt();
+//   pThis->m_GpioIntIrqPin.AcknowledgeInterrupt();
 // }
 
 
-// void CZxSmi::GpioIrqHandler (void *pParam) 
+// void CZxSmi::GpioIntIrqHandler (void *pParam) 
 // {
 //   CZxSmi *pThis = (CZxSmi *) pParam;
 //   assert (pThis != 0);
 
-// // #if (ZX_SMI_USE_FIQ)    
+// // #if (ZX_SMI_INT_USE_FIQ)    
 // //   // TODO - auto-ack?
 // // #else
-// //   pThis->m_GpioIrqPin.AcknowledgeInterrupt();
+// //   pThis->m_GpioIntIrqPin.AcknowledgeInterrupt();
 // // #endif  
 
   
@@ -1016,10 +1048,10 @@ void CZxSmi::GpioBorderHandler (void *pParam)
 
 //     _loops++;
 
-//   #if (ZX_SMI_USE_FIQ)    
+//   #if (ZX_SMI_INT_USE_FIQ)    
 //   // TODO - auto-ack?
 //   #else
-//     pThis->m_GpioIrqPin.AcknowledgeInterrupt();
+//     pThis->m_GpioIntIrqPin.AcknowledgeInterrupt();
 //   #endif  
 // }
 	

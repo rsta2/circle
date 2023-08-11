@@ -139,7 +139,7 @@ THTTPStatus CZxWeb::GetContent (const char  *pPath,
 	}
 	else if (strlen(pPath) > PATH_ACTION_LEN && strncmp (pPath, PATH_ACTION, PATH_ACTION_LEN) == 0)
 	{
-		const char *pAction = pPath + PATH_ACTION_LEN;
+		// const char *pAction = pPath + PATH_ACTION_LEN;
 		// TODO get pData;
 
 		// TODO queue action routine (don't callback in this context!)

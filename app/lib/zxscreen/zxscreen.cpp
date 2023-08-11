@@ -12,13 +12,11 @@
 
 LOGMODULE ("ZxScreen");
 
-#define ZX_SCREEN_WIDESCREEN    TRUE
-// #define ZX_SCREEN_WIDESCREEN    FALSE
+
 #define SCREEN_BUFFER_COUNT 2
 // #define SPINLOCK_LEVEL      IRQ_LEVEL /* TASK_LEVEL*/
 #define SPINLOCK_LEVEL      TASK_LEVEL  // UNUSED?
 
-#define WIDESCREEN_WIDTH_RATIO  (64 / 45) // 5:4 => 16:9 ((5*9) / (4*16))
 
 
 
@@ -135,7 +133,7 @@ boolean CZxScreen::Initialize ()
   // m_pDMAControlBlock4 = m_DMA.CreateDMAControlBlock();
 
   // Create the framebuffer
-  m_pFrameBuffer = new CBcmFrameBuffer (m_nInitWidth, m_nInitHeight, DEPTH,
+  m_pFrameBuffer = new CBcmFrameBuffer (m_nInitWidth, m_nInitHeight, ZX_SCREEN_DEPTH,
 						      0, 0, m_nDisplay, TRUE);
 
   // Initialize the framebuffer
@@ -145,7 +143,7 @@ boolean CZxScreen::Initialize ()
   }
 
   // Check depth is correct
-  if (m_pFrameBuffer->GetDepth () != DEPTH)
+  if (m_pFrameBuffer->GetDepth () != ZX_SCREEN_DEPTH)
   {
     return FALSE;
   }
@@ -442,7 +440,7 @@ void CZxScreen::UpdateScreen() {
 
 void CZxScreen::InitZxColorLUT(void) {
   // Init ZX colour LUT - TODO move to function
-  for (u32 attr = 0; attr < ZX_COLOR_LUT_SIZE; attr++) {
+  for (u32 attr = 0; attr < ZX_SCREEN_COLOR_LUT_SIZE; attr++) {
     u32 ink = 0;
     u32 paper = 0;
     u32 bright = attr & 0x40;
@@ -579,7 +577,7 @@ void CZxScreen::ULADataToScreen(u32 frameNo, TScreenColor *pZxScreenBuffer, u16 
               pixelData = lastCasValue >> 8;    
             } else {
               attrData = lastCasValue >> 8;                
-#if (HD_SPECCYS_BOARD_REV == 1)
+#if (ZX_SCREEN_REVERSE_DATA_BITS)
               // HW Fix, reverse the 8 bits
               attrData = reverseBits(attrData);
 #endif               
@@ -601,7 +599,7 @@ void CZxScreen::ULADataToScreen(u32 frameNo, TScreenColor *pZxScreenBuffer, u16 
       if (inIOWR > 5 && inIOWR < 40) {
         // Exited IO write, use the last value
         borderValue = lastIOWRValue >> 8;
-#if (HD_SPECCYS_BOARD_REV == 1)
+#if (ZX_SCREEN_REVERSE_DATA_BITS)
         // HW Fix, reverse the 8 bits
         borderValue = reverseBits(borderValue);
 #endif        
@@ -654,7 +652,7 @@ void CZxScreen::ULADataToScreen(u32 frameNo, TScreenColor *pZxScreenBuffer, u16 
 
       for (int i = 0; i < 8; i++) {
         // 7-i to flip the data lines
-#if (HD_SPECCYS_BOARD_REV == 1)
+#if (ZX_SCREEN_REVERSE_DATA_BITS)
         bool pixelSet = pixelData >> i & 0x01;
 #else        
         bool pixelSet = pixelData << i & 0x80;

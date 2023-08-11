@@ -4,7 +4,7 @@
 #ifndef _kernel_h
 #define _kernel_h
 
-#include "config.h"
+#include "../config.h"
 
 #include <circle/startup.h>
 #include <circle/actled.h>

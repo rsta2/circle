@@ -4,6 +4,7 @@
 #ifndef _zxsmi_h
 #define _zxsmi_h
 
+#include "../../config.h"
 #include <circle/actled.h>
 #include <circle/types.h>
 #include <circle/interrupt.h>
@@ -14,6 +15,60 @@
 #include <circle/smimaster.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/sched/semaphore.h>
+
+//
+// Configurable defines
+//
+
+/**
+ * ZX_SMI_GPIO_INT_INPUT_PIN
+ * 
+ * Selects the GPIO output pin to use for the tape playback
+ */
+#ifndef ZX_SMI_GPIO_INT_INPUT_PIN
+#define ZX_SMI_GPIO_INT_INPUT_PIN 	27 // GPIO 27 (HW PIN 13) - Rev 1.0a
+#endif
+
+/**
+ * ZX_SMI_GPIO_BORDER_INPUT_PIN
+ * 
+ * Selects the GPIO output pin to use for the tape playback
+ */
+#ifndef ZX_SMI_GPIO_BORDER_INPUT_PIN
+#define ZX_SMI_GPIO_BORDER_INPUT_PIN 	26 // GPIO 26 (HW PIN 37) - Rev 1.0a
+#endif
+
+/**
+ * ZX_SMI_INT_USE_FIQ
+ * 
+ * Selects whether to use a FIQ or a standard IRQ for the SMI screen interrupt (Zx Spectrum INT signal)
+ * 
+ * TRUE - Use FIQ 
+ * FALSE - Use a standard IRQ
+ */
+#ifndef ZX_SMI_INT_USE_FIQ
+#define ZX_SMI_INT_USE_FIQ 	TRUE
+#endif
+
+/**
+ * ZX_SMI_BORDER_USE_FIQ
+ * 
+ * Selects whether to use a FIQ or a standard IRQ for the SMI border interrupt (Zx Spectrum IOREQ & WR signal)
+ * 
+ * TRUE - Use FIQ 
+ * FALSE - Use a standard IRQ
+ */
+#ifndef ZX_SMI_BORDER_USE_FIQ
+#define ZX_SMI_BORDER_USE_FIQ 	FALSE
+#endif
+
+
+
+//
+// Fixed defines
+//
+
+
 
 // NOTE: If FIQ can be made to work, then the problem with the screen flicker 
 // could be sovled, as all IRQs have same proio (or defined by SW, no preemption)
@@ -35,10 +90,6 @@
 // #define ZX_SMI_PACK_DATA				FALSE
 #define ZX_SMI_EXTERNAL_DREQ			TRUE
 
-// Use FIQ - if FIQ  is enabled AND border interrupt is enabled, crashes for some reason unknown
-// Otherwise, FIQ works fine. We might need to solve this as FIQ might be needed when WiFi is enabled
-// #define ZX_SMI_USE_FIQ					FALSE
-#define ZX_SMI_USE_FIQ					TRUE
 
 // SMI Timing (for a 50 ns cycle time, 20MHz)
 // Timings for RPi v4 (1.5 GHz) - (10 * (15+30+15) / 1.5GHZ) = 400ns
@@ -97,9 +148,9 @@
 #define ZX_DMA_CHANNEL_TYPE		DMA_CHANNEL_NORMAL
 // #define ZX_DMA_CHANNEL_TYPE		DMA_CHANNEL_LITE
 
-// ZX SMI PIN MASKS (UNUSED??)
-#define ZX_PIN_IOREQ		(1 << 15)
-#define ZX_PIN_WR				(1 << 14)
+// // ZX SMI PIN MASKS (UNUSED??)
+// #define ZX_PIN_IOREQ		(1 << 15)
+// #define ZX_PIN_WR				(1 << 14)
 
 
 // typedef void ZXSMIBufferReadyRoutine (boolean bStatus, void *pParam);
@@ -127,12 +178,9 @@ private:
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 	static void DMARestartCompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 	static void SMICompleteInterrupt(boolean bStatus, void *pParam);		
-#if (ZX_SMI_USE_FIQ)		
-	static void FiqIrqHandler (void *pParam);	
-#else
-	static void GpioIrqHandler (void *pParam);	
-#endif	
-	static void GpioBorderHandler (void *pParam);
+	static void GpioIntIrqHandler (void *pParam);	
+	static void GpioBorderIrqHandler (void *pParam);
+	
 
 private:
 // HACK
@@ -140,12 +188,17 @@ public:
 	// members ...
 	CGPIOManager *m_pGPIOManager;
 	CInterruptSystem *m_pInterruptSystem;
-#if (ZX_SMI_USE_FIQ)	
-	CGPIOPinFIQ	m_GpioFiqPin;
+#if (ZX_SMI_INT_USE_FIQ)	
+	CGPIOPinFIQ	m_GpioIntFiqPin;
 #else		
-	CGPIOPin	m_GpioIrqPin;
-#endif	
-	CGPIOPin	m_GpioBorderPin;
+	CGPIOPin	m_GpioIntIrqPin;
+#endif
+#if (ZX_SMI_BORDER_USE_FIQ)	
+	CGPIOPinFIQ	m_GpioBorderFiqPin;
+#else		
+	CGPIOPin	m_GpioBorderIrqPin;
+#endif
+	
 	CSMIMaster m_SMIMaster;
 
 	CDMAChannel m_DMA;

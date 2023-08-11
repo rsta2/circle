@@ -14,19 +14,19 @@ LOGMODULE ("kernel");
 static volatile boolean bReboot = TRUE;
 static CKernel *pKernel = 0;
 
-#if HD_SPECCYS_FEATURE_OPENGL
+#if (HD_SPECCYS_FEATURE_OPENGL)
 extern "C" int _opengl_main (void);
 #endif // HD_SPECCYS_FEATURE_OPENGL
 
 #if HD_SPECCYS_FEATURE_NETWORK
-#if HD_SPECCYS_DHCP
+#if HD_SPECCYS_NETWORK_USE_DHCP
 #else
 // TODO get from options string or read from file
 static const u8 IPAddress[]      = {192, 168, 0, 250};
 static const u8 NetMask[]        = {255, 255, 255, 0};
 static const u8 DefaultGateway[] = {192, 168, 0, 1};
 static const u8 DNSServer[]      = {192, 168, 0, 1};
-#endif // HD_SPECCYS_DHCP
+#endif // HD_SPECCYS_NETWORK_USE_DHCP
 #endif // HD_SPECCYS_FEATURE_NETWORK
 
 
@@ -43,11 +43,11 @@ CKernel::CKernel (void)
 	m_USBHCI (&m_Interrupt, &m_Timer),
 	m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
 	m_WLAN (FIRMWARE_PATH),
-#if HD_SPECCYS_DHCP
+#if HD_SPECCYS_NETWORK_USE_DHCP
 	m_Net (0, 0, 0, 0, HOSTNAME, NetDeviceTypeWLAN),
 #else
 	m_Net (IPAddress, NetMask, DefaultGateway, DNSServer, NetDeviceTypeWLAN),
-#endif // HD_SPECCYS_DHCP
+#endif // HD_SPECCYS_NETWORK_USE_DHCP
 	m_WPASupplicant (WPA_SUPPLICANT_CONFIG_FILE),
 #endif // HD_SPECCYS_FEATURE_NETWORK
 	m_Shell (&m_Serial),
@@ -207,7 +207,7 @@ TShutdownMode CKernel::Run (void)
 	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
 	new CTapeTask (&m_ZxTape);
 
-#if HD_SPECCYS_FEATURE_OPENGL
+#if (HD_SPECCYS_FEATURE_OPENGL)
 	// OpenGL ES test
 	_opengl_main ();
 #else

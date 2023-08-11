@@ -4,6 +4,7 @@
 #ifndef _zxtape_h
 #define _zxtape_h
 
+#include "../../config.h"
 #include <circle/types.h>
 #include <circle/interrupt.h>
 #include <circle/usertimer.h>
@@ -12,13 +13,35 @@
 #include <circle/gpiopinfiq.h>
 #include <circle/logger.h>
 
-// TEST BOARD
-// #define ZX_TAPE_GPIO_OUTPUT_PIN				0	// GPIO 0 (HW PIN 27)
+//
+// Configurable defines
+//
 
-// REV 1.0a
-#define ZX_TAPE_GPIO_OUTPUT_PIN				7	// GPIO 7 (HW PIN 26)
-#define ZX_TAPE_USE_FIQ						FALSE
-// #define ZX_TAPE_USE_FIQ					TRUE
+/**
+ * ZX_TAPE_GPIO_OUTPUT_PIN
+ * 
+ * Selects the GPIO output pin to use for the tape playback
+ * 
+ */
+#ifndef ZX_TAPE_GPIO_OUTPUT_PIN
+#define ZX_TAPE_GPIO_OUTPUT_PIN	0	// GPIO 0 (HW PIN 27)
+#endif
+
+/**
+ * ZX_TAPE_USE_FIQ
+ *
+ * Selects whether to use a FIQ or a standard IRQ for the tape timer
+ * 
+ * TRUE - Use FIQ 
+ * FALSE - Use a standard IRQ
+ */
+#ifndef ZX_TAPE_USE_FIQ
+#define ZX_TAPE_USE_FIQ FALSE
+#endif
+
+//
+// Fixed defines
+//
 
 // Maximum length for long filename support (ideally as large as possible to support very long filenames)
 #define ZX_TAPE_MAX_FILENAME_LEN   			1023      		

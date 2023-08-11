@@ -27,9 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // A rotating cube rendered with OpenGL|ES. Three images used as textures on the cube faces.
 
-#include "./config.h"
-
-#if 1// HD_SPECCYS_FEATURE_OPENGL
+#include "../config.h"
 
 #ifdef __circle__
 #include <linux/kernel.h>
@@ -43,6 +41,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <unistd.h>
 #endif
+
+#if (HD_SPECCYS_FEATURE_OPENGL)
 
 #include "bcm_host.h"
 

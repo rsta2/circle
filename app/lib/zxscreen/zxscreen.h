@@ -4,7 +4,7 @@
 #ifndef _zxscreen_h
 #define _zxscreen_h
 
-#include "../../hdspeccys/config.h"
+#include "../../config.h"
 #include <circle/actled.h>
 #include <circle/types.h>
 #include <circle/interrupt.h>
@@ -14,14 +14,65 @@
 #include <circle/util.h>
 #include <zxutil/zxutil.h>	// For rand_32();
 
+//
+// Configurable defines
+//
 
-#ifndef DEPTH
-#define DEPTH	16		// can be: 8, 16 or 32
+/**
+ * ZX_SCREEN_DEPTH
+ * 
+ * 8 - 8-bit colour
+ * 16 - 16-bit colour
+ * 32 - 32-bit colour
+ */
+#ifndef ZX_SCREEN_DEPTH
+#define ZX_SCREEN_DEPTH 16
+#endif
+
+/**
+ * ZX_SCREEN_COLOUR
+ * 
+ * TRUE - colour
+ * FALSE - black and white (for testing)
+ */
+#ifndef ZX_SCREEN_COLOUR
+#define ZX_SCREEN_COLOUR TRUE
+#endif
+
+/**
+ * ZX_SCREEN_DMA
+ * 
+ * TRUE - DMA used for copying data to the framebuffer
+ * FALSE - memcpy used for copying data to the framebuffer (faster as don't have to wait for DMA to complete)
+ */
+#ifndef ZX_SCREEN_DMA
+#define ZX_SCREEN_DMA FALSE	// Disabled as waiting for DMA to complete is slower than just doing a memcpy().
+#endif
+
+/**
+ * ZX_SCREEN_DMA_BURST_COUNT
+ * 
+ * number - burst count for DMA
+ */
+#ifndef ZX_SCREEN_DMA_BURST_COUNT
+#define ZX_SCREEN_DMA_BURST_COUNT 0
+#endif
+
+/**
+ * ZX_SCREEN_REVERSE_DATA_BITS
+ * 
+ * TRUE - data bits will be reversed (fixes a hardware bug)
+ * FALSE - data bits will not be reversed
+ */
+#ifndef ZX_SCREEN_REVERSE_DATA_BITS
+#define ZX_SCREEN_REVERSE_DATA_BITS FALSE
 #endif
 
 
-#define ZX_SCREEN_COLOUR		TRUE
-// #define ZX_SCREEN_COLOUR		FALSE
+
+//
+// Fixed defines
+//
 
 #define ZX_SCREEN_PIXEL_WIDTH	256
 #define ZX_SCREEN_PIXEL_HEIGHT	192
@@ -30,9 +81,11 @@
 #define ZX_SCREEN_WIDTH			(ZX_SCREEN_BORDER_WIDTH + ZX_SCREEN_PIXEL_WIDTH + ZX_SCREEN_BORDER_WIDTH)
 #define ZX_SCREEN_HEIGHT		(ZX_SCREEN_BORDER_HEIGHT + ZX_SCREEN_PIXEL_HEIGHT + ZX_SCREEN_BORDER_HEIGHT)
 
+#define ZX_SCREEN_FLASH_FRAMES	16	// Frames between flash changes
+#define ZX_SCREEN_COLOR_LUT_SIZE 	256 	// (8 * 8 * 2 * 2) ink * paper * flash * bright
+#define ZX_SCREEN_WIDESCREEN    TRUE
+#define ZX_SCREEN_WIDESCREEN_WIDTH_RATIO  (64 / 45) // 5:4 => 16:9 ((5*9) / (4*16))
 
-// #define ZX_SCREEN_DMA // Disabled as waiting for DMA to complete is slower than just doing a memcpy().
-#define ZX_SCREEN_DMA_BURST_COUNT	0
 
 
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
@@ -52,7 +105,7 @@
 #define HIGH_COLOR	BRIGHT_RED_COLOR
 #define HALF_COLOR	BLUE_COLOR
 
-#if DEPTH == 8
+#if ZX_SCREEN_DEPTH == 8
 	typedef u8 TScreenColor;
 
 	#define RED_COLOR16			COLOR16 (170 >> 3, 0, 0)
@@ -89,7 +142,7 @@
 	#define BRIGHT_CYAN_COLOR		14
 	#define BRIGHT_WHITE_COLOR		15
 
-#elif DEPTH == 16
+#elif ZX_SCREEN_DEPTH == 16
 	typedef u16 TScreenColor;
 
 	#define RED_COLOR				COLOR16 (0xCD >> 3, 0 >> 3, 0 >> 3)
@@ -108,7 +161,7 @@
 	#define BRIGHT_MAGENTA_COLOR	COLOR16 (255 >> 3, 0 >> 3, 255 >> 3)
 	#define BRIGHT_CYAN_COLOR		COLOR16 (0 >> 3, 255 >> 3, 255 >> 3)
 	#define BRIGHT_WHITE_COLOR		COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
-#elif DEPTH == 32
+#elif ZX_SCREEN_DEPTH == 32
 	typedef u32 TScreenColor;
 
 	#define RED_COLOR			COLOR32 (170, 0, 0, 255)
@@ -131,9 +184,6 @@
 	#error DEPTH must be 8, 16 or 32
 #endif
 
-#define ZX_SCREEN_FLASH_FRAMES	16	// Frames between flash changes
-
-#define ZX_COLOR_LUT_SIZE 	256 	// (8 * 8 * 2 * 2) ink * paper * flash * bright
 
 
 // Data types
@@ -210,7 +260,7 @@ private:
 	unsigned	 m_nScreenBufferNo;
 	boolean		 m_bDirty;
 
-	ZX_COLORS zxColors[ZX_COLOR_LUT_SIZE];
+	ZX_COLORS zxColors[ZX_SCREEN_COLOR_LUT_SIZE];
 
 #ifdef ZX_SCREEN_DMA
 	CDMAChannel	 m_DMA;
