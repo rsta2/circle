@@ -252,11 +252,11 @@ void CZxSmi::Start(CSynchronizationEvent *pFrameEvent)
   m_GpioIntIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
   // m_GpioIntIrqPin.EnableInterrupt(GPIOInterruptOnAsyncFallingEdge);
 #endif  
-#if (ZX_SMI_BORDER_USE_FIQ)	
-	m_GpioBorderFiqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
-#else		
-	m_GpioBorderIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
-#endif
+// #if (ZX_SMI_BORDER_USE_FIQ)	
+// 	m_GpioBorderFiqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+// #else		
+// 	m_GpioBorderIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
+// #endif
   
 
   // m_DMA.Wait();
