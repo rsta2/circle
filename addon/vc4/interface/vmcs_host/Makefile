@@ -4,7 +4,9 @@
 
 CIRCLEHOME = ../../../..
 
-OBJS	= vc_vchi_gencmd.o vc_vchi_dispmanx.o
+OBJS	= vc_vchi_gencmd.o vc_vchi_dispmanx.o vc_vchi_tvservice.o
+
+CFLAGS	+= -Wno-format
 
 libvmcs_host.a: $(OBJS)
 	@echo "  AR    $@"

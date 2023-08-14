@@ -36,7 +36,7 @@ EXTRACLEAN = common/*.o egl/*.o ext/*.o glxx/*.o vg/*.o \
 
 include $(CIRCLEHOME)/Rules.mk
 
-CFLAGS += -Wno-strict-overflow
+CFLAGS += -Wno-strict-overflow -Wno-array-bounds
 DEFINE += -DEGL_SERVER_DISPMANX
 
 ifeq ($(strip $(AARCH)),64)
