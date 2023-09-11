@@ -46,6 +46,10 @@ public:
 	/// \return FALSE on failure
 	boolean Setup (unsigned nScreenWidth, unsigned nScreenHeight);
 
+	/// \brief Undo Setup()
+	/// \note Call this before resizing the screen!
+	void Release (void);
+
 	/// \brief Register event handler in cooked mode
 	/// \param pEventHandler Pointer to the event handler (see: mousebehaviour.h)
 	void RegisterEventHandler (TMouseEventHandler *pEventHandler);
