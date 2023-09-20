@@ -2,7 +2,7 @@
 /// \file i2cmaster.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -74,6 +74,17 @@ public:
 	/// \return Number of written bytes or < 0 on failure
 	int Write (u8 ucAddress, const void *pBuffer, unsigned nCount);
 
+	/// \brief Consecutive write and read operation with repeated start
+	/// \param ucAddress    I2C slave address of target device
+	/// \param pWriteBuffer Write data for will be taken from here
+	/// \param nWriteCount  Number of bytes to be written (max. 16)
+	/// \param pReadBuffer  Read data will be stored here
+	/// \param nReadCount   Number of bytes to be read
+	/// \return Number of read bytes or < 0 on failure
+	int WriteReadRepeatedStart (u8 ucAddress,
+				    const void *pWriteBuffer, unsigned nWriteCount,
+				    void *pReadBuffer, unsigned nReadCount);
+
 private:
 	unsigned m_nDevice;
 	uintptr  m_nBaseAddress;
@@ -85,6 +96,7 @@ private:
 	CGPIOPin m_SCL;
 
 	unsigned m_nCoreClockRate;
+	unsigned m_nClockSpeed;
 
 	CSpinLock m_SpinLock;
 };
