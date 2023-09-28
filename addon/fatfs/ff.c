@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------/
-/  FatFs - Generic FAT Filesystem Module  R0.15 w/patch2                      /
+/  FatFs - Generic FAT Filesystem Module  R0.15 w/patch3                      /
 /-----------------------------------------------------------------------------/
 /
 / Copyright (C) 2022, ChaN, all right reserved.
@@ -5466,6 +5466,9 @@ FRESULT f_setlabel (
 	/* Get logical drive */
 	res = mount_volume(&label, &fs, FA_WRITE);
 	if (res != FR_OK) LEAVE_FF(fs, res);
+#if FF_STR_VOLUME_ID == 2
+	for ( ; *label == '/'; label++) ;	/* Snip the separators off */
+#endif
 
 #if FF_FS_EXFAT
 	if (fs->fs_type == FS_EXFAT) {	/* On the exFAT volume */
