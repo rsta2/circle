@@ -1,0 +1,24 @@
+README 
+
+This test program continuously sends "Note On" and "Note Off" MIDI events to an
+attached USB MIDI tone generator, which can be connected and removed from the
+system (USB plug-and-play). After (re-)connect the tone sequence starts again.
+
+
+USB GADGET MODE
+
+This test program works on the Raspberry Pi (3)A(+), Zero (2) (W) and 4B in USB
+gadget mode too. These models allow to connect the on-board DW USB controller
+directly to an USB host for USB gadget (aka device) operation. The Raspberry Pi
+4B uses the USB-C power connector for that purpose. You need a suitable USB
+cable. The Raspberry Pi is normally bus-powered via the USB host in any case for
+this test. A separate power supply need not be connected.
+
+If you want to self-power your Raspberry Pi, you have to ensure that the supply
+voltages at the USB connector and the power connector are exactly the same.
+Otherwise there is a risk of damage. Be careful!
+
+A configuration is required for this test. First you have to enable the define
+USB_GADGET_MODE in the file kernel.cpp. Furthermore you have to define the macro
+USB_GADGET_VENDOR_ID with your USB Vendor ID to be used for the USB device. See
+the file include/circle/sysconfig.h for details!

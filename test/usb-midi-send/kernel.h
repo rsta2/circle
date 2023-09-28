@@ -24,14 +24,14 @@
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
 #include <circle/screen.h>
+#include <circle/serial.h>
 #include <circle/exceptionhandler.h>
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/types.h>
-#include <circle/i2cmaster.h>
 #include <circle/usb/usbcontroller.h>
-#include "miniorgan.h"
+#include <circle/usb/usbmidi.h>
 
 enum TShutdownMode
 {
@@ -51,19 +51,24 @@ public:
 	TShutdownMode Run (void);
 
 private:
+	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
+
+private:
 	// do not change this order
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
 	CScreenDevice		m_Screen;
+	CSerialDevice		m_Serial;
 	CExceptionHandler	m_ExceptionHandler;
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
-	CI2CMaster		m_I2CMaster;
 	CUSBController		*m_pUSB;
 
-	CMiniOrgan		*m_pMiniOrgan;
+	CUSBMIDIDevice * volatile m_pMIDIDevice;
+
+	static const u8 s_Note[];
 };
 
 #endif

@@ -2,7 +2,7 @@
 // bcm2835.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -212,6 +212,7 @@
 
 #define ARM_USB_CORE_BASE	ARM_USB_BASE
 #define ARM_USB_HOST_BASE	(ARM_USB_BASE + 0x400)
+#define ARM_USB_DEV_BASE	(ARM_USB_BASE + 0x800)
 #define ARM_USB_POWER		(ARM_USB_BASE + 0xE00)
 
 //
