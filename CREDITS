@@ -77,6 +77,7 @@ Testing and tracing USB Audio streaming with Dirtywave M8
 Brad Robinson
 Improving scheduler library
 Improving bootloader support and tools
+Improving different parts of the base library
 
 D. Rimron
 Adding screen reverse mode
@@ -99,3 +100,6 @@ Testing several USB Audio Pro streaming interfaces
 
 Kevin Boone
 Adding support for Ctrl+navigation keys
+
+@ArnoldUK
+Testing the resizing of the screen in different classes
