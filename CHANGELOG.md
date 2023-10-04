@@ -3,8 +3,27 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 45.3
+------------
+
+This release comes with initial **USB gadget (aka device, peripheral) mode support**, which is used to implement an **USB MIDI (v1.0) gadget**. This allows to connect the Raspberry Pi models (3)A(+), Zero (2) (W) and 4B directly to a host computer (e.g. for running a sequencer program). Before the Raspberry Pi was always the USB host with Circle and required an additional USB MIDI serial adapter for that purpose.
+
+The sample [29-miniorgan](sample/29-miniorgan/) is prepared to work as MIDI gadget. Please see the [README](sample/29-miniorgan/README) for information about the required configuration. Beside the define `USB_GADGET_MODE`, which enables the gadget mode in the sample, you have to define your own USB vendor ID as system option `USB_GADGET_VENDOR_ID` in *Config.mk* or *include/circle/sysconfig.h*. Please note that Circle does not support OTG protocols, so the USB controller always works in host or gadget mode and the connected peer must work in the opposite mode.
+
+Adapting your own application to be used as an USB MIDI gadget should not be difficult. You have to create an object of the class `CUSBMIDIGadget` (see *include/circle/usb/gadget/usbmidigadget.h*) instead of `CUSBHCIDevice` and call `Initialize()` and `UpdatePlugAndPlay()` on it as before in host mode. You have to add the library *lib/usb/gadget/libusbgadget.a* to your `LIBS` variable. The USB MIDI API device `umidi1` has the same interface as in host mode. There is a shared base class `CUSBController` for `CUSBHCIDevice` and `CUSBMIDIGadget`, so it is easy to implement host and gadget mode in one application and to select it on user configuration.
+
+Further improvements:
+
+* The **LVGL submodule** has been updated to version 8.3.10.
+* **Application-defined kernel options** can be used now in the file *cmdline.txt*. The methods `GetAppOptionString()` and `GetAppOptionDecimal()` have been added to the class `CKernelOptions` for this purpose.
+* **Resizing the screen** is supported in the classes `CScreenDevice`, `C2DGraphics` and `CMouseDevice`.
+* **TV service support** has been added to [addon/vc4/interface](addon/vc4/interface/). It works in 32-bit mode only.
+* The class `CI2CMaster` supports **I2C operations with repeated start** now.
+
 Release 45.2
 ------------
+
+2023-05-22
 
 This release provides many enhancements and fixes for the **USB audio streaming support** for Raspberry Pi 4, 400 and Compute Module 4. USB audio interfaces with 16-bit or 24-bit wide samples with up to 32 channels are supported now. You have to specify the option `soundopt=24` in the file *cmdline.txt* to select 24-bit wide samples and the option `usbsoundchannels=TX,RX` to select a specific number of output (TX) and input (RX) channels. See the file [cmdline.txt](doc/cmdline.txt) for more info on this option. You can call the methods `GetHWTXChannels()` and `GetHWRXChannels()` of a sound device driver class to request the number of available hardware channels in your application now.
 
