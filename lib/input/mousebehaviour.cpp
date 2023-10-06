@@ -2,7 +2,7 @@
 // mousebehaviour.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -108,6 +108,28 @@ boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
 	}
 
 	return TRUE;
+}
+
+void CMouseBehaviour::Release (void)
+{
+	if (   m_nScreenWidth == 0		// not setup?
+	    || m_nScreenHeight == 0)
+	{
+		return;
+	}
+
+	if (m_bCursorOn)
+	{
+		SetCursorState (0, 0, FALSE);
+	}
+
+	m_nScreenWidth = 0;
+	m_nScreenHeight = 0;
+	m_nPosX = 0;
+	m_nPosY = 0;
+	m_bHasMoved = FALSE;
+	m_bCursorOn = FALSE;
+	m_nButtons = 0;
 }
 
 void CMouseBehaviour::RegisterEventHandler (TMouseEventHandler *pEventHandler)

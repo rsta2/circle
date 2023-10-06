@@ -2,7 +2,7 @@
 // tftpdaemon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,21 @@
 class CTFTPDaemon : public CTask
 {
 public:
+	enum TStatus
+	{
+		StatusIdle,
+		StatusReadInProgress,
+		StatusWriteInProgress,
+		StatusReadCompleted,
+		StatusWriteCompleted,
+		StatusReadAborted,
+		StatusWriteAborted,
+		StatusUnknown
+	};
+
+	static const size_t MaxFilenameLen = 128;
+
+public:
 	CTFTPDaemon (CNetSubSystem *pNetSubSystem);
 	~CTFTPDaemon (void);
 
@@ -39,6 +54,8 @@ public:
 	virtual boolean FileClose (void) = 0;
 	virtual int FileRead (void *pBuffer, unsigned nCount) = 0;
 	virtual int FileWrite (const void *pBuffer, unsigned nCount) = 0;
+
+	virtual void UpdateStatus (TStatus Status, const char *pFileName) {}
 
 private:
 	boolean DoRead (const char *pFileName);
@@ -53,6 +70,8 @@ private:
 
 	CSocket *m_pRequestSocket;
 	CSocket *m_pTransferSocket;
+
+	char m_Filename[MaxFilenameLen+1];
 };
 
 #endif

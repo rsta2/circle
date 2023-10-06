@@ -2,7 +2,7 @@
 // i2cslave.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,19 +23,35 @@
 #include <circle/gpiopin.h>
 #include <circle/types.h>
 
-class CI2CSlave
+class CI2CSlave		/// Driver for I2C slave device
 {
 public:
+	static const unsigned TimeoutNone    = 0;	///< Return immediately
+	static const unsigned TimeoutForEver = -1;	///< Timeout never occurs
+
+public:
+	/// \param ucAddress 7-bit device address
 	CI2CSlave (u8 ucAddress);
+
 	~CI2CSlave (void);
 
+	/// \return Operation successful?
 	boolean Initialize (void);
 
-	// returns number of read bytes or < 0 on failure
-	int Read (void *pBuffer, unsigned nCount);
+	/// \param pBuffer Pointer to data buffer
+	/// \param nCount Number of bytes to be read
+	/// \param nTimeout_us Return after given number of us, when less than nCount bytes read
+	/// \return Number of read bytes or < 0 on failure\n
+	///	    When a timeout occurs, the result is smaller than nCount (or 0).
+	/// \note Broadcasts to the General Call Address 0 will not be received.
+	int Read (void *pBuffer, unsigned nCount, unsigned nTimeout_us = TimeoutForEver);
 
-	// returns number of written bytes or < 0 on failure
-	int Write (const void *pBuffer, unsigned nCount);
+	/// \param pBuffer Pointer to data buffer
+	/// \param nCount Number of bytes to be written
+	/// \param nTimeout_us Return after given number of us, when less than nCount bytes written
+	/// \return Number of written bytes or < 0 on failure\n
+	///	    When a timeout occurs, the result is smaller than nCount (or 0).
+	int Write (const void *pBuffer, unsigned nCount, unsigned nTimeout_us = TimeoutForEver);
 
 private:
 	u8 m_ucAddress;

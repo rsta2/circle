@@ -298,6 +298,38 @@
 
 ///////////////////////////////////////////////////////////////////////
 //
+// USB gadgets
+//
+///////////////////////////////////////////////////////////////////////
+
+// USB_GADGET_VENDOR_ID is the Vendor ID, which is used for your USB
+// gadgets. Normally new USB Vendor IDs will be assigned by the USB-IF
+// (https://usb.org/getting-vendor-id). For tests a unique free Vendor
+// ID may be used. A list of known Vendor IDs can be found here:
+// http://www.linux-usb.org/usb-ids.html. You must not use the same
+// Vendor/Device ID combination for USB devices with different
+// configurations. Especially on Windows hosts this may lead to
+// malfunction. The default Vendor ID 0x0000 given here, is not a valid
+// ID and will be rejected by the Circle USB gadget driver. You have to
+// define a new one.
+
+#ifndef USB_GADGET_VENDOR_ID
+#define USB_GADGET_VENDOR_ID		0x0000
+#endif
+
+// USB_GADGET_DEVICE_ID_BASE is the base value for the assignment of
+// USB Device IDs for USB gadgets in Circle. Used Device IDs start with
+// USB_GADGET_DEVICE_ID_BASE and end with USB_GADGET_DEVICE_ID_BASE+N-1
+// where N is the number of supported USB gadget devices in Circle.
+// Be sure that there is no collision with other USB devices with the
+// same USB Vendor ID!
+
+#ifndef USB_GADGET_DEVICE_ID_BASE
+#define USB_GADGET_DEVICE_ID_BASE	0x8001
+#endif
+
+///////////////////////////////////////////////////////////////////////
+//
 // Other
 //
 ///////////////////////////////////////////////////////////////////////
@@ -415,6 +447,19 @@
 #define __FAST_MATH__
 #endif
 
+#endif
+
+
+// Sets the name of the "main()" entry point function that will be
+// called by circle after system initialization has completed.
+//
+// 	extern int MAINPROC (void);
+//
+// Can be used by wrapper libraries that need to inject their
+// own startup/shutdown code before calling their client's main().
+
+#ifndef MAINPROC
+#define MAINPROC main
 #endif
 
 ///////////////////////////////////////////////////////////////////////

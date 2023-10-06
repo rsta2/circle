@@ -57,3 +57,28 @@ The PC keyboard mapping is as follows:
 The inscription of the keyboard may vary, but the physical position of the
 piano keys is the same on all keyboards. Using this scheme you should be able to
 find them.
+
+
+USB GADGET MODE
+
+This sample works in USB gadget mode too. Normally the Raspberry Pi is the USB
+host, but in gadget mode it is the peripheral device. This allows the Raspberry
+Pi to be directly connected to a host computer. This is supported for the
+Raspberry Pi (3)A(+), Zero (2) (W) and 4B only. The Raspberry Pi 4B uses the
+USB-C power connector for that purpose. You need a suitable USB cable. The
+Raspberry Pi is normally bus-powered via the USB host in this case. A separate
+power supply need not be connected.
+
+If you want to self-power your Raspberry Pi, you have to ensure that the supply
+voltages at the USB connector and the power connector are exactly the same.
+Otherwise there is a risk of damage. Be careful!
+
+A configuration is required for this test. First you have to enable the define
+USB_GADGET_MODE in the file kernel.cpp. Furthermore you have to define the macro
+USB_GADGET_VENDOR_ID with your USB Vendor ID to be used for the USB device. See
+the file include/circle/sysconfig.h for details!
+
+Further general information about using the Raspberry Pi in USB gadget mode can
+be found in this guide:
+
+	https://github.com/thagrol/Guides/blob/main/ethernetgadget.pdf

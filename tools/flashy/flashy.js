@@ -2,6 +2,8 @@ let fs = require('fs');
 let os = require('os');
 let util = require('util');
 let stdout = process.stdout;
+let child_process = require('child_process');
+
 
 // Command line options
 let hexFile = null;
@@ -21,6 +23,7 @@ let rebootDelay = null;
 let monitor = false;
 let noFast = false;
 let usingHC06 = false;
+let noRespawn = false;
 let goDelay = 0;
 
 // The currently open serial port
@@ -67,6 +70,33 @@ async function openSerialPortAsync(baudRate)
     // Remap WSL serial port names to Windows equivalent if appropriate
     if (os.platform() == 'win32' && serialPortName.startsWith(`/dev/ttyS`))
     {
+        // This is a hacky fix for when launched from within a WSL session (possibly
+        // related to Windows 11) where the SerialPort module fails with overlapped
+        // I/O errors.  No sure why this happens but only seems to occur in the process
+        // launched immediately from WSL.
+        // As a work around, we simply respawn ourself with the same arguments + an
+        // additional "--no-respawn" flag so we know not to do this again.
+        if (!noRespawn)
+        {
+            // Use same args, but add the --no-respawn flag
+            let args = process.argv.slice(1);
+            args.push("--no-respawn");
+
+            // Respawn
+            let r = child_process.spawnSync(
+                process.argv[0], 
+                args,
+                { 
+                    stdio: 'inherit', 
+                    shell: false
+                }
+            );
+            
+            // Quit with exit code of child process
+            process.exit(r.status);
+        }
+        
+
         let remapped = `COM` + serialPortName.substr(9);
         stdout.write(`Using '${remapped}' instead of WSL port '${serialPortName}'.\n`)
         serialPortName = remapped;
@@ -616,6 +646,10 @@ function parseCommandLine()
                     usingHC06 = true;
                     break;
 
+                case "no-respawn":
+                    noRespawn = true;
+                    break;
+
                 default:
                     fail(`Unknown switch --${sw}`);
             }
@@ -685,4 +719,5 @@ function parseCommandLine()
     // Finished
     await closeSerialPortAsync();
     stdout.write(`Done!\n`);
+    process.exit(0);
 })();

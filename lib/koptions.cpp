@@ -38,7 +38,8 @@ CKernelOptions::CKernelOptions (void)
 	m_CPUSpeed (CPUSpeedLow),
 	m_nSoCMaxTemp (60),
 	m_nGPIOFanPin (0),
-	m_bTouchScreenValid (FALSE)
+	m_bTouchScreenValid (FALSE),
+	m_pAppOptionList (nullptr)
 {
 	strcpy (m_LogDevice, "tty1");
 	strcpy (m_KeyMap, DEFAULT_KEYMAP);
@@ -180,11 +181,34 @@ CKernelOptions::CKernelOptions (void)
 		{
 			m_bTouchScreenValid = GetDecimals (pValue, m_TouchScreen, 4);
 		}
+		else
+		{
+			TAppOption *pAppOption = new TAppOption;
+
+			pAppOption->pName = new char[strlen (pOption)+1];
+			strcpy (pAppOption->pName, pOption);
+
+			pAppOption->pValue = new char[strlen (pValue)+1];
+			strcpy (pAppOption->pValue, pValue);
+
+			pAppOption->pNext = m_pAppOptionList;
+			m_pAppOptionList = pAppOption;
+		}
 	}
 }
 
 CKernelOptions::~CKernelOptions (void)
 {
+	while (m_pAppOptionList)
+	{
+		TAppOption *pAppOption = m_pAppOptionList;
+		m_pAppOptionList = pAppOption->pNext;
+
+		delete [] pAppOption->pValue;
+		delete [] pAppOption->pName;
+		delete pAppOption;
+	}
+
 	s_pThis = 0;
 }
 
@@ -268,6 +292,36 @@ const unsigned *CKernelOptions::GetTouchScreen (void) const
 	return m_bTouchScreenValid ? m_TouchScreen : nullptr;
 }
 
+const char *CKernelOptions::GetAppOptionString (const char *pOption, const char *pDefault) const
+{
+	for (TAppOption *pAppOption = m_pAppOptionList; pAppOption; pAppOption = pAppOption->pNext)
+	{
+		if (strcmp (pAppOption->pName, pOption) == 0)
+		{
+			return pAppOption->pValue;
+		}
+	}
+
+	return pDefault;
+}
+
+unsigned CKernelOptions::GetAppOptionDecimal (const char *pOption, unsigned nDefault) const
+{
+	const char *pValue = GetAppOptionString (pOption, nullptr);
+	if (!pValue)
+	{
+		return nDefault;
+	}
+
+	unsigned nValue = GetDecimal (pValue);
+	if (nValue == INVALID_VALUE)
+	{
+		return nDefault;
+	}
+
+	return nValue;
+}
+
 CKernelOptions *CKernelOptions::Get (void)
 {
 	return s_pThis;
@@ -329,7 +383,7 @@ char *CKernelOptions::GetOptionValue (char *pOption)
 	return pOption;
 }
 
-unsigned CKernelOptions::GetDecimal (char *pString)
+unsigned CKernelOptions::GetDecimal (const char *pString)
 {
 	if (   pString == 0
 	    || *pString == '\0')

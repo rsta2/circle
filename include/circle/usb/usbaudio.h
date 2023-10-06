@@ -53,8 +53,62 @@ struct TUSBMIDIStreamingEndpointDescriptor
 	unsigned char	bLength;
 	unsigned char	bDescriptorType;
 	unsigned char	bDescriptorSubType;
+#define USB_MIDI_STREAMING_SUBTYPE_GENERAL		0x01
 	unsigned char	bNumEmbMIDIJack;
-	unsigned char	bAssocJackIDs[];
+	unsigned char	bAssocJackIDs[1];
+}
+PACKED;
+
+struct TUSBMIDIStreamingInterfaceDescriptorHeader
+{
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned char	bDescriptorSubtype;
+#define USB_MIDI_STREAMING_IFACE_SUBTYPE_HEADER		0x01
+	unsigned short	bcdADC;
+#define USB_MIDI_STREAMING_IFACE_BCDADC_100		0x100
+	unsigned short	wTotalLength;
+}
+PACKED;
+
+struct TUSBMIDIStreamingInterfaceDescriptorInJack
+{
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned char	bDescriptorSubtype;
+#define USB_MIDI_STREAMING_IFACE_SUBTYPE_MIDI_IN_JACK	0x02
+	unsigned char	bJackType;
+#define USB_MIDI_STREAMING_IFACE_JACKTYPE_EMBEDDED	0x01
+#define USB_MIDI_STREAMING_IFACE_JACKTYPE_EXTERNAL	0x02
+	unsigned char	bJackID;
+	unsigned char	iJack;
+}
+PACKED;
+
+struct TUSBMIDIStreamingInterfaceDescriptorOutJack
+{
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned char	bDescriptorSubtype;
+#define USB_MIDI_STREAMING_IFACE_SUBTYPE_MIDI_OUT_JACK	0x03
+	unsigned char	bJackType;
+	unsigned char	bJackID;
+	unsigned char	bNrInputPins;
+	unsigned char	baSourceID[1];
+	unsigned char	baSourcePin[1];
+	unsigned char	iJack;
+}
+PACKED;
+
+struct TUSBAudioControlInterfaceDescriptorHeader
+{
+	unsigned char	bLength;
+	unsigned char	bDescriptorType;
+	unsigned char	bDescriptorSubtype;
+	unsigned short	bcdADC;
+	unsigned short	wTotalLength;
+	unsigned char	bInCollection;
+	unsigned char	baInterfaceNr[1];
 }
 PACKED;
 

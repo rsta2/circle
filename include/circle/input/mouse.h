@@ -2,7 +2,7 @@
 // mouse.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #define MOUSE_DISPLACEMENT_MIN	-127
 #define MOUSE_DISPLACEMENT_MAX	127
 
+typedef void TMouseStatusHandlerEx (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove, void* pArg);
 typedef void TMouseStatusHandler (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove);
 
 class CMouseDevice : public CDevice	/// Generic mouse interface device ("mouse1")
@@ -44,6 +45,10 @@ public:
 	/// \param nScreenHeight Height of the screen in pixels
 	/// \return FALSE on failure
 	boolean Setup (unsigned nScreenWidth, unsigned nScreenHeight);
+
+	/// \brief Undo Setup()
+	/// \note Call this before resizing the screen!
+	void Release (void);
 
 	/// \brief Register event handler in cooked mode
 	/// \param pEventHandler Pointer to the event handler (see: mousebehaviour.h)
@@ -64,6 +69,8 @@ public:
 
 	/// \brief Register mouse status handler in raw mode
 	/// \param pStatusHandler Pointer to the mouse status handler
+	/// \param pArg User argument, handed over to the mouse status handler
+	void RegisterStatusHandler (TMouseStatusHandlerEx *pStatusHandler, void* pArg);
 	void RegisterStatusHandler (TMouseStatusHandler *pStatusHandler);
 
 	/// \return Number of supported mouse buttons
@@ -79,7 +86,8 @@ public:
 private:
 	CMouseBehaviour m_Behaviour;
 
-	TMouseStatusHandler *m_pStatusHandler;
+	TMouseStatusHandlerEx *m_pStatusHandler;
+	void* m_pStatusHandlerArg;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

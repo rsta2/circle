@@ -12,6 +12,7 @@
 arm_64bit=0
 
 [pi4]
+kernel=kernel7l.img
 armstub=armstub7-rpi4.bin
 max_framebuffers=2
 

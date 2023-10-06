@@ -49,6 +49,14 @@ public:
 	/// \return Operation successful?
 	boolean Initialize (void);
 
+	/// \param nWidth  New screen width in pixels
+	/// \param nHeight New screen height in pixels
+	/// \return Operation successful?
+	/// \note When FALSE is returned, the width and/or height are not supported.\n
+	///	  The object is in an uninitialized state then and must not be used,\n
+	///	  but Resize() can be called again with other parameters.
+	boolean Resize (unsigned nWidth, unsigned nHeight);
+
 	/// \return Screen width in pixels
 	unsigned GetWidth () const;
 

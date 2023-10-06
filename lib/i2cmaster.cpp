@@ -2,7 +2,7 @@
 // i2cmaster.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // Large portions are:
 //	Copyright (C) 2011-2013 Mike McCauley
@@ -26,6 +26,7 @@
 #include <circle/bcm2835.h>
 #include <circle/machineinfo.h>
 #include <circle/synchronize.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 #if RASPPI < 4
@@ -108,6 +109,7 @@ CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode, unsigned nConfig)
 	m_nConfig (nConfig),
 	m_bValid (FALSE),
 	m_nCoreClockRate (CMachineInfo::Get ()->GetClockRate (CLOCK_ID_CORE)),
+	m_nClockSpeed (0),
 	m_SpinLock (TASK_LEVEL)
 {
 	if (   m_nDevice >= DEVICES
@@ -165,6 +167,8 @@ void CI2CMaster::SetClock (unsigned nClockSpeed)
 	PeripheralEntry ();
 
 	assert (nClockSpeed > 0);
+	m_nClockSpeed = nClockSpeed;
+
 	u16 nDivider = (u16) (m_nCoreClockRate / nClockSpeed);
 	write32 (m_nBaseAddress + ARM_BSC_DIV__OFFSET, nDivider);
 	
@@ -319,6 +323,115 @@ int CI2CMaster::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 		nResult = -I2C_MASTER_ERROR_CLKT;
 	}
 	else if (nCount > 0)
+	{
+		nResult = -I2C_MASTER_DATA_LEFT;
+	}
+
+	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_DONE);
+
+	PeripheralExit ();
+
+	m_SpinLock.Release ();
+
+	return nResult;
+}
+
+int CI2CMaster::WriteReadRepeatedStart (u8 ucAddress,
+					const void *pWriteBuffer, unsigned nWriteCount,
+					void *pReadBuffer, unsigned nReadCount)
+{
+	assert (m_bValid);
+
+	if (ucAddress >= 0x80)
+	{
+		return -I2C_MASTER_INALID_PARM;
+	}
+
+	if (   nWriteCount == 0 || nWriteCount > FIFO_SIZE || pWriteBuffer == 0
+	    || nReadCount == 0 || pReadBuffer == 0
+	)
+	{
+		return -I2C_MASTER_INALID_PARM;
+	}
+
+	m_SpinLock.Acquire ();
+
+	u8 *pWriteData = (u8 *) pWriteBuffer;
+
+	PeripheralEntry ();
+
+	// setup transfer
+	write32 (m_nBaseAddress + ARM_BSC_A__OFFSET, ucAddress);
+
+	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET, C_CLEAR);
+	write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_CLKT | S_ERR | S_DONE);
+
+	write32 (m_nBaseAddress + ARM_BSC_DLEN__OFFSET, nWriteCount);
+
+	// fill FIFO
+	for (unsigned i = 0; i < nWriteCount; i++)
+	{
+		write32 (m_nBaseAddress + ARM_BSC_FIFO__OFFSET, *pWriteData++);
+	}
+
+	// start transfer
+	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET, C_I2CEN | C_ST);
+
+	// poll for transfer has started
+	while (!(read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_TA))
+	{
+		if (read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_DONE)
+		{
+			break;
+		}
+	}
+
+	u8 *pReadData = (u8 *) pReadBuffer;
+
+	int nResult = 0;
+
+	// setup transfer
+	write32 (m_nBaseAddress + ARM_BSC_DLEN__OFFSET, nReadCount);
+
+	write32 (m_nBaseAddress + ARM_BSC_C__OFFSET, C_I2CEN | C_ST | C_READ);
+
+	assert (m_nClockSpeed > 0);
+	CTimer::SimpleusDelay ((nWriteCount + 1) * 9 * 1000000 / m_nClockSpeed);
+
+	// transfer active
+	while (!(read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_DONE))
+	{
+		while (read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_RXD)
+		{
+			*pReadData++ = read32 (m_nBaseAddress + ARM_BSC_FIFO__OFFSET) & FIFO__MASK;
+
+			nReadCount--;
+			nResult++;
+		}
+	}
+
+	// transfer has finished, grab any remaining stuff from FIFO
+	while (   nReadCount > 0
+	       && (read32 (m_nBaseAddress + ARM_BSC_S__OFFSET) & S_RXD))
+	{
+		*pReadData++ = read32 (m_nBaseAddress + ARM_BSC_FIFO__OFFSET) & FIFO__MASK;
+
+		nReadCount--;
+		nResult++;
+	}
+
+	u32 nStatus = read32 (m_nBaseAddress + ARM_BSC_S__OFFSET);
+	if (nStatus & S_ERR)
+	{
+		write32 (m_nBaseAddress + ARM_BSC_S__OFFSET, S_ERR);
+
+		nResult = -I2C_MASTER_ERROR_NACK;
+	}
+	else if (nStatus & S_CLKT)
+	{
+		nResult = -I2C_MASTER_ERROR_CLKT;
+	}
+	else if (nReadCount > 0)
 	{
 		nResult = -I2C_MASTER_DATA_LEFT;
 	}

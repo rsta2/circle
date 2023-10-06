@@ -716,13 +716,19 @@ boolean CUSBAudioStreamingDevice::Setup (unsigned nSampleRate)
 		{
 			unsigned nUSBFrameRate = (  GetDevice ()->GetSpeed () == USBSpeedFull
 						  ? 1000 : 8000) / m_nDataIntervalFactor;
+			unsigned nFrameSize = m_nChannels * m_nSubframeSize;
 
-			m_nChunkSizeBytes =   nSampleRate * m_nChannels * m_nSubframeSize
-					    / nUSBFrameRate;
+			m_nChunkSizeBytes = nSampleRate * nFrameSize / nUSBFrameRate;
+
+			// round up to a multiple of frame size
+			m_nChunkSizeBytes += nFrameSize-1;
+			m_nChunkSizeBytes /= nFrameSize;
+			m_nChunkSizeBytes *= nFrameSize;
 		}
 		else
 		{
-			m_nChunkSizeBytes = m_pEndpointData->GetMaxPacketSize ();
+			m_nChunkSizeBytes =   m_pEndpointData->GetMaxPacketSize ()
+					    - m_pEndpointData->GetMaxPacketSize () % m_nSubframeSize;
 		}
 	}
 

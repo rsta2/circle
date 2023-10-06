@@ -32,7 +32,7 @@ C2DGraphics::C2DGraphics (unsigned nWidth, unsigned nHeight, boolean bVSync, uns
 	m_pFrameBuffer(0),
 	m_Buffer(0),
 	m_bVSync(bVSync),
-	m_bBufferSwapped(FALSE)
+	m_bBufferSwapped(TRUE)
 {
 
 }
@@ -79,6 +79,20 @@ boolean C2DGraphics::Initialize (void)
 	m_Buffer = m_baseBuffer + m_nWidth * m_nHeight;
 	
 	return TRUE;
+}
+
+boolean C2DGraphics::Resize (unsigned nWidth, unsigned nHeight)
+{
+	delete m_pFrameBuffer;
+	m_pFrameBuffer = 0;
+
+	m_nWidth = nWidth;
+	m_nHeight = nHeight;
+
+	m_Buffer = 0;
+	m_bBufferSwapped = TRUE;
+
+	return Initialize ();
 }
 
 unsigned C2DGraphics::GetWidth () const

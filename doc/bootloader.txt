@@ -30,13 +30,17 @@ using the serial interface.
 4. The Circle project libraries used in your application have to be build
 manually using "./makeall" as described in the main README.md file.
 
-5. You have to prepare a SD card, which starts your Raspberry Pi in bootloader
-mode. Go to the boot/ subdirectory and enter:
+5. You have to prepare a SD card with a FAT partition, which starts your
+Raspberry Pi in bootloader mode. Go to the boot/ subdirectory and enter:
 
 	make all
 
-After completion copy the files from boot/ to the SD card (copy the file
-"config.txt" only for AArch64 operation), which must have a FAT partition.
+5b. If building for AArch64, then additionally enter:
+
+	make bootloader64
+
+After completion copy the files from boot/ to the SD card's FAT partition and in 
+the destination, rename config32.txt or config64.txt (for AArch64) to config.txt.
 Please note, that you have to repeat this step, if you change the parameter
 FLASHBAUD in Config.mk. The built bootloader is specific for this baud rate. Put
 the SD card into your Raspberry Pi, which is connected to your development
@@ -56,8 +60,8 @@ right communication parameters.
 after rebuilding do again "make flash".
 
 
-Using the New New Flash Tool "Flashy"
--------------------------------------
+Using the Flash Tool "Flashy"
+-----------------------------
 
 The above procedure describes flashing the device using the traditional python3 based flash
 tool and bootloader.  There is also a new flash tool and bootloader that provide improved 
@@ -130,3 +134,19 @@ For details on using this under WSL, see the [Windows build instructions](window
 
 If you want to use Flashy with the Bluetooth modules HC-05 or HC-06, please see
 [these instructions](https://github.com/rsta2/circle/pull/312).
+
+
+Using "Flashy" v2
+-----------------
+
+There is a new improved version of Flashy, which is maintained in a separate
+project:
+
+	https://github.com/toptensoftware/flashy
+
+Details about the features of this version and its installation can be found in
+the project README. The configuration in Circle to use this version is very
+similar as described above, with one difference. In your Config.mk you have to
+specify:
+
+	USEFLASHY = 2

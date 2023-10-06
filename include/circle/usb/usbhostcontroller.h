@@ -2,7 +2,7 @@
 // usbhostcontroller.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #ifndef _circle_usb_usbhostcontroller_h
 #define _circle_usb_usbhostcontroller_h
 
+#include <circle/usb/usbcontroller.h>
 #include <circle/usb/usb.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
@@ -35,7 +36,7 @@ class CUSBHCIRootPort;
 class CUSBStandardHub;
 class CUSBDevice;
 
-class CUSBHostController
+class CUSBHostController : public CUSBController
 {
 public:
 	CUSBHostController (boolean bPlugAndPlay);
@@ -75,7 +76,7 @@ public:
 
 	// must be called from TASK_LEVEL, if Plug-and-Play is enabled
 	// returns TRUE if device tree might have been updated (always TRUE on first call)
-	boolean UpdatePlugAndPlay (void);
+	boolean UpdatePlugAndPlay (void) override;
 
 	static boolean IsActive (void)
 	{

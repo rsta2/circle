@@ -1,0 +1,5 @@
+README
+
+This is a test program for the VC4 TV service. In the ported variant it displays
+some info about the attached HDMI display and monitors events from it. The TV
+service can be used in 32-bit mode only.

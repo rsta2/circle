@@ -30,7 +30,7 @@
 #include <circle/logger.h>
 #include <circle/types.h>
 #include <circle/i2cmaster.h>
-#include <circle/usb/usbhcidevice.h>
+#include <circle/usb/usbcontroller.h>
 #include "miniorgan.h"
 
 enum TShutdownMode
@@ -61,7 +61,7 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CI2CMaster		m_I2CMaster;
-	CUSBHCIDevice		m_USBHCI;
+	CUSBController		*m_pUSB;
 
 	CMiniOrgan		*m_pMiniOrgan;
 };

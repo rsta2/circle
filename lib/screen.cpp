@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
 #include <circle/util.h>
+
+static const char DevicePrefix[] = "tty";
 
 #define ROTORS		4
 
@@ -68,6 +70,8 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtua
 
 CScreenDevice::~CScreenDevice (void)
 {
+	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDisplay+1, FALSE);
+
 	if (m_bVirtual)
 	{
 		delete [] m_pBuffer;
@@ -154,9 +158,42 @@ boolean CScreenDevice::Initialize (void)
 	ClearDisplayEnd ();
 	InvertCursor ();
 
-	CDeviceNameService::Get ()->AddDevice ("tty", m_nDisplay+1, this, FALSE);
+	if (!CDeviceNameService::Get ()->GetDevice (DevicePrefix, m_nDisplay+1, FALSE))
+	{
+		CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDisplay+1, this, FALSE);
+	}
 
 	return TRUE;
+}
+
+boolean CScreenDevice::Resize (unsigned nWidth, unsigned nHeight)
+{
+	if (m_bVirtual)
+	{
+		delete [] m_pBuffer;
+	}
+	m_pBuffer = 0;
+	delete m_pFrameBuffer;
+	m_pFrameBuffer = 0;
+	delete [] m_pCursorPixels;
+	m_pCursorPixels = 0;
+
+	m_nInitWidth = nWidth;
+	m_nInitHeight = nHeight;
+
+	m_nState = ScreenStateStart;
+	m_nScrollStart = 0;
+	m_nCursorX = 0;
+	m_nCursorY = 0;
+	m_bCursorOn = TRUE;
+	m_bCursorVisible = FALSE;
+	m_Color = NORMAL_COLOR;
+	m_BackgroundColor = BLACK_COLOR;
+	m_ReverseAttribute = FALSE;
+	m_bInsertOn = FALSE;
+	m_bUpdated = FALSE;
+
+	return Initialize ();
 }
 
 unsigned CScreenDevice::GetWidth (void) const
@@ -1010,12 +1047,14 @@ void CScreenDevice::Rotor (unsigned nIndex, unsigned nCount)
 
 CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual, unsigned nDisplay)
 :	m_nInitWidth (nWidth),
-	m_nInitHeight (nHeight)
+	m_nInitHeight (nHeight),
+	m_nDisplay (nDisplay)
 {
 }
 
 CScreenDevice::~CScreenDevice (void)
 {
+	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDisplay+1, FALSE);
 }
 
 boolean CScreenDevice::Initialize (void)
@@ -1034,9 +1073,20 @@ boolean CScreenDevice::Initialize (void)
 
 	m_nUsedHeight = m_nHeight / m_CharGen.GetCharHeight () * m_CharGen.GetCharHeight ();
 
-	CDeviceNameService::Get ()->AddDevice ("tty1", this, FALSE);
+	if (!CDeviceNameService::Get ()->GetDevice (DevicePrefix, m_nDisplay+1, FALSE))
+	{
+		CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDisplay+1, this, FALSE);
+	}
 
 	return TRUE;
+}
+
+boolean CScreenDevice::Resize (unsigned nWidth, unsigned nHeight)
+{
+	m_nInitWidth = nWidth;
+	m_nInitHeight = nHeight;
+
+	return Initialize ();
 }
 
 unsigned CScreenDevice::GetWidth (void) const

@@ -2,7 +2,7 @@
 // device.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -51,6 +51,11 @@ public:
 	/// \return Total byte size of a block device, (u64) -1 on error
 	/// \note Supported by block devices only
 	virtual u64 GetSize (void) const;
+
+	/// \param ulCmd The IOCtl command to invoke
+	/// \param pData Depends on command, used to return command specific data
+	/// \return Zero on success, or error code on failure
+	virtual int IOCtl (unsigned long ulCmd, void *pData);
 
 	/// \return TRUE on successful device removal
 	virtual boolean RemoveDevice (void);

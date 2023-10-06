@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@
 #include <circle/usb/smsc951x.h>
 #include <circle/usb/lan7800.h>
 #include <circle/usb/usbbluetooth.h>
-#include <circle/usb/usbmidi.h>
+#include <circle/usb/usbmidihost.h>
 #include <circle/usb/usbaudiocontrol.h>
 #include <circle/usb/usbaudiostreaming.h>
 #include <circle/usb/usbcdcethernet.h>
@@ -152,7 +152,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (   pName->Compare ("int1-3-0") == 0
 		 || pName->Compare ("ven582-12a") == 0)		// Roland UM-ONE MIDI interface
 	{
-		pResult = new CUSBMIDIDevice (pParent);
+		pResult = new CUSBMIDIHostDevice (pParent);
 	}
 #if RASPPI >= 4
 	else if (   pName->Compare ("int1-1-0") == 0

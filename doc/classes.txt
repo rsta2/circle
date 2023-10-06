@@ -84,6 +84,7 @@ USB library
 * CUSBBulkOnlyMassStorageDevice: Driver for USB mass storage devices (bulk only)
 * CUSBCDCEthernetDevice: Driver for the USB CDC Ethernet device implemented in QEMU.
 * CUSBConfigurationParser: Parses and validates an USB configuration descriptor.
+* CUSBController: Generic USB (host or gadget) controller
 * CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
 * CUSBDeviceFactory: Creates the function objects of the different supported USB functions.
 * CUSBEndpoint: Encapsulates an endpoint of an USB device (supports control, bulk and interrupt EPs).
@@ -100,7 +101,8 @@ USB library
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse, gamepad)
 * CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards
-* CUSBMIDIDevice: Driver for USB Audio Class MIDI 1.0 devices
+* CUSBMIDIDevice: Interface device for USB Audio Class MIDI 1.0 devices
+* CUSBMIDIHostDevice: Host driver for USB Audio Class MIDI 1.0 devices
 * CUSBMouseDevice: Driver for USB mice
 * CUSBPrinterDevice: Simple communications driver for USB printers (back-channel is not used).
 * CUSBRequest: A request to an USB device (URB).
@@ -124,6 +126,14 @@ USB library
 * CXHCISharedMemAllocator: Shared memory allocation for the xHCI driver.
 * CXHCISlotManager: Manages the USB device slots of the xHCI controller.
 * CXHCIUSBDevice: Encapsulates a single USB device, attached to the xHCI controller.
+
+USB gadget library
+
+* CDWUSBGadget: DW USB gadget on Raspberry Pi (3)A(+), Zero (2) (W), 4B
+* CDWUSBGadgetEndpoint: Endpoint of a DW USB gadget
+* CDWUSBGadgetEndpoint0: Endpoint 0 of a DW USB gadget
+* CUSBMIDIGadget: USB MIDI (v1.0) gadget
+* CUSBMIDIGadgetEndpoint: Endpoint of the USB MIDI gadget
 
 Input library
 

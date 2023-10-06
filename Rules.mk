@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 450200
+CIRCLEVER = 450300
 
 CIRCLEHOME ?= ..
 
@@ -284,8 +284,14 @@ endif
 else
 
 # Flash with flashy
+ifeq ($(strip $(USEFLASHY)),1)
+	FLASHY ?= $(NODE) $(CIRCLEHOME)/tools/flashy/flashy.js
+else
+	FLASHY ?= flashy
+endif
+
 flash: $(TARGET).hex
-	$(NODE) $(CIRCLEHOME)/tools/flashy/flashy.js \
+	$(FLASHY) \
 		$(SERIALPORT) \
 		--flashBaud:$(FLASHBAUD) \
 		--userBaud:$(USERBAUD) \

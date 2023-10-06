@@ -5,6 +5,9 @@
 #     onto a SD(HC) card with FAT file system.
 #
 
+-include ../Config.mk
+-include ../Config2.mk
+
 # Use most recent firmware test revision
 #FIRMWARE = master
 
@@ -13,24 +16,24 @@ FIRMWARE ?= a585b376a2e7e657287543d196ae1f8881ede559
 
 BASEURL = https://github.com/raspberrypi/firmware/blob/$(FIRMWARE)/boot
 
-firmware: clean
-	wget -q -O LICENCE.broadcom $(BASEURL)/LICENCE.broadcom?raw=true
-	wget -q -O COPYING.linux $(BASEURL)/COPYING.linux?raw=true
-	wget -q -O bootcode.bin $(BASEURL)/bootcode.bin?raw=true
-	wget -q -O fixup.dat $(BASEURL)/fixup.dat?raw=true
-	wget -q -O fixup_cd.dat $(BASEURL)/fixup_cd.dat?raw=true
-	wget -q -O start.elf $(BASEURL)/start.elf?raw=true
-	wget -q -O start_cd.elf $(BASEURL)/start_cd.elf?raw=true
-	wget -q -O fixup4.dat $(BASEURL)/fixup4.dat?raw=true
-	wget -q -O fixup4cd.dat $(BASEURL)/fixup4cd.dat?raw=true
-	wget -q -O start4.elf $(BASEURL)/start4.elf?raw=true
-	wget -q -O start4cd.elf $(BASEURL)/start4cd.elf?raw=true
-	wget -q -O bcm2710-rpi-zero-2-w.dtb $(BASEURL)/bcm2710-rpi-zero-2-w.dtb?raw=true
-	wget -q -O bcm2711-rpi-400.dtb $(BASEURL)/bcm2711-rpi-400.dtb?raw=true
-	wget -q -O bcm2711-rpi-4-b.dtb $(BASEURL)/bcm2711-rpi-4-b.dtb?raw=true
-	wget -q -O bcm2711-rpi-cm4.dtb $(BASEURL)/bcm2711-rpi-cm4.dtb?raw=true
+FILES = LICENCE.broadcom COPYING.linux \
+	bootcode.bin start.elf fixup.dat start4.elf fixup4.dat \
+	start_cd.elf fixup_cd.dat start4cd.elf fixup4cd.dat \
+	bcm2710-rpi-zero-2-w.dtb bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb bcm2711-rpi-cm4.dtb
 
-all: firmware bootloader
+FILES32 = armstub7-rpi4.bin kernel.img kernel7.img kernel7l.img
+FILES64 = armstub8-rpi4.bin kernel8.img kernel8-rpi4.img
+
+firmware: clean
+	@for file in $(FILES) ; \
+	do \
+		echo Downloading $$file ... ; \
+		wget -q -O $$file $(BASEURL)/$$file?raw=true ; \
+	done
+
+all: firmware armstub bootloader
+
+all64: firmware armstub64 bootloader64
 
 bootloader:
 	make -C "../tools/bootloader"
@@ -52,6 +55,37 @@ armstub:
 armstub64:
 	make -C armstub armstub8-rpi4.bin
 	cp armstub/armstub8-rpi4.bin .
+
+ifneq ($(strip $(SDCARD)),)
+install: firmware armstub bootloader armstub64 bootloader64
+	@for file in $(FILES) $(FILES32) $(FILES64) ; \
+	do \
+		echo Copying $$file ... ; \
+		cp $$file $(SDCARD) ; \
+	done
+	cp config32.txt $(SDCARD)
+	cp config64.txt $(SDCARD)
+	sync
+	@echo "You must rename config32.txt or config64.txt to config.txt on the SD card!"
+
+install32: firmware armstub bootloader
+	@for file in $(FILES) $(FILES32) ; \
+	do \
+		echo Copying $$file ... ; \
+		cp $$file $(SDCARD) ; \
+	done
+	cp config32.txt $(SDCARD)/config.txt
+	sync
+
+install64: firmware armstub64 bootloader64
+	@for file in $(FILES) $(FILES64) ; \
+	do \
+		echo Copying $$file ... ; \
+		cp $$file $(SDCARD) ; \
+	done
+	cp config64.txt $(SDCARD)/config.txt
+	sync
+endif
 
 clean:
 	rm -f bootcode.bin fixup*.dat start*.elf bcm*.dtb kernel*.img armstub*.bin LICENCE.broadcom COPYING.linux

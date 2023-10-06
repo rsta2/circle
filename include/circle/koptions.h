@@ -54,6 +54,10 @@ public:
 
 	const unsigned *GetTouchScreen (void) const;	// returns 4 values (nullptr if unset)
 
+	// for application-defined options:
+	const char *GetAppOptionString (const char *pOption, const char *pDefault = nullptr) const;
+	unsigned GetAppOptionDecimal (const char *pOption, unsigned nDefault = -1) const;
+
 	static CKernelOptions *Get (void);
 
 private:
@@ -61,7 +65,7 @@ private:
 
 	static char *GetOptionValue (char *pOption);	// returns value and terminates option with '\0'
 
-	static unsigned GetDecimal (char *pString);	// returns decimal value, -1 on error
+	static unsigned GetDecimal (const char *pString);	// returns decimal value, -1 on error
 
 	// fetches nCount comma-separated decimals from pString to pResult
 	static boolean GetDecimals (char *pString, unsigned *pResult, unsigned nCount);
@@ -94,6 +98,15 @@ private:
 
 	boolean m_bTouchScreenValid;
 	unsigned m_TouchScreen[4];
+
+	struct TAppOption
+	{
+		TAppOption	*pNext;
+		char		*pName;
+		char		*pValue;
+	};
+
+	TAppOption *m_pAppOptionList;
 
 	static CKernelOptions *s_pThis;
 };
