@@ -3,8 +3,15 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 45.3.1
+--------------
+
+This is a hotfix release. It fixes the release of guard structures, which are used to protect static objects, which are defined inside of a function. This problem did occur only, when the system option `ARM_ALLOW_MULTI_CORE` was defined.
+
 Release 45.3
 ------------
+
+2023-10-06
 
 This release comes with initial **USB gadget (aka device, peripheral) mode support**, which is used to implement an **USB MIDI (v1.0) gadget**. This allows to connect the Raspberry Pi models (3)A(+), Zero (2) (W) and 4B directly to a host computer (e.g. for running a sequencer program). Before the Raspberry Pi was always the USB host with Circle and required an additional USB MIDI serial adapter for that purpose.
 
