@@ -104,7 +104,7 @@ static void GuardAcquire (void)
 static void GuardRelease (void)
 {
 	assert (s_nGuardAcquireCount > 0);
-	if (--s_nGuardAcquireCount)
+	if (--s_nGuardAcquireCount == 0)
 	{
 		AtomicSet (&s_nGuardCore, LOCK_FREE);
 	}
