@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -459,8 +459,8 @@ void CTimer::PollKernelTimers (void)
 {
 	m_KernelTimerSpinLock.Acquire ();
 
-	TPtrListElement *pElement = m_KernelTimerList.GetFirst ();
-	while (pElement != 0)
+	TPtrListElement *pElement;
+	while ((pElement = m_KernelTimerList.GetFirst ()) != 0)
 	{
 		TKernelTimer *pTimer = (TKernelTimer *) m_KernelTimerList.GetPtr (pElement);
 		assert (pTimer != 0);
@@ -471,9 +471,7 @@ void CTimer::PollKernelTimers (void)
 			break;
 		}
 
-		TPtrListElement *pNextElement = m_KernelTimerList.GetNext (pElement);
 		m_KernelTimerList.Remove (pElement);
-		pElement = pNextElement;
 
 		m_KernelTimerSpinLock.Release ();
 
