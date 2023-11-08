@@ -31,6 +31,7 @@ TODO - automate this part
 Standard
 - `cd app`
 - `./makeall`
+- `./flash`
 
 
 
