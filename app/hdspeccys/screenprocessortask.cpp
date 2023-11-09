@@ -23,8 +23,9 @@ extern "C" u32 frameInterruptCount;
 
 
 
-CScreenProcessorTask::CScreenProcessorTask (CZxScreen *pZxScreen, CZxSmi *pZxSmi, CActLED *pActLED)
+CScreenProcessorTask::CScreenProcessorTask (CZxReset *pZxReset, CZxScreen *pZxScreen, CZxSmi *pZxSmi, CActLED *pActLED)
 :	m_FrameEvent(0),
+	m_pZxReset (pZxReset),
 	m_pZxScreen (pZxScreen),
 	m_pZxSmi (pZxSmi),
 	m_pActLED (pActLED),
@@ -55,6 +56,7 @@ void CScreenProcessorTask::Run (void)
 
 	m_pZxSmi->Start(&m_FrameEvent);
 	m_pZxScreen->Start();
+
 
 	while (1)
 	{	

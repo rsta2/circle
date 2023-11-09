@@ -51,6 +51,7 @@ CKernel::CKernel (void)
 	m_WPASupplicant (WPA_SUPPLICANT_CONFIG_FILE),
 #endif // HD_SPECCYS_FEATURE_NETWORK
 	m_Shell (&m_Serial),
+	m_ZxReset(&m_GPIOManager, ZX_RESET_ON_BOOT),
 	m_ZxTape(&m_GPIOManager, &m_Interrupt),
 	m_ZxSmi(&m_GPIOManager, &m_Interrupt),
 #if HD_SPECCYS_FEATURE_OPENGL
@@ -121,6 +122,11 @@ boolean CKernel::Initialize (void)
 	if (bOK)
 	{
 		bOK = m_GPIOManager.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = m_ZxReset.Initialize ();
 	}
 
 #if HD_SPECCYS_FEATURE_OPENGL
@@ -204,6 +210,12 @@ TShutdownMode CKernel::Run (void)
 	// DO NOT LEAVE RUNNING WITH THIS!
 	// m_CPUThrottle.SetSpeed(CPUSpeedMaximum);
 
+#if (ZX_RESET_ON_BOOT)	
+	m_ZxReset.ClearReset();
+	CTimer::Get()->MsDelay(ZX_RESET_ON_BOOT_DELAY_MS);
+#endif	
+
+
 	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
 	new CTapeTask (&m_ZxTape);
 
@@ -211,7 +223,7 @@ TShutdownMode CKernel::Run (void)
 	// OpenGL ES test
 	_opengl_main ();
 #else
-	new CScreenProcessorTask (&m_ZxScreen, &m_ZxSmi, &m_ActLED);
+	new CScreenProcessorTask (&m_ZxReset, &m_ZxScreen, &m_ZxSmi, &m_ActLED);
 #endif	
 	
 
@@ -235,6 +247,12 @@ TShutdownMode CKernel::Run (void)
 
 	// Set up callback on the timer 100Hz interrupt
 	// m_Timer.RegisterPeriodicHandler(PeriodicTimer100Hz);
+
+	// // Take the ZX Spectrum out of reset (if it is in reset)
+	// while(1) {
+	// 	CScheduler::Get ()->MsSleep (5000);			
+	// 	m_ZxReset.Reset();
+	// }
 
 	// Wait here forever until shutdown
 	m_Event.Clear();

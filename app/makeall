@@ -21,6 +21,10 @@ cd zxweb
 $make $1 $2 || exit
 cd ..
 
+cd zxreset
+$make $1 $2 || exit
+cd ..
+
 cd zxtape
 $make $1 $2 || exit
 cd ..

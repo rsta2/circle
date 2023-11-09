@@ -197,6 +197,54 @@
 #endif
 
 //
+// ZX Reset configuration
+//
+
+/**
+ * ZX_RESET_ON_BOOT
+ * 
+ * DO NOT SET DIRECTLY
+ * 
+ * CAUTION: Resetting the ZX Spectrum on boot of HD Speccys can mess with some peripherals such as 
+ * the DivMMC, so this should only be used for testing.
+ * 
+ * If TRUE, the ZX Spectrum will reset when HD Speccy video starts
+ * If FALSE, the ZX Spectrum will not be affected
+ * 
+ * TODO - set from HW configuration
+ */
+#ifndef ZX_RESET_ON_BOOT
+#define ZX_RESET_ON_BOOT			FALSE
+#endif
+
+/**
+ * ZX_RESET_ON_BOOT_DELAY_MS
+ * 
+ * DO NOT SET DIRECTLY
+ * 
+ * Time to wait after releasing reset of the ZX Spectrum before starting video
+ * This avoids seeing the speccy in a reset state before the final reset
+ * 
+ * TODO - set from HW configuration
+ */
+#ifndef ZX_RESET_ON_BOOT_DELAY_MS
+#define ZX_RESET_ON_BOOT_DELAY_MS			500
+#endif
+
+/**
+ * ZX_RESET_GPIO_OUTPUT_PIN
+ * 
+ * DO NOT SET DIRECTLY
+ * 
+ * Selects the GPIO output pin to use for resetting the ZX Spectrum
+ * 
+ * TODO - set from HW configuration
+ */
+#ifndef ZX_RESET_GPIO_OUTPUT_PIN
+#define ZX_RESET_GPIO_OUTPUT_PIN	0	// GPIO 0 (HW PIN 27) - Rev 1.0a, 1.0b
+#endif
+
+//
 // ZX tape configuration
 //
 
@@ -210,7 +258,7 @@
  * TODO - set from HW configuration
  */
 #ifndef ZX_TAPE_GPIO_OUTPUT_PIN
-#define ZX_TAPE_GPIO_OUTPUT_PIN 	7	// GPIO 7 (HW PIN 26) - Rev 1.0a
+#define ZX_TAPE_GPIO_OUTPUT_PIN 	7	// GPIO 7 (HW PIN 26) - Rev 0.1a
 // #define ZX_TAPE_GPIO_OUTPUT_PIN	0	// GPIO 0 (HW PIN 27) - Hand wired prototype board
 #endif
 
@@ -242,7 +290,7 @@
  * TODO - set from HW configuration
  */
 #ifndef ZX_SMI_GPIO_INT_INPUT_PIN
-#define ZX_SMI_GPIO_INT_INPUT_PIN 	27 // GPIO 27 (HW PIN 13) - Rev 1.0a
+#define ZX_SMI_GPIO_INT_INPUT_PIN 	27 // GPIO 27 (HW PIN 13) - Rev 0.1a
 #endif
 
 /**
@@ -255,7 +303,7 @@
  * TODO - set from HW configuration
  */
 #ifndef ZX_SMI_GPIO_BORDER_INPUT_PIN
-#define ZX_SMI_GPIO_BORDER_INPUT_PIN 	26 // GPIO 26 (HW PIN 37) - Rev 1.0a
+#define ZX_SMI_GPIO_BORDER_INPUT_PIN 	26 // GPIO 26 (HW PIN 37) - Rev 0.1a
 #endif
 
 /**

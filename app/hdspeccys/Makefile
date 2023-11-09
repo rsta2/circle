@@ -14,6 +14,7 @@ OBJS	= main.o \
 LIBS	= $(CIRCLEHOME)/app/lib/zxutil/libzxutil.a \
           $(CIRCLEHOME)/app/lib/shell/libshell.a \
           $(CIRCLEHOME)/app/lib/zxweb/libzxweb.a \
+          $(CIRCLEHOME)/app/lib/zxreset/libzxreset.a \
           $(CIRCLEHOME)/app/lib/zxtape/libzxtape.a \
           $(CIRCLEHOME)/app/lib/zxsmi/libzxsmi.a \
           $(CIRCLEHOME)/app/lib/zxscreen/libzxscreen.a \

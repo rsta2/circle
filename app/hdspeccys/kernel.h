@@ -22,6 +22,7 @@
 #include <circle/sched/synchronizationevent.h>
 #include <circle/cputhrottle.h>
 #include <shell/shell.h>
+#include <zxreset/zxreset.h>
 #include <zxtape/zxtape.h>
 #include <zxsmi/zxsmi.h>
 #include "backgroundtask.h"
@@ -99,6 +100,7 @@ private:
 #endif
 
 	CShell			m_Shell;
+	CZxReset		m_ZxReset;
 	CZxTape			m_ZxTape;
 	CZxSmi			m_ZxSmi;
 
