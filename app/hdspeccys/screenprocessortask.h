@@ -6,13 +6,14 @@
 
 #include <circle/sched/task.h>
 #include <circle/actled.h>
+#include <zxreset/zxreset.h>
 #include <zxsmi/zxsmi.h>
 #include <zxscreen/zxscreen.h>
  
 class CScreenProcessorTask : public CTask
 {
 public:
-	CScreenProcessorTask (CZxScreen *pZxScreen, CZxSmi *pZxSmi, CActLED *pActLED);
+	CScreenProcessorTask (CZxReset *pZxReset, CZxScreen *pZxScreen, CZxSmi *pZxSmi, CActLED *pActLED);
 	~CScreenProcessorTask (void);
 
 	void Run (void);
@@ -20,6 +21,7 @@ public:
 private:
 	CSynchronizationEvent	m_FrameEvent;
 
+	CZxReset		*m_pZxReset;
 	CZxScreen		*m_pZxScreen;
 	CZxSmi			*m_pZxSmi;	
 	CActLED			*m_pActLED;	

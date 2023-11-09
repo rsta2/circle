@@ -96,7 +96,8 @@ CZxScreen::CZxScreen (unsigned nWidth, unsigned nHeight, unsigned nDisplay, CInt
   // m_value(0),
   // m_isIOWrite(0)
 {
-  
+  // Start with a white border
+  borderValue = 0x07;
 
 }
 
