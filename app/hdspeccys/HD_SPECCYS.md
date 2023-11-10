@@ -46,3 +46,7 @@ byte is the attribute bits for those pixel. This should result in 6144 * 2 = 122
 - Shortest Z80 read is ~296ns
 - Therefore we only have a window of ~70ns difference to differentiate the 2 :/
 
+
+# TODO - List of modifications to Circle
+1. SCHEDULER_IN_FIQ
+2. ...

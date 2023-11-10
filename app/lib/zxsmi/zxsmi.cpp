@@ -85,10 +85,11 @@ CZxSmi::CZxSmi (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem)
   m_pDMAControlBlock4(0),
 	m_pDMABuffer(0),
 	m_nDMABufferIdx(0),
-  m_nDMABufferLenBytes(0),
-	m_nDMABufferLenWords(0),
-    m_pDMABufferRead (0),
-	m_nDMABufferIdxRead (0),
+  m_nDMABufferLenBytes(ZX_DMA_BUFFER_LENGTH),
+	m_nDMABufferLenWords(ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T)),
+  m_pRawVideoData (0),
+  m_pBorderTimingBuffer (0),
+  m_nBorderTimingWriteIdx(0),
   m_DMABufferReadSemaphore (1),
   m_pFrameEvent(0),
   m_bRunning(FALSE),  
@@ -101,29 +102,33 @@ CZxSmi::CZxSmi (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem)
   m_counter2(0),
   m_pDebugBuffer(0)
 {
-  m_nDMABufferLenBytes = ZX_DMA_BUFFER_LENGTH;
-	m_nDMABufferLenWords = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
+  //
 }
 
 CZxSmi::~CZxSmi (void)
-{  
+{
+  m_GpioIntIrqPin.DisableInterrupt ();
+	m_GpioBorderIrqPin.DisableInterrupt ();
+
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock1);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock2);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock3);
   m_DMA.FreeDMAControlBlock(m_pDMAControlBlock4);
 
-    // Deallocate DMA buffers and control blocks
+  // Deallocate DMA buffers and control blocks
   for (unsigned i = 0; i < ZX_DMA_BUFFER_COUNT; i++) {
     // DMA control block
     m_DMA.FreeDMAControlBlock(m_pDMAControlBlocks[i]);
 
     // Target data buffer
     delete m_pDMABuffers[i];
+
+    // Border timing buffer 
+    delete m_pBorderTimingBuffers[i];
   }
 
-
-  m_GpioIntIrqPin.DisableInterrupt ();
-	m_GpioBorderIrqPin.DisableInterrupt ();
+  // Raw Video data
+  delete m_pRawVideoData;
 }
 
 boolean CZxSmi::Initialize ()
@@ -145,11 +150,16 @@ boolean CZxSmi::Initialize ()
 
     // Target data buffer
     m_pDMABuffers[i] = new ZX_DMA_T[m_nDMABufferLenWords]; // using new makes the buffer cache-aligned, so suitable for DMA
+
+    // Create the border timing buffer
+    m_pBorderTimingBuffers[i] = new ZX_BORDER_TIME_T[ZX_BORDER_TIMING_BUFFER_LENGTH];
   }
 
   // Debug buffer
   m_pDebugBuffer = new ZX_DMA_T[ZX_SMI_DEBUG_BUFFER_LENGTH];
 
+  // Raw Video data
+  m_pRawVideoData = new ZX_VIDEO_RAW_DATA_T;
 
   // Setup SMI timing
   LOGDBG("Setting SMI timing: width: %d, ns: %d, setup: %d, strobe: %d, hold: %d, pace: %d, external: %d", 
@@ -212,6 +222,8 @@ void CZxSmi::Start(CSynchronizationEvent *pFrameEvent)
   // Set initial DMA buffer and control block  
   m_pDMABuffer = m_pDMABuffers[m_nDMABufferIdx];
   m_pDMAControlBlock = m_pDMAControlBlocks[m_nDMABufferIdx];
+  m_pBorderTimingBuffer = m_pBorderTimingBuffers[m_nDMABufferIdx];
+  m_nBorderTimingWriteIdx = 0;
 
   // Set DMA completion routines
   // m_DMA.SetCompletionRoutine(DMACompleteInterrupt, this);
@@ -264,22 +276,26 @@ volatile ZX_DMA_T CZxSmi::GetValue() {
   return m_value;
 }
 
-ZX_DMA_T *CZxSmi::LockDataBuffer(void) {
+ZX_VIDEO_RAW_DATA_T *CZxSmi::LockDataBuffer(void) {
   // Lock the buffer
   m_DMABufferReadSemaphore.Down();
 
-  if (m_pDMABufferRead) {
+  ZX_DMA_T *pDMABuffer = m_pRawVideoData->pDMABuffer;
+
+  if (pDMABuffer) {
     // Ensure DMA buffer is not cached
-    CleanAndInvalidateDataCacheRange((uintptr)m_pDMABufferRead, m_nDMABufferLenBytes);
+    CleanAndInvalidateDataCacheRange((uintptr)pDMABuffer, m_nDMABufferLenBytes);
   }
 
 
-  // Return the buffer
-  return m_pDMABufferRead;
+  // Return the raw video data (i.e. video DMA buffer and border timing buffer)
+  return m_pRawVideoData;
 }
 
 void CZxSmi::ReleaseDataBuffer(void) {
-  if (m_pDMABufferRead) {
+  ZX_DMA_T *pDMABuffer = m_pRawVideoData->pDMABuffer;
+
+  if (pDMABuffer) {
     // Fewer corruptions if we don't zero out the buffer
     // If just memset and no CleanAndInvalidateDataCacheRange, then we get bad corruption
     // With both, only corruption when dropping frames.
@@ -571,12 +587,6 @@ void CZxSmi::SMICompleteInterrupt(boolean bStatus, void *pParam)
 /**
  * Screen vsync (ZX Spectrum INT) IRQ/FIQ Handler
  * 
- * When using FIQ, have to ACK the interrupt early, and the handler must also take at least a few cycles
- * otherwise the FIQ will be retriggered. 1us is definitely long enough.
- * 
- * Scheduling code cannot be used from the FIQ, unlike the standard IRQ handler.
- * Therefore any atomic protection / signalling must be done using CriticalSection.
- * 
  * @param pParam 
  */
 void CZxSmi::GpioIntIrqHandler (void *pParam) 
@@ -584,26 +594,14 @@ void CZxSmi::GpioIntIrqHandler (void *pParam)
   CZxSmi *pThis = (CZxSmi *) pParam;
   // assert (pThis != 0);
 
-// #if (ZX_SMI_GPIO_USE_FIQ)
-//   // Acknowledge the interrupt (early otherwise FIQ will be retriggered)
-//   pThis->m_GpioIntFiqPin.AcknowledgeInterrupt();
-// #endif  
-
   // Toggle LED for debug
   // pThis->m_pActLED->On();
 
-#if (ZX_SMI_GPIO_USE_FIQ)
   // This delay is important to ensure that the last video bytes are flushed out of the SMI FIFO when running
   // at slower sample rates. Without this, the last few bytes of the frame are lost.
   // At higher sample rates the delay is not needed, but it makes more sense to have a lower sample rate and
   // therefore lower power consumption.
-  // NOTE: This delay needs to be longer when using FIQ rather than IRQ because it is faster so this code happens
-  // earlier in the spectrum's INT pulse and there is not time for the SMI FIFO to flush out the last few bytes.
-  // CTimer::SimpleusDelay(2);
   CTimer::SimpleusDelay(1);
-#else
-  CTimer::SimpleusDelay(1);
-#endif
 
   // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
   // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
@@ -618,13 +616,16 @@ void CZxSmi::GpioIntIrqHandler (void *pParam)
   if (haveLock) {
     // We have the m_pDMABufferRead lock
 
-    // Save pointer to buffer just filled by DMA
-    pThis->m_pDMABufferRead = pThis->m_pDMABuffer;
+    // Save pointer to buffers just filled by DMA and border timing interrupt
+    pThis->m_pRawVideoData->pDMABuffer = pThis->m_pDMABuffer;
+    pThis->m_pRawVideoData->pBorderTimingBuffer = pThis->m_pBorderTimingBuffer;
 
     // Move to the next DMA buffer and control block
     pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
     pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
     pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
+    pThis->m_pBorderTimingBuffer = pThis->m_pBorderTimingBuffers[pThis->m_nDMABufferIdx];
+    pThis->m_nBorderTimingWriteIdx = 0;
 
     // Release the m_pDMABufferRead lock
     pThis->m_DMABufferReadSemaphore.Up();
@@ -635,7 +636,10 @@ void CZxSmi::GpioIntIrqHandler (void *pParam)
     }
   } else {
     // Dropped a frame - the screen processor can't keep up
-    pThis->m_pDMABufferRead = nullptr;
+    // Clear the buffer pointers so that the frame is not rerendered - TODO - add some control info to m_pRawVideoData
+    pThis->m_pRawVideoData->pDMABuffer = nullptr;
+    pThis->m_pRawVideoData->pBorderTimingBuffer = nullptr;
+
     skippedFrameCount++;
   }
 
@@ -654,10 +658,8 @@ void CZxSmi::GpioIntIrqHandler (void *pParam)
   // Increment the loop count
   frameInterruptCount++;  
 
-// #if !(ZX_SMI_GPIO_USE_FIQ)
   // Acknowledge the interrupt
   pThis->m_GpioIntIrqPin.AcknowledgeInterrupt();
-// #endif  
 }
 
 
@@ -677,11 +679,6 @@ void CZxSmi::GpioBorderIrqHandler (void *pParam)
   CZxSmi *pThis = (CZxSmi *) pParam;
   assert (pThis != 0);
 
-// #if (ZX_SMI_GPIO_USE_FIQ)
-//   // Acknowledge the interrupt (early otherwise FIQ will be retriggered)
-//   pThis->m_GpioBorderFiqPin.AcknowledgeInterrupt();
-// #endif  
-
   // Return early if stopped (fix - have to ack interrupt in this case)
   // if (!pThis->m_bRunning) return;
 
@@ -689,9 +686,21 @@ void CZxSmi::GpioBorderIrqHandler (void *pParam)
   // Toggle LED for debug
   // pThis->m_pActLED->On();
 
-    
+
+  // Get the current time
+  if (pThis->m_nBorderTimingWriteIdx < ZX_BORDER_TIMING_BUFFER_LENGTH) {
+    u64 *pTime = &pThis->m_pBorderTimingBuffer[pThis->m_nBorderTimingWriteIdx++];
+    u32 *pSeconds = (u32 *)pTime;
+    u32 *pMicroSeconds = pSeconds+1;
+    // Hangs when this is called - I think because the SpinLock in Timer is only IRQ_LEVEL, not FIQ
+    // Yep, should modify the CTimer class to support FIQ level
+    CTimer::Get()->GetUniversalTime(pSeconds, pMicroSeconds);
+  }
+  // TODO - all buffer count to video data, and print it out now and then.
+
+
   // if (pThis->m_counter <= 0) {
-  //   pThis->m_counter = 10;
+  //   pThis->m_counter = 100;
   //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
   
   //   if (pThis->m_bDMAResult) {
@@ -703,17 +712,13 @@ void CZxSmi::GpioBorderIrqHandler (void *pParam)
   // pThis->m_counter--;
 
 
-
   // Toggle LED for debug
   // pThis->m_pActLED->Off();
 
   
 
-// #if !(ZX_SMI_GPIO_USE_FIQ)
   // Acknowledge the interrupt
-  pThis->m_GpioBorderIrqPin.AcknowledgeInterrupt();
-// #endif
-  
+  pThis->m_GpioBorderIrqPin.AcknowledgeInterrupt();  
 }
 
 

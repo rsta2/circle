@@ -65,8 +65,10 @@ void CScreenProcessorTask::Run (void)
 
 		unsigned startTicks = CTimer::Get()->GetClockTicks();
 
+		ZX_VIDEO_RAW_DATA_T *pVideoData = m_pZxSmi->LockDataBuffer();
+
 		// Get pointer to screen buffer (will be null if no new frame available)
-		ZX_DMA_T *pULABuffer = m_pZxSmi->LockDataBuffer();
+		ZX_DMA_T *pULABuffer = pVideoData->pDMABuffer;
 
 		if (pULABuffer) {		
 			// ZX_DMA_T value = borderValue;
