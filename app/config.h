@@ -50,22 +50,19 @@
  * HD_SPECCYS_GPIO_FIQ <-- default
  * HD_SPECCYS_TIMER_FIQ <-- use FIQ for the timer used by the tape loader
  * 
- * If tape is disabled, the behaviour is actually the same, tape was a red herring - it just triggered border IRQs:
- * 
- * Something UGLY is going on!
- * 
- * I think I have solved the mystery - the GPIO interrupts are actually really only 1 single interrupt, the 
+ * NOTE: The FIQ is tricky...
+ * GPIO interrupts are actually really only 1 single interrupt; the 
  * 'GPIO' interrupt (which is set in gpiomanager.cpp, ARM_IRQ_GPIO3). This means that if ANY GPIO is set to FIQ,
  * all GPIO interrupts will be FIQ, and must be handled as such!
  * 
  * Unfortunately, circle does not support multiple GPIO lines on the FIQ with a gpio manager - maybe because
  * the FIQ should be ultra fast, and the GPIO manager is not?
  * 
- * Therefore, either we cannot use FIQ for GPIOs when using more than one, or we have to write our own FIQ GPIO manager.
- * A quick look at the code suggests that the FIQ GPIO manager should be possible! 
- * FIQ could be a flag to the original GPIOManager, or a new set of managed pins with an FIQ manager could be created.
- * The best would be a GPIO manager flag, as then it would be easy to switch and the existing single FIQ GPIO pin 
- * code could still be used for a super fast, but very limiting GPIO FIQ.
+ * Therefore, by default, we cannot use FIQ for GPIOs when using more than one.
+ * I had to write a FIQ GPIO manager. 
+ * 
+ * FIQ is implemented as a flag to the original GPIOManager. It is be easy to switch between IRQ and FIQ and the 
+ * existing single FIQ GPIO pin code can still be used for a super fast, but very limiting GPIO FIQ.
  * 
  */
 #ifndef HD_SPECCYS_FIQ
