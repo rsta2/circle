@@ -59,8 +59,8 @@ uint64_t nFileSeekIdx;                        // Current file seek position
 unsigned tzxLoopCount = 0;                    // HACK to call wave less than loop count at start
 
 // HACK
-unsigned char* GAME = JetPac;
-unsigned long GAME_SIZE = sizeof(JetPac);
+unsigned char* GAME = ChuckieEgg;
+unsigned long GAME_SIZE = sizeof(ChuckieEgg);
 
 
 /* Local functions */

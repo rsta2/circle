@@ -576,6 +576,13 @@ void CZxScreen::ULADataToScreen(
     
     // At start of frame, de-glitching is necssary to ensure the first CAS detected is not a glitch
     // This is achieved by using the INT signal as part of the DREQ, and discarding the first CAS
+
+    // TODO - how the data array is processed for CAS needs optimising, as it is currently too CPU intensive and
+    // error prone.
+    // It should be possible that as soon as we detect a CAS, we can look ahead in the array to quickly decide if
+    // it is a video CAS or not. If we can optimise this, we can increase the DMA buffer length and the accuracy
+    // of the video data detection.
+
     if (i > 50) {
       if (!wasOutOfCAS) {            
         wasOutOfCAS = !CAS;      
