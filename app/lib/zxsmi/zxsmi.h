@@ -141,6 +141,27 @@
 // #define ZX_PIN_IOREQ		(1 << 15)
 // #define ZX_PIN_WR				(1 << 14)
 
+// Theorectically the border colour can be changed every IO write. 
+// - On the Z80, it takes 4 clock cycles to perform an IO write. 
+// - The ZX Spectrum runs at 3.5MHz, so 4 clock cycles is 1.14us.
+// - A screen frame take 50Hz, so 1/50 = 20ms.
+// - So, the border colour can be changed 20ms / 1.14us = 17543 times per frame.
+// - Each IO write we need to record a us timestamp, which is sizeof(unsigned) = 4 bytes.
+//  
+// Memory on the PI as a microcontroller is cheap! 
+// We'll make the buffer 1024 * 20 = 20480 words long, which is 81920 bytes (80kB).
+#define ZX_BORDER_TIME_T					u32	
+#define ZX_BORDER_TIMING_BUFFER_LENGTH		((1024 * 20) / sizeof(ZX_DMA_T))
+
+typedef struct {
+	unsigned nFrame;
+	unsigned nFramesRendered;
+	unsigned nFramesDropped;
+	unsigned nFrameStartTime;
+	ZX_DMA_T *pDMABuffer;
+	unsigned nBorderTimingCount;
+	ZX_BORDER_TIME_T *pBorderTimingBuffer;
+} ZX_VIDEO_RAW_DATA_T;
 
 // typedef void ZXSMIBufferReadyRoutine (boolean bStatus, void *pParam);
 
@@ -159,7 +180,7 @@ public:
 	void SetActLED(CActLED *pActLED);
 	volatile ZX_DMA_T GetValue(void);
 
-	ZX_DMA_T *LockDataBuffer(void);
+	ZX_VIDEO_RAW_DATA_T *LockDataBuffer(void);
 	void ReleaseDataBuffer(void);
 
 private:
@@ -196,8 +217,12 @@ public:
 	volatile unsigned m_nDMABufferIdx;
 	u32 m_nDMABufferLenBytes;
 	u32 m_nDMABufferLenWords;
-	/*volatile*/ ZX_DMA_T *m_pDMABufferRead;
-	volatile unsigned m_nDMABufferIdxRead;
+	/*volatile*/ ZX_VIDEO_RAW_DATA_T *m_pRawVideoData;
+
+	ZX_BORDER_TIME_T *m_pBorderTimingBuffers[ZX_DMA_BUFFER_COUNT];
+	ZX_BORDER_TIME_T *m_pBorderTimingBuffer;
+	volatile unsigned m_nBorderTimingWriteIdx;
+
 	CSemaphore m_DMABufferReadSemaphore;
 	CSynchronizationEvent	*m_pFrameEvent;
 

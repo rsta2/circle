@@ -11,6 +11,8 @@ DEFINE += -DREALTIME
 DEFINE += -DUSE_SDHOST
 # Allow scheduler calls in the FIQ handler
 DEFINE += -DSCHEDULER_IN_FIQ
+# Allow timer calls in the FIQ handler
+#DEFINE += -DTIMER_IN_FIQ
 DEFINE += -DDEFAULT_KEYMAP=\"US\"
 # STDLIB_SUPPORT = 1
 USEFLASHY = 1

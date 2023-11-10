@@ -1,5 +1,9 @@
 
-GPIO27 (GPIO27, PIN13) => IRQ - IRQ for frame timing - !3S
+
+HD-SPECCYS 0.1a prototype
+GPIO0  (GPIO0,  PIN27) <= ZX Spectrum reset control
+GPIO27 (GPIO27, PIN13) => IRQ - IRQ for frame timing - 50Hz, interrupt - !3S
+GPIO26 (GPIO26, PIN37) => /IOREQ | /WR - Will be HIGH when border is written, interrupt - !3S
 SD17   (GPI025, PIN22) => DREQ_ACK - UNUSED
 SD16   (GPI024, PIN18) => DREQ = /(/IORQ & /CAS) - triggers the SMI reads to DMA - !3S
 SD15   (GPI023, PIN16) => D0 - 3S
@@ -20,7 +24,7 @@ SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
 SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
 SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
 
-OLD!!
+Original Prototype?
 SD3    (SCLK,   PIN23) => CAS - Used to detect writes to video memory - 3S
 SD2    (MOSI,   PIN19) => A0 - Address bit 0 (/IOREQ = /IORQ | A0) ? is A0 inverted? - 3S
 SD1    (MISO,   PIN21) => /WR - When low, indicates a write - 3S
@@ -42,3 +46,8 @@ byte is the attribute bits for those pixel. This should result in 6144 * 2 = 122
 - Shortest Z80 read is ~296ns
 - Therefore we only have a window of ~70ns difference to differentiate the 2 :/
 
+
+# TODO - List of modifications to Circle
+1. SCHEDULER_IN_FIQ
+2. TIMER_IN_FIQ
+3. ...

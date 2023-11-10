@@ -12,7 +12,7 @@ extern "C" u32 screenLoopCount;
 extern "C" u32 screenLoopTicks;
 extern "C" u32 ulaBufferTicks;
 extern "C" u32 screenUpdateTicks;
-extern "C" u32 frameInterruptCount;
+ZX_VIDEO_RAW_DATA_T *pGlobalVideoData = nullptr;
 
 // unsigned char reverseBits(unsigned char b) {
 //    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
@@ -65,9 +65,13 @@ void CScreenProcessorTask::Run (void)
 
 		unsigned startTicks = CTimer::Get()->GetClockTicks();
 
-		// Get pointer to screen buffer (will be null if no new frame available)
-		ZX_DMA_T *pULABuffer = m_pZxSmi->LockDataBuffer();
+		ZX_VIDEO_RAW_DATA_T *pVideoData = m_pZxSmi->LockDataBuffer();
 
+		// Get pointer to screen buffer (will be null if no new frame available)
+		ZX_DMA_T *pULABuffer = pVideoData->pDMABuffer;
+	
+
+		// TODO: Would be better to have a valid flag in the data, or not send the event if there is no valid data
 		if (pULABuffer) {		
 			// ZX_DMA_T value = borderValue;
 
@@ -88,7 +92,13 @@ void CScreenProcessorTask::Run (void)
 
 
 			// Set screen data from ULA buffer
-			m_pZxScreen->SetScreenFromULABuffer(frameInterruptCount, pULABuffer, ZX_DMA_BUFFER_LENGTH);
+			m_pZxScreen->SetScreenFromULABuffer(
+				pGlobalVideoData->nFrame, 
+				pULABuffer, 
+				ZX_DMA_BUFFER_LENGTH,
+				pVideoData->pBorderTimingBuffer,
+			    pVideoData->nBorderTimingCount
+			);
 		}
 
 		// Release the SMI DMA buffer pointer
@@ -106,6 +116,10 @@ void CScreenProcessorTask::Run (void)
 		// Timing		
 		screenUpdateTicks = (CTimer::Get()->GetClockTicks() - startTicks) - ulaBufferTicks;
 		screenLoopTicks = ulaBufferTicks + screenUpdateTicks;
+
+		// Video data
+		pGlobalVideoData = pVideoData;
+
 	
 
 		// clear = !clear;
