@@ -4,7 +4,7 @@
 
 #include "zxtape.h"
 #include "tzx-api.h"
-// #include "games/chuckie-egg.h" // TZX, OK
+#include "games/chuckie-egg.h" // TZX, OK
 // #include "games/jsw.h" // TZX, OK
 // #include "games/jsw2.h" // TZX, OK
 // #include "games/gyro.h" // TAP, OK
@@ -23,7 +23,7 @@
 // #include "games/720Degrees.h" // TZX, OK!
 // #include "games/starquake.h" // TZX, OK!
 // #include "games/dynamitedan.h" // TZX, OK!
-#include "games/back2school.h" // TZX, OK! Fast baud rate, fails if buffer less than 128+64+32 (e.g. 128+64)
+// #include "games/back2school.h" // TZX, OK! Fast baud rate, fails if buffer less than 128+64+32 (e.g. 128+64)
 // #include "games/cauldron.h" // TZX, OK!
 #include <circle/stdarg.h>
 
@@ -59,8 +59,8 @@ uint64_t nFileSeekIdx;                        // Current file seek position
 unsigned tzxLoopCount = 0;                    // HACK to call wave less than loop count at start
 
 // HACK
-unsigned char* GAME = Back2School;
-unsigned long GAME_SIZE = sizeof(Back2School);
+unsigned char* GAME = JetPac;
+unsigned long GAME_SIZE = sizeof(JetPac);
 
 
 /* Local functions */

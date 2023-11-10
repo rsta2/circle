@@ -2,6 +2,7 @@
 // backgroundtask.cpp
 //
 #include "backgroundtask.h"
+#include <zxsmi/zxsmi.h>
 #include <circle/sched/scheduler.h>
 #include <circle/logger.h>
 
@@ -13,14 +14,13 @@ LOGMODULE ("screenprocessingtask");
 extern "C" u16 borderValue;
 extern "C" u32 videoByteCount;
 extern "C" u16 videoValue;
-extern "C" u32 frameInterruptCount;
-extern "C" u32 skippedFrameCount;
 extern "C" u32 screenLoopTicks;
 extern "C" u32 ulaBufferTicks;
 extern "C" u32 screenUpdateTicks;
+extern "C" ZX_VIDEO_RAW_DATA_T *pGlobalVideoData;
 
 u32 backgroundTime = 0;
-u32 prevFrameInterruptCount = 0;
+u32 prevFrameCount = 0;
 
 
 CBackgroundTask::CBackgroundTask (CShell *pShell, CActLED *pActLED, CSynchronizationEvent *pRebootEvent)
@@ -42,9 +42,23 @@ void CBackgroundTask::Run (void)
 
 	while (1)
 	{
-		backgroundTime += BACKGROUND_LOOP_PERIOD_MS;
-		float fps = (float)((frameInterruptCount - prevFrameInterruptCount) * 1000) / (float)BACKGROUND_LOOP_PERIOD_MS;
-		prevFrameInterruptCount = frameInterruptCount;
+		u32 nFrame = 0;
+		// u32 nFramesRendered = 0;
+		u32 nFramesDropped = 0;
+		u32 nBorderTimingCount = 0;
+		u32 nFirstBorderTimestamp = 0;
+
+		if (pGlobalVideoData) {
+			nFrame = pGlobalVideoData->nFrame;
+			// nFramesRendered = pGlobalVideoData->nFramesRendered;
+			nFramesDropped = pGlobalVideoData->nFramesDropped;
+			nBorderTimingCount = pGlobalVideoData->nBorderTimingCount;
+			nFirstBorderTimestamp = pGlobalVideoData->pBorderTimingBuffer[0];
+		}
+		
+		backgroundTime += BACKGROUND_LOOP_PERIOD_MS;		
+		float fps = (float)((nFrame - prevFrameCount) * 1000) / (float)BACKGROUND_LOOP_PERIOD_MS;
+		prevFrameCount = nFrame;
 
 		// Read the shell (serial port)
 		m_pShell->Update();
@@ -68,10 +82,13 @@ void CBackgroundTask::Run (void)
 		// }
 		// LOGDBG("Buffer len: %04ld", len);
 		// LOGDBG("Border value: %04ld", borderValue);				
-		LOGDBG("Video bytes: 0x%04lx, border: 0x%04lx Skipped: 0x%04lx, FPS: %.1f, Loop Time: %.1f + %.1f = %.1f ms", 
+		LOGDBG("Vidb:0x%04lx Bdr:0x%04lx,%08uus,%04u Fms:%04u Skp:%u FPS:%.1f, Loop:%.1f+%.1f=%.1fms", 
 			videoByteCount, 
 			borderValue, 
-			skippedFrameCount, 
+			nFirstBorderTimestamp,
+			nBorderTimingCount,
+			nFrame,
+			nFramesDropped, 
 			fps, 
 			(float)ulaBufferTicks / 1000,
 			(float)screenUpdateTicks / 1000,

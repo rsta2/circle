@@ -55,6 +55,11 @@ CTimer::CTimer (CInterruptSystem *pInterruptSystem)
 	m_nTicks (0),
 	m_nUptime (0),
 	m_nTime (0),
+#ifdef TIMER_IN_FIQ	
+	m_TimeSpinLock (FIQ_LEVEL),
+#else
+	m_TimeSpinLock (),
+#endif	
 	m_nMinutesDiff (0),
 	m_nMsDelay (200000),
 	m_nusDelay (m_nMsDelay / 1000),

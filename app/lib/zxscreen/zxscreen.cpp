@@ -358,9 +358,9 @@ void CZxScreen::SetScreen (boolean bToggle)
 }
 
 
-void CZxScreen::SetScreenFromULABuffer(u32 frameNo, u16 *pULABuffer, size_t len) {
+void CZxScreen::SetScreenFromULABuffer(u32 frameNo, u16 *pULABuffer, size_t nULABufferlen, u32 *pBorderTimingBuffer, size_t nBorderTimingBufferLen) {
   // Update offscreen buffer
-  ULADataToScreen(frameNo, m_pZxScreenBuffer, pULABuffer, len);
+  ULADataToScreen(frameNo, m_pZxScreenBuffer, pULABuffer, nULABufferlen, pBorderTimingBuffer, nBorderTimingBufferLen);
 
   // Mark dirty so will be updated
   m_bDirty = TRUE;
@@ -504,7 +504,16 @@ TScreenColor CZxScreen::ZxColorPaperToScreenColor(u32 paper) {
 
 
 // TODO: Pass in all the sizes
-void CZxScreen::ULADataToScreen(u32 frameNo, TScreenColor *pZxScreenBuffer, u16 *pULABuffer, size_t nULABufferLen) {
+// TODO: There is a fundamental problem that A0 is not considered for border writes, that means IO writes to external
+// peripherals will cause the border to incorrectly change colour.
+void CZxScreen::ULADataToScreen(
+  u32 frameNo,
+  TScreenColor *pZxScreenBuffer, 
+  u16 *pULABuffer, 
+  size_t nULABufferLen, 
+  u32 *pBorderTimingBuffer, 
+  size_t nBorderTimingBufferLen
+) {
   // Reset state before processing data (this interrupt occurs at start of screen refresh)
   u32 lastCasValue = 0;
   u32 lastIOWRValue = 0;
@@ -522,6 +531,9 @@ void CZxScreen::ULADataToScreen(u32 frameNo, TScreenColor *pZxScreenBuffer, u16 
   u32 pixelAttrDataValid = FALSE;  
   u32 borderDrawComplete = FALSE;
   u32 pixelDrawComplete = FALSE;
+
+  u32 nDrawBorderTimingIndex = 0;
+  u32 nBorderPixelDrawCount = 0;
   
   
   u32 bx = 0; // border x
@@ -554,6 +566,11 @@ void CZxScreen::ULADataToScreen(u32 frameNo, TScreenColor *pZxScreenBuffer, u16 
     u32 WR = (value & WR_MASK) == 0;
     u32 CAS = (value & CAS_MASK) == 0;           
     u32 IOREQ = IORQ;
+
+    u32 bDrawBorder = false;
+    u32 bDrawBorderFinalPart = false;
+    u32 drawBorderValue = 0;
+    u32 drawBorderCount = 0;
   
     // Handle ULA video read (/CAS in close succession (~100ns in-between each cas)
     
@@ -597,7 +614,36 @@ void CZxScreen::ULADataToScreen(u32 frameNo, TScreenColor *pZxScreenBuffer, u16 
       lastIOWRValue = value;
       inIOWR++;          
     } else {
-      if (inIOWR > 5 && inIOWR < 40) {
+      // if (inIOWR > 5 && inIOWR < 40) {
+      if (inIOWR > 5 /*&& inIOWR < 40*/) {
+      // if (inIOWR > 0) {
+        // A border write has been performed. 
+        // Set the data used to write the border up to this write
+        // If this is the last write, then complete the drawing of the border
+        bDrawBorder = true;
+        drawBorderValue = borderValue;              
+
+        if (nDrawBorderTimingIndex < nBorderTimingBufferLen) { 
+          drawBorderCount = pBorderTimingBuffer[nDrawBorderTimingIndex];
+          if (nDrawBorderTimingIndex > 0) {
+            drawBorderCount -= pBorderTimingBuffer[nDrawBorderTimingIndex - 1];
+          }
+          // TODO: Using a hack factor here is too simple because the border timing below only considers on screen
+          // time, but there is offscreen time as well. The border loop below needs to be corrected to account for
+          // the offscreen time as well.
+          drawBorderCount = (u32) drawBorderCount * 4.2;  // HACK factor
+          nDrawBorderTimingIndex++;
+
+          if (nDrawBorderTimingIndex >= nBorderTimingBufferLen) {
+            // Reached the end of the border timing info. Draw the final part of the border
+            bDrawBorderFinalPart = true;
+          }
+        } else {
+          // Should not happen - more border writes than border timing data - just draw the final part of the border 
+          // in this case  
+          bDrawBorderFinalPart = true;
+        }
+
         // Exited IO write, use the last value
         borderValue = lastIOWRValue >> 8;
 #if (ZX_SCREEN_REVERSE_DATA_BITS)
@@ -608,38 +654,86 @@ void CZxScreen::ULADataToScreen(u32 frameNo, TScreenColor *pZxScreenBuffer, u16 
       inIOWR = 0;
     }
 
-    // if (i == 400) {
-    // borderValue = value;
-    // }
 
     // Draw border
+
+    // OLD hacky code
+    // if (!borderDrawComplete) {
+    //   for (u32 i=0; i<nBorderTimeMultiplier; i++) {
+    //     inTopBottomBorder = by < m_nZxScreenBorderHeight || by >= nEndOfZxPixelsY;
+    //     inBorder = (bx < m_nZxScreenBorderWidth || bx >= nEndOfZxPixelsX || inTopBottomBorder);
+    //     // nBorderTimeMultiplier = inTopBottomBorder ? 4 : 1;
+
+    //     if (inBorder /*&& nBorderTime % 100 == 0*/) {
+    //       // TScreenColor borderColor = getPixelColor(borderValue, 0, 0, 1);
+    //       TScreenColor borderColor = ZxColorToScreenColor(borderValue);
+    //       u32 bytePos = by * m_nZxScreenWidth + bx;
+    //       pZxScreenBuffer[bytePos] = borderColor;
+    //     }
+
+    //     bx++;
+    //     if (bx >= m_nZxScreenWidth) {
+    //       bx = 0;
+    //       by++;
+    //       if (by >= m_nZxScreenHeight) {
+    //         // End of screen, break out of loop
+    //         borderDrawComplete = TRUE;
+    //         break;
+    //       }
+    //     } 
+    //   }
+    // }
+
+    // New border code
+
+    // Handle the special case where there is no border data (just write entire border in current colour)
+    // TODO: What if there is border timing data, but no border data in the ULA buffer?
+    // In this case, we'll loop the entire ULA buffer looking for the non-existing border data
+    // This is unlikely to happen, but needs to be handled somehow (it will be tricky!!)
+    if (nBorderTimingBufferLen == 0) {
+      bDrawBorder = true;
+      bDrawBorderFinalPart = true;
+      drawBorderCount = 0;      
+      drawBorderValue = borderValue;
+    }
+    // borderDrawComplete = true;
+
+
     if (!borderDrawComplete) {
-      for (u32 i=0; i<nBorderTimeMultiplier; i++) {
-        inTopBottomBorder = by < m_nZxScreenBorderHeight || by >= nEndOfZxPixelsY;
-        inBorder = (bx < m_nZxScreenBorderWidth || bx >= nEndOfZxPixelsX || inTopBottomBorder);
-        // nBorderTimeMultiplier = inTopBottomBorder ? 4 : 1;
+      if (bDrawBorder) {
+        // TScreenColor borderColor = getPixelColor(borderValue, 0, 0, 1);
+        TScreenColor borderColor = ZxColorToScreenColor(drawBorderValue);
 
-        if (inBorder /*&& nBorderTime % 100 == 0*/) {
-          // TScreenColor borderColor = getPixelColor(borderValue, 0, 0, 1);
-          TScreenColor borderColor = ZxColorToScreenColor(borderValue);
-          u32 bytePos = by * m_nZxScreenWidth + bx;
-          pZxScreenBuffer[bytePos] = borderColor;
-        }
+        for (u32 loops=0; loops<2; loops++) {
+          // Loop 1: draw previous border part
+          // Loop 2: draw final border part if 
+          for (u32 i=0; i<drawBorderCount; i++) {
+            inTopBottomBorder = by < m_nZxScreenBorderHeight || by >= nEndOfZxPixelsY;
+            inBorder = (bx < m_nZxScreenBorderWidth || bx >= nEndOfZxPixelsX || inTopBottomBorder);
+            // nBorderTimeMultiplier = inTopBottomBorder ? 4 : 1;
 
-        bx++;
-        if (bx >= m_nZxScreenWidth) {
-          bx = 0;
-          by++;
-          if (by >= m_nZxScreenHeight) {
-            // End of screen, break out of loop
-            borderDrawComplete = TRUE;
-            break;
+            if (inBorder /*&& nBorderTime % 100 == 0*/) {            
+              u32 bytePos = by * m_nZxScreenWidth + bx;
+              pZxScreenBuffer[bytePos] = borderColor;
+            }
+
+            bx++;
+            if (bx >= m_nZxScreenWidth) {
+              bx = 0;
+              by++;
+              if (by >= m_nZxScreenHeight) {
+                // End of screen, break out of loop
+                borderDrawComplete = TRUE;
+                break;
+              }
+            } 
           }
-        } 
+          if (borderDrawComplete || !bDrawBorderFinalPart) break;
+          drawBorderValue = borderValue; // Fill final part of border in current colour
+          drawBorderCount = m_nZxScreenWidth * m_nZxScreenHeight * 2; // Ensure all remaining pixels are drawn
+        }
       }
     }
-    // nBorderTime++;
-
 
 
     // Draw pixels

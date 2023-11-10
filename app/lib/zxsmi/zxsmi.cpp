@@ -62,8 +62,6 @@ u32 ulaBufferTicks = 0;
 u32 screenUpdateTicks = 0;
 u32 screenLoopTicks = 0;
 u32 screenLoopCount = 0;
-u32 frameInterruptCount = 0;
-u32 skippedFrameCount = 0;
 
 u32 skippy = 0;
 
@@ -160,6 +158,7 @@ boolean CZxSmi::Initialize ()
 
   // Raw Video data
   m_pRawVideoData = new ZX_VIDEO_RAW_DATA_T;
+  memset(m_pRawVideoData, 0, sizeof(ZX_VIDEO_RAW_DATA_T));
 
   // Setup SMI timing
   LOGDBG("Setting SMI timing: width: %d, ns: %d, setup: %d, strobe: %d, hold: %d, pace: %d, external: %d", 
@@ -231,9 +230,7 @@ void CZxSmi::Start(CSynchronizationEvent *pFrameEvent)
   // Set SMI completion routines
   m_SMIMaster.SetCompletionRoutine(SMICompleteInterrupt, this);
   
-  DMAStart();  
-
-  // Only start interrupt after DMA has been configured
+  // Start interrupts - first frame INT interrupt will trigger DMA
   m_GpioIntIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
 	m_GpioBorderIrqPin.EnableInterrupt(GPIOInterruptOnFallingEdge);
 
@@ -593,9 +590,13 @@ void CZxSmi::GpioIntIrqHandler (void *pParam)
 {
   CZxSmi *pThis = (CZxSmi *) pParam;
   // assert (pThis != 0);
+  ZX_VIDEO_RAW_DATA_T *pRawVideoData = pThis->m_pRawVideoData;
 
   // Toggle LED for debug
   // pThis->m_pActLED->On();
+
+  // Record the frame start time
+  pRawVideoData->nFrameStartTime = CTimer::Get()->GetClockTicks();
 
   // This delay is important to ensure that the last video bytes are flushed out of the SMI FIFO when running
   // at slower sample rates. Without this, the last few bytes of the frame are lost.
@@ -603,11 +604,15 @@ void CZxSmi::GpioIntIrqHandler (void *pParam)
   // therefore lower power consumption.
   CTimer::SimpleusDelay(1);
 
+
+
+
   // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
   // pThis->m_DMA.Stop(); // Now in SM->StopDMA()
 
   // Stop the DMA and SMI
   pThis->m_SMIMaster.StopDMA(pThis->m_DMA);
+
 
   // Attempt to get the m_pDMABufferRead lock - if it is still in use, we need to drop this frame
   // To drop the frame, we just restart the DMA and SMI on the same buffer
@@ -616,31 +621,43 @@ void CZxSmi::GpioIntIrqHandler (void *pParam)
   if (haveLock) {
     // We have the m_pDMABufferRead lock
 
-    // Save pointer to buffers just filled by DMA and border timing interrupt
-    pThis->m_pRawVideoData->pDMABuffer = pThis->m_pDMABuffer;
-    pThis->m_pRawVideoData->pBorderTimingBuffer = pThis->m_pBorderTimingBuffer;
+    // On the first interrupt, there will be no frame as DMA was not yet started
+    bool haveFrame = pRawVideoData->nFrame > 0;
 
-    // Move to the next DMA buffer and control block
-    pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
-    pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
-    pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
-    pThis->m_pBorderTimingBuffer = pThis->m_pBorderTimingBuffers[pThis->m_nDMABufferIdx];
-    pThis->m_nBorderTimingWriteIdx = 0;
+    if (haveFrame) {
+      // Save pointer to buffers just filled by DMA and border timing interrupt
+      pRawVideoData->pDMABuffer = pThis->m_pDMABuffer;
+      pRawVideoData->pBorderTimingBuffer = pThis->m_pBorderTimingBuffer;
+      pRawVideoData->nFramesRendered++;
+      pRawVideoData->nBorderTimingCount = pThis->m_nBorderTimingWriteIdx;
+
+    
+      // Move to the next DMA buffer and control block
+      pThis->m_nDMABufferIdx = (pThis->m_nDMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
+      pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_nDMABufferIdx];
+      pThis->m_pDMAControlBlock = pThis->m_pDMAControlBlocks[pThis->m_nDMABufferIdx];
+      pThis->m_pBorderTimingBuffer = pThis->m_pBorderTimingBuffers[pThis->m_nDMABufferIdx];
+    }
 
     // Release the m_pDMABufferRead lock
     pThis->m_DMABufferReadSemaphore.Up();
 
-    // Signal the screen processor task
-    if (pThis->m_pFrameEvent) {
-      pThis->m_pFrameEvent->Set();
+    if (haveFrame) {        
+      // Signal the screen processor task
+      if (pThis->m_pFrameEvent) {
+        pThis->m_pFrameEvent->Set();
+      }
     }
   } else {
     // Dropped a frame - the screen processor can't keep up
     // Clear the buffer pointers so that the frame is not rerendered - TODO - add some control info to m_pRawVideoData
-    pThis->m_pRawVideoData->pDMABuffer = nullptr;
-    pThis->m_pRawVideoData->pBorderTimingBuffer = nullptr;
+    // NO, because these are the buffers that are passed out to the screen processor task
+    // pRawVideoData->pDMABuffer = nullptr;
+    // pRawVideoData->pBorderTimingBuffer = nullptr;
+    // pRawVideoData->nFramesDropped++;
+    // pRawVideoData->nBorderTimingCount = 0;
 
-    skippedFrameCount++;
+    pRawVideoData->nFramesDropped++;
   }
 
   // Start the DMA using the next control block
@@ -651,12 +668,15 @@ void CZxSmi::GpioIntIrqHandler (void *pParam)
   write32(ARM_SMI_CS, read32(ARM_SMI_CS) | CS_START | CS_ENABLE); // No completion interrupt
   PeripheralExit();
 
+  // Reset the border timing write index
+  pThis->m_nBorderTimingWriteIdx = 0;
+
+  // Increment the number of frames in total
+  pRawVideoData->nFrame++;
+
 
   // Toggle LED for debug
   // pThis->m_pActLED->Off();
-
-  // Increment the loop count
-  frameInterruptCount++;  
 
   // Acknowledge the interrupt
   pThis->m_GpioIntIrqPin.AcknowledgeInterrupt();
@@ -678,6 +698,7 @@ void CZxSmi::GpioBorderIrqHandler (void *pParam)
 {
   CZxSmi *pThis = (CZxSmi *) pParam;
   assert (pThis != 0);
+  ZX_VIDEO_RAW_DATA_T *pRawVideoData = pThis->m_pRawVideoData;
 
   // Return early if stopped (fix - have to ack interrupt in this case)
   // if (!pThis->m_bRunning) return;
@@ -689,12 +710,10 @@ void CZxSmi::GpioBorderIrqHandler (void *pParam)
 
   // Get the current time
   if (pThis->m_nBorderTimingWriteIdx < ZX_BORDER_TIMING_BUFFER_LENGTH) {
-    u64 *pTime = &pThis->m_pBorderTimingBuffer[pThis->m_nBorderTimingWriteIdx++];
-    u32 *pSeconds = (u32 *)pTime;
-    u32 *pMicroSeconds = pSeconds+1;
-    // Hangs when this is called - I think because the SpinLock in Timer is only IRQ_LEVEL, not FIQ
-    // Yep, should modify the CTimer class to support FIQ level
-    CTimer::Get()->GetUniversalTime(pSeconds, pMicroSeconds);
+    u32 *pBuf = pThis->m_pBorderTimingBuffer;
+
+    pBuf[pThis->m_nBorderTimingWriteIdx++] = CTimer::Get()->GetClockTicks() - pRawVideoData->nFrameStartTime;
+    // pBuf[0] = CTimer::Get()->GetClockTicks();
   }
   // TODO - all buffer count to video data, and print it out now and then.
 

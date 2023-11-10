@@ -217,7 +217,7 @@ TShutdownMode CKernel::Run (void)
 
 
 	new CBackgroundTask (&m_Shell, &m_ActLED, &m_Event);
-	// new CTapeTask (&m_ZxTape);
+	new CTapeTask (&m_ZxTape);
 
 #if (HD_SPECCYS_FEATURE_OPENGL)
 	// OpenGL ES test

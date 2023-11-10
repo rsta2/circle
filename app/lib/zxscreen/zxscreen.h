@@ -216,7 +216,13 @@ public:
 	void Clear (TScreenColor backgroundColor);
 	void SetBorder (TScreenColor borderColor);
 	void SetScreen (boolean bToggle);
-	void SetScreenFromULABuffer(u32 frameNo, u16 *pULABuffer, size_t len);
+	void SetScreenFromULABuffer(
+		u32 frameNo, 
+		u16 *pULABuffer,
+		size_t nULABufferlen, 
+		u32 *pBorderTimingBuffer, 
+		size_t nBorderTimingBufferLen
+	);
 
 	void UpdateScreen(void);
 private:
@@ -226,7 +232,14 @@ private:
 	TScreenColor ZxColorInkToScreenColor(u32 ink);
 	TScreenColor ZxColorPaperToScreenColor(u32 paper);
 
-	void ULADataToScreen(u32 frameNo, TScreenColor *pScreenBuffer, u16 *pULABuffer, size_t nULABufferLen);
+	void ULADataToScreen(
+		u32 frameNo, 
+		TScreenColor *pScreenBuffer,   
+		u16 *pULABuffer, 
+		size_t nULABufferLen, 
+		u32 *pBorderTimingBuffer, 
+		size_t nBorderTimingBufferLen
+	);
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 

@@ -49,4 +49,5 @@ byte is the attribute bits for those pixel. This should result in 6144 * 2 = 122
 
 # TODO - List of modifications to Circle
 1. SCHEDULER_IN_FIQ
-2. ...
+2. TIMER_IN_FIQ
+3. ...
