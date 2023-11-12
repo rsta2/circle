@@ -196,7 +196,8 @@ boolean CZxSmi::Initialize ()
     // Set up reads in separate control blocks
     m_pDMAControlBlocks[i]->SetupIORead (m_pDMABuffers[i], ARM_SMI_D, m_nDMABufferLenBytes, DREQSourceSMI);  
     m_pDMAControlBlocks[i]->SetWaitForWriteResponse(TRUE);
-    m_pDMAControlBlocks[i]->SetBurstLength(8);
+    // m_pDMAControlBlocks[i]->SetBurstLength(8);
+    m_pDMAControlBlocks[i]->SetBurstLength(15);
 
     // Ensure CBs are not cached (Start should do this! ..and it does do for this first one, but not chained ones)
     TDMAControlBlock *pCB = m_pDMAControlBlocks[i]->GetRawControlBlock();
@@ -298,9 +299,10 @@ void CZxSmi::ReleaseDataBuffer(void) {
     // With both, only corruption when dropping frames.
     // With neither, no corruption ?!!
 
+    // TODO - DONT DO THIS, JUST FOR TESTING
     // Zero out the DMA buffer, read for next fill
-    // memset(m_pDMABufferRead, 0, m_nDMABufferLenBytes);
-    // CleanAndInvalidateDataCacheRange((uintptr)m_pDMABufferRead, m_nDMABufferLenBytes); // Necessary?
+    // memset(pDMABuffer, 0, m_nDMABufferLenBytes);
+    // CleanAndInvalidateDataCacheRange((uintptr)pDMABuffer, m_nDMABufferLenBytes); // Necessary?
   }
 
   // Release the buffer

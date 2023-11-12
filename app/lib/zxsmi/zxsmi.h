@@ -70,7 +70,7 @@
 // NOTE: pins SD6 and SD7 are used for the serial UART used for debugging!
 #define ZX_SMI_DATA_LINES_MASK		0b111111111100111111
 #define ZX_SMI_USE_ADDRESS_LINES	FALSE
-#define ZX_SMI_USE_SOE_SE					TRUE
+#define ZX_SMI_USE_SOE_SE					TRUE	// Debugging
 // #define ZX_SMI_USE_SOE_SE					FALSE
 #define ZX_SMI_USE_SWE_SRW				FALSE
 #define ZX_SMI_WIDTH					SMI16Bits
@@ -94,6 +94,10 @@
 #define ZX_SMI_HOLD		6
 #else
 // 2 * (8+9+8) / 1GHz = 50.0ns
+// #define ZX_SMI_NS		4
+// #define ZX_SMI_SETUP	3
+// #define ZX_SMI_STROBE	5
+// #define ZX_SMI_HOLD		3
 #define ZX_SMI_NS		4
 #define ZX_SMI_SETUP	3
 #define ZX_SMI_STROBE	5
@@ -118,10 +122,10 @@
 // SMI DMA
 #define ZX_DMA_T					u16
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 2) / sizeof(ZX_DMA_T))
+#define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 2) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))  // This currently uses up our entire loop time!
-#define ZX_DMA_BUFFER_LENGTH		((820 * 1024) / sizeof(ZX_DMA_T))	// Solid in DD2, should try really complex game
+// #define ZX_DMA_BUFFER_LENGTH		((820 * 1024) / sizeof(ZX_DMA_T))	// Solid in DD2, should try really complex game
 // #define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))	// This is long enough for the test cart - not sure in real situations (not for DD2!)
 // #define ZX_DMA_BUFFER_LENGTH		((512 * 1024) / sizeof(ZX_DMA_T))
 // #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))

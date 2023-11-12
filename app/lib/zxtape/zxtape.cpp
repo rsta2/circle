@@ -4,7 +4,8 @@
 
 #include "zxtape.h"
 #include "tzx-api.h"
-#include "games/chuckie-egg.h" // TZX, OK
+// #include "games/borderEfekti.h" // TAP, OK
+// #include "games/chuckie-egg.h" // TZX, OK
 // #include "games/jsw.h" // TZX, OK
 // #include "games/jsw2.h" // TZX, OK
 // #include "games/gyro.h" // TAP, OK
@@ -14,7 +15,7 @@
 // #include "games/greenberet.h" // TAP, OK
 // #include "games/spellbound.h" // TZX, OK
 // #include "games/dynamitedan2.h" // TZX, OK!
-// #include "games/jetpac.h" // TAP, OK!
+#include "games/jetpac.h" // TAP, OK!
 // #include "games/brianbloodaxe.h" // TZX, OK!
 // #include "games/arkanoidSpeedlock4.h" // TZX, OK!
 // #include "games/arkanoid2Speedlock7.h" // TZX, OK!
@@ -59,8 +60,8 @@ uint64_t nFileSeekIdx;                        // Current file seek position
 unsigned tzxLoopCount = 0;                    // HACK to call wave less than loop count at start
 
 // HACK
-unsigned char* GAME = ChuckieEgg;
-unsigned long GAME_SIZE = sizeof(ChuckieEgg);
+unsigned char* GAME = JetPac;
+unsigned long GAME_SIZE = sizeof(JetPac);
 
 
 /* Local functions */
@@ -110,8 +111,8 @@ boolean CZxTape::Initialize ()
   LOGNOTE("Initializing ZX TAPE");
 
   // Initialise the TZX API
-  strncpy(fileName, "ChuckieEgg.tzx", ZX_TAPE_MAX_FILENAME_LEN); // TODO: This is a hack
-  // strncpy(fileName, "ChuckieEgg.tap", ZX_TAPE_MAX_FILENAME_LEN); // TODO: This is a hack
+  // strncpy(fileName, "ChuckieEgg.tzx", ZX_TAPE_MAX_FILENAME_LEN); // TODO: This is a hack
+  strncpy(fileName, "ChuckieEgg.tap", ZX_TAPE_MAX_FILENAME_LEN); // TODO: This is a hack
   fileIndex = 0;
   initializeFileType(&dir);
   initializeFileType(&entry);

@@ -24,6 +24,7 @@ LOGMODULE ("ZxScreen");
 u32 borderValue;
 u32 videoByteCount;
 u32 videoValue;
+u32 CAS_LENGTHS[30];
 
 
 // Reverse bits (TODO - move to util)
@@ -118,6 +119,8 @@ CZxScreen::~CZxScreen (void)
 	
 	delete m_pFrameBuffer;
 	m_pFrameBuffer = 0;
+
+  delete m_pZxScreenData;
 }
 
 boolean CZxScreen::Initialize ()
@@ -189,6 +192,9 @@ boolean CZxScreen::Initialize ()
 
   // Create a ZX screen buffer (which has ZX screen dimensions, which may be to the visible screen)
   m_pZxScreenBuffer = (TScreenColor *) new u8[m_nZxScreenBufferSize];
+
+  // Create a ZX screen data buffer (which has data in the internal ZX screen format, but u32 for efficient processing)
+  m_pZxScreenData = new unsigned[m_nZxScreenBufferSize];
 
 
   // Initialise the zx color LUT
@@ -361,6 +367,7 @@ void CZxScreen::SetScreen (boolean bToggle)
 void CZxScreen::SetScreenFromULABuffer(u32 frameNo, u16 *pULABuffer, size_t nULABufferlen, u32 *pBorderTimingBuffer, size_t nBorderTimingBufferLen) {
   // Update offscreen buffer
   ULADataToScreen(frameNo, m_pZxScreenBuffer, pULABuffer, nULABufferlen, pBorderTimingBuffer, nBorderTimingBufferLen);
+  // ULADataToScreen_OLD(frameNo, m_pZxScreenBuffer, pULABuffer, nULABufferlen, pBorderTimingBuffer, nBorderTimingBufferLen);
 
   // Mark dirty so will be updated
   m_bDirty = TRUE;
@@ -502,11 +509,305 @@ TScreenColor CZxScreen::ZxColorPaperToScreenColor(u32 paper) {
   return zxColors[(u8)paper].ink;
 }
 
+// TODO: Pass in all the sizes
+// TODO: There is a fundamental problem that A0 is not considered for border writes, that means IO writes to external
+// peripherals will cause the border to incorrectly change colour.
+// NOTE: Stability was found by ensuring that the 4 ULA /CAS low pulses are detected sequentially, rather than
+// just trying to detect individual /CAS low pulses. This makes the code more resistant against sample glitches
+// but I am not 100% sure why it works, and considering the pulses singley did not.
+void CZxScreen::ULADataToScreen(
+  u32 frameNo,
+  TScreenColor *pZxScreenBuffer, 
+  u16 *pULABuffer, 
+  size_t nULABufferLen, 
+  u32 *pBorderTimingBuffer, 
+  size_t nBorderTimingBufferLen
+) {
+  // Reset state before processing data (this interrupt occurs at start of screen refresh)
+  u32 lastCasValue = 0;
+  u32 lastIOWRValue = 0;
+  u32 inIOWR = 0;
+  u32 inCAS = 0;
+  u32 isPixels = TRUE;
+  u32 wasOutOfCAS = FALSE;
+  videoByteCount = 0;
+  u32 pixelData = 0;
+  u32 attrData = 0;  
+  // u32 nBorderTime;
+  u32 nBorderTimeMultiplier = 1;
+  u32 inBorder = TRUE;
+  u32 inTopBottomBorder = TRUE;
+  u32 pixelAttrDataValid = FALSE;  
+  u32 borderDrawComplete = FALSE;
+  u32 pixelDataComplete = FALSE;
+
+  u32 nDrawBorderTimingIndex = 0;
+  u32 nBorderPixelDrawCount = 0;
+  
+  
+  u32 bx = 0; // border x
+  u32 by = 0; // border y
+  u32 px = m_nZxScreenBorderWidth; // pixel x
+  u32 py = m_nZxScreenBorderHeight; // pixel y
+  u32 nEndOfZxPixelsY = m_nZxScreenHeight - m_nZxScreenBorderHeight;
+  u32 nEndOfZxPixelsX = m_nZxScreenWidth - m_nZxScreenBorderWidth;
+  u32 IORQ_MASK = (1 << 2);
+  u32 WR_MASK = (1 << 0);
+  u32 CAS_MASK = (1 << 1);
+
+  // Update the flash state (on/off every 16 frames)
+  u32 flashState = ((frameNo / ZX_SCREEN_FLASH_FRAMES) & 0x01) == 0 ? FALSE : TRUE;
+
+
+  for (unsigned i = 0; i < 30; i++) {
+    CAS_LENGTHS[i] = 0;
+  }
+
+  // Loop all the data in the buffer
+  unsigned i = 0;
+  while (i < nULABufferLen) {   
+    // Read the value from the ULA data buffer
+    // u16 value = pULABuffer[i];
+    // u32 value = pULABuffer[i];
+
+    // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
+    // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
+    // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
+    // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
+    // NOTE: Currently if a frame is dropped, it will glitch the next frame - this should be fixed.
+
+    // Extract the state of the signals
+    // u32 IORQ = (value & IORQ_MASK) == 0;
+    // u32 WR = (value & WR_MASK) == 0;
+    // u32 CAS = (value & CAS_MASK) == 0;           
+    // u32 IOREQ = IORQ;
+
+    // 6.6ms per frame
+    // pZxScreenBuffer[i % (m_nZxScreenBufferSize / 2)] = (u8)value;
+
+
+    // Find the next valid ULA screen read (4 short CAS pulses)
+    unsigned j = i;
+    u32 prevValue = 0;
+    u32 value = 0;
+    u32 CAS = 0;
+    u32 inCAS = 0;
+    u32 ulaCASCount = 0;
+    u32 pixelData0 = 0;
+    u32 attrData0 = 0;
+    u32 pixelData1 = 0;
+    u32 attrData1 = 0;
+    u32 bFound = false;
+  //   while (j < nULABufferLen) {
+  //     prevValue = value;
+  //     value = pULABuffer[j++];
+
+  //     CAS = (value & CAS_MASK) == 0;  
+
+  //     // if (j > 50) {
+  //     //   if (!wasOutOfCAS) {            
+  //     //     wasOutOfCAS = !CAS;      
+  //     //   }
+
+  //       if (CAS) {
+  //         inCAS++;
+  //       } else {
+  //         if (inCAS >= 2 && inCAS <= 5) {
+  //           ulaCASCount++;
+  //           if (ulaCASCount == 1) pixelData0 = prevValue >> 8;
+  //           else if (ulaCASCount == 2) {
+  //             attrData0 = prevValue >> 8;
+  // #if (ZX_SCREEN_REVERSE_DATA_BITS)
+  //             // HW Fix, reverse the 8 bits
+  //             attrData0 = reverseBits(attrData0);
+  // #endif                         
+  //           }
+  //           else if (ulaCASCount == 3) pixelData1 = prevValue >> 8;
+  //           else if (ulaCASCount == 4) {
+  //             attrData1 = prevValue >> 8;
+  // #if (ZX_SCREEN_REVERSE_DATA_BITS)
+  //             // HW Fix, reverse the 8 bits
+  //             attrData1 = reverseBits(attrData1);
+  // #endif    
+  //             ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
+  //             bFound = true;
+  //             break;
+  //           }
+  //         } else {
+  //           // Non-ULA CAS, reset
+  //           ulaCASCount = 0; 
+  //         }
+  //         inCAS = 0;
+  //       }
+  //     // } // j>50
+  //   }
+
+  //   i = j;
+
+  //   if (bFound) {
+  //     m_pZxScreenData[videoByteCount] = pixelData0;
+  //     m_pZxScreenData[videoByteCount + 1] = attrData0;
+  //     m_pZxScreenData[videoByteCount + 2] = pixelData1;
+  //     m_pZxScreenData[videoByteCount + 3] = attrData1;
+  //     videoByteCount += 4;
+
+  //     if (videoByteCount >= 0x3000) {
+  //       // End of screen, break out of loop
+  //       pixelDataComplete = TRUE;
+  //       // break;
+  //     }
+  //   }    
+  // } // while (i < nULABufferLen)
+
+    while (j < nULABufferLen) {
+      prevValue = value;
+      value = pULABuffer[j++];
+
+      CAS = (value & CAS_MASK) == 0;  
+
+      // if (j > 20) {
+      //   if (!wasOutOfCAS) {            
+      //     wasOutOfCAS = !CAS;      
+      //   }
+
+        if (CAS) {
+          inCAS++;
+        } else {
+          if (inCAS > 0 && inCAS < 30) {
+            CAS_LENGTHS[inCAS]++;
+          }
+          if (inCAS > 3 && inCAS <= 5) {
+            ulaCASCount++;
+
+//             if (isPixels) {
+//               pixelData0 = prevValue >> 8;
+//               isPixels = !isPixels;
+//             }
+//             else {
+//               attrData0 = prevValue >> 8;
+// #if (ZX_SCREEN_REVERSE_DATA_BITS)
+//               // HW Fix, reverse the 8 bits
+//               attrData0 = reverseBits(attrData0);
+// #endif
+//               ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
+//               inCAS = 0;
+//               isPixels = !isPixels;
+//               bFound = true;
+//               break;
+//             }            
+            
+            if (ulaCASCount == 1) pixelData0 = prevValue >> 8;
+            else if (ulaCASCount == 2) {
+              attrData0 = prevValue >> 8;
+  #if (ZX_SCREEN_REVERSE_DATA_BITS)
+              // HW Fix, reverse the 8 bits
+              attrData0 = reverseBits(attrData0);
+  #endif
+              // ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
+              // inCAS = 0;
+              // bFound = true;
+              // break;
+            }
+            else if (ulaCASCount == 3) pixelData1 = prevValue >> 8;
+            else if (ulaCASCount == 4) {
+              attrData1 = prevValue >> 8;
+  #if (ZX_SCREEN_REVERSE_DATA_BITS)
+              // HW Fix, reverse the 8 bits
+              attrData1 = reverseBits(attrData1);
+  #endif                         
+              ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
+              inCAS = 0;
+              bFound = true;
+              break;
+            }
+            // if (ulaCASCount == 4) {
+            //   ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
+            //   inCAS = 0;
+            //   bFound = true;
+            //   break;
+            // }
+          } else if (inCAS > 5) {
+            // Non-ULA CAS, reset
+            ulaCASCount = 0;             
+          }
+          inCAS = 0;
+        }
+      // } // j>50
+    }
+
+    i = j;
+
+    if (bFound) {
+      m_pZxScreenData[videoByteCount] = pixelData0;
+      m_pZxScreenData[videoByteCount + 1] = attrData0;
+      // videoByteCount += 2;
+      m_pZxScreenData[videoByteCount + 2] = pixelData1;
+      m_pZxScreenData[videoByteCount + 3] = attrData1;
+      videoByteCount += 4;
+
+      if (videoByteCount >= 0x3000) {
+        // End of screen, break out of loop
+        pixelDataComplete = TRUE;
+        break;
+      }
+    }    
+  } // while (i < nULABufferLen)
+
+  //
+  // Draw the screen data to the screen - TODO: make a separate function
+  // This adds 0.5ms to the frame time
+  //
+
+  for (unsigned i = 0; i < ZX_SCREEN_DATA_LENGTH; i += 2) {   
+    u32 pixelData = m_pZxScreenData[i];
+    u32 attrData = m_pZxScreenData[i+1];
+
+    // Proces the pixel and attribute data
+    ZX_COLORS colours = ZxAttrToScreenColors(attrData);
+    
+    u32 bytePos = py * m_nZxScreenWidth + px;
+
+    for (int i = 0; i < 8; i++) {
+      // 7-i to flip the data lines
+#if (ZX_SCREEN_REVERSE_DATA_BITS)
+      bool pixelSet = pixelData >> i & 0x01;
+#else        
+      bool pixelSet = pixelData << i & 0x80;
+#endif      
+      // Flip the pixel state if flash and in flash state
+      if (colours.flash && flashState) {
+        pixelSet = !pixelSet;
+      }
+#if ZX_SCREEN_COLOUR     
+      TScreenColor pixelColor = pixelSet ? colours.ink : colours.paper;
+      pZxScreenBuffer[bytePos + i] = pixelColor;
+#else
+      pZxScreenBuffer[bytePos + i] = pixelSet ? BLACK_COLOR : WHITE_COLOR;
+#endif        
+    }
+
+    // TODO - should try to standardise all buffers and buffer pointers to u32 as it is MUCH faster than
+    // operating on u16 or u8 - this should be possible because the SMI data is 16 bit attr (+control)
+    // and 16 bit pixel data (+control)
+
+    // Move to the next pixels (byte)
+    px += 8;
+    if (px >= (m_nZxScreenWidth - m_nZxScreenBorderWidth)) {
+      px = m_nZxScreenBorderWidth;
+      py++;
+      if (py >= m_nZxScreenHeight - m_nZxScreenBorderHeight) {
+        // End of screen
+      }
+    }      
+  }
+
+}
+
 
 // TODO: Pass in all the sizes
 // TODO: There is a fundamental problem that A0 is not considered for border writes, that means IO writes to external
 // peripherals will cause the border to incorrectly change colour.
-void CZxScreen::ULADataToScreen(
+void CZxScreen::ULADataToScreen_OLD(
   u32 frameNo,
   TScreenColor *pZxScreenBuffer, 
   u16 *pULABuffer, 
@@ -548,6 +849,10 @@ void CZxScreen::ULADataToScreen(
 
   // Update the flash state (on/off every 16 frames)
   u32 flashState = ((frameNo / ZX_SCREEN_FLASH_FRAMES) & 0x01) == 0 ? FALSE : TRUE;
+
+  for (unsigned i = 0; i < 30; i++) {
+    CAS_LENGTHS[i] = 0;
+  }
 
   // Loop all the data in the buffer
   for (unsigned i = 0; i < nULABufferLen; i++) {   
@@ -593,6 +898,10 @@ void CZxScreen::ULADataToScreen(
         lastCasValue = value;
         inCAS++;
       } else {
+        if (inCAS > 0 && inCAS < 30) {
+          CAS_LENGTHS[inCAS]++;
+        }
+
         if (inCAS >= 3 && inCAS <= 5) {
         // // pThis->m_value = lastValue;   
           if (videoByteCount < 0x3000) {
@@ -663,35 +972,6 @@ void CZxScreen::ULADataToScreen(
 
 
     // Draw border
-
-    // OLD hacky code
-    // if (!borderDrawComplete) {
-    //   for (u32 i=0; i<nBorderTimeMultiplier; i++) {
-    //     inTopBottomBorder = by < m_nZxScreenBorderHeight || by >= nEndOfZxPixelsY;
-    //     inBorder = (bx < m_nZxScreenBorderWidth || bx >= nEndOfZxPixelsX || inTopBottomBorder);
-    //     // nBorderTimeMultiplier = inTopBottomBorder ? 4 : 1;
-
-    //     if (inBorder /*&& nBorderTime % 100 == 0*/) {
-    //       // TScreenColor borderColor = getPixelColor(borderValue, 0, 0, 1);
-    //       TScreenColor borderColor = ZxColorToScreenColor(borderValue);
-    //       u32 bytePos = by * m_nZxScreenWidth + bx;
-    //       pZxScreenBuffer[bytePos] = borderColor;
-    //     }
-
-    //     bx++;
-    //     if (bx >= m_nZxScreenWidth) {
-    //       bx = 0;
-    //       by++;
-    //       if (by >= m_nZxScreenHeight) {
-    //         // End of screen, break out of loop
-    //         borderDrawComplete = TRUE;
-    //         break;
-    //       }
-    //     } 
-    //   }
-    // }
-
-    // New border code
 
     // Handle the special case where there is no border data (just write entire border in current colour)
     // TODO: What if there is border timing data, but no border data in the ULA buffer?

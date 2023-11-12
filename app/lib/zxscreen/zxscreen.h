@@ -80,6 +80,7 @@
 #define ZX_SCREEN_BORDER_HEIGHT	32
 #define ZX_SCREEN_WIDTH			(ZX_SCREEN_BORDER_WIDTH + ZX_SCREEN_PIXEL_WIDTH + ZX_SCREEN_BORDER_WIDTH)
 #define ZX_SCREEN_HEIGHT		(ZX_SCREEN_BORDER_HEIGHT + ZX_SCREEN_PIXEL_HEIGHT + ZX_SCREEN_BORDER_HEIGHT)
+#define ZX_SCREEN_DATA_LENGTH	0x3000 // 12kB ((256pixels*192pixels)/8byteSize * 2bytes(pixels+attributes))
 
 #define ZX_SCREEN_FLASH_FRAMES	16	// Frames between flash changes
 #define ZX_SCREEN_COLOR_LUT_SIZE 	256 	// (8 * 8 * 2 * 2) ink * paper * flash * bright
@@ -240,6 +241,14 @@ private:
 		u32 *pBorderTimingBuffer, 
 		size_t nBorderTimingBufferLen
 	);
+	void ULADataToScreen_OLD(
+		u32 frameNo, 
+		TScreenColor *pScreenBuffer,   
+		u16 *pULABuffer, 
+		size_t nULABufferLen, 
+		u32 *pBorderTimingBuffer, 
+		size_t nBorderTimingBufferLen
+	);
 	void DMAStart(void);
 	static void DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam);
 
@@ -271,6 +280,7 @@ private:
 	unsigned	 m_nPixelCount;
 	unsigned	 m_nZxScreenPixelCount;
 	unsigned	 m_nScreenBufferNo;
+	unsigned	 *m_pZxScreenData; // Buffer of screen data in ZX Spectrum format (u32 for efficient processing)
 	boolean		 m_bDirty;
 
 	ZX_COLORS zxColors[ZX_SCREEN_COLOR_LUT_SIZE];

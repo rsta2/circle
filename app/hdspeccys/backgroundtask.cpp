@@ -18,6 +18,7 @@ extern "C" u32 screenLoopTicks;
 extern "C" u32 ulaBufferTicks;
 extern "C" u32 screenUpdateTicks;
 extern "C" ZX_VIDEO_RAW_DATA_T *pGlobalVideoData;
+extern "C" u32 CAS_LENGTHS[];
 
 u32 backgroundTime = 0;
 u32 prevFrameCount = 0;
@@ -94,6 +95,11 @@ void CBackgroundTask::Run (void)
 			(float)screenUpdateTicks / 1000,
 			(float)screenLoopTicks / 1000
 		);		
+
+		for (unsigned i = 0; i < 10; i++){
+			LOGDBG("CAS%d: %06ld", i, CAS_LENGTHS[i]);
+		}
+	
 		// // if (pDEBUG_BUFFER) {	
 		// // 	for (unsigned i = 0; i < 25/*ZX_SMI_DEBUG_BUFFER_LENGTH*/; i++){
 		// // 		u16 v = pDEBUG_BUFFER[i];
