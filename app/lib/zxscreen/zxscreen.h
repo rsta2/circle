@@ -1,6 +1,23 @@
 //
 // zxscreen.h
 //
+/**
+ * @brief 
+ * 
+ *           96(HSYNC) + 32(left border) + 256(pixels) + 64(right border) = 448 pixel clocks per line
+          8(VSYNC) + 56(top border) + 192(lines) + 56(bottom border) = 312 lines per frame
+          448 * 312 = 139,776 pixel clocks (@7MHz) per frame, or 69888 T states (@3.5MHz)
+          132608 / 8 = 17,472 'bytes' per frame
+          One 'byte' = 64 / (448/8) = 1.1428571429 us
+          17472 * 1.1428571429 = 19968ms (50.08 Hz)
+
+          Interestingly (and not co-incidentally!), 
+          this is exactly the same result as for the border timing array, since an IO write take 4 cycles!
+          This should make mapping the border timing array to the border data array quite easy!
+
+ * 
+ */
+
 #ifndef _zxscreen_h
 #define _zxscreen_h
 
@@ -82,10 +99,14 @@
 #define ZX_SCREEN_HEIGHT		(ZX_SCREEN_BORDER_HEIGHT + ZX_SCREEN_PIXEL_HEIGHT + ZX_SCREEN_BORDER_HEIGHT)
 #define ZX_SCREEN_DATA_LENGTH	0x3000 // 12kB ((256pixels*192pixels)/8byteSize * 2bytes(pixels+attributes))
 
-#define ZX_SCREEN_FLASH_FRAMES	16	// Frames between flash changes
-#define ZX_SCREEN_COLOR_LUT_SIZE 	256 	// (8 * 8 * 2 * 2) ink * paper * flash * bright
-#define ZX_SCREEN_WIDESCREEN    TRUE
-#define ZX_SCREEN_WIDESCREEN_WIDTH_RATIO  (64 / 45) // 5:4 => 16:9 ((5*9) / (4*16))
+#define ZX_SCREEN_FLASH_FRAMES				16	// Frames between flash changes
+#define ZX_SCREEN_COLOR_LUT_SIZE 			256 	// (8 * 8 * 2 * 2) ink * paper * flash * bright
+#define ZX_SCREEN_WIDESCREEN    			TRUE
+#define ZX_SCREEN_WIDESCREEN_WIDTH_RATIO  	(64 / 45) // 5:4 => 16:9 ((5*9) / (4*16))
+
+// Border bytes; 448 pixel clocks per line * 312 lines per frame / 8 bits per byte = 17472 bytes per frame
+#define ZX_SCREEN_BORDER_DATA_LENGTH 		17472
+#define ZX_BORDER_TIME_TO_PIXEL_RATIO 		1.1428571429f	 // 64 / (448/8) = 64 / 56 = 1.1428571429 us per 8 pixels
 
 
 
@@ -235,15 +256,16 @@ private:
 
 	void ULADataToScreen(
 		u32 frameNo, 
-		TScreenColor *pScreenBuffer,   
 		u16 *pULABuffer, 
 		size_t nULABufferLen, 
 		u32 *pBorderTimingBuffer, 
 		size_t nBorderTimingBufferLen
 	);
+	void CopyZxScreenDataToZxScreenBuffer(u32 frameNo);
+	void CopyZxBorderDataToZxScreenBuffer(u32 frameNo);
+
 	void ULADataToScreen_OLD(
 		u32 frameNo, 
-		TScreenColor *pScreenBuffer,   
 		u16 *pULABuffer, 
 		size_t nULABufferLen, 
 		u32 *pBorderTimingBuffer, 
@@ -281,6 +303,7 @@ private:
 	unsigned	 m_nZxScreenPixelCount;
 	unsigned	 m_nScreenBufferNo;
 	unsigned	 *m_pZxScreenData; // Buffer of screen data in ZX Spectrum format (u32 for efficient processing)
+	unsigned	 *m_pZxBorderData; // Buffer of border data (border colour as ZX screen position (offset by 16 bytes))
 	boolean		 m_bDirty;
 
 	ZX_COLORS zxColors[ZX_SCREEN_COLOR_LUT_SIZE];

@@ -17,8 +17,10 @@ LOGMODULE ("ZxScreen");
 // #define SPINLOCK_LEVEL      IRQ_LEVEL /* TASK_LEVEL*/
 #define SPINLOCK_LEVEL      TASK_LEVEL  // UNUSED?
 
-
-
+// TODO - these are potentially HW dependent and should be in config.h
+#define IORQ_MASK (1 << 2)
+#define WR_MASK   (1 << 0)
+#define CAS_MASK  (1 << 1)
 
 
 u32 borderValue;
@@ -26,6 +28,29 @@ u32 videoByteCount;
 u32 videoValue;
 u32 CAS_LENGTHS[30];
 
+
+inline void processUlaCas(
+  bool CAS, 
+  u32 dataValue,
+  u32 &inCAS, 
+  u32 &ulaCASCount,     
+  u32 *pPixelAttrData, 
+  unsigned pZxScreenData[],
+  u32 &videoByteCount,
+  u32 &pixelDataComplete
+);
+
+inline void processUlaIoWrite(
+  bool ulaWR, 
+  u32 dataValue,
+  u32 &inUlaWR, 
+  u32 &borderValue,     
+  u32 &borderChangeIndex,     
+  u32 *pBorderTimingBuffer, 
+  size_t nBorderTimingBufferLen,
+  unsigned pZxBorderData[],
+  u32 &borderDataComplete
+);
 
 // Reverse bits (TODO - move to util)
 
@@ -36,7 +61,7 @@ static unsigned char lookup[16] = {
 0x0, 0x8, 0x4, 0xc, 0x2, 0xa, 0x6, 0xe,
 0x1, 0x9, 0x5, 0xd, 0x3, 0xb, 0x7, 0xf, };
 
-u8 reverseBits(u8 n) {
+inline u8 reverseBits(u8 n) {
    // Reverse the top and bottom nibble then swap them.
    return (lookup[n&0b1111] << 4) | lookup[n>>4];
 }
@@ -121,20 +146,12 @@ CZxScreen::~CZxScreen (void)
 	m_pFrameBuffer = 0;
 
   delete m_pZxScreenData;
+  delete m_pZxBorderData;
 }
 
 boolean CZxScreen::Initialize ()
 {
-  // unsigned i;
-  // unsigned dmaBufferLenWords = ZX_DMA_BUFFER_LENGTH;
-  // unsigned dmaBufferLenBytes = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
-  
   LOGNOTE("Initializing ZX SCREEN");
-
-  // m_pDMAControlBlock = m_DMA.CreateDMAControlBlock();
-  // m_pDMAControlBlock2 = m_DMA.CreateDMAControlBlock();
-  // m_pDMAControlBlock3 = m_DMA.CreateDMAControlBlock();
-  // m_pDMAControlBlock4 = m_DMA.CreateDMAControlBlock();
 
   // Create the framebuffer
   m_pFrameBuffer = new CBcmFrameBuffer (m_nInitWidth, m_nInitHeight, ZX_SCREEN_DEPTH,
@@ -196,6 +213,9 @@ boolean CZxScreen::Initialize ()
   // Create a ZX screen data buffer (which has data in the internal ZX screen format, but u32 for efficient processing)
   m_pZxScreenData = new unsigned[m_nZxScreenBufferSize];
 
+  // Create a ZX border data buffer ([0] = border colour, [1] = border byte change, ...repeats)
+  m_pZxBorderData = new unsigned[ZX_SCREEN_BORDER_DATA_LENGTH];
+
 
   // Initialise the zx color LUT
   InitZxColorLUT();
@@ -226,21 +246,6 @@ void CZxScreen::Start()
 
   // Set running flag
   m_bRunning = TRUE;
-
-  // // Set initial DMA buffer
-  // m_pDMABuffer = m_pDMABuffers[m_DMABufferIdx];
-
-  // // Set DMA completion routine
-  // m_DMA.SetCompletionRoutine(DMACompleteInterrupt, this);
-  // // m_DMA_2.SetCompletionRoutine(DMACompleteInterrupt, this);
-  
-  // DMAStart();  
-
-  // if (m_pActLED != nullptr) {
-  //   m_pActLED->On();
-  // }
-
-  // m_DMA.Wait();
 }
 
 void CZxScreen::Stop()
@@ -366,8 +371,8 @@ void CZxScreen::SetScreen (boolean bToggle)
 
 void CZxScreen::SetScreenFromULABuffer(u32 frameNo, u16 *pULABuffer, size_t nULABufferlen, u32 *pBorderTimingBuffer, size_t nBorderTimingBufferLen) {
   // Update offscreen buffer
-  ULADataToScreen(frameNo, m_pZxScreenBuffer, pULABuffer, nULABufferlen, pBorderTimingBuffer, nBorderTimingBufferLen);
-  // ULADataToScreen_OLD(frameNo, m_pZxScreenBuffer, pULABuffer, nULABufferlen, pBorderTimingBuffer, nBorderTimingBufferLen);
+  ULADataToScreen(frameNo, pULABuffer, nULABufferlen, pBorderTimingBuffer, nBorderTimingBufferLen);
+  // ULADataToScreen_OLD(frameNo, pULABuffer, nULABufferlen, pBorderTimingBuffer, nBorderTimingBufferLen);
 
   // Mark dirty so will be updated
   m_bDirty = TRUE;
@@ -509,6 +514,7 @@ TScreenColor CZxScreen::ZxColorPaperToScreenColor(u32 paper) {
   return zxColors[(u8)paper].ink;
 }
 
+// TODO: Move all this to a ZxUlaToScreen class
 // TODO: Pass in all the sizes
 // TODO: There is a fundamental problem that A0 is not considered for border writes, that means IO writes to external
 // peripherals will cause the border to incorrectly change colour.
@@ -517,48 +523,31 @@ TScreenColor CZxScreen::ZxColorPaperToScreenColor(u32 paper) {
 // but I am not 100% sure why it works, and considering the pulses singley did not.
 void CZxScreen::ULADataToScreen(
   u32 frameNo,
-  TScreenColor *pZxScreenBuffer, 
   u16 *pULABuffer, 
   size_t nULABufferLen, 
   u32 *pBorderTimingBuffer, 
   size_t nBorderTimingBufferLen
 ) {
   // Reset state before processing data (this interrupt occurs at start of screen refresh)
-  u32 lastCasValue = 0;
-  u32 lastIOWRValue = 0;
-  u32 inIOWR = 0;
+  // TODO: remove unused values!
+  u32 dataValue = 0;
+  u32 value = 0;
+  u32 CAS = 0;
+  u32 IORQ = 0;
+  u32 WR = 0; 
+  u32 IOREQ = 0;
+  u32 ulaWR = 0;
   u32 inCAS = 0;
-  u32 isPixels = TRUE;
-  u32 wasOutOfCAS = FALSE;
-  videoByteCount = 0;
-  u32 pixelData = 0;
-  u32 attrData = 0;  
-  // u32 nBorderTime;
-  u32 nBorderTimeMultiplier = 1;
-  u32 inBorder = TRUE;
-  u32 inTopBottomBorder = TRUE;
-  u32 pixelAttrDataValid = FALSE;  
-  u32 borderDrawComplete = FALSE;
+  u32 inUlaWR = 0;
+  u32 ulaCASCount = 0;
+  u32 pPixelAttrData[4];  
+  videoByteCount = 0; // Exported for debug reasons
+  u32 borderChangeIndex = 0;
+  u32 borderDataComplete = FALSE;
   u32 pixelDataComplete = FALSE;
-
-  u32 nDrawBorderTimingIndex = 0;
-  u32 nBorderPixelDrawCount = 0;
   
   
-  u32 bx = 0; // border x
-  u32 by = 0; // border y
-  u32 px = m_nZxScreenBorderWidth; // pixel x
-  u32 py = m_nZxScreenBorderHeight; // pixel y
-  u32 nEndOfZxPixelsY = m_nZxScreenHeight - m_nZxScreenBorderHeight;
-  u32 nEndOfZxPixelsX = m_nZxScreenWidth - m_nZxScreenBorderWidth;
-  u32 IORQ_MASK = (1 << 2);
-  u32 WR_MASK = (1 << 0);
-  u32 CAS_MASK = (1 << 1);
-
-  // Update the flash state (on/off every 16 frames)
-  u32 flashState = ((frameNo / ZX_SCREEN_FLASH_FRAMES) & 0x01) == 0 ? FALSE : TRUE;
-
-
+  // For debugging only
   for (unsigned i = 0; i < 30; i++) {
     CAS_LENGTHS[i] = 0;
   }
@@ -566,201 +555,222 @@ void CZxScreen::ULADataToScreen(
   // Loop all the data in the buffer
   unsigned i = 0;
   while (i < nULABufferLen) {   
-    // Read the value from the ULA data buffer
-    // u16 value = pULABuffer[i];
-    // u32 value = pULABuffer[i];
-
-    // SD2    (MOSI,   PIN19) => /IORQ - When low, indicates an IO read or write - 3S
-    // SD1    (MISO,   PIN21) => CAS - Used to detect writes to video memory - 3S
-    // SD0    (CE0,    PIN24) => /WR - When low, indicates a write - 3S
-    // SOE/SE (GPIO6,  PIN31) <= SMI CLK - Clock for SMI, Switch off except when debugging
     // NOTE: Currently if a frame is dropped, it will glitch the next frame - this should be fixed.
 
-    // Extract the state of the signals
-    // u32 IORQ = (value & IORQ_MASK) == 0;
-    // u32 WR = (value & WR_MASK) == 0;
-    // u32 CAS = (value & CAS_MASK) == 0;           
-    // u32 IOREQ = IORQ;
+    // Find the next valid ULA screen read (4 short CAS pulses)        
+    
+    // Data value is latched on sample before the deactivation of the relevant signals
+    dataValue = value;  
 
-    // 6.6ms per frame
-    // pZxScreenBuffer[i % (m_nZxScreenBufferSize / 2)] = (u8)value;
+    // Get the next sample from the ULA buffer
+    value = pULABuffer[i++];
 
-
-    // Find the next valid ULA screen read (4 short CAS pulses)
-    unsigned j = i;
-    u32 prevValue = 0;
-    u32 value = 0;
-    u32 CAS = 0;
-    u32 inCAS = 0;
-    u32 ulaCASCount = 0;
-    u32 pixelData0 = 0;
-    u32 attrData0 = 0;
-    u32 pixelData1 = 0;
-    u32 attrData1 = 0;
-    u32 bFound = false;
-  //   while (j < nULABufferLen) {
-  //     prevValue = value;
-  //     value = pULABuffer[j++];
-
-  //     CAS = (value & CAS_MASK) == 0;  
-
-  //     // if (j > 50) {
-  //     //   if (!wasOutOfCAS) {            
-  //     //     wasOutOfCAS = !CAS;      
-  //     //   }
-
-  //       if (CAS) {
-  //         inCAS++;
-  //       } else {
-  //         if (inCAS >= 2 && inCAS <= 5) {
-  //           ulaCASCount++;
-  //           if (ulaCASCount == 1) pixelData0 = prevValue >> 8;
-  //           else if (ulaCASCount == 2) {
-  //             attrData0 = prevValue >> 8;
-  // #if (ZX_SCREEN_REVERSE_DATA_BITS)
-  //             // HW Fix, reverse the 8 bits
-  //             attrData0 = reverseBits(attrData0);
-  // #endif                         
-  //           }
-  //           else if (ulaCASCount == 3) pixelData1 = prevValue >> 8;
-  //           else if (ulaCASCount == 4) {
-  //             attrData1 = prevValue >> 8;
-  // #if (ZX_SCREEN_REVERSE_DATA_BITS)
-  //             // HW Fix, reverse the 8 bits
-  //             attrData1 = reverseBits(attrData1);
-  // #endif    
-  //             ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
-  //             bFound = true;
-  //             break;
-  //           }
-  //         } else {
-  //           // Non-ULA CAS, reset
-  //           ulaCASCount = 0; 
-  //         }
-  //         inCAS = 0;
-  //       }
-  //     // } // j>50
-  //   }
-
-  //   i = j;
-
-  //   if (bFound) {
-  //     m_pZxScreenData[videoByteCount] = pixelData0;
-  //     m_pZxScreenData[videoByteCount + 1] = attrData0;
-  //     m_pZxScreenData[videoByteCount + 2] = pixelData1;
-  //     m_pZxScreenData[videoByteCount + 3] = attrData1;
-  //     videoByteCount += 4;
-
-  //     if (videoByteCount >= 0x3000) {
-  //       // End of screen, break out of loop
-  //       pixelDataComplete = TRUE;
-  //       // break;
-  //     }
-  //   }    
-  // } // while (i < nULABufferLen)
-
-    while (j < nULABufferLen) {
-      prevValue = value;
-      value = pULABuffer[j++];
-
+    // Optimization: no need to process CAS at all if the screen is drawn
+    // CAS will be inactive when pixelDataComplete is set true, so border optimisation below will work
+    if (!pixelDataComplete) {
       CAS = (value & CAS_MASK) == 0;  
 
-      // if (j > 20) {
-      //   if (!wasOutOfCAS) {            
-      //     wasOutOfCAS = !CAS;      
-      //   }
-
-        if (CAS) {
-          inCAS++;
-        } else {
-          if (inCAS > 0 && inCAS < 30) {
-            CAS_LENGTHS[inCAS]++;
-          }
-          if (inCAS > 3 && inCAS <= 5) {
-            ulaCASCount++;
-
-//             if (isPixels) {
-//               pixelData0 = prevValue >> 8;
-//               isPixels = !isPixels;
-//             }
-//             else {
-//               attrData0 = prevValue >> 8;
-// #if (ZX_SCREEN_REVERSE_DATA_BITS)
-//               // HW Fix, reverse the 8 bits
-//               attrData0 = reverseBits(attrData0);
-// #endif
-//               ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
-//               inCAS = 0;
-//               isPixels = !isPixels;
-//               bFound = true;
-//               break;
-//             }            
-            
-            if (ulaCASCount == 1) pixelData0 = prevValue >> 8;
-            else if (ulaCASCount == 2) {
-              attrData0 = prevValue >> 8;
-  #if (ZX_SCREEN_REVERSE_DATA_BITS)
-              // HW Fix, reverse the 8 bits
-              attrData0 = reverseBits(attrData0);
-  #endif
-              // ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
-              // inCAS = 0;
-              // bFound = true;
-              // break;
-            }
-            else if (ulaCASCount == 3) pixelData1 = prevValue >> 8;
-            else if (ulaCASCount == 4) {
-              attrData1 = prevValue >> 8;
-  #if (ZX_SCREEN_REVERSE_DATA_BITS)
-              // HW Fix, reverse the 8 bits
-              attrData1 = reverseBits(attrData1);
-  #endif                         
-              ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
-              inCAS = 0;
-              bFound = true;
-              break;
-            }
-            // if (ulaCASCount == 4) {
-            //   ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS
-            //   inCAS = 0;
-            //   bFound = true;
-            //   break;
-            // }
-          } else if (inCAS > 5) {
-            // Non-ULA CAS, reset
-            ulaCASCount = 0;             
-          }
-          inCAS = 0;
-        }
-      // } // j>50
+      // Process the ULA CAS (pixel and attribute data)
+      processUlaCas(
+        CAS,      
+        dataValue, 
+        inCAS, 
+        ulaCASCount,           
+        pPixelAttrData, 
+        m_pZxScreenData,
+        videoByteCount,
+        pixelDataComplete
+      );
     }
+    
+   
+    // Process ULA IO write (border colour capture)
+    // NOTE: There is a special case where there were NO border writes in the frame
+    if (nBorderTimingBufferLen > 0) {
+      // Optimisations: 
+      // - IO signal states while CAS is active are not relevant as they don't change
+      // - No need to process IO writes at all if the border data is complete
 
-    i = j;
+      if (!borderDataComplete && !CAS) { 
+        IORQ = (value & IORQ_MASK) == 0;
+        WR = (value & WR_MASK) == 0;
+        IOREQ = IORQ; // NOTE: This is a bug. A0 must be considered but is not wired in HW. Peripheral IO writes will cause border colour to change.
+        ulaWR = IOREQ & WR;
 
-    if (bFound) {
-      m_pZxScreenData[videoByteCount] = pixelData0;
-      m_pZxScreenData[videoByteCount + 1] = attrData0;
-      // videoByteCount += 2;
-      m_pZxScreenData[videoByteCount + 2] = pixelData1;
-      m_pZxScreenData[videoByteCount + 3] = attrData1;
-      videoByteCount += 4;
-
-      if (videoByteCount >= 0x3000) {
-        // End of screen, break out of loop
-        pixelDataComplete = TRUE;
-        break;
+        processUlaIoWrite(
+          ulaWR,
+          dataValue,
+          inUlaWR,
+          borderValue, // TODO: currently global - preserved between frames
+          borderChangeIndex,
+          pBorderTimingBuffer,
+          nBorderTimingBufferLen,
+          m_pZxBorderData,
+          borderDataComplete
+        );
       }
-    }    
+    } else {
+      // No border writes in this frame.
+      borderDataComplete = TRUE;
+    }
+    // borderDataComplete = TRUE;
+  
+
+    // Break out of loop if screen is drawn (as the rest of the data is not needed)
+    if (pixelDataComplete && borderDataComplete) break;
+
   } // while (i < nULABufferLen)
 
-  //
-  // Draw the screen data to the screen - TODO: make a separate function
-  // This adds 0.5ms to the frame time
-  //
+  // Special border case when there is no border written this frame
+  if (nBorderTimingBufferLen == 0) {
+      // No border writes in this frame. Fill the border data with the current border colour  
+      for (u32 i = 0; i < ZX_SCREEN_BORDER_DATA_LENGTH; i++) m_pZxBorderData[i] = borderValue;
+  }
+
+  // NOTE: It is more efficient to write the border across the entire screen, then the screen pixels over the top
+  // than to calculate and only write the border pixels.
+
+  // Draw the border data to the screen (??ms)
+  CopyZxBorderDataToZxScreenBuffer(frameNo);
+
+  // Draw the screen data to the screen (0.5ms)
+  CopyZxScreenDataToZxScreenBuffer(frameNo);
+}
+
+inline void processUlaCas(
+  bool CAS,   
+  u32 dataValue,
+  u32 &inCAS, 
+  u32 &ulaCASCount,       
+  u32 *pPixelAttrData, 
+  unsigned pZxScreenData[],
+  u32 &videoByteCount,
+  u32 &pixelDataComplete
+) {
+  if (CAS) {
+    inCAS++;
+  } else {
+
+    // For debugging only
+    if (inCAS > 0 && inCAS < 30) {
+      CAS_LENGTHS[inCAS]++;
+    }
+
+    // Process ULA CAS ('short' CAS, video memory read for display)
+    if (inCAS > 3 && inCAS <= 5) {
+
+      pPixelAttrData[ulaCASCount] = dataValue >> 8;
+#if (ZX_SCREEN_REVERSE_DATA_BITS)
+      // HW Fix, reverse the 8 bits of the attribute value (pixels are reversed later)
+      if (ulaCASCount & 0x01) {
+        pPixelAttrData[ulaCASCount] = reverseBits(pPixelAttrData[ulaCASCount]);
+      }
+#endif          
+      ulaCASCount++;     
+
+      if (ulaCASCount == 4) {
+        // Exited the 4th ULA CAS, so have a complete pixel and attribute data x2
+        memcpy(&pZxScreenData[videoByteCount], pPixelAttrData, sizeof(u32) * 4);
+        videoByteCount += 4;
+
+        if (videoByteCount >= 0x3000) {
+          // End of screen
+          pixelDataComplete = TRUE;
+        }
+        
+        ulaCASCount = 0;  // Reset CAS count as hit 4th ULA CAS    
+      }
+    } else if (inCAS > 5) {
+      // Non-ULA 'long' CAS from Z80, reset ULA CAS count
+      ulaCASCount = 0;             
+    } else {
+      // CAS pulse shorter than 3 - this is a glitch and must be ignored
+    }
+    inCAS = 0;
+  }
+}
+
+inline void processUlaIoWrite(
+  bool ulaWR, 
+  u32 dataValue,
+  u32 &inUlaWR, 
+  u32 &borderValue,     
+  u32 &borderChangeIndex,     
+  u32 *pBorderTimingBuffer, 
+  size_t nBorderTimingBufferLen,
+  unsigned pZxBorderData[],
+  u32 &borderDataComplete
+) {
+  if (ulaWR) {    
+    inUlaWR++;
+  } else {
+    if (inUlaWR > 5) {
+      // A border write has been performed. 
+      // Set the data used to write the border up to this write
+      // If this is the last write, then complete the drawing of the border
+      if (borderChangeIndex < nBorderTimingBufferLen) { 
+        
+        // Get the time difference between this write and the previous (0 if first write)
+        u32 borderWriteTimePrevUs = 0;
+        if (borderChangeIndex > 0) borderWriteTimePrevUs = pBorderTimingBuffer[borderChangeIndex - 1];
+        u32 borderWriteTimeUs = pBorderTimingBuffer[borderChangeIndex];
+
+        // Convert the times to pixel 'byte' counts (since the border is written in 8 pixel blocks)
+        // TODO: It might be better to round these values, rather than truncate
+        u32 pixelByteCountPrev = (u32)(borderWriteTimePrevUs / ZX_BORDER_TIME_TO_PIXEL_RATIO);
+        u32 pixelByteCount = (u32)(borderWriteTimeUs / ZX_BORDER_TIME_TO_PIXEL_RATIO);
+
+        // Fill the border data between the previous border colour write and this one with the previous colour
+        u32 idxPrev = pixelByteCountPrev;
+        u32 idx = min(pixelByteCount, ZX_SCREEN_BORDER_DATA_LENGTH);
+        for (u32 i = idxPrev; i < idx; i++) {
+          pZxBorderData[i] = borderValue;
+        }
+
+        // Set the border value for this write
+        borderValue = dataValue >> 8;
+#if (ZX_SCREEN_REVERSE_DATA_BITS)
+        // HW Fix, reverse the 8 bits
+        borderValue = reverseBits(borderValue);
+#endif     
+        
+        // Increment the border change index
+        borderChangeIndex++;
+
+        // Check if this was the final border write this frame
+        borderDataComplete = borderChangeIndex >= nBorderTimingBufferLen;
+          
+        if (borderDataComplete) {
+          // Reached the end of the border timing info. Draw the final part of the border
+          for (u32 i = idx; i < ZX_SCREEN_BORDER_DATA_LENGTH; i++) {
+            pZxBorderData[i] = borderValue;
+          }
+        }
+      } else {
+        // Should not happen - more border writes than border timing data - ignore, she'll be right.
+      }
+
+    } else {
+      // IOWR pulse shorter than 5 - this is a glitch and must be ignored
+    }
+    inUlaWR = 0;
+  }  
+}
+
+void CZxScreen::CopyZxScreenDataToZxScreenBuffer(u32 frameNo) {
+  unsigned *pZxScreenData = m_pZxScreenData;
+  TScreenColor *pZxScreenBuffer = m_pZxScreenBuffer;
+
+  // Update the flash state (on/off every 16 frames)
+  u32 flashState = ((frameNo / ZX_SCREEN_FLASH_FRAMES) & 0x01) == 0 ? FALSE : TRUE;
+
+  u32 px = m_nZxScreenBorderWidth; // pixel x
+  u32 py = m_nZxScreenBorderHeight; // pixel y
+
 
   for (unsigned i = 0; i < ZX_SCREEN_DATA_LENGTH; i += 2) {   
-    u32 pixelData = m_pZxScreenData[i];
-    u32 attrData = m_pZxScreenData[i+1];
+    u32 pixelData = pZxScreenData[i];
+    u32 attrData = pZxScreenData[i+1];
 
     // Proces the pixel and attribute data
     ZX_COLORS colours = ZxAttrToScreenColors(attrData);
@@ -797,10 +807,101 @@ void CZxScreen::ULADataToScreen(
       py++;
       if (py >= m_nZxScreenHeight - m_nZxScreenBorderHeight) {
         // End of screen
+        break; // Will be end of data anyway
       }
     }      
   }
+}
 
+void CZxScreen::CopyZxBorderDataToZxScreenBuffer(u32 frameNo) {  
+  TScreenColor borderColor = -1;
+  TScreenColor prevBorderColor = -1;  
+  u32 prevBorderValue = -1;
+
+  u32 nScreenWidth = m_nZxScreenWidth / 8;  // Width converted to bytes
+  u32 nScreenHeight = m_nZxScreenHeight;
+  u32 nBorderWidth = m_nZxScreenBorderWidth / 8; // Width converted to bytes
+  u32 nBorderHeight = m_nZxScreenBorderHeight;
+  u32 nEndOfZxPixelsX = (nScreenWidth - nBorderWidth);  
+  u32 nEndOfZxPixelsY = (nScreenHeight - nBorderHeight);  
+
+  // HACK - reset border
+  // memset(m_pZxScreenBuffer, 0, m_nZxScreenBufferSize);
+
+  for (u32 i = 0; i < ZX_SCREEN_BORDER_DATA_LENGTH; i++) {
+
+    // Get and convert the borderValue (attribute) to border colour, only converting when colour changes.
+    u32 borderValue = m_pZxBorderData[i];
+    if (borderValue == prevBorderValue) {
+      borderColor = prevBorderColor;
+    } else {
+      borderColor = ZxColorToScreenColor(borderValue);
+      prevBorderColor = borderColor;
+      prevBorderValue = borderValue;
+    }
+    // borderColor = ZxColorToScreenColor(0x33);
+
+    // Convert the index to the screen buffer position
+    // The original screen timing of the spectrum is considered, then mapped to the screen buffer
+    // The frame interrupt occurs at the start of the screen pixels on the left side (NOT at the start of the
+    // television line or left border). However,there will be an offset needed in the code here for the interrupt
+    // processing delay, and it is unlikely to be possible to get the border timing perfect as the interrupts will
+    // not be microsecond accurate. Try the best we can.
+    // 448 / 8 = 56 bytes per line
+    // 312 lines per frame
+    // 96 / 8 = 12 bytes offset before left border pixels start
+    // 32 / 8 = 4 bytes for left border
+    // 256 / 8 = 32 bytes for screen pixels    
+    // 64 / 8 = 8 bytes for right border (but we'll only display 4!)
+    // Total 128 / 8 = 16 bytes offset before screen pixels start
+    // 8 lines before top border pixels start
+    // 56 lines of top border (but we'll only display 32!)
+    // 192 lines of screen pixels
+    // 56 lines of bottom border (but we'll only display 32!)
+    // TODO - define the above as constants
+
+    u32 idx = i + 16; // Add the 16 byte offset
+
+    u32 zxBorderX = i % 56;
+    u32 zxBorderY = i / 56;
+
+
+    // Map the ZX border position to the screen buffer XY position
+    u32 screenBufferX = (zxBorderX - 12); // 12 (HSYNC)
+    u32 screenBufferY = (zxBorderY - 32); // 8 (VSYNC) + 24 (top border off-screen)
+
+    // Check if this byte is in the visible border, otherwise it can be ignored
+    u32 xInRange = screenBufferX >= 0 && screenBufferX < nScreenWidth;
+    u32 yInRange = screenBufferY >= 0 && screenBufferY < nScreenHeight;
+    u32 inVisibleBorder = xInRange && yInRange;
+    // u32 inVisibleTopBottomBorder = xInRange &&
+    //   ((screenBufferY >= 0 && screenBufferY < nBorderHeight) || 
+    //   (screenBufferY >= nEndOfZxPixelsY && screenBufferY < nScreenHeight));  
+    // u32 inVisibleSideBorder = 
+    //   (screenBufferX >= 0 && screenBufferX < nBorderWidth) || 
+    //   (screenBufferX >= nEndOfZxPixelsX && screenBufferX < nScreenWidth);    
+    // u32 inVisibleBorder = inVisibleTopBottomBorder || inVisibleSideBorder;
+
+
+    // Draw the border colour to the screen buffer
+    if (inVisibleBorder) {            
+      u32 bytePos = screenBufferY * nScreenWidth + screenBufferX;
+      u32 bitPos = bytePos * 8;
+      if (bitPos >= 0 && bitPos < m_nZxScreenBufferSize) {
+        for (u32 bit = 0; bit < 8; bit++) m_pZxScreenBuffer[bitPos + bit] = borderColor;
+      }
+    }
+
+    // bx++;
+    // if (bx >= m_nZxScreenWidth) {
+    //   bx = 0;
+    //   by++;
+    //   if (by >= m_nZxScreenHeight) {
+    //     // End of border, break out of loop
+    //     break; // Will be end of data anyway
+    //   }
+    // }     
+  }
 }
 
 
@@ -809,13 +910,13 @@ void CZxScreen::ULADataToScreen(
 // peripherals will cause the border to incorrectly change colour.
 void CZxScreen::ULADataToScreen_OLD(
   u32 frameNo,
-  TScreenColor *pZxScreenBuffer, 
   u16 *pULABuffer, 
   size_t nULABufferLen, 
   u32 *pBorderTimingBuffer, 
   size_t nBorderTimingBufferLen
 ) {
   // Reset state before processing data (this interrupt occurs at start of screen refresh)
+  TScreenColor *pZxScreenBuffer = m_pZxScreenBuffer;
   u32 lastCasValue = 0;
   u32 lastIOWRValue = 0;
   u32 inIOWR = 0;
@@ -826,7 +927,6 @@ void CZxScreen::ULADataToScreen_OLD(
   u32 pixelData = 0;
   u32 attrData = 0;  
   // u32 nBorderTime;
-  u32 nBorderTimeMultiplier = 1;
   u32 inBorder = TRUE;
   u32 inTopBottomBorder = TRUE;
   u32 pixelAttrDataValid = FALSE;  
@@ -834,8 +934,6 @@ void CZxScreen::ULADataToScreen_OLD(
   u32 pixelDrawComplete = FALSE;
 
   u32 nDrawBorderTimingIndex = 0;
-  u32 nBorderPixelDrawCount = 0;
-  
   
   u32 bx = 0; // border x
   u32 by = 0; // border y
@@ -843,9 +941,6 @@ void CZxScreen::ULADataToScreen_OLD(
   u32 py = m_nZxScreenBorderHeight; // pixel y
   u32 nEndOfZxPixelsY = m_nZxScreenHeight - m_nZxScreenBorderHeight;
   u32 nEndOfZxPixelsX = m_nZxScreenWidth - m_nZxScreenBorderWidth;
-  u32 IORQ_MASK = (1 << 2);
-  u32 WR_MASK = (1 << 0);
-  u32 CAS_MASK = (1 << 1);
 
   // Update the flash state (on/off every 16 frames)
   u32 flashState = ((frameNo / ZX_SCREEN_FLASH_FRAMES) & 0x01) == 0 ? FALSE : TRUE;
@@ -1071,107 +1166,6 @@ void CZxScreen::ULADataToScreen_OLD(
     if (borderDrawComplete && pixelDrawComplete) break;
   }
 }
-
-
-void CZxScreen::DMAStart()
-{
-  // CDMAChannel dma = m_DMABufferIdx == 0 ? m_DMA : m_DMA_2;
-
-  // m_SMIMaster.StartDMA(m_DMA, m_pDMABuffer);  
-
-  // if (m_pActLED != nullptr) {
-  //   m_pActLED->On();
-  // }
-
-}
-
-void CZxScreen::DMACompleteInterrupt(unsigned nChannel, boolean bStatus, void *pParam)
-{
-  // unsigned i = 0;
-
-  // CZxScreen *pThis = (CZxScreen *) pParam;
-	// assert (pThis != 0);
-
-  // // if (pThis->m_pActLED != nullptr) {
-  // //   pThis->m_pActLED->Off();
-  // // }
-
-  // // Return early if stopped
-  // if (!pThis->m_bRunning) return;
-
-  // // CDMAChannel dma = pThis->m_DMABufferIdx == 0 ? pThis->m_DMA : pThis->m_DMA_2;
-
-  // // Save pointer to buffer just filled by DMA
-  // ZX_DMA_T *pBuffer = pThis->m_pDMABuffer;
-
-  // // Move to the next DMA buffer
-  // pThis->m_DMABufferIdx = (pThis->m_DMABufferIdx + 1) % ZX_DMA_BUFFER_COUNT;
-  // pThis->m_pDMABuffer = pThis->m_pDMABuffers[pThis->m_DMABufferIdx];
-
-  // // (Re-)Start the DMA
-  // pThis->DMAStart();
-
-
-  // Process the buffer (TODO - this should happen in a bottom half)
-  // boolean have1 = FALSE;
-  // for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {    
-  //   if (pBuffer[i] > 0) {
-  //     have1 = TRUE;
-  //   }
-  // }
-
-  // if (have1) {
-  //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
-  // }
-
-  // if (pThis->m_bDMAResult) {
-  //   pThis->m_pActLED->On();
-  // } else {
-  //   pThis->m_pActLED->Off();
-  // }
-
-  // for (unsigned i = 0; i < ZX_DMA_BUFFER_LENGTH; i++) {   
-  //   ZX_DMA_T value = pBuffer[i];
-  //   if (value > 0) {
-  //     pThis->m_counter++;
-
-  //     // pThis->m_value = value;
-
-
-  //     // TODO: BORDER detection is sort of working, but I have reduced the SMI clock duration
-  //     // Instead, there should be an IOWrite counter.
-
-  //     // INT length is 282ns (One scan line is 64us)
-
-  //     // CAS ULA detection works by measuring time between 2 CAS pulses. Should be between 
-  //     // 200ns - 400ns, but NOT longer, otherwise it's a CPU read
-
-  //     // Check for /IOREQ = 0 (/IOREQ = /IORQ | /A0)
-  //     if (!pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 13))) == 0) {
-  //       // pThis->m_value = value; // & 0x07;  // Only interested in first 3 bits
-  //       pThis->m_isIOWrite = true;        
-  //     }      
-  //     else if (pThis->m_isIOWrite && (value & ((1 << 15) | (1 << 14) | (1 << 13))) == 0) {
-  //       // pThis->m_value = value & 0x07;  // Only interested in first 3 bits for the border colour
-  //       pThis->m_value = value;
-  //       pThis->m_isIOWrite = false;        
-  //     }    
-  //   }
-  // }
-  
-  // if (pThis->m_counter > 10000000) {
-  //   pThis->m_counter = 0;
-  //   pThis->m_bDMAResult = !pThis->m_bDMAResult;
-   
-  //   if (pThis->m_bDMAResult) {
-  //     pThis->m_pActLED->On();
-  //   } else {
-  //     pThis->m_pActLED->Off();
-  //   }
-  // }
-
-}
-
 
 
 

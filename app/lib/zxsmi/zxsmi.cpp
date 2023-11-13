@@ -83,8 +83,8 @@ CZxSmi::CZxSmi (CGPIOManager *pGPIOManager, CInterruptSystem *pInterruptSystem)
   m_pDMAControlBlock4(0),
 	m_pDMABuffer(0),
 	m_nDMABufferIdx(0),
-  m_nDMABufferLenBytes(ZX_DMA_BUFFER_LENGTH),
-	m_nDMABufferLenWords(ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T)),
+  m_nDMABufferLenBytes(ZX_DMA_BUFFER_LENGTH / sizeof(ZX_DMA_T)),
+	m_nDMABufferLenWords(ZX_DMA_BUFFER_LENGTH),
   m_pRawVideoData (0),
   m_pBorderTimingBuffer (0),
   m_nBorderTimingWriteIdx(0),
@@ -379,8 +379,8 @@ void CZxSmi::DMAStart()
 
 //   CleanAndInvalidateDataCacheRange((uintptr)pDataIn, dataLen);
 
-//   unsigned dmaBufferLenWords = ZX_DMA_BUFFER_LENGTH;
-//   unsigned dmaBufferLenBytes = ZX_DMA_BUFFER_LENGTH * sizeof(ZX_DMA_T);
+//   unsigned dmaBufferLenWords = ZX_DMA_BUFFER_LENGTH / sizeof(ZX_DMA_T);
+//   unsigned dmaBufferLenBytes = ZX_DMA_BUFFER_LENGTH;
   
 //   // m_pDMAControlBlock1->SetupMemCopy (pDataOut, pDataIn, 4);
 //   m_pDMAControlBlock1->SetupIOWrite (ARM_SMI_CS, pDataIn, 4, DREQSourceNone);

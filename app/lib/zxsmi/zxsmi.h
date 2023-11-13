@@ -121,22 +121,13 @@
 
 // SMI DMA
 #define ZX_DMA_T					u16
-// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 4) / sizeof(ZX_DMA_T))
-#define ZX_DMA_BUFFER_LENGTH		((1024 * 1024 * 2) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((1024 * 1024) / sizeof(ZX_DMA_T))  // This currently uses up our entire loop time!
-// #define ZX_DMA_BUFFER_LENGTH		((820 * 1024) / sizeof(ZX_DMA_T))	// Solid in DD2, should try really complex game
-// #define ZX_DMA_BUFFER_LENGTH		((768 * 1024) / sizeof(ZX_DMA_T))	// This is long enough for the test cart - not sure in real situations (not for DD2!)
-// #define ZX_DMA_BUFFER_LENGTH		((512 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((256 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((220 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((160 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((144 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((128 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((96 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((64 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((32 * 1024) / sizeof(ZX_DMA_T))
-// #define ZX_DMA_BUFFER_LENGTH		((1 * 1024) / sizeof(ZX_DMA_T))
+// #define ZX_DMA_BUFFER_LENGTH		(1024 * 1024 * 4)
+#define ZX_DMA_BUFFER_LENGTH		(1024 * 1024 * 2)
+// #define ZX_DMA_BUFFER_LENGTH		(1024 * 1024)
+// #define ZX_DMA_BUFFER_LENGTH		(1024 * 1024)   // This currently uses up our entire loop time (but not long enough for JetPac)!
+// #define ZX_DMA_BUFFER_LENGTH		(820 * 1024)	// Solid in DD2, should try really complex game
+// #define ZX_DMA_BUFFER_LENGTH		(768 * 1024)	// This is long enough for the test cart - not sure in real situations (not for DD2!)
+// #define ZX_DMA_BUFFER_LENGTH		(1 * 1024)
 #define ZX_DMA_BUFFER_COUNT			2
 #define ZX_DMA_CHANNEL_TYPE		DMA_CHANNEL_NORMAL
 // #define ZX_DMA_CHANNEL_TYPE		DMA_CHANNEL_LITE
@@ -148,14 +139,14 @@
 // Theorectically the border colour can be changed every IO write. 
 // - On the Z80, it takes 4 clock cycles to perform an IO write. 
 // - The ZX Spectrum runs at 3.5MHz, so 4 clock cycles is 1.14us.
-// - A screen frame take 50Hz, so 1/50 = 20ms.
+// - A screen frame takes 50Hz, so 1/50 = 20ms.
 // - So, the border colour can be changed 20ms / 1.14us = 17543 times per frame.
 // - Each IO write we need to record a us timestamp, which is sizeof(unsigned) = 4 bytes.
 //  
 // Memory on the PI as a microcontroller is cheap! 
 // We'll make the buffer 1024 * 20 = 20480 words long, which is 81920 bytes (80kB).
 #define ZX_BORDER_TIME_T					u32	
-#define ZX_BORDER_TIMING_BUFFER_LENGTH		((1024 * 20) / sizeof(ZX_DMA_T))
+#define ZX_BORDER_TIMING_BUFFER_LENGTH		(1024 * 20)
 
 typedef struct {
 	unsigned nFrame;
