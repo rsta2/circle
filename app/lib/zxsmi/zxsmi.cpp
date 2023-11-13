@@ -717,7 +717,6 @@ void CZxSmi::GpioBorderIrqHandler (void *pParam)
     pBuf[pThis->m_nBorderTimingWriteIdx++] = CTimer::Get()->GetClockTicks() - pRawVideoData->nFrameStartTime;
     // pBuf[0] = CTimer::Get()->GetClockTicks();
   }
-  // TODO - all buffer count to video data, and print it out now and then.
 
 
   // if (pThis->m_counter <= 0) {

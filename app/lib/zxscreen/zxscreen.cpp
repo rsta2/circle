@@ -717,8 +717,13 @@ inline void processUlaIoWrite(
 
         // Convert the times to pixel 'byte' counts (since the border is written in 8 pixel blocks)
         // TODO: It might be better to round these values, rather than truncate
-        u32 pixelByteCountPrev = (u32)(borderWriteTimePrevUs / ZX_BORDER_TIME_TO_PIXEL_RATIO);
-        u32 pixelByteCount = (u32)(borderWriteTimeUs / ZX_BORDER_TIME_TO_PIXEL_RATIO);
+        u32 pixelByteCountPrev = borderWriteTimePrevUs / ZX_BORDER_TIME_TO_PIXEL_RATIO;
+        u32 pixelByteCount = borderWriteTimeUs / ZX_BORDER_TIME_TO_PIXEL_RATIO;        
+        if (false) {
+          u32 divisorMinus1 = ZX_BORDER_TIME_TO_PIXEL_RATIO - 1;
+          pixelByteCountPrev = (borderWriteTimePrevUs + divisorMinus1)  / ZX_BORDER_TIME_TO_PIXEL_RATIO;
+          pixelByteCount = (borderWriteTimeUs + divisorMinus1) / ZX_BORDER_TIME_TO_PIXEL_RATIO;
+        }
 
         // Fill the border data between the previous border colour write and this one with the previous colour
         u32 idxPrev = pixelByteCountPrev;
@@ -862,8 +867,11 @@ void CZxScreen::CopyZxBorderDataToZxScreenBuffer(u32 frameNo) {
 
     u32 idx = i + 16; // Add the 16 byte offset
 
-    u32 zxBorderX = i % 56;
-    u32 zxBorderY = i / 56;
+    // Interrupt processing delay offset (will be PI dependent)
+    idx -= 1;
+
+    u32 zxBorderX = idx % 56;
+    u32 zxBorderY = idx / 56;
 
 
     // Map the ZX border position to the screen buffer XY position
