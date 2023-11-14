@@ -33,7 +33,11 @@
 //
 // Hardware Random Number Generator RNG200
 //
+#if RASPPI == 4
 #define ARM_HW_RNG200_BASE	(ARM_IO_BASE + 0x104000)
+#else
+#define ARM_HW_RNG200_BASE	(ARM_IO_BASE + 0x1208000UL)
+#endif
 
 //
 // Generic Interrupt Controller (GIC-400)
