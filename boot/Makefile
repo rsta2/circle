@@ -11,18 +11,19 @@
 # Use most recent firmware test revision
 #FIRMWARE = master
 
-# Use firmware revision built/committed on: Mar 17 2023
-FIRMWARE ?= a585b376a2e7e657287543d196ae1f8881ede559
+# Use firmware revision built/committed on: Oct 17 2023/Oct 30 2023
+FIRMWARE ?= c2743f561db19ccc4923eaf715d81db3d15f5c1c
 
 BASEURL = https://github.com/raspberrypi/firmware/blob/$(FIRMWARE)/boot
 
 FILES = LICENCE.broadcom COPYING.linux \
 	bootcode.bin start.elf fixup.dat start4.elf fixup4.dat \
 	start_cd.elf fixup_cd.dat start4cd.elf fixup4cd.dat \
-	bcm2710-rpi-zero-2-w.dtb bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb bcm2711-rpi-cm4.dtb
+	bcm2710-rpi-zero-2-w.dtb bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb bcm2711-rpi-cm4.dtb \
+	bcm2712-rpi-5-b.dtb
 
 FILES32 = armstub7-rpi4.bin kernel.img kernel7.img kernel7l.img
-FILES64 = armstub8-rpi4.bin kernel8.img kernel8-rpi4.img
+FILES64 = armstub8-rpi4.bin kernel8.img kernel8-rpi4.img kernel_2712.img
 
 firmware: clean
 	@for file in $(FILES) ; \
@@ -44,8 +45,10 @@ bootloader:
 bootloader64:
 	make -C "../tools/bootloader" kernel8.img
 	make -C "../tools/bootloader" kernel8-rpi4.img
+	make -C "../tools/bootloader" kernel_2712.img
 	cp ../tools/bootloader/kernel8.img .
 	cp ../tools/bootloader/kernel8-rpi4.img .
+	cp ../tools/bootloader/kernel_2712.img .
 
 .PHONY: armstub
 armstub:
