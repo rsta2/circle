@@ -600,13 +600,9 @@ void CZxSmi::GpioIntIrqHandler (void *pParam)
   // Record the frame start time
   pRawVideoData->nFrameStartTime = CTimer::Get()->GetClockTicks();
 
-  // This delay is important to ensure that the last video bytes are flushed out of the SMI FIFO when running
-  // at slower sample rates. Without this, the last few bytes of the frame are lost.
-  // At higher sample rates the delay is not needed, but it makes more sense to have a lower sample rate and
-  // therefore lower power consumption.
+  // This delay is important to ensure that the last video bytes are flushed out of the SMI FIFO.
+  // Without this, the last few bytes of the frame are lost.
   CTimer::SimpleusDelay(1);
-
-
 
 
   // // Stop the current DMA transfer if still in progress (NOT SURE IF NECESSARY)
