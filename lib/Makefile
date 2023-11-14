@@ -50,7 +50,7 @@ else
 OBJS	+= $(OBJS64)
 endif
 
-ifneq ($(strip $(RASPPI)),4)
+ifneq ($(filter 1 2 3,$(RASPPI)),)
 OBJS	+= bcmrandom.o interrupt.o mphi.o
 else
 OBJS	+= bcm54213.o bcmpciehostbridge.o bcmrandom200.o interruptgic.o dma4channel.o \

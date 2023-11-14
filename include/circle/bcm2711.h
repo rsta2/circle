@@ -2,7 +2,7 @@
 // bcm2711.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,9 +38,15 @@
 //
 // Generic Interrupt Controller (GIC-400)
 //
+#if RASPPI == 4
 #define ARM_GICD_BASE		0xFF841000
 #define ARM_GICC_BASE		0xFF842000
 #define ARM_GIC_END		0xFF847FFF
+#else
+#define ARM_GICD_BASE		(ARM_IO_BASE + 0x3FF9000UL)
+#define ARM_GICC_BASE		(ARM_IO_BASE + 0x3FFA000UL)
+#define ARM_GIC_END		(ARM_IO_BASE + 0x3FFFFFFUL)
+#endif
 
 //
 // BCM54213PE Gigabit Ethernet Transceiver (external)

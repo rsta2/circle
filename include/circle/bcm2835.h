@@ -26,10 +26,17 @@
 #define ARM_IO_BASE		0x20000000
 #elif RASPPI <= 3
 #define ARM_IO_BASE		0x3F000000
-#else
+#elif RASPPI == 4
 #define ARM_IO_BASE		0xFE000000
+#else
+#define ARM_IO_BASE		0x107C000000UL
 #endif
+
+#if RASPPI <= 4
 #define ARM_IO_END		(ARM_IO_BASE + 0xFFFFFF)
+#else
+#define ARM_IO_END		(ARM_IO_BASE + 0x3FFFFFF)
+#endif
 
 #define GPU_IO_BASE		0x7E000000
 
@@ -147,7 +154,11 @@
 //
 // Mailbox
 //
+#if RASPPI <= 4
 #define MAILBOX_BASE		(ARM_IO_BASE + 0xB880)
+#else
+#define MAILBOX_BASE		(ARM_IO_BASE + 0x13880)
+#endif
 
 #define MAILBOX0_READ  		(MAILBOX_BASE + 0x00)
 #define MAILBOX0_STATUS 	(MAILBOX_BASE + 0x18)
@@ -239,7 +250,11 @@
 //
 // Power Manager
 //
+#if RASPPI <= 4
 #define ARM_PM_BASE		(ARM_IO_BASE + 0x100000)
+#else
+#define ARM_PM_BASE		(ARM_IO_BASE + 0x1200000)
+#endif
 
 #define ARM_PM_RSTC		(ARM_PM_BASE + 0x1C)
 #define ARM_PM_RSTS		(ARM_PM_BASE + 0x20)

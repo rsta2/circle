@@ -97,6 +97,9 @@ void halt (void)
 	u64 nMPIDR;
 	asm volatile ("mrs %0, mpidr_el1" : "=r" (nMPIDR));
 #endif
+#if RASPPI >= 5
+	nMPIDR >>= 8;
+#endif
 	unsigned nCore = nMPIDR & (CORES-1);
 
 	// core 0 must not halt until all secondary cores have been halted
@@ -217,12 +220,12 @@ void sysinit (void)
 		halt ();
 	}
 
-	CMachineInfo MachineInfo;
-
 	CMemorySystem Memory;
 
+	CMachineInfo MachineInfo;
+
 #if RASPPI >= 4
-	MachineInfo.FetchDTB ();
+	Memory.SetupHighMem ();
 #endif
 
 	// set circle_version_string[]

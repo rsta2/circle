@@ -4,7 +4,7 @@
 // Memory addresses and sizes (for AArch64)
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -78,6 +78,12 @@
 #define MEM_PCIE_DMA_RANGE_START	0UL
 #define MEM_PCIE_DMA_RANGE_SIZE		0x100000000UL
 #define MEM_PCIE_DMA_RANGE_PCIE_START	0UL			// mapping on PCIe side
+#endif
+
+#if RASPPI >= 5
+// I/O memory region of the Raspberry Pi 5
+#define MEM_IOMEM_START			0x1060000000UL
+#define MEM_IOMEM_END			0x107FFFFFFFUL
 #endif
 
 #endif

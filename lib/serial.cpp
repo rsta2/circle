@@ -2,7 +2,7 @@
 // serial.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -105,6 +105,8 @@
 #define INT_DCDM		(1 << 2)
 #define INT_CTSM		(1 << 1)
 
+#if RASPPI <= 4
+
 static uintptr s_BaseAddress[SERIAL_DEVICES] =
 {
 	ARM_IO_BASE + 0x201000,
@@ -143,6 +145,15 @@ static unsigned s_GPIOConfig[SERIAL_DEVICES][GPIOS][VALUES] =
 #define ALT_FUNC(device, gpio)	((TGPIOMode) (  s_GPIOConfig[device][gpio][VALUE_ALT] \
 					      + GPIOModeAlternateFunction0))
 
+#else
+
+static uintptr s_BaseAddress[SERIAL_DEVICES] =
+{
+	ARM_IO_BASE + 0x1001000
+};
+
+#endif
+
 unsigned CSerialDevice::s_nInterruptUseCount = 0;
 CInterruptSystem *CSerialDevice::s_pInterruptSystem = 0;
 boolean CSerialDevice::s_bUseFIQ = FALSE;
@@ -168,7 +179,10 @@ CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFI
 #endif
 {
 	if (   m_nDevice >= SERIAL_DEVICES
-	    || s_GPIOConfig[nDevice][0][VALUE_PIN] >= GPIO_PINS)
+#if RASPPI <= 4
+	    || s_GPIOConfig[nDevice][0][VALUE_PIN] >= GPIO_PINS
+#endif
+	   )
 	{
 		return;
 	}
@@ -179,6 +193,7 @@ CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFI
 	m_nBaseAddress = s_BaseAddress[nDevice];
 	assert (m_nBaseAddress != 0);
 
+#if RASPPI <= 4
 #if SERIAL_GPIO_SELECT == 14
 	if (nDevice == 0)
 	{
@@ -197,6 +212,7 @@ CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFI
 	m_RxDPin.AssignPin (s_GPIOConfig[nDevice][GPIO_RXD][VALUE_PIN]);
 	m_RxDPin.SetMode (ALT_FUNC (nDevice, GPIO_RXD));
 	m_RxDPin.SetPullMode (GPIOPullModeUp);
+#endif
 
 	m_bValid = TRUE;
 }
@@ -237,8 +253,10 @@ CSerialDevice::~CSerialDevice (void)
 		s_bUseFIQ = FALSE;
 	}
 
+#if RASPPI <= 4
 	m_TxDPin.SetMode (GPIOModeInput);
 	m_RxDPin.SetMode (GPIOModeInput);
+#endif
 
 	s_pThis[m_nDevice] = 0;
 	m_bValid = FALSE;

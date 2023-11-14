@@ -76,7 +76,8 @@ s_NewInfo[]
 	{18, MachineModelZero2W,	3},
 	{19, MachineModel400,		4},
 	{20, MachineModelCM4,		4},
-	{21, MachineModelCM4S,		4}
+	{21, MachineModelCM4S,		4},
+	{23, MachineModel5,		5}
 };
 
 static const char *s_MachineName[] =		// must match TMachineModel
@@ -101,6 +102,7 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Raspberry Pi 400",
 	"Compute Module 4",
 	"Compute Module 4S",
+	"Raspberry Pi 5",
 	"Unknown"
 };
 
@@ -110,6 +112,7 @@ static const char *s_SoCName[] =		// must match TSoCType
 	"BCM2836",
 	"BCM2837",
 	"BCM2711",
+	"BCM2712",
 	"Unknown"
 };
 
@@ -135,6 +138,7 @@ static unsigned s_ActLEDInfo[] =		// must match TMachineModel
 	42,				// 400
 	42,				// CM4
 	0 | ACTLED_VIRTUAL_PIN,		// CM4S
+	9 | ACTLED_ACTIVE_LOW,		// 5	 (at GPIO chip #2)
 
 	ACTLED_UNKNOWN			// Unknown
 };
@@ -168,7 +172,11 @@ CMachineInfo::CMachineInfo (void)
 	}
 	s_pThis = this;
 
-	CBcmPropertyTags Tags (TRUE);
+#if RASPPI >= 4
+	FetchDTB ();
+#endif
+
+	CBcmPropertyTags Tags;
 	TPropertyTagSimple DMAChannels;
 	if (Tags.GetTag (PROPTAG_GET_DMA_CHANNELS, &DMAChannels, sizeof DMAChannels))
 	{
@@ -178,7 +186,21 @@ CMachineInfo::CMachineInfo (void)
 	TPropertyTagSimple BoardRevision;
 	if (!Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
 	{
+#if RASPPI >= 4
+		const TDeviceTreeNode *pSystemNode;
+		const TDeviceTreeProperty *pRevision;
+
+		if (   !m_pDTB
+		    || !(pSystemNode = m_pDTB->FindNode ("/system"))
+		    || !(pRevision = m_pDTB->FindProperty (pSystemNode, "linux,revision")))
+		{
+			return;
+		}
+
+		BoardRevision.nValue = m_pDTB->GetPropertyValueWord (pRevision, 0);
+#else
 		return;
+#endif
 	}
 
 	m_nRevisionRaw = BoardRevision.nValue;
@@ -331,7 +353,11 @@ unsigned CMachineInfo::GetClockRate (u32 nClockId) const
 		break;
 
 	case CLOCK_ID_UART:
+#if RASPPI <= 4
 		nResult = 48000000;
+#else
+		nResult = 44000000;
+#endif
 		break;
 
 	case CLOCK_ID_CORE:
@@ -566,6 +592,11 @@ void CMachineInfo::FetchDTB (void)
 
 		*pDTBPtr = 0;		// does not work with chain boot, disable it
 	}
+}
+
+const CDeviceTreeBlob *CMachineInfo::GetDTB (void) const
+{
+	return m_pDTB;
 }
 
 TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const

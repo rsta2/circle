@@ -2,7 +2,7 @@
 // machineinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ enum TMachineModel
 	MachineModel400,
 	MachineModelCM4,
 	MachineModelCM4S,
+	MachineModel5,
 	MachineModelUnknown
 };
 
@@ -57,6 +58,7 @@ enum TSoCType
 	SoCTypeBCM2836,
 	SoCTypeBCM2837,
 	SoCTypeBCM2711,
+	SoCTypeBCM2712,
 	SoCTypeUnknown
 };
 
@@ -133,6 +135,8 @@ public:
 #if RASPPI >= 4
 	// Devicetree blob handling
 	void FetchDTB (void);
+
+	const CDeviceTreeBlob *GetDTB (void) const;
 
 	TMemoryWindow GetPCIeDMAMemory (void) const;
 #endif

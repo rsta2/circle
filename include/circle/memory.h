@@ -2,7 +2,7 @@
 // memory.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,6 +38,10 @@ public:
 	~CMemorySystem (void);
 
 	void Destructor (void);		// explicit callable
+
+#if RASPPI >= 4
+	void SetupHighMem (void);
+#endif
 
 #ifdef ARM_ALLOW_MULTI_CORE
 	void InitializeSecondary (void);
