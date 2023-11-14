@@ -90,10 +90,6 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 		assert (m_pPageTable != 0);
 
 		EnableMMU ();
-
-#ifdef ARM_ALLOW_MULTI_CORE
-		CSpinLock::Enable ();
-#endif
 	}
 }
 
