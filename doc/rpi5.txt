@@ -1,0 +1,77 @@
+RASPBERRY PI 5
+
+This file gives information about the Raspberry Pi 5 support in Circle.
+
+
+FEATURES
+
+Currently is only a small subset of features supported:
+
+* System init and reboot
+* MMU and cache support
+* Memory allocation (with 3 GB high memory max. so far)
+* Property mailbox (subset of functions only)
+* ActLED
+* GIC interrupt controller (IRQ only)
+* 1 UART (via UART connector, including IRQ support)
+* Framebuffer and screen device
+* Multi-core support and spin locks
+* Hardware random number generator
+* Scheduler library
+* Bootloader (via UART connector)
+
+Most external hardware interfaces (GPIO, I2C etc.) are part of the RP1
+southbridge and are not supported yet.
+
+The Cortex-A76 CPU of the Raspberry Pi 5 supports only AArch64 in the mode,
+which is used by Circle (EL1), so AArch32 is and will not be supported.
+
+
+BUILDING
+
+The *Config.mk* for the Raspberry Pi 5 looks like this:
+
+	AARCH = 64
+	RASPPI = 5
+	PREFIX64 = aarch64-none-elf-
+	DEFINE += -DARM_ALLOW_MULTI_CORE	# optional
+
+It can be created using:
+
+	./configure -r 5 [ --multicore ]
+
+Build the base library using:
+
+	cd lib
+	make
+
+Optionally build the scheduler library using:
+
+	cd lib/sched
+	make
+
+Go to the sample directory of your choice (see below) and enter:
+
+	make
+
+
+INSTALLING
+
+The resulting kernel image file has the name kernel_2712.img. Additionally the
+following files are required on the SD card:
+
+* bcm2712-rpi-5-b.dtb (can be downloaded in boot/)
+* config.txt (copy boot/config64.txt and rename it)
+
+
+SAMPLES
+
+Currently the following sample programs are operational:
+
+* 01-gpiosimple (no audio clicks)
+* 02-screenpixel
+* 03-screentext
+* 04-timer
+* 17-fractal (multi-core supported)
+* 19-tasks (requires scheduler library)
+* 24-hwrandom
