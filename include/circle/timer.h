@@ -66,6 +66,9 @@ public:
 
 	/// \return Current clock ticks of an 1 MHz counter, may wrap
 	static unsigned GetClockTicks (void);
+
+	/// \return Current clock ticks of an 1 MHz counter (continuous)
+	static u64 GetClockTicks64 (void);
 #define CLOCKHZ	1000000
 
 	/// \return 1/HZ seconds since system boot, may wrap

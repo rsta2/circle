@@ -239,6 +239,44 @@ unsigned CTimer::GetClockTicks (void)
 #endif
 }
 
+u64 CTimer::GetClockTicks64 (void)
+{
+#ifndef USE_PHYSICAL_COUNTER
+	PeripheralEntry ();
+
+	u32 hi = read32 (ARM_SYSTIMER_CHI);
+	u32 lo = read32 (ARM_SYSTIMER_CLO);
+
+	// double check hi value didn't change when retrieving lo...
+	if (hi != read32 (ARM_SYSTIMER_CHI)) {
+		hi = read32 (ARM_SYSTIMER_CHI);
+		lo = read32 (ARM_SYSTIMER_CLO);
+	}
+
+	PeripheralExit ();
+
+	return static_cast<u64> (hi) << 32 | lo;
+#else
+#if AARCH == 32
+	InstructionSyncBarrier ();
+
+	u32 nCNTPCTLow, nCNTPCTHigh;
+	asm volatile ("mrrc p15, 0, %0, %1, c14" : "=r" (nCNTPCTLow), "=r" (nCNTPCTHigh));
+
+	return static_cast<u64> (nCNTPCTHigh) << 32 | nCNTPCTLow;
+#else
+	InstructionSyncBarrier ();
+
+	u64 nCNTPCT;
+	asm volatile ("mrs %0, CNTPCT_EL0" : "=r" (nCNTPCT));
+	u64 nCNTFRQ;
+	asm volatile ("mrs %0, CNTFRQ_EL0" : "=r" (nCNTFRQ));
+
+	return nCNTPCT * CLOCKHZ / nCNTFRQ;
+#endif
+#endif
+}
+
 unsigned CTimer::GetTicks (void) const
 {
 	return m_nTicks;
