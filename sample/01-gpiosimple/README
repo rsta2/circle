@@ -1,3 +1,5 @@
 README
 
-The Act LED flashes 10 times and on the 3.5mm headphone jack 10 "clicks" are generated at the same time. Then the system reboots.
+The Act LED flashes 10 times and on the 3.5mm headphone jack (not available on
+Raspberry Pi 5) 10 "clicks" are generated at the same time. Then the system
+reboots.
