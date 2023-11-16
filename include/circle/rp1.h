@@ -1,8 +1,5 @@
 //
-// bcm2712.h
-//
-// Memory I/O addresses of peripherals, which were introduced
-// with the Raspberry Pi 5
+// rp1.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023  R. Stange <rsta2@o2online.de>
@@ -20,38 +17,41 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_bcm2712_h
-#define _circle_bcm2712_h
+#ifndef _circle_rp1_h
+#define _circle_rp1_h
 
 #if RASPPI >= 5
 
-#include <circle/bcm2835.h>
+#include <circle/interrupt.h>
+#include <circle/bcmpciehostbridge.h>
+#include <circle/types.h>
 
-//
-// General Purpose I/O #0 (RP1)
-//
-#define ARM_GPIO0_IO_BASE	0x1F000D0000UL		// IO_BANK0
-#define ARM_GPIO0_PADS_BASE	0x1F000F0000UL		// PADS_BANK0
+class CRP1	/// Driver for the RP1 multi-function device of the Raspberry Pi 5
+{
+public:
+	/// \param pInterrupt Pointer to the interrupt system object
+	CRP1 (CInterruptSystem *pInterrupt);
 
-//
-// General Purpose I/O #2
-//
-#define ARM_GPIO2_BASE		(ARM_IO_BASE + 0x1517C00)
+	~CRP1 (void);
 
-#define ARM_GPIO2_DATA0		(ARM_GPIO2_BASE + 0x04)
-#define ARM_GPIO2_IODIR0	(ARM_GPIO2_BASE + 0x08)
+	/// \return Operation successful?
+	boolean Initialize (void);
 
-//
-// Reset controller
-//
-#define ARM_RESET_BASE		0x1001504318UL
-#define ARM_RESET_END		(ARM_RESET_BASE + 0x2F)
+#ifndef NDEBUG
+	void DumpStatus (void);
+#endif
 
-//
-// PCIe rescal reset controller
-//
-#define ARM_RESET_RESCAL_BASE	0x1000119500UL
-#define ARM_RESET_RESCAL_END	(ARM_RESET_RESCAL_BASE + 0x0F)
+	/// \return Has RP1 already been initialized?
+	static boolean IsInitialized (void)
+	{
+		return s_bIsInitialized;
+	}
+
+private:
+	CBcmPCIeHostBridge m_PCIe;
+
+	static boolean s_bIsInitialized;
+};
 
 #endif
 

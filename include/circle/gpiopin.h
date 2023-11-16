@@ -2,7 +2,7 @@
 // gpiopin.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,9 @@
 #include <circle/types.h>
 
 #define GPIO_PINS	54
+
+#define LOW		0
+#define HIGH		1
 
 enum TGPIOVirtualPin
 {
@@ -66,9 +69,15 @@ enum TGPIOInterrupt
 	GPIOInterruptUnknown
 };
 
+#if RASPPI >= 5
+	#include <circle/gpiopin2712.h>
+#else
+
 typedef void TGPIOInterruptHandler (void *pParam);
 
 class CGPIOManager;
+
+/// \note For the Raspberry Pi 5 is only a subset of methods supported.
 
 class CGPIOPin		/// Encapsulates a GPIO pin
 {
@@ -98,8 +107,6 @@ public:
 	void Write (unsigned nValue);
 	/// \return Value read from pin (LOW or HIGH)
 	unsigned Read (void) const;
-#define LOW		0
-#define HIGH		1
 
 	/// \brief Write inverted value to pin
 	void Invert (void);
@@ -153,5 +160,7 @@ protected:
 
 	static CSpinLock s_SpinLock;
 };
+
+#endif
 
 #endif

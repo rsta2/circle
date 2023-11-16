@@ -68,22 +68,42 @@
 #define MEM_HIGHMEM_END			(3 * GIGABYTE - 1)
 
 // PCIe memory range (outbound)
+#if RASPPI == 4
 #define MEM_PCIE_RANGE_START		0x600000000UL
 #define MEM_PCIE_RANGE_SIZE		0x4000000UL
 #define MEM_PCIE_RANGE_PCIE_START	0xF8000000UL		// mapping on PCIe side
+#else
+#define MEM_PCIE_RANGE_START		0x1F00000000UL
+#define MEM_PCIE_RANGE_SIZE		0xFFFFFFFCUL
+#define MEM_PCIE_RANGE_PCIE_START	0x0000000000UL		// mapping on PCIe side
+#endif
 #define MEM_PCIE_RANGE_START_VIRTUAL	MEM_PCIE_RANGE_START
 #define MEM_PCIE_RANGE_END_VIRTUAL	(MEM_PCIE_RANGE_START_VIRTUAL + MEM_PCIE_RANGE_SIZE - 1UL)
 
 // PCIe memory range (inbound)
+#if RASPPI == 4
 #define MEM_PCIE_DMA_RANGE_START	0UL
 #define MEM_PCIE_DMA_RANGE_SIZE		0x100000000UL
 #define MEM_PCIE_DMA_RANGE_PCIE_START	0UL			// mapping on PCIe side
+#else
+#define MEM_PCIE_DMA_RANGE_START	0UL
+#define MEM_PCIE_DMA_RANGE_SIZE		0x1000000000UL
+#define MEM_PCIE_DMA_RANGE_PCIE_START	0x1000000000UL		// mapping on PCIe side
 #endif
 
+#endif	// #if RASPPI >= 4
+
 #if RASPPI >= 5
-// I/O memory region of the Raspberry Pi 5
-#define MEM_IOMEM_START			0x1060000000UL
-#define MEM_IOMEM_END			0x107FFFFFFFUL
+// I/O memory regions of the Raspberry Pi 5
+// (regions must have a size of a multiple of 512 MB)
+#define MEM_IOMEM_AXI_START		0x1000000000UL		// AXI peripherals
+#define MEM_IOMEM_AXI_END		0x101FFFFFFFUL
+
+#define MEM_IOMEM_SOC_START		0x1060000000UL		// SoC peripherals
+#define MEM_IOMEM_SOC_END		0x107FFFFFFFUL
+
+#define MEM_IOMEM_PCIE_START		0x1F00000000UL		// PCI Bus 0000:01
+#define MEM_IOMEM_PCIE_END		0x1F1FFFFFFFUL
 #endif
 
 #endif

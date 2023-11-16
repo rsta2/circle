@@ -65,8 +65,9 @@ CTranslationTable::CTranslationTable (size_t nMemSize)
 		}
 #elif RASPPI >= 5
 		if (   nBaseAddress >= 4*GIGABYTE
-		    && !(   MEM_IOMEM_START <= nBaseAddress
-			 && nBaseAddress <= MEM_IOMEM_END))
+		    && !(MEM_IOMEM_AXI_START <= nBaseAddress && nBaseAddress <= MEM_IOMEM_AXI_END)
+		    && !(MEM_IOMEM_SOC_START <= nBaseAddress && nBaseAddress <= MEM_IOMEM_SOC_END)
+		    && !(MEM_IOMEM_PCIE_START <= nBaseAddress && nBaseAddress <= MEM_IOMEM_PCIE_END))
 		{
 			continue;
 		}

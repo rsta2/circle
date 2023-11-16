@@ -63,7 +63,11 @@
 //
 // PCIe Host Bridge
 //
+#if RASPPI == 4
 #define ARM_PCIE_HOST_BASE	0xFD500000
+#else
+#define ARM_PCIE_HOST_BASE	0x1000120000UL
+#endif
 #define ARM_PCIE_HOST_END	(ARM_PCIE_HOST_BASE + 0x930F)
 
 //

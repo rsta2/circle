@@ -609,6 +609,7 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
 
 	TMemoryWindow Result;
 
+#if RASPPI == 4
 	if (m_pDTB != 0)
 	{
 		const TDeviceTreeNode *pPCIe = m_pDTB->FindNode ("/scb/pcie@7d500000");
@@ -643,6 +644,11 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
 			Result.BusAddress = 0x400000000ULL;
 		}
 	}
+#else
+	Result.BusAddress = MEM_PCIE_DMA_RANGE_PCIE_START;
+	Result.CPUAddress = MEM_PCIE_DMA_RANGE_START;
+	Result.Size = (u64) m_nRAMSize * MEGABYTE;
+#endif
 
 	return Result;
 }

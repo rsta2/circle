@@ -46,6 +46,7 @@ Base library
 * CPtrList: Container class. List of pointers.
 * CPtrListFIQ: Container class. List of pointers, usable from FIQ_LEVEL.
 * CPWMOutput: Pulse Width Modulator output (2 channels).
+* CRP1: Driver for the RP1 multi-function device of the Raspberry Pi 5.
 * CScreenDevice: Writing characters to screen, some escape sequences (some are not yet implemented)
 * CSerialDevice: Driver for PL011 UART, interrupt or polling mode
 * CSMIMaster: Driver for the Second Memory Interface.
