@@ -30,7 +30,7 @@ const TUSBDeviceDescriptor CUSBCDCGadget::s_DeviceDescriptor =
 	0, 0, 0,
 	64,				// wMaxPacketSize0
 	USB_GADGET_VENDOR_ID,
-	USB_GADGET_DEVICE_ID_BASE,
+	USB_GADGET_DEVICE_ID_BASE+1,
 	0x100,				// bcdDevice
 	1, 2, 0,			// strings
 	1

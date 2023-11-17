@@ -60,7 +60,7 @@ PACKED;
 typedef void TCDCGadgetReceiveHandler (void *pBuffer, unsigned nLength);
 
 
-class CUSBCDCGadget : public CDWUSBGadget, CDevice	/// USB CDC gadget
+class CUSBCDCGadget : public CDWUSBGadget, public CDevice	/// USB CDC gadget
 {
 public:
 	/// \param pInterruptSystem Pointer to the interrupt system object
