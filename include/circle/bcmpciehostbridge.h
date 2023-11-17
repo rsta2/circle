@@ -127,7 +127,6 @@ private:
 
 private:
 	CInterruptSystem	*m_pInterrupt;
-	CTimer			*m_pTimer;
 
 	uintptr			 m_base;		// mmio base address
 	unsigned		 m_rev;			// controller revision

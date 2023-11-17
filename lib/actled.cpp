@@ -27,8 +27,10 @@
 CActLED *CActLED::s_pThis = 0;
 
 CActLED::CActLED (boolean bSafeMode)
+#if RASPPI <= 4
 :	m_pPin (0),
 	m_pVirtualPin (0)
+#endif
 {
 	s_pThis = this;
 
