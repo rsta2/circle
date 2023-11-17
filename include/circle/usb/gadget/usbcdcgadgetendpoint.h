@@ -1,6 +1,8 @@
 //
 // usbcdcgadgetendpoint.h
 //
+// This file by Sebastien Nicolas <seba1978@gmx.de>
+//
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023  R. Stange <rsta2@o2online.de>
 //
