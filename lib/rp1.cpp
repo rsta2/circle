@@ -107,22 +107,28 @@ boolean CRP1::Initialize (void)
 void CRP1::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
 {
 	assert (s_bIsInitialized);
+	assert (nIRQ & IRQ_FROM_RP1__MASK);
+	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
+	nIRQ &= IRQ_NUMBER__MASK;
 	assert (nIRQ < RP1_IRQ_LINES);
 	assert (!m_apIRQHandler[nIRQ]);
 
 	m_apIRQHandler[nIRQ] = pHandler;
 	m_pParam[nIRQ] = pParam;
 
-	EnableIRQ (nIRQ);
+	EnableIRQ (nIRQ | IRQ_FROM_RP1__MASK);
 }
 
 void CRP1::DisconnectIRQ (unsigned nIRQ)
 {
 	assert (s_bIsInitialized);
+	assert (nIRQ & IRQ_FROM_RP1__MASK);
+	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
+	nIRQ &= IRQ_NUMBER__MASK;
 	assert (nIRQ < RP1_IRQ_LINES);
 	assert (m_apIRQHandler[nIRQ]);
 
-	DisableIRQ (nIRQ);
+	DisableIRQ (nIRQ | IRQ_FROM_RP1__MASK);
 
 	m_apIRQHandler[nIRQ] = nullptr;
 	m_pParam[nIRQ] = nullptr;
@@ -130,6 +136,9 @@ void CRP1::DisconnectIRQ (unsigned nIRQ)
 
 void CRP1::EnableIRQ (unsigned nIRQ)
 {
+	assert (nIRQ & IRQ_FROM_RP1__MASK);
+	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
+	nIRQ &= IRQ_NUMBER__MASK;
 	assert (nIRQ < RP1_IRQ_LINES);
 	assert (s_pThis);
 	s_pThis->m_ulEnableMask |= BIT (nIRQ);
@@ -139,6 +148,9 @@ void CRP1::EnableIRQ (unsigned nIRQ)
 
 void CRP1::DisableIRQ (unsigned nIRQ)
 {
+	assert (nIRQ & IRQ_FROM_RP1__MASK);
+	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
+	nIRQ &= IRQ_NUMBER__MASK;
 	assert (nIRQ < RP1_IRQ_LINES);
 
 	write32 (INTC_REG_CLR + MSIX_CFG (nIRQ), MSIX_CFG_ENABLE);
@@ -201,10 +213,12 @@ void CRP1::InterruptHandler (void *pParam)
 			}
 			else
 			{
-				DisableIRQ (nIRQ);
+				DisableIRQ (nIRQ | IRQ_FROM_RP1__MASK);
 
 				LOGWARN ("Spurious IRQ (%u)", nIRQ);
 			}
+
+			// TODO: break;
 		}
 	}
 }

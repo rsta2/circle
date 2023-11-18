@@ -49,8 +49,8 @@ CGPIOManager::~CGPIOManager (void)
 
 	if (m_bIRQConnected)
 	{
-		// TODO: assert (m_pInterrupt != 0);
-		CRP1::Get ()->DisconnectIRQ (GPIO_IRQ);
+		assert (m_pInterrupt != 0);
+		m_pInterrupt->DisconnectIRQ (GPIO_IRQ);
 	}
 
 	m_pInterrupt = 0;
@@ -59,8 +59,8 @@ CGPIOManager::~CGPIOManager (void)
 boolean CGPIOManager::Initialize (void)
 {
 	assert (!m_bIRQConnected);
-	// TODO: assert (m_pInterrupt != 0);
-	CRP1::Get ()->ConnectIRQ (GPIO_IRQ, InterruptStub, this);
+	assert (m_pInterrupt != 0);
+	m_pInterrupt->ConnectIRQ (GPIO_IRQ, InterruptStub, this);
 	m_bIRQConnected = TRUE;
 
 	return TRUE;

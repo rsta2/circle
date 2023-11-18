@@ -26,6 +26,8 @@
 #include <circle/memio.h>
 #include <circle/logger.h>
 #include <circle/sysconfig.h>
+#include <circle/rp1.h>
+#include <circle/rp1int.h>
 #include <circle/types.h>
 #include <assert.h>
 
@@ -175,6 +177,18 @@ boolean CInterruptSystem::Initialize (void)
 
 void CInterruptSystem::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
 {
+#if RASPPI >= 5
+	if (nIRQ & IRQ_FROM_RP1__MASK)
+	{
+		assert (CRP1::IsInitialized ());
+		CRP1::Get ()->ConnectIRQ (nIRQ, pHandler, pParam);
+
+		return;
+	}
+
+	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
+#endif
+
 	assert (nIRQ < IRQ_LINES);
 	assert (m_apIRQHandler[nIRQ] == 0);
 
@@ -186,6 +200,18 @@ void CInterruptSystem::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *p
 
 void CInterruptSystem::DisconnectIRQ (unsigned nIRQ)
 {
+#if RASPPI >= 5
+	if (nIRQ & IRQ_FROM_RP1__MASK)
+	{
+		assert (CRP1::IsInitialized ());
+		CRP1::Get ()->DisconnectIRQ (nIRQ);
+
+		return;
+	}
+
+	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
+#endif
+
 	assert (nIRQ < IRQ_LINES);
 	assert (m_apIRQHandler[nIRQ] != 0);
 
@@ -219,6 +245,18 @@ void CInterruptSystem::DisconnectFIQ (void)
 
 void CInterruptSystem::EnableIRQ (unsigned nIRQ)
 {
+#if RASPPI >= 5
+	if (nIRQ & IRQ_FROM_RP1__MASK)
+	{
+		assert (CRP1::IsInitialized ());
+		CRP1::Get ()->EnableIRQ (nIRQ);
+
+		return;
+	}
+
+	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
+#endif
+
 	assert (nIRQ < IRQ_LINES);
 
 	write32 (GICD_ISENABLER0 + 4 * (nIRQ / 32), 1 << (nIRQ % 32));
@@ -226,6 +264,18 @@ void CInterruptSystem::EnableIRQ (unsigned nIRQ)
 
 void CInterruptSystem::DisableIRQ (unsigned nIRQ)
 {
+#if RASPPI >= 5
+	if (nIRQ & IRQ_FROM_RP1__MASK)
+	{
+		assert (CRP1::IsInitialized ());
+		CRP1::Get ()->DisableIRQ (nIRQ);
+
+		return;
+	}
+
+	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
+#endif
+
 	assert (nIRQ < IRQ_LINES);
 
 	write32 (GICD_ICENABLER0 + 4 * (nIRQ / 32), 1 << (nIRQ % 32));
