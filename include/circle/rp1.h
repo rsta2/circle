@@ -22,6 +22,7 @@
 
 #if RASPPI >= 5
 
+#include <circle/rp1int.h>
 #include <circle/interrupt.h>
 #include <circle/bcmpciehostbridge.h>
 #include <circle/types.h>
@@ -37,9 +38,21 @@ public:
 	/// \return Operation successful?
 	boolean Initialize (void);
 
-#ifndef NDEBUG
-	void DumpStatus (void);
-#endif
+	/// \brief Connect to second level IRQ at RP1
+	/// \param nIRQ IRQ number to connect
+	/// \param pHandler Pointer to IRQ handler
+	/// \param pParam User parameter to be handed over to handler
+	void ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam);
+	/// \brief Disconnect from second level IRQ at RP1
+	void DisconnectIRQ (unsigned nIRQ);
+
+	/// \param nIRQ IRQ number to enable
+	static void EnableIRQ (unsigned nIRQ);
+	/// \param nIRQ IRQ number to disable
+	static void DisableIRQ (unsigned nIRQ);
+
+	/// \return Pointer to the only RP1 object
+	static CRP1 *Get (void);
 
 	/// \return Has RP1 already been initialized?
 	static boolean IsInitialized (void)
@@ -47,10 +60,25 @@ public:
 		return s_bIsInitialized;
 	}
 
+#ifndef NDEBUG
+	void DumpStatus (void);
+#endif
+
 private:
+	static void InterruptHandler (void *pParam);
+
+private:
+	CInterruptSystem *m_pInterrupt;
+
 	CBcmPCIeHostBridge m_PCIe;
 
+	u64 m_ulEnableMask;
+	TIRQHandler *m_apIRQHandler[RP1_IRQ_LINES];
+	void *m_pParam[RP1_IRQ_LINES];
+
 	static boolean s_bIsInitialized;
+
+	static CRP1 *s_pThis;
 };
 
 #endif

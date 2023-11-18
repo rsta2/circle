@@ -28,6 +28,11 @@
 #include <circle/bcm2835.h>
 
 //
+// Second level interrupt controller (RP1)
+//
+#define ARM_RP1_INTC		0x1F00108000UL
+
+//
 // General Purpose I/O #0 (RP1)
 //
 #define ARM_GPIO0_IO_BASE	0x1F000D0000UL		// IO_BANK0

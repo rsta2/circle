@@ -753,6 +753,16 @@ int CBcmPCIeHostBridge::enable_device (u32 nClassCode, unsigned nSlot, unsigned 
 	write8 (msi_conf + PCI_MSI_FLAGS,   PCI_MSI_FLAGS_ENABLE
 					  | PCI_MSI_FLAGS_64BIT
 					  | uchQueueSize << 4);
+#else
+	// Ensure, that we can use INTA.
+	u8 uchIntPin = read8 (conf + PCI_INTERRUPT_PIN);
+	if (uchIntPin != 1)
+	{
+		CLogger::Get ()->Write (FromPCIeHost, LogWarning, "INTA was not enabled (%u)",
+					(unsigned) uchIntPin);
+
+		write8 (conf + PCI_INTERRUPT_PIN, 1);
+	}
 #endif
 
 	write16 (conf + PCI_COMMAND,   PCI_COMMAND_MEMORY

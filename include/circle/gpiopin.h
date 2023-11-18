@@ -23,7 +23,11 @@
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
-#define GPIO_PINS	54
+#if RASPPI <= 4
+	#define GPIO_PINS	54
+#else
+	#define GPIO_PINS	28
+#endif
 
 #define LOW		0
 #define HIGH		1
@@ -66,14 +70,18 @@ enum TGPIOInterrupt
 	GPIOInterruptOnLowLevel,
 	GPIOInterruptOnAsyncRisingEdge,
 	GPIOInterruptOnAsyncFallingEdge,
+#if RASPPI >= 5
+	GPIOInterruptOnDebouncedHighLevel,
+	GPIOInterruptOnDebouncedLowLevel,
+#endif
 	GPIOInterruptUnknown
 };
+
+typedef void TGPIOInterruptHandler (void *pParam);
 
 #if RASPPI >= 5
 	#include <circle/gpiopin2712.h>
 #else
-
-typedef void TGPIOInterruptHandler (void *pParam);
 
 class CGPIOManager;
 

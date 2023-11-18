@@ -25,13 +25,16 @@
 #endif
 
 #include <circle/gpiopin.h>
+#include <circle/spinlock.h>
 #include <circle/types.h>
+
+class CGPIOManager;
 
 class CGPIOPin
 {
 public:
 	CGPIOPin (void);
-	CGPIOPin (unsigned nPin, TGPIOMode Mode);
+	CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager = nullptr);
 	~CGPIOPin (void);
 
 	void AssignPin (unsigned nPin);
@@ -46,10 +49,44 @@ public:
 
 	void Invert (void);
 
+	void ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam,
+			       boolean bAutoAck = TRUE);
+	void DisconnectInterrupt (void);
+
+	void EnableInterrupt (TGPIOInterrupt Interrupt);
+	void DisableInterrupt (void);
+
+	void EnableInterrupt2 (TGPIOInterrupt Interrupt);
+	void DisableInterrupt2 (void);
+
+	void AcknowledgeInterrupt (void);
+
+#ifndef NDEBUG
+	static void DumpStatus (void);
+#endif
+
+private:
+	void InterruptHandler (void);
+	static void DisableAllInterrupts (unsigned nPin);
+	friend class CGPIOManager;
+
 private:
 	unsigned  m_nPin;
 	TGPIOMode m_Mode;
 	unsigned  m_nValue;
+
+	CGPIOManager		*m_pManager;
+	TGPIOInterruptHandler	*m_pHandler;
+	void			*m_pParam;
+	boolean			 m_bAutoAck;
+	TGPIOInterrupt		 m_Interrupt;
+	TGPIOInterrupt		 m_Interrupt2;
+
+	static u32 s_nInterruptMap[GPIOInterruptUnknown];
+
+	CSpinLock m_SpinLock;
+
+	static CSpinLock s_SpinLock;
 };
 
 #endif
