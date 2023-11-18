@@ -17,13 +17,13 @@ Currently is only a small subset of features supported:
 * Framebuffer and screen device
 * PCIe host bridge to RP1 device (no IRQ support so far)
 * GPIO at RP1 (40-pin header) (subset of methods, input/output only)
+* GPIO interrupts (via RP1, issue with GPIOInterruptOn[Rising|Falling]Edge)
 * Multi-core support and spin locks
 * Hardware random number generator
 * Scheduler library
 * Bootloader (via UART connector)
 
-Most external hardware interfaces (GPIO, I2C etc.) are part of the RP1
-southbridge and are not supported yet.
+Most external hardware interfaces (I2C etc.) are not supported yet.
 
 The Cortex-A76 CPU of the Raspberry Pi 5 supports only AArch64 in the mode,
 which is used by Circle (EL1), so AArch32 is and will not be supported.
@@ -81,3 +81,4 @@ Currently the following sample programs are operational:
 Additionally the following tests in test/ are operational:
 
 * gpio
+* gpio-interrupt
