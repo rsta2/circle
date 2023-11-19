@@ -15,13 +15,14 @@ Currently is only a small subset of features supported:
 * GIC interrupt controller (IRQ only)
 * 1 UART (via UART connector, including IRQ support)
 * Framebuffer and screen device
-* PCIe host bridge to RP1 device (no IRQ support so far)
+* PCIe host bridge to RP1 device
 * GPIO at RP1 (40-pin header) (subset of methods, input/output only)
 * GPIO interrupts (via RP1, issue with GPIOInterruptOn[Rising|Falling]Edge)
 * First xHCI USB controller (with 2 ports)
 * Multi-core support and spin locks
 * Hardware random number generator
 * Scheduler library
+* Sound library (with USB sound only)
 * Bootloader (via UART connector)
 
 Most external hardware interfaces (I2C etc.) are not supported yet.
@@ -71,8 +72,9 @@ Currently the following sample programs are operational:
 * 04-timer
 * 08-usbkeyboard
 * 17-fractal (multi-core supported)
-* 19-tasks (requires scheduler library)
+* 19-tasks
 * 24-hwrandom
+* 34-sounddevices (USB sound only)
 
 Additionally the following tests in test/ are operational:
 

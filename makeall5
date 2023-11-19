@@ -46,9 +46,9 @@ cd ..
 # $make $1 $2 || exit
 # cd ..
 
-# cd sound
-# $make $1 $2 || exit
-# cd ..
+cd sound
+$make $1 $2 || exit
+cd ..
 
 cd ..
 
