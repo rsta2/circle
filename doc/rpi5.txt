@@ -21,6 +21,7 @@ Currently is only a small subset of features supported:
 * First xHCI USB controller (with 2 ports)
 * Multi-core support and spin locks
 * Hardware random number generator
+* Watchdog device
 * Scheduler library
 * Sound library (with USB sound only)
 * Bootloader (via UART connector)
@@ -80,7 +81,7 @@ Additionally the following tests in test/ are operational:
 
 * gpio
 * gpio-interrupt
-
+* watchdog
 
 USB
 
