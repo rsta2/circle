@@ -24,8 +24,6 @@
 #include <circle/macros.h>
 #include <assert.h>
 
-// TODO: Support edge-triggered interrupts (for USB)
-
 #define RP1_PCIE_SLOT			0
 #define RP1_PCIE_FUNC			0
 
@@ -62,6 +60,7 @@ CRP1::CRP1 (CInterruptSystem *pInterrupt)
 	{
 		m_apIRQHandler[nIRQ] = nullptr;
 		m_pParam[nIRQ] = nullptr;
+		m_bEdgeTriggered[nIRQ] = FALSE;
 	}
 }
 
@@ -107,56 +106,70 @@ boolean CRP1::Initialize (void)
 void CRP1::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
 {
 	assert (s_bIsInitialized);
+
 	assert (nIRQ & IRQ_FROM_RP1__MASK);
-	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
-	nIRQ &= IRQ_NUMBER__MASK;
-	assert (nIRQ < RP1_IRQ_LINES);
-	assert (!m_apIRQHandler[nIRQ]);
+	unsigned nIRQLocal = nIRQ & IRQ_NUMBER__MASK;
 
-	m_apIRQHandler[nIRQ] = pHandler;
-	m_pParam[nIRQ] = pParam;
+	assert (nIRQLocal < RP1_IRQ_LINES);
+	assert (!m_apIRQHandler[nIRQLocal]);
 
-	EnableIRQ (nIRQ | IRQ_FROM_RP1__MASK);
+	m_apIRQHandler[nIRQLocal] = pHandler;
+	m_pParam[nIRQLocal] = pParam;
+
+	EnableIRQ (nIRQ);
 }
 
 void CRP1::DisconnectIRQ (unsigned nIRQ)
 {
 	assert (s_bIsInitialized);
+
 	assert (nIRQ & IRQ_FROM_RP1__MASK);
-	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
-	nIRQ &= IRQ_NUMBER__MASK;
-	assert (nIRQ < RP1_IRQ_LINES);
-	assert (m_apIRQHandler[nIRQ]);
+	unsigned nIRQLocal = nIRQ & IRQ_NUMBER__MASK;
 
-	DisableIRQ (nIRQ | IRQ_FROM_RP1__MASK);
+	assert (nIRQLocal < RP1_IRQ_LINES);
+	assert (m_apIRQHandler[nIRQLocal]);
 
-	m_apIRQHandler[nIRQ] = nullptr;
-	m_pParam[nIRQ] = nullptr;
+	DisableIRQ (nIRQ);
+
+	m_apIRQHandler[nIRQLocal] = nullptr;
+	m_pParam[nIRQLocal] = nullptr;
 }
 
 void CRP1::EnableIRQ (unsigned nIRQ)
 {
 	assert (nIRQ & IRQ_FROM_RP1__MASK);
-	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
-	nIRQ &= IRQ_NUMBER__MASK;
-	assert (nIRQ < RP1_IRQ_LINES);
-	assert (s_pThis);
-	s_pThis->m_ulEnableMask |= BIT (nIRQ);
+	unsigned nIRQLocal = nIRQ & IRQ_NUMBER__MASK;
+	assert (nIRQLocal < RP1_IRQ_LINES);
 
-	write32 (INTC_REG_SET + MSIX_CFG (nIRQ), MSIX_CFG_ENABLE);
+	assert (s_pThis);
+	s_pThis->m_ulEnableMask |= BIT (nIRQLocal);
+
+	if (nIRQ & IRQ_EDGE_TRIG__MASK)
+	{
+		s_pThis->m_bEdgeTriggered[nIRQLocal] = TRUE;
+
+		write32 (INTC_REG_CLR + MSIX_CFG (nIRQLocal), MSIX_CFG_IACK_ENABLE);
+	}
+	else
+	{
+		s_pThis->m_bEdgeTriggered[nIRQLocal] = FALSE;
+
+		write32 (INTC_REG_SET + MSIX_CFG (nIRQLocal), MSIX_CFG_IACK_ENABLE);
+	}
+
+	write32 (INTC_REG_SET + MSIX_CFG (nIRQLocal), MSIX_CFG_ENABLE);
 }
 
 void CRP1::DisableIRQ (unsigned nIRQ)
 {
 	assert (nIRQ & IRQ_FROM_RP1__MASK);
-	assert (!(nIRQ & IRQ_EDGE_TRIG__MASK));
-	nIRQ &= IRQ_NUMBER__MASK;
-	assert (nIRQ < RP1_IRQ_LINES);
+	unsigned nIRQLocal = nIRQ & IRQ_NUMBER__MASK;
+	assert (nIRQLocal < RP1_IRQ_LINES);
 
-	write32 (INTC_REG_CLR + MSIX_CFG (nIRQ), MSIX_CFG_ENABLE);
+	write32 (INTC_REG_CLR + MSIX_CFG (nIRQLocal), MSIX_CFG_ENABLE);
 
 	assert (s_pThis);
-	s_pThis->m_ulEnableMask &= ~BIT (nIRQ);
+	s_pThis->m_ulEnableMask &= ~BIT (nIRQLocal);
 }
 
 CRP1 *CRP1::Get (void)
@@ -178,14 +191,15 @@ void CRP1::DumpStatus (void)
 
 	m_PCIe.DumpStatus (RP1_PCIE_SLOT, RP1_PCIE_FUNC);
 
-	LOGDBG ("IRQ HANDLER  PARAM");
+	LOGDBG ("IRQ HANDLER  PARAM    FL");
 	for (unsigned nIRQ = 0; nIRQ < RP1_IRQ_LINES; nIRQ++)
 	{
 		if (m_apIRQHandler[nIRQ])
 		{
-			LOGDBG ("%02u: %08lX %08lX", nIRQ,
+			LOGDBG ("%02u: %08lX %08lX %c", nIRQ,
 				(unsigned long) m_apIRQHandler[nIRQ],
-				(unsigned long) m_pParam[nIRQ]);
+				(unsigned long) m_pParam[nIRQ],
+				m_bEdgeTriggered[nIRQ] ? 'e' : 'l');
 		}
 	}
 }
@@ -216,6 +230,11 @@ void CRP1::InterruptHandler (void *pParam)
 				DisableIRQ (nIRQ | IRQ_FROM_RP1__MASK);
 
 				LOGWARN ("Spurious IRQ (%u)", nIRQ);
+			}
+
+			if (!s_pThis->m_bEdgeTriggered[nIRQ])
+			{
+				write32 (INTC_REG_SET + MSIX_CFG (nIRQ), MSIX_CFG_IACK);
 			}
 
 			// TODO: break;

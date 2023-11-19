@@ -75,6 +75,7 @@ private:
 	u64 m_ulEnableMask;
 	TIRQHandler *m_apIRQHandler[RP1_IRQ_LINES];
 	void *m_pParam[RP1_IRQ_LINES];
+	boolean m_bEdgeTriggered[RP1_IRQ_LINES];
 
 	static boolean s_bIsInitialized;
 
