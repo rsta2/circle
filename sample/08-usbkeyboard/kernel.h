@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
+#include <circle/rp1.h>
 #include <circle/usb/usbhcidevice.h>
 #include <circle/usb/usbkeyboard.h>
 #include <circle/types.h>
@@ -69,6 +70,9 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
+#if RASPPI >= 5
+	CRP1			m_RP1;
+#endif
 	CUSBHCIDevice		m_USBHCI;
 
 	CUSBKeyboardDevice * volatile m_pKeyboard;

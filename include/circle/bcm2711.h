@@ -74,11 +74,16 @@
 // xHCI USB Host Controller
 //
 #ifdef USE_XHCI_INTERNAL
+#if RASPPI == 4
 	#define ARM_XHCI_BASE	(ARM_IO_BASE + 0x9C0000)
 #else
-	#define ARM_XHCI_BASE	MEM_PCIE_RANGE_START_VIRTUAL
+	#define ARM_XHCI_BASE	0x1F00200000UL
 #endif
-#define ARM_XHCI_END		(ARM_XHCI_BASE + 0x0FFF)
+	#define ARM_XHCI_END	(ARM_XHCI_BASE + 0xFFFFF)
+#else
+	#define ARM_XHCI_BASE	MEM_PCIE_RANGE_START_VIRTUAL
+	#define ARM_XHCI_END	(ARM_XHCI_BASE + 0x0FFF)
+#endif
 
 #endif
 

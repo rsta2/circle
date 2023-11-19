@@ -18,6 +18,7 @@ Currently is only a small subset of features supported:
 * PCIe host bridge to RP1 device (no IRQ support so far)
 * GPIO at RP1 (40-pin header) (subset of methods, input/output only)
 * GPIO interrupts (via RP1, issue with GPIOInterruptOn[Rising|Falling]Edge)
+* First xHCI USB controller (with 2 ports)
 * Multi-core support and spin locks
 * Hardware random number generator
 * Scheduler library
@@ -42,15 +43,9 @@ It can be created using:
 
 	./configure -r 5 [ --multicore ]
 
-Build the base library using:
+Build all supported libraries using:
 
-	cd lib
-	make
-
-Optionally build the scheduler library using:
-
-	cd lib/sched
-	make
+	./makeall5 [ -j ]
 
 Go to the sample directory of your choice (see below) and enter:
 
@@ -74,6 +69,7 @@ Currently the following sample programs are operational:
 * 02-screenpixel
 * 03-screentext
 * 04-timer
+* 08-usbkeyboard
 * 17-fractal (multi-core supported)
 * 19-tasks (requires scheduler library)
 * 24-hwrandom
@@ -82,3 +78,18 @@ Additionally the following tests in test/ are operational:
 
 * gpio
 * gpio-interrupt
+
+
+USB
+
+Currently only two USB ports can be used (view onto the ports):
+
++---------+---------+
+|         | Port 1  |
+|         | USB 2.0 |
+|         | only    |
++---------+---------+
+| Port 2  |         |
+| USB 2.0 |         |
+| USB 3.0 |         |
++---------+---------+

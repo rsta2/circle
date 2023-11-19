@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,6 +34,9 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+#if RASPPI >= 5
+	m_RP1 (&m_Interrupt),
+#endif
 	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),		// TRUE: enable plug-and-play
 	m_pKeyboard (0),
 	m_ShutdownMode (ShutdownNone)
@@ -82,6 +85,13 @@ boolean CKernel::Initialize (void)
 	{
 		bOK = m_Timer.Initialize ();
 	}
+
+#if RASPPI >= 5
+	if (bOK)
+	{
+		bOK = m_RP1.Initialize ();
+	}
+#endif
 
 	if (bOK)
 	{

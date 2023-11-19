@@ -25,10 +25,15 @@
 #include <circle/util.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/machineinfo.h>
+#include <circle/rp1int.h>
 #include <assert.h>
 
 #ifdef USE_XHCI_INTERNAL
+#if RASPPI == 4
 	#define ARM_IRQ_XHCI	ARM_IRQ_XHCI_INTERNAL
+#else
+	#define ARM_IRQ_XHCI	RP1_IRQ_USBHOST0_0
+#endif
 #else
 	#define ARM_IRQ_XHCI	ARM_IRQ_PCIE_HOST_INTA
 #endif
@@ -97,7 +102,8 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 	INIT_PROTECTED_CLASS_ALLOCATOR (CUSBRequest, XHCI_CONFIG_MAX_REQUESTS, IRQ_LEVEL);
 
 #ifdef USE_XHCI_INTERNAL
-	if (CMachineInfo::Get ()->GetMachineModel () != MachineModel4B)
+	if (   CMachineInfo::Get ()->GetMachineModel () != MachineModel4B
+	    && CMachineInfo::Get ()->GetMachineModel () != MachineModel5)
 	{
 		CBcmPropertyTags Tags;
 		TPropertyTagPowerState PowerState;

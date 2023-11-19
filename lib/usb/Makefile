@@ -32,7 +32,7 @@ OBJS	= lan7800.o smsc951x.o usbbluetooth.o usbcdcethernet.o \
 	  usbstandardhub.o usbstring.o usbserial.o usbserialch341.o usbserialcp210x.o \
 	  usbserialpl2303.o usbserialft231x.o usbserialcdc.o usbtouchscreen.o dwhciregister.o
 
-ifneq ($(strip $(RASPPI)),4)
+ifneq ($(filter 1 2 3,$(RASPPI)),)
 OBJS	+= dwhcidevice.o dwhciframeschednper.o dwhciframeschednsplit.o dwhciframeschedper.o \
 	   dwhcirootport.o dwhcixactqueue.o dwhcicompletionqueue.o \
 	   dwhcixferstagedata.o dwhciframeschediso.o
@@ -40,14 +40,13 @@ else
 OBJS	+= xhcicommandmanager.o xhcidevice.o xhciendpoint.o xhcieventmanager.o xhcimmiospace.o \
 	   xhciring.o xhciroothub.o xhcirootport.o xhcisharedmemallocator.o xhcislotmanager.o \
 	   xhciusbdevice.o usbaudiocontrol.o usbaudiostreaming.o usbaudiofunctopology.o
+endif
 
 # using coherent memory region
 ifeq ($(strip $(AARCH)),32)
 CFLAGS += -mno-unaligned-access
 else
 CFLAGS += -mstrict-align
-endif
-
 endif
 
 libusb.a: $(OBJS)
