@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -129,18 +129,30 @@ TShutdownMode CKernel::Run (void)
 #endif
 
 	// display some properties
+	Properties.SelectSection ("log");
+
 	m_Logger.Write (FromKernel, LogNotice, "logdev is \"%s\"",
 			Properties.GetString ("logdev", "tty1"));
 
 	m_Logger.Write (FromKernel, LogNotice, "loglevel is %u",
 			Properties.GetNumber ("loglevel", 3));
 
+	Properties.SelectSection ("usb");
+
 	m_Logger.Write (FromKernel, LogNotice, "usbpowerdelay is %u",
 			Properties.GetNumber ("usbpowerdelay", 510));	// unset in params.txt by default
 
+	Properties.SelectSection ();		// select no section header
+
+	m_Logger.Write (FromKernel, LogNotice, "width is %u",
+			Properties.GetNumber ("width"));		// no default value
+
 	// set or overwrite some properties
+	Properties.SelectSection ("log");
 	Properties.SetString ("logdev", "tty1");
 	Properties.SetNumber ("loglevel", 3);
+
+	Properties.SelectSection ("usb");
 	Properties.SetNumber ("usbpowerdelay", 1000);
 
 	if (!Properties.Save ())

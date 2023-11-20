@@ -2,7 +2,7 @@
 // properties.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,9 +18,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <Properties/properties.h>
+#include <circle/ptrarray.h>
 #include <circle/util.h>
 #include <circle/logger.h>
 #include <assert.h>
+
+struct TSection
+{
+	CString Name;
+	CPtrArray PropArray;
+};
 
 struct TPropertyPair
 {
@@ -28,14 +35,26 @@ struct TPropertyPair
 	char *pValue;
 };
 
+const char CProperties::DefaultSection[] = "";
+
 CProperties::CProperties (void)
-:	m_nGetIndex (0)
+:	m_CurrentSectionName (DefaultSection),
+	m_pCurrentSection (nullptr),
+	m_pGetSection (nullptr),
+	m_nGetIndex (0)
 {
 }
 
 CProperties::~CProperties (void)
 {
 	RemoveAll ();
+}
+
+void CProperties::SelectSection (const char *pSectionName)
+{
+	m_CurrentSectionName = pSectionName;
+
+	m_pCurrentSection = LookupSection (pSectionName);
 }
 
 boolean CProperties::IsSet (const char *pPropertyName) const
@@ -214,20 +233,35 @@ void CProperties::SetIPAddress (const char *pPropertyName, const u8 *pAddress)
 
 void CProperties::RemoveAll (void)
 {
-	for (unsigned i = 0; i < m_PropArray.GetCount (); i++)
+	TPtrListElement *pElement;
+	while ((pElement  = m_SectionList.GetFirst ()) !=  0)
 	{
-		TPropertyPair *pProperty = (TPropertyPair *) m_PropArray[i];
-		assert (pProperty != 0);
+		TSection *pSection = (TSection *) m_SectionList.GetPtr (pElement);
+		assert (pSection != 0);
+		CPtrArray *pPropArray = &pSection->PropArray;
 
-		delete [] (char *) pProperty->pName;
-		delete [] (char *) pProperty->pValue;
-		delete pProperty;
+		for (unsigned i = 0; i < pPropArray->GetCount (); i++)
+		{
+			TPropertyPair *pProperty = (TPropertyPair *) (*pPropArray)[i];
+			assert (pProperty != 0);
+
+			delete [] (char *) pProperty->pName;
+			delete [] (char *) pProperty->pValue;
+			delete pProperty;
+		}
+
+		while (pPropArray->GetCount () > 0)
+		{
+			pPropArray->RemoveLast ();
+		}
+
+		delete pSection;
+
+		m_SectionList.Remove (pElement);
 	}
 
-	while (m_PropArray.GetCount () > 0)
-	{
-		m_PropArray.RemoveLast ();
-	}
+	m_CurrentSectionName = DefaultSection;
+	m_pCurrentSection = nullptr;
 }
 
 void CProperties::AddProperty (const char*pPropertyName, const char *pValue)
@@ -252,27 +286,97 @@ void CProperties::AddProperty (const char*pPropertyName, const char *pValue)
 	assert (pProperty->pValue != 0);
 	strcpy (pProperty->pValue, pValue);
 
-	m_PropArray.Append (pProperty);
+	if (m_pCurrentSection == 0)
+	{
+		m_pCurrentSection = new TSection;
+		assert (m_pCurrentSection != 0);
+
+		m_pCurrentSection->Name = m_CurrentSectionName;
+
+		TPtrListElement *pElement = m_SectionList.GetFirst ();
+		while (pElement != 0)
+		{
+			TPtrListElement *pNext = m_SectionList.GetNext (pElement);
+			if (pNext == 0)
+			{
+				break;
+			}
+
+			pElement = pNext;
+		}
+
+		m_SectionList.InsertAfter (pElement, m_pCurrentSection);
+	}
+
+	m_pCurrentSection->PropArray.Append (pProperty);
 }
 
 boolean CProperties::GetFirst (void)
 {
+	m_pGetSection = m_SectionList.GetFirst ();
 	m_nGetIndex = 0;
 
-	return m_PropArray.GetCount () > m_nGetIndex;
+	if (m_pGetSection == 0)
+	{
+		m_CurrentSectionName = DefaultSection;
+
+		return FALSE;
+	}
+
+	TSection *pSection = (TSection *) m_SectionList.GetPtr (m_pGetSection);
+	assert (pSection != 0);
+
+	m_CurrentSectionName = pSection->Name;
+
+	return pSection->PropArray.GetCount () > m_nGetIndex;
 }
 
 boolean CProperties::GetNext (void)
 {
 	m_nGetIndex++;
 
-	return m_PropArray.GetCount () > m_nGetIndex;
+	assert (m_pGetSection != 0);
+	TSection *pSection = (TSection *) m_SectionList.GetPtr (m_pGetSection);
+	assert (pSection != 0);
+
+	if (pSection->PropArray.GetCount () > m_nGetIndex)
+	{
+		return TRUE;
+	}
+
+	m_pGetSection = m_SectionList.GetNext (m_pGetSection);
+	if (m_pGetSection == 0)
+	{
+		m_CurrentSectionName = DefaultSection;
+		m_pCurrentSection = LookupSection (m_CurrentSectionName);
+
+		return FALSE;
+	}
+
+	pSection = (TSection *) m_SectionList.GetPtr (m_pGetSection);
+	assert (pSection != 0);
+
+	m_CurrentSectionName = pSection->Name;
+	m_pCurrentSection = pSection;
+
+	m_nGetIndex = 0;
+
+	return TRUE;
+}
+
+const char *CProperties::GetSectionName (void) const
+{
+	return m_CurrentSectionName;
 }
 
 const char *CProperties::GetName (void) const
 {
-	assert (m_nGetIndex < m_PropArray.GetCount ());
-	TPropertyPair *pProperty = (TPropertyPair *) m_PropArray[m_nGetIndex];
+	assert (m_pGetSection != 0);
+	TSection *pSection = (TSection *) m_SectionList.GetPtr (m_pGetSection);
+	assert (pSection != 0);
+
+	assert (m_nGetIndex < pSection->PropArray.GetCount ());
+	TPropertyPair *pProperty = (TPropertyPair *) pSection->PropArray[m_nGetIndex];
 	assert (pProperty != 0);
 	assert (pProperty->pName != 0);
 
@@ -281,19 +385,50 @@ const char *CProperties::GetName (void) const
 
 const char *CProperties::GetValue (void) const
 {
-	assert (m_nGetIndex < m_PropArray.GetCount ());
-	TPropertyPair *pProperty = (TPropertyPair *) m_PropArray[m_nGetIndex];
+	assert (m_pGetSection != 0);
+	TSection *pSection = (TSection *) m_SectionList.GetPtr (m_pGetSection);
+	assert (pSection != 0);
+
+	assert (m_nGetIndex < pSection->PropArray.GetCount ());
+	TPropertyPair *pProperty = (TPropertyPair *) pSection->PropArray[m_nGetIndex];
 	assert (pProperty != 0);
 	assert (pProperty->pValue != 0);
 
 	return pProperty->pValue;
 }
 
+TSection *CProperties::LookupSection (const char*pSectionName) const
+{
+	assert (pSectionName != 0);
+
+	TPtrListElement *pElement = m_SectionList.GetFirst ();
+	while (pElement != 0)
+	{
+		TSection *pSection = (TSection *) m_SectionList.GetPtr (pElement);
+		assert (pSection != 0);
+
+		if (pSection->Name.Compare (pSectionName) == 0)
+		{
+			return pSection;
+		}
+
+		pElement = m_SectionList.GetNext (pElement);
+	}
+
+	return 0;
+}
+
+
 TPropertyPair *CProperties::Lookup (const char*pPropertyName) const
 {
-	for (unsigned i = 0; i < m_PropArray.GetCount (); i++)
+	if (m_pCurrentSection == 0)
 	{
-		TPropertyPair *pProperty = (TPropertyPair *) m_PropArray[i];
+		return 0;
+	}
+
+	for (unsigned i = 0; i < m_pCurrentSection->PropArray.GetCount (); i++)
+	{
+		TPropertyPair *pProperty = (TPropertyPair *) m_pCurrentSection->PropArray[i];
 		assert (pProperty != 0);
 		if (strcmp (pProperty->pName, pPropertyName) == 0)
 		{
@@ -308,14 +443,30 @@ TPropertyPair *CProperties::Lookup (const char*pPropertyName) const
 
 void CProperties::Dump (const char *pSource) const
 {
-	CLogger::Get ()->Write (pSource, LogDebug, "Dumping %u properties:", m_PropArray.GetCount ());
+	CLogger::Get ()->Write (pSource, LogDebug, "Dumping properties:");
 
-	for (unsigned i = 0; i < m_PropArray.GetCount (); i++)
+	TPtrListElement *pElement = m_SectionList.GetFirst ();
+	while (pElement != 0)
 	{
-		TPropertyPair *pProperty = (TPropertyPair *) m_PropArray[i];
-		assert (pProperty != 0);
+		TSection *pSection = (TSection *) m_SectionList.GetPtr (pElement);
+		assert (pSection != 0);
 
-		CLogger::Get ()->Write (pSource, LogDebug, "%s=%s", pProperty->pName, pProperty->pValue);
+		if (pSection->Name.Compare (DefaultSection) != 0)
+		{
+			CLogger::Get ()->Write (pSource, LogDebug, "[%s]",
+						static_cast<const char *> (pSection->Name));
+		}
+
+		for (unsigned i = 0; i < pSection->PropArray.GetCount (); i++)
+		{
+			TPropertyPair *pProperty = (TPropertyPair *) pSection->PropArray[i];
+			assert (pProperty != 0);
+
+			CLogger::Get ()->Write (pSource, LogDebug, "%s=%s",
+						pProperty->pName, pProperty->pValue);
+		}
+
+		pElement = m_SectionList.GetNext (pElement);
 	}
 }
 

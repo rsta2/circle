@@ -2,7 +2,7 @@
 // propertiesfile.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -69,7 +69,11 @@ boolean CPropertiesFile::Load (void)
 
 	m_pFileSystem->FileClose (hFile);
 
-	return Parse ('\n');		// fake an empty line at file end
+	boolean bResult = Parse ('\n');		// fake an empty line at file end
+
+	SelectSection (DefaultSection);
+
+	return bResult;
 }
 
 boolean CPropertiesFile::Save (void)
@@ -82,10 +86,27 @@ boolean CPropertiesFile::Save (void)
 		return FALSE;
 	}
 
+	CString LastSection (DefaultSection);
 	boolean bContinue = GetFirst ();
 	while (bContinue)
 	{
 		CString Line;
+
+		if (LastSection.Compare (GetSectionName ()) != 0)
+		{
+			Line.Format ("\n[%s]\n", GetSectionName ());
+
+			if (   m_pFileSystem->FileWrite (hFile, (const char *) Line, Line.GetLength ())
+			    != Line.GetLength ())
+			{
+				m_pFileSystem->FileClose (hFile);
+
+				return FALSE;
+			}
+
+			LastSection = GetSectionName ();
+		}
+
 		Line.Format ("%s=%s\n", GetName (), GetValue ());
 
 		if (   m_pFileSystem->FileWrite (hFile, (const char *) Line, Line.GetLength ())

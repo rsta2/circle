@@ -4,7 +4,7 @@
 // Base class for configuration properties
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,16 +22,25 @@
 #ifndef _Properties_properties_h
 #define _Properties_properties_h
 
-#include <circle/ptrarray.h>
+#include <circle/ptrlist.h>
+#include <circle/string.h>
 #include <circle/types.h>
 
+struct TSection;
 struct TPropertyPair;
 
 class CProperties
 {
 public:
+	static const char DefaultSection[];
+
+public:
 	CProperties (void);
 	~CProperties (void);
+
+	// set the section name for the following Get*() and Set*() calls
+	// DefaultSection for properties, which are outside of a section
+	void SelectSection (const char *pSectionName = DefaultSection);
 
 	boolean IsSet (const char *pPropertyName) const;
 
@@ -62,15 +71,22 @@ protected:
 	boolean GetFirst (void);
 	boolean GetNext (void);
 
-	// getting name and value at current position
+	// getting section, name and value at current position
+	const char *GetSectionName (void) const;
 	const char *GetName (void) const;
 	const char *GetValue (void) const;
 
 private:
+	TSection *LookupSection (const char*pSectionName) const;
 	TPropertyPair *Lookup (const char*pPropertyName) const;
 
 private:
-	CPtrArray m_PropArray;
+	CPtrList m_SectionList;
+
+	CString m_CurrentSectionName;
+	TSection *m_pCurrentSection;
+
+	TPtrListElement *m_pGetSection;
 	unsigned m_nGetIndex;
 
 	u8 m_IPAddress[4];

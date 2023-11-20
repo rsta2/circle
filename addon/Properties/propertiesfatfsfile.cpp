@@ -2,7 +2,7 @@
 // propertiesfile.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // FatFs support by Steve Maynard
 //
@@ -73,7 +73,11 @@ boolean CPropertiesFatFsFile::Load (void)
 
 	f_close (&File);
 
-	return Parse ('\n');		// fake an empty line at file end
+	boolean bResult = Parse ('\n');		// fake an empty line at file end
+
+	SelectSection (DefaultSection);
+
+	return bResult;
 }
 
 boolean CPropertiesFatFsFile::Save (void)
@@ -89,10 +93,27 @@ boolean CPropertiesFatFsFile::Save (void)
 		return FALSE;
 	}
 
+	CString LastSection (DefaultSection);
 	boolean bContinue = GetFirst ();
 	while (bContinue)
 	{
 		CString Line;
+
+		if (LastSection.Compare (GetSectionName ()) != 0)
+		{
+			Line.Format ("\n[%s]\n", GetSectionName ());
+
+			if ( (Result = f_write (&File, (const char *) Line, Line.GetLength (),
+				&nBytesWritten)) != FR_OK || nBytesWritten != Line.GetLength ())
+			{
+				f_close (&File);
+
+				return FALSE;
+			}
+
+			LastSection = GetSectionName ();
+		}
+
 		Line.Format ("%s=%s\n", GetName (), GetValue ());
 
 		if ( (Result = f_write (&File, (const char *) Line, Line.GetLength (),

@@ -2,7 +2,7 @@
 // propertiesbasefile.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <Properties/properties.h>
 #include <circle/types.h>
 
+#define MAX_PROPERTY_SECTION_LENGTH	100
 #define MAX_PROPERTY_NAME_LENGTH	100
 #define MAX_PROPERTY_VALUE_LENTGH	500
 
@@ -47,7 +48,9 @@ protected:
 
 private:
 	unsigned m_nState;
+	unsigned m_nPrevState;
 	unsigned m_nIndex;	// for the arrays below
+	char m_SectionName[MAX_PROPERTY_SECTION_LENGTH];
 	char m_PropertyName[MAX_PROPERTY_NAME_LENGTH];
 	char m_PropertyValue[MAX_PROPERTY_VALUE_LENTGH];
 
