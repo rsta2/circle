@@ -70,7 +70,7 @@ private:
 private:
 	CInterruptSystem *m_pInterrupt;
 
-	CBcmPCIeHostBridge m_PCIe;
+	CBcmPCIeHostBridge *m_pPCIe;
 
 	u64 m_ulEnableMask;
 	TIRQHandler *m_apIRQHandler[RP1_IRQ_LINES];

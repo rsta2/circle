@@ -50,10 +50,13 @@ boolean CRP1::s_bIsInitialized = FALSE;
 
 CRP1::CRP1 (CInterruptSystem *pInterrupt)
 :	m_pInterrupt (pInterrupt),
-	m_PCIe (pInterrupt),
+	m_pPCIe (nullptr),
 	m_ulEnableMask (0)
 {
-	assert (!s_pThis);
+	if (s_pThis)
+	{
+		return;
+	}
 	s_pThis = this;
 
 	for (unsigned nIRQ = 0; nIRQ < RP1_IRQ_LINES; nIRQ++)
@@ -62,10 +65,18 @@ CRP1::CRP1 (CInterruptSystem *pInterrupt)
 		m_pParam[nIRQ] = nullptr;
 		m_bEdgeTriggered[nIRQ] = FALSE;
 	}
+
+	assert (m_pInterrupt);
+	m_pPCIe = new CBcmPCIeHostBridge (m_pInterrupt);
 }
 
 CRP1::~CRP1 (void)
 {
+	if (s_pThis != this)
+	{
+		return;
+	}
+
 	if (s_bIsInitialized)
 	{
 		assert (m_pInterrupt);
@@ -76,35 +87,51 @@ CRP1::~CRP1 (void)
 		s_bIsInitialized = FALSE;
 	}
 
+	delete m_pPCIe;
+	m_pPCIe = nullptr;
+
 	s_pThis = nullptr;
 }
 
 boolean CRP1::Initialize (void)
 {
+	if (s_pThis != this)
+	{
+		return s_bIsInitialized;
+	}
+
 	assert (!s_bIsInitialized);
 
-	if (!m_PCIe.Initialize ())
+	assert (m_pPCIe);
+	if (!m_pPCIe->Initialize ())
 	{
 		LOGERR ("Cannot initialize PCIe host bridge");
 
 		return FALSE;
 	}
 
-	if (!m_PCIe.EnableDevice (RP1_PCI_CLASS_CODE, RP1_PCIE_SLOT, RP1_PCIE_FUNC))
+	if (!m_pPCIe->EnableDevice (RP1_PCI_CLASS_CODE, RP1_PCIE_SLOT, RP1_PCIE_FUNC))
 	{
 		LOGERR ("Cannot enable RP1 device");
 	}
 
+	s_bIsInitialized = TRUE;
+
 	assert (m_pInterrupt);
 	m_pInterrupt->ConnectIRQ (ARM_IRQ_PCIE_HOST_INTA, InterruptHandler, this);
-
-	s_bIsInitialized = TRUE;
 
 	return TRUE;
 }
 
 void CRP1::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->ConnectIRQ (nIRQ, pHandler, pParam);
+
+		return;
+	}
+
 	assert (s_bIsInitialized);
 
 	assert (nIRQ & IRQ_FROM_RP1__MASK);
@@ -121,6 +148,13 @@ void CRP1::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
 
 void CRP1::DisconnectIRQ (unsigned nIRQ)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->DisconnectIRQ (nIRQ);
+
+		return;
+	}
+
 	assert (s_bIsInitialized);
 
 	assert (nIRQ & IRQ_FROM_RP1__MASK);
@@ -182,6 +216,13 @@ CRP1 *CRP1::Get (void)
 
 void CRP1::DumpStatus (void)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->DumpStatus ();
+
+		return;
+	}
+
 	if (!s_bIsInitialized)
 	{
 		LOGDBG ("RP1 device is not initialized");
@@ -189,7 +230,8 @@ void CRP1::DumpStatus (void)
 		return;
 	}
 
-	m_PCIe.DumpStatus (RP1_PCIE_SLOT, RP1_PCIE_FUNC);
+	assert (m_pPCIe);
+	m_pPCIe->DumpStatus (RP1_PCIE_SLOT, RP1_PCIE_FUNC);
 
 	LOGDBG ("IRQ HANDLER  PARAM    FL");
 	for (unsigned nIRQ = 0; nIRQ < RP1_IRQ_LINES; nIRQ++)

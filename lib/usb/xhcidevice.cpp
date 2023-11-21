@@ -47,6 +47,9 @@ CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, bo
 #ifndef USE_XHCI_INTERNAL
 	m_PCIeHostBridge (pInterruptSystem),
 #endif
+#if RASPPI >= 5
+	m_RP1 (pInterruptSystem),
+#endif
 	m_SharedMemAllocator (
 		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_START),
 		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_END) + PAGE_SIZE - 1),
@@ -138,6 +141,15 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 	if (!m_PCIeHostBridge.EnableDevice (XHCI_PCI_CLASS_CODE, XHCI_PCIE_SLOT, XHCI_PCIE_FUNC))
 	{
 		CLogger::Get ()->Write (From, LogError, "Cannot enable xHCI device");
+
+		return FALSE;
+	}
+#endif
+
+#if RASPPI >= 5
+	if (!m_RP1.Initialize ())
+	{
+		CLogger::Get ()->Write (From, LogError, "Cannot initialize RP1");
 
 		return FALSE;
 	}

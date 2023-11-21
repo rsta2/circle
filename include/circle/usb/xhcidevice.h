@@ -2,7 +2,7 @@
 // xhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/interrupt.h>
 #include <circle/timer.h>
+#include <circle/rp1.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/bcmpciehostbridge.h>
 #include <circle/usb/xhcisharedmemallocator.h>
@@ -76,6 +77,9 @@ private:
 
 #ifndef USE_XHCI_INTERNAL
 	CBcmPCIeHostBridge m_PCIeHostBridge;
+#endif
+#if RASPPI >= 5
+	CRP1 m_RP1;
 #endif
 
 	CXHCISharedMemAllocator m_SharedMemAllocator;
