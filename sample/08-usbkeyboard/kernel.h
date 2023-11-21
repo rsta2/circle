@@ -29,7 +29,6 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include <circle/rp1.h>
 #include <circle/usb/usbhcidevice.h>
 #include <circle/usb/usbkeyboard.h>
 #include <circle/types.h>
@@ -70,9 +69,6 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
-#if RASPPI >= 5
-	CRP1			m_RP1;
-#endif
 	CUSBHCIDevice		m_USBHCI;
 
 	CUSBKeyboardDevice * volatile m_pKeyboard;

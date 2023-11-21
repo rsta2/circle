@@ -71,16 +71,23 @@ Currently the following sample programs are operational:
 * 02-screenpixel
 * 03-screentext
 * 04-timer
+* 05-usbsimple (with external USB 2.0 hub)
+* 07-usbstorage
 * 08-usbkeyboard
+* 14-usbprinter
 * 17-fractal (multi-core supported)
 * 19-tasks
 * 24-hwrandom
+* 27-usbgamepad
 * 34-sounddevices (USB sound only)
+* 37-showgamepad
 
 Additionally the following tests in test/ are operational:
 
 * gpio
 * gpio-interrupt
+* screen-ansi-colors
+* synchronization
 * watchdog
 
 USB
