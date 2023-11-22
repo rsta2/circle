@@ -55,7 +55,7 @@
 #define ARM_IRQ_GPIO3		GIC_SPI (116)
 #define ARM_IRQ_UART		GIC_SPI (121)
 #define ARM_IRQ_ARASANSDIO	GIC_SPI (126)
-#if RASPI == 4
+#if RASPPI == 4
 #define ARM_IRQ_PCIE_HOST_INTA	GIC_SPI (143)
 #define ARM_IRQ_PCIE_HOST_MSI	GIC_SPI (148)
 #else
@@ -66,7 +66,7 @@
 #define ARM_IRQ_BCM54213_1	GIC_SPI (158)
 #define ARM_IRQ_XHCI_INTERNAL	GIC_SPI (176)
 
-#if RASPI == 4
+#if RASPPI == 4
 #define IRQ_LINES		256
 #else
 #define IRQ_LINES		512
