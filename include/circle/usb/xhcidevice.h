@@ -23,7 +23,6 @@
 #include <circle/usb/usbhostcontroller.h>
 #include <circle/interrupt.h>
 #include <circle/timer.h>
-#include <circle/rp1.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/bcmpciehostbridge.h>
 #include <circle/usb/xhcisharedmemallocator.h>
@@ -40,7 +39,8 @@ class CXHCIDevice : public CUSBHostController	/// USB host controller interface 
 {
 public:
 	CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer,
-		     boolean bPlugAndPlay = FALSE);
+		     boolean bPlugAndPlay = FALSE, unsigned nDevice = 0,
+		     CXHCISharedMemAllocator *pSharedMemAllocator = 0);
 	~CXHCIDevice (void);
 
 	boolean Initialize (boolean bScanDevices = TRUE);
@@ -75,14 +75,14 @@ private:
 	CInterruptSystem *m_pInterruptSystem;
 	boolean m_bInterruptConnected;
 
+	unsigned m_nDevice;
+
 #ifndef USE_XHCI_INTERNAL
 	CBcmPCIeHostBridge m_PCIeHostBridge;
 #endif
-#if RASPPI >= 5
-	CRP1 m_RP1;
-#endif
 
-	CXHCISharedMemAllocator m_SharedMemAllocator;
+	CXHCISharedMemAllocator *m_pSharedMemAllocator;
+	boolean m_bOwnSharedMemAllocator;
 
 	CXHCIMMIOSpace *m_pMMIO;
 

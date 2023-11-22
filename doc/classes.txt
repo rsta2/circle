@@ -97,10 +97,10 @@ USB library
 * CUSBGamePadSwitchProDevice: Driver for Nintendo Switch Pro gamepad
 * CUSBGamePadXbox360Device: Driver for Xbox 360 Wired gamepad
 * CUSBGamePadXboxOneDevice: Driver for Xbox One gamepad
-* CUSBHCIDevice: Alias for CDWHCIDevice or CXHCIDevice, depending on Raspberry Pi model.
+* CUSBHCIDevice: Alias for CDWHCIDevice, CXHCIDevice or CUSBSubSystem, depending on Raspberry Pi model.
 * CUSBHCIRootPort: Base class, which represents an USB HCI root port.
 * CUSBHIDDevice: General USB HID device (e.g. keyboard, mouse, gamepad)
-* CUSBHostController: Base class of CDWHCIDevice, some basic functions for host controllers.
+* CUSBHostController: Base class of USB host controllers.
 * CUSBKeyboardDevice: Driver for USB keyboards
 * CUSBMIDIDevice: Interface device for USB Audio Class MIDI 1.0 devices
 * CUSBMIDIHostDevice: Host driver for USB Audio Class MIDI 1.0 devices
@@ -115,6 +115,7 @@ USB library
 * CUSBSerialPL2303Device: Driver for PL2303 based USB serial devices
 * CUSBStandardHub: USB hub driver for LAN9512/9514 and external hubs (max. 8 ports)
 * CUSBString: Encapsulates a string descriptor, available on an USB device.
+* CUSBSubSystem: USB sub-system of the Raspberry Pi 5.
 * CUSBTouchScreenDevice: Driver for USB HID-class touchscreens.
 * CXHCICommandManager: Synchronous xHC command execution for the xHCI driver.
 * CXHCIDevice: USB host controller interface (xHCI) driver for Raspberry Pi 4.

@@ -32,7 +32,7 @@
 #if RASPPI == 4
 	#define ARM_IRQ_XHCI	ARM_IRQ_XHCI_INTERNAL
 #else
-	#define ARM_IRQ_XHCI	RP1_IRQ_USBHOST0_0
+	#define ARM_IRQ_XHCI	(m_nDevice == 0 ? RP1_IRQ_USBHOST0_0 : RP1_IRQ_USBHOST1_0)
 #endif
 #else
 	#define ARM_IRQ_XHCI	ARM_IRQ_PCIE_HOST_INTA
@@ -40,19 +40,17 @@
 
 static const char From[] = "xhci";
 
-CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, boolean bPlugAndPlay)
+CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, boolean bPlugAndPlay,
+			  unsigned nDevice, CXHCISharedMemAllocator *pSharedMemAllocator)
 :	CUSBHostController (bPlugAndPlay),
 	m_pInterruptSystem (pInterruptSystem),
 	m_bInterruptConnected (FALSE),
+	m_nDevice (nDevice),
 #ifndef USE_XHCI_INTERNAL
 	m_PCIeHostBridge (pInterruptSystem),
 #endif
-#if RASPPI >= 5
-	m_RP1 (pInterruptSystem),
-#endif
-	m_SharedMemAllocator (
-		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_START),
-		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_END) + PAGE_SIZE - 1),
+	m_pSharedMemAllocator (pSharedMemAllocator),
+	m_bOwnSharedMemAllocator (FALSE),
 	m_pMMIO (0),
 	m_pSlotManager (0),
 	m_pEventManager (0),
@@ -62,6 +60,14 @@ CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, bo
 	m_pRootHub (0),
 	m_bShutdown (FALSE)
 {
+	if (m_pSharedMemAllocator == 0)
+	{
+		m_bOwnSharedMemAllocator = TRUE;
+
+		m_pSharedMemAllocator = new CXHCISharedMemAllocator (
+			CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_START),
+			CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_END) + PAGE_SIZE - 1);
+	}
 }
 
 CXHCIDevice::~CXHCIDevice (void)
@@ -97,6 +103,12 @@ CXHCIDevice::~CXHCIDevice (void)
 
 	delete m_pMMIO;
 	m_pMMIO = 0;
+
+	if (m_bOwnSharedMemAllocator)
+	{
+		delete m_pSharedMemAllocator;
+	}
+	m_pSharedMemAllocator = 0;
 }
 
 boolean CXHCIDevice::Initialize (boolean bScanDevices)
@@ -146,17 +158,19 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 	}
 #endif
 
-#if RASPPI >= 5
-	if (!m_RP1.Initialize ())
+	uintptr nBaseAddress = ARM_XHCI0_BASE;
+#if RASPPI == 4
+	assert (m_nDevice == 0);
+#else
+	assert (m_nDevice <= 1);
+	if (m_nDevice == 1)
 	{
-		CLogger::Get ()->Write (From, LogError, "Cannot initialize RP1");
-
-		return FALSE;
+		nBaseAddress = ARM_XHCI1_BASE;
 	}
 #endif
 
 	// version check
-	u16 usVersion = read16 (ARM_XHCI_BASE + XHCI_REG_CAP_HCIVERSION);
+	u16 usVersion = read16 (nBaseAddress + XHCI_REG_CAP_HCIVERSION);
 	if (usVersion != XHCI_SUPPORTED_VERSION)
 	{
 		CLogger::Get ()->Write (From, LogError, "Unsupported xHCI version (%X)",
@@ -166,7 +180,7 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 	}
 
 	// init MMIO space
-	m_pMMIO = new CXHCIMMIOSpace (ARM_XHCI_BASE);
+	m_pMMIO = new CXHCIMMIOSpace (nBaseAddress);
 	assert (m_pMMIO != 0);
 
 	// get some capabilities
@@ -273,7 +287,7 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 		}
 	}
 
-#if !defined (NDEBUG) && defined (XHCI_DEBUG2)
+#if !defined (NDEBUG) && defined (XHCI_DEBUG2) && RASPPI == 4
 	DumpStatus ();
 #endif
 
@@ -340,7 +354,8 @@ CXHCIRootHub *CXHCIDevice::GetRootHub (void)
 
 void *CXHCIDevice::AllocateSharedMem (size_t nSize, size_t nAlign, size_t nBoundary)
 {
-	void *pResult = m_SharedMemAllocator.Allocate (nSize, nAlign, nBoundary);
+	assert (m_pSharedMemAllocator != 0);
+	void *pResult = m_pSharedMemAllocator->Allocate (nSize, nAlign, nBoundary);
 	if (pResult != 0)
 	{
 		memset (pResult, 0, nSize);
@@ -355,7 +370,8 @@ void *CXHCIDevice::AllocateSharedMem (size_t nSize, size_t nAlign, size_t nBound
 
 void CXHCIDevice::FreeSharedMem (void *pBlock)
 {
-	m_SharedMemAllocator.Free (pBlock);
+	assert (m_pSharedMemAllocator != 0);
+	m_pSharedMemAllocator->Free (pBlock);
 }
 
 void CXHCIDevice::InterruptHandler (void)
@@ -451,8 +467,12 @@ void CXHCIDevice::DumpStatus (void)
 	m_PCIeHostBridge.DumpStatus (XHCI_PCIE_SLOT, XHCI_PCIE_FUNC);
 #endif
 
-	CLogger::Get ()->Write (From, LogDebug, "%u KB shared memory free",
-				(unsigned) (m_SharedMemAllocator.GetFreeSpace () / 1024));
+	if (m_bOwnSharedMemAllocator)
+	{
+		assert (m_pSharedMemAllocator != 0);
+		CLogger::Get ()->Write (From, LogDebug, "%u KB shared memory free",
+				(unsigned) (m_pSharedMemAllocator->GetFreeSpace () / 1024));
+	}
 }
 
 #endif

@@ -18,7 +18,7 @@ Currently is only a small subset of features supported:
 * PCIe host bridge to RP1 device
 * GPIO at RP1 (40-pin header) (subset of methods, input/output only)
 * GPIO interrupts (via RP1, issue with GPIOInterruptOn[Rising|Falling]Edge)
-* First xHCI USB controller (with 2 ports)
+* 2 xHCI USB controllers (4 ports)
 * Multi-core support and spin locks
 * Hardware random number generator
 * Watchdog device
@@ -92,14 +92,9 @@ Additionally the following tests in test/ are operational:
 
 USB
 
-Currently only two USB ports can be used (view onto the ports):
+The USB 2 ports cannot be used to connect devices, which only support USB 3.
+USB 1 and 2 devices can be used on any port. If you have problems with USB
+devices (e.g. with some USB hubs), which are not detected at all, please add
+the following option to the file cmdline.txt on the SD card:
 
-+---------+---------+
-|         | Port 1  |
-|         | USB 2.0 |
-|         | only    |
-+---------+---------+
-| Port 2  |         |
-| USB 2.0 |         |
-| USB 3.0 |         |
-+---------+---------+
+	usbpowerdelay=1000

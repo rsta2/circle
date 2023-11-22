@@ -42,6 +42,10 @@ OBJS	+= xhcicommandmanager.o xhcidevice.o xhciendpoint.o xhcieventmanager.o xhci
 	   xhciusbdevice.o usbaudiocontrol.o usbaudiostreaming.o usbaudiofunctopology.o
 endif
 
+ifeq ($(strip $(RASPPI)),5)
+OBJS	+= usbsubsystem.o
+endif
+
 # using coherent memory region
 ifeq ($(strip $(AARCH)),32)
 CFLAGS += -mno-unaligned-access
