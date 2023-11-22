@@ -5,7 +5,7 @@ This file gives information about the Raspberry Pi 5 support in Circle.
 
 FEATURES
 
-Currently is only a small subset of features supported:
+Currently is only a subset of features supported:
 
 * System init and reboot
 * MMU and cache support
@@ -24,6 +24,8 @@ Currently is only a small subset of features supported:
 * Watchdog device
 * Scheduler library
 * Sound library (with USB sound only)
+* Native FAT file-system library (in lib/fs/fat/)
+* FatFs library (in addon/fatfs/)
 * Bootloader (via UART connector)
 
 Most external hardware interfaces (I2C etc.) are not supported yet.
@@ -75,12 +77,14 @@ Currently the following sample programs are operational:
 * 07-usbstorage
 * 08-usbkeyboard
 * 14-usbprinter
+* 15-files
 * 17-fractal (multi-core supported)
 * 19-tasks
 * 24-hwrandom
 * 27-usbgamepad
 * 34-sounddevices (USB sound only)
 * 37-showgamepad
+* 39-umsdplugging
 
 Additionally the following tests in test/ are operational:
 
