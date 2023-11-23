@@ -70,8 +70,12 @@ private:
 	static void DisableAllInterrupts (unsigned nPin);
 	friend class CGPIOManager;
 
+	static void Pin2Bank (unsigned nPin, unsigned *pBank, unsigned *pBankPin);
+
 private:
 	unsigned  m_nPin;
+	unsigned  m_nBank;
+	unsigned  m_nBankPin;
 	TGPIOMode m_Mode;
 	unsigned  m_nValue;
 

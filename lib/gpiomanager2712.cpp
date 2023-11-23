@@ -24,9 +24,9 @@
 #include <circle/memio.h>
 #include <assert.h>
 
-#define GPIO_IRQ	RP1_IRQ_IO_BANK0
+#define GPIO0_BANKS	3
 
-#define PCIE_INTS	(ARM_GPIO0_IO_BASE + 0x124)
+#define PCIE_INTS(bank)	(ARM_GPIO0_IO_BASE + (bank)*0x4000 + 0x124)
 
 CGPIOManager::CGPIOManager (CInterruptSystem *pInterrupt)
 :	m_pInterrupt (pInterrupt),
@@ -50,7 +50,9 @@ CGPIOManager::~CGPIOManager (void)
 	if (m_bIRQConnected)
 	{
 		assert (m_pInterrupt != 0);
-		m_pInterrupt->DisconnectIRQ (GPIO_IRQ);
+		m_pInterrupt->DisconnectIRQ (RP1_IRQ_IO_BANK2);
+		m_pInterrupt->DisconnectIRQ (RP1_IRQ_IO_BANK1);
+		m_pInterrupt->DisconnectIRQ (RP1_IRQ_IO_BANK0);
 	}
 
 	m_pInterrupt = 0;
@@ -60,7 +62,9 @@ boolean CGPIOManager::Initialize (void)
 {
 	assert (!m_bIRQConnected);
 	assert (m_pInterrupt != 0);
-	m_pInterrupt->ConnectIRQ (GPIO_IRQ, InterruptStub, this);
+	m_pInterrupt->ConnectIRQ (RP1_IRQ_IO_BANK0, InterruptStub, this);
+	m_pInterrupt->ConnectIRQ (RP1_IRQ_IO_BANK1, InterruptStub, this);
+	m_pInterrupt->ConnectIRQ (RP1_IRQ_IO_BANK2, InterruptStub, this);
 	m_bIRQConnected = TRUE;
 
 	return TRUE;
@@ -95,22 +99,35 @@ void CGPIOManager::InterruptHandler (void)
 {
 	assert (m_bIRQConnected);
 
-	u32 nEventStatus = read32 (PCIE_INTS);
-
 	unsigned nPin = 0;
-	while (nPin < GPIO_PINS)
+	unsigned nBank = 0;
+	unsigned nBankPin;
+	do
 	{
-		if (nEventStatus & 1)
+		u32 nEventStatus = read32 (PCIE_INTS (nBank));
+
+		static unsigned BankPins[GPIO0_BANKS] = {28, 6, 20};
+
+		nBankPin = 0;
+		while (nBankPin < BankPins[nBank])
 		{
-			break;
+			if (nEventStatus & 1)
+			{
+				goto PinFound;
+			}
+			nEventStatus >>= 1;
+
+			++nPin;
+			++nBankPin;
 		}
-		nEventStatus >>= 1;
 
-		++nPin;
+		++nBank;
 	}
+	while (nBank < GPIO0_BANKS);
 
-	if (nPin < GPIO_PINS)
+	if (nBank < GPIO0_BANKS)
 	{
+PinFound:
 		CGPIOPin *pPin = m_apPin[nPin];
 		if (pPin)
 		{

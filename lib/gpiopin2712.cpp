@@ -27,7 +27,6 @@
 #include <assert.h>
 
 // TODO: Support alternate functions
-// TODO: Support IO_BANK1 and IO_BANK2
 // TODO: Support non-RP1 GPIO pins
 // TODO: GPIOInterruptOn[Rising|Falling]Edge does not work
 // TODO: Use SET/CLR registers (if available?)
@@ -35,12 +34,15 @@
 // See: Raspberry Pi RP1 Peripherals
 //      https://datasheets.raspberrypi.com/rp1/rp1-peripherals.pdf
 
-#define GPIO0_STATUS(pin)			(ARM_GPIO0_IO_BASE + (pin) * 8)
+#define GPIO0_BANKS	3
+#define MAX_BANK_PINS	32
+
+#define GPIO0_STATUS(bank, pin)			(ARM_GPIO0_IO_BASE + (bank)*0x4000 + (pin)*8)
 	#define STATUS_INISDIRECT__MASK		BIT (16)
 	#define STATUS_INFROMPAD__MASK		BIT (17)
 	#define STATUS_INFILTERED__MASK		BIT (18)
 	#define STATUS_INTOPERI__MASK		BIT (19)
-#define GPIO0_CTRL(pin)				(ARM_GPIO0_IO_BASE + (pin) * 8 + 4)
+#define GPIO0_CTRL(bank, pin)			(ARM_GPIO0_IO_BASE + (bank)*0x4000 + (pin)*8 + 4)
 	#define CTRL_FUNCSEL__SHIFT		0
 	#define CTRL_FUNCSEL__MASK		(0x1F << 0)
 		#define FUNCSEL_NULL		31
@@ -81,10 +83,10 @@
 		#define IRQOVER_INVERT		1
 		#define IRQOVER_LOW		2
 		#define IRQOVER_HIGH		3
-#define PCIE_INTE				(ARM_GPIO0_IO_BASE + 0x11C)
-#define PCIE_INTF				(ARM_GPIO0_IO_BASE + 0x120)
-#define PCIE_INTS				(ARM_GPIO0_IO_BASE + 0x124)
-#define PADS0_CTRL(pin)				(ARM_GPIO0_PADS_BASE + 4 + (pin) * 4)
+#define PCIE_INTE(bank)				(ARM_GPIO0_IO_BASE + (bank)*0x4000 + 0x11C)
+#define PCIE_INTF(bank)				(ARM_GPIO0_IO_BASE + (bank)*0x4000 + 0x120)
+#define PCIE_INTS(bank)				(ARM_GPIO0_IO_BASE + (bank)*0x4000 + 0x124)
+#define PADS0_CTRL(bank, pin)			(ARM_GPIO0_PADS_BASE + (bank)*0x4000 + 4 + (pin) * 4)
 	#define PADS_SLEWFAST__MASK		BIT (0)
 	#define PADS_SCHMITT__MASK		BIT (1)
 	#define PADS_PDE__MASK			BIT (2)
@@ -116,6 +118,8 @@ u32 CGPIOPin::s_nInterruptMap[GPIOInterruptUnknown] =
 
 CGPIOPin::CGPIOPin (void)
 :	m_nPin (GPIO_PINS),
+	m_nBank (GPIO0_BANKS),
+	m_nBankPin (MAX_BANK_PINS),
 	m_Mode (GPIOModeUnknown),
 	m_nValue (LOW),
 	m_pManager (nullptr),
@@ -127,6 +131,8 @@ CGPIOPin::CGPIOPin (void)
 
 CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
 :	m_nPin (GPIO_PINS),
+	m_nBank (GPIO0_BANKS),
+	m_nBankPin (MAX_BANK_PINS),
 	m_Mode (GPIOModeUnknown),
 	m_nValue (LOW),
 	m_pManager (pManager),
@@ -144,19 +150,26 @@ CGPIOPin::~CGPIOPin (void)
 	m_pHandler = nullptr;
 	m_pManager = nullptr;
 
-	m_nPin = GPIO_PINS;
+	m_nBank = GPIO0_BANKS;
+	m_nBankPin = MAX_BANK_PINS;
 }
 
 void CGPIOPin::AssignPin (unsigned nPin)
 {
 	assert (m_nPin == GPIO_PINS);
+	assert (m_nBank == GPIO0_BANKS);
+	assert (m_nBankPin == MAX_BANK_PINS);
+
 	m_nPin = nPin;
 	assert (m_nPin < GPIO_PINS);
+
+	Pin2Bank (nPin, &m_nBank, &m_nBankPin);
 }
 
 void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 {
-	assert (m_nPin < GPIO_PINS);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
 	assert (bInitPin);			// TODO
 	assert (CRP1::IsInitialized ());
 
@@ -165,35 +178,37 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	switch (m_Mode)
 	{
 	case GPIOModeInput:
-		write32 (GPIO0_CTRL (m_nPin),
+		write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
 			   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
 			 | (FILTER_CONST_M_DEFAULT << CTRL_FILTER_CONST_M__SHIFT)
 			 | (OEOVER_DISABLE << CTRL_OEOVER__SHIFT));
-		write32 (PADS0_CTRL (m_nPin), PADS_SCHMITT__MASK | PADS_IE__MASK);
+		write32 (PADS0_CTRL (m_nBank, m_nBankPin), PADS_SCHMITT__MASK | PADS_IE__MASK);
 		break;
 
 	case GPIOModeOutput:
-		write32 (GPIO0_CTRL (m_nPin),
+		write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
 			   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
 			 | (OUTOVER_LOW << CTRL_OUTOVER__SHIFT)
 			 | (OEOVER_ENABLE << CTRL_OEOVER__SHIFT));
-		write32 (PADS0_CTRL (m_nPin), (DRIVE_12MA << PADS_DRIVE__SHIFT));
+		write32 (PADS0_CTRL (m_nBank, m_nBankPin), (DRIVE_12MA << PADS_DRIVE__SHIFT));
 		break;
 
 	case GPIOModeInputPullUp:
-		write32 (GPIO0_CTRL (m_nPin),
+		write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
 			   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
 			 | (FILTER_CONST_M_DEFAULT << CTRL_FILTER_CONST_M__SHIFT)
 			 | (OEOVER_DISABLE << CTRL_OEOVER__SHIFT));
-		write32 (PADS0_CTRL (m_nPin), PADS_SCHMITT__MASK | PADS_PUE__MASK | PADS_IE__MASK);
+		write32 (PADS0_CTRL (m_nBank, m_nBankPin),
+			 PADS_SCHMITT__MASK | PADS_PUE__MASK | PADS_IE__MASK);
 		break;
 
 	case GPIOModeInputPullDown:
-		write32 (GPIO0_CTRL (m_nPin),
+		write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
 			   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
 			 | (FILTER_CONST_M_DEFAULT << CTRL_FILTER_CONST_M__SHIFT)
 			 | (OEOVER_DISABLE << CTRL_OEOVER__SHIFT));
-		write32 (PADS0_CTRL (m_nPin), PADS_SCHMITT__MASK | PADS_PDE__MASK | PADS_IE__MASK);
+		write32 (PADS0_CTRL (m_nBank, m_nBankPin),
+			 PADS_SCHMITT__MASK | PADS_PDE__MASK | PADS_IE__MASK);
 		break;
 
 	default:
@@ -204,10 +219,11 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 
 void CGPIOPin::SetPullMode (TGPIOPullMode Mode)
 {
-	assert (m_nPin < GPIO_PINS);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
 	assert (CRP1::IsInitialized ());
 
-	u32 nPads = read32 (PADS0_CTRL (m_nPin));
+	u32 nPads = read32 (PADS0_CTRL (m_nBank, m_nBankPin));
 	nPads &= ~(PADS_PDE__MASK | PADS_PUE__MASK);
 
 	switch (Mode)
@@ -228,12 +244,13 @@ void CGPIOPin::SetPullMode (TGPIOPullMode Mode)
 		break;
 	}
 
-	write32 (PADS0_CTRL (m_nPin), nPads);
+	write32 (PADS0_CTRL (m_nBank, m_nBankPin), nPads);
 }
 
 void CGPIOPin::Write (unsigned nValue)
 {
-	assert (m_nPin < GPIO_PINS);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
 	assert (m_Mode == GPIOModeOutput);
 	assert (nValue <= HIGH);
 
@@ -241,7 +258,7 @@ void CGPIOPin::Write (unsigned nValue)
 
 	// TODO: Acquire m_SpinLock?
 
-	write32 (GPIO0_CTRL (m_nPin),
+	write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
 		   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
 		 | ((nValue ? OUTOVER_HIGH : OUTOVER_LOW) << CTRL_OUTOVER__SHIFT)
 		 | (OEOVER_ENABLE << CTRL_OEOVER__SHIFT));
@@ -249,12 +266,13 @@ void CGPIOPin::Write (unsigned nValue)
 
 unsigned CGPIOPin::Read (void) const
 {
-	assert (m_nPin < GPIO_PINS);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
 	assert (   m_Mode == GPIOModeInput
 		|| m_Mode == GPIOModeInputPullUp
 		|| m_Mode == GPIOModeInputPullDown);
 
-	return !!(read32 (GPIO0_STATUS (m_nPin)) & STATUS_INFILTERED__MASK);
+	return !!(read32 (GPIO0_STATUS (m_nBank, m_nBankPin)) & STATUS_INFILTERED__MASK);
 }
 
 void CGPIOPin::Invert (void)
@@ -282,9 +300,10 @@ void CGPIOPin::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam, 
 	assert (m_pManager);
 	m_pManager->ConnectInterrupt (this);
 
-	assert (m_nPin < GPIO_PINS);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
 	s_SpinLock.Acquire ();
-	write32 (PCIE_INTE, read32 (PCIE_INTE) | BIT (m_nPin));
+	write32 (PCIE_INTE (m_nBank), read32 (PCIE_INTE (m_nBank)) | BIT (m_nBankPin));
 	s_SpinLock.Release ();
 }
 
@@ -300,9 +319,10 @@ void CGPIOPin::DisconnectInterrupt (void)
 	assert (m_pHandler);
 	m_pHandler = nullptr;
 
-	assert (m_nPin < GPIO_PINS);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
 	s_SpinLock.Acquire ();
-	write32 (PCIE_INTE, read32 (PCIE_INTE) & ~BIT (m_nPin));
+	write32 (PCIE_INTE (m_nBank), read32 (PCIE_INTE (m_nBank)) & ~BIT (m_nBankPin));
 	s_SpinLock.Release ();
 
 	assert (m_pManager);
@@ -321,7 +341,9 @@ void CGPIOPin::EnableInterrupt (TGPIOInterrupt Interrupt)
 	assert (Interrupt != m_Interrupt2);
 	m_Interrupt = Interrupt;
 
-	uintptr nReg = GPIO0_CTRL (m_nPin);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+	uintptr nReg = GPIO0_CTRL (m_nBank, m_nBankPin);
 
 	m_SpinLock.Acquire ();
 	write32 (nReg, read32 (nReg) | s_nInterruptMap[Interrupt]);
@@ -337,7 +359,9 @@ void CGPIOPin::DisableInterrupt (void)
 
 	assert (m_Interrupt < GPIOInterruptUnknown);
 
-	uintptr nReg = GPIO0_CTRL (m_nPin);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+	uintptr nReg = GPIO0_CTRL (m_nBank, m_nBankPin);
 
 	m_SpinLock.Acquire ();
 	write32 (nReg, read32 (nReg) & ~s_nInterruptMap[m_Interrupt]);
@@ -358,7 +382,9 @@ void CGPIOPin::EnableInterrupt2 (TGPIOInterrupt Interrupt)
 	assert (Interrupt != m_Interrupt);
 	m_Interrupt2 = Interrupt;
 
-	uintptr nReg = GPIO0_CTRL (m_nPin);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+	uintptr nReg = GPIO0_CTRL (m_nBank, m_nBankPin);
 
 	m_SpinLock.Acquire ();
 	write32 (nReg, read32 (nReg) | s_nInterruptMap[Interrupt]);
@@ -374,7 +400,9 @@ void CGPIOPin::DisableInterrupt2 (void)
 
 	assert (m_Interrupt2 < GPIOInterruptUnknown);
 
-	uintptr nReg = GPIO0_CTRL (m_nPin);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+	uintptr nReg = GPIO0_CTRL (m_nBank, m_nBankPin);
 
 	m_SpinLock.Acquire ();
 	write32 (nReg, read32 (nReg) & ~s_nInterruptMap[m_Interrupt2]);
@@ -398,7 +426,9 @@ void CGPIOPin::AcknowledgeInterrupt (void)
 		return;
 	}
 
-	uintptr nReg = GPIO0_CTRL (m_nPin);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+	uintptr nReg = GPIO0_CTRL (m_nBank, m_nBankPin);
 
 	m_SpinLock.Acquire ();
 	write32 (nReg, read32 (nReg) | CTRL_IRQRESET__MASK);
@@ -416,11 +446,15 @@ void CGPIOPin::DumpStatus (void)
 
 		for (unsigned nPin = 0; nPin < GPIO_PINS; nPin++)
 		{
+			unsigned nBank;
+			unsigned nBankPin;
+			Pin2Bank (nPin, &nBank, &nBankPin);
+
 			LOGDBG ("%02u: %08X %08X %02X",
 				nPin,
-				read32 (GPIO0_STATUS (nPin)),
-				read32 (GPIO0_CTRL (nPin)),
-				read32 (PADS0_CTRL (nPin)));
+				read32 (GPIO0_STATUS (nBank, nBankPin)),
+				read32 (GPIO0_CTRL (nBank, nBankPin)),
+				read32 (PADS0_CTRL (nBank, nBankPin)));
 		}
 	}
 	else
@@ -447,7 +481,34 @@ void CGPIOPin::DisableAllInterrupts (unsigned nPin)
 {
 	assert (nPin < GPIO_PINS);
 
+	unsigned nBank;
+	unsigned nBankPin;
+	Pin2Bank (nPin, &nBank, &nBankPin);
+
 	s_SpinLock.Acquire ();
-	write32 (PCIE_INTE, read32 (PCIE_INTE) & ~BIT (nPin));
+	write32 (PCIE_INTE (nBank), read32 (PCIE_INTE (nBank)) & ~BIT (nBankPin));
 	s_SpinLock.Release ();
+}
+
+void CGPIOPin::Pin2Bank (unsigned nPin, unsigned *pBank, unsigned *pBankPin)
+{
+	assert (pBank);
+	assert (pBankPin);
+
+	if (nPin < 28)
+	{
+		*pBank = 0;
+		*pBankPin = nPin;
+	}
+	else if (nPin < 34)
+	{
+		*pBank = 1;
+		*pBankPin = nPin - 28;
+	}
+	else
+	{
+		assert (nPin < 54);
+		*pBank = 2;
+		*pBankPin = nPin - 34;
+	}
 }

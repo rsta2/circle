@@ -23,11 +23,7 @@
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
-#if RASPPI <= 4
-	#define GPIO_PINS	54
-#else
-	#define GPIO_PINS	28
-#endif
+#define GPIO_PINS	54
 
 #define LOW		0
 #define HIGH		1
