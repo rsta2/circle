@@ -33,7 +33,7 @@
 /// \details GPIO pin mapping (chip numbers)
 /// nDevice | TXD    | RXD    | Support
 /// :-----: | :----: | :----: | :------
-/// 0       | GPIO14 | GPIO15 | All boards
+/// 0       | GPIO14 | GPIO15 | Raspberry Pi 1-4
 /// ^       | GPIO32 | GPIO33 | Compute Modules
 /// ^       | GPIO36 | GPIO37 | Compute Modules
 /// 1       |        |        | None (AUX)
@@ -44,11 +44,23 @@
 /// GPIO32/33 and GPIO36/37 can be selected with system option SERIAL_GPIO_SELECT.\n
 /// GPIO0/1 are normally reserved for ID EEPROM.\n
 /// Handshake lines CTS and RTS are not supported.
+///
+/// nDevice | TXD    | RXD    | Support
+/// :-----: | :----: | :----: | :------
+/// 0       | UART connector  | Raspberry Pi 5 only
+/// 1       | GPIO14 | GPIO15 | Raspberry Pi 5 only
+/// 2       | GPIO0  | GPIO1  | Raspberry Pi 5 only
+/// 3       | GPIO4  | GPIO5  | Raspberry Pi 5 only
+/// 4       | GPIO8  | GPIO9  | Raspberry Pi 5 only
+/// 5       | GPIO12 | GPIO13 | Raspberry Pi 5 only
+/// 6       | GPIO36 | GPIO37 | Compute Module 5?
 
-#if RASPPI != 4
+#if RASPPI < 4
 	#define SERIAL_DEVICES		1
-#else
+#elif RASPPI == 4
 	#define SERIAL_DEVICES		6
+#else
+	#define SERIAL_DEVICES		7
 #endif
 
 #define SERIAL_BUF_SIZE		2048			// must be a power of 2
@@ -150,14 +162,12 @@ private:
 	uintptr  m_nBaseAddress;
 	boolean  m_bValid;
 
-#if RASPPI <= 4
-#if SERIAL_GPIO_SELECT == 14
+#if SERIAL_GPIO_SELECT == 14 && RASPPI <= 4
 	CGPIOPin m_GPIO32;
 	CGPIOPin m_GPIO33;
 #endif
 	CGPIOPin m_TxDPin;
 	CGPIOPin m_RxDPin;
-#endif
 
 	u8 m_RxBuffer[SERIAL_BUF_SIZE];
 	volatile unsigned m_nRxInPtr;
