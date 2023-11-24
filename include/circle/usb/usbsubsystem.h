@@ -22,7 +22,7 @@
 
 #include <circle/interrupt.h>
 #include <circle/timer.h>
-#include <circle/rp1.h>
+#include <circle/southbridge.h>
 #include <circle/usb/usb.h>
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbcontroller.h>
@@ -63,7 +63,7 @@ private:
 private:
 	boolean m_bPlugAndPlay;
 
-	CRP1 m_RP1;
+	CSouthbridge m_Southbridge;
 
 	CXHCISharedMemAllocator m_SharedMemAllocator;
 

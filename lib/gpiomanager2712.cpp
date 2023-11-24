@@ -18,7 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/gpiomanager.h>
-#include <circle/rp1.h>
 #include <circle/rp1int.h>
 #include <circle/bcm2712.h>
 #include <circle/memio.h>

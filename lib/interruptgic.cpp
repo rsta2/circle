@@ -26,7 +26,7 @@
 #include <circle/memio.h>
 #include <circle/logger.h>
 #include <circle/sysconfig.h>
-#include <circle/rp1.h>
+#include <circle/southbridge.h>
 #include <circle/rp1int.h>
 #include <circle/types.h>
 #include <assert.h>
@@ -180,8 +180,8 @@ void CInterruptSystem::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *p
 #if RASPPI >= 5
 	if (nIRQ & IRQ_FROM_RP1__MASK)
 	{
-		assert (CRP1::IsInitialized ());
-		CRP1::Get ()->ConnectIRQ (nIRQ, pHandler, pParam);
+		assert (CSouthbridge::IsInitialized ());
+		CSouthbridge::Get ()->ConnectIRQ (nIRQ, pHandler, pParam);
 
 		return;
 	}
@@ -203,8 +203,8 @@ void CInterruptSystem::DisconnectIRQ (unsigned nIRQ)
 #if RASPPI >= 5
 	if (nIRQ & IRQ_FROM_RP1__MASK)
 	{
-		assert (CRP1::IsInitialized ());
-		CRP1::Get ()->DisconnectIRQ (nIRQ);
+		assert (CSouthbridge::IsInitialized ());
+		CSouthbridge::Get ()->DisconnectIRQ (nIRQ);
 
 		return;
 	}
@@ -248,8 +248,8 @@ void CInterruptSystem::EnableIRQ (unsigned nIRQ)
 #if RASPPI >= 5
 	if (nIRQ & IRQ_FROM_RP1__MASK)
 	{
-		assert (CRP1::IsInitialized ());
-		CRP1::Get ()->EnableIRQ (nIRQ);
+		assert (CSouthbridge::IsInitialized ());
+		CSouthbridge::Get ()->EnableIRQ (nIRQ);
 
 		return;
 	}
@@ -267,8 +267,8 @@ void CInterruptSystem::DisableIRQ (unsigned nIRQ)
 #if RASPPI >= 5
 	if (nIRQ & IRQ_FROM_RP1__MASK)
 	{
-		assert (CRP1::IsInitialized ());
-		CRP1::Get ()->DisableIRQ (nIRQ);
+		assert (CSouthbridge::IsInitialized ());
+		CSouthbridge::Get ()->DisableIRQ (nIRQ);
 
 		return;
 	}

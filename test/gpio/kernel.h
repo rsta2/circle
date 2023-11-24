@@ -29,7 +29,7 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include <circle/rp1.h>
+#include <circle/southbridge.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -61,7 +61,7 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 #if RASPPI >= 5
-	CRP1			m_RP1;
+	CSouthbridge		m_Southbridge;
 #endif
 };
 

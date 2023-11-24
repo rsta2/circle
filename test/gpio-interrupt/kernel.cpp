@@ -28,7 +28,7 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 #if RASPPI >= 5
-	m_RP1 (&m_Interrupt),
+	m_Southbridge (&m_Interrupt),
 #endif
 	m_GPIOManager (&m_Interrupt),
 	m_pButtonPin (nullptr)
@@ -78,7 +78,7 @@ boolean CKernel::Initialize (void)
 #if RASPPI >= 5
 	if (bOK)
 	{
-		bOK = m_RP1.Initialize ();
+		bOK = m_Southbridge.Initialize ();
 	}
 #endif
 

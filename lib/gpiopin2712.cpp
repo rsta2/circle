@@ -23,7 +23,7 @@
 #include <circle/memio.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
-#include <circle/rp1.h>
+#include <circle/southbridge.h>
 #include <assert.h>
 
 // TODO: Support non-RP1 GPIO pins
@@ -169,7 +169,7 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	assert (Mode < GPIOModeUnknown);
 	assert (m_nBank < GPIO0_BANKS);
 	assert (m_nBankPin < MAX_BANK_PINS);
-	assert (CRP1::IsInitialized ());
+	assert (CSouthbridge::IsInitialized ());
 
 	m_Mode = Mode;
 
@@ -252,7 +252,7 @@ void CGPIOPin::SetPullMode (TGPIOPullMode Mode)
 {
 	assert (m_nBank < GPIO0_BANKS);
 	assert (m_nBankPin < MAX_BANK_PINS);
-	assert (CRP1::IsInitialized ());
+	assert (CSouthbridge::IsInitialized ());
 
 	u32 nPads = read32 (PADS0_CTRL (m_nBank, m_nBankPin));
 	nPads &= ~(PADS_PDE__MASK | PADS_PUE__MASK);
@@ -554,7 +554,7 @@ void CGPIOPin::AcknowledgeInterrupt (void)
 
 void CGPIOPin::DumpStatus (void)
 {
-	if (CRP1::IsInitialized ())
+	if (CSouthbridge::IsInitialized ())
 	{
 		LOGDBG ("GIO STATUS   CTRL     PADS");
 

@@ -60,7 +60,7 @@ endif
 ifneq ($(strip $(RASPPI)),5)
 OBJS	+= gpiomanager.o gpiopin.o gpiopinfiq.o smimaster.o spimasterdma.o
 else
-OBJS	+= rp1.o gpiomanager2712.o gpiopin2712.o
+OBJS	+= southbridge.o gpiomanager2712.o gpiopin2712.o
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),3)

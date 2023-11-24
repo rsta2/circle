@@ -30,7 +30,7 @@ CUSBSubSystem *CUSBSubSystem::s_pThis = nullptr;
 CUSBSubSystem::CUSBSubSystem (CInterruptSystem *pInterruptSystem, CTimer *pTimer,
 			      boolean bPlugAndPlay)
 :	m_bPlugAndPlay (bPlugAndPlay),
-	m_RP1 (pInterruptSystem),
+	m_Southbridge (pInterruptSystem),
 	m_SharedMemAllocator (
 		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_START),
 		CMemorySystem::GetCoherentPage (COHERENT_SLOT_XHCI_END) + PAGE_SIZE - 1)
@@ -59,7 +59,7 @@ CUSBSubSystem::~CUSBSubSystem (void)
 
 boolean CUSBSubSystem::Initialize (boolean bScanDevices)
 {
-	if (!m_RP1.Initialize ())
+	if (!m_Southbridge.Initialize ())
 	{
 		LOGERR ("Cannot initialize RP1 device");
 
@@ -146,7 +146,7 @@ void CUSBSubSystem::DumpStatus (void)
 		}
 	}
 
-	m_RP1.DumpStatus ();
+	m_Southbridge.DumpStatus ();
 
 	LOGDBG ("%u KB shared memory free",
 		(unsigned) (m_SharedMemAllocator.GetFreeSpace () / 1024));

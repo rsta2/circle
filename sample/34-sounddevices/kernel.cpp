@@ -59,8 +59,6 @@ CKernel::CKernel (void)
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 #if RASPPI <= 4
 	m_I2CMaster (CMachineInfo::Get ()->GetDevice (DeviceI2CMaster), TRUE),
-#else
-	m_RP1 (&m_Interrupt),
 #endif
 	m_USBHCI (&m_Interrupt, &m_Timer, FALSE),
 #ifdef USE_VCHIQ_SOUND
@@ -115,11 +113,6 @@ boolean CKernel::Initialize (void)
 	if (bOK)
 	{
 		bOK = m_I2CMaster.Initialize ();
-	}
-#else
-	if (bOK)
-	{
-		bOK = m_RP1.Initialize ();
 	}
 #endif
 

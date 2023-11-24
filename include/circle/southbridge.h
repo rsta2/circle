@@ -1,5 +1,5 @@
 //
-// rp1.h
+// southbridge.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023  R. Stange <rsta2@o2online.de>
@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_rp1_h
-#define _circle_rp1_h
+#ifndef _circle_southbridge_h
+#define _circle_southbridge_h
 
 #if RASPPI >= 5
 
@@ -27,13 +27,13 @@
 #include <circle/bcmpciehostbridge.h>
 #include <circle/types.h>
 
-class CRP1	/// Driver for the RP1 multi-function device of the Raspberry Pi 5
+class CSouthbridge	/// Driver for the RP1 multi-function device of the Raspberry Pi 5
 {
 public:
 	/// \param pInterrupt Pointer to the interrupt system object
-	CRP1 (CInterruptSystem *pInterrupt);
+	CSouthbridge (CInterruptSystem *pInterrupt);
 
-	~CRP1 (void);
+	~CSouthbridge (void);
 
 	/// \return Operation successful?
 	boolean Initialize (void);
@@ -52,7 +52,7 @@ public:
 	static void DisableIRQ (unsigned nIRQ);
 
 	/// \return Pointer to the only RP1 object
-	static CRP1 *Get (void);
+	static CSouthbridge *Get (void);
 
 	/// \return Has RP1 already been initialized?
 	static boolean IsInitialized (void)
@@ -79,7 +79,7 @@ private:
 
 	static boolean s_bIsInitialized;
 
-	static CRP1 *s_pThis;
+	static CSouthbridge *s_pThis;
 };
 
 #endif

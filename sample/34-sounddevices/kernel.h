@@ -31,7 +31,6 @@
 #include <circle/logger.h>
 #include <circle/sched/scheduler.h>
 #include <circle/i2cmaster.h>
-#include <circle/rp1.h>
 #include <circle/usb/usbhcidevice.h>
 #include <circle/sound/soundbasedevice.h>
 #include <circle/types.h>
@@ -77,8 +76,6 @@ private:
 	CScheduler		m_Scheduler;
 #if RASPPI <= 4
 	CI2CMaster		m_I2CMaster;
-#else
-	CRP1			m_RP1;
 #endif
 	CUSBHCIDevice		m_USBHCI;
 

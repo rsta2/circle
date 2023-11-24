@@ -1,5 +1,5 @@
 //
-// rp1.cpp
+// southbridge.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023  R. Stange <rsta2@o2online.de>
@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/rp1.h>
+#include <circle/southbridge.h>
 #include <circle/memio.h>
 #include <circle/bcm2712.h>
 #include <circle/logger.h>
@@ -44,11 +44,11 @@
 
 LOGMODULE ("rp1");
 
-CRP1 *CRP1::s_pThis = nullptr;
+CSouthbridge *CSouthbridge::s_pThis = nullptr;
 
-boolean CRP1::s_bIsInitialized = FALSE;
+boolean CSouthbridge::s_bIsInitialized = FALSE;
 
-CRP1::CRP1 (CInterruptSystem *pInterrupt)
+CSouthbridge::CSouthbridge (CInterruptSystem *pInterrupt)
 :	m_pInterrupt (pInterrupt),
 	m_pPCIe (nullptr),
 	m_ulEnableMask (0)
@@ -70,7 +70,7 @@ CRP1::CRP1 (CInterruptSystem *pInterrupt)
 	m_pPCIe = new CBcmPCIeHostBridge (m_pInterrupt);
 }
 
-CRP1::~CRP1 (void)
+CSouthbridge::~CSouthbridge (void)
 {
 	if (s_pThis != this)
 	{
@@ -93,7 +93,7 @@ CRP1::~CRP1 (void)
 	s_pThis = nullptr;
 }
 
-boolean CRP1::Initialize (void)
+boolean CSouthbridge::Initialize (void)
 {
 	if (s_pThis != this)
 	{
@@ -123,7 +123,7 @@ boolean CRP1::Initialize (void)
 	return TRUE;
 }
 
-void CRP1::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
+void CSouthbridge::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
 {
 	if (s_pThis != this)
 	{
@@ -146,7 +146,7 @@ void CRP1::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
 	EnableIRQ (nIRQ);
 }
 
-void CRP1::DisconnectIRQ (unsigned nIRQ)
+void CSouthbridge::DisconnectIRQ (unsigned nIRQ)
 {
 	if (s_pThis != this)
 	{
@@ -169,7 +169,7 @@ void CRP1::DisconnectIRQ (unsigned nIRQ)
 	m_pParam[nIRQLocal] = nullptr;
 }
 
-void CRP1::EnableIRQ (unsigned nIRQ)
+void CSouthbridge::EnableIRQ (unsigned nIRQ)
 {
 	assert (nIRQ & IRQ_FROM_RP1__MASK);
 	unsigned nIRQLocal = nIRQ & IRQ_NUMBER__MASK;
@@ -194,7 +194,7 @@ void CRP1::EnableIRQ (unsigned nIRQ)
 	write32 (INTC_REG_SET + MSIX_CFG (nIRQLocal), MSIX_CFG_ENABLE);
 }
 
-void CRP1::DisableIRQ (unsigned nIRQ)
+void CSouthbridge::DisableIRQ (unsigned nIRQ)
 {
 	assert (nIRQ & IRQ_FROM_RP1__MASK);
 	unsigned nIRQLocal = nIRQ & IRQ_NUMBER__MASK;
@@ -206,7 +206,7 @@ void CRP1::DisableIRQ (unsigned nIRQ)
 	s_pThis->m_ulEnableMask &= ~BIT (nIRQLocal);
 }
 
-CRP1 *CRP1::Get (void)
+CSouthbridge *CSouthbridge::Get (void)
 {
 	assert (s_pThis);
 	return s_pThis;
@@ -214,7 +214,7 @@ CRP1 *CRP1::Get (void)
 
 #ifndef NDEBUG
 
-void CRP1::DumpStatus (void)
+void CSouthbridge::DumpStatus (void)
 {
 	if (s_pThis != this)
 	{
@@ -248,7 +248,7 @@ void CRP1::DumpStatus (void)
 
 #endif
 
-void CRP1::InterruptHandler (void *pParam)
+void CSouthbridge::InterruptHandler (void *pParam)
 {
 	assert (s_pThis);
 	assert (s_bIsInitialized);
