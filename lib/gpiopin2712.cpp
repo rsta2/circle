@@ -26,9 +26,7 @@
 #include <circle/rp1.h>
 #include <assert.h>
 
-// TODO: Support alternate functions
 // TODO: Support non-RP1 GPIO pins
-// TODO: GPIOInterruptOn[Rising|Falling]Edge does not work
 // TODO: Use SET/CLR registers (if available?)
 
 // See: Raspberry Pi RP1 Peripherals
@@ -49,7 +47,7 @@
 		#define FUNCSEL_ALT_MAX		8
 	#define CTRL_FILTER_CONST_M__SHIFT	5
 	#define CTRL_FILTER_CONST_M__MASK	(0x7F << 5)
-		#define FILTER_CONST_M_DEFAULT	4
+		#define FILTER_CONST_M_MAX	127
 	#define CTRL_OUTOVER__SHIFT		12
 	#define CTRL_OUTOVER__MASK		(3 << 12)
 		#define OUTOVER_FUNCSEL		0
@@ -106,8 +104,8 @@ CSpinLock CGPIOPin::s_SpinLock;
 
 u32 CGPIOPin::s_nInterruptMap[GPIOInterruptUnknown] =
 {
-	CTRL_IRQMASK_F_EDGE_HIGH__MASK,		// RisingEdge
-	CTRL_IRQMASK_F_EDGE_LOW__MASK,		// FallingEdge
+	CTRL_IRQMASK_EDGE_HIGH__MASK,		// RisingEdge
+	CTRL_IRQMASK_EDGE_LOW__MASK,		// FallingEdge
 	CTRL_IRQMASK_LEVEL_HIGH__MASK,		// HighLevel
 	CTRL_IRQMASK_LEVEL_LOW__MASK,		// LowLevel
 	CTRL_IRQMASK_EDGE_HIGH__MASK,		// AsyncRisingEdge
@@ -168,52 +166,85 @@ void CGPIOPin::AssignPin (unsigned nPin)
 
 void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 {
+	assert (Mode < GPIOModeUnknown);
 	assert (m_nBank < GPIO0_BANKS);
 	assert (m_nBankPin < MAX_BANK_PINS);
-	assert (bInitPin);			// TODO
 	assert (CRP1::IsInitialized ());
 
 	m_Mode = Mode;
 
-	switch (m_Mode)
+	if (GPIOModeAlternateFunction0 <= m_Mode && m_Mode <= GPIOModeAlternateFunction8)
 	{
-	case GPIOModeInput:
-		write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
-			   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
-			 | (FILTER_CONST_M_DEFAULT << CTRL_FILTER_CONST_M__SHIFT)
-			 | (OEOVER_DISABLE << CTRL_OEOVER__SHIFT));
-		write32 (PADS0_CTRL (m_nBank, m_nBankPin), PADS_SCHMITT__MASK | PADS_IE__MASK);
-		break;
+		if (bInitPin)
+		{
+			SetPullMode (GPIOPullModeOff);
+		}
 
-	case GPIOModeOutput:
-		write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
-			   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
-			 | (OUTOVER_LOW << CTRL_OUTOVER__SHIFT)
-			 | (OEOVER_ENABLE << CTRL_OEOVER__SHIFT));
-		write32 (PADS0_CTRL (m_nBank, m_nBankPin), (DRIVE_12MA << PADS_DRIVE__SHIFT));
-		break;
+		SetAlternateFunction (m_Mode - GPIOModeAlternateFunction0);
 
-	case GPIOModeInputPullUp:
-		write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
-			   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
-			 | (FILTER_CONST_M_DEFAULT << CTRL_FILTER_CONST_M__SHIFT)
-			 | (OEOVER_DISABLE << CTRL_OEOVER__SHIFT));
-		write32 (PADS0_CTRL (m_nBank, m_nBankPin),
-			 PADS_SCHMITT__MASK | PADS_PUE__MASK | PADS_IE__MASK);
-		break;
+		return;
+	}
 
-	case GPIOModeInputPullDown:
-		write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
-			   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
-			 | (FILTER_CONST_M_DEFAULT << CTRL_FILTER_CONST_M__SHIFT)
-			 | (OEOVER_DISABLE << CTRL_OEOVER__SHIFT));
-		write32 (PADS0_CTRL (m_nBank, m_nBankPin),
-			 PADS_SCHMITT__MASK | PADS_PDE__MASK | PADS_IE__MASK);
-		break;
+	if (   bInitPin
+	    && m_Mode == GPIOModeOutput)
+	{
+		SetPullMode (GPIOPullModeOff);
+	}
 
-	default:
-		assert (0);
-		break;
+	uintptr nCtrlReg = GPIO0_CTRL (m_nBank, m_nBankPin);
+	u32 nCtrlValue = read32 (nCtrlReg);
+
+	uintptr nPadsReg = PADS0_CTRL (m_nBank, m_nBankPin);
+	u32 nPadsValue = read32 (nPadsReg);
+
+	nCtrlValue &= ~CTRL_FUNCSEL__MASK;
+	nCtrlValue |= FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT;
+
+	if (m_Mode == GPIOModeOutput)
+	{
+		nPadsValue &= ~PADS_OD__MASK;
+		nPadsValue &= ~PADS_IE__MASK;
+
+		nCtrlValue &= ~CTRL_OEOVER__MASK;
+		nCtrlValue |= OEOVER_ENABLE << CTRL_OEOVER__SHIFT;
+	}
+	else
+	{
+		nPadsValue |= PADS_OD__MASK;
+		nPadsValue |= PADS_IE__MASK;
+
+		nCtrlValue &= ~CTRL_OEOVER__MASK;
+		nCtrlValue |= OEOVER_DISABLE << CTRL_OEOVER__SHIFT;
+		nCtrlValue &= ~CTRL_INOVER__MASK;
+		nCtrlValue |= INOVER_DONT_INVERT << CTRL_INOVER__SHIFT;
+	}
+
+	write32 (nPadsReg, nPadsValue);
+	write32 (nCtrlReg, nCtrlValue);
+
+	if (bInitPin)
+	{
+		switch (m_Mode)
+		{
+		case GPIOModeInput:
+			SetPullMode (GPIOPullModeOff);
+			break;
+
+		case GPIOModeOutput:
+			Write (LOW);
+			break;
+
+		case GPIOModeInputPullUp:
+			SetPullMode (GPIOPullModeUp);
+			break;
+
+		case GPIOModeInputPullDown:
+			SetPullMode (GPIOPullModeDown);
+			break;
+
+		default:
+			break;
+		}
 	}
 }
 
@@ -247,21 +278,104 @@ void CGPIOPin::SetPullMode (TGPIOPullMode Mode)
 	write32 (PADS0_CTRL (m_nBank, m_nBankPin), nPads);
 }
 
+void CGPIOPin::SetSchmittTrigger (boolean bEnable)
+{
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+
+	uintptr nPadsReg = PADS0_CTRL (m_nBank, m_nBankPin);
+	u32 nPadsValue = read32 (nPadsReg);
+
+	if (bEnable)
+	{
+		nPadsValue |= PADS_SCHMITT__MASK;
+	}
+	else
+	{
+		nPadsValue &= ~PADS_SCHMITT__MASK;
+	}
+
+	write32 (nPadsReg, nPadsValue);
+}
+
+void CGPIOPin::SetFilterConstant (unsigned nFilterConstant)
+{
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+	assert (nFilterConstant <= FILTER_CONST_M_MAX);
+
+	uintptr nCtrlReg = GPIO0_CTRL (m_nBank, m_nBankPin);
+	u32 nCtrlValue = read32 (nCtrlReg);
+
+	nCtrlValue &= ~CTRL_FILTER_CONST_M__MASK;
+	nCtrlValue |= nFilterConstant << CTRL_FILTER_CONST_M__SHIFT;
+
+	write32 (nCtrlReg, nCtrlValue);
+}
+
+void CGPIOPin::SetDriveStrength (TGPIODriveStrength DriveStrength)
+{
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+	assert (DriveStrength < GPIODriveStrengthUnknown);
+
+	uintptr nPadsReg = PADS0_CTRL (m_nBank, m_nBankPin);
+	u32 nPadsValue = read32 (nPadsReg);
+
+	nPadsValue &= ~PADS_DRIVE__MASK;
+	nPadsValue |= DriveStrength << PADS_DRIVE__SHIFT;
+
+	write32 (nPadsReg, nPadsValue);
+}
+
+void CGPIOPin::SetSlewRate (TGPIOSlewRate SlewRate)
+{
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+	assert (SlewRate < GPIOSlewRateUnknown);
+
+	uintptr nPadsReg = PADS0_CTRL (m_nBank, m_nBankPin);
+	u32 nPadsValue = read32 (nPadsReg);
+
+	if (SlewRate == GPIOSlewRateSlow)
+	{
+		nPadsValue &= ~PADS_SLEWFAST__MASK;
+	}
+	else
+	{
+		nPadsValue |= PADS_SLEWFAST__MASK;
+	}
+
+	write32 (nPadsReg, nPadsValue);
+}
+
 void CGPIOPin::Write (unsigned nValue)
 {
 	assert (m_nBank < GPIO0_BANKS);
 	assert (m_nBankPin < MAX_BANK_PINS);
-	assert (m_Mode == GPIOModeOutput);
 	assert (nValue <= HIGH);
 
 	m_nValue = nValue;
 
-	// TODO: Acquire m_SpinLock?
+	boolean bSpinLock =    m_Interrupt != GPIOInterruptUnknown
+			    || m_Interrupt2 != GPIOInterruptUnknown;
+	if (bSpinLock)
+	{
+		m_SpinLock.Acquire ();
+	}
 
-	write32 (GPIO0_CTRL (m_nBank, m_nBankPin),
-		   (FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT)
-		 | ((nValue ? OUTOVER_HIGH : OUTOVER_LOW) << CTRL_OUTOVER__SHIFT)
-		 | (OEOVER_ENABLE << CTRL_OEOVER__SHIFT));
+	uintptr nCtrlReg = GPIO0_CTRL (m_nBank, m_nBankPin);
+	u32 nCtrlValue = read32 (nCtrlReg);
+
+	nCtrlValue &= ~CTRL_OUTOVER__MASK;
+	nCtrlValue |= (nValue ? OUTOVER_HIGH : OUTOVER_LOW) << CTRL_OUTOVER__SHIFT;
+
+	write32 (nCtrlReg, nCtrlValue);
+
+	if (bSpinLock)
+	{
+		m_SpinLock.Release ();
+	}
 }
 
 unsigned CGPIOPin::Read (void) const
@@ -464,6 +578,31 @@ void CGPIOPin::DumpStatus (void)
 }
 
 #endif
+
+void CGPIOPin::SetAlternateFunction (unsigned nFunction)
+{
+	assert (nFunction <= FUNCSEL_ALT_MAX);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+
+	uintptr nPadsReg = PADS0_CTRL (m_nBank, m_nBankPin);
+	u32 nPadsValue = read32 (nPadsReg);
+	nPadsValue &= ~PADS_OD__MASK;
+	nPadsValue |= PADS_IE__MASK;
+	write32 (nPadsReg, nPadsValue);
+
+	uintptr nCtrlReg = GPIO0_CTRL (m_nBank, m_nBankPin);
+	u32 nCtrlValue = read32 (nCtrlReg);
+	nCtrlValue &= ~CTRL_INOVER__MASK;
+	nCtrlValue |= INOVER_DONT_INVERT << CTRL_INOVER__SHIFT;
+	nCtrlValue &= ~CTRL_OUTOVER__MASK;
+	nCtrlValue |= OUTOVER_FUNCSEL << CTRL_OUTOVER__SHIFT;
+	nCtrlValue &= ~CTRL_OEOVER__MASK;
+	nCtrlValue |= OEOVER_FUNCSEL << CTRL_OEOVER__SHIFT;
+	nCtrlValue &= ~CTRL_FUNCSEL__MASK;
+	nCtrlValue |= nFunction << CTRL_FUNCSEL__SHIFT;
+	write32 (nCtrlReg, nCtrlValue);
+}
 
 void CGPIOPin::InterruptHandler (void)
 {

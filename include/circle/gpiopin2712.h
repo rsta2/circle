@@ -28,6 +28,22 @@
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
+enum TGPIODriveStrength
+{
+	GPIODriveStrength2mA,
+	GPIODriveStrength4mA,
+	GPIODriveStrength8mA,
+	GPIODriveStrength12mA,
+	GPIODriveStrengthUnknown
+};
+
+enum TGPIOSlewRate
+{
+	GPIOSlewRateSlow,
+	GPIOSlewRateFast,
+	GPIOSlewRateUnknown
+};
+
 class CGPIOManager;
 
 class CGPIOPin
@@ -42,6 +58,11 @@ public:
 	void SetMode (TGPIOMode Mode, boolean bInitPin = TRUE);
 
 	void SetPullMode (TGPIOPullMode Mode);
+
+	void SetSchmittTrigger (boolean bEnable);
+	void SetFilterConstant (unsigned nFilterConstant);		// 127 max.
+	void SetDriveStrength (TGPIODriveStrength DriveStrength);
+	void SetSlewRate (TGPIOSlewRate SlewRate);
 
 	void Write (unsigned nValue);
 
@@ -66,6 +87,8 @@ public:
 #endif
 
 private:
+	void SetAlternateFunction (unsigned nFunction);
+
 	void InterruptHandler (void);
 	static void DisableAllInterrupts (unsigned nPin);
 	friend class CGPIOManager;

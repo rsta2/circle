@@ -16,8 +16,8 @@ Currently is only a subset of features supported:
 * 1 UART (via UART connector, including IRQ support)
 * Framebuffer and screen device
 * PCIe host bridge to RP1 device
-* GPIO at RP1 (40-pin header) (subset of methods, input/output only)
-* GPIO interrupts (via RP1, issue with GPIOInterruptOn[Rising|Falling]Edge)
+* GPIO at RP1 (40-pin header, IO_BANK0-2)
+* GPIO interrupts
 * 2 xHCI USB controllers (4 ports)
 * Multi-core support and spin locks
 * Hardware random number generator

@@ -102,8 +102,8 @@ TShutdownMode CKernel::Run (void)
 
 	LOGNOTE ("Just press the button!");
 
-	m_pButtonPin->EnableInterrupt (GPIOInterruptOnAsyncFallingEdge);
-	LOGNOTE ("Mode is AsyncFallingEdge for 10 seconds");
+	m_pButtonPin->EnableInterrupt (GPIOInterruptOnFallingEdge);
+	LOGNOTE ("Mode is FallingEdge for 10 seconds");
 	m_Timer.MsDelay (10000);
 	m_pButtonPin->DisableInterrupt ();
 
@@ -118,14 +118,6 @@ TShutdownMode CKernel::Run (void)
 	m_Timer.MsDelay (10000);
 	m_pButtonPin->DisableInterrupt ();
 #endif
-
-	m_pButtonPin->EnableInterrupt (GPIOInterruptOnFallingEdge);
-	LOGNOTE ("Mode is FallingEdge for 10 seconds");
-#if RASPPI >= 5
-	LOGNOTE ("This does currently not work!");		// TODO!
-#endif
-	m_Timer.MsDelay (10000);
-	m_pButtonPin->DisableInterrupt ();
 
 	m_pButtonPin->DisconnectInterrupt ();
 

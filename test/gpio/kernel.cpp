@@ -90,6 +90,10 @@ TShutdownMode CKernel::Run (void)
 	LOGNOTE ("Compile time: " __DATE__ " " __TIME__);
 
 	CGPIOPin LEDPin (GPIO_LED, GPIOModeOutput);
+#if RASPPI >= 5
+	LEDPin.SetDriveStrength (GPIODriveStrength12mA);
+#endif
+
 	CGPIOPin ButtonPin (GPIO_BUTTON, GPIOModeInputPullUp);
 
 	m_Timer.MsDelay (1);	// let input settle

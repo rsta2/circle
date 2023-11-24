@@ -47,6 +47,11 @@ enum TGPIOMode
 	GPIOModeAlternateFunction3,
 	GPIOModeAlternateFunction4,
 	GPIOModeAlternateFunction5,
+#if RASPPI >= 5
+	GPIOModeAlternateFunction6,
+	GPIOModeAlternateFunction7,
+	GPIOModeAlternateFunction8,
+#endif
 	GPIOModeUnknown
 };
 
