@@ -154,8 +154,11 @@ CMachineInfo::CMachineInfo (void)
 	m_nRAMSize (0),
 #if RASPPI <= 3
 	m_usDMAChannelMap (0x1F35)	// default mapping
-#else
+#elif RASPPI == 4
 	m_usDMAChannelMap (0x71F5),	// default mapping
+	m_pDTB (0)
+#else
+	m_usDMAChannelMap (0x0FF5),	// default mapping
 	m_pDTB (0)
 #endif
 {
@@ -176,6 +179,7 @@ CMachineInfo::CMachineInfo (void)
 	FetchDTB ();
 #endif
 
+	// TODO: request DMA channel map from DTB for Raspberry Pi 5
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple DMAChannels;
 	if (Tags.GetTag (PROPTAG_GET_DMA_CHANNELS, &DMAChannels, sizeof DMAChannels))
@@ -539,7 +543,11 @@ unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)
 	else
 	{
 		// arbitrary channel allocation
+#if RASPPI == 4
 		int i = nChannel == DMA_CHANNEL_NORMAL ? 6 : DMA_CHANNEL_MAX;
+#else
+		int i = nChannel == DMA_CHANNEL_MAX;
+#endif
 		int nMin = 0;
 #if RASPPI >= 4
 		if (nChannel == DMA_CHANNEL_EXTENDED)

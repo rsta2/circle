@@ -118,7 +118,11 @@
 //
 // Platform DMA Controller
 //
+#if RASPPI <= 4
 #define ARM_DMA_BASE		(ARM_IO_BASE + 0x7000)
+#else
+#define ARM_DMA_BASE		0x1000010000UL
+#endif
 
 //
 // Interrupt Controller

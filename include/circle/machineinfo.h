@@ -115,15 +115,25 @@ public:
 	// DMA channel resource management
 #if RASPPI <= 3
 #define DMA_CHANNEL_MAX		11			// channels 0-11 are supported
-#else
+#elif RASPPI == 4
 #define DMA_CHANNEL_MAX		7			// legacy channels 0-7 are supported
 #define DMA_CHANNEL_EXT_MIN	11			// DMA4 channels 11-14 are supported
 #define DMA_CHANNEL_EXT_MAX	14
+#else
+#define DMA_CHANNEL_MAX		5			// TODO: support legacy channels 0-5
+#define DMA_CHANNEL_EXT_MIN	6			// DMA4 channels 6-11 are supported
+#define DMA_CHANNEL_EXT_MAX	11
 #endif
 #define DMA_CHANNEL__MASK	0x0F			// explicit channel number
 #define DMA_CHANNEL_NONE	0x80			// returned if no channel available
+#if RASPPI <= 4
 #define DMA_CHANNEL_NORMAL	0x81			// normal DMA engine requested
 #define DMA_CHANNEL_LITE	0x82			// lite (or normal) DMA engine requested
+#else
+// TODO: currently only extended DMA4 engines are supported for Raspberry Pi 5
+#define DMA_CHANNEL_NORMAL	DMA_CHANNEL_EXTENDED	// TODO: define 0x81 instead
+#define DMA_CHANNEL_LITE	DMA_CHANNEL_EXTENDED	// TODO: define 0x82 instead
+#endif
 #if RASPPI >= 4
 #define DMA_CHANNEL_EXTENDED	0x83			// "large address" DMA4 engine requested
 #endif

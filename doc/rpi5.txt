@@ -15,6 +15,7 @@ Currently is only a subset of features supported:
 * GIC interrupt controller (IRQ only)
 * 1 UART (via UART connector, including IRQ support)
 * Framebuffer and screen device
+* 6 extended DMA channels (including IRQ support, port I/O untested)
 * PCIe host bridge to RP1 device
 * GPIO at RP1 (40-pin header, IO_BANK0-2)
 * GPIO interrupts
