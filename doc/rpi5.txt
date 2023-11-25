@@ -27,6 +27,7 @@ Currently is only a subset of features supported:
 * Sound library (with USB sound only)
 * Native FAT file-system library (in lib/fs/fat/)
 * FatFs library (in addon/fatfs/)
+* LVGL graphics library (in addon/lvgl/)
 * Bootloader (via UART connector)
 
 Most external hardware interfaces (I2C etc.) are not supported yet.
@@ -86,6 +87,7 @@ Currently the following sample programs are operational:
 * 34-sounddevices (USB sound only)
 * 37-showgamepad
 * 39-umsdplugging
+* addon/lvgl/sample
 
 Additionally the following tests in test/ are operational:
 
