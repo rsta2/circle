@@ -35,6 +35,7 @@ int main (void);
 void sysinit (void) NORETURN;
 
 void halt (void) NORETURN;
+void error_halt (unsigned errnum) NORETURN;
 void reboot (void) NORETURN;
 
 void set_qemu_exit_status (int nStatus);

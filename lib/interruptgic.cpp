@@ -90,17 +90,31 @@ CInterruptSystem *CInterruptSystem::s_pThis = 0;
 
 CInterruptSystem::CInterruptSystem (void)
 {
+	if (s_pThis != 0)
+	{
+		return;
+	}
+	s_pThis = this;
+
 	for (unsigned nIRQ = 0; nIRQ < IRQ_LINES; nIRQ++)
 	{
 		m_apIRQHandler[nIRQ] = 0;
 		m_pParam[nIRQ] = 0;
 	}
-
-	s_pThis = this;
 }
 
 CInterruptSystem::~CInterruptSystem (void)
 {
+	Destructor ();
+}
+
+void CInterruptSystem::Destructor (void)
+{
+	if (s_pThis != this)
+	{
+		return;
+	}
+
 	DisableIRQs ();
 
 	write32 (GICD_CTLR, GICD_CTLR_DISABLE);
@@ -110,6 +124,11 @@ CInterruptSystem::~CInterruptSystem (void)
 
 boolean CInterruptSystem::Initialize (void)
 {
+	if (s_pThis != this)
+	{
+		return TRUE;
+	}
+
 #if AARCH == 32
 	TExceptionTable * volatile pTable = (TExceptionTable * volatile) ARM_EXCEPTION_TABLE_BASE;
 	pTable->IRQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->IRQ, IRQStub));
@@ -177,6 +196,13 @@ boolean CInterruptSystem::Initialize (void)
 
 void CInterruptSystem::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->ConnectIRQ (nIRQ, pHandler, pParam);
+
+		return;
+	}
+
 #if RASPPI >= 5
 	if (nIRQ & IRQ_FROM_RP1__MASK)
 	{
@@ -200,6 +226,13 @@ void CInterruptSystem::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *p
 
 void CInterruptSystem::DisconnectIRQ (unsigned nIRQ)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->DisconnectIRQ (nIRQ);
+
+		return;
+	}
+
 #if RASPPI >= 5
 	if (nIRQ & IRQ_FROM_RP1__MASK)
 	{
@@ -223,6 +256,13 @@ void CInterruptSystem::DisconnectIRQ (unsigned nIRQ)
 
 void CInterruptSystem::ConnectFIQ (unsigned nFIQ, TFIQHandler *pHandler, void *pParam)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->ConnectFIQ (nFIQ, pHandler, pParam);
+
+		return;
+	}
+
 	assert (nFIQ <= ARM_MAX_FIQ);
 	assert (pHandler != 0);
 	assert (FIQData.pHandler == 0);
@@ -235,6 +275,13 @@ void CInterruptSystem::ConnectFIQ (unsigned nFIQ, TFIQHandler *pHandler, void *p
 
 void CInterruptSystem::DisconnectFIQ (void)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->DisconnectFIQ ();
+
+		return;
+	}
+
 	assert (FIQData.pHandler != 0);
 
 	DisableFIQ ();

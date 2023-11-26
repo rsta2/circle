@@ -23,6 +23,10 @@
 #include <circle/bcm2836.h>
 #include <circle/machineinfo.h>
 #include <circle/memory.h>
+#include <circle/interrupt.h>
+#include <circle/southbridge.h>
+#include <circle/actled.h>
+#include <circle/timer.h>
 #include <circle/chainboot.h>
 #include <circle/qemu.h>
 #include <circle/synchronize.h>
@@ -151,6 +155,18 @@ void halt (void)
 	}
 }
 
+void error_halt (unsigned errnum)
+{
+	CActLED ActLED;
+
+	while (1)
+	{
+		ActLED.Blink (errnum, 100, 300);
+
+		CTimer::SimpleMsDelay (1000);
+	}
+}
+
 void reboot (void)					// by PlutoniumBob@raspi-forum
 {
 	PeripheralEntry ();
@@ -246,6 +262,20 @@ void sysinit (void)
 
 	strcpy (circle_version_string, Version);
 
+	CInterruptSystem InterruptSystem;
+	if (!InterruptSystem.Initialize ())
+	{
+		error_halt (2);
+	}
+
+#if RASPPI >= 5 && !defined (NO_SOUTHBRIDGE_EARLY)
+	CSouthbridge Southbridge (&InterruptSystem);
+	if (!Southbridge.Initialize ())
+	{
+		error_halt (3);
+	}
+#endif
+
 	// call constructors of static objects
 	extern void (*__init_start) (void);
 	extern void (*__init_end) (void);
@@ -259,6 +289,7 @@ void sysinit (void)
 	{
 		if (IsChainBootEnabled ())
 		{
+			InterruptSystem.Destructor ();
 			Memory.Destructor ();
 
 			DisableFIQs ();

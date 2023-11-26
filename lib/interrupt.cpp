@@ -50,17 +50,31 @@ CInterruptSystem *CInterruptSystem::s_pThis = 0;
 
 CInterruptSystem::CInterruptSystem (void)
 {
+	if (s_pThis != 0)
+	{
+		return;
+	}
+	s_pThis = this;
+
 	for (unsigned nIRQ = 0; nIRQ < IRQ_LINES; nIRQ++)
 	{
 		m_apIRQHandler[nIRQ] = 0;
 		m_pParam[nIRQ] = 0;
 	}
-
-	s_pThis = this;
 }
 
 CInterruptSystem::~CInterruptSystem (void)
 {
+	Destructor ();
+}
+
+void CInterruptSystem::Destructor (void)
+{
+	if (s_pThis != this)
+	{
+		return;
+	}
+
 	DisableIRQs ();
 
 	PeripheralEntry ();
@@ -82,6 +96,11 @@ CInterruptSystem::~CInterruptSystem (void)
 
 boolean CInterruptSystem::Initialize (void)
 {
+	if (s_pThis != this)
+	{
+		return TRUE;
+	}
+
 #if AARCH == 32
 	TExceptionTable * volatile pTable = (TExceptionTable * volatile) ARM_EXCEPTION_TABLE_BASE;
 	pTable->IRQ = ARM_OPCODE_BRANCH (ARM_DISTANCE (pTable->IRQ, IRQStub));
@@ -115,6 +134,13 @@ boolean CInterruptSystem::Initialize (void)
 
 void CInterruptSystem::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *pParam)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->ConnectIRQ (nIRQ, pHandler, pParam);
+
+		return;
+	}
+
 	assert (nIRQ < IRQ_LINES);
 	assert (m_apIRQHandler[nIRQ] == 0);
 
@@ -126,6 +152,13 @@ void CInterruptSystem::ConnectIRQ (unsigned nIRQ, TIRQHandler *pHandler, void *p
 
 void CInterruptSystem::DisconnectIRQ (unsigned nIRQ)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->DisconnectIRQ (nIRQ);
+
+		return;
+	}
+
 	assert (nIRQ < IRQ_LINES);
 	assert (m_apIRQHandler[nIRQ] != 0);
 
@@ -137,6 +170,13 @@ void CInterruptSystem::DisconnectIRQ (unsigned nIRQ)
 
 void CInterruptSystem::ConnectFIQ (unsigned nFIQ, TFIQHandler *pHandler, void *pParam)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->ConnectFIQ (nFIQ, pHandler, pParam);
+
+		return;
+	}
+
 #ifdef USE_RPI_STUB_AT
 	assert (0);
 #endif
@@ -152,6 +192,13 @@ void CInterruptSystem::ConnectFIQ (unsigned nFIQ, TFIQHandler *pHandler, void *p
 
 void CInterruptSystem::DisconnectFIQ (void)
 {
+	if (s_pThis != this)
+	{
+		s_pThis->DisconnectFIQ ();
+
+		return;
+	}
+
 	assert (FIQData.pHandler != 0);
 
 	DisableFIQ ();

@@ -397,7 +397,6 @@ int CBcmPCIeHostBridge::pcie_setup(void)
 	u64 rc_bar2_offset, rc_bar2_size, total_mem_size = 0;
 	u32 tmp;
 	int i, j, limit;
-	u16 nlw, cls, lnksta;
 
 #if RASPPI >= 5
 	int ret = rescal_reset_deassert();
@@ -663,14 +662,14 @@ int CBcmPCIeHostBridge::pcie_setup(void)
 	 * a PCIe-PCIe bridge (the default setting is to be EP mode).
 	 */
 	WR_FLD_RB(m_base, PCIE_RC_CFG_PRIV1_ID_VAL3, CLASS_CODE, 0x060400);
-#endif
 
-	lnksta = bcm_readw(m_base + BRCM_PCIE_CAP_REGS + PCI_EXP_LNKSTA);
-	cls = lnksta & PCI_EXP_LNKSTA_CLS;
-	nlw = (lnksta & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT;
+	u16 lnksta = bcm_readw(m_base + BRCM_PCIE_CAP_REGS + PCI_EXP_LNKSTA);
+	u16 cls = lnksta & PCI_EXP_LNKSTA_CLS;
+	u16 nlw = (lnksta & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT;
 
 	CLogger::Get ()->Write (FromPCIeHost, LogNotice, "Link up, %s Gbps x%u",
 				link_speed_to_str(cls), nlw);
+#endif
 
 #if RASPPI == 4
 	/* PCIe->SCB endian mode for BAR */
@@ -1086,14 +1085,12 @@ void CBcmPCIeHostBridge::InterruptHandler (void *pParam)
 
 void CBcmPCIeHostBridge::usleep_range (unsigned min, unsigned max)
 {
-	assert (CTimer::Get () != 0);
-	CTimer::Get ()->usDelay (min);
+	CTimer::SimpleusDelay (min);
 }
 
 void CBcmPCIeHostBridge::msleep (unsigned ms)
 {
-	assert (CTimer::Get () != 0);
-	CTimer::Get ()->MsDelay (ms);
+	CTimer::SimpleMsDelay (ms);
 }
 
 int CBcmPCIeHostBridge::ilog2 (u64 v)
@@ -1174,7 +1171,7 @@ int CBcmPCIeHostBridge::pcie_mdio_read(u8 port, u8 regad, u32 *val)
 
 	data = bcm_readl(m_base + PCIE_RC_DL_MDIO_RD_DATA);
 	for (tries = 0; !MDIO_RD_DONE(data) && tries < 10; tries++) {
-		CTimer::Get ()->usDelay(10);
+		usleep_range (10, 10);
 		data = bcm_readl(m_base + PCIE_RC_DL_MDIO_RD_DATA);
 	}
 
@@ -1194,7 +1191,7 @@ int CBcmPCIeHostBridge::pcie_mdio_write(u8 port, u8 regad, u16 wrdata)
 
 	data = bcm_readl(m_base + PCIE_RC_DL_MDIO_WR_DATA);
 	for (tries = 0; !MDIO_WT_DONE(data) && tries < 10; tries++) {
-		CTimer::Get ()->usDelay(10);
+		usleep_range (10, 10);
 		data = bcm_readl(m_base + PCIE_RC_DL_MDIO_WR_DATA);
 	}
 
@@ -1273,10 +1270,9 @@ int CBcmPCIeHostBridge::rescal_reset_deassert(void)
 		return -1;
 	}
 
-	assert (CTimer::Get () != 0);
-	unsigned nStartTicks = CTimer::Get ()->GetClockTicks ();
+	unsigned nStartTicks = CTimer::GetClockTicks ();
 	while (!(bcm_readl(ARM_RESET_RESCAL_BASE + BRCM_RESCAL_STATUS) & BRCM_RESCAL_STATUS_BIT)) {
-		if (CTimer::Get ()->GetClockTicks () - nStartTicks >= CLOCKHZ/1000) {
+		if (CTimer::GetClockTicks () - nStartTicks >= CLOCKHZ/1000) {
 			CLogger::Get ()->Write (FromPCIeHost, LogError, "Time out on SATA/PCIe rescal");
 			return -1;
 		}
