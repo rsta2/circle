@@ -78,6 +78,7 @@ Currently the following sample programs are operational:
 * 05-usbsimple (with external USB 2.0 hub)
 * 07-usbstorage
 * 08-usbkeyboard
+* 09-softserial (19200 Bps max.)
 * 14-usbprinter
 * 15-files
 * 17-fractal (multi-core supported)
@@ -88,6 +89,9 @@ Currently the following sample programs are operational:
 * 37-showgamepad
 * 39-umsdplugging
 * addon/lvgl/sample
+* addon/OneWire/sample
+* addon/sensor/sample/hcsr04
+* addon/sensor/sample/ky040
 
 Additionally the following tests in test/ are operational:
 
