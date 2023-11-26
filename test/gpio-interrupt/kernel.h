@@ -29,7 +29,6 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include <circle/southbridge.h>
 #include <circle/gpiomanager.h>
 #include <circle/gpiopin.h>
 #include <circle/types.h>
@@ -65,12 +64,9 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
-#if RASPPI >= 5
-	CSouthbridge		m_Southbridge;
-#endif
 
 	CGPIOManager		m_GPIOManager;
-	CGPIOPin		*m_pButtonPin;
+	CGPIOPin		m_ButtonPin;
 };
 
 #endif

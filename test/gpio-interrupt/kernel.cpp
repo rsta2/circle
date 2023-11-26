@@ -27,11 +27,8 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-#if RASPPI >= 5
-	m_Southbridge (&m_Interrupt),
-#endif
 	m_GPIOManager (&m_Interrupt),
-	m_pButtonPin (nullptr)
+	m_ButtonPin (GPIO_BUTTON, GPIOModeInputPullUp, &m_GPIOManager)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -75,20 +72,9 @@ boolean CKernel::Initialize (void)
 		bOK = m_Timer.Initialize ();
 	}
 
-#if RASPPI >= 5
-	if (bOK)
-	{
-		bOK = m_Southbridge.Initialize ();
-	}
-#endif
-
 	if (bOK)
 	{
 		bOK = m_GPIOManager.Initialize ();
-
-		// Because on the Raspberry Pi 5 this must be done, after
-		// the RP1 has been  initialized, we always do this here.
-		m_pButtonPin = new CGPIOPin (GPIO_BUTTON, GPIOModeInputPullUp, &m_GPIOManager);
 	}
 
 	return bOK;
@@ -98,28 +84,28 @@ TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE ("Compile time: " __DATE__ " " __TIME__);
 
-	m_pButtonPin->ConnectInterrupt (InterruptHandler, this);
+	m_ButtonPin.ConnectInterrupt (InterruptHandler, this);
 
 	LOGNOTE ("Just press the button!");
 
-	m_pButtonPin->EnableInterrupt (GPIOInterruptOnFallingEdge);
+	m_ButtonPin.EnableInterrupt (GPIOInterruptOnFallingEdge);
 	LOGNOTE ("Mode is FallingEdge for 10 seconds");
 	m_Timer.MsDelay (10000);
-	m_pButtonPin->DisableInterrupt ();
+	m_ButtonPin.DisableInterrupt ();
 
-	m_pButtonPin->EnableInterrupt (GPIOInterruptOnLowLevel);
+	m_ButtonPin.EnableInterrupt (GPIOInterruptOnLowLevel);
 	LOGNOTE ("Mode is LowLevel for 10 seconds");
 	m_Timer.MsDelay (10000);
-	m_pButtonPin->DisableInterrupt ();
+	m_ButtonPin.DisableInterrupt ();
 
 #if RASPPI >= 5
-	m_pButtonPin->EnableInterrupt (GPIOInterruptOnDebouncedLowLevel);
+	m_ButtonPin.EnableInterrupt (GPIOInterruptOnDebouncedLowLevel);
 	LOGNOTE ("Mode is DebouncedLowLevel for 10 seconds");
 	m_Timer.MsDelay (10000);
-	m_pButtonPin->DisableInterrupt ();
+	m_ButtonPin.DisableInterrupt ();
 #endif
 
-	m_pButtonPin->DisconnectInterrupt ();
+	m_ButtonPin.DisconnectInterrupt ();
 
 	LOGNOTE ("Program will halt now");
 

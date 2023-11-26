@@ -28,12 +28,15 @@ LOGMODULE ("kernel");
 CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
-	m_Logger (m_Options.GetLogLevel (), &m_Timer)
-#if RASPPI >= 5
-	, m_Southbridge (&m_Interrupt)
-#endif
+	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+	m_LEDPin (GPIO_LED, GPIOModeOutput),
+	m_ButtonPin (GPIO_BUTTON, GPIOModeInputPullUp)
 {
 	m_ActLED.Blink (5);	// show we are alive
+
+#if RASPPI >= 5
+	m_LEDPin.SetDriveStrength (GPIODriveStrength12mA);
+#endif
 }
 
 CKernel::~CKernel (void)
@@ -75,13 +78,6 @@ boolean CKernel::Initialize (void)
 		bOK = m_Timer.Initialize ();
 	}
 
-#if RASPPI >= 5
-	if (bOK)
-	{
-		bOK = m_Southbridge.Initialize ();
-	}
-#endif
-
 	return bOK;
 }
 
@@ -89,20 +85,11 @@ TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE ("Compile time: " __DATE__ " " __TIME__);
 
-	CGPIOPin LEDPin (GPIO_LED, GPIOModeOutput);
-#if RASPPI >= 5
-	LEDPin.SetDriveStrength (GPIODriveStrength12mA);
-#endif
-
-	CGPIOPin ButtonPin (GPIO_BUTTON, GPIOModeInputPullUp);
-
-	m_Timer.MsDelay (1);	// let input settle
-
-	while (ButtonPin.Read ())
+	while (m_ButtonPin.Read ())
 	{
 		m_Timer.MsDelay (200);
 
-		LEDPin.Invert ();
+		m_LEDPin.Invert ();
 	}
 
 	return ShutdownReboot;

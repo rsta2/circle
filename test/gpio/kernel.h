@@ -29,7 +29,6 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include <circle/southbridge.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -60,9 +59,9 @@ private:
 	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
-#if RASPPI >= 5
-	CSouthbridge		m_Southbridge;
-#endif
+
+	CGPIOPin		m_LEDPin;
+	CGPIOPin		m_ButtonPin;
 };
 
 #endif
