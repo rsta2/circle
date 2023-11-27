@@ -95,7 +95,7 @@ private:
 	int DoWrite (u8 *buf, size_t buf_size, u32 block_no);
 
 #ifndef USE_SDHOST
-	int TimeoutWait (unsigned reg, unsigned mask, int value, unsigned usec);
+	int TimeoutWait (unsigned long reg, unsigned mask, int value, unsigned usec);
 #endif
 
 	void usDelay (unsigned usec);

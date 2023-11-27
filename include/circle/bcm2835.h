@@ -244,7 +244,11 @@
 //
 // External Mass Media Controller (SD Card)
 //
+#if RASPPI <= 4
 #define ARM_EMMC_BASE		(ARM_IO_BASE + 0x300000)
+#else
+#define ARM_EMMC_BASE		0x1000FFF000UL
+#endif
 
 //
 // SDHOST Controller (SD Card)

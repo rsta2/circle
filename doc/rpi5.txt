@@ -27,6 +27,7 @@ Currently is only a subset of features supported:
 * Sound library (with USB sound only)
 * Native FAT file-system library (in lib/fs/fat/)
 * FatFs library (in addon/fatfs/)
+* SD card library (in addon/SDCard/, EMMC driver only)
 * LVGL graphics library (in addon/lvgl/)
 * Bootloader (via UART connector)
 
@@ -88,8 +89,10 @@ Currently the following sample programs are operational:
 * 34-sounddevices (USB sound only)
 * 37-showgamepad
 * 39-umsdplugging
+* addon/FatFs/sample
 * addon/lvgl/sample
 * addon/OneWire/sample
+* addon/SDCard/sample
 * addon/sensor/sample/hcsr04
 * addon/sensor/sample/ky040
 
@@ -98,6 +101,7 @@ Additionally the following tests in test/ are operational:
 * gpio
 * gpio-interrupt
 * screen-ansi-colors
+* storage
 * synchronization
 * watchdog
 

@@ -353,7 +353,11 @@ unsigned CMachineInfo::GetClockRate (u32 nClockId) const
 	{
 	case CLOCK_ID_EMMC:
 	case CLOCK_ID_EMMC2:
+#if RASPPI <= 4
 		nResult = 100000000;
+#else
+		nResult = 200000000;
+#endif
 		break;
 
 	case CLOCK_ID_UART:
