@@ -547,7 +547,7 @@ unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)
 	else
 	{
 		// arbitrary channel allocation
-#if RASPPI == 4
+#if RASPPI <= 4
 		int i = nChannel == DMA_CHANNEL_NORMAL ? 6 : DMA_CHANNEL_MAX;
 #else
 		int i = nChannel == DMA_CHANNEL_MAX;
