@@ -13,7 +13,7 @@ Currently is only a subset of features supported:
 * Property mailbox (subset of functions only)
 * ActLED
 * GIC interrupt controller (IRQ only)
-* 1 UART (via UART connector, including IRQ support)
+* 6 UARTs (including IRQ support)
 * Framebuffer and screen device
 * 6 extended DMA channels (including IRQ support, port I/O untested)
 * PCIe host bridge to RP1 device

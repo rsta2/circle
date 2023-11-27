@@ -47,20 +47,33 @@
 ///
 /// nDevice | TXD    | RXD    | Support
 /// :-----: | :----: | :----: | :------
-/// 0       | UART connector  | Raspberry Pi 5 only
-/// 1       | GPIO14 | GPIO15 | Raspberry Pi 5 only
-/// 2       | GPIO0  | GPIO1  | Raspberry Pi 5 only
-/// 3       | GPIO4  | GPIO5  | Raspberry Pi 5 only
-/// 4       | GPIO8  | GPIO9  | Raspberry Pi 5 only
-/// 5       | GPIO12 | GPIO13 | Raspberry Pi 5 only
-/// 6       | GPIO36 | GPIO37 | Compute Module 5?
+/// 0       | GPIO14 | GPIO15 | Raspberry Pi 5 only
+/// 1       | GPIO0  | GPIO1  | Raspberry Pi 5 only
+/// 2       | GPIO4  | GPIO5  | Raspberry Pi 5 only
+/// 3       | GPIO8  | GPIO9  | Raspberry Pi 5 only
+/// 4       | GPIO12 | GPIO13 | Raspberry Pi 5 only
+/// 5       | GPIO36 | GPIO37 | None
+/// 6       |        |        | None
+/// 7       |        |        | None
+/// 8       |        |        | None
+/// 9       |        |        | None
+/// 10      | UART   | UART   | Raspberry Pi 5 only
+/// UART is the dedicated 3-pin JST UART connector.
 
 #if RASPPI < 4
 	#define SERIAL_DEVICES		1
 #elif RASPPI == 4
 	#define SERIAL_DEVICES		6
 #else
-	#define SERIAL_DEVICES		7
+	#define SERIAL_DEVICES		11
+#endif
+
+#ifndef SERIAL_DEVICE_DEFAULT
+#if RASPPI <= 4
+	#define SERIAL_DEVICE_DEFAULT	0
+#else
+	#define SERIAL_DEVICE_DEFAULT	10
+#endif
 #endif
 
 #define SERIAL_BUF_SIZE		2048			// must be a power of 2
@@ -92,7 +105,7 @@ public:
 	/// \param bUseFIQ Use FIQ instead of IRQ
 	/// \param nDevice Device number (see: GPIO pin mapping)
 	CSerialDevice (CInterruptSystem *pInterruptSystem = 0, boolean bUseFIQ = FALSE,
-		       unsigned nDevice = 0);
+		       unsigned nDevice = SERIAL_DEVICE_DEFAULT);
 
 	~CSerialDevice (void);
 #endif

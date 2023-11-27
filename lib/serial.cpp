@@ -151,36 +151,48 @@ static unsigned s_GPIOConfig[SERIAL_DEVICES][GPIOS][VALUES] =
 
 static uintptr s_BaseAddress[SERIAL_DEVICES] =
 {
-	ARM_IO_BASE + 0x1001000,
 	0x1F00030000UL,
 	0x1F00034000UL,
 	0x1F00038000UL,
 	0x1F0003C000UL,
 	0x1F00040000UL,
-	0x1F00044000UL
+	0x1F00044000UL,
+	0,
+	0,
+	0,
+	0,
+	ARM_IO_BASE + 0x1001000
 };
 
 static unsigned s_GPIOConfig[SERIAL_DEVICES][GPIOS][VALUES] =
 {
 	// TXD      RXD
-	{  NOALT,   NOALT },
 	{{14,  4}, {15,  4}},
 	{{ 0,  2}, { 1,  2}},
 	{{ 4,  2}, { 5,  2}},
 	{{ 8,  2}, { 9,  2}},
 	{{12,  2}, {13,  2}},
-	{{36,  1}, {37,  1}}
+	{{36,  1}, {37,  1}},
+	{  NONE,     NONE  }, // unused
+	{  NONE,     NONE  }, // unused
+	{  NONE,     NONE  }, // unused
+	{  NONE,     NONE  }, // unused
+	{  NOALT,    NOALT }
 };
 
 static unsigned s_IRQ[SERIAL_DEVICES] =
 {
-	ARM_IRQ_UART,
 	RP1_IRQ_UART0,
 	RP1_IRQ_UART1,
 	RP1_IRQ_UART2,
 	RP1_IRQ_UART3,
 	RP1_IRQ_UART4,
-	RP1_IRQ_UART5
+	RP1_IRQ_UART5,
+	0,
+	0,
+	0,
+	0,
+	ARM_IRQ_UART
 };
 
 #endif
@@ -193,7 +205,11 @@ CSerialDevice *CSerialDevice::s_pThis[SERIAL_DEVICES] = {0};
 
 CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFIQ, unsigned nDevice)
 :	m_pInterruptSystem (pInterruptSystem),
+#if RASPPI <= 4
 	m_bUseFIQ (bUseFIQ),
+#else
+	m_bUseFIQ (FALSE),		// silently use the IRQ instead
+#endif
 	m_nDevice (nDevice),
 	m_nBaseAddress (0),
 	m_bValid (FALSE),
@@ -325,7 +341,7 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate,
 
 	unsigned nClockRate;
 #if RASPPI >= 5
-	if (m_nDevice > 0)
+	if (m_nDevice < 10)
 	{
 		nClockRate = 50000000;
 	}
