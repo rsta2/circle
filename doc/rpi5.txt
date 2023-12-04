@@ -20,6 +20,7 @@ Currently is only a subset of features supported:
 * GPIO at RP1 (40-pin header, IO_BANK0-2)
 * GPIO interrupts
 * 2 xHCI USB controllers (4 ports)
+* 4 I2C masters
 * Multi-core support and spin locks
 * Hardware random number generator
 * Watchdog device
@@ -82,19 +83,25 @@ Currently the following sample programs are operational:
 * 09-softserial (19200 Bps max.)
 * 14-usbprinter
 * 15-files
+* 16-i2cping (master only)
 * 17-fractal (multi-core supported)
 * 19-tasks
 * 24-hwrandom
 * 27-usbgamepad
+* 32-i2cshell
 * 34-sounddevices (USB sound only)
 * 37-showgamepad
 * 39-umsdplugging
+* addon/display/sample/hd44780i2c
+* addon/display/sample/ssd1306
 * addon/FatFs/sample
 * addon/lvgl/sample
 * addon/OneWire/sample
 * addon/SDCard/sample
+* addon/sensor/sample/bmp180
 * addon/sensor/sample/hcsr04
 * addon/sensor/sample/ky040
+* addon/sensor/sample/mpu6050
 
 Additionally the following tests in test/ are operational:
 

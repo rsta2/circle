@@ -40,7 +40,9 @@ enum TGPIODriveStrength
 enum TGPIOSlewRate
 {
 	GPIOSlewRateSlow,
+	GPIOSlewRateLimited	= GPIOSlewRateSlow,
 	GPIOSlewRateFast,
+	GPIOSlewRateNotLimited	= GPIOSlewRateFast,
 	GPIOSlewRateUnknown
 };
 

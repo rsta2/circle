@@ -22,7 +22,7 @@ OBJS	= actled.o alloc.o assert.o bcmframebuffer.o bcmmailbox.o \
 	  bcmpropertytags.o bcmwatchdog.o chargenerator.o classallocator.o \
 	  cputhrottle.o debug.o delayloop.o device.o devicenameservice.o \
 	  dmachannel.o gpioclock.o \
-	  i2cmaster.o i2cslave.o koptions.o \
+	  koptions.o \
 	  logger.o machineinfo.o multicore.o nulldevice.o ptrarray.o ptrlist.o \
 	  pwmoutput.o qemu.o screen.o serial.o \
 	  spimaster.o spimasteraux.o spinlock.o \
@@ -58,9 +58,9 @@ OBJS	+= bcm54213.o bcmpciehostbridge.o bcmrandom200.o interruptgic.o dma4channel
 endif
 
 ifneq ($(strip $(RASPPI)),5)
-OBJS	+= gpiomanager.o gpiopin.o gpiopinfiq.o smimaster.o spimasterdma.o
+OBJS	+= gpiomanager.o gpiopin.o gpiopinfiq.o i2cmaster.o i2cslave.o smimaster.o spimasterdma.o
 else
-OBJS	+= southbridge.o gpiomanager2712.o gpiopin2712.o
+OBJS	+= southbridge.o gpiomanager2712.o gpiopin2712.o i2cmaster-rp1.o
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),3)
