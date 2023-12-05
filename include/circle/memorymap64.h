@@ -63,9 +63,14 @@
 #endif
 
 #if RASPPI >= 4
-// high memory region (memory >= 3 GB is not safe to be DMA-able and is not used)
+// high memory region
 #define MEM_HIGHMEM_START		GIGABYTE
+#if RASPPI == 4
+// memory >= 3 GB is not safe to be DMA-able and is not used
 #define MEM_HIGHMEM_END			(3 * GIGABYTE - 1)
+#else
+#define MEM_HIGHMEM_END			(8 * GIGABYTE - 1)
+#endif
 
 // PCIe memory range (outbound)
 #if RASPPI == 4

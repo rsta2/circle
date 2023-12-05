@@ -9,7 +9,7 @@ Currently is only a subset of features supported:
 
 * System init and reboot
 * MMU and cache support
-* Memory allocation (with 3 GB high memory max. so far)
+* Memory allocation
 * Property mailbox (subset of functions only)
 * ActLED
 * GIC interrupt controller (IRQ only)
