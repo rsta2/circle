@@ -77,7 +77,7 @@ private:
 
 	unsigned m_nDevice;
 
-#ifndef USE_XHCI_INTERNAL
+#if RASPPI == 4 && !defined (USE_XHCI_INTERNAL)
 	CBcmPCIeHostBridge m_PCIeHostBridge;
 #endif
 

@@ -173,7 +173,7 @@
 
 #endif
 
-#if RASPPI >= 4
+#if RASPPI == 4
 
 // USE_XHCI_INTERNAL enables the xHCI controller, which is integrated
 // into the BCM2711 SoC. The Raspberry Pi 4 provides two independent
@@ -185,13 +185,8 @@
 // this option is the only possibility to use USB on the Compute Module 4
 // with Circle. This setting requires the option "otg_mode=1" set in the
 // config.txt file too!
-//
-// On the Raspberry Pi 5 USE_XHCI_INTERNAL is always defined, without the
-// "otg_mode" setting in config.txt.
 
-#if RASPPI >= 5
-#define USE_XHCI_INTERNAL
-#endif
+//#define USE_XHCI_INTERNAL
 
 #endif
 

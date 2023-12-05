@@ -28,14 +28,14 @@
 #include <circle/rp1int.h>
 #include <assert.h>
 
-#ifdef USE_XHCI_INTERNAL
 #if RASPPI == 4
+#ifdef USE_XHCI_INTERNAL
 	#define ARM_IRQ_XHCI	ARM_IRQ_XHCI_INTERNAL
 #else
-	#define ARM_IRQ_XHCI	(m_nDevice == 0 ? RP1_IRQ_USBHOST0_0 : RP1_IRQ_USBHOST1_0)
+	#define ARM_IRQ_XHCI	ARM_IRQ_PCIE_HOST_INTA
 #endif
 #else
-	#define ARM_IRQ_XHCI	ARM_IRQ_PCIE_HOST_INTA
+	#define ARM_IRQ_XHCI	(m_nDevice == 0 ? RP1_IRQ_USBHOST0_0 : RP1_IRQ_USBHOST1_0)
 #endif
 
 static const char From[] = "xhci";
@@ -46,7 +46,7 @@ CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, bo
 	m_pInterruptSystem (pInterruptSystem),
 	m_bInterruptConnected (FALSE),
 	m_nDevice (nDevice),
-#ifndef USE_XHCI_INTERNAL
+#if RASPPI == 4 && !defined (USE_XHCI_INTERNAL)
 	m_PCIeHostBridge (pInterruptSystem),
 #endif
 	m_pSharedMemAllocator (pSharedMemAllocator),
@@ -117,8 +117,7 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 	INIT_PROTECTED_CLASS_ALLOCATOR (CUSBRequest, XHCI_CONFIG_MAX_REQUESTS, IRQ_LEVEL);
 
 #ifdef USE_XHCI_INTERNAL
-	if (   CMachineInfo::Get ()->GetMachineModel () != MachineModel4B
-	    && CMachineInfo::Get ()->GetMachineModel () != MachineModel5)
+	if (CMachineInfo::Get ()->GetMachineModel () != MachineModel4B)
 	{
 		CBcmPropertyTags Tags;
 		TPropertyTagPowerState PowerState;
@@ -133,7 +132,7 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 			return FALSE;
 		}
 	}
-#else
+#elif RASPPI == 4
 	// PCIe init
 	if (!m_PCIeHostBridge.Initialize ())
 	{
@@ -199,7 +198,7 @@ boolean CXHCIDevice::Initialize (boolean bScanDevices)
 				         & XHCI_REG_CAP_HCSPARAMS2_MAX_SCRATCHPAD_BUFS__MASK)
 				      >> XHCI_REG_CAP_HCSPARAMS2_MAX_SCRATCHPAD_BUFS__SHIFT;
 
-#ifdef USE_XHCI_INTERNAL
+#if XHCI_CONTEXT_SIZE == 64
 	assert (m_pMMIO->cap_read32 (XHCI_REG_CAP_HCCPARAMS) & XHCI_REG_CAP_HCCPARAMS1_CSZ);
 #else
 	assert (!(m_pMMIO->cap_read32 (XHCI_REG_CAP_HCCPARAMS) & XHCI_REG_CAP_HCCPARAMS1_CSZ));
@@ -463,7 +462,7 @@ void CXHCIDevice::DumpStatus (void)
 	m_pSlotManager->DumpStatus ();
 	m_pMMIO->DumpStatus ();
 
-#ifndef USE_XHCI_INTERNAL
+#if RASPPI == 4 && !defined (USE_XHCI_INTERNAL)
 	m_PCIeHostBridge.DumpStatus (XHCI_PCIE_SLOT, XHCI_PCIE_FUNC);
 #endif
 

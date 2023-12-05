@@ -621,22 +621,32 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
 
 	TMemoryWindow Result;
 
-#if RASPPI == 4
 	if (m_pDTB != 0)
 	{
-		const TDeviceTreeNode *pPCIe = m_pDTB->FindNode ("/scb/pcie@7d500000");
+#if RASPPI == 4
+		// there is one inbound window only
+		static const char PCIePath[] = "/scb/pcie@7d500000";
+		unsigned n = 1*7;
+		unsigned i = 0;
+#else
+		// TODO: for now we map only the second inbound window
+		static const char PCIePath[] = "/axi/pcie@120000";
+		unsigned n = 2*7;
+		unsigned i = 7;
+#endif
+		const TDeviceTreeNode *pPCIe = m_pDTB->FindNode (PCIePath);
 		if (pPCIe != 0)
 		{
 			const TDeviceTreeProperty *pDMA = m_pDTB->FindProperty (pPCIe, "dma-ranges");
 			if (   pDMA != 0
-			    && m_pDTB->GetPropertyValueLength (pDMA) == sizeof (u32)*7)
+			    && m_pDTB->GetPropertyValueLength (pDMA) == sizeof (u32)*n)
 			{
-				Result.BusAddress = (u64) m_pDTB->GetPropertyValueWord (pDMA, 1) << 32
-							| m_pDTB->GetPropertyValueWord (pDMA, 2);
-				Result.CPUAddress = (u64) m_pDTB->GetPropertyValueWord (pDMA, 3) << 32
-							| m_pDTB->GetPropertyValueWord (pDMA, 4);
-				Result.Size	  = (u64) m_pDTB->GetPropertyValueWord (pDMA, 5) << 32
-							| m_pDTB->GetPropertyValueWord (pDMA, 6);
+				Result.BusAddress = (u64) m_pDTB->GetPropertyValueWord (pDMA, i+1) << 32
+							| m_pDTB->GetPropertyValueWord (pDMA, i+2);
+				Result.CPUAddress = (u64) m_pDTB->GetPropertyValueWord (pDMA, i+3) << 32
+							| m_pDTB->GetPropertyValueWord (pDMA, i+4);
+				Result.Size	  = (u64) m_pDTB->GetPropertyValueWord (pDMA, i+5) << 32
+							| m_pDTB->GetPropertyValueWord (pDMA, i+6);
 
 				return Result;
 			}
@@ -648,6 +658,7 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
 	Result.CPUAddress = MEM_PCIE_DMA_RANGE_START;
 	Result.Size = (u64) m_nRAMSize * MEGABYTE;
 
+#if RASPPI == 4
 	if (   m_MachineModel != MachineModel4B			// not for BCM2711B0
 	    || m_nModelRevision >= 5)
 	{
@@ -656,10 +667,6 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
 			Result.BusAddress = 0x400000000ULL;
 		}
 	}
-#else
-	Result.BusAddress = MEM_PCIE_DMA_RANGE_PCIE_START;
-	Result.CPUAddress = MEM_PCIE_DMA_RANGE_START;
-	Result.Size = (u64) m_nRAMSize * MEGABYTE;
 #endif
 
 	return Result;

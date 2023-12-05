@@ -28,7 +28,7 @@
 //
 // PCIe Configuration
 //
-#ifndef USE_XHCI_INTERNAL
+#if RASPPI == 4 && !defined (USE_XHCI_INTERNAL)
 #define XHCI_PCIE_BUS			1
 #define XHCI_PCIE_SLOT			0
 #define XHCI_PCIE_FUNC			0
@@ -39,16 +39,23 @@
 //
 // Driver Configuration
 //
-#ifdef USE_XHCI_INTERNAL
-#define XHCI_CONFIG_MAX_SLOTS		64
 #if RASPPI == 4
+#ifdef USE_XHCI_INTERNAL
+#define XHCI_SUPPORTED_VERSION		0x110
+#define XHCI_CONFIG_MAX_SLOTS		64
 #define XHCI_CONFIG_MAX_PORTS		1
+#define XHCI_CONTEXT_SIZE		64
 #else
-#define XHCI_CONFIG_MAX_PORTS		3
-#endif
-#else
+#define XHCI_SUPPORTED_VERSION		0x100
 #define XHCI_CONFIG_MAX_SLOTS		32
 #define XHCI_CONFIG_MAX_PORTS		5
+#define XHCI_CONTEXT_SIZE		32
+#endif
+#else
+#define XHCI_SUPPORTED_VERSION		0x110
+#define XHCI_CONFIG_MAX_SLOTS		64
+#define XHCI_CONFIG_MAX_PORTS		3
+#define XHCI_CONTEXT_SIZE		64
 #endif
 
 #define XHCI_CONFIG_EVENT_RING_SIZE	256
