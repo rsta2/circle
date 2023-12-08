@@ -33,8 +33,6 @@ Currently is only a subset of features supported:
 * LVGL graphics library (in addon/lvgl/)
 * Bootloader (via UART connector)
 
-Most external hardware interfaces (I2C etc.) are not supported yet.
-
 The Cortex-A76 CPU of the Raspberry Pi 5 supports only AArch64 in the mode,
 which is used by Circle (EL1), so AArch32 is and will not be supported.
 
