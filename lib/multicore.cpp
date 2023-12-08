@@ -295,9 +295,6 @@ void CMultiCoreSupport::LocalInterruptHandler (unsigned nFromCore, unsigned nIPI
 
 void CMultiCoreSupport::EntrySecondary (void)
 {
-	assert (s_pThis != 0);
-
-	assert (s_pThis->m_pMemorySystem != 0);
 	s_pThis->m_pMemorySystem->InitializeSecondary ();
 	
 	unsigned nCore = ThisCore ();
@@ -308,10 +305,10 @@ void CMultiCoreSupport::EntrySecondary (void)
 	pSpinTable->SpinCore[nCore] = 0;
 	DataSyncBarrier ();
 #else
+	CTimer::SimpleMsDelay (20);
+
 	s_pThis->m_bCoreStarted[nCore] = TRUE;
 	DataSyncBarrier ();
-
-	CTimer::SimpleMsDelay (20);		// TODO: does not work without
 #endif
 
 #if RASPPI <= 3

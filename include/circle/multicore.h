@@ -81,7 +81,7 @@ private:
 	CMemorySystem *m_pMemorySystem;
 
 #if RASPPI >= 5
-	volatile boolean m_bCoreStarted[CORES] CACHE_ALIGN;
+	volatile DMA_BUFFER (boolean, m_bCoreStarted, CORES);
 #endif
 
 	static CMultiCoreSupport *s_pThis;

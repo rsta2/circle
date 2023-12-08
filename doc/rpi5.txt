@@ -22,6 +22,7 @@ Currently is only a subset of features supported:
 * 2 xHCI USB controllers (4 ports)
 * 4 I2C masters
 * Multi-core support and spin locks
+* CPU throttle and GPIO fan (gpiofanpin=45)
 * Hardware random number generator
 * Watchdog device
 * Scheduler library
@@ -87,6 +88,7 @@ Currently the following sample programs are operational:
 * 17-fractal (multi-core supported)
 * 19-tasks
 * 24-hwrandom
+* 26-cpustress
 * 27-usbgamepad
 * 32-i2cshell
 * 34-sounddevices (USB sound only)
