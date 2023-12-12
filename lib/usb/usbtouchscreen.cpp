@@ -2,7 +2,7 @@
 // usbtouchscreen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -407,7 +407,8 @@ boolean CUSBTouchScreenDevice::DecodeReportDescriptor (const u8 *pDesc, unsigned
 			break;
 		}
 
-		if (ucItem == HID_INPUT)
+		if (   ucItem == HID_INPUT
+		    && nReportID == m_Report.ReportID)
 		{
 			nBitOffset += nReportCount * nReportSize;
 		}
