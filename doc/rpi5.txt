@@ -50,9 +50,9 @@ It can be created using:
 
 	./configure -r 5 [ --multicore ]
 
-Build all supported libraries using:
+Build all libraries using:
 
-	./makeall5 [ -j ]
+	./makeall [ -j ]
 
 Go to the sample directory of your choice (see below) and enter:
 

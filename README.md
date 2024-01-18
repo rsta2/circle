@@ -178,7 +178,7 @@ Then go to the build root of Circle and do:
 ./makeall
 ```
 
-By default only the latest sample (with the highest number) is build. The ready build *kernel.img* file should be in its subdirectory of sample/. If you want to build another sample after `makeall` go to its subdirectory and do `make`.
+By default only the Circle libraries are built. To build a sample program after `makeall` go to its subdirectory and do `make`.
 
 You can also build Circle on the Raspberry Pi itself (set `PREFIX =` (empty)) on Raspbian but you need some method to put the *kernel.img* file onto the SD(HC) card. With an external USB card reader on model B+ or Raspberry Pi 2/3/4 model B (4 USB ports) this should be no problem.
 
@@ -208,7 +208,7 @@ Then go to the build root of Circle and do:
 ./makeall
 ```
 
-By default only the latest sample (with the highest number) is build. The ready build *kernel8.img* or *kernel8-rpi4.img* file should be in its subdirectory of sample/. If you want to build another sample after `makeall` go to its subdirectory and do `make`.
+By default only the Circle libraries are built. To build a sample program after `makeall` go to its subdirectory and do `make`.
 
 Installation
 ------------
