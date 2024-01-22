@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -179,13 +179,32 @@ CMachineInfo::CMachineInfo (void)
 	FetchDTB ();
 #endif
 
-	// TODO: request DMA channel map from DTB for Raspberry Pi 5
 	CBcmPropertyTags Tags;
+#if RASPPI <= 4
 	TPropertyTagSimple DMAChannels;
 	if (Tags.GetTag (PROPTAG_GET_DMA_CHANNELS, &DMAChannels, sizeof DMAChannels))
 	{
 		m_usDMAChannelMap = (u16) DMAChannels.nValue;
 	}
+#else
+	const TDeviceTreeNode *pDMANode;
+	const TDeviceTreeProperty *pChannelMask;
+	if (   m_pDTB
+	    && (pDMANode = m_pDTB->FindNode ("/axi/dma@10000"))		// DMA32 (6 channels)
+	    && (pChannelMask = m_pDTB->FindProperty (pDMANode, "brcm,dma-channel-mask")))
+	{
+		m_usDMAChannelMap &= ~0x3F;
+		m_usDMAChannelMap |= (u16) m_pDTB->GetPropertyValueWord (pChannelMask, 0) & 0x3F;
+	}
+
+	if (   m_pDTB
+	    && (pDMANode = m_pDTB->FindNode ("/axi/dma@10600"))		// DMA40 (6 channels)
+	    && (pChannelMask = m_pDTB->FindProperty (pDMANode, "brcm,dma-channel-mask")))
+	{
+		m_usDMAChannelMap &= ~0xFC0;
+		m_usDMAChannelMap |= (u16) m_pDTB->GetPropertyValueWord (pChannelMask, 0) & 0xFC0;
+	}
+#endif
 
 	TPropertyTagSimple BoardRevision;
 	if (!Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
