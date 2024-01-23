@@ -71,76 +71,76 @@ Features
 
 Circle supports the following features:
 
-| Group                 | Features                                            |
-|-----------------------|-----------------------------------------------------|
-| C++ build environment | AArch32 and AArch64 support                         |
-|                       | Basic library functions (e.g. new and delete)       |
-|                       | Enables all CPU caches using the MMU                |
-|                       | Interrupt support (IRQ and FIQ)                     |
-|                       | Multi-core support (Raspberry Pi 2, 3 and 4)        |
-|                       | Cooperative non-preemtive scheduler                 |
-|                       | CPU clock rate management                           |
-|                       | Clang/LLVM support (experimental)                   |
-|                       |                                                     |
-| Debug support         | Kernel logging to screen, UART and/or syslog server |
-|                       | C-assertions with stack trace                       |
-|                       | Hardware exception handler with stack trace         |
-|                       | GDB support using rpi_stub (Raspberry Pi 2 and 3)   |
-|                       | Serial bootloader (by David Welch) included         |
-|                       | Software profiling support (single-core)            |
-|                       | QEMU support                                        |
-|                       |                                                     |
-| SoC devices           | GPIO pins (with interrupt, Act LED) and clocks      |
-|                       | Frame buffer (screen driver with escape sequences)  |
-|                       | UART(s) (Polling and interrupt driver)              |
-|                       | System timer (with kernel timers)                   |
-|                       | Platform DMA controller                             |
-|                       | EMMC SD card interface driver                       |
-|                       | SDHOST SD card interface driver (Raspberry Pi 1-3)  |
-|                       | PWM output (2 channels)                             |
-|                       | PWM sound output (on headphone jack)                |
-|                       | I2C master(s) and slave                             |
-|                       | SPI0 master (Polling and DMA driver)                |
-|                       | SPI1 auxiliary master (Polling)                     |
-|                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          |
-|                       | SMI master (experimental)                           |
-|                       | I2S sound output and input                          |
-|                       | HDMI sound output (without VCHIQ)                   |
-|                       | Hardware random number generator                    |
-|                       | Watchdog device                                     |
-|                       | Official Raspberry Pi touch screen                  |
-|                       | VCHIQ interface and audio service drivers           |
-|                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |
-|                       | Wireless LAN access                                 |
-|                       |                                                     |
-| USB                   | Host controller interface (HCI) drivers             |
-|                       | Standard hub driver (USB 2.0 only)                  |
-|                       | HID class device drivers (keyboard, mouse, gamepad) |
-|                       | Driver for on-board Ethernet device (SMSC951x)      |
-|                       | Driver for on-board Ethernet device (LAN7800)       |
-|                       | Driver for USB mass storage devices (bulk only)     |
-|                       | Driver for USB audio streaming devices (RPi 4 only) |
-|                       | Drivers for different USB serial devices            |
-|                       | Audio class MIDI input support                      |
-|                       | Touchscreen driver (digitizer mode)                 |
-|                       | Printer driver                                      |
-|                       | MIDI gadget driver (experimental)                   |
-|                       |                                                     |
-| File systems          | Internal FAT driver (limited function)              |
-|                       | FatFs driver (full function, by ChaN)               |
-|                       |                                                     |
-| TCP/IP networking     | Protocols: ARP, IP, ICMP, UDP, TCP                  |
-|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog, MQTT         |
-|                       | Servers: HTTP, TFTP                                 |
-|                       | BSD-like C++ socket API                             |
-|                       |                                                     |
-| Graphics              | OpenGL ES 1.1 and 2.0, OpenVG 1.1, EGL 1.4          |
-|                       | (not on Raspberry Pi 4)                             |
-|                       | uGUI (by Achim Doebler)                             |
-|                       | LVGL (by LVGL Kft)                                  |
-|                       | 2D graphics class in base library                   |
-|                       |                                                     |
-| Not supported         | Bluetooth                                           |
+| Group                 | Features                                            | Raspberry Pi 5 |
+|-----------------------|-----------------------------------------------------|----------------|
+| C++ build environment | AArch32 and AArch64 support                         | AArch64 only   |
+|                       | Basic library functions (e.g. new and delete)       | x              |
+|                       | Enables all CPU caches using the MMU                | x              |
+|                       | Interrupt support (IRQ and FIQ)                     | IRQ only       |
+|                       | Multi-core support (Raspberry Pi 2, 3 and 4)        | x              |
+|                       | Cooperative non-preemtive scheduler                 | x              |
+|                       | CPU clock rate management                           | x              |
+|                       | Clang/LLVM support (experimental)                   | x              |
+|                       |                                                     |                |
+| Debug support         | Kernel logging to screen, UART and/or syslog server | screen / UART  |
+|                       | C-assertions with stack trace                       | x              |
+|                       | Hardware exception handler with stack trace         | x              |
+|                       | GDB support using rpi_stub (Raspberry Pi 2 and 3)   |                |
+|                       | Serial bootloader (by David Welch) included         | x              |
+|                       | Software profiling support (single-core)            | x              |
+|                       | QEMU support                                        |                |
+|                       |                                                     |                |
+| SoC devices           | GPIO pins (with interrupt, Act LED) and clocks      | no clocks      |
+|                       | Frame buffer (screen driver with escape sequences)  | limited        |
+|                       | UART(s) (Polling and interrupt driver)              | x              |
+|                       | System timer (with kernel timers)                   | x              |
+|                       | Platform DMA controller                             | memcopy only   |
+|                       | EMMC SD card interface driver                       | x              |
+|                       | SDHOST SD card interface driver (Raspberry Pi 1-3)  |                |
+|                       | PWM output (2 channels)                             |                |
+|                       | PWM sound output (on headphone jack)                |                |
+|                       | I2C master(s) and slave                             | masters only   |
+|                       | SPI0 master (Polling and DMA driver)                |                |
+|                       | SPI1 auxiliary master (Polling)                     |                |
+|                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          |                |
+|                       | SMI master (experimental)                           |                |
+|                       | I2S sound output and input                          |                |
+|                       | HDMI sound output (without VCHIQ)                   |                |
+|                       | Hardware random number generator                    | x              |
+|                       | Watchdog device                                     | x              |
+|                       | Official Raspberry Pi touch screen                  |                |
+|                       | VCHIQ interface and audio service drivers           |                |
+|                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |                |
+|                       | Wireless LAN access                                 |                |
+|                       |                                                     |                |
+| USB                   | Host controller interface (HCI) drivers             | x              |
+|                       | Standard hub driver (USB 2.0 only)                  | x              |
+|                       | HID class device drivers (keyboard, mouse, gamepad) | x              |
+|                       | Driver for on-board Ethernet device (SMSC951x)      |                |
+|                       | Driver for on-board Ethernet device (LAN7800)       |                |
+|                       | Driver for USB mass storage devices (bulk only)     | x              |
+|                       | Driver for USB audio streaming devices (RPi 4 only) | x              |
+|                       | Drivers for different USB serial devices            | x              |
+|                       | Audio class MIDI input support                      | x              |
+|                       | Touchscreen driver (digitizer mode)                 | x              |
+|                       | Printer driver                                      | x              |
+|                       | MIDI gadget driver (experimental)                   |                |
+|                       |                                                     |                |
+| File systems          | Internal FAT driver (limited function)              | x              |
+|                       | FatFs driver (full function, by ChaN)               | x              |
+|                       |                                                     |                |
+| TCP/IP networking     | Protocols: ARP, IP, ICMP, UDP, TCP                  |                |
+|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog, MQTT         |                |
+|                       | Servers: HTTP, TFTP                                 |                |
+|                       | BSD-like C++ socket API                             |                |
+|                       |                                                     |                |
+| Graphics              | OpenGL ES 1.1 and 2.0, OpenVG 1.1, EGL 1.4          |                |
+|                       | (not on Raspberry Pi 4)                             |                |
+|                       | uGUI (by Achim Doebler)                             |                |
+|                       | LVGL (by LVGL Kft)                                  | x              |
+|                       | 2D graphics class in base library                   |                |
+|                       |                                                     |                |
+| Not supported         | Bluetooth                                           |                |
 
 Building
 --------
