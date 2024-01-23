@@ -10,6 +10,7 @@
 #
 
 arm_64bit=1
+kernel_address=0x80000
 
 [pi02]
 kernel=kernel8.img
