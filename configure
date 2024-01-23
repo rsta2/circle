@@ -155,4 +155,4 @@ echo "Configuration file successfully created:"
 echo
 cat "$CONFIG_FILE"
 echo
-echo "Now enter ./makeall to build the Circle libraries and the latest sample!"
+echo "Now enter ./makeall to build the Circle libraries!"
