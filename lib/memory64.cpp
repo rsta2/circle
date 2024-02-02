@@ -2,7 +2,7 @@
 // memory64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,6 +66,8 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 		assert (m_pTranslationTable != 0);
 
 		EnableMMU ();
+
+		InstructionSyncBarrier ();
 	}
 }
 
@@ -131,6 +133,8 @@ void CMemorySystem::InitializeSecondary (void)
 	assert (s_pThis->m_bEnableMMU);		// required to use spin locks
 
 	s_pThis->EnableMMU ();
+
+	InstructionSyncBarrier ();
 }
 
 #endif
