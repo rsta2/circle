@@ -2,7 +2,7 @@
 // xhcidevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -432,9 +432,7 @@ void CXHCIDevice::InterruptStub (void *pParam)
 
 boolean CXHCIDevice::HWReset (void)
 {
-	if (   !m_pMMIO->op_wait32 (XHCI_REG_OP_USBSTS, XHCI_REG_OP_USBSTS_CNR, 0, 100000)
-	    || !m_pMMIO->op_wait32 (XHCI_REG_OP_USBSTS, XHCI_REG_OP_USBSTS_HCH,
-				    XHCI_REG_OP_USBSTS_HCH, 100000))
+	if (!m_pMMIO->op_wait32 (XHCI_REG_OP_USBSTS, XHCI_REG_OP_USBSTS_CNR, 0, 100000))
 	{
 		return FALSE;
 	}
