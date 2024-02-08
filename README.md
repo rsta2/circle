@@ -69,6 +69,8 @@ Don't forget to update the used firmware to the one downloadable in [boot/](boot
 Features
 --------
 
+> Only the features with a "x" or other info are currently supported on the Raspberry Pi 5.
+
 Circle supports the following features:
 
 | Group                 | Features                                            | Raspberry Pi 5 |
