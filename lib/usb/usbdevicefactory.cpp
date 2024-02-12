@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -94,7 +94,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		pResult = new CUSBMouseDevice (pParent);
 	}
 	else if (   pName->Compare ("int3-0-0") == 0
-		 || pName->Compare ("int3-0-2") == 0)
+		 || pName->Compare ("int3-0-2") == 0
+		 || pName->Compare ("int3-1-0") == 0)
 	{
 		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
 		assert (pVendor != 0);
