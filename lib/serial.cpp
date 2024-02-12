@@ -2,7 +2,7 @@
 // serial.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -305,12 +305,12 @@ CSerialDevice::~CSerialDevice (void)
 		s_bUseFIQ = FALSE;
 	}
 #else
-	assert (s_pInterruptSystem != 0);
-	s_pInterruptSystem->DisconnectIRQ (s_IRQ[m_nDevice]);
-
 	if (   m_pInterruptSystem != 0
 	    && --s_nInterruptUseCount == 0)
 	{
+		assert (s_pInterruptSystem != 0);
+		s_pInterruptSystem->DisconnectIRQ (s_IRQ[m_nDevice]);
+
 		s_pInterruptSystem = 0;
 	}
 #endif
