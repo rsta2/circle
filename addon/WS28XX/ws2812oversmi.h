@@ -6,7 +6,7 @@
 // Adapted from https://iosoft.blog/2020/09/29/raspberry-pi-multi-channel-ws2812/
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@
 // NEOPIXEL_SMI_NS is in nanoseconds: even numbers, 2 to 30
 #define NEOPIXEL_SMI_WIDTH		(LED_NCHANS > 8 ? SMI16Bits : SMI8Bits)
 #define NEOPIXEL_SMI_PACE		0
-#if RASPI > 3	// Timings for RPi v4 (1.5 GHz)
+#if RASPPI > 3	// Timings for RPi v4 (1.5 GHz)
 #define NEOPIXEL_SMI_NS			10
 #define NEOPIXEL_SMI_SETUP		15
 #define NEOPIXEL_SMI_STROBE		30
