@@ -47,6 +47,11 @@ boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 	{
 		return FALSE;
 	}
+#elif RASPPI >= 5
+	if (!m_MACB.Initialize ())
+	{
+		return FALSE;
+	}
 #endif
 
 	if (!bWaitForActivate)

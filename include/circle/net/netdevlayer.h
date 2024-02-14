@@ -24,6 +24,7 @@
 #include <circle/netdevice.h>
 #include <circle/net/netqueue.h>
 #include <circle/bcm54213.h>
+#include <circle/macb.h>
 #include <circle/types.h>
 
 class CNetDeviceLayer
@@ -54,6 +55,8 @@ private:
 
 #if RASPPI == 4
 	CBcm54213Device m_Bcm54213;
+#elif RASPPI >= 5
+	CMACBDevice m_MACB;
 #endif
 };
 

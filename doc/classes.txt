@@ -33,6 +33,7 @@ Base library
 * CLatencyTester: Measures the IRQ latency of the running code.
 * CLogger: Writing logging messages to a target device
 * CMACAddress: Encapsulates an Ethernet MAC address.
+* CMACBDevice: Driver for MACB/GEM Ethernet NIC of Raspberry Pi 5.
 * CMachineInfo: Helper class to get different information about the running computer.
 * CMemorySystem: Enabling MMU if requested, switching page tables (not used here).
 * CMPHIDevice: A driver, which uses the MPHI device to generate an IRQ.

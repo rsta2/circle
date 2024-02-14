@@ -5,7 +5,7 @@
 // with the Raspberry Pi 5
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -57,6 +57,12 @@
 //
 #define ARM_RESET_RESCAL_BASE	0x1000119500UL
 #define ARM_RESET_RESCAL_END	(ARM_RESET_RESCAL_BASE + 0x0F)
+
+//
+// MACB Ethernet NIC (RP1)
+//
+#define ARM_MACB_BASE		0x1F00100000UL
+#define ARM_MACB_END		(ARM_MACB_BASE + 0x3FFF)
 
 #endif
 
