@@ -43,7 +43,7 @@ static const char FromFt231x[] = "ft231x";
 #define FTDI_SIO_SET_DATA_STOP_BITS_2	(0x2 << 11)
 
 CUSBSerialFT231XDevice::CUSBSerialFT231XDevice (CUSBFunction *pFunction)
-:	CUSBSerialDevice (pFunction, 2)
+:	CUSBSerialHostDevice (pFunction, 2)
 {
 }
 
@@ -53,7 +53,7 @@ CUSBSerialFT231XDevice::~CUSBSerialFT231XDevice (void)
 
 boolean CUSBSerialFT231XDevice::Configure (void)
 {
-	if (!CUSBSerialDevice::Configure ())
+	if (!CUSBSerialHostDevice::Configure ())
 	{
 		CLogger::Get ()->Write (FromFt231x, LogError, "Cannot configure serial device");
 

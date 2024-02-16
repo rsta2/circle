@@ -44,7 +44,7 @@ PACKED;
 static const char From[] = "uttycdc";
 
 CUSBSerialCDCDevice::CUSBSerialCDCDevice (CUSBFunction *pFunction)
-:	CUSBSerialDevice (pFunction),
+:	CUSBSerialHostDevice (pFunction),
 	m_ucCommunicationsInterfaceNumber (GetInterfaceNumber ()),
 	m_bInterfaceOK (SelectInterfaceByClass (10, 0, 0))
 {
@@ -63,7 +63,7 @@ boolean CUSBSerialCDCDevice::Configure (void)
 		return FALSE;
 	}
 
-	if (!CUSBSerialDevice::Configure ())
+	if (!CUSBSerialHostDevice::Configure ())
 	{
 		CLogger::Get ()->Write (From, LogError, "Cannot configure serial device");
 
