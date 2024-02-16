@@ -31,6 +31,7 @@ CUSBSerialDevice::CUSBSerialDevice (void)
 	m_pReadHandler (nullptr),
 	m_pSetBaudRateHandler (nullptr),
 	m_pSetLinePropertiesHandler (nullptr),
+	m_nOptions (SERIAL_OPTION_ONLCR),
 	m_nDeviceNumber (s_DeviceNumberPool.AllocateNumber (TRUE, From))
 {
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
@@ -50,7 +51,29 @@ CUSBSerialDevice::~CUSBSerialDevice (void)
 int CUSBSerialDevice::Write (const void *pBuffer, size_t nCount)
 {
 	assert (m_pWriteHandler);
-	return (*m_pWriteHandler) (pBuffer, nCount, m_pWriteParam);
+
+	if (!(m_nOptions & SERIAL_OPTION_ONLCR))
+	{
+		return (*m_pWriteHandler) (pBuffer, nCount, m_pWriteParam);
+	}
+
+	const char *pIn = reinterpret_cast<const char *> (pBuffer);
+	assert (pIn);
+
+	char Buffer[nCount*2];
+	char *pOut = Buffer;
+
+	while (nCount--)
+	{
+		if (*pIn == '\n')
+		{
+			*pOut++ = '\r';
+		}
+
+		*pOut++ = *pIn++;
+	}
+
+	return (*m_pWriteHandler) (Buffer, pOut-Buffer, m_pWriteParam);
 }
 
 int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
@@ -80,6 +103,16 @@ boolean CUSBSerialDevice::SetLineProperties (TUSBSerialDataBits nDataBits,
 
 	return (*m_pSetLinePropertiesHandler) (nDataBits, nParity, nStopBits,
 					       m_pSetLinePropertiesParam);
+}
+
+unsigned CUSBSerialDevice::GetOptions (void) const
+{
+	return m_nOptions;
+}
+
+void CUSBSerialDevice::SetOptions (unsigned nOptions)
+{
+	m_nOptions = nOptions;
 }
 
 void CUSBSerialDevice::RegisterWriteHandler (TWriteHandler *pHandler, void *pParam)

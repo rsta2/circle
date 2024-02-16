@@ -45,6 +45,9 @@ enum TUSBSerialParity
 	USBSerialParityEven	 = 2,
 };
 
+// serial options
+#define SERIAL_OPTION_ONLCR	(1 << 0)	///< Translate NL to CR+NL on output (default)
+
 class CUSBSerialDevice : public CDevice		/// Interface device for USB serial devices
 {
 public:
@@ -60,6 +63,11 @@ public:
 	boolean SetLineProperties (TUSBSerialDataBits nDataBits,
 				   TUSBSerialParity nParity,
 				   TUSBSerialStopBits nStopBits);
+
+	/// \return Serial options mask (see serial options)
+	unsigned GetOptions (void) const;
+	/// \param nOptions Serial options mask (see serial options)
+	void SetOptions (unsigned nOptions);
 
 private:
 	typedef int TWriteHandler (const void *pBuffer, size_t nCount, void *pParam);
@@ -88,6 +96,8 @@ private:
 	void *m_pReadParam;
 	void *m_pSetBaudRateParam;
 	void *m_pSetLinePropertiesParam;
+
+	unsigned m_nOptions;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;
