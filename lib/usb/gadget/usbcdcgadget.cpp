@@ -1,5 +1,7 @@
 //
-// usbmidigadget.cpp
+// usbcdcgadget.cpp
+//
+// This file by Sebastien Nicolas <seba1978@gmx.de>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
@@ -17,12 +19,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/usb/gadget/usbmidigadget.h>
-#include <circle/usb/gadget/usbmidigadgetendpoint.h>
+#include <circle/usb/gadget/usbcdcgadget.h>
+#include <circle/usb/gadget/usbcdcgadgetendpoint.h>
 #include <circle/sysconfig.h>
 #include <assert.h>
 
-const TUSBDeviceDescriptor CUSBMIDIGadget::s_DeviceDescriptor =
+const TUSBDeviceDescriptor CUSBCDCGadget::s_DeviceDescriptor =
 {
 	sizeof (TUSBDeviceDescriptor),
 	DESCRIPTOR_DEVICE,
@@ -30,14 +32,14 @@ const TUSBDeviceDescriptor CUSBMIDIGadget::s_DeviceDescriptor =
 	0, 0, 0,
 	64,				// wMaxPacketSize0
 	USB_GADGET_VENDOR_ID,
-	USB_GADGET_DEVICE_ID_MIDI,
+	USB_GADGET_DEVICE_ID_SERIAL_CDC,
 	0x100,				// bcdDevice
 	1, 2, 0,			// strings
 	1
 };
 
-const CUSBMIDIGadget::TUSBMIDIGadgetConfigurationDescriptor
-	CUSBMIDIGadget::s_ConfigurationDescriptor =
+const CUSBCDCGadget::TUSBCDCGadgetConfigurationDescriptor
+	CUSBCDCGadget::s_ConfigurationDescriptor =
 {
 	{
 		sizeof (TUSBConfigurationDescriptor),
@@ -47,25 +49,53 @@ const CUSBMIDIGadget::TUSBMIDIGadgetConfigurationDescriptor
 		1,
 		0,
 		0x80,			// bmAttributes (bus-powered)
-		500 / 2			// bMaxPower (500mA)
+		100 / 2			// bMaxPower (500mA) todo back to 500
 	},
 	{
 		sizeof (TUSBInterfaceDescriptor),
 		DESCRIPTOR_INTERFACE,
 		0,			// bInterfaceNumber
 		0,			// bAlternateSetting
-		0,			// bNumEndpoints
-		1, 1, 0,		// bInterfaceClass, SubClass, Protocol
-		0
+		1,			// bNumEndpoints
+		2, 2, 1,	// bInterfaceClass, SubClass, Protocol
+		0			// iInterface
 	},
 	{
-		sizeof (TUSBAudioControlInterfaceDescriptorHeader),
+		5,			// bFunctionLength1
 		DESCRIPTOR_CS_INTERFACE,
-		USB_AUDIO_CTL_IFACE_SUBTYPE_HEADER,
-		USB_AUDIO_CTL_IFACE_BCDADC_100,
-		sizeof (TUSBAudioControlInterfaceDescriptorHeader),
-		1,
-		{1}
+		0,			// bDescriptorSubtype1 = header functional descriptor
+		0x110,		// bcdCDC
+
+		4,			// bFunctionLength2
+		DESCRIPTOR_CS_INTERFACE,
+	    2,			// bDescriptorSubtype2 = acm functional descriptor
+	    0x0,		// bmCapabilities1
+
+		5,			// bFunctionLength3
+		DESCRIPTOR_CS_INTERFACE,
+	    6,			// bDescriptorSubtype3 = union functional descriptor
+	    0,			// bMasterInterface
+		1,			// bSubordinateInterface0
+
+		/*
+		5,			// bFunctionLength4
+		DESCRIPTOR_CS_INTERFACE,
+	    1,			// bDescriptorSubtype4 = call management functional descriptor
+	    3,			// bmCapabilities2
+		1,			// bDataInterface
+		*/
+	},
+	{
+		sizeof (TUSBEndpointDescriptor),
+		DESCRIPTOR_ENDPOINT,
+		EPNotif | 0x80,
+		//2,			// bmAttributes (Bulk)
+		//todo circle does not support interrupt endpoints but then Linux's CDC driver keeps segfaulting with a bulk notif interrupt...
+		// this is OK because that interrupt is never used anyway - not even created (see below)
+		// note: we do need this unused notif interrupt or linux does not create /dev/ttyACM0
+		3,			// bmAttributes (Interrupt)
+		10,			// wMaxPacketSize
+		11,		// bInterval
 	},
 	{
 		sizeof (TUSBInterfaceDescriptor),
@@ -73,112 +103,47 @@ const CUSBMIDIGadget::TUSBMIDIGadgetConfigurationDescriptor
 		1,			// bInterfaceNumber
 		0,			// bAlternateSetting
 		2,			// bNumEndpoints
-		1, 3, 0,		// bInterfaceClass, SubClass, Protocol
-		0
+		0xA, 0, 0,	// bInterfaceClass, SubClass, Protocol
+		0			// iInterface
 	},
 	{
-		sizeof (TUSBMIDIStreamingInterfaceDescriptorHeader),
-		DESCRIPTOR_CS_INTERFACE,
-		USB_MIDI_STREAMING_IFACE_SUBTYPE_HEADER,
-		USB_MIDI_STREAMING_IFACE_BCDADC_100,
-		  sizeof (TUSBMIDIStreamingInterfaceDescriptorHeader)
-		+ sizeof (TUSBMIDIStreamingInterfaceDescriptorInJack)*2
-		+ sizeof (TUSBMIDIStreamingInterfaceDescriptorOutJack)*2
-		+ sizeof (TUSBAudioEndpointDescriptor)*2
-		+ sizeof (TUSBMIDIStreamingEndpointDescriptor)*2
-	},
-	{
-		sizeof (TUSBMIDIStreamingInterfaceDescriptorInJack),
-		DESCRIPTOR_CS_INTERFACE,
-		USB_MIDI_STREAMING_IFACE_SUBTYPE_MIDI_IN_JACK,
-		USB_MIDI_STREAMING_IFACE_JACKTYPE_EMBEDDED,
-		1,			// bJackID
-		0
-	},
-	{
-		sizeof (TUSBMIDIStreamingInterfaceDescriptorInJack),
-		DESCRIPTOR_CS_INTERFACE,
-		USB_MIDI_STREAMING_IFACE_SUBTYPE_MIDI_IN_JACK,
-		USB_MIDI_STREAMING_IFACE_JACKTYPE_EXTERNAL,
-		2,			// bJackID
-		0
-	},
-	{
-		sizeof (TUSBMIDIStreamingInterfaceDescriptorOutJack),
-		DESCRIPTOR_CS_INTERFACE,
-		USB_MIDI_STREAMING_IFACE_SUBTYPE_MIDI_OUT_JACK,
-		USB_MIDI_STREAMING_IFACE_JACKTYPE_EMBEDDED,
-		3,			// bJackID
-		1,			// bNrInputPins
-		{2},			// baSourceID[]
-		{1},			// baSourcePin[]
-		0
-	},
-	{
-		sizeof (TUSBMIDIStreamingInterfaceDescriptorOutJack),
-		DESCRIPTOR_CS_INTERFACE,
-		USB_MIDI_STREAMING_IFACE_SUBTYPE_MIDI_OUT_JACK,
-		USB_MIDI_STREAMING_IFACE_JACKTYPE_EXTERNAL,
-		4,			// bJackID
-		1,			// bNrInputPins
-		{1},			// baSourceID[]
-		{1},			// baSourcePin[]
-		0
-	},
-	{
-		sizeof (TUSBAudioEndpointDescriptor),
+		sizeof (TUSBEndpointDescriptor),
 		DESCRIPTOR_ENDPOINT,
 		EPOut,
 		2,			// bmAttributes (Bulk)
-		512,			// wMaxPacketSize
-		0,
-		0, 0
+		512,		// wMaxPacketSize
+		0,			// bInterval
 	},
 	{
-		sizeof (TUSBMIDIStreamingEndpointDescriptor),
-		DESCRIPTOR_CS_ENDPOINT,
-		USB_MIDI_STREAMING_SUBTYPE_GENERAL,
-		1,			// bNumEmbMIDIJack
-		{1}			// bAssocJackIDs[]
-	},
-	{
-		sizeof (TUSBAudioEndpointDescriptor),
+		sizeof (TUSBEndpointDescriptor),
 		DESCRIPTOR_ENDPOINT,
 		EPIn | 0x80,
 		2,			// bmAttributes (Bulk)
-		512,			// wMaxPacketSize
-		0,
-		0, 0
-	},
-	{
-		sizeof (TUSBMIDIStreamingEndpointDescriptor),
-		DESCRIPTOR_CS_ENDPOINT,
-		USB_MIDI_STREAMING_SUBTYPE_GENERAL,
-		1,			// bNumEmbMIDIJack
-		{3}			// bAssocJackIDs[]
+		512,		// wMaxPacketSize
+		0,			// bInterval
 	}
 };
 
-const char *const CUSBMIDIGadget::s_StringDescriptor[] =
+const char *const CUSBCDCGadget::s_StringDescriptor[] =
 {
 	"\x04\x03\x09\x04",		// Language ID
 	"Circle",
-	"MIDI Gadget"
+	"CDC Gadget"
 };
 
-CUSBMIDIGadget::CUSBMIDIGadget (CInterruptSystem *pInterruptSystem)
+CUSBCDCGadget::CUSBCDCGadget (CInterruptSystem *pInterruptSystem)
 :	CDWUSBGadget (pInterruptSystem, HighSpeed),
 	m_pInterface (nullptr),
-	m_pEP {nullptr, nullptr, nullptr}
+	m_pEP {nullptr, nullptr, nullptr, nullptr}
 {
 }
 
-CUSBMIDIGadget::~CUSBMIDIGadget (void)
+CUSBCDCGadget::~CUSBCDCGadget (void)
 {
 	assert (0);
 }
 
-const void *CUSBMIDIGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength)
+const void *CUSBCDCGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLength)
 {
 	assert (pLength);
 
@@ -221,25 +186,33 @@ const void *CUSBMIDIGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLeng
 	return nullptr;
 }
 
-void CUSBMIDIGadget::AddEndpoints (void)
+void CUSBCDCGadget::AddEndpoints (void)
 {
+	/*not necessary, which is fortunate because circle does not support Interrupt endpoints
+	assert (!m_pEP[EPNotif]);
+	m_pEP[EPNotif] = new CUSBCDCGadgetEndpoint (
+				reinterpret_cast<const TUSBEndpointDescriptor *> (
+					&s_ConfigurationDescriptor.EndpointNotif), this);
+	assert (m_pEP[EPNotif]);
+	*/
+
 	assert (!m_pEP[EPOut]);
-	m_pEP[EPOut] = new CUSBMIDIGadgetEndpoint (
+	m_pEP[EPOut] = new CUSBCDCGadgetEndpoint (
 				reinterpret_cast<const TUSBEndpointDescriptor *> (
 					&s_ConfigurationDescriptor.EndpointOut), this);
 	assert (m_pEP[EPOut]);
 
 	assert (!m_pEP[EPIn]);
-	m_pEP[EPIn] = new CUSBMIDIGadgetEndpoint (
+	m_pEP[EPIn] = new CUSBCDCGadgetEndpoint (
 				reinterpret_cast<const TUSBEndpointDescriptor *> (
 					&s_ConfigurationDescriptor.EndpointIn), this);
 	assert (m_pEP[EPIn]);
 }
 
-void CUSBMIDIGadget::CreateDevice (void)
+void CUSBCDCGadget::CreateDevice (void)
 {
 	assert (!m_pInterface);
-	m_pInterface = new CUSBMIDIDevice;
+	m_pInterface = new CUSBSerialDevice;
 	assert (m_pInterface);
 
 	assert (m_pEP[EPOut]);
@@ -249,10 +222,15 @@ void CUSBMIDIGadget::CreateDevice (void)
 	m_pEP[EPIn]->AttachInterface (m_pInterface);
 }
 
-void CUSBMIDIGadget::OnSuspend (void)
+void CUSBCDCGadget::OnSuspend (void)
 {
 	delete m_pInterface;
 	m_pInterface = nullptr;
+
+	/*not necessary
+	delete m_pEP[EPNotif];
+	m_pEP[EPNotif] = nullptr;
+	*/
 
 	delete m_pEP[EPOut];
 	m_pEP[EPOut] = nullptr;
@@ -261,7 +239,7 @@ void CUSBMIDIGadget::OnSuspend (void)
 	m_pEP[EPIn] = nullptr;
 }
 
-const void *CUSBMIDIGadget::ToStringDescriptor (const char *pString, size_t *pLength)
+const void *CUSBCDCGadget::ToStringDescriptor (const char *pString, size_t *pLength)
 {
 	assert (pString);
 

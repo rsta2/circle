@@ -1,5 +1,7 @@
 //
-// usbmidigadgetendpoint.cpp
+// usbcdcgadgetendpoint.cpp
+//
+// This file by Sebastien Nicolas <seba1978@gmx.de>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
@@ -17,51 +19,53 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/usb/gadget/usbmidigadgetendpoint.h>
-#include <circle/usb/gadget/usbmidigadget.h>
-#include <circle/usb/usbmidi.h>
+#include <circle/usb/gadget/usbcdcgadgetendpoint.h>
+#include <circle/usb/gadget/usbcdcgadget.h>
+#include <circle/usb/usbserial.h>
 #include <circle/logger.h>
-#include <circle/atomic.h>
-#include <circle/debug.h>
 #include <assert.h>
 
-LOGMODULE ("midigadgetep");
+LOGMODULE ("cdcgadgetep");
 
-CUSBMIDIGadgetEndpoint::CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
-						CUSBMIDIGadget *pGadget)
+CUSBCDCGadgetEndpoint::CUSBCDCGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
+						CUSBCDCGadget *pGadget)
 :	CDWUSBGadgetEndpoint (pDesc, pGadget),
 	m_pInterface (nullptr),
+	m_nStatus (0),
 	m_bInActive (FALSE),
 	m_pQueue (nullptr),
 	m_nInPtr (0),
 	m_nOutPtr (0)
 {
-	if (GetDirection () == DirectionIn)
-	{
-		m_pQueue = new u8[QueueSize];
-		assert (m_pQueue);
-	}
+	m_pQueue = new u8[QueueSize];
+	assert (m_pQueue);
 }
 
-CUSBMIDIGadgetEndpoint::~CUSBMIDIGadgetEndpoint (void)
+CUSBCDCGadgetEndpoint::~CUSBCDCGadgetEndpoint (void)
 {
 	delete [] m_pQueue;
 	m_pQueue = nullptr;
 }
 
-void CUSBMIDIGadgetEndpoint::AttachInterface (CUSBMIDIDevice *pInterface)
+void CUSBCDCGadgetEndpoint::AttachInterface (CUSBSerialDevice *pInterface)
 {
+	m_nStatus = 0;
+
 	assert (!m_pInterface);
 	m_pInterface = pInterface;
 	assert (m_pInterface);
 
 	if (GetDirection () == DirectionIn)
 	{
-		m_pInterface->RegisterSendEventsHandler (SendEventsHandler, this);
+		m_pInterface->RegisterWriteHandler (WriteHandler, this);
+	}
+	else
+	{
+		m_pInterface->RegisterReadHandler (ReadHandler, this);
 	}
 }
 
-void CUSBMIDIGadgetEndpoint::OnActivate (void)
+void CUSBCDCGadgetEndpoint::OnActivate (void)
 {
 	if (GetDirection () == DirectionOut)
 	{
@@ -69,19 +73,23 @@ void CUSBMIDIGadgetEndpoint::OnActivate (void)
 	}
 }
 
-void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
+void CUSBCDCGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 {
 	if (!bIn)
 	{
-#ifndef NDEBUG
-		//debug_hexdump (m_OutBuffer, nLength, From);
-#endif
+		m_SpinLock.Acquire ();
 
-		if (!(nLength % CUSBMIDIDevice::EventPacketSize))
+		unsigned nBytesFree = GetQueueBytesFree ();
+		if (nLength > nBytesFree)
 		{
-			assert (m_pInterface);
-			m_pInterface->CallPacketHandler (m_OutBuffer, nLength);
+			nLength = nBytesFree;
+
+			m_nStatus = -1;		// RX overrun
 		}
+
+		Enqueue (m_OutBuffer, nLength);
+
+		m_SpinLock.Release ();
 
 		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
 	}
@@ -113,7 +121,7 @@ void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 	}
 }
 
-void CUSBMIDIGadgetEndpoint::OnSuspend (void)
+void CUSBCDCGadgetEndpoint::OnSuspend (void)
 {
 	if (GetDirection () == DirectionIn)
 	{
@@ -127,22 +135,34 @@ void CUSBMIDIGadgetEndpoint::OnSuspend (void)
 	}
 }
 
-boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLength)
+int CUSBCDCGadgetEndpoint::Write (const void *pData, unsigned nLength)
 {
 	assert (pData != 0);
 	assert (nLength > 0);
-	assert (!(nLength % CUSBMIDIDevice::EventPacketSize));
 
 	m_SpinLock.Acquire ();
 
+	if (m_nStatus)
+	{
+		int nStatus = m_nStatus;
+		m_nStatus = 0;
+
+		m_SpinLock.Release ();
+
+		return nStatus;
+	}
+
 	unsigned nBytesFree = GetQueueBytesFree ();
-	if (nLength > nBytesFree)
+	if (!nBytesFree)
 	{
 		m_SpinLock.Release ();
 
-		LOGWARN ("Trying to send %u bytes (max %u)", nLength, nBytesFree);
+		return 0;
+	}
 
-		return FALSE;
+	if (nLength > nBytesFree)
+	{
+		nLength = nBytesFree;
 	}
 
 	Enqueue (pData, nLength);
@@ -151,7 +171,7 @@ boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLe
 	{
 		m_SpinLock.Release ();
 
-		return TRUE;
+		return nLength;
 	}
 
 	m_bInActive = TRUE;
@@ -168,18 +188,60 @@ boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLe
 
 	BeginTransfer (TransferDataIn, m_InBuffer, nBytesAvail);
 
-	return TRUE;
+	return nLength;
 }
 
-boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLength, void *pParam)
+int CUSBCDCGadgetEndpoint::Read (void *pBuffer, unsigned nLength)
 {
-	CUSBMIDIGadgetEndpoint *pThis = static_cast<CUSBMIDIGadgetEndpoint *> (pParam);
+	m_SpinLock.Acquire ();
+
+	if (m_nStatus)
+	{
+		int nStatus = m_nStatus;
+		m_nStatus = 0;
+
+		m_SpinLock.Release ();
+
+		return nStatus;
+	}
+
+	unsigned nBytesAvail = GetQueueBytesAvail ();
+	if (!nBytesAvail)
+	{
+		m_SpinLock.Release ();
+
+		return 0;
+	}
+
+	if (nBytesAvail > nLength)
+	{
+		nBytesAvail = nLength;
+	}
+
+	Dequeue (pBuffer, nBytesAvail);
+
+	m_SpinLock.Release ();
+
+	return nBytesAvail;
+}
+
+int CUSBCDCGadgetEndpoint::WriteHandler (const void *pBuffer, size_t nCount, void *pParam)
+{
+	CUSBCDCGadgetEndpoint *pThis = static_cast<CUSBCDCGadgetEndpoint *> (pParam);
 	assert (pThis);
 
-	return pThis->SendEventsHandler (pData, nLength);
+	return pThis->Write (pBuffer, nCount);
 }
 
-unsigned CUSBMIDIGadgetEndpoint::GetQueueBytesFree (void)
+int CUSBCDCGadgetEndpoint::ReadHandler (void *pBuffer, size_t nCount, void *pParam)
+{
+	CUSBCDCGadgetEndpoint *pThis = static_cast<CUSBCDCGadgetEndpoint *> (pParam);
+	assert (pThis);
+
+	return pThis->Read (pBuffer, nCount);
+}
+
+unsigned CUSBCDCGadgetEndpoint::GetQueueBytesFree (void)
 {
 	assert (m_nInPtr < QueueSize);
 	assert (m_nOutPtr < QueueSize);
@@ -192,7 +254,7 @@ unsigned CUSBMIDIGadgetEndpoint::GetQueueBytesFree (void)
 	return m_nOutPtr-m_nInPtr-1;
 }
 
-unsigned CUSBMIDIGadgetEndpoint::GetQueueBytesAvail (void)
+unsigned CUSBCDCGadgetEndpoint::GetQueueBytesAvail (void)
 {
 	assert (m_nInPtr < QueueSize);
 	assert (m_nOutPtr < QueueSize);
@@ -205,7 +267,7 @@ unsigned CUSBMIDIGadgetEndpoint::GetQueueBytesAvail (void)
 	return m_nInPtr-m_nOutPtr;
 }
 
-void CUSBMIDIGadgetEndpoint::Enqueue (const void *pBuffer, unsigned nCount)
+void CUSBCDCGadgetEndpoint::Enqueue (const void *pBuffer, unsigned nCount)
 {
 	const u8 *p = static_cast<const u8 *> (pBuffer);
 	assert (p != 0);
@@ -223,7 +285,7 @@ void CUSBMIDIGadgetEndpoint::Enqueue (const void *pBuffer, unsigned nCount)
 	}
 }
 
-void CUSBMIDIGadgetEndpoint::Dequeue (void *pBuffer, unsigned nCount)
+void CUSBCDCGadgetEndpoint::Dequeue (void *pBuffer, unsigned nCount)
 {
 	u8 *p = static_cast<u8 *> (pBuffer);
 	assert (p != 0);

@@ -139,8 +139,28 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			break;
 
 		default:
-			Stall (TRUE);
-			BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+			// Ignore all other OUT requests
+			if (pSetupData->wLength)
+			{
+				m_State = StateOutDataPhase;
+
+				// EP0 can transfer only up to 127 bytes at once. Therefore
+				// we split greater transfers into multiple transfers, with
+				// up to max. packet size each.
+				assert (pSetupData->wLength <= sizeof m_OutBuffer);
+				m_nBytesLeft = pSetupData->wLength;
+				m_pBufPtr = m_OutBuffer;
+
+				BeginTransfer (TransferDataOut, m_pBufPtr,
+						 m_nBytesLeft <= m_nMaxPacketSize
+					       ? m_nBytesLeft : m_nMaxPacketSize);
+			}
+			else
+			{
+				m_State = StateInStatusPhase;
+
+				BeginTransfer (TransferDataIn, nullptr, 0);
+			}
 			break;
 		}
 	}

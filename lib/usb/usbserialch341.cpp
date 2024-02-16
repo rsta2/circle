@@ -47,7 +47,7 @@ static const char FromCh341[] = "ch341";
 #define CH341_LCR_CS5          0x00
 
 CUSBSerialCH341Device::CUSBSerialCH341Device (CUSBFunction *pFunction)
-:	CUSBSerialDevice (pFunction)
+:	CUSBSerialHostDevice (pFunction)
 {
 }
 
@@ -57,7 +57,7 @@ CUSBSerialCH341Device::~CUSBSerialCH341Device (void)
 
 boolean CUSBSerialCH341Device::Configure (void)
 {
-	if (!CUSBSerialDevice::Configure ())
+	if (!CUSBSerialHostDevice::Configure ())
 	{
 		CLogger::Get ()->Write (FromCh341, LogError, "Cannot configure serial device");
 

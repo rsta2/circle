@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -326,6 +326,14 @@
 
 #ifndef USB_GADGET_DEVICE_ID_BASE
 #define USB_GADGET_DEVICE_ID_BASE	0x8001
+#endif
+
+#ifndef USB_GADGET_DEVICE_ID_MIDI
+#define USB_GADGET_DEVICE_ID_MIDI	USB_GADGET_DEVICE_ID_BASE
+#endif
+
+#ifndef USB_GADGET_DEVICE_ID_SERIAL_CDC
+#define USB_GADGET_DEVICE_ID_SERIAL_CDC	(USB_GADGET_DEVICE_ID_BASE+1)
 #endif
 
 ///////////////////////////////////////////////////////////////////////
