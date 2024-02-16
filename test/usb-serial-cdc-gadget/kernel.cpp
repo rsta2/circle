@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,22 +22,18 @@
 
 LOGMODULE ("kernel");
 
-CKernel *CKernel::s_pThis = nullptr;
-
 CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_SerialCDC (&m_Interrupt)
+	m_SerialCDC (&m_Interrupt),
+	m_pSerial (nullptr)
 {
-	s_pThis = this;
-
 	m_ActLED.Blink (5);	// show we are alive
 }
 
 CKernel::~CKernel (void)
 {
-	s_pThis = nullptr;
 }
 
 boolean CKernel::Initialize (void)
@@ -87,17 +83,25 @@ TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE ("Compile time: " __DATE__ " " __TIME__);
 
-	m_SerialCDC.RegisterReceiveHandler (usbCDCReceiveHandler);
-
-	// generate a log message every second
 	unsigned nLastTime = 0;
 	while (1)
 	{
 		if (m_SerialCDC.UpdatePlugAndPlay ())
 		{
-			m_Logger.SetNewTarget (&m_SerialCDC);
+			if (!m_pSerial)
+			{
+				m_pSerial = CDeviceNameService::Get ()->GetDevice ("utty1", FALSE);
+				if (m_pSerial)
+				{
+					m_pSerial->RegisterRemovedHandler (DeviceRemovedHandler,
+									   this);
+
+					m_Logger.SetNewTarget (m_pSerial);
+				}
+			}
 		}
 
+		// generate a log message every second
 		unsigned nNow = m_Timer.GetTime ();
 		if (nLastTime != nNow)
 		{
@@ -105,14 +109,30 @@ TShutdownMode CKernel::Run (void)
 
 			nLastTime = nNow;
 		}
+
+		if (m_pSerial)
+		{
+			char Buffer[100];
+			int nResult = m_pSerial->Read (Buffer, sizeof Buffer);
+			if (nResult > 0)
+			{
+				m_Screen.Write (Buffer, nResult);
+				m_Serial.Write (Buffer, nResult);
+			}
+		}
 	}
 
 	return ShutdownHalt;
 }
 
-void CKernel::usbCDCReceiveHandler(void *pBuffer, unsigned nLength)
+void CKernel::DeviceRemovedHandler (CDevice *pDevice, void *pContext)
 {
-	assert (s_pThis);
-	s_pThis->m_Screen.Write (pBuffer, nLength);
-	s_pThis->m_Serial.Write (pBuffer, nLength);
+	CKernel *pThis = static_cast<CKernel *> (pContext);
+	assert (pThis);
+
+	pThis->m_pSerial = nullptr;
+
+	pThis->m_Logger.SetNewTarget (&pThis->m_Screen);
+
+	LOGDBG ("Device has been detached");
 }

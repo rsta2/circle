@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ public:
 	TShutdownMode Run (void);
 
 private:
-	static void usbCDCReceiveHandler (void *pBuffer, unsigned nLength);
+	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
 
 private:
 	// do not change this order
@@ -66,7 +66,7 @@ private:
 
 	CUSBCDCGadget		m_SerialCDC;
 
-	static CKernel *s_pThis;
+	CDevice * volatile 	m_pSerial;
 };
 
 #endif

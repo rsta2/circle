@@ -4,7 +4,7 @@
 // This file by Sebastien Nicolas <seba1978@gmx.de>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,9 +24,9 @@
 
 #include <circle/usb/gadget/dwusbgadget.h>
 #include <circle/usb/gadget/usbcdcgadgetendpoint.h>
+#include <circle/usb/usbserial.h>
 #include <circle/usb/usb.h>
 #include <circle/interrupt.h>
-#include <circle/device.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -57,28 +57,13 @@ struct TUSBCDCACMInterfaceDescriptor
 }
 PACKED;
 
-/// \param pBuffer Pointer to the data received over USB serial
-/// \param nLength Number of valid bytes in the buffer
-typedef void TCDCGadgetReceiveHandler (void *pBuffer, unsigned nLength);
-
-
-class CUSBCDCGadget : public CDWUSBGadget, public CDevice	/// USB CDC gadget
+class CUSBCDCGadget : public CDWUSBGadget	/// USB serial CDC gadget
 {
 public:
 	/// \param pInterruptSystem Pointer to the interrupt system object
 	CUSBCDCGadget (CInterruptSystem *pInterruptSystem);
 
 	~CUSBCDCGadget (void);
-
-	/// \param pBuffer Buffer to send over USB
-	/// \param nCount Number of bytes to be written
-	/// \return Number of written bytes or < 0 on failure
-	int Write (const void *pBuffer, size_t nCount) override;
-
-	/// \brief Register a handler, which is called, when USB serial data arrives
-	/// \param pReceiveHandler Pointer to the handler
-	void RegisterReceiveHandler (TCDCGadgetReceiveHandler *pReceiveHandler);
-
 
 protected:
 	/// \brief Get device-specific descriptor
@@ -103,6 +88,8 @@ private:
 	void OnSuspend (void) override;
 
 private:
+	CUSBSerialDevice *m_pInterface;
+
 	enum TEPNumber
 	{
 		EPNotif = 1,
@@ -114,10 +101,6 @@ private:
 	CUSBCDCGadgetEndpoint *m_pEP[NumEPs];
 
 	u8 m_StringDescriptorBuffer[80];
-
-	TCDCGadgetReceiveHandler *m_pReceiveHandler;
-
-	boolean m_bIsConfigured;
 
 private:
 	static const TUSBDeviceDescriptor s_DeviceDescriptor;

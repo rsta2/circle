@@ -61,7 +61,11 @@ int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 
 boolean CUSBSerialDevice::SetBaudRate (unsigned nBaudRate)
 {
-	assert (m_pSetBaudRateHandler);
+	if (!m_pSetBaudRateHandler)
+	{
+		return TRUE;
+	}
+
 	return (*m_pSetBaudRateHandler) (nBaudRate, m_pSetBaudRateParam);
 }
 
@@ -69,7 +73,11 @@ boolean CUSBSerialDevice::SetLineProperties (TUSBSerialDataBits nDataBits,
 					     TUSBSerialParity nParity,
 					     TUSBSerialStopBits nStopBits)
 {
-	assert (m_pSetLinePropertiesHandler);
+	if (!m_pSetLinePropertiesHandler)
+	{
+		return TRUE;
+	}
+
 	return (*m_pSetLinePropertiesHandler) (nDataBits, nParity, nStopBits,
 					       m_pSetLinePropertiesParam);
 }

@@ -131,6 +131,8 @@ USB library
 
 USB gadget library
 
+* CUSBCDCGadget: USB serial CDC gadget
+* CUSBCDCGadgetEndpoint: Endpoint of the USB serial CDC gadget
 * CDWUSBGadget: DW USB gadget on Raspberry Pi (3)A(+), Zero (2) (W), 4B
 * CDWUSBGadgetEndpoint: Endpoint of a DW USB gadget
 * CDWUSBGadgetEndpoint0: Endpoint 0 of a DW USB gadget

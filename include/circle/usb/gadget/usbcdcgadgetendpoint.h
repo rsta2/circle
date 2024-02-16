@@ -4,7 +4,7 @@
 // This file by Sebastien Nicolas <seba1978@gmx.de>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,13 +30,15 @@
 #include <circle/types.h>
 
 class CUSBCDCGadget;
-typedef void TCDCGadgetReceiveHandler (void *pBuffer, unsigned nLength);
+class CUSBSerialDevice;
 
-class CUSBCDCGadgetEndpoint : public CDWUSBGadgetEndpoint	/// Endpoint of the USB CDC gadget
+class CUSBCDCGadgetEndpoint : public CDWUSBGadgetEndpoint /// Endpoint of the USB serial CDC gadget
 {
 public:
 	CUSBCDCGadgetEndpoint (const TUSBEndpointDescriptor *pDesc, CUSBCDCGadget *pGadget);
 	~CUSBCDCGadgetEndpoint (void);
+
+	void AttachInterface (CUSBSerialDevice *pInterface);
 
 	void OnActivate (void) override;
 
@@ -44,18 +46,22 @@ public:
 
 	void OnSuspend (void) override;
 
-	int Write (const void *pData, unsigned nLength);
-
-	void RegisterReceiveHandler (TCDCGadgetReceiveHandler *pReceiveHandler);
-
 private:
+	int Write (const void *pData, unsigned nLength);
+	int Read (void *pBuffer, unsigned nLength);
+
+	static int WriteHandler (const void *pBuffer, size_t nCount, void *pParam);
+	static int ReadHandler (void *pBuffer, size_t nCount, void *pParam);
+
 	unsigned GetQueueBytesFree (void);
 	unsigned GetQueueBytesAvail (void);
 	void Enqueue (const void *pBuffer, unsigned nCount);
 	void Dequeue (void *pBuffer, unsigned nCount);
 
 private:
-	TCDCGadgetReceiveHandler *m_pReceiveHandler;
+	CUSBSerialDevice *m_pInterface;
+
+	int m_nStatus;
 
 	volatile boolean m_bInActive;
 

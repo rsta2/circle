@@ -76,6 +76,7 @@ private:
 	void RegisterSetLinePropertiesHandler (TSetLinePropertiesHandler *pHandler, void *pParam);
 
 	friend class CUSBSerialHostDevice;
+	friend class CUSBCDCGadgetEndpoint;
 
 private:
 	TWriteHandler *m_pWriteHandler;

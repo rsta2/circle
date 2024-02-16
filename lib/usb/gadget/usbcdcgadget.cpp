@@ -4,7 +4,7 @@
 // This file by Sebastien Nicolas <seba1978@gmx.de>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -95,7 +95,7 @@ const CUSBCDCGadget::TUSBCDCGadgetConfigurationDescriptor
 		// note: we do need this unused notif interrupt or linux does not create /dev/ttyACM0
 		3,			// bmAttributes (Interrupt)
 		10,			// wMaxPacketSize
-		255,		// bInterval
+		11,		// bInterval
 	},
 	{
 		sizeof (TUSBInterfaceDescriptor),
@@ -133,10 +133,8 @@ const char *const CUSBCDCGadget::s_StringDescriptor[] =
 
 CUSBCDCGadget::CUSBCDCGadget (CInterruptSystem *pInterruptSystem)
 :	CDWUSBGadget (pInterruptSystem, HighSpeed),
-	CDevice(),
-	m_pEP {nullptr, nullptr, nullptr, nullptr},
-	m_pReceiveHandler(nullptr),
-	m_bIsConfigured(false)
+	m_pInterface (nullptr),
+	m_pEP {nullptr, nullptr, nullptr, nullptr}
 {
 }
 
@@ -213,14 +211,22 @@ void CUSBCDCGadget::AddEndpoints (void)
 
 void CUSBCDCGadget::CreateDevice (void)
 {
-	assert (m_pEP[EPOut]);
-	m_pEP[EPOut]->RegisterReceiveHandler (m_pReceiveHandler);
+	assert (!m_pInterface);
+	m_pInterface = new CUSBSerialDevice;
+	assert (m_pInterface);
 
-	m_bIsConfigured = true; // todo should replace this boolean by CUSBGadget::m_State but it's private...
+	assert (m_pEP[EPOut]);
+	m_pEP[EPOut]->AttachInterface (m_pInterface);
+
+	assert (m_pEP[EPIn]);
+	m_pEP[EPIn]->AttachInterface (m_pInterface);
 }
 
 void CUSBCDCGadget::OnSuspend (void)
 {
+	delete m_pInterface;
+	m_pInterface = nullptr;
+
 	/*not necessary
 	delete m_pEP[EPNotif];
 	m_pEP[EPNotif] = nullptr;
@@ -231,8 +237,6 @@ void CUSBCDCGadget::OnSuspend (void)
 
 	delete m_pEP[EPIn];
 	m_pEP[EPIn] = nullptr;
-
-	m_bIsConfigured = false;
 }
 
 const void *CUSBCDCGadget::ToStringDescriptor (const char *pString, size_t *pLength)
@@ -257,26 +261,4 @@ const void *CUSBCDCGadget::ToStringDescriptor (const char *pString, size_t *pLen
 	*pLength = nLength;
 
 	return m_StringDescriptorBuffer;
-}
-
-void CUSBCDCGadget::RegisterReceiveHandler (TCDCGadgetReceiveHandler *pReceiveHandler)
-{
-	m_pReceiveHandler = pReceiveHandler;
-
-	if (m_pEP[EPOut] != nullptr)
-	{
-		m_pEP[EPOut]->RegisterReceiveHandler (m_pReceiveHandler);
-	}
-}
-
-int CUSBCDCGadget::Write (const void *pBuffer, size_t nCount)
-{
-	// todo queue the data until we're configured
-	if (!m_bIsConfigured)
-	{
-		return -1;
-	}
-
-	assert (m_pEP[EPIn]);
-	return m_pEP[EPIn]->Write (pBuffer, nCount);
 }

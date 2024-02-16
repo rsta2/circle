@@ -4,7 +4,7 @@
 // This file by Sebastien Nicolas <seba1978@gmx.de>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,9 +21,8 @@
 //
 #include <circle/usb/gadget/usbcdcgadgetendpoint.h>
 #include <circle/usb/gadget/usbcdcgadget.h>
+#include <circle/usb/usbserial.h>
 #include <circle/logger.h>
-#include <circle/atomic.h>
-#include <circle/debug.h>
 #include <assert.h>
 
 LOGMODULE ("cdcgadgetep");
@@ -31,17 +30,15 @@ LOGMODULE ("cdcgadgetep");
 CUSBCDCGadgetEndpoint::CUSBCDCGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
 						CUSBCDCGadget *pGadget)
 :	CDWUSBGadgetEndpoint (pDesc, pGadget),
-	m_pReceiveHandler (nullptr),
+	m_pInterface (nullptr),
+	m_nStatus (0),
 	m_bInActive (FALSE),
 	m_pQueue (nullptr),
 	m_nInPtr (0),
 	m_nOutPtr (0)
 {
-	if (GetDirection () == DirectionIn)
-	{
-		m_pQueue = new u8[QueueSize];
-		assert (m_pQueue);
-	}
+	m_pQueue = new u8[QueueSize];
+	assert (m_pQueue);
 }
 
 CUSBCDCGadgetEndpoint::~CUSBCDCGadgetEndpoint (void)
@@ -49,6 +46,25 @@ CUSBCDCGadgetEndpoint::~CUSBCDCGadgetEndpoint (void)
 	delete [] m_pQueue;
 	m_pQueue = nullptr;
 }
+
+void CUSBCDCGadgetEndpoint::AttachInterface (CUSBSerialDevice *pInterface)
+{
+	m_nStatus = 0;
+
+	assert (!m_pInterface);
+	m_pInterface = pInterface;
+	assert (m_pInterface);
+
+	if (GetDirection () == DirectionIn)
+	{
+		m_pInterface->RegisterWriteHandler (WriteHandler, this);
+	}
+	else
+	{
+		m_pInterface->RegisterReadHandler (ReadHandler, this);
+	}
+}
+
 void CUSBCDCGadgetEndpoint::OnActivate (void)
 {
 	if (GetDirection () == DirectionOut)
@@ -61,10 +77,19 @@ void CUSBCDCGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 {
 	if (!bIn)
 	{
-		if (m_pReceiveHandler != nullptr)
+		m_SpinLock.Acquire ();
+
+		unsigned nBytesFree = GetQueueBytesFree ();
+		if (nLength > nBytesFree)
 		{
-			m_pReceiveHandler(m_OutBuffer, nLength);
+			nLength = nBytesFree;
+
+			m_nStatus = -1;		// RX overrun
 		}
+
+		Enqueue (m_OutBuffer, nLength);
+
+		m_SpinLock.Release ();
 
 		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
 	}
@@ -117,12 +142,27 @@ int CUSBCDCGadgetEndpoint::Write (const void *pData, unsigned nLength)
 
 	m_SpinLock.Acquire ();
 
+	if (m_nStatus)
+	{
+		int nStatus = m_nStatus;
+		m_nStatus = 0;
+
+		m_SpinLock.Release ();
+
+		return nStatus;
+	}
+
 	unsigned nBytesFree = GetQueueBytesFree ();
+	if (!nBytesFree)
+	{
+		m_SpinLock.Release ();
+
+		return 0;
+	}
+
 	if (nLength > nBytesFree)
 	{
-		LOGWARN ("Trying to send %u bytes (max %u)", nLength, nBytesFree);
-
-		return -1;
+		nLength = nBytesFree;
 	}
 
 	Enqueue (pData, nLength);
@@ -151,9 +191,54 @@ int CUSBCDCGadgetEndpoint::Write (const void *pData, unsigned nLength)
 	return nLength;
 }
 
-void CUSBCDCGadgetEndpoint::RegisterReceiveHandler (TCDCGadgetReceiveHandler *pReceiveHandler)
+int CUSBCDCGadgetEndpoint::Read (void *pBuffer, unsigned nLength)
 {
-	m_pReceiveHandler = pReceiveHandler;
+	m_SpinLock.Acquire ();
+
+	if (m_nStatus)
+	{
+		int nStatus = m_nStatus;
+		m_nStatus = 0;
+
+		m_SpinLock.Release ();
+
+		return nStatus;
+	}
+
+	unsigned nBytesAvail = GetQueueBytesAvail ();
+	if (!nBytesAvail)
+	{
+		m_SpinLock.Release ();
+
+		return 0;
+	}
+
+	if (nBytesAvail > nLength)
+	{
+		nBytesAvail = nLength;
+	}
+
+	Dequeue (pBuffer, nBytesAvail);
+
+	m_SpinLock.Release ();
+
+	return nBytesAvail;
+}
+
+int CUSBCDCGadgetEndpoint::WriteHandler (const void *pBuffer, size_t nCount, void *pParam)
+{
+	CUSBCDCGadgetEndpoint *pThis = static_cast<CUSBCDCGadgetEndpoint *> (pParam);
+	assert (pThis);
+
+	return pThis->Write (pBuffer, nCount);
+}
+
+int CUSBCDCGadgetEndpoint::ReadHandler (void *pBuffer, size_t nCount, void *pParam)
+{
+	CUSBCDCGadgetEndpoint *pThis = static_cast<CUSBCDCGadgetEndpoint *> (pParam);
+	assert (pThis);
+
+	return pThis->Read (pBuffer, nCount);
 }
 
 unsigned CUSBCDCGadgetEndpoint::GetQueueBytesFree (void)
