@@ -2,7 +2,7 @@
 // usbmidigadgetendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -138,6 +138,8 @@ boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLe
 	unsigned nBytesFree = GetQueueBytesFree ();
 	if (nLength > nBytesFree)
 	{
+		m_SpinLock.Release ();
+
 		LOGWARN ("Trying to send %u bytes (max %u)", nLength, nBytesFree);
 
 		return FALSE;
