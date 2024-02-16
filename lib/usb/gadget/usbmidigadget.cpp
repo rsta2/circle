@@ -2,7 +2,7 @@
 // usbmidigadget.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ const TUSBDeviceDescriptor CUSBMIDIGadget::s_DeviceDescriptor =
 	0, 0, 0,
 	64,				// wMaxPacketSize0
 	USB_GADGET_VENDOR_ID,
-	USB_GADGET_DEVICE_ID_BASE,
+	USB_GADGET_DEVICE_ID_MIDI,
 	0x100,				// bcdDevice
 	1, 2, 0,			// strings
 	1
