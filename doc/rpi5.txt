@@ -20,6 +20,7 @@ Currently is only a subset of features supported:
 * GPIO at RP1 (40-pin header, IO_BANK0-2)
 * GPIO interrupts
 * 2 xHCI USB controllers (4 ports)
+* TCP/IP networking via Ethernet
 * 4 I2C masters
 * Multi-core support and spin locks
 * CPU throttle and GPIO fan (gpiofanpin=45)
@@ -77,6 +78,7 @@ Currently the following sample programs are operational:
 * 03-screentext
 * 04-timer
 * 05-usbsimple (with external USB 2.0 hub)
+* 06-ethernet
 * 07-usbstorage
 * 08-usbkeyboard
 * 09-softserial (19200 Bps max.)
@@ -84,12 +86,17 @@ Currently the following sample programs are operational:
 * 15-files
 * 16-i2cping (master only)
 * 17-fractal (multi-core supported)
+* 18-ntptime
 * 19-tasks
+* 20-tcpsimple
+* 21-webserver
 * 24-hwrandom
 * 26-cpustress
 * 27-usbgamepad
 * 32-i2cshell
+* 33-syslog
 * 34-sounddevices (USB sound only)
+* 35-mqttclient
 * 37-showgamepad
 * 39-umsdplugging
 * addon/display/sample/hd44780i2c
@@ -102,11 +109,14 @@ Currently the following sample programs are operational:
 * addon/sensor/sample/hcsr04
 * addon/sensor/sample/ky040
 * addon/sensor/sample/mpu6050
+* addon/tftpfileserver/sample
+* addon/webconsole/sample
 
 Additionally the following tests in test/ are operational:
 
 * gpio
 * gpio-interrupt
+* iperfserver
 * screen-ansi-colors
 * storage
 * synchronization

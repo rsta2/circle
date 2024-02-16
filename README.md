@@ -113,6 +113,7 @@ Circle supports the following features:
 |                       | Official Raspberry Pi touch screen                  |                |
 |                       | VCHIQ interface and audio service drivers           |                |
 |                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |                |
+|                       | MACB / GEM Gigabit Ethernet NIC of Raspberry Pi 5   | x              |
 |                       | Wireless LAN access                                 |                |
 |                       |                                                     |                |
 | USB                   | Host controller interface (HCI) drivers             | x              |
@@ -131,10 +132,10 @@ Circle supports the following features:
 | File systems          | Internal FAT driver (limited function)              | x              |
 |                       | FatFs driver (full function, by ChaN)               | x              |
 |                       |                                                     |                |
-| TCP/IP networking     | Protocols: ARP, IP, ICMP, UDP, TCP                  |                |
-|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog, MQTT         |                |
-|                       | Servers: HTTP, TFTP                                 |                |
-|                       | BSD-like C++ socket API                             |                |
+| TCP/IP networking     | Protocols: ARP, IP, ICMP, UDP, TCP                  | x              |
+|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog, MQTT         | x              |
+|                       | Servers: HTTP, TFTP                                 | x              |
+|                       | BSD-like C++ socket API                             | x              |
 |                       |                                                     |                |
 | Graphics              | OpenGL ES 1.1 and 2.0, OpenVG 1.1, EGL 1.4          |                |
 |                       | (not on Raspberry Pi 4)                             |                |
