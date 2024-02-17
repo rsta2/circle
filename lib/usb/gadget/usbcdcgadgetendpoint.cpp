@@ -22,10 +22,7 @@
 #include <circle/usb/gadget/usbcdcgadgetendpoint.h>
 #include <circle/usb/gadget/usbcdcgadget.h>
 #include <circle/usb/usbserial.h>
-#include <circle/logger.h>
 #include <assert.h>
-
-LOGMODULE ("cdcgadgetep");
 
 CUSBCDCGadgetEndpoint::CUSBCDCGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
 						CUSBCDCGadget *pGadget)
