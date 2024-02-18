@@ -39,6 +39,16 @@
 #define ARM_GPIO0_PADS_BASE	0x1F000F0000UL
 
 //
+// General Purpose I/O #1
+//
+#define ARM_GPIO1_BASE		(ARM_IO_BASE + 0x1508500)
+
+#define ARM_GPIO1_DATA0		(ARM_GPIO1_BASE + 0x04)
+#define ARM_GPIO1_IODIR0	(ARM_GPIO1_BASE + 0x08)
+
+#define ARM_PINCTRL1_BASE	(ARM_IO_BASE + 0x1504100)
+
+//
 // General Purpose I/O #2
 //
 #define ARM_GPIO2_BASE		(ARM_IO_BASE + 0x1517C00)
