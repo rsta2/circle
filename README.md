@@ -114,7 +114,7 @@ Circle supports the following features:
 |                       | VCHIQ interface and audio service drivers           |                |
 |                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |                |
 |                       | MACB / GEM Gigabit Ethernet NIC of Raspberry Pi 5   | x              |
-|                       | Wireless LAN access                                 |                |
+|                       | Wireless LAN access                                 | x              |
 |                       |                                                     |                |
 | USB                   | Host controller interface (HCI) drivers             | x              |
 |                       | Standard hub driver (USB 2.0 only)                  | x              |

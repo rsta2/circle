@@ -20,7 +20,7 @@ Currently is only a subset of features supported:
 * GPIO at RP1 (40-pin header, IO_BANK0-2)
 * GPIO interrupts
 * 2 xHCI USB controllers (4 ports)
-* TCP/IP networking via Ethernet
+* TCP/IP networking via Ethernet and WLAN
 * 4 I2C masters
 * Multi-core support and spin locks
 * CPU throttle and GPIO fan (gpiofanpin=45)
@@ -111,6 +111,8 @@ Currently the following sample programs are operational:
 * addon/sensor/sample/mpu6050
 * addon/tftpfileserver/sample
 * addon/webconsole/sample
+* addon/wlan/sample/hello_ap
+* addon/wlan/sample/hello_wlan
 
 Additionally the following tests in test/ are operational:
 
