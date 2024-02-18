@@ -2,7 +2,7 @@
 // logger.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -83,11 +83,33 @@ boolean CLogger::Initialize (CDevice *pTarget)
 {
 	m_pTarget = pTarget;
 
-	Write ("logger", LogNotice, CIRCLE_NAME " %s started on %s"
+	unsigned nRAMSize = CMachineInfo::Get ()->GetRAMSize ();
+	CString RAMSize;
+	if (nRAMSize < 1024)
+	{
+		RAMSize.Format ("%uMB", nRAMSize);
+	}
+	else
+	{
+		RAMSize.Format ("%uGB", nRAMSize / 1024);
+	}
+
+	CString Compiler ("unknown");
+#ifdef __clang__
+	Compiler.Format ("Clang %u.%u.%u", __clang_major__, __clang_minor__, __clang_patchlevel__);
+#elif defined (__GNUC__)
+	Compiler.Format ("GCC %u.%u.%u", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#endif
+
+	Write ("logger", LogNotice, CIRCLE_NAME " %s started on %s %s"
 #if AARCH == 64
 	       " (AArch64)"
 #endif
-	       , CIRCLE_VERSION_STRING, CMachineInfo::Get ()->GetMachineName ());
+	       , CIRCLE_VERSION_STRING, CMachineInfo::Get ()->GetMachineName (),
+	         (const char *) RAMSize);
+
+	Write ("logger", LogDebug, "Revision code is %x, compiler has been %s",
+	       CMachineInfo::Get ()->GetRevisionRaw (), (const char *) Compiler);
 
 	return TRUE;
 }
