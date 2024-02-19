@@ -27,6 +27,7 @@ This will provide the following files:
 	bcm2711-rpi-4-b.dtb	device tree binary needed for Raspberry Pi 4
 	bcm2711-rpi-400.dtb	device tree binary needed for Raspberry Pi 400
 	bcm2711-rpi-cm4.dtb	device tree binary needed for Compute Module 4
+	bcm2712-rpi-5-b.dtb	device tree binary needed for Raspberry Pi 5
 	bcm2710-rpi-zero-2-w.dtb device tree binary needed for Raspberry Pi Zero 2 W
 	LICENCE.broadcom	firmware license
 	COPYING.linux		license for the device tree binaries

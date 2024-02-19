@@ -173,7 +173,7 @@
 
 #endif
 
-#if RASPPI >= 4
+#if RASPPI == 4
 
 // USE_XHCI_INTERNAL enables the xHCI controller, which is integrated
 // into the BCM2711 SoC. The Raspberry Pi 4 provides two independent

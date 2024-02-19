@@ -104,3 +104,7 @@ Adding support for Ctrl+navigation keys
 
 @ArnoldUK
 Testing the resizing of the screen in different classes
+
+@aniplay62
+Providing U-Boot driver for MACB / GEM Ethernet NIC for Raspberry Pi 5
+Helping to get WLAN working on Raspberry Pi 5

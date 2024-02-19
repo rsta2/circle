@@ -60,6 +60,10 @@ private:
 
 	static void PeriodicTickHandler (void);
 
+#if RASPPI >= 5
+	void SetupCursor (lv_indev_t *pIndev);
+#endif
+
 private:
 	lv_color_t *m_pBuffer1;
 	lv_color_t *m_pBuffer2;
@@ -73,6 +77,11 @@ private:
 	CTouchScreenDevice *m_pTouchScreen;
 	unsigned m_nLastTouchUpdate;
 	lv_indev_data_t m_PointerData;
+
+#if RASPPI >= 5
+	lv_indev_t *m_pIndev;
+	lv_img_dsc_t *m_pCursorDesc;
+#endif
 
 	static CLVGL *s_pThis;
 };

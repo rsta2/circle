@@ -89,6 +89,7 @@ boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
 	m_nPosX = (m_nScreenWidth+1) / 2;
 	m_nPosY = (m_nScreenHeight+1) / 2;
 
+#if RASPPI <= 4
 	CBcmPropertyTags Tags;
 	TPropertyTagSetCursorInfo TagSetCursorInfo;
 	TagSetCursorInfo.nWidth = CURSOR_WIDTH;
@@ -106,6 +107,7 @@ boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
 	{
 		return FALSE;
 	}
+#endif
 
 	return TRUE;
 }
@@ -252,6 +254,7 @@ void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX,
 
 boolean CMouseBehaviour::SetCursorState (unsigned nPosX, unsigned nPosY, boolean bVisible)
 {
+#if RASPPI <= 4
 	CBcmPropertyTags Tags;
 	TPropertyTagSetCursorState TagSetCursorState;
 	TagSetCursorState.nEnable = bVisible ? CURSOR_ENABLE_VISIBLE : CURSOR_ENABLE_INVISIBLE;
@@ -267,6 +270,7 @@ boolean CMouseBehaviour::SetCursorState (unsigned nPosX, unsigned nPosY, boolean
 	{
 		return FALSE;
 	}
+#endif
 
 	return TRUE;
 }

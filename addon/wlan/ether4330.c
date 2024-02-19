@@ -293,7 +293,13 @@ static struct {
 	{ 43362, 1,	"fw_bcm40181a2.bin", config40181, 0 },
 	{ 43430, 1,	"brcmfmac43430-sdio.bin", "brcmfmac43430-sdio.txt", 0 },
 	{ 43430, 2,	"brcmfmac43436-sdio.bin", "brcmfmac43436-sdio.txt", "brcmfmac43436-sdio.clm_blob" },
+#if RASPPI <= 4
 	{ 0x4345, 6, "brcmfmac43455-sdio.bin", "brcmfmac43455-sdio.txt", "brcmfmac43455-sdio.clm_blob" },
+#else
+	{ 0x4345, 6, "brcmfmac43455-sdio.raspberrypi,5-model-b.bin",
+		     "brcmfmac43455-sdio.raspberrypi,5-model-b.txt",
+		     "brcmfmac43455-sdio.raspberrypi,5-model-b.clm_blob" },
+#endif
 	{ 0x4345, 9, "brcmfmac43456-sdio.bin", "brcmfmac43456-sdio.txt", "brcmfmac43456-sdio.clm_blob" },
 };
 
@@ -485,6 +491,7 @@ sdioinit(void)
 	ulong ocr, rca;
 	int i;
 
+#if RASPPI <= 4
 	/* disconnect emmc from SD card (connect sdhost instead) */
 	for(i = 48; i <= 53; i++)
 		gpiosel(i, Alt0);
@@ -496,6 +503,20 @@ sdioinit(void)
 		else
 			gpiopullup(i);
 	}
+#else
+	/* See: https://forums.raspberrypi.com/viewtopic.php?t=362326#p2173647 */
+	gpiosel(28, Output);
+	gpioset(28, 1);		/* switch WLAN on */
+	microdelay(150000);
+
+	/* TODO: for BCM2712 C0 only */
+	gpiosel(30, Func4); gpiopulloff(30);	/* sdio_clk */
+	gpiosel(31, Func4); gpiopullup(31);	/* sdio_cmd */
+	gpiosel(32, Func4); gpiopullup(32);	/* sdio_d0 */
+	gpiosel(33, Func3); gpiopullup(33);	/* sdio_d1 */
+	gpiosel(34, Func4); gpiopullup(34);	/* sdio_d2 */
+	gpiosel(35, Func3); gpiopullup(35);	/* sdio_d3 */
+#endif
 	sdio.init();
 	sdio.enable();
 	sdiocmd(GO_IDLE_STATE, 0);

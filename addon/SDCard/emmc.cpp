@@ -95,7 +95,7 @@
 // Required for QEMU
 #define EMMC_ALLOW_OLD_SDHCI
 
-#if RASPPI <= 3
+#if RASPPI != 4
 	#define EMMC_BASE	ARM_EMMC_BASE
 #else
 	#define EMMC_BASE	ARM_EMMC2_BASE
@@ -497,7 +497,7 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 
 #ifndef USE_SDHOST
 
-#if RASPPI >= 2
+#if RASPPI >= 2 && RASPPI <= 4
 	// workaround if bootloader does not restore GPIO modes
 	if (   CMachineInfo::Get ()->GetMachineModel () == MachineModel3B
 	    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3APlus
@@ -536,7 +536,7 @@ CEMMCDevice::~CEMMCDevice (void)
 boolean CEMMCDevice::Initialize (void)
 {
 #ifndef USE_SDHOST
-#if RASPPI >= 4
+#if RASPPI == 4
 	// disable 1.8V supply
 	CBcmPropertyTags Tags;
 	TPropertyTagGPIOState GPIOState;
@@ -665,6 +665,8 @@ u64 CEMMCDevice::Seek (u64 ullOffset)
 
 #ifndef USE_SDHOST
 
+#if RASPPI <= 4
+
 int CEMMCDevice::PowerOn (void)
 {
 	CBcmPropertyTags Tags;
@@ -683,6 +685,8 @@ int CEMMCDevice::PowerOn (void)
 	return 0;
 }
 
+#endif
+
 void CEMMCDevice::PowerOff (void)
 {
 	// Power off the SD card
@@ -695,7 +699,7 @@ void CEMMCDevice::PowerOff (void)
 u32 CEMMCDevice::GetBaseClock (void)
 {
 	u32 nClockRate;
-#if RASPPI <= 3
+#if RASPPI != 4
 	nClockRate = CMachineInfo::Get ()->GetClockRate (CLOCK_ID_EMMC);
 #else
 	nClockRate = CMachineInfo::Get ()->GetClockRate (CLOCK_ID_EMMC2);
@@ -1458,11 +1462,16 @@ int CEMMCDevice::CardReset (void)
 
 		return -1;
 	}
+	control1 &= ~(0x3FF << 6);
 	control1 |= f_id;
 
 	// was not masked out and or'd with (7 << 16) in original driver
 	control1 &= ~(0xF << 16);
+#if RASPPI <= 4
 	control1 |= (11 << 16);		// data timeout = TMCLK * 2^24
+#else
+	control1 |= (12 << 16);		// data timeout = TMCLK * 2^25
+#endif
 
 	write32 (EMMC_CONTROL1, control1);
 
@@ -2147,7 +2156,7 @@ int CEMMCDevice::CardReset (void)
 
 int CEMMCDevice::CardInit (void)
 {
-#ifndef USE_SDHOST
+#if RASPPI <= 4 && !defined (USE_SDHOST)
 	if(PowerOn () != 0)
 	{
 		LogWrite (LogError, "BCM2708 controller did not power on successfully");
@@ -2432,7 +2441,7 @@ int CEMMCDevice::DoWrite (u8 *buf, size_t buf_size, u32 block_no)
 
 #ifndef USE_SDHOST
 
-int CEMMCDevice::TimeoutWait (unsigned reg, unsigned mask, int value, unsigned usec)
+int CEMMCDevice::TimeoutWait (unsigned long reg, unsigned mask, int value, unsigned usec)
 {
 	assert (m_pTimer != 0);
 	unsigned nStartTicks = m_pTimer->GetClockTicks ();

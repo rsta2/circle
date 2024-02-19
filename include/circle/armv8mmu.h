@@ -2,7 +2,7 @@
 // armv8mmu.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -151,6 +151,7 @@ PACKED;
 #define TCR_EL1_IPS__MASK	(7UL << 32)
 	#define TCR_EL1_IPS_4GB		0UL
 	#define TCR_EL1_IPS_64GB	1UL
+	#define TCR_EL1_IPS_1TB		2UL
 #define TCR_EL1_EPD1		(1 << 23)
 #define TCR_EL1_A1		(1 << 22)
 #define TCR_EL1_TG0__SHIFT	14
@@ -172,5 +173,6 @@ PACKED;
 #define TCR_EL1_T0SZ__MASK	(0x3F << 0)
 	#define TCR_EL1_T0SZ_4GB	32
 	#define TCR_EL1_T0SZ_64GB	28
+	#define TCR_EL1_T0SZ_128GB	27
 
 #endif

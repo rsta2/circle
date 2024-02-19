@@ -8,7 +8,10 @@ To use the bootloader, you have to do the following:
 
 1. You need a serial USB adapter (3.3V level) connected to GPIO14/15 (Broadcom
 numbering) of your Raspberry Pi computer on one side and to your development
-machine on the other.
+machine on the other. On the Raspberry Pi 5 the dedicated UART connector is used
+to connect the serial adapter. See this document for the pinout:
+
+https://datasheets.raspberrypi.com/debug/debug-connector-specification.pdf
 
 2. On your development machine there must be a python3 interpreter (including the
 python3-pyserial module) installed. You may also need the terminal program

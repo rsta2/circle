@@ -2,7 +2,7 @@
 // actled.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,8 +40,10 @@ public:
 	static CActLED *Get (void);
 	
 private:
+#if RASPPI <= 4
 	CGPIOPin *m_pPin;
 	CVirtualGPIOPin *m_pVirtualPin;
+#endif
 	boolean m_bActiveHigh;
 
 	static CActLED *s_pThis;

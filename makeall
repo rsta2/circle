@@ -2,7 +2,12 @@
 
 make="${MAKE:-make}"
 
-makesample=true
+makesample=false
+if [[ $1 == "--sample" ]]
+then
+	makesample=true
+	shift
+fi
 if [[ $1 == "--nosample" ]]
 then
 	makesample=false

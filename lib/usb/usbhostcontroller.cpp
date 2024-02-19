@@ -2,7 +2,7 @@
 // usbhostcontroller.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,21 +34,26 @@ struct TPortStatusEvent
 	};
 };
 
-boolean CUSBHostController::s_bPlugAndPlay;
+#if RASPPI <= 4
 
 CUSBHostController *CUSBHostController::s_pThis = 0;
 
-CUSBHostController::CUSBHostController (boolean bPlugAndPlay)
-:	m_bFirstUpdateCall (TRUE)
-{
-	s_pThis = this;
+#endif
 
-	s_bPlugAndPlay = bPlugAndPlay;
+CUSBHostController::CUSBHostController (boolean bPlugAndPlay)
+:	m_bPlugAndPlay (bPlugAndPlay),
+	m_bFirstUpdateCall (TRUE)
+{
+#if RASPPI <= 4
+	s_pThis = this;
+#endif
 }
 
 CUSBHostController::~CUSBHostController (void)
 {
+#if RASPPI <= 4
 	s_pThis = 0;
+#endif
 }
 	
 int CUSBHostController::GetDescriptor (CUSBEndpoint	*pEndpoint, 
@@ -135,14 +140,14 @@ int CUSBHostController::Transfer (CUSBEndpoint *pEndpoint, void *pBuffer, unsign
 	return URB.GetResultLength ();
 }
 
-boolean CUSBHostController::IsPlugAndPlay (void)
+boolean CUSBHostController::IsPlugAndPlay (void) const
 {
-	return s_bPlugAndPlay;
+	return m_bPlugAndPlay;
 }
 
 boolean CUSBHostController::UpdatePlugAndPlay (void)
 {
-	assert (s_bPlugAndPlay);
+	assert (m_bPlugAndPlay);
 
 	boolean bResult = m_bFirstUpdateCall;
 	m_bFirstUpdateCall = FALSE;
@@ -184,7 +189,7 @@ boolean CUSBHostController::UpdatePlugAndPlay (void)
 
 void CUSBHostController::PortStatusChanged (CUSBHCIRootPort *pRootPort)
 {
-	assert (s_bPlugAndPlay);
+	assert (m_bPlugAndPlay);
 	assert (pRootPort != 0);
 
 	TPortStatusEvent *pEvent = new TPortStatusEvent;
@@ -209,7 +214,7 @@ void CUSBHostController::PortStatusChanged (CUSBHCIRootPort *pRootPort)
 
 void CUSBHostController::PortStatusChanged (CUSBStandardHub *pHub)
 {
-	assert (s_bPlugAndPlay);
+	assert (m_bPlugAndPlay);
 	assert (pHub != 0);
 
 	TPortStatusEvent *pEvent = new TPortStatusEvent;
@@ -232,8 +237,12 @@ void CUSBHostController::PortStatusChanged (CUSBStandardHub *pHub)
 	m_SpinLock.Release ();
 }
 
+#if RASPPI <= 4
+
 CUSBHostController *CUSBHostController::Get (void)
 {
 	assert (s_pThis != 0);
 	return s_pThis;
 }
+
+#endif

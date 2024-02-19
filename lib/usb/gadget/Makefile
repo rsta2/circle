@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,15 +20,19 @@
 
 CIRCLEHOME = ../../..
 
+all: libusbgadget.a
+
+include $(CIRCLEHOME)/Rules.mk
+
+ifneq ($(strip $(RASPPI)),5)
 OBJS	= dwusbgadget.o dwusbgadgetendpoint.o dwusbgadgetendpoint0.o \
 	  usbmidigadget.o usbmidigadgetendpoint.o \
 	  usbcdcgadget.o usbcdcgadgetendpoint.o
+endif
 
 libusbgadget.a: $(OBJS)
 	@echo "  AR    $@"
 	@rm -f $@
 	@$(AR) cr $@ $(OBJS)
-
-include $(CIRCLEHOME)/Rules.mk
 
 -include $(DEPS)

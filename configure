@@ -11,9 +11,10 @@ function usage()
 	echo
 	echo "Options:"
 	echo "  -r <number>, --raspberrypi <number>"
-	echo "                     Raspberry Pi model number (1, 2, 3, 4, default: 1)"
+	echo "                     Raspberry Pi model number (1, 2, 3, 4, 5, default: 1)"
 	echo "  -p <string>, --prefix <string> "
-	echo "                     Prefix of the toolchain commands (default: arm-none-eabi-)"
+	echo "                     Prefix of the toolchain commands"
+	echo "                     (default: arm-none-eabi-, aarch64-none-elf- with -r 5)"
 	echo "  --multicore        Allow multi-core applications"
 	echo "  --realtime         Enable real time mode to improve IRQ latency"
 	echo "  --keymap <country> Set default USB keymap (DE, ES, FR, IT, UK, US)"
@@ -67,6 +68,14 @@ while true ; do
 	esac
 done
 
+if [ $RASPPI -eq 5 ]
+then
+	if [ "$PREFIX" == "arm-none-eabi-" ]
+	then
+		PREFIX=aarch64-none-elf-
+	fi
+fi
+
 : ${CC:="$PREFIX"gcc}
 
 if [ ! -x "`which $CC 2> /dev/null`" ]
@@ -88,7 +97,7 @@ then
 fi
 
 case "$RASPPI" in
-	1|2|3|4) ;;
+	1|2|3|4|5) ;;
 	*) echo "Error: Unknown Raspberry Pi target: ${RASPPI}" >&2; exit 1;;
 esac
 
@@ -146,4 +155,4 @@ echo "Configuration file successfully created:"
 echo
 cat "$CONFIG_FILE"
 echo
-echo "Now enter ./makeall to build the Circle libraries and the latest sample!"
+echo "Now enter ./makeall to build the Circle libraries!"

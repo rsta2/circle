@@ -219,7 +219,7 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 	}
 	else
 	{
-		if (!CUSBHostController::IsPlugAndPlay ())
+		if (!GetHost ()->IsPlugAndPlay ())
 		{
 			ReportHandler (0, 0);
 		}

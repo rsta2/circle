@@ -47,6 +47,9 @@ periph64.o : periph.c BCM2836.h
 periph64_rpi4.o : periph.c BCM2711.h
 	$(ARMGNU64)gcc $(COPS) $(COPS64) -c periph.c -o periph64_rpi4.o -DRPI4 -DAARCH=64
 
+periph64_2712.o : periph.c BCM2712.h
+	$(ARMGNU64)gcc $(COPS) $(COPS64) -c periph.c -o periph64_2712.o -DRPI5 -DAARCH=64
+
 kernel.img : loader vectors.o periph.o bootloader07.o
 	$(ARMGNU)ld vectors.o periph.o bootloader07.o -T loader -o bootloader07_rpi1.elf
 	$(ARMGNU)objdump -D bootloader07_rpi1.elf > bootloader07_rpi1.lst
@@ -71,3 +74,8 @@ kernel8-rpi4.img : loader64 vectors64.o periph64_rpi4.o bootloader07_64.o
 	$(ARMGNU64)ld vectors64.o periph64_rpi4.o bootloader07_64.o -T loader64 -o bootloader07_64_rpi4.elf
 	$(ARMGNU64)objdump -D bootloader07_64_rpi4.elf > bootloader07_64_rpi4.lst
 	$(ARMGNU64)objcopy bootloader07_64_rpi4.elf -O binary kernel8-rpi4.img
+
+kernel_2712.img : loader64 vectors64.o periph64_2712.o bootloader07_64.o
+	$(ARMGNU64)ld vectors64.o periph64_2712.o bootloader07_64.o -T loader64 -o bootloader07_64_2712.elf
+	$(ARMGNU64)objdump -D bootloader07_64_2712.elf > bootloader07_64_2712.lst
+	$(ARMGNU64)objcopy bootloader07_64_2712.elf -O binary kernel_2712.img

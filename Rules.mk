@@ -111,8 +111,12 @@ else ifeq ($(strip $(RASPPI)),4)
 ARCHCPU	?= -mcpu=cortex-a72 -mlittle-endian
 ARCH	+= -DAARCH=64 $(ARCHCPU)
 TARGET	?= kernel8-rpi4
+else ifeq ($(strip $(RASPPI)),5)
+ARCHCPU	?= -mcpu=cortex-a76 -mlittle-endian
+ARCH	+= -DAARCH=64 $(ARCHCPU)
+TARGET	?= kernel_2712
 else
-$(error RASPPI must be set to 3 or 4)
+$(error RASPPI must be set to 3, 4 or 5)
 endif
 PREFIX	= $(PREFIX64)
 LOADADDR = 0x80000

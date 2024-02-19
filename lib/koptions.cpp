@@ -172,7 +172,7 @@ CKernelOptions::CKernelOptions (void)
 		{
 			unsigned nValue;
 			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
-			    && 2 <= nValue && nValue <= 27)
+			    && 2 <= nValue && nValue <= 53)
 			{
 				m_nGPIOFanPin = nValue;
 			}

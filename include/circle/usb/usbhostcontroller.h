@@ -36,7 +36,7 @@ class CUSBHCIRootPort;
 class CUSBStandardHub;
 class CUSBDevice;
 
-class CUSBHostController : public CUSBController
+class CUSBHostController : public CUSBController	/// Base class of USB host controllers
 {
 public:
 	CUSBHostController (boolean bPlugAndPlay);
@@ -72,18 +72,20 @@ public:
 	virtual void CancelDeviceTransactions (CUSBDevice *pUSBDevice) {}
 
 public:
-	static boolean IsPlugAndPlay (void);
+	boolean IsPlugAndPlay (void) const;
 
 	// must be called from TASK_LEVEL, if Plug-and-Play is enabled
 	// returns TRUE if device tree might have been updated (always TRUE on first call)
 	boolean UpdatePlugAndPlay (void) override;
 
+#if RASPPI <= 4
 	static boolean IsActive (void)
 	{
 		return s_pThis != 0 ? TRUE : FALSE;
 	}
 
 	static CUSBHostController *Get (void);
+#endif
 
 protected:
 	void PortStatusChanged (CUSBHCIRootPort *pRootPort);
@@ -94,13 +96,15 @@ private:
 	friend class CUSBStandardHub;
 
 private:
-	static boolean s_bPlugAndPlay;
+	boolean m_bPlugAndPlay;
 	boolean m_bFirstUpdateCall;
 
 	CPtrList  m_HubList;
 	CSpinLock m_SpinLock;
 
+#if RASPPI <= 4
 	static CUSBHostController *s_pThis;
+#endif
 };
 
 #endif

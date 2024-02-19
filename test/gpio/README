@@ -1,0 +1,4 @@
+README
+
+This test blinks a LED, connected from GPIO18 (chip number) to GND, until GPIO17
+is connected to GND (e.g. with a button). Then the system reboots.

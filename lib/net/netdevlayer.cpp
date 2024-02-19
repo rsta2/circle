@@ -2,7 +2,7 @@
 // netdevlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,8 +42,13 @@ CNetDeviceLayer::~CNetDeviceLayer (void)
 
 boolean CNetDeviceLayer::Initialize (boolean bWaitForActivate)
 {
-#if RASPPI >= 4
+#if RASPPI == 4
 	if (!m_Bcm54213.Initialize ())
+	{
+		return FALSE;
+	}
+#elif RASPPI >= 5
+	if (!m_MACB.Initialize ())
 	{
 		return FALSE;
 	}

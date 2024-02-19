@@ -2,7 +2,7 @@
 // machineinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ enum TMachineModel
 	MachineModel400,
 	MachineModelCM4,
 	MachineModelCM4S,
+	MachineModel5,
 	MachineModelUnknown
 };
 
@@ -57,6 +58,7 @@ enum TSoCType
 	SoCTypeBCM2836,
 	SoCTypeBCM2837,
 	SoCTypeBCM2711,
+	SoCTypeBCM2712,
 	SoCTypeUnknown
 };
 
@@ -113,15 +115,25 @@ public:
 	// DMA channel resource management
 #if RASPPI <= 3
 #define DMA_CHANNEL_MAX		11			// channels 0-11 are supported
-#else
+#elif RASPPI == 4
 #define DMA_CHANNEL_MAX		7			// legacy channels 0-7 are supported
 #define DMA_CHANNEL_EXT_MIN	11			// DMA4 channels 11-14 are supported
 #define DMA_CHANNEL_EXT_MAX	14
+#else
+#define DMA_CHANNEL_MAX		5			// TODO: support legacy channels 0-5
+#define DMA_CHANNEL_EXT_MIN	6			// DMA4 channels 6-11 are supported
+#define DMA_CHANNEL_EXT_MAX	11
 #endif
 #define DMA_CHANNEL__MASK	0x0F			// explicit channel number
 #define DMA_CHANNEL_NONE	0x80			// returned if no channel available
+#if RASPPI <= 4
 #define DMA_CHANNEL_NORMAL	0x81			// normal DMA engine requested
 #define DMA_CHANNEL_LITE	0x82			// lite (or normal) DMA engine requested
+#else
+// TODO: currently only extended DMA4 engines are supported for Raspberry Pi 5
+#define DMA_CHANNEL_NORMAL	DMA_CHANNEL_EXTENDED	// TODO: define 0x81 instead
+#define DMA_CHANNEL_LITE	DMA_CHANNEL_EXTENDED	// TODO: define 0x82 instead
+#endif
 #if RASPPI >= 4
 #define DMA_CHANNEL_EXTENDED	0x83			// "large address" DMA4 engine requested
 #endif
@@ -133,6 +145,8 @@ public:
 #if RASPPI >= 4
 	// Devicetree blob handling
 	void FetchDTB (void);
+
+	const CDeviceTreeBlob *GetDTB (void) const;
 
 	TMemoryWindow GetPCIeDMAMemory (void) const;
 #endif

@@ -2,7 +2,7 @@
 // actled.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,17 +20,23 @@
 #include <circle/actled.h>
 #include <circle/machineinfo.h>
 #include <circle/timer.h>
+#include <circle/bcm2712.h>
+#include <circle/memio.h>
+#include <circle/macros.h>
 
 CActLED *CActLED::s_pThis = 0;
 
 CActLED::CActLED (boolean bSafeMode)
+#if RASPPI <= 4
 :	m_pPin (0),
 	m_pVirtualPin (0)
+#endif
 {
 	s_pThis = this;
 
 	unsigned nActLEDInfo = CMachineInfo::Get ()->GetActLEDInfo ();
 
+#if RASPPI <= 4
 	if (nActLEDInfo & ACTLED_VIRTUAL_PIN)
 	{
 		m_pVirtualPin = new CVirtualGPIOPin (nActLEDInfo & ACTLED_PIN_MASK, bSafeMode);
@@ -39,6 +45,10 @@ CActLED::CActLED (boolean bSafeMode)
 	{
 		m_pPin = new CGPIOPin (nActLEDInfo & ACTLED_PIN_MASK, GPIOModeOutput);
 	}
+#else
+	// set mode to output
+	write32 (ARM_GPIO2_IODIR0, read32 (ARM_GPIO2_IODIR0) & ~BIT (9));
+#endif
 
 	m_bActiveHigh = nActLEDInfo & ACTLED_ACTIVE_LOW ? FALSE : TRUE;
 
@@ -52,6 +62,7 @@ CActLED::~CActLED (void)
 
 void CActLED::On (void)
 {
+#if RASPPI <= 4
 	if (m_pPin != 0)
 	{
 		m_pPin->Write (m_bActiveHigh ? HIGH : LOW);
@@ -60,10 +71,14 @@ void CActLED::On (void)
 	{
 		m_pVirtualPin->Write (m_bActiveHigh ? HIGH : LOW);
 	}
+#else
+	write32 (ARM_GPIO2_DATA0, read32 (ARM_GPIO2_DATA0) | BIT (9));
+#endif
 }
 
 void CActLED::Off (void)
 {
+#if RASPPI <= 4
 	if (m_pPin != 0)
 	{
 		m_pPin->Write (m_bActiveHigh ? LOW : HIGH);
@@ -72,6 +87,9 @@ void CActLED::Off (void)
 	{
 		m_pVirtualPin->Write (m_bActiveHigh ? LOW : HIGH);
 	}
+#else
+	write32 (ARM_GPIO2_DATA0, read32 (ARM_GPIO2_DATA0) & ~BIT (9));
+#endif
 }
 
 void CActLED::Blink (unsigned nCount, unsigned nTimeOnMs, unsigned nTimeOffMs)
