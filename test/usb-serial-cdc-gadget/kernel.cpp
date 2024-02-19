@@ -90,11 +90,14 @@ TShutdownMode CKernel::Run (void)
 		{
 			if (!m_pSerial)
 			{
-				m_pSerial = CDeviceNameService::Get ()->GetDevice ("utty1", FALSE);
+				m_pSerial = static_cast<CUSBSerialDevice *> (
+					CDeviceNameService::Get ()->GetDevice ("utty1", FALSE));
 				if (m_pSerial)
 				{
 					m_pSerial->RegisterRemovedHandler (DeviceRemovedHandler,
 									   this);
+
+					m_pSerial->SetOptions (SERIAL_OPTION_ONLCR);
 
 					m_Logger.SetNewTarget (m_pSerial);
 				}

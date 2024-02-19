@@ -46,7 +46,7 @@ enum TUSBSerialParity
 };
 
 // serial options
-#define SERIAL_OPTION_ONLCR	(1 << 0)	///< Translate NL to CR+NL on output (default)
+#define SERIAL_OPTION_ONLCR	(1 << 0)	///< Translate NL to CR+NL on output
 
 class CUSBSerialDevice : public CDevice		/// Interface device for USB serial devices
 {

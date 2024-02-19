@@ -31,7 +31,7 @@ CUSBSerialDevice::CUSBSerialDevice (void)
 	m_pReadHandler (nullptr),
 	m_pSetBaudRateHandler (nullptr),
 	m_pSetLinePropertiesHandler (nullptr),
-	m_nOptions (SERIAL_OPTION_ONLCR),
+	m_nOptions (0),
 	m_nDeviceNumber (s_DeviceNumberPool.AllocateNumber (TRUE, From))
 {
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);

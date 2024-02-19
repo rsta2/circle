@@ -30,6 +30,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/gadget/usbcdcgadget.h>
+#include <circle/usb/usbserial.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -66,7 +67,7 @@ private:
 
 	CUSBCDCGadget		m_SerialCDC;
 
-	CDevice * volatile 	m_pSerial;
+	CUSBSerialDevice * volatile m_pSerial;
 };
 
 #endif
