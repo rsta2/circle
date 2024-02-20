@@ -2,7 +2,7 @@
 /// \file serial.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,7 +76,9 @@
 #endif
 #endif
 
+#ifndef SERIAL_BUF_SIZE
 #define SERIAL_BUF_SIZE		2048			// must be a power of 2
+#endif
 #define SERIAL_BUF_MASK		(SERIAL_BUF_SIZE-1)
 
 // serial options
