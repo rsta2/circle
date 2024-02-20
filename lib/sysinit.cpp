@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -178,6 +178,23 @@ void reboot (void)					// by PlutoniumBob@raspi-forum
 
 	for (;;);					// wait for reset
 }
+
+#if RASPPI >= 5
+
+void poweroff (void)
+{
+	asm volatile
+	(
+		"mov	x0, %0\n"
+		"smc	#0\n"
+
+		:: "r" (0x84000008UL)			// function code SYSTEM_OFF
+	);
+
+	for (;;);
+}
+
+#endif
 
 #if AARCH == 32
 
