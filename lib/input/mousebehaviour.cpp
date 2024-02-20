@@ -2,7 +2,7 @@
 // mousebehaviour.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 #define CURSOR_HOTSPOT_X	0
 #define CURSOR_HOTSPOT_Y	0
 
+#if RASPPI <= 4
+
 static const u32 CursorSymbol[CURSOR_HEIGHT][CURSOR_WIDTH] =
 {
 #define B	0
@@ -53,6 +55,8 @@ static const u32 CursorSymbol[CURSOR_HEIGHT][CURSOR_WIDTH] =
 	{B,B,B,B,B,G,W,W,W,G,B,B,B,B,B,B},
 	{B,B,B,B,B,B,G,G,G,G,B,B,B,B,B,B}
 };
+
+#endif
 
 CMouseBehaviour::CMouseBehaviour (void)
 :	m_nScreenWidth (0),

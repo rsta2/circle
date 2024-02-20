@@ -159,12 +159,12 @@ boolean CMultiCoreSupport::Initialize (void)
 			"mov	x2, %3\n"
 			"mov	x3, %4\n"
 			"smc	#0\n"
-			"mov	%0, x0\n"
+			"mov	%w0, w0\n"
 
 			: "=r" (nReturnCode)
 
-			: "r" (0xC4000003U),			// function code CPU_ON
-			  "r" (nCore << 8),			// target core
+			: "r" (0xC4000003UL),			// function code CPU_ON
+			  "r" ((u64) nCore << 8),		// target core
 			  "r" ((u64) &_start_secondary),	// entry point
 			  "i" (0)				// context (unused)
 

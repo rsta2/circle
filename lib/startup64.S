@@ -2,7 +2,7 @@
  * startup64.S
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
  *
  * This file contains (sligthly modified) code taken from U-Boot:
  *	armv8_switch_to_el1_m macro
@@ -103,7 +103,7 @@ _start_secondary:			/* normally entered from armstub8 in EL2 after boot */
 
 	mrs	x2, mpidr_el1		/* read affinity */
 #if RASPPI >= 5
-	mov	x2, x2, lsr #8		/* CPU ID is in Aff1 in Cortex-A76 */
+	lsr	x2, x2, #8		/* CPU ID is in Aff1 in Cortex-A76 */
 #endif
 	and	x2, x2, #CORES-1	/* get CPU ID */
 
