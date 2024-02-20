@@ -305,13 +305,14 @@ CSerialDevice::~CSerialDevice (void)
 		s_bUseFIQ = FALSE;
 	}
 #else
-	if (   m_pInterruptSystem != 0
-	    && --s_nInterruptUseCount == 0)
+	if (s_pInterruptSystem != 0)
 	{
-		assert (s_pInterruptSystem != 0);
 		s_pInterruptSystem->DisconnectIRQ (s_IRQ[m_nDevice]);
 
-		s_pInterruptSystem = 0;
+		if (--s_nInterruptUseCount == 0)
+		{
+			s_pInterruptSystem = 0;
+		}
 	}
 #endif
 
