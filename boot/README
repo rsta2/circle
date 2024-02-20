@@ -59,6 +59,14 @@ images. The toolchain prefix (PREFIX= or PREFIX64=) can be configured in the
 file Config.mk in the Circle root directory. You have to copy the created file
 armstub?-rpi4.bin to the SD card together with the other files (see above).
 
+RASPBERRY PI 5
+
+The Raspberry Pi 5 has an EEPROM, which contains the firmware. Therefore only
+these additional files are required on the SD card (beside kernel*.img):
+
+	bcm2712-rpi-5-b.dtb
+	config.txt		(copied from config64.txt)
+
 QUICK INSTALL
 
 If you have defined the path to the mount point of your SD card as follows in

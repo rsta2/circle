@@ -1,8 +1,6 @@
 Circle
 ======
 
-> For information on Raspberry Pi 5 support see the file [doc/rpi5.txt](doc/rpi5.txt)!
-
 Overview
 --------
 
