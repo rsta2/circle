@@ -288,6 +288,7 @@
 #ifndef DEFAULT_KEYMAP
 
 #define DEFAULT_KEYMAP		"DE"
+//#define DEFAULT_KEYMAP		"DV"	// Dvorak layout
 //#define DEFAULT_KEYMAP		"ES"
 //#define DEFAULT_KEYMAP		"FR"
 //#define DEFAULT_KEYMAP		"IT"
