@@ -9,7 +9,8 @@ width=640 height=480		Changes screen size (default is maximum size)
 logdev=ttyS1			Set device used for log messages
 				("tty1" for screen (default), "ttySN" for UART,
 				 where N=1..M, M depends on the Raspberry Pi model,
-				 "ttyS1" should be used if no screen is attached)
+				 "ttyS1" ("ttyS11" on the Raspberry Pi 5) should be used,
+				 if no screen is attached)
 
 loglevel=4			Control amount of generated log messages
 				(0: only panic, 1: also errors, 2: also warnings,
