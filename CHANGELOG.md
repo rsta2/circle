@@ -3,8 +3,21 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+The 46th Step
+-------------
+
+With this release Circle initially **supports the Raspberry Pi 5**. There are many features, which are not available yet, but important features like USB and networking are supported. Please see the [Circle documentation](https://circle-rpi.readthedocs.io/en/46.0/appendices/raspberry-pi-5.html) for more information on Raspberry Pi 5 support!
+
+Circle comes with an **USB serial CDC gadget** now, which allows to communicate with a Circle application from a host computer via a serial interface without an USB serial adapter. This can be tested with the [test/usb-serial-cdc-gadget](test/usb-serial-cdc-gadget/).
+
+The **properties file library** in [addon/Properties](addon/Properties/) supports section headers now.
+
+A possible race condition in `CTimer` has been fixed, which could only occur with the KY-040 rotary encoder module driver.
+
 Release 45.3.1
 --------------
+
+2023-10-08
 
 This is a hotfix release. It fixes the release of guard structures, which are used to protect static objects, which are defined inside of a function. This problem did occur only, when the system option `ARM_ALLOW_MULTI_CORE` was defined.
 
