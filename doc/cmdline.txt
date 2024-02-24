@@ -16,7 +16,8 @@ loglevel=4			Control amount of generated log messages
 				(0: only panic, 1: also errors, 2: also warnings,
 				 3: also notices, 4: also debug output (default))
 
-keymap=UK			Select keyboard mapping ("DE", "ES", "FR", "IT", "UK" or "US")
+keymap=UK			Select keyboard mapping ("DE", "DV" (Dvorak), "ES", "FR", "IT",
+				"UK" or "US")
 				The default mapping can be selected at the end of the file
 				include/circle/sysconfig.h (normally "DE").
 
