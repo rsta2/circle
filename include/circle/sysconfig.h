@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -173,7 +173,7 @@
 
 #endif
 
-#if RASPPI >= 4
+#if RASPPI == 4
 
 // USE_XHCI_INTERNAL enables the xHCI controller, which is integrated
 // into the BCM2711 SoC. The Raspberry Pi 4 provides two independent
@@ -288,6 +288,7 @@
 #ifndef DEFAULT_KEYMAP
 
 #define DEFAULT_KEYMAP		"DE"
+//#define DEFAULT_KEYMAP		"DV"	// Dvorak layout
 //#define DEFAULT_KEYMAP		"ES"
 //#define DEFAULT_KEYMAP		"FR"
 //#define DEFAULT_KEYMAP		"IT"
@@ -326,6 +327,14 @@
 
 #ifndef USB_GADGET_DEVICE_ID_BASE
 #define USB_GADGET_DEVICE_ID_BASE	0x8001
+#endif
+
+#ifndef USB_GADGET_DEVICE_ID_MIDI
+#define USB_GADGET_DEVICE_ID_MIDI	USB_GADGET_DEVICE_ID_BASE
+#endif
+
+#ifndef USB_GADGET_DEVICE_ID_SERIAL_CDC
+#define USB_GADGET_DEVICE_ID_SERIAL_CDC	(USB_GADGET_DEVICE_ID_BASE+1)
 #endif
 
 ///////////////////////////////////////////////////////////////////////

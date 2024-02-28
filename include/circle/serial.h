@@ -2,7 +2,7 @@
 /// \file serial.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 /// \details GPIO pin mapping (chip numbers)
 /// nDevice | TXD    | RXD    | Support
 /// :-----: | :----: | :----: | :------
-/// 0       | GPIO14 | GPIO15 | All boards
+/// 0       | GPIO14 | GPIO15 | Raspberry Pi 1-4
 /// ^       | GPIO32 | GPIO33 | Compute Modules
 /// ^       | GPIO36 | GPIO37 | Compute Modules
 /// 1       |        |        | None (AUX)
@@ -44,14 +44,41 @@
 /// GPIO32/33 and GPIO36/37 can be selected with system option SERIAL_GPIO_SELECT.\n
 /// GPIO0/1 are normally reserved for ID EEPROM.\n
 /// Handshake lines CTS and RTS are not supported.
+///
+/// nDevice | TXD    | RXD    | Support
+/// :-----: | :----: | :----: | :------
+/// 0       | GPIO14 | GPIO15 | Raspberry Pi 5 only
+/// 1       | GPIO0  | GPIO1  | Raspberry Pi 5 only
+/// 2       | GPIO4  | GPIO5  | Raspberry Pi 5 only
+/// 3       | GPIO8  | GPIO9  | Raspberry Pi 5 only
+/// 4       | GPIO12 | GPIO13 | Raspberry Pi 5 only
+/// 5       | GPIO36 | GPIO37 | None
+/// 6       |        |        | None
+/// 7       |        |        | None
+/// 8       |        |        | None
+/// 9       |        |        | None
+/// 10      | UART   | UART   | Raspberry Pi 5 only
+/// UART is the dedicated 3-pin JST UART connector.
 
 #if RASPPI < 4
 	#define SERIAL_DEVICES		1
-#else
+#elif RASPPI == 4
 	#define SERIAL_DEVICES		6
+#else
+	#define SERIAL_DEVICES		11
 #endif
 
+#ifndef SERIAL_DEVICE_DEFAULT
+#if RASPPI <= 4
+	#define SERIAL_DEVICE_DEFAULT	0
+#else
+	#define SERIAL_DEVICE_DEFAULT	10
+#endif
+#endif
+
+#ifndef SERIAL_BUF_SIZE
 #define SERIAL_BUF_SIZE		2048			// must be a power of 2
+#endif
 #define SERIAL_BUF_MASK		(SERIAL_BUF_SIZE-1)
 
 // serial options
@@ -80,7 +107,7 @@ public:
 	/// \param bUseFIQ Use FIQ instead of IRQ
 	/// \param nDevice Device number (see: GPIO pin mapping)
 	CSerialDevice (CInterruptSystem *pInterruptSystem = 0, boolean bUseFIQ = FALSE,
-		       unsigned nDevice = 0);
+		       unsigned nDevice = SERIAL_DEVICE_DEFAULT);
 
 	~CSerialDevice (void);
 #endif
@@ -150,7 +177,7 @@ private:
 	uintptr  m_nBaseAddress;
 	boolean  m_bValid;
 
-#if SERIAL_GPIO_SELECT == 14
+#if SERIAL_GPIO_SELECT == 14 && RASPPI <= 4
 	CGPIOPin m_GPIO32;
 	CGPIOPin m_GPIO33;
 #endif

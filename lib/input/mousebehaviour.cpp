@@ -2,7 +2,7 @@
 // mousebehaviour.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 #define CURSOR_HOTSPOT_X	0
 #define CURSOR_HOTSPOT_Y	0
 
+#if RASPPI <= 4
+
 static const u32 CursorSymbol[CURSOR_HEIGHT][CURSOR_WIDTH] =
 {
 #define B	0
@@ -53,6 +55,8 @@ static const u32 CursorSymbol[CURSOR_HEIGHT][CURSOR_WIDTH] =
 	{B,B,B,B,B,G,W,W,W,G,B,B,B,B,B,B},
 	{B,B,B,B,B,B,G,G,G,G,B,B,B,B,B,B}
 };
+
+#endif
 
 CMouseBehaviour::CMouseBehaviour (void)
 :	m_nScreenWidth (0),
@@ -89,6 +93,7 @@ boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
 	m_nPosX = (m_nScreenWidth+1) / 2;
 	m_nPosY = (m_nScreenHeight+1) / 2;
 
+#if RASPPI <= 4
 	CBcmPropertyTags Tags;
 	TPropertyTagSetCursorInfo TagSetCursorInfo;
 	TagSetCursorInfo.nWidth = CURSOR_WIDTH;
@@ -106,6 +111,7 @@ boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
 	{
 		return FALSE;
 	}
+#endif
 
 	return TRUE;
 }
@@ -252,6 +258,7 @@ void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX,
 
 boolean CMouseBehaviour::SetCursorState (unsigned nPosX, unsigned nPosY, boolean bVisible)
 {
+#if RASPPI <= 4
 	CBcmPropertyTags Tags;
 	TPropertyTagSetCursorState TagSetCursorState;
 	TagSetCursorState.nEnable = bVisible ? CURSOR_ENABLE_VISIBLE : CURSOR_ENABLE_INVISIBLE;
@@ -267,6 +274,7 @@ boolean CMouseBehaviour::SetCursorState (unsigned nPosX, unsigned nPosY, boolean
 	{
 		return FALSE;
 	}
+#endif
 
 	return TRUE;
 }

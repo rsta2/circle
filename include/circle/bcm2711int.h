@@ -2,7 +2,7 @@
 // bcm2711int.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@
 
 // IRQs
 #define ARM_IRQLOCAL0_CNTPNS	GIC_PPI (14)
+
+#if RASPPI == 4
 
 #define ARM_IRQ_ARM_DOORBELL_0	GIC_SPI (34)
 #define ARM_IRQ_TIMER1		GIC_SPI (65)
@@ -63,10 +65,37 @@
 
 #define IRQ_LINES		256
 
+#else
+
+#define ARM_IRQ_DMA0		GIC_SPI (80)
+#define ARM_IRQ_DMA1		GIC_SPI (81)
+#define ARM_IRQ_DMA2		GIC_SPI (82)
+#define ARM_IRQ_DMA3		GIC_SPI (83)
+#define ARM_IRQ_DMA4		GIC_SPI (84)
+#define ARM_IRQ_DMA5		GIC_SPI (85)
+#define ARM_IRQ_DMA6		GIC_SPI (86)
+#define ARM_IRQ_DMA7		GIC_SPI (87)
+#define ARM_IRQ_DMA8		GIC_SPI (88)
+#define ARM_IRQ_DMA9		GIC_SPI (89)
+#define ARM_IRQ_DMA10		GIC_SPI (90)
+#define ARM_IRQ_DMA11		GIC_SPI (91)
+#define ARM_IRQ_UART		GIC_SPI (121)
+#define ARM_IRQ_PCIE_HOST_INTA	GIC_SPI (229)
+#define ARM_IRQ_PCIE_HOST_MSI	GIC_SPI (234)
+#define ARM_IRQ_SDIO2		GIC_SPI (274)
+
+#define IRQ_LINES		512
+
+#endif
+
 // FIQs
+#if RASPPI == 4
+
 #define ARM_FIQ_TIMER1		ARM_IRQ_TIMER1
 #define ARM_FIQ_GPIO3		ARM_IRQ_GPIO3
 #define ARM_FIQ_UART		ARM_IRQ_UART
+
+#endif
 
 #define ARM_MAX_FIQ		IRQ_LINES
 

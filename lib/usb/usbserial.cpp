@@ -17,259 +17,137 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include <circle/synchronize.h>
-#include <circle/util.h>
 #include <circle/usb/usbserial.h>
-#include <circle/usb/usbhostcontroller.h>
-#include <circle/usb/usbrequest.h>
 #include <circle/devicenameservice.h>
-#include <circle/logger.h>
 #include <assert.h>
 
 CNumberPool CUSBSerialDevice::s_DeviceNumberPool (1);
 
-static const char FromSerial[] = "userial";
+static const char From[] = "userial";
 static const char DevicePrefix[] = "utty";
 
-CUSBSerialDevice::CUSBSerialDevice (CUSBFunction *pFunction, size_t nReadHeaderBytes)
-:	CUSBFunction (pFunction),
-	m_nBaudRate (9600),
-	m_nDataBits (USBSerialDataBits8),
-	m_nParity (USBSerialParityNone),
-	m_nStopBits (USBSerialStopBits1),
-	m_nReadHeaderBytes (nReadHeaderBytes),
-	m_pEndpointIn (0),
-	m_pEndpointOut (0),
-	m_pBufferIn (0),
-	m_nBufferInSize (0),
-	m_nBufferInValid (0),
-	m_nBufferInPtr (0),
-	m_bInRequestActive (FALSE),
-	m_nDeviceNumber (0)
+CUSBSerialDevice::CUSBSerialDevice (void)
+:	m_pWriteHandler (nullptr),
+	m_pReadHandler (nullptr),
+	m_pSetBaudRateHandler (nullptr),
+	m_pSetLinePropertiesHandler (nullptr),
+	m_nOptions (0),
+	m_nDeviceNumber (s_DeviceNumberPool.AllocateNumber (TRUE, From))
 {
+	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
 }
 
 CUSBSerialDevice::~CUSBSerialDevice (void)
 {
-	if (m_nDeviceNumber != 0)
-	{
-		CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
+	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
+	s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 
-		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
-	}
-
-	delete m_pEndpointOut;
-	m_pEndpointOut =  0;
-	
-	delete m_pEndpointIn;
-	m_pEndpointIn = 0;
-
-	delete [] m_pBufferIn;
-	m_pBufferIn = 0;
-	m_nBufferInSize = 0;
-}
-
-boolean CUSBSerialDevice::Configure (void)
-{
-	const TUSBEndpointDescriptor *pEndpointDesc;
-	while ((pEndpointDesc = (TUSBEndpointDescriptor *) GetDescriptor (DESCRIPTOR_ENDPOINT)) != 0)
-	{
-		if ((pEndpointDesc->bmAttributes & 0x3F) == 0x02)		// Bulk
-		{
-			if ((pEndpointDesc->bEndpointAddress & 0x80) == 0x80)	// Input
-			{
-				if (m_pEndpointIn != 0)
-				{
-					ConfigurationError (FromSerial);
-
-					return FALSE;
-				}
-
-				m_pEndpointIn = new CUSBEndpoint (GetDevice (), pEndpointDesc);
-			}
-			else							// Output
-			{
-				if (m_pEndpointOut != 0)
-				{
-					ConfigurationError (FromSerial);
-
-					return FALSE;
-				}
-
-				m_pEndpointOut = new CUSBEndpoint (GetDevice (), pEndpointDesc);
-			}
-		}
-	}
-
-	if (   m_pEndpointIn == 0
-	    || m_pEndpointOut == 0)
-	{
-		ConfigurationError (FromSerial);
-
-		return FALSE;
-	}
-
-	m_nBufferInSize = m_pEndpointIn->GetMaxPacketSize ();
-	m_pBufferIn = new u8[m_nBufferInSize];
-	assert (m_pBufferIn != 0);
-
-	if (!CUSBFunction::Configure ())
-	{
-		CLogger::Get ()->Write (FromSerial, LogError, "Cannot set interface");
-
-		return FALSE;
-	}
-
-	assert (m_nDeviceNumber == 0);
-	m_nDeviceNumber = s_DeviceNumberPool.AllocateNumber (TRUE, FromSerial);
-
-	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
-
-	return TRUE;
+	m_pWriteHandler = nullptr;
+	m_pReadHandler = nullptr;
+	m_pSetBaudRateHandler = nullptr;
+	m_pSetLinePropertiesHandler = nullptr;
 }
 
 int CUSBSerialDevice::Write (const void *pBuffer, size_t nCount)
 {
-	assert (pBuffer != 0);
-	assert (nCount > 0);
+	assert (m_pWriteHandler);
 
-#if RASPPI <= 3
-	// USB host controller does not allow concurrent split transactions
-	// to same device. Thus wait for completion of pending IN request.
-	do
+	if (!(m_nOptions & SERIAL_OPTION_ONLCR))
 	{
-		DataMemBarrier ();
-	}
-	while (m_bInRequestActive);
-#endif
-
-	CUSBHostController *pHost = GetHost ();
-	assert (pHost != 0);
-
-	DMA_BUFFER (u8, BufferOut, nCount);
-	memcpy (BufferOut, pBuffer, nCount);
-
-	assert (m_pEndpointOut != 0);
-	int nActual = pHost->Transfer (m_pEndpointOut, BufferOut, nCount);
-	if (nActual < 0)
-	{
-		CLogger::Get ()->Write (FromSerial, LogWarning, "USB write failed");
+		return (*m_pWriteHandler) (pBuffer, nCount, m_pWriteParam);
 	}
 
-	return nActual;
+	const char *pIn = reinterpret_cast<const char *> (pBuffer);
+	assert (pIn);
+
+	char Buffer[nCount*2];
+	char *pOut = Buffer;
+
+	while (nCount--)
+	{
+		if (*pIn == '\n')
+		{
+			*pOut++ = '\r';
+		}
+
+		*pOut++ = *pIn++;
+	}
+
+	return (*m_pWriteHandler) (Buffer, pOut-Buffer, m_pWriteParam);
 }
 
 int CUSBSerialDevice::Read (void *pBuffer, size_t nCount)
 {
-	assert (pBuffer != 0);
-	assert (nCount > 0);
-
-	DataMemBarrier ();
-
-	if (m_bInRequestActive)
-	{
-		return 0;
-	}
-
-	assert (m_pBufferIn != 0);
-	assert (m_nBufferInSize > 0);
-	assert (m_nBufferInValid <= m_nBufferInSize);
-	assert (m_nBufferInPtr <= m_nBufferInValid);
-
-	if (m_nBufferInPtr == m_nBufferInValid)		// buffer empty?
-	{
-		CUSBHostController *pHost = GetHost ();
-		assert (pHost != 0);
-
-		assert (m_pEndpointIn != 0);
-		CUSBRequest *pURB = new CUSBRequest (m_pEndpointIn, m_pBufferIn, m_nBufferInSize);
-		assert (pURB != 0);
-
-		// do not retry if request cannot be served immediately
-		pURB->SetCompleteOnNAK ();
-
-		pURB->SetCompletionRoutine (CompletionStub, 0, this);
-		m_bInRequestActive = TRUE;
-
-		if (!pHost->SubmitAsyncRequest (pURB))
-		{
-			CLogger::Get ()->Write (FromSerial, LogWarning, "USB read failed");
-
-			m_bInRequestActive = FALSE;
-
-			delete pURB;
-
-			return -1;
-		}
-
-		return 0;
-	}
-
-	size_t nRemain = m_nBufferInValid - m_nBufferInPtr;
-	if (nRemain < nCount)
-	{
-		nCount = nRemain;
-	}
-
-	assert (nCount > 0);
-	memcpy (pBuffer, m_pBufferIn + m_nBufferInPtr, nCount);
-	m_nBufferInPtr += nCount;
-
-	return nCount;
+	assert (m_pReadHandler);
+	return (*m_pReadHandler) (pBuffer, nCount, m_pReadParam);
 }
 
 boolean CUSBSerialDevice::SetBaudRate (unsigned nBaudRate)
 {
-	(void)nBaudRate;
-	return TRUE;
+	if (!m_pSetBaudRateHandler)
+	{
+		return TRUE;
+	}
+
+	return (*m_pSetBaudRateHandler) (nBaudRate, m_pSetBaudRateParam);
 }
 
 boolean CUSBSerialDevice::SetLineProperties (TUSBSerialDataBits nDataBits,
 					     TUSBSerialParity nParity,
 					     TUSBSerialStopBits nStopBits)
 {
-	(void)nDataBits;
-	(void)nParity;
-	(void)nStopBits;
-	return TRUE;
-}
-
-void CUSBSerialDevice::CompletionRoutine (CUSBRequest *pURB)
-{
-	assert (pURB != 0);
-	assert (m_bInRequestActive);
-	assert (m_nBufferInValid == m_nBufferInPtr);
-
-	if (pURB->GetStatus () != 0)
+	if (!m_pSetLinePropertiesHandler)
 	{
-		m_nBufferInValid = pURB->GetResultLength ();
-		m_nBufferInPtr = m_nReadHeaderBytes;
-
-		if (   m_nBufferInValid == 0
-		    || m_nBufferInValid == m_nBufferInPtr)
-		{
-			m_nBufferInValid = 0;
-			m_nBufferInPtr = 0;
-		}
-		else if (m_nBufferInValid < m_nBufferInPtr)
-		{
-			CLogger::Get ()->Write (FromSerial, LogWarning, "Missing read header");
-
-			m_nBufferInValid = 0;
-			m_nBufferInPtr = 0;
-		}
+		return TRUE;
 	}
 
-	delete pURB;
-
-	m_bInRequestActive = FALSE;
-	DataSyncBarrier ();
+	return (*m_pSetLinePropertiesHandler) (nDataBits, nParity, nStopBits,
+					       m_pSetLinePropertiesParam);
 }
 
-void CUSBSerialDevice::CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext)
+unsigned CUSBSerialDevice::GetOptions (void) const
 {
-	CUSBSerialDevice *pThis = (CUSBSerialDevice *) pContext;
-	assert (pThis != 0);
+	return m_nOptions;
+}
 
-	pThis->CompletionRoutine (pURB);
+void CUSBSerialDevice::SetOptions (unsigned nOptions)
+{
+	m_nOptions = nOptions;
+}
+
+void CUSBSerialDevice::RegisterWriteHandler (TWriteHandler *pHandler, void *pParam)
+{
+	m_pWriteParam = pParam;
+
+	assert (!m_pWriteHandler);
+	m_pWriteHandler = pHandler;
+	assert (m_pWriteHandler);
+}
+
+void CUSBSerialDevice::RegisterReadHandler (TReadHandler *pHandler, void *pParam)
+{
+	m_pReadParam = pParam;
+
+	assert (!m_pReadHandler);
+	m_pReadHandler = pHandler;
+	assert (m_pReadHandler);
+}
+
+void CUSBSerialDevice::RegisterSetBaudRateHandler (TSetBaudRateHandler *pHandler, void *pParam)
+{
+	m_pSetBaudRateParam = pParam;
+
+	assert (!m_pSetBaudRateHandler);
+	m_pSetBaudRateHandler = pHandler;
+	assert (m_pSetBaudRateHandler);
+}
+
+void CUSBSerialDevice::RegisterSetLinePropertiesHandler (TSetLinePropertiesHandler *pHandler,
+							 void *pParam)
+{
+	m_pSetLinePropertiesParam = pParam;
+
+	assert (!m_pSetLinePropertiesHandler);
+	m_pSetLinePropertiesHandler = pHandler;
+	assert (m_pSetLinePropertiesHandler);
 }

@@ -4,7 +4,11 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= emmc.o mmchost.o sdhost.o
+OBJS	= emmc.o
+
+ifneq ($(strip $(RASPPI)),5)
+OBJS	+= mmchost.o sdhost.o
+endif
 
 libsdcard.a: $(OBJS)
 	@echo "  AR    $@"

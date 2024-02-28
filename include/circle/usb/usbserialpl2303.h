@@ -20,11 +20,11 @@
 #ifndef _circle_usb_usbserialpl2303_h
 #define _circle_usb_usbserialpl2303_h
 
-#include <circle/usb/usbserial.h>
+#include <circle/usb/usbserialhost.h>
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/types.h>
 
-class CUSBSerialPL2303Device : public CUSBSerialDevice
+class CUSBSerialPL2303Device : public CUSBSerialHostDevice
 {
 public:
 	CUSBSerialPL2303Device (CUSBFunction *pFunction);

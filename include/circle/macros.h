@@ -2,7 +2,7 @@
 // macros.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@
 #define likely(exp)	__builtin_expect (!!(exp), 1)
 #define unlikely(exp)	__builtin_expect (!!(exp), 0)
 
-#define BIT(n)		(1U << (n))
+#define BIT(n)		(1UL << (n))
 
 #define IS_POWEROF_2(num) ((num) != 0 && (((num) & ((num) - 1)) == 0))
 

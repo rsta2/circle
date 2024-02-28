@@ -23,6 +23,7 @@
 #include <circle/usb/gadget/dwusbgadget.h>
 #include <circle/usb/gadget/dwusbgadgetendpoint0.h>
 #include <circle/usb/usb.h>
+#include <circle/machineinfo.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
@@ -65,6 +66,21 @@ boolean CDWUSBGadget::Initialize (boolean bScanDevices)
 	if (!pDeviceDesc->idVendor)
 	{
 		LOGERR ("You have to define a unique USB Vendor ID");
+		return FALSE;
+	}
+
+	// Check for supported Raspberry Pi model
+	TMachineModel Model = CMachineInfo::Get ()->GetMachineModel ();
+	if (   Model != MachineModelA
+	    && Model != MachineModelAPlus
+	    && Model != MachineModelZero
+	    && Model != MachineModelZeroW
+	    && Model != MachineModelZero2W
+	    && Model != MachineModel3APlus
+	    && Model != MachineModel4B
+	    && Model != MachineModel400)
+	{
+		LOGERR ("This Raspberry Pi model does not support USB gadget mode");
 		return FALSE;
 	}
 

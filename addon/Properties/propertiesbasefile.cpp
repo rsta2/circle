@@ -2,7 +2,7 @@
 // propertiesbasefile.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
 enum TParseState
 {
+	StateWaitForSection,
+	StateCopySection,
 	StateWaitForName,
 	StateCopyName,
 	StateWaitForValue,
@@ -31,7 +33,8 @@ enum TParseState
 };
  
 CPropertiesBaseFile::CPropertiesBaseFile (void)
-:	m_nState (StateWaitForName),
+:	m_nState (StateWaitForSection),
+	m_nPrevState  (StateUnknown),
 	m_nIndex (0),
 	m_nLine (1)
 {
@@ -60,7 +63,7 @@ boolean CPropertiesBaseFile::Parse (char chChar)
 
 	switch (m_nState)
 	{
-	case StateWaitForName:
+	case StateWaitForSection:
 		switch (chChar)
 		{
 		case ' ':
@@ -72,6 +75,76 @@ boolean CPropertiesBaseFile::Parse (char chChar)
 			break;
 
 		case '#':
+			m_nPrevState = m_nState;
+			m_nState = StateIgnoreComment;
+			break;
+
+		case '[':
+			m_nState = StateCopySection;
+			break;
+
+		default:
+			m_nState = StateWaitForName;
+			goto CopyName;
+		}
+		break;
+
+	case StateCopySection:
+		switch (chChar)
+		{
+		case ' ':
+		case '\t':
+			break;
+
+		case '\n':
+		case '#':
+			return FALSE;
+
+		case ']':
+			if (m_nIndex == 0)
+			{
+				return FALSE;
+			}
+
+			SelectSection (m_SectionName);
+
+			m_nState = StateWaitForName;
+			m_nIndex = 0;
+			break;
+
+		default:
+			if (IsValidNameChar (chChar))
+			{
+				if (m_nIndex >= MAX_PROPERTY_SECTION_LENGTH-2)
+				{
+					return FALSE;
+				}
+
+				m_SectionName[m_nIndex++] = chChar;
+				m_SectionName[m_nIndex]   = '\0';
+			}
+			else
+			{
+				return FALSE;
+			}
+			break;
+		}
+		break;
+
+	case StateWaitForName:
+	CopyName:
+		switch (chChar)
+		{
+		case ' ':
+		case '\t':
+			break;
+
+		case '\n':
+			m_nLine++;
+			break;
+
+		case '#':
+			m_nPrevState = m_nState;
 			m_nState = StateIgnoreComment;
 			break;
 
@@ -115,7 +188,7 @@ boolean CPropertiesBaseFile::Parse (char chChar)
 		else if (chChar == '\n')
 		{
 			AddProperty (m_PropertyName, "");
-			m_nState = StateWaitForName;
+			m_nState = StateWaitForSection;
 			m_nIndex = 0;
 			m_nLine++;
 		}
@@ -135,7 +208,7 @@ boolean CPropertiesBaseFile::Parse (char chChar)
 
 		case '\n':
 			AddProperty (m_PropertyName, "");
-			m_nState = StateWaitForName;
+			m_nState = StateWaitForSection;
 			m_nIndex = 0;
 			m_nLine++;
 			break;
@@ -170,7 +243,7 @@ boolean CPropertiesBaseFile::Parse (char chChar)
 			}
 			
 			AddProperty (m_PropertyName, m_PropertyValue);
-			m_nState = StateWaitForName;
+			m_nState = StateWaitForSection;
 			m_nIndex = 0;
 			m_nLine++;
 		}
@@ -193,7 +266,9 @@ boolean CPropertiesBaseFile::Parse (char chChar)
 	case StateIgnoreComment:
 		if (chChar == '\n')
 		{
-			m_nState = StateWaitForName;
+			assert (m_nPrevState < StateUnknown);
+			m_nState = m_nPrevState;
+			m_nPrevState = StateUnknown;
 			m_nIndex = 0;
 			m_nLine++;
 		}

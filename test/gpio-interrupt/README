@@ -1,0 +1,6 @@
+README
+
+This test program demonstrates GPIO interrupts. You have to connect a button
+between GPIO17 (chip number) and GND to use it. After initialization the program
+enables several different GPIO interrupt modes for ten seconds each. Please
+press the button and GPIO interrupts will be triggered.

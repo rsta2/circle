@@ -2,7 +2,7 @@
 // memory.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,6 +39,10 @@ public:
 
 	void Destructor (void);		// explicit callable
 
+#if RASPPI >= 4
+	void SetupHighMem (void);
+#endif
+
 #ifdef ARM_ALLOW_MULTI_CORE
 	void InitializeSecondary (void);
 #endif
@@ -49,6 +53,9 @@ public:
 #define COHERENT_SLOT_PROP_MAILBOX	0
 #define COHERENT_SLOT_GPIO_VIRTBUF	1
 #define COHERENT_SLOT_TOUCHBUF		2
+
+#define COHERENT_SLOT_MACB_START	3
+#define COHERENT_SLOT_MACB_END		(3 + 256*1024 / PAGE_SIZE - 1)
 
 #define COHERENT_SLOT_VCHIQ_START	(MEGABYTE / PAGE_SIZE / 2)
 #define COHERENT_SLOT_VCHIQ_END		(MEGABYTE / PAGE_SIZE - 1)

@@ -2,7 +2,7 @@
 // timer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -239,6 +239,44 @@ unsigned CTimer::GetClockTicks (void)
 #endif
 }
 
+u64 CTimer::GetClockTicks64 (void)
+{
+#ifndef USE_PHYSICAL_COUNTER
+	PeripheralEntry ();
+
+	u32 hi = read32 (ARM_SYSTIMER_CHI);
+	u32 lo = read32 (ARM_SYSTIMER_CLO);
+
+	// double check hi value didn't change when retrieving lo...
+	if (hi != read32 (ARM_SYSTIMER_CHI)) {
+		hi = read32 (ARM_SYSTIMER_CHI);
+		lo = read32 (ARM_SYSTIMER_CLO);
+	}
+
+	PeripheralExit ();
+
+	return static_cast<u64> (hi) << 32 | lo;
+#else
+#if AARCH == 32
+	InstructionSyncBarrier ();
+
+	u32 nCNTPCTLow, nCNTPCTHigh;
+	asm volatile ("mrrc p15, 0, %0, %1, c14" : "=r" (nCNTPCTLow), "=r" (nCNTPCTHigh));
+
+	return static_cast<u64> (nCNTPCTHigh) << 32 | nCNTPCTLow;
+#else
+	InstructionSyncBarrier ();
+
+	u64 nCNTPCT;
+	asm volatile ("mrs %0, CNTPCT_EL0" : "=r" (nCNTPCT));
+	u64 nCNTFRQ;
+	asm volatile ("mrs %0, CNTFRQ_EL0" : "=r" (nCNTFRQ));
+
+	return nCNTPCT * CLOCKHZ / nCNTFRQ;
+#endif
+#endif
+}
+
 unsigned CTimer::GetTicks (void) const
 {
 	return m_nTicks;
@@ -459,8 +497,8 @@ void CTimer::PollKernelTimers (void)
 {
 	m_KernelTimerSpinLock.Acquire ();
 
-	TPtrListElement *pElement = m_KernelTimerList.GetFirst ();
-	while (pElement != 0)
+	TPtrListElement *pElement;
+	while ((pElement = m_KernelTimerList.GetFirst ()) != 0)
 	{
 		TKernelTimer *pTimer = (TKernelTimer *) m_KernelTimerList.GetPtr (pElement);
 		assert (pTimer != 0);
@@ -471,9 +509,7 @@ void CTimer::PollKernelTimers (void)
 			break;
 		}
 
-		TPtrListElement *pNextElement = m_KernelTimerList.GetNext (pElement);
 		m_KernelTimerList.Remove (pElement);
-		pElement = pNextElement;
 
 		m_KernelTimerSpinLock.Release ();
 

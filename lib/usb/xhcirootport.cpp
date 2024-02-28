@@ -2,7 +2,7 @@
 // xhcirootport.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <circle/usb/xhcirootport.h>
 #include <circle/usb/xhcidevice.h>
 #include <circle/logger.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 static const char From[] = "xhciroot";
@@ -71,8 +72,19 @@ boolean CXHCIRootPort::Initialize (void)
 		}
 	}
 
+	CTimer::Get ()->MsDelay (100);		// give device after reset some time to settle
+
+	TUSBSpeed PortSpeed = GetPortSpeed ();
+	if (PortSpeed == USBSpeedUnknown)
+	{
+		CLogger::Get ()->Write (From, LogWarning,
+					"Port %u: Unknown speed", m_nPortIndex+1);
+
+		return FALSE;
+	}
+
 	assert (m_pUSBDevice == 0);
-	m_pUSBDevice = new CXHCIUSBDevice (m_pXHCIDevice, GetPortSpeed (), this);
+	m_pUSBDevice = new CXHCIUSBDevice (m_pXHCIDevice, PortSpeed, this);
 	assert (m_pUSBDevice != 0);
 
 	if (!m_pUSBDevice->Initialize ())

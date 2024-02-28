@@ -71,7 +71,7 @@ const CUSBSerialCP210xDevice::TDeviceInfo CUSBSerialCP210xDevice::s_DeviceInfo[]
 };
 
 CUSBSerialCP210xDevice::CUSBSerialCP210xDevice (CUSBFunction *pFunction)
-:	CUSBSerialDevice (pFunction),
+:	CUSBSerialHostDevice (pFunction),
 	m_pDeviceInfo (0)
 {
 }
@@ -82,7 +82,7 @@ CUSBSerialCP210xDevice::~CUSBSerialCP210xDevice (void)
 
 boolean CUSBSerialCP210xDevice::Configure (void)
 {
-	if (!CUSBSerialDevice::Configure ())
+	if (!CUSBSerialHostDevice::Configure ())
 	{
 		CLogger::Get ()->Write (FromCp210x, LogError, "Cannot configure serial device");
 

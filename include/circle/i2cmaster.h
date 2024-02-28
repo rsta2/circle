@@ -27,7 +27,7 @@
 /// \class CI2CMaster
 /// \brief Driver for I2C master devices
 ///
-/// \details GPIO pin mapping
+/// \details GPIO pin mapping (Raspberry Pi 1-4)
 /// nDevice   | nConfig 0     | nConfig 1     | nConfig 2     | Boards
 /// :-------: | :-----------: | :-----------: | :-----------: | :-----
 /// ^         | SDA    SCL    | SDA    SCL    | SDA    SCL    | ^
@@ -38,12 +38,27 @@
 /// 4         | GPIO6  GPIO7  | GPIO8  GPIO9  |               | Raspberry Pi 4 only
 /// 5         | GPIO10 GPIO11 | GPIO12 GPIO13 |               | Raspberry Pi 4 only
 /// 6         | GPIO22 GPIO23 |               |               | Raspberry Pi 4 only
+///
+/// \details GPIO pin mapping (Raspberry Pi 5)
+/// nDevice   | nConfig 0     | nConfig 1     | nConfig 2     | Boards
+/// :-------: | :-----------: | :-----------: | :-----------: | :-----
+/// ^         | SDA    SCL    | SDA    SCL    | SDA    SCL    | ^
+/// 0         | GPIO0  GPIO1  | GPIO8  GPIO9  |               | Raspberry Pi 5 only
+/// 1         | GPIO2  GPIO3  | GPIO10 GPIO11 |               | Raspberry Pi 5 only
+/// 2         | GPIO4  GPIO5  | GPIO12 GPIO13 |               | Raspberry Pi 5 only
+/// 3         | GPIO6  GPIO7  | GPIO14 GPIO15 | GPIO22 GPIO23 | Raspberry Pi 5 only
 
 // returned by Read/Write as negative value
 #define I2C_MASTER_INALID_PARM	1	///< Invalid parameter
 #define I2C_MASTER_ERROR_NACK	2	///< Received a NACK
 #define I2C_MASTER_ERROR_CLKT	3	///< Received clock stretch timeout
 #define I2C_MASTER_DATA_LEFT	4	///< Not all data has been sent/received
+#define I2C_MASTER_TIMEOUT	5	///< Transfer timed out
+#define I2C_MASTER_BUS_BUSY	6	///< Bus did not become ready
+
+#if RASPPI >= 5
+	#include <circle/i2cmaster-rp1.h>
+#else
 
 class CI2CMaster
 {
@@ -100,5 +115,7 @@ private:
 
 	CSpinLock m_SpinLock;
 };
+
+#endif
 
 #endif

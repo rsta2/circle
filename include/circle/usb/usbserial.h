@@ -3,7 +3,7 @@
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2020  H. Kocevar <hinxx@protonmail.com>
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -20,8 +20,7 @@
 #ifndef _circle_usb_usbserial_h
 #define _circle_usb_usbserial_h
 
-#include <circle/usb/usbfunction.h>
-#include <circle/usb/usbendpoint.h>
+#include <circle/device.h>
 #include <circle/numberpool.h>
 #include <circle/types.h>
 
@@ -46,43 +45,59 @@ enum TUSBSerialParity
 	USBSerialParityEven	 = 2,
 };
 
-class CUSBSerialDevice : public CUSBFunction
+// serial options
+#define SERIAL_OPTION_ONLCR	(1 << 0)	///< Translate NL to CR+NL on output
+
+class CUSBSerialDevice : public CDevice		/// Interface device for USB serial devices
 {
 public:
-	CUSBSerialDevice (CUSBFunction *pFunction,
-			  size_t nReadHeaderBytes = 0);		// number of bytes to be ignored
-	virtual ~CUSBSerialDevice (void);
+	CUSBSerialDevice (void);
+	~CUSBSerialDevice (void);
 
 	boolean Configure (void);
 
 	int Write (const void *pBuffer, size_t nCount);
 	int Read (void *pBuffer, size_t nCount);
 
-	virtual boolean SetBaudRate (unsigned nBaudRate);
-	virtual boolean SetLineProperties (TUSBSerialDataBits nDataBits, TUSBSerialParity nParity, TUSBSerialStopBits nStopBits);
+	boolean SetBaudRate (unsigned nBaudRate);
+	boolean SetLineProperties (TUSBSerialDataBits nDataBits,
+				   TUSBSerialParity nParity,
+				   TUSBSerialStopBits nStopBits);
+
+	/// \return Serial options mask (see serial options)
+	unsigned GetOptions (void) const;
+	/// \param nOptions Serial options mask (see serial options)
+	void SetOptions (unsigned nOptions);
 
 private:
-	void CompletionRoutine (CUSBRequest *pURB);
-	static void CompletionStub (CUSBRequest *pURB, void *pParam, void *pContext);
+	typedef int TWriteHandler (const void *pBuffer, size_t nCount, void *pParam);
+	typedef int TReadHandler (void *pBuffer, size_t nCount, void *pParam);
+	typedef boolean TSetBaudRateHandler (unsigned nBaudRate, void *pParam);
+	typedef boolean TSetLinePropertiesHandler (TUSBSerialDataBits nDataBits,
+						   TUSBSerialParity nParity,
+						   TUSBSerialStopBits nStopBits,
+						   void *pParam);
 
-protected:
-	unsigned m_nBaudRate;
-	TUSBSerialDataBits m_nDataBits;
-	TUSBSerialParity m_nParity;
-	TUSBSerialStopBits m_nStopBits;
+	void RegisterWriteHandler (TWriteHandler *pHandler, void *pParam);
+	void RegisterReadHandler (TReadHandler *pHandler, void *pParam);
+	void RegisterSetBaudRateHandler (TSetBaudRateHandler *pHandler, void *pParam);
+	void RegisterSetLinePropertiesHandler (TSetLinePropertiesHandler *pHandler, void *pParam);
+
+	friend class CUSBSerialHostDevice;
+	friend class CUSBCDCGadgetEndpoint;
 
 private:
-	size_t m_nReadHeaderBytes;
+	TWriteHandler *m_pWriteHandler;
+	TReadHandler *m_pReadHandler;
+	TSetBaudRateHandler *m_pSetBaudRateHandler;
+	TSetLinePropertiesHandler *m_pSetLinePropertiesHandler;
 
-	CUSBEndpoint *m_pEndpointIn;
-	CUSBEndpoint *m_pEndpointOut;
+	void *m_pWriteParam;
+	void *m_pReadParam;
+	void *m_pSetBaudRateParam;
+	void *m_pSetLinePropertiesParam;
 
-	u8 *m_pBufferIn;
-	size_t m_nBufferInSize;
-	size_t m_nBufferInValid;
-	unsigned m_nBufferInPtr;
-
-	volatile boolean m_bInRequestActive;
+	unsigned m_nOptions;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

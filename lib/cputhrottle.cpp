@@ -2,7 +2,7 @@
 // cputhrottle.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,7 +43,8 @@ CCPUThrottle::CCPUThrottle (TCPUSpeed InitialSpeed)
 	m_LastThrottledState (SystemStateNothingOccurred),
 	m_pThrottledHandler (0),
 	m_pThrottledParam (0),
-	m_bFanConnected (FALSE)
+	m_bFanConnected (FALSE),
+	m_bFanActiveLow (FALSE)
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -56,7 +57,15 @@ CCPUThrottle::CCPUThrottle (TCPUSpeed InitialSpeed)
 
 		m_FanPin.AssignPin (nFanPin);
 		m_FanPin.SetMode (GPIOModeOutput, FALSE);
-		m_FanPin.Write (HIGH);
+
+#if RASPPI >= 5
+		if (nFanPin == 45)
+		{
+			m_bFanActiveLow = TRUE;
+		}
+#endif
+
+		m_FanPin.Write (m_bFanActiveLow ? LOW : HIGH);
 	}
 
 	if (InitialSpeed == CPUSpeedUnknown)
@@ -182,11 +191,11 @@ boolean CCPUThrottle::SetOnTemperature (void)
 
 		if (nTemperature > m_nEnforcedTemperature)
 		{
-			m_FanPin.Write (HIGH);
+			m_FanPin.Write (m_bFanActiveLow ? LOW : HIGH);
 		}
 		else if (nTemperature < (m_nEnforcedTemperature-5000))	// 5 degrees hysteresis
 		{
-			m_FanPin.Write (LOW);
+			m_FanPin.Write (m_bFanActiveLow ? HIGH : LOW);
 		}
 
 		return TRUE;

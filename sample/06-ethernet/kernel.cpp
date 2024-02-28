@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -82,8 +82,10 @@ boolean CKernel::Initialize (void)
 	{
 #if RASPPI <= 3
 		bOK = m_USBHCI.Initialize ();
-#else
+#elif RASPPI == 4
 		bOK = m_Bcm54213.Initialize ();
+#else
+		bOK = m_MACB.Initialize ();
 #endif
 	}
 
@@ -102,8 +104,13 @@ TShutdownMode CKernel::Run (void)
 		return ShutdownHalt;
 	}
 
-	// wait for Ethernet PHY to come up
-	m_Timer.MsDelay (2000);
+	while (   !pEth0->IsLinkUp ()
+	       && pEth0->UpdatePHY ())
+	{
+		m_Logger.Write (FromKernel, LogNotice, "Waiting for Ethernet PHY to come up");
+
+		m_Timer.MsDelay (2000);
+	}
 
 	m_Logger.Write (FromKernel, LogNotice, "Dumping received broadcasts");
 

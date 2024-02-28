@@ -1,0 +1,5 @@
+README
+
+This test checks the watchdog device. The watchdog will be started and
+re-triggered three times to elapse after 10 seconds. Then the program counts
+down, until the watchdog elapses and the system is restarted.

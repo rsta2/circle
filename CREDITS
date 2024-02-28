@@ -87,6 +87,7 @@ Adding screen ANSI colors
 Providing info patch for I2S input
 Providing patch for WLAN AP mode
 Adding SMI master driver and WS2812OverSMI addon
+USB CDC ACM (serial) gadget driver
 
 Maciej Sokolowski
 Adding WM8960 support to I2S sound driver
@@ -103,3 +104,10 @@ Adding support for Ctrl+navigation keys
 
 @ArnoldUK
 Testing the resizing of the screen in different classes
+
+@aniplay62
+Providing U-Boot driver for MACB / GEM Ethernet NIC for Raspberry Pi 5
+Helping to get WLAN working on Raspberry Pi 5
+
+Joe Strout
+Providing Dvorak keyboard layout

@@ -4,7 +4,7 @@
 // I2C slave detection method by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,11 +31,16 @@
 	#define MASTER_DEVICE_MAX	2
 	#define MASTER_CONFIG_MIN	0
 	#define MASTER_CONFIG_MAX	0
-#else
+#elif RASPPI == 4
 	#define MASTER_DEVICE_MIN	0
 	#define MASTER_DEVICE_MAX	6
 	#define MASTER_CONFIG_MIN	0
 	#define MASTER_CONFIG_MAX	1
+#else
+	#define MASTER_DEVICE_MIN	0
+	#define MASTER_DEVICE_MAX	3
+	#define MASTER_CONFIG_MIN	0
+	#define MASTER_CONFIG_MAX	2
 #endif
 
 #define SLAVE_ADDRESS_MIN	0x03
@@ -43,7 +48,11 @@
 
 #define CLOCK_KHZ_MIN		5
 #define CLOCK_KHZ_DEFAULT	100
+#if RASPPI <= 4
 #define CLOCK_KHZ_MAX		2000
+#else
+#define CLOCK_KHZ_MAX		1000
+#endif
 
 
 const char CI2CShell::HelpMsg[] =
@@ -71,6 +80,7 @@ const char CI2CShell::HelpMsg[] =
 const char CI2CShell::GPIOHelpMsg[] =
 	"\n"
 	"Master\t\tConfiguration\n"
+#if RASPPI <= 4
 	"\t\t0\t\t1\n"
 	"\n"
 	"\t\tSDA\tSCL\tSDA\tSCL\n"
@@ -78,11 +88,21 @@ const char CI2CShell::GPIOHelpMsg[] =
 	"0%s\n"
 	"1%s\n"
 	"2\n"
-#if RASPPI >= 4
+#if RASPPI == 4
 	"3\t\tGPIO2\tGPIO3\tGPIO4\tGPIO5\n"
 	"4\t\tGPIO6\tGPIO7\tGPIO8\tGPIO9\n"
 	"5\t\tGPIO10\tGPIO11\tGPIO12\tGPIO13\n"
 	"6\t\tGPIO22\tGPIO23\n"
+#endif
+#else
+	"\t\t0\t\t1\t\t2\n"
+	"\n"
+	"\t\tSDA\tSCL\tSDA\tSCL\tSDA\tSCL\n"
+	"\n"
+	"0\t\tGPIO0\tGPIO1\tGPIO8\tGPIO9\n"
+	"1\t\tGPIO2\tGPIO3\tGPIO10\tGPIO11\n"
+	"2\t\tGPIO4\tGPIO5\tGPIO12\tGPIO13\n"
+	"3\t\tGPIO6\tGPIO7\tGPIO14\tGPIO15\tGPIO22\tGPIO23\n"
 #endif
 	"\n"
 	"GPIO# are chip numbers, not the position on the header!\n"
@@ -485,6 +505,7 @@ boolean CI2CShell::Help (void)
 	{
 		if (Token.Compare ("gpio") == 0)
 		{
+#if RASPPI <= 4
 			if (CMachineInfo::Get ()->GetDevice (DeviceI2CMaster) == 0)
 			{
 				Print (GPIOHelpMsg, "\t\tGPIO0\tGPIO1", "");
@@ -493,6 +514,9 @@ boolean CI2CShell::Help (void)
 			{
 				Print (GPIOHelpMsg, "", "\t\tGPIO2\tGPIO3");
 			}
+#else
+			Print (GPIOHelpMsg);
+#endif
 
 			return TRUE;
 		}
@@ -553,10 +577,12 @@ void CI2CShell::PrintI2CError (int nStatus)
 {
 	switch (nStatus)
 	{
-	case -I2C_MASTER_INALID_PARM:	Print ("Invalid parameter");		break;
+	case -I2C_MASTER_INALID_PARM:	Print ("Invalid parameter\n");		break;
 	case -I2C_MASTER_ERROR_NACK:	Print ("Negative ACK\n");		break;
 	case -I2C_MASTER_ERROR_CLKT:	Print ("Clock stretch timeout\n");	break;
 	case -I2C_MASTER_DATA_LEFT:	Print ("Short transfer\n");		break;
+	case -I2C_MASTER_TIMEOUT:	Print ("Transfer timeout");		break;
+	case -I2C_MASTER_BUS_BUSY:	Print ("Bus is busy");			break;
 	case 0:				Print ("No data\n");			break;
 	default:			Print ("Unknown I2C error\n");		break;
 	}

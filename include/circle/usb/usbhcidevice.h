@@ -2,7 +2,7 @@
 /// \file usbhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,14 +21,17 @@
 #define _circle_usb_usbhcidevice_h
 
 /// \class CUSBHCIDevice
-/// \brief Alias for CDWHCIDevice or CXHCIDevice, depending on Raspberry Pi model
+/// \brief Alias for CDWHCIDevice, CXHCIDevice or CUSBSubSystem, depending on Raspberry Pi model
 
 #if RASPPI <= 3
 	#include <circle/usb/dwhcidevice.h>
 	#define CUSBHCIDevice	CDWHCIDevice
-#else
+#elif RASPPI == 4
 	#include <circle/usb/xhcidevice.h>
 	#define CUSBHCIDevice	CXHCIDevice
+#else
+	#include <circle/usb/usbsubsystem.h>
+	#define CUSBHCIDevice	CUSBSubSystem
 #endif
 
 #endif

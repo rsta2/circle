@@ -2,7 +2,7 @@
 // xhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +39,8 @@ class CXHCIDevice : public CUSBHostController	/// USB host controller interface 
 {
 public:
 	CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer,
-		     boolean bPlugAndPlay = FALSE);
+		     boolean bPlugAndPlay = FALSE, unsigned nDevice = 0,
+		     CXHCISharedMemAllocator *pSharedMemAllocator = 0);
 	~CXHCIDevice (void);
 
 	boolean Initialize (boolean bScanDevices = TRUE);
@@ -74,11 +75,14 @@ private:
 	CInterruptSystem *m_pInterruptSystem;
 	boolean m_bInterruptConnected;
 
-#ifndef USE_XHCI_INTERNAL
+	unsigned m_nDevice;
+
+#if RASPPI == 4 && !defined (USE_XHCI_INTERNAL)
 	CBcmPCIeHostBridge m_PCIeHostBridge;
 #endif
 
-	CXHCISharedMemAllocator m_SharedMemAllocator;
+	CXHCISharedMemAllocator *m_pSharedMemAllocator;
+	boolean m_bOwnSharedMemAllocator;
 
 	CXHCIMMIOSpace *m_pMMIO;
 

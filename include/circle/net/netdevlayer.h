@@ -2,7 +2,7 @@
 // netdevlayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <circle/netdevice.h>
 #include <circle/net/netqueue.h>
 #include <circle/bcm54213.h>
+#include <circle/macb.h>
 #include <circle/types.h>
 
 class CNetDeviceLayer
@@ -52,8 +53,10 @@ private:
 	CNetQueue m_TxQueue;
 	CNetQueue m_RxQueue;
 
-#if RASPPI >= 4
+#if RASPPI == 4
 	CBcm54213Device m_Bcm54213;
+#elif RASPPI >= 5
+	CMACBDevice m_MACB;
 #endif
 };
 

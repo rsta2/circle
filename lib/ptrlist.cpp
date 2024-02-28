@@ -2,7 +2,7 @@
 // ptrlist.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2023  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,12 +42,12 @@ CPtrList::~CPtrList (void)
 	assert (m_pFirst == 0);
 }
 
-TPtrListElement *CPtrList::GetFirst (void)
+TPtrListElement *CPtrList::GetFirst (void) const
 {
 	return m_pFirst;
 }
 
-TPtrListElement *CPtrList::GetNext (TPtrListElement *pElement)
+TPtrListElement *CPtrList::GetNext (TPtrListElement *pElement) const
 {
 	assert (pElement != 0);
 	assert (pElement->nMagic == PTR_LIST_MAGIC);
@@ -172,7 +172,7 @@ void CPtrList::Remove (TPtrListElement *pElement)
 	delete pElement;
 }
 
-TPtrListElement *CPtrList::Find (void *pPtr)
+TPtrListElement *CPtrList::Find (void *pPtr) const
 {
 	for (TPtrListElement *pElement = m_pFirst; pElement != 0; pElement = pElement->pNext)
 	{

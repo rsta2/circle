@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,10 @@
 #include <circle/bcm2836.h>
 #include <circle/machineinfo.h>
 #include <circle/memory.h>
+#include <circle/interrupt.h>
+#include <circle/southbridge.h>
+#include <circle/actled.h>
+#include <circle/timer.h>
 #include <circle/chainboot.h>
 #include <circle/qemu.h>
 #include <circle/synchronize.h>
@@ -97,6 +101,9 @@ void halt (void)
 	u64 nMPIDR;
 	asm volatile ("mrs %0, mpidr_el1" : "=r" (nMPIDR));
 #endif
+#if RASPPI >= 5
+	nMPIDR >>= 8;
+#endif
 	unsigned nCore = nMPIDR & (CORES-1);
 
 	// core 0 must not halt until all secondary cores have been halted
@@ -148,6 +155,18 @@ void halt (void)
 	}
 }
 
+void error_halt (unsigned errnum)
+{
+	CActLED ActLED;
+
+	while (1)
+	{
+		ActLED.Blink (errnum, 100, 300);
+
+		CTimer::SimpleMsDelay (1000);
+	}
+}
+
 void reboot (void)					// by PlutoniumBob@raspi-forum
 {
 	PeripheralEntry ();
@@ -159,6 +178,23 @@ void reboot (void)					// by PlutoniumBob@raspi-forum
 
 	for (;;);					// wait for reset
 }
+
+#if RASPPI >= 5
+
+void poweroff (void)
+{
+	asm volatile
+	(
+		"mov	x0, %0\n"
+		"smc	#0\n"
+
+		:: "r" (0x84000008UL)			// function code SYSTEM_OFF
+	);
+
+	for (;;);
+}
+
+#endif
 
 #if AARCH == 32
 
@@ -217,12 +253,12 @@ void sysinit (void)
 		halt ();
 	}
 
-	CMachineInfo MachineInfo;
-
 	CMemorySystem Memory;
 
+	CMachineInfo MachineInfo;
+
 #if RASPPI >= 4
-	MachineInfo.FetchDTB ();
+	Memory.SetupHighMem ();
 #endif
 
 	// set circle_version_string[]
@@ -243,6 +279,20 @@ void sysinit (void)
 
 	strcpy (circle_version_string, Version);
 
+	CInterruptSystem InterruptSystem;
+	if (!InterruptSystem.Initialize ())
+	{
+		error_halt (2);
+	}
+
+#if RASPPI >= 5 && !defined (NO_SOUTHBRIDGE_EARLY)
+	CSouthbridge Southbridge (&InterruptSystem);
+	if (!Southbridge.Initialize ())
+	{
+		error_halt (3);
+	}
+#endif
+
 	// call constructors of static objects
 	extern void (*__init_start) (void);
 	extern void (*__init_end) (void);
@@ -256,6 +306,7 @@ void sysinit (void)
 	{
 		if (IsChainBootEnabled ())
 		{
+			InterruptSystem.Destructor ();
 			Memory.Destructor ();
 
 			DisableFIQs ();

@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,11 +24,15 @@ all: libsound.a
 
 include $(CIRCLEHOME)/Rules.mk
 
-OBJS	= dmasoundbuffers.o hdmisoundbasedevice.o i2ssoundbasedevice.o \
-	  pwmsoundbasedevice.o pwmsounddevice.o soundbasedevice.o \
-	  pcm512xsoundcontroller.o wm8960soundcontroller.o
+OBJS	= soundbasedevice.o
 
-ifeq ($(strip $(RASPPI)),4)
+ifneq ($(strip $(RASPPI)),5)
+OBJS	+= dmasoundbuffers.o hdmisoundbasedevice.o i2ssoundbasedevice.o \
+	   pwmsoundbasedevice.o pwmsounddevice.o \
+	   pcm512xsoundcontroller.o wm8960soundcontroller.o
+endif
+
+ifneq ($(filter 4 5,$(RASPPI)),)
 OBJS	+= usbsoundbasedevice.o usbsoundcontroller.o
 endif
 

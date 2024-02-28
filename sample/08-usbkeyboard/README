@@ -17,10 +17,10 @@ In "cooked mode" (used by default) a keyboard translation map is used to
 translate the physical key code into the right ASCII code or in an escape
 sequence for special keys (see the file doc/keyboard.txt). There are six of
 these language-depended maps at the moment (UK English, Spanish, French,
-Italian, US International and German). Select the wanted map at the end of the
-file include/circle/sysconfig.h before building (defaUlt map) or by using the
-file cmdline.txt (e.g. "keymap=UK"). The "Caps Lock" and "Num Lock" keys should
-work as expected. If you press Ctrl-Alt-Del the system reboots.
+Italian, US International, German and Dvorak). Select the wanted map at the end
+of the file include/circle/sysconfig.h before building (defaUlt map) or by using
+the file cmdline.txt (e.g. "keymap=UK"). The "Caps Lock" and "Num Lock" keys
+should work as expected. If you press Ctrl-Alt-Del the system reboots.
 
 In "raw mode" the physical key codes of the pressed keys are send to the
 key-pressed handler. To test this please change the #if in CKernel::Run() in the

@@ -36,7 +36,7 @@ static const char FromPl2303[] = "pl2303";
 #define SET_LINE_REQUEST	0x20
 
 CUSBSerialPL2303Device::CUSBSerialPL2303Device (CUSBFunction *pFunction)
-:	CUSBSerialDevice (pFunction)
+:	CUSBSerialHostDevice (pFunction)
 {
 }
 
@@ -46,7 +46,7 @@ CUSBSerialPL2303Device::~CUSBSerialPL2303Device (void)
 
 boolean CUSBSerialPL2303Device::Configure (void)
 {
-	if (!CUSBSerialDevice::Configure ())
+	if (!CUSBSerialHostDevice::Configure ())
 	{
 		CLogger::Get ()->Write (FromPl2303, LogError, "Cannot configure serial device");
 

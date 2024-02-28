@@ -2,7 +2,7 @@
 // translationtable64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,19 +24,23 @@
 #include <circle/util.h>
 #include <assert.h>
 
-// Granule size is 64KB. Only EL1 stage 1 translation is enabled with 32 bits IPA
-// (= PA) size (4GB).
+// Granule size is 64KB. Only EL1 stage 1 translation is enabled.
 
 #if RASPPI == 3
 // We create one level 2 (first lookup level) translation table with 3 table
 // entries (total 1.5GB) which point to a level 3 (final lookup level) translation
 // table each with 8192 page entries a 64KB (total 512MB).
 #define LEVEL2_TABLE_ENTRIES	3
-#elif RASPPI >= 4
+#elif RASPPI == 4
 // We create one level 2 (first lookup level) translation table with 128 table
 // entries (total 64GB) which point to a level 3 (final lookup level) translation
 // table each with 8192 page entries a 64KB (total 512MB).
 #define LEVEL2_TABLE_ENTRIES	128
+#elif RASPPI >= 5
+// We create one level 2 (first lookup level) translation table with 256 table
+// entries (total 128GB) which point to a level 3 (final lookup level) translation
+// table each with 8192 page entries a 64KB (total 512MB).
+#define LEVEL2_TABLE_ENTRIES	256
 #endif
 
 CTranslationTable::CTranslationTable (size_t nMemSize)
@@ -52,10 +56,18 @@ CTranslationTable::CTranslationTable (size_t nMemSize)
 	{
 		u64 nBaseAddress = (u64) nEntry * ARMV8MMU_TABLE_ENTRIES * ARMV8MMU_LEVEL3_PAGE_SIZE;
 
-#if RASPPI >= 4
+#if RASPPI == 4
 		if (   nBaseAddress >= 4*GIGABYTE
 		    && !(   MEM_PCIE_RANGE_START_VIRTUAL <= nBaseAddress
 			 && nBaseAddress <= MEM_PCIE_RANGE_END_VIRTUAL))
+		{
+			continue;
+		}
+#elif RASPPI >= 5
+		if (   nBaseAddress >= 4*GIGABYTE
+		    && !(MEM_IOMEM_AXI_START <= nBaseAddress && nBaseAddress <= MEM_IOMEM_AXI_END)
+		    && !(MEM_IOMEM_SOC_START <= nBaseAddress && nBaseAddress <= MEM_IOMEM_SOC_END)
+		    && !(MEM_IOMEM_PCIE_START <= nBaseAddress && nBaseAddress <= MEM_IOMEM_PCIE_END))
 		{
 			continue;
 		}

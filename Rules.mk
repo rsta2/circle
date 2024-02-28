@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 450301
+CIRCLEVER = 460000
 
 CIRCLEHOME ?= ..
 
@@ -111,8 +111,12 @@ else ifeq ($(strip $(RASPPI)),4)
 ARCHCPU	?= -mcpu=cortex-a72 -mlittle-endian
 ARCH	+= -DAARCH=64 $(ARCHCPU)
 TARGET	?= kernel8-rpi4
+else ifeq ($(strip $(RASPPI)),5)
+ARCHCPU	?= -mcpu=cortex-a76 -mlittle-endian
+ARCH	+= -DAARCH=64 $(ARCHCPU)
+TARGET	?= kernel_2712
 else
-$(error RASPPI must be set to 3 or 4)
+$(error RASPPI must be set to 3, 4 or 5)
 endif
 PREFIX	= $(PREFIX64)
 LOADADDR = 0x80000

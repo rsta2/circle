@@ -25,7 +25,11 @@
 #include "p9compat.h"
 #endif
 
+#if RASPPI <= 4
 #define EMMCREGS	(VIRTIO+0x300000)
+#else
+#define EMMCREGS	(VIRTIO+0x1100000)
+#endif
 
 enum {
 	Extfreq		= 100*Mhz,	/* guess external clock frequency if */
@@ -181,6 +185,10 @@ struct Ctlr {
 #else
 	#define CACHELINESZ	(64)
 #endif
+
+#if RASPPI >= 5
+	int	blksize;
+#endif
 };
 
 static Ctlr emmc;
@@ -231,6 +239,21 @@ emmcclk(uint freq)
 		print("emmc: can't set clock to %ud\n", freq);
 }
 
+#if RASPPI >= 5
+
+static int
+dataready(void *p)
+{
+	int mask = *(int *)p;
+	int i;
+
+	volatile u32int *r = (u32int*)EMMCREGS;
+	i = r[Interrupt];
+	return i & (mask|Err);
+}
+
+#endif
+
 static int
 datadone(void*dummy)
 {
@@ -276,6 +299,14 @@ emmcinit(void)
 	WR(Control1, Srstdata);
 	delay(10);
 	WR(Control1, 0);
+#if RASPPI >= 5
+	/* See: https://forums.raspberrypi.com/viewtopic.php?t=362326#p2174597 */
+	/* Enable SD Bus Power VDD1 at 3.3V */
+	u32int control0 = r[Control0];
+	control0 |= 0x0F << 8;
+	WR(Control0, control0);
+	microdelay(2000);
+#endif
 	return 0;
 }
 
@@ -471,6 +502,9 @@ emmciosetup(int write, void *buf, int bsize, int bcount)
 {
 	USED(write);
 	USED(buf);
+#if RASPPI >= 5
+	emmc.blksize = bsize;
+#endif
 	WR(Blksizecnt, bcount<<16 | bsize);
 }
 
@@ -478,7 +512,13 @@ static void
 emmcio(int write, uchar *buf, int len)
 {
 	volatile u32int *r;
+#if RASPPI <= 4
 	uchar *dmabuf = 0;
+#else
+	u32int mask = write ? Writerdy : Readrdy;
+	u32int *p = (u32int *)buf;
+	int bytes, words;
+#endif
 	int i;
 
 	r = (u32int*)EMMCREGS;
@@ -488,6 +528,7 @@ emmcio(int write, uchar *buf, int len)
 		okay(0);
 		nexterror();
 	}
+#if RASPPI <= 4
 	if(((unsigned long)buf & (CACHELINESZ-1)) ||
 	    (len & (CACHELINESZ-1))){
 		assert(len <= DMABUFSZ);
@@ -508,6 +549,37 @@ emmcio(int write, uchar *buf, int len)
 		if(dmabuf)
 			memcpy(buf, dmabuf, len);
 	}
+#else
+	/* Use programmed I/O instead of DMA */
+	while(len){
+		tsleep(&emmc.r, dataready, &mask, 1000);
+		i = r[Interrupt]&~Cardintr;
+		if((i & mask) == 0){
+			print("emmcio: %d data timeout intr %x stat %x\n",
+				write, i, r[Status]);
+			WR(Interrupt, i);
+			error(Eio);
+		}
+		if(i & Err){
+			print("emmcio: %d data error intr %x stat %x\n",
+				write, i, r[Status]);
+			WR(Interrupt, i);
+			error(Eio);
+		}
+		if(i)
+			r[Interrupt] = i;
+		bytes = len < emmc.blksize ? len : emmc.blksize;
+		words = (bytes + 3) / 4;
+		if(write){
+			while(words--)
+				r[Data] = *p++;
+		}else{
+			while(words--)
+				*p++ = r[Data];
+		}
+		len -= bytes;
+	}
+#endif
 	WR(Irpten, r[Irpten]|Datadone|Err);
 	tsleep(&emmc.r, datadone, 0, 3000);
 	i = r[Interrupt]&~Cardintr;
@@ -537,11 +609,12 @@ mmcinterrupt(Ureg*regs, void*param)
 
 	r = (u32int*)EMMCREGS;
 	i = r[Interrupt];
+	if(0)print("mmcinterrupt: intr %x\n", i);
 	if(i&(Datadone|Err))
 		wakeup(&emmc.r);
 	if(i&Cardintr)
 		wakeup(&emmc.cardr);
-	WR(Irpten, r[Irpten] & ~i);
+	r[Irpten] &= ~i;
 }
 
 SDio sdio = {

@@ -1,6 +1,6 @@
 README
 
-This sample uses the on-board WLAN device of the Raspberry Pi 3, 4 and Zero W to
+This sample uses the on-board WLAN device of the Raspberry Pi 3, 4, 5 and Zero W to
 connect to a WLAN and to update the system time from a NTP server. Currently
 only WPA[2] enabled WLANs can be joined by default. The WLAN driver has been
 ported from the Plan 9 operating system. Furthermore the ported "WPA Supplicant"
@@ -32,6 +32,9 @@ controllers of the Raspberry Pi:
 	brcmfmac43456-sdio.bin
 	brcmfmac43456-sdio.txt
 	brcmfmac43456-sdio.clm_blob
+	brcmfmac43455-sdio.raspberrypi,5-model-b.bin
+	brcmfmac43455-sdio.raspberrypi,5-model-b.txt
+	brcmfmac43455-sdio.raspberrypi,5-model-b.clm_blob
 
 These files can be downloaded as follows (uses the "wget" tool):
 

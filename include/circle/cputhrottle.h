@@ -2,7 +2,7 @@
 // cputhrottle.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -143,6 +143,7 @@ private:
 	void *m_pThrottledParam;
 
 	boolean m_bFanConnected;
+	boolean m_bFanActiveLow;
 	CGPIOPin m_FanPin;
 
 	static CCPUThrottle *s_pThis;

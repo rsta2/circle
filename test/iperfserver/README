@@ -1,0 +1,27 @@
+README
+
+This test program is a server for the iperf (version 2) network performance
+measurement tool. It is only working on Raspberry Pi models with on-board
+Ethernet controller. You need a second computer (host) with iperf installed in
+your local network to use it. iperf2 can be downloaded from (go to "Files" for
+the source code to be build on Linux machines):
+
+	https://sourceforge.net/projects/iperf2/
+
+Before building the sample you may have to update the network configuration
+(DHCP is used by default) in kernel.cpp to meet your local network
+configuration. Don't forget to connect your local Ethernet to the Ethernet
+connector of the Raspberry Pi.
+
+After initialization the sample program is waiting for incoming TCP connections
+on port 5001. Try the "iperf -c" (client) command - as given on the screen of
+your Raspberry Pi - from the host computer. Your Raspberry Pi should inform about
+an incoming connection on the screen with the IP address and port number of the
+client. After 10 seconds iperf will stop sending data and displays the
+performance results. The Raspberry Pi should do the same.
+
+Please note that this sample program allows unidirectional TCP connections only
+(iperf options -u, -d, -r cannot be used).
+
+When you add the option "fast=true" to the file cmdline.txt on the SD card, the
+Raspberry Pi runs at full speed. The bandwidth may be increased then.
