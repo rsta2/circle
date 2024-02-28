@@ -614,7 +614,7 @@ mmcinterrupt(Ureg*regs, void*param)
 		wakeup(&emmc.r);
 	if(i&Cardintr)
 		wakeup(&emmc.cardr);
-	WR(Irpten, r[Irpten] & ~i);
+	r[Irpten] &= ~i;
 }
 
 SDio sdio = {
