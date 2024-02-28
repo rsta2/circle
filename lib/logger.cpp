@@ -108,7 +108,7 @@ boolean CLogger::Initialize (CDevice *pTarget)
 	       , CIRCLE_VERSION_STRING, CMachineInfo::Get ()->GetMachineName (),
 	         (const char *) RAMSize);
 
-	Write ("logger", LogDebug, "Revision code is %x, compiler has been %s",
+	Write ("logger", LogDebug, "Revision code is %04x, compiler has been %s",
 	       CMachineInfo::Get ()->GetRevisionRaw (), (const char *) Compiler);
 
 	return TRUE;

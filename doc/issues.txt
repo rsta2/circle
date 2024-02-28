@@ -9,8 +9,8 @@ Known issues of Circle are:
   source directory in this case and always after changing the configuration!
 
 * There are known issues with the included USB library (e.g. no error recovery,
-  limited split support, no isochronous support). You should only attach the USB
-  devices, which are needed for your application!
+  limited split support, limited isochronous support). You should only attach the
+  USB devices, which are needed for your application!
 
 * Circle is not a real-time OS. That means different simultaneous operations may
   interfere in respect of its timing behaviour. The provided samples are tested to
@@ -47,6 +47,9 @@ Known issues of Circle are:
   when a display is not attached. This is different from earlier models. To run
   most of the sample programs headless, you have to enable the system option
   SCREEN_HEADLESS in the file include/circle/sysconfig.h.
+
+* The WLAN connection is delicate on the Raspberry Pi 5, when a HDMI display is
+  used at the same time.
 
 
 You can see or report further issues here:
