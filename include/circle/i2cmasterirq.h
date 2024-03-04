@@ -2,7 +2,7 @@
 /// \file i2cmasterirq.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -102,17 +102,17 @@ public:
 	/// \param nReadCount   Number of bytes to be read
 	/// \return 0 if success or < 0 on failure
 	int StartWriteRead (u8 ucAddress,
-				    const void *pWriteBuffer, unsigned nWriteCount,
-				    void *pReadBuffer, unsigned nReadCount);
+			    const void *pWriteBuffer, unsigned nWriteCount,
+			    void *pReadBuffer, unsigned nReadCount);
 
 private:
 	void InterruptHandler (void);
 	static void InterruptStub (void *pParam);
 
 	int StartTransfer (u8 ucAddress,
-		    const void *pWriteBuffer, unsigned nWriteCount,
-		    void *pReadBuffer, unsigned nReadCount,
-			bool bValidateReadBuffer, bool bValidateWriteBuffer);
+			   const void *pWriteBuffer, unsigned nWriteCount,
+			   void *pReadBuffer, unsigned nReadCount,
+			   bool bValidateReadBuffer, bool bValidateWriteBuffer);
 	void CallCompletionRoutine();
 
 private:

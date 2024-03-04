@@ -2,11 +2,12 @@
 // i2cmasterirq.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // Large portions are:
 //	Copyright (C) 2011-2013 Mike McCauley
 //	Copyright (C) 2014, 2015, 2016 by Arjan van Vught <info@raspberrypi-dmx.nl>
+//	Copyright (C) 2024 Sebastien Nicolas <seba1978@gmx.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -220,16 +221,16 @@ int CI2CMasterIRQ::Write (u8 ucAddress, const void *pBuffer, unsigned nCount)
 }
 
 int CI2CMasterIRQ::StartWriteRead (u8 ucAddress,
-			    const void *pWriteBuffer, unsigned nWriteCount,
-			    void *pReadBuffer, unsigned nReadCount)
+				   const void *pWriteBuffer, unsigned nWriteCount,
+				   void *pReadBuffer, unsigned nReadCount)
 {
 	return StartTransfer(ucAddress, pWriteBuffer, nWriteCount, pReadBuffer, nReadCount, TRUE, TRUE);
 }
 
 int CI2CMasterIRQ::StartTransfer (u8 ucAddress,
-					const void *pWriteBuffer, unsigned nWriteCount,
-					void *pReadBuffer, unsigned nReadCount,
-					bool bValidateReadBuffer, bool bValidateWriteBuffer)
+				  const void *pWriteBuffer, unsigned nWriteCount,
+				  void *pReadBuffer, unsigned nReadCount,
+				  bool bValidateReadBuffer, bool bValidateWriteBuffer)
 {
 	assert (m_bValid);
 
