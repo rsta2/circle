@@ -62,6 +62,7 @@ public:
 	};
 
 public:
+	/// \param pInterruptSystem Pointer to the interrupt system object
 	/// \param nDevice   Device number (see: GPIO pin mapping)
 	/// \param bFastMode Use I2C fast mode (400 KHz) or standard mode (100 KHz) otherwise
 	/// \param nConfig   GPIO mapping configuration (see: GPIO pin mapping)
