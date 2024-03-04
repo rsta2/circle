@@ -60,19 +60,15 @@ boolean CKernel::Initialize (void)
 void CKernel::exec_test(int loopcount, const char *name, fn_ptr fn) 
 {
     unsigned cta, ctb;
-#if RASPPI > 3    
-    asm volatile ("msr DAIFSet, #2"); // disable interrupts
-#endif    
+
+    DisableIRQs();
     ctb = CTimer::GetClockTicks();
     for (int i = 0; i < loopcount; i++)
     {
 	(*fn)();
     }
     cta = CTimer::GetClockTicks();
-#if RASPPI > 3    
-    asm volatile ("msr DAIFClr, #2"); // enable interrupts
-#endif    
-    
+    EnableIRQs();
     log ("%s,\t%d loops:\t%03dus,\t%.3fus avg.",
 	 name, loopcount, (cta - ctb), (float)(cta - ctb) / (float)loopcount);
     CTimer::SimpleMsDelay (20);
