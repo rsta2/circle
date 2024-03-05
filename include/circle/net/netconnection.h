@@ -2,7 +2,7 @@
 // netconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,8 +43,12 @@ public:
 	virtual ~CNetConnection (void);
 
 	const u8 *GetForeignIP (void) const;
+	u16 GetForeignPort (void) const;
 	u16 GetOwnPort (void) const;
 	int GetProtocol (void) const;
+
+	// returns: string representation for current connection state
+	virtual const char *GetStateName (void) const;
 
 	virtual int Connect (void) = 0;
 	virtual int Accept (CIPAddress *pForeignIP, u16 *pForeignPort) = 0;

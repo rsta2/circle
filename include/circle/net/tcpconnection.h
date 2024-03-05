@@ -2,7 +2,7 @@
 // tcpconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -69,6 +69,8 @@ public:
 			CNetworkLayer	*pNetworkLayer,
 			u16		 nOwnPort);
 	~CTCPConnection (void);
+
+	const char *GetStateName (void) const;
 
 	int Connect (void);
 	int Accept (CIPAddress *pForeignIP, u16 *pForeignPort);
@@ -162,6 +164,8 @@ private:
 	CRetransmissionTimeoutCalculator m_RTOCalculator;
 
 	static unsigned s_nConnections;
+
+	static const char *s_pStateName[];
 };
 
 #endif
