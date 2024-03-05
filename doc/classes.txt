@@ -27,6 +27,7 @@ Base library
 * CGenericLock: Locks a resource with or without scheduler.
 * CHeapAllocator: Allocates blocks from a flat memory region.
 * CI2CMaster: Driver for I2C master devices.
+* CI2CMasterIRQ: Driver for I2C master devices - async using IRQ.
 * CI2CSlave: Driver for I2C slave device.
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CKernelOptions: Providing kernel options from file cmdline.txt (see doc/cmdline.txt).
