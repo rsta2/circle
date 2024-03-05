@@ -88,6 +88,7 @@ Providing info patch for I2S input
 Providing patch for WLAN AP mode
 Adding SMI master driver and WS2812OverSMI addon
 USB CDC ACM (serial) gadget driver
+IRQ-driven I2C master
 
 Maciej Sokolowski
 Adding WM8960 support to I2S sound driver
