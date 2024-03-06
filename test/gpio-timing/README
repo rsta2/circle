@@ -1,3 +1,6 @@
 README
 
-Measure the time of some simple GPIO functions using GetClockTicks(). After 10 iterations, the system reboots.
+Test by @pottendo
+
+Measure the time of some simple GPIO functions using GetClockTicks().
+After 10 iterations, the system reboots.

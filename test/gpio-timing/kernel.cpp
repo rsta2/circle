@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,26 +21,21 @@
 #include <circle/machineinfo.h>
 #include <circle/cputhrottle.h>
 
-CActLED m_ActLED;
+static CActLED m_ActLED;
 
 #define	PIGPIO_DATA 17
 static CGPIOPin IO_DAT;
+
+LOGMODULE ("kernel");
 
 CKernel::CKernel (void) :
     mScreen (mOptions.GetWidth (), mOptions.GetHeight ()),
     mTimer (&mInterrupt),
     mLogger (mOptions.GetLogLevel (), &mTimer)
 {
-    if (mScreen.Initialize() == true)
-    {
-	mLogger.Initialize(&mScreen);
-    }
-    else if (mSerial.Initialize(115200) == true)
-    {
-	// as HDMI init fails in my setup, logging is needed via serial
-    	mLogger.Initialize(&mSerial);
-    }
     IO_DAT.AssignPin(PIGPIO_DATA); IO_DAT.SetMode(GPIOModeInput, true);
+
+    m_ActLED.Blink (5);	// show we are alive
 }
 
 CKernel::~CKernel (void)
@@ -49,15 +44,43 @@ CKernel::~CKernel (void)
 
 boolean CKernel::Initialize (void)
 {
-    boolean bOK;
-    bOK = mInterrupt.Initialize();
-    if (bOK) bOK = mTimer.Initialize();
-    return bOK;
+	boolean bOK = TRUE;
+
+	if (bOK)
+	{
+		bOK = mScreen.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = mSerial.Initialize (115200);
+	}
+
+	if (bOK)
+	{
+		CDevice *pTarget = m_DeviceNameService.GetDevice (mOptions.GetLogDevice (), FALSE);
+		if (pTarget == 0)
+		{
+			pTarget = &mScreen;
+		}
+
+		bOK = mLogger.Initialize (pTarget);
+	}
+
+	if (bOK)
+	{
+		bOK = mInterrupt.Initialize ();
+	}
+
+	if (bOK)
+	{
+		bOK = mTimer.Initialize ();
+	}
+
+	return bOK;
 }
 
-#define log(...) mLogger.Write("", LogNotice, __VA_ARGS__)
-
-void CKernel::exec_test(int loopcount, const char *name, fn_ptr fn) 
+void CKernel::exec_test(int loopcount, const char *name, fn_ptr fn)
 {
     unsigned cta, ctb;
 
@@ -69,7 +92,7 @@ void CKernel::exec_test(int loopcount, const char *name, fn_ptr fn)
     }
     cta = CTimer::GetClockTicks();
     EnableIRQs();
-    log ("%s,\t%d loops:\t%03dus,\t%.3fus avg.",
+    LOGNOTE ("%s,\t%d loops:\t%03dus,\t%.3fus avg.",
 	 name, loopcount, (cta - ctb), (float)(cta - ctb) / (float)loopcount);
     CTimer::SimpleMsDelay (20);
 }
@@ -79,13 +102,13 @@ TShutdownMode CKernel::Run (void)
     CMachineInfo *mi = CMachineInfo::Get();
     CCPUThrottle CPUThrottle;
     
-    log("timing of GPIOs on %s", mi->GetMachineName());
+    LOGNOTE("timing of GPIOs on %s", mi->GetMachineName());
     CPUThrottle.Update();
     if (CPUThrottle.SetSpeed(CPUSpeedMaximum, true) != CPUSpeedUnknown)
     {	
-	log("maxed freq to %dMHz", CPUThrottle.GetClockRate() / 1000000L);
+	LOGNOTE("maxed freq to %dMHz", CPUThrottle.GetClockRate() / 1000000L);
     }
-    log("Temp %dC (max=%dC), dynamic adaption%spossible, current freq = %dMHz (max=%dMHz)", 
+    LOGNOTE("Temp %dC (max=%dC), dynamic adaption%spossible, current freq = %dMHz (max=%dMHz)",
 			CPUThrottle.GetTemperature(),
 			CPUThrottle.GetMaxTemperature(), 
 			CPUThrottle.IsDynamic() ? " " : " not ",
@@ -93,7 +116,7 @@ TShutdownMode CKernel::Run (void)
 			CPUThrottle.GetMaxClockRate() / 1000000L);
     for (unsigned i = 1; i <= 10; i++)
     {
-	log("loop %d -------------------------------------------------", i);
+	LOGNOTE("loop %d -------------------------------------------------", i);
 	exec_test(1000, "LED on      ", []()->void { m_ActLED.On(); });
 	exec_test(1000, "LED off     ", []()->void { m_ActLED.Off(); });
 	exec_test(1000, "SetMode(Out)", []()->void { IO_DAT.SetMode(GPIOModeOutput, false); });

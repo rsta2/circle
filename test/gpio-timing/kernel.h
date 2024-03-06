@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 #ifndef _kernel_h
 #define _kernel_h
 
-//#include <circle/multicore.h>
 #include <circle/actled.h>
 #include <circle/types.h>
 #include <circle/screen.h>
@@ -28,10 +27,10 @@
 #include <circle/startup.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
+#include <circle/exceptionhandler.h>
 #include <circle/serial.h>
 #include <circle/logger.h>
 #include <circle/cputhrottle.h>
-#include <stdio.h>
 
 enum TShutdownMode
 {
@@ -40,8 +39,6 @@ enum TShutdownMode
 	ShutdownReboot
 };
 
-typedef void (*fn_ptr)(void);
-
 class CKernel
 {
 public:
@@ -49,15 +46,20 @@ public:
 	~CKernel (void);
 
 	boolean Initialize (void);
-	void exec_test(int loopcount, const char *name, fn_ptr f);
-	
+
 	TShutdownMode Run (void);
+
+private:
+	typedef void (*fn_ptr)(void);
+
+	void exec_test(int loopcount, const char *name, fn_ptr f);
 
 private:
 	CKernelOptions mOptions;
 	CDeviceNameService m_DeviceNameService;
 	CScreenDevice mScreen;
 	CSerialDevice mSerial;
+	CExceptionHandler m_ExceptionHandler;
 	CInterruptSystem mInterrupt;
 	CTimer mTimer;
 	CLogger mLogger;
