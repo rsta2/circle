@@ -45,7 +45,7 @@ public:
 	int Bind (u16 nOwnPort, int nProtocol);
 
 	// nOwnPort may be 0 (dynamic port assignment)
-	int Connect (CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol);
+	int Connect (const CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol);
 
 	int Listen (u16 nOwnPort, int nProtocol);
 	int Accept (CIPAddress *pForeignIP, u16 *pForeignPort, int hConnection);
@@ -58,7 +58,7 @@ public:
 	int Receive (void *pBuffer, int nFlags, int hConnection);
 
 	int SendTo (const void *pData, unsigned nLength, int nFlags,
-		    CIPAddress &rForeignIP, u16 nForeignPort, int hConnection);
+		    const CIPAddress &rForeignIP, u16 nForeignPort, int hConnection);
 
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,

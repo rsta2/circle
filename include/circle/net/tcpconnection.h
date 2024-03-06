@@ -62,7 +62,7 @@ class CTCPConnection : public CNetConnection
 public:
 	CTCPConnection (CNetConfig	*pNetConfig,		// active OPEN
 			CNetworkLayer	*pNetworkLayer,
-			CIPAddress	&rForeignIP,
+			const CIPAddress &rForeignIP,
 			u16		 nForeignPort,
 			u16		 nOwnPort);
 	CTCPConnection (CNetConfig	*pNetConfig,		// passive OPEN
@@ -79,7 +79,8 @@ public:
 	int Send (const void *pData, unsigned nLength, int nFlags);
 	int Receive (void *pBuffer, int nFlags);
 
-	int SendTo (const void *pData, unsigned nLength, int nFlags, CIPAddress	&rForeignIP, u16 nForeignPort);
+	int SendTo (const void *pData, unsigned nLength, int nFlags,
+		    const CIPAddress &rForeignIP, u16 nForeignPort);
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort);
 
 	int SetOptionBroadcast (boolean bAllowed);

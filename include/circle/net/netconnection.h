@@ -32,7 +32,7 @@ class CNetConnection
 public:
 	CNetConnection (CNetConfig	*pNetConfig,
 			CNetworkLayer	*pNetworkLayer,
-			CIPAddress	&rForeignIP,
+			const CIPAddress &rForeignIP,
 			u16		 nForeignPort,
 			u16		 nOwnPort,
 			int		 nProtocol);
@@ -57,7 +57,8 @@ public:
 	virtual int Send (const void *pData, unsigned nLength, int nFlags) = 0;
 	virtual int Receive (void *pBuffer, int nFlags) = 0;
 
-	virtual int SendTo (const void *pData, unsigned nLength, int nFlags, CIPAddress	&rForeignIP, u16 nForeignPort) = 0;
+	virtual int SendTo (const void *pData, unsigned nLength, int nFlags,
+			    const CIPAddress &rForeignIP, u16 nForeignPort) = 0;
 	virtual int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
 
 	virtual int SetOptionBroadcast (boolean bAllowed) = 0;

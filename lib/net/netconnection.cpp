@@ -22,7 +22,7 @@
 
 CNetConnection::CNetConnection (CNetConfig	*pNetConfig,
 				CNetworkLayer	*pNetworkLayer,
-				CIPAddress	&rForeignIP,
+				const CIPAddress &rForeignIP,
 				u16		 nForeignPort,
 				u16		 nOwnPort,
 				int		 nProtocol)

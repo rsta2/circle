@@ -143,7 +143,7 @@ static const char FromTCP[] = "tcp";
 
 CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 				CNetworkLayer	*pNetworkLayer,
-				CIPAddress	&rForeignIP,
+				const CIPAddress &rForeignIP,
 				u16		 nForeignPort,
 				u16		 nOwnPort)
 :	CNetConnection (pNetConfig, pNetworkLayer, rForeignIP, nForeignPort, nOwnPort, IPPROTO_TCP),
@@ -483,7 +483,7 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 }
 
 int CTCPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
-			    CIPAddress	&rForeignIP, u16 nForeignPort)
+			    const CIPAddress &rForeignIP, u16 nForeignPort)
 {
 	// ignore rForeignIP and nForeignPort
 	return Send (pData, nLength, nFlags);

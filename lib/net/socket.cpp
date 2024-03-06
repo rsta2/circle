@@ -2,7 +2,7 @@
 // socket.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -102,7 +102,7 @@ int CSocket::Bind (u16 nOwnPort)
 	return 0;
 }
 
-int CSocket::Connect (CIPAddress &rForeignIP, u16 nForeignPort)
+int CSocket::Connect (const CIPAddress &rForeignIP, u16 nForeignPort)
 {
 	if (nForeignPort == 0)
 	{
@@ -271,7 +271,7 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 }
 
 int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
-		     CIPAddress &rForeignIP, u16 nForeignPort)
+		     const CIPAddress &rForeignIP, u16 nForeignPort)
 {
 	if (m_hConnection < 0)
 	{

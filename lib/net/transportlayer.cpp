@@ -181,7 +181,7 @@ int CTransportLayer::Bind (u16 nOwnPort, int nProtocol)
 	return i;
 }
 
-int CTransportLayer::Connect (CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol)
+int CTransportLayer::Connect (const CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol)
 {
 	m_SpinLock.Acquire ();
 
@@ -348,7 +348,7 @@ int CTransportLayer::Receive (void *pBuffer, int nFlags, int hConnection)
 }
 
 int CTransportLayer::SendTo (const void *pData, unsigned nLength, int nFlags,
-			     CIPAddress &rForeignIP, u16 nForeignPort, int hConnection)
+			     const CIPAddress &rForeignIP, u16 nForeignPort, int hConnection)
 {
 	assert (hConnection >= 0);
 	if (   hConnection >= (int) m_pConnection.GetCount ()
