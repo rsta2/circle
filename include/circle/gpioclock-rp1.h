@@ -1,0 +1,80 @@
+//
+// gpioclock-rp1.h
+//
+// Circle - A C++ bare metal environment for Raspberry Pi
+// Copyright (C) 2024  R. Stange <rsta2@o2online.de>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+#ifndef _circle_gpioclock_rp1_h
+#define _circle_gpioclock_rp1_h
+
+#ifndef _circle_gpioclock_h
+	#error Do not include this header file directly!
+#endif
+
+#include <circle/types.h>
+
+enum TGPIOClock					// TODO: only GPIOClock0 supported so far
+{
+	//GPIOClockSys		= 0,
+	//GPIOClockSlowSys	= 1,
+
+	//GPIOClockDMA		= 3,
+	//GPIOClockUART		= 4,
+
+	//GPIOClockPWM0		= 6,
+	//GPIOClockPWM1		= 7,
+	//GPIOClockAudioIn	= 8,
+	//GPIOClockAudioOut	= 9,
+	//GPIOClockI2S		= 10,
+
+	GPIOClock0		= 22,		// on GPIO4 Alt0 or GPIO20 Alt3
+	//GPIOClock1		= 23,		// on GPIO5 Alt0, GPIO18 Alt8 or GPIO21 Alt3
+	//GPIOClock2		= 24,		// on GPIO6 Alt0
+	//GPIOClock3		= 25,
+	//GPIOClock4		= 26,
+	//GPIOClock5		= 27,
+
+	GPIOClockUnknown	= 28
+};
+
+enum TGPIOClockSource
+{						// RPi 5:
+	GPIOClockSourceOscillator = 0		// 50 MHz
+};
+
+class CGPIOClock
+{
+public:
+	CGPIOClock (TGPIOClock Clock);
+	~CGPIOClock (void);
+
+	void Start (unsigned nDivI,		// 1..65535
+		    unsigned nDivF = 0);	// 0..65535
+
+	// returns FALSE if requested rate cannot be generated
+	boolean StartRate (unsigned nRateHZ);
+
+	void Stop (void);
+
+#ifndef NDEBUG
+	static void DumpStatus (boolean bEnabledOnly = TRUE);
+#endif
+	
+private:
+	TGPIOClock m_Clock;
+};
+
+#endif

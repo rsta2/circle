@@ -479,6 +479,7 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 
 unsigned CMachineInfo::GetGPIOClockSourceRate (unsigned nSourceId)
 {
+#if RASPPI <= 4
 	if (m_nModelMajor <= 3)
 	{
 		switch (nSourceId)
@@ -507,6 +508,16 @@ unsigned CMachineInfo::GetGPIOClockSourceRate (unsigned nSourceId)
 			break;
 		}
 	}
+#else
+	switch (nSourceId)
+	{
+	case GPIOClockSourceOscillator:
+		return 50000000;
+
+	default:
+		break;
+	}
+#endif
 
 	return GPIO_CLOCK_SOURCE_UNUSED;
 }

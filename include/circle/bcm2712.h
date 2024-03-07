@@ -58,6 +58,11 @@
 #define ARM_GPIO2_IODIR0	(ARM_GPIO2_BASE + 0x08)
 
 //
+// General Purpose I/O clocks
+//
+#define ARM_GPIO_CLK_BASE	0x1F00018000UL
+
+//
 // Reset controller
 //
 #define ARM_RESET_BASE		0x1001504318UL

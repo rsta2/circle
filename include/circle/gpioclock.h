@@ -4,6 +4,10 @@
 #ifndef _circle_gpioclock_h
 #define _circle_gpioclock_h
 
+#if RASPPI >= 5
+	#include <circle/gpioclock-rp1.h>
+#else
+
 #include <circle/types.h>
 
 enum TGPIOClock
@@ -47,5 +51,7 @@ private:
 	TGPIOClock m_Clock;
 	TGPIOClockSource m_Source;
 };
+
+#endif
 
 #endif
