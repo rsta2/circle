@@ -84,13 +84,7 @@ public:
 
 	void AcknowledgeInterrupt (void);
 
-	/// \brief Set GPIO pins in bank 0 to input or output (Raspberry Pi 5 only)
-	/// \param nInputMask Set the GPIO pins to input, for which the respective bits are set
-	/// \param nOutputMask Set the GPIO pins to output, for which the respective bits are set
-	/// \note The pins must be set to input or output before in the constructor
-	///	  or using SetMode().
 	static void SetModeAll (u32 nInputMask, u32 nOutputMask);
-
 	static void WriteAll (u32 nValue, u32 nMask);
 	static u32 ReadAll (void);
 

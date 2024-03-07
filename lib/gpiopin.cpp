@@ -2,7 +2,7 @@
 // gpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -312,6 +312,51 @@ void CGPIOPin::AcknowledgeInterrupt (void)
 	write32 (ARM_GPIO_GPEDS0 + m_nRegOffset, m_nRegMask);
 
 	PeripheralExit ();
+}
+
+void CGPIOPin::SetModeAll (u32 nInputMask, u32 nOutputMask)
+{
+	assert (!(nInputMask & nOutputMask));
+	u32 nAffectedMask = nInputMask | nOutputMask;
+
+	s_SpinLock.Acquire ();
+
+	for (unsigned i = 0; i < 4; i++)
+	{
+		unsigned nBasePin = i * 10;
+		if (!(nAffectedMask & (0x3FF << nBasePin)))
+		{
+			continue;
+		}
+
+		uintptr nSelReg = ARM_GPIO_GPFSEL0 + i * 4;
+		u32 nValue = read32 (nSelReg);
+
+		for (unsigned j = 0; j < 10; j++)
+		{
+			unsigned nPin = nBasePin + j;
+			if (nPin > 31)
+			{
+				break;
+			}
+
+			u32 nPinMask = 1 << nPin;
+			if (nAffectedMask & nPinMask)
+			{
+				unsigned nShift = j * 3;
+				nValue &= ~(7 << nShift);
+
+				if (nOutputMask & nPinMask)
+				{
+					nValue |= 1 << nShift;
+				}
+			}
+		}
+
+		write32 (nSelReg, nValue);
+	}
+
+	s_SpinLock.Release ();
 }
 
 void CGPIOPin::WriteAll (u32 nValue, u32 nMask)

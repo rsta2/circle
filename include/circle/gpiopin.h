@@ -2,7 +2,7 @@
 // gpiopin.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -139,6 +139,12 @@ public:
 	/// \brief Manually acknowledge GPIO event detect status from interrupt handler
 	void AcknowledgeInterrupt (void);
 
+	/// \brief Set mode of GPIO0-31 to input or output
+	/// \param nInputMask Set the GPIO pins to input, for which the respective bits are set
+	/// \param nOutputMask Set the GPIO pins to output, for which the respective bits are set
+	/// \note The pins must be set to input or output before in the constructor
+	///	  or using SetMode().
+	static void SetModeAll (u32 nInputMask, u32 nOutputMask);
 	/// \param nValue Level of GPIO0-31 in the respective bits to be written (masked by nMask)
 	/// \param nMask  Bit mask for the written value (only those GPIOs are affected, for which
 	///		  the respective bit is set in nMask, the others are not touched)
