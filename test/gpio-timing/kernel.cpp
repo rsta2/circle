@@ -26,6 +26,7 @@ static CActLED m_ActLED;
 
 #define	PIGPIO_DATA 17
 static CGPIOPin IO_DAT;
+static u32 regsave;
 
 LOGMODULE ("kernel");
 
@@ -111,6 +112,9 @@ TShutdownMode CKernel::Run (void)
 			CPUThrottle.IsDynamic() ? " " : " not ",
 			CPUThrottle.GetClockRate() / 1000000L,
 			CPUThrottle.GetMaxClockRate() / 1000000L);
+
+    regsave = read32(ARM_GPIO_GPFSEL1); // save register
+    
     for (unsigned i = 1; i <= 10; i++)
     {
 	LOGNOTE("loop %d -------------------------------------------------", i);
@@ -118,28 +122,35 @@ TShutdownMode CKernel::Run (void)
 	exec_test(1000, "LED off     ", []()->void { m_ActLED.Off(); });
 	exec_test(1000, "SetMode(Out)", []()->void { IO_DAT.SetMode(GPIOModeOutput, false); });
  	exec_test(1000, "Write(H)    ", []()->void { IO_DAT.Write(HIGH); });
-	exec_test(1000, "WriteAll(H) ", []()->void { u32 v, m; v = 0xffffffff, m=0xffffffff; CGPIOPin::WriteAll(v, m); });
+	exec_test(1000, "WriteAll(H) ", []()->void { u32 v, m; v = 0xffffffff, m=((1<<(7*3)) | (1 << (8*3))); CGPIOPin::WriteAll(v, m); });
  	exec_test(1000, "Write(L)    ", []()->void { IO_DAT.Write(LOW); });
-	exec_test(1000, "WriteAll(L) ", []()->void { u32 v, m; v = 0x0, m=0xffffffff; CGPIOPin::WriteAll(v, m); });
+	exec_test(1000, "WriteAll(L) ", []()->void { u32 v, m; v = 0x0, m=((1<<(7*3)) | (1 << (8 * 3))); CGPIOPin::WriteAll(v, m); });
+	exec_test(1000, "Invert()    ", []()->void { IO_DAT.Invert(); });
 	exec_test(1000, "SetMode(In) ", []()->void { IO_DAT.SetMode(GPIOModeInput, false); });
 	exec_test(1000, "Read()      ", []()->void { (void)IO_DAT.Read(); });
 	exec_test(1000, "ReadAll()   ", []()->void { (void)CGPIOPin::ReadAll(); });
-#if RASPPI == 5
 	exec_test(1000, "SetModeAll(Out)",
-		  []()->void { u32 i, o; i = 0xffffffff, o=0x0; (void)CGPIOPin::SetModeAll(i, o); });
+		  []()->void { u32 i, o; i = (1<<17), o=(1<<18); (void)CGPIOPin::SetModeAll(i, o); });
 	exec_test(1000, "SetModeAll(In)",
-		  []()->void { u32 i, o; i = 0x0, o=0xffffffff; (void)CGPIOPin::SetModeAll(i, o); });
-#endif	
-#if 0 && RASPPI <= 4
+		  []()->void { u32 i, o; i = (1<<18), o=(1<<17); (void)CGPIOPin::SetModeAll(i, o); });
+#if RASPPI <= 4
  	exec_test(1000, "write ARM_GPIO_GPFSEL1 Out",
-		  []()->void { write32(ARM_GPIO_GPFSEL1, 0xffffffff); 
+		  []()->void {
+		      regsave |= ((1 << 7) * 3);
+		      write32(ARM_GPIO_GPFSEL1, regsave); 
 		  });
  	exec_test(1000, "write ARM_GPIO_GPFSEL1 In",
-		  []()->void { write32(ARM_GPIO_GPFSEL1, 0x0); });
+		  []()->void {
+		      regsave &= ~((1 << 7) * 3);
+		      write32(ARM_GPIO_GPFSEL1, regsave);
+		  });
  	exec_test(1000, "read ARM_GPIO_GPLEV0",
 		  []()->void { (void) read32(ARM_GPIO_GPLEV0); });
 	
-#endif	
+	u32 rv = read32(ARM_GPIO_GPLEV0);
+	u32 apirv = CGPIOPin::ReadAll();
+	LOGNOTE ("rv = 0x%08x apirv = 0x%08x", rv, apirv);
+#endif
 	CTimer::SimpleMsDelay (1000);
     }
     
