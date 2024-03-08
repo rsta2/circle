@@ -20,6 +20,7 @@
 #include "kernel.h"
 #include <circle/machineinfo.h>
 #include <circle/cputhrottle.h>
+#include <circle/memio.h>
 
 static CActLED m_ActLED;
 
@@ -45,28 +46,24 @@ CKernel::~CKernel (void)
 boolean CKernel::Initialize (void)
 {
 	boolean bOK = TRUE;
-
+	boolean serialOK;
+	
+	serialOK = mSerial.Initialize (115200);
 	if (bOK)
 	{
 		bOK = mScreen.Initialize ();
 	}
-
-	if (bOK)
+	CDevice *pTarget = m_DeviceNameService.GetDevice (mOptions.GetLogDevice (), FALSE);
+	if (pTarget == 0)
 	{
-		bOK = mSerial.Initialize (115200);
+	    if (bOK)
+		pTarget = &mScreen;
+	    else if (serialOK)
+		pTarget = &mSerial;
+	    else
+		m_ActLED.Blink(10); // we're screwed for logging, tell the user by blinking
 	}
-
-	if (bOK)
-	{
-		CDevice *pTarget = m_DeviceNameService.GetDevice (mOptions.GetLogDevice (), FALSE);
-		if (pTarget == 0)
-		{
-			pTarget = &mScreen;
-		}
-
-		bOK = mLogger.Initialize (pTarget);
-	}
-
+	bOK = mLogger.Initialize (pTarget);
 	if (bOK)
 	{
 		bOK = mInterrupt.Initialize ();
@@ -120,17 +117,29 @@ TShutdownMode CKernel::Run (void)
 	exec_test(1000, "LED on      ", []()->void { m_ActLED.On(); });
 	exec_test(1000, "LED off     ", []()->void { m_ActLED.Off(); });
 	exec_test(1000, "SetMode(Out)", []()->void { IO_DAT.SetMode(GPIOModeOutput, false); });
-	exec_test(1000, "Write()     ", []()->void { IO_DAT.Write(HIGH); });
+ 	exec_test(1000, "Write(H)    ", []()->void { IO_DAT.Write(HIGH); });
+	exec_test(1000, "WriteAll(H) ", []()->void { u32 v, m; v = 0xffffffff, m=0xffffffff; CGPIOPin::WriteAll(v, m); });
+ 	exec_test(1000, "Write(L)    ", []()->void { IO_DAT.Write(LOW); });
+	exec_test(1000, "WriteAll(L) ", []()->void { u32 v, m; v = 0x0, m=0xffffffff; CGPIOPin::WriteAll(v, m); });
 	exec_test(1000, "SetMode(In) ", []()->void { IO_DAT.SetMode(GPIOModeInput, false); });
 	exec_test(1000, "Read()      ", []()->void { (void)IO_DAT.Read(); });
-	exec_test(1000, "all fns     ", []()->void {
-	    m_ActLED.On();
-	    IO_DAT.SetMode(GPIOModeOutput, false);
-	    IO_DAT.Write(HIGH);
-	    IO_DAT.SetMode(GPIOModeInput, false);
-	    (void)IO_DAT.Read();
-	    m_ActLED.Off();
-	});
+	exec_test(1000, "ReadAll()   ", []()->void { (void)CGPIOPin::ReadAll(); });
+#if RASPPI == 5
+	exec_test(1000, "SetModeAll(Out)",
+		  []()->void { u32 i, o; i = 0xffffffff, o=0x0; (void)CGPIOPin::SetModeAll(i, o); });
+	exec_test(1000, "SetModeAll(In)",
+		  []()->void { u32 i, o; i = 0x0, o=0xffffffff; (void)CGPIOPin::SetModeAll(i, o); });
+#endif	
+#if 0 && RASPPI <= 4
+ 	exec_test(1000, "write ARM_GPIO_GPFSEL1 Out",
+		  []()->void { write32(ARM_GPIO_GPFSEL1, 0xffffffff); 
+		  });
+ 	exec_test(1000, "write ARM_GPIO_GPFSEL1 In",
+		  []()->void { write32(ARM_GPIO_GPFSEL1, 0x0); });
+ 	exec_test(1000, "read ARM_GPIO_GPLEV0",
+		  []()->void { (void) read32(ARM_GPIO_GPLEV0); });
+	
+#endif	
 	CTimer::SimpleMsDelay (1000);
     }
     
