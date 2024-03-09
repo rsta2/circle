@@ -26,44 +26,50 @@
 
 #include <circle/types.h>
 
-enum TGPIOClock					// TODO: only GPIOClock0 supported so far
+enum TGPIOClock
 {
-	//GPIOClockSys		= 0,
-	//GPIOClockSlowSys	= 1,
-
-	//GPIOClockDMA		= 3,
-	//GPIOClockUART		= 4,
-
-	//GPIOClockPWM0		= 6,
-	//GPIOClockPWM1		= 7,
-	//GPIOClockAudioIn	= 8,
-	//GPIOClockAudioOut	= 9,
-	//GPIOClockI2S		= 10,
+	GPIOClockPWM0		= 6,
+	GPIOClockPWM1		= 7,
+	GPIOClockAudioIn	= 8,
+	GPIOClockAudioOut	= 9,
+	GPIOClockI2S		= 10,
 
 	GPIOClock0		= 22,		// on GPIO4 Alt0 or GPIO20 Alt3
-	//GPIOClock1		= 23,		// on GPIO5 Alt0, GPIO18 Alt8 or GPIO21 Alt3
-	//GPIOClock2		= 24,		// on GPIO6 Alt0
-	//GPIOClock3		= 25,
-	//GPIOClock4		= 26,
-	//GPIOClock5		= 27,
+	GPIOClock1		= 23,		// on GPIO5 Alt0, GPIO18 Alt8 or GPIO21 Alt3
+	GPIOClock2		= 24,		// on GPIO6 Alt0
 
 	GPIOClockUnknown	= 28
 };
 
 enum TGPIOClockSource
-{						// RPi 5:
-	GPIOClockSourceOscillator = 0		// 50 MHz
+{
+	GPIOClockSourceNone = 0,
+
+	GPIOClockSourceXOscillator,		// 50 MHz
+
+	GPIOClockSourcePLLSys,			// 200 MHz
+	GPIOClockSourcePLLSysSec,		// 125 MHz
+	GPIOClockSourcePLLSysPriPh,		// 100 MHz
+
+	GPIOClockSourcePLLAudio,		// 61440 KHz
+	GPIOClockSourcePLLAudioSec,		// 192 MHz
+	GPIOClockSourcePLLAudioPriPh,		// 30720 KHz
+
+	GPIOClockSourceClkSys,			// 200 MHz
+
+	GPIOClockSourceUnknown
 };
 
 class CGPIOClock
 {
 public:
-	CGPIOClock (TGPIOClock Clock);
+	CGPIOClock (TGPIOClock Clock, TGPIOClockSource Source = GPIOClockSourceUnknown);
 	~CGPIOClock (void);
 
-	void Start (unsigned nDivI,		// 1..65535
+	void Start (unsigned nDivI,		// 1..65535, Audio/I2S: 1..255
 		    unsigned nDivF = 0);	// 0..65535
 
+	// assigns clock source automatically
 	// returns FALSE if requested rate cannot be generated
 	boolean StartRate (unsigned nRateHZ);
 
@@ -75,6 +81,14 @@ public:
 	
 private:
 	TGPIOClock m_Clock;
+	TGPIOClockSource m_Source;
+
+	unsigned m_nDivIntMax;
+	unsigned m_nFreqMax;
+	unsigned m_nAuxSrc;
+
+	static const unsigned MaxParents = 16;
+	static const u8 s_ParentAux[GPIOClockUnknown][MaxParents];
 };
 
 #endif
