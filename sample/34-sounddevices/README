@@ -1,6 +1,6 @@
 README 
 
-	On the Raspberry Pi 5 this sample always works in USB mode.
+	On the Raspberry Pi 5 this sample always works in USB and I2S mode.
 
 This sample plays a modulated 440 Hz tone via one of the following sound
 devices:

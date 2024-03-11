@@ -80,6 +80,15 @@
 #define ARM_MACB_BASE		0x1F00100000UL
 #define ARM_MACB_END		(ARM_MACB_BASE + 0x3FFF)
 
+//
+// I2S devices (RP1)
+//
+#define ARM_I2S0_BASE		0x1F000A0000UL
+#define ARM_I2S0_END		(ARM_I2S0_BASE + 0xFFF)
+
+#define ARM_I2S1_BASE		0x1F000A4000UL
+#define ARM_I2S1_END		(ARM_I2S0_BASE + 0xFFF)
+
 #endif
 
 #endif

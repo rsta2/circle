@@ -2,7 +2,7 @@
 // soundshell.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,9 +18,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "soundshell.h"
+#if RASPPI <= 4
 #include <circle/sound/pwmsoundbasedevice.h>
-#include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/sound/hdmisoundbasedevice.h>
+#endif
+#include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/sound/usbsoundbasedevice.h>
 #include <circle/sched/scheduler.h>
 #include <circle/timer.h>
@@ -53,7 +55,10 @@ const char CSoundShell::HelpMsg[] =
 	"Command\t\tDescription\t\t\t\t\t\tAlias\n"
 	"\n"
 	"start DEV [MODE] [CLK] [I2C]\n"
-	"\t\tStart sound device (snd{pwm|i2s|hdmi"
+	"\t\tStart sound device (snd{i2s"
+#if RASPPI <= 4
+	"|pwm|hdmi"
+#endif
 #if RASPPI >= 4
 	"|usb"
 #endif
@@ -335,6 +340,7 @@ boolean CSoundShell::Start (void)
 
 	// select the sound device
 	assert (m_pInterrupt != 0);
+#if RASPPI <= 4
 	if (strcmp (Token, "sndpwm") == 0)
 	{
 		if (nMode != ModeOutput)
@@ -346,7 +352,9 @@ boolean CSoundShell::Start (void)
 
 		m_pSound[nMode] = new CPWMSoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
-	else if (strcmp (Token, "sndi2s") == 0)
+	else
+#endif
+	if (strcmp (Token, "sndi2s") == 0)
 	{
 		CString ClockMode;
 		if (!GetToken (&ClockMode))
@@ -417,6 +425,7 @@ boolean CSoundShell::Start (void)
 			break;
 		}
 	}
+#if RASPPI <= 4
 	else if (strcmp (Token, "sndhdmi") == 0)
 	{
 		if (nMode != ModeOutput)
@@ -428,6 +437,7 @@ boolean CSoundShell::Start (void)
 
 		m_pSound[nMode] = new CHDMISoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
+#endif
 #if RASPPI >= 4
 	else if (strcmp (Token, "sndusb") == 0)
 	{

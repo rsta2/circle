@@ -45,7 +45,7 @@ Circle supports the following features:
 |                       | Software profiling support (single-core)            | x              |
 |                       | QEMU support                                        |                |
 |                       |                                                     |                |
-| SoC devices           | GPIO pins (with interrupt, Act LED) and clocks      | no clocks      |
+| SoC devices           | GPIO pins (with interrupt, Act LED) and clocks      | x              |
 |                       | Frame buffer (screen driver with escape sequences)  | limited        |
 |                       | UART(s) (Polling and interrupt driver)              | x              |
 |                       | System timer (with kernel timers)                   | x              |
@@ -59,7 +59,7 @@ Circle supports the following features:
 |                       | SPI1 auxiliary master (Polling)                     |                |
 |                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          |                |
 |                       | SMI master (experimental)                           |                |
-|                       | I2S sound output and input                          |                |
+|                       | I2S sound output and input                          | x              |
 |                       | HDMI sound output (without VCHIQ)                   |                |
 |                       | Hardware random number generator                    | x              |
 |                       | Watchdog device                                     | x              |
