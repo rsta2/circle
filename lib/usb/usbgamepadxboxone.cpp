@@ -152,7 +152,9 @@ void CUSBGamePadXboxOneDevice::ReportHandler (const u8 *pReport, unsigned report
 
 	// Controller sends "heartbeat" packets periodically starting with
 	// 0x03, 0x20. We aren't interested in them.
-	if (m_pStatusHandler != nullptr && reportSize == 18 && pReport[0] == 0x20)
+	//
+	// XBox One controller has packet size 18, Series X controller has size 48
+	if (m_pStatusHandler != nullptr && (reportSize == 18 || reportSize == 48) && pReport[0] == 0x20)
 	{
 		DecodeReport (pReport);
 
