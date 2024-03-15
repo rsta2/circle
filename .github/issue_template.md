@@ -1,0 +1,1 @@
+Please create a new issue only when you think, there is a real problem in Circle, or if you want a new feature! Otherwise please use the [Discussions](https://github.com/rsta2/circle/discussions) forum!
