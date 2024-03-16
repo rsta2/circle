@@ -75,6 +75,12 @@
 #define ARM_RESET_RESCAL_END	(ARM_RESET_RESCAL_BASE + 0x0F)
 
 //
+// DMA controller (RP1)
+//
+#define ARM_DMA_RP1_BASE	0x1F00188000UL
+#define ARM_DMA_RP1_END		(ARM_DMA_RP1_BASE + 0xFFF)
+
+//
 // MACB Ethernet NIC (RP1)
 //
 #define ARM_MACB_BASE		0x1F00100000UL
