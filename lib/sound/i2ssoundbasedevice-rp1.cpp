@@ -4,7 +4,7 @@
 // Supports:
 //	RP1 I2S output and input (not at once)
 //	two 24-bit audio channels
-//	programmed I/O operation with interrupt
+//	cyclic DMA operation or programmed I/O operation with interrupt
 //	currently used clock is not precise
 //	output tested with PCM5102A and PCM5122 DAC
 //
@@ -34,13 +34,16 @@
 #include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/devicenameservice.h>
 #include <circle/bcm2712.h>
-#include <circle/rp1int.h>
 #include <circle/memio.h>
+#include <circle/rp1int.h>
 #include <circle/macros.h>
+#include <circle/util.h>
 #include <assert.h>
 
 #define CHANS		2			// 2 I2S stereo channels
 #define CHANLEN		32			// width of a channel slot in bits
+
+#define DMA_CHANNEL	0			// TODO: allocate dynamically
 
 /* common register for all channel */
 #define IER		0x000
@@ -109,7 +112,9 @@
 #define I2S_COMP_VERSION	0x01F8
 #define I2S_COMP_TYPE		0x01FC
 
+#define I2S_RXDMA		0x01C0
 #define I2S_RRXDMA		0x01C4
+#define I2S_TXDMA		0x01C8
 #define I2S_RTXDMA		0x01CC
 #define I2S_DMACR		0x0200
 #define I2S_DMAEN_RXBLOCK	(1 << 16)
@@ -147,9 +152,13 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  u8                ucI2CAddress,
 					  TDeviceMode       DeviceMode)
 :	CSoundBaseDevice (SoundFormatSigned24_32, 0, nSampleRate),
+#ifdef USE_I2S_SOUND_IRQ
 	m_pInterruptSystem (pInterrupt),
+#else
+	// TODO: This is a workaround for bad audio quality with greater chunk sizes.
+	m_nChunkSize (nChunkSize <= 128 ? (nChunkSize & ~1U) : 128),
+#endif
 	m_nSampleRate (nSampleRate),
-	//m_nChunkSize (nChunkSize),
 	m_bSlave (bSlave),
 	m_pI2CMaster (pI2CMaster),
 	m_ucI2CAddress (ucI2CAddress),
@@ -160,15 +169,20 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_PCMDOUTPin (21, m_bSlave ? GPIOModeAlternateFunction4 : GPIOModeAlternateFunction2),
 	m_Clock (GPIOClockI2S, GPIOClockSourceXOscillator),
 	m_ulBase (m_bSlave ? ARM_I2S1_BASE : ARM_I2S0_BASE),
+#ifdef USE_I2S_SOUND_IRQ
 	m_bInterruptConnected (FALSE),
-	m_bActive (FALSE),
-	m_bError (FALSE),
+#endif
+	m_State (StateIdle),
+#ifndef USE_I2S_SOUND_IRQ
+	m_DMAChannel (DMA_CHANNEL, pInterrupt),
+	m_pDMABuffer {new u32[m_nChunkSize], new u32[m_nChunkSize]},
+#endif
 	m_bControllerInited (FALSE),
 	m_pController (nullptr)
 {
 	if (m_DeviceMode == DeviceModeTXRX)
 	{
-		m_bError = TRUE;
+		m_State = StateFailed;
 
 		return;
 	}
@@ -178,12 +192,20 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 
 CI2SSoundBaseDevice::~CI2SSoundBaseDevice (void)
 {
+	assert (   m_State != StateRunning
+		&& m_State != StateCanceled);
+
 	CDeviceNameService::Get ()->RemoveDevice ("sndi2s", FALSE);
 
 	delete m_pController;
 	m_pController = nullptr;
 
 	StopI2S ();
+
+#ifndef USE_I2S_SOUND_IRQ
+	delete [] m_pDMABuffer[0];
+	delete [] m_pDMABuffer[1];
+#endif
 }
 
 int CI2SSoundBaseDevice::GetRangeMin (void) const
@@ -198,7 +220,7 @@ int CI2SSoundBaseDevice::GetRangeMax (void) const
 
 boolean CI2SSoundBaseDevice::Start (void)
 {
-	if (m_bError)
+	if (m_State == StateFailed)
 	{
 		return FALSE;
 	}
@@ -207,7 +229,7 @@ boolean CI2SSoundBaseDevice::Start (void)
 	{
 		if (!ControllerFactory ())
 		{
-			m_bError = TRUE;
+			m_State = StateFailed;
 
 			return FALSE;
 		}
@@ -215,21 +237,86 @@ boolean CI2SSoundBaseDevice::Start (void)
 		m_bControllerInited = TRUE;
 	}
 
-	m_bActive = RunI2S ();
+	m_State = StateRunning;
 
-	return m_bActive;
+#ifndef USE_I2S_SOUND_IRQ
+	assert (m_pDMABuffer[0]);
+	assert (m_pDMABuffer[1]);
+	size_t ulBufferSize = m_nChunkSize * sizeof (u32);
+
+	if (m_DeviceMode == DeviceModeTXOnly)
+	{
+		memset (m_pDMABuffer[0], 0, ulBufferSize);
+		memset (m_pDMABuffer[1], 0, ulBufferSize);
+
+		const void *Buffers[2] = {m_pDMABuffer[0], m_pDMABuffer[1]};
+		m_DMAChannel.SetupCyclicIOWrite (m_ulBase + I2S_TXDMA,
+						 Buffers, 2, ulBufferSize,
+						 m_bSlave ? CDMAChannelRP1::DREQSourceI2S1TX
+							  : CDMAChannelRP1::DREQSourceI2S0TX);
+	}
+	else
+	{
+		assert (m_DeviceMode == DeviceModeRXOnly);
+
+		void *Buffers[2] = {m_pDMABuffer[0], m_pDMABuffer[1]};
+		m_DMAChannel.SetupCyclicIORead (Buffers,
+						m_ulBase + I2S_RXDMA, 2, ulBufferSize,
+						m_bSlave ? CDMAChannelRP1::DREQSourceI2S1RX
+							 : CDMAChannelRP1::DREQSourceI2S0RX);
+	}
+
+	m_DMAChannel.SetCompletionRoutine (DMACompletionStub, this);
+	m_DMAChannel.Start ();
+#endif
+
+	if (!RunI2S ())
+	{
+#ifndef USE_I2S_SOUND_IRQ
+		m_DMAChannel.Cancel ();
+#endif
+
+		m_State = StateFailed;
+
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 void CI2SSoundBaseDevice::Cancel (void)
 {
+#ifdef USE_I2S_SOUND_IRQ
 	StopI2S ();
 
-	m_bActive = FALSE;
+	m_State = StateIdle;
+#else
+	m_SpinLock.Acquire ();
+
+	if (m_State == StateRunning)
+	{
+		m_State = StateCanceled;
+
+		m_SpinLock.Release ();
+
+		m_DMAChannel.Cancel ();
+		StopI2S ();
+
+		m_SpinLock.Acquire ();
+
+		m_State = StateIdle;
+	}
+
+	m_SpinLock.Release ();
+#endif
 }
 
 boolean CI2SSoundBaseDevice::IsActive (void) const
 {
-	return m_bActive;
+	TState State = m_State;
+
+	return    State == StateRunning
+	       || State == StateCanceled;
 }
 
 CSoundController *CI2SSoundBaseDevice::GetController (void)
@@ -265,11 +352,13 @@ boolean CI2SSoundBaseDevice::RunI2S (void)
 		}
 	}
 
+#ifdef USE_I2S_SOUND_IRQ
 	// connect interrupt
 	assert (!m_bInterruptConnected);
 	assert (m_pInterruptSystem);
 	m_pInterruptSystem->ConnectIRQ (m_bSlave ? RP1_IRQ_I2S1 : RP1_IRQ_I2S0, InterruptStub, this);
 	m_bInterruptConnected = TRUE;
+#endif
 
 	// disable all channels
 	for (int i = 0; i < 4; i++)
@@ -297,7 +386,11 @@ boolean CI2SSoundBaseDevice::RunI2S (void)
 		write32 (m_ulBase + IER, IER_IEN);
 		write32 (m_ulBase + ITER, 1);
 
+#ifdef USE_I2S_SOUND_IRQ
 		write32 (m_ulBase + IMR (0), read32 (m_ulBase + IMR (0)) & ~0x30);
+#else
+		write32 (m_ulBase + I2S_DMACR, read32 (m_ulBase + I2S_DMACR) | I2S_DMAEN_TXBLOCK);
+#endif
 	}
 	else
 	{
@@ -316,7 +409,11 @@ boolean CI2SSoundBaseDevice::RunI2S (void)
 		write32 (m_ulBase + IER, IER_IEN);
 		write32 (m_ulBase + IRER, 1);
 
+#ifdef USE_I2S_SOUND_IRQ
 		write32 (m_ulBase + IMR (0), read32 (m_ulBase + IMR (0)) & ~0x03);
+#else
+		write32 (m_ulBase + I2S_DMACR, read32 (m_ulBase + I2S_DMACR) | I2S_DMAEN_RXBLOCK);
+#endif
 	}
 
 	write32 (m_ulBase + CER, 1);
@@ -326,21 +423,25 @@ boolean CI2SSoundBaseDevice::RunI2S (void)
 
 void CI2SSoundBaseDevice::StopI2S (void)
 {
+#ifdef USE_I2S_SOUND_IRQ
 	if (m_bInterruptConnected)
 	{
 		m_pInterruptSystem->DisconnectIRQ (m_bSlave ? RP1_IRQ_I2S1 : RP1_IRQ_I2S0);
 
 		m_bInterruptConnected = FALSE;
 	}
+#endif
 
 	for (int i = 0; i < 4; i++)
 	{
+#ifdef USE_I2S_SOUND_IRQ
 		// clear interrupts
 		read32 (m_ulBase + TOR (i));
 		read32 (m_ulBase + ROR (i));
 
 		// disable interrupts
 		write32 (m_ulBase + IMR (i), read32 (m_ulBase + IMR (i)) | 0x30 | 0x03);
+#endif
 
 		// disable channels
 		write32 (m_ulBase + TER (i), 0);
@@ -359,6 +460,8 @@ void CI2SSoundBaseDevice::StopI2S (void)
 	}
 }
 
+#ifdef USE_I2S_SOUND_IRQ
+
 void CI2SSoundBaseDevice::InterruptHandler (void)
 {
 	u32 nStatus = read32 (m_ulBase + ISR (0)) & ~read32 (m_ulBase + IMR (0));
@@ -374,7 +477,7 @@ void CI2SSoundBaseDevice::InterruptHandler (void)
 
 		if (GetChunk (Buffer, nChunkSize) < nChunkSize)
 		{
-			m_bActive = FALSE;
+			m_State = StateIdle;
 
 			// disable TX interrupts
 			write32 (m_ulBase + IMR (0), read32 (m_ulBase + IMR (0)) | 0x30);
@@ -414,6 +517,70 @@ void CI2SSoundBaseDevice::InterruptStub (void *pParam)
 
 	pThis->InterruptHandler ();
 }
+
+#else	// #ifdef USE_I2S_SOUND_IRQ
+
+void CI2SSoundBaseDevice::DMACompletionRoutine (unsigned nChannel, unsigned nBuffer, boolean bStatus)
+{
+	m_SpinLock.Acquire ();
+
+	if (m_State != StateRunning)
+	{
+		m_SpinLock.Release ();
+
+		return;
+	}
+
+	if (!bStatus)
+	{
+		m_State = StateFailed;
+
+		m_SpinLock.Release ();
+
+		m_DMAChannel.Cancel ();
+		StopI2S ();
+
+		return;
+	}
+
+	assert (nBuffer < 2);
+	assert (m_pDMABuffer[nBuffer]);
+	assert (m_nChunkSize);
+
+	if (m_DeviceMode == DeviceModeTXOnly)
+	{
+		if (GetChunk (m_pDMABuffer[nBuffer], m_nChunkSize) < m_nChunkSize)
+		{
+			m_DMAChannel.Cancel ();
+			StopI2S ();
+
+			m_State = StateIdle;
+
+			m_SpinLock.Release ();
+
+			return;
+		}
+	}
+	else
+	{
+		assert (m_DeviceMode == DeviceModeRXOnly);
+
+		PutChunk (m_pDMABuffer[nBuffer], m_nChunkSize);
+	}
+
+	m_SpinLock.Release ();
+}
+
+void CI2SSoundBaseDevice::DMACompletionStub (unsigned nChannel, unsigned nBuffer,
+					     boolean bStatus, void *pParam)
+{
+	CI2SSoundBaseDevice *pThis = static_cast<CI2SSoundBaseDevice *> (pParam);
+	assert (pThis);
+
+	pThis->DMACompletionRoutine (nChannel, nBuffer, bStatus);
+}
+
+#endif
 
 #include <circle/sound/pcm512xsoundcontroller.h>
 #include <circle/sound/wm8960soundcontroller.h>
