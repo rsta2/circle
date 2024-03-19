@@ -517,10 +517,6 @@ unsigned CMachineInfo::GetGPIOClockSourceRate (unsigned nSourceId)
 	case GPIOClockSourcePLLSysSec:		return 125000000;
 	case GPIOClockSourcePLLSysPriPh:	return 100000000;
 
-	case GPIOClockSourcePLLAudio:		return 61440000;
-	case GPIOClockSourcePLLAudioSec:	return 192000000;
-	case GPIOClockSourcePLLAudioPriPh:	return 30720000;
-
 	case GPIOClockSourceClkSys:		return 200000000;
 
 	default:

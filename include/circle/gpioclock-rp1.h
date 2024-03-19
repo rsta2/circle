@@ -51,9 +51,8 @@ enum TGPIOClockSource
 	GPIOClockSourcePLLSysSec,		// 125 MHz
 	GPIOClockSourcePLLSysPriPh,		// 100 MHz
 
-	GPIOClockSourcePLLAudio,		// 61440 KHz
-	GPIOClockSourcePLLAudioSec,		// 192 MHz
-	GPIOClockSourcePLLAudioPriPh,		// 30720 KHz
+	GPIOClockSourcePLLAudioCore,		// varies
+	GPIOClockSourcePLLAudio,		// varies
 
 	GPIOClockSourceClkSys,			// 200 MHz
 
@@ -66,8 +65,8 @@ public:
 	CGPIOClock (TGPIOClock Clock, TGPIOClockSource Source = GPIOClockSourceUnknown);
 	~CGPIOClock (void);
 
-	void Start (unsigned nDivI,		// 1..65535, Audio/I2S: 1..255
-		    unsigned nDivF = 0);	// 0..65535
+	boolean Start (unsigned nDivI,		// 1..65535, Audio/I2S: 1..255
+		       unsigned nDivF = 0);	// 0..65535
 
 	// assigns clock source automatically
 	// returns FALSE if requested rate cannot be generated
@@ -80,15 +79,38 @@ public:
 #endif
 	
 private:
+	static boolean EnablePLLAudioCore (unsigned long ulRate);
+	static boolean EnablePLLAudio (unsigned long ulRate, unsigned long ulParentRate);
+
+	static unsigned long GetPLLCoreDivider (unsigned long rate, unsigned long parent_rate,
+						u32 *div_int, u32 *div_frac);
+	static void GetPLLDividers (unsigned long rate, unsigned long parent_rate,
+				    u32 *divider1, u32 *divider2);
+
+	static unsigned GetSourceRate (unsigned nSourceId, unsigned nClockI2SRate = 0);
+
+	struct TAudioClock
+	{
+		unsigned PLLAudioCoreRate;
+		unsigned PLLAudioRate;
+		unsigned ClockI2SRate;
+	};
+
+private:
 	TGPIOClock m_Clock;
 	TGPIOClockSource m_Source;
 
 	unsigned m_nDivIntMax;
+	boolean m_bHasFrac;
 	unsigned m_nFreqMax;
 	unsigned m_nAuxSrc;
 
+	unsigned m_nRateHZ;
+
 	static const unsigned MaxParents = 16;
 	static const u8 s_ParentAux[GPIOClockUnknown][MaxParents];
+
+	static const TAudioClock s_AudioClock[];
 };
 
 #endif

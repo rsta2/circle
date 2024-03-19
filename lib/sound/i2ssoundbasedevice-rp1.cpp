@@ -155,8 +155,7 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 #ifdef USE_I2S_SOUND_IRQ
 	m_pInterruptSystem (pInterrupt),
 #else
-	// TODO: This is a workaround for bad audio quality with greater chunk sizes.
-	m_nChunkSize (nChunkSize <= 128 ? (nChunkSize & ~1U) : 128),
+	m_nChunkSize (nChunkSize),
 #endif
 	m_nSampleRate (nSampleRate),
 	m_bSlave (bSlave),
@@ -167,7 +166,7 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_PCMFSPin (19, m_bSlave ? GPIOModeAlternateFunction4 : GPIOModeAlternateFunction2),
 	m_PCMDINPin (20, m_bSlave ? GPIOModeAlternateFunction4 : GPIOModeAlternateFunction2),
 	m_PCMDOUTPin (21, m_bSlave ? GPIOModeAlternateFunction4 : GPIOModeAlternateFunction2),
-	m_Clock (GPIOClockI2S, GPIOClockSourceXOscillator),
+	m_Clock (GPIOClockI2S, GPIOClockSourcePLLAudio),
 	m_ulBase (m_bSlave ? ARM_I2S1_BASE : ARM_I2S0_BASE),
 #ifdef USE_I2S_SOUND_IRQ
 	m_bInterruptConnected (FALSE),
