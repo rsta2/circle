@@ -180,6 +180,32 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	TGPIOMode PreviousMode = m_Mode;
 	m_Mode = Mode;
 
+	if (m_Mode == GPIOModeNone)
+	{
+		assert (m_nBank < GPIO0_BANKS);
+		assert (m_nBankPin < MAX_BANK_PINS);
+
+		uintptr nPadsReg = PADS0_CTRL (m_nBank, m_nBankPin);
+		u32 nPadsValue = read32 (nPadsReg);
+		nPadsValue |= PADS_OD__MASK;
+		nPadsValue &= ~PADS_IE__MASK;
+		nPadsValue |= PADS_PDE__MASK;
+		nPadsValue &= ~PADS_PUE__MASK;
+		write32 (nPadsReg, nPadsValue);
+
+		uintptr nCtrlReg = GPIO0_CTRL (m_nBank, m_nBankPin);
+		u32 nCtrlValue = read32 (nCtrlReg);
+		nCtrlValue &= ~CTRL_OUTOVER__MASK;
+		nCtrlValue |= OUTOVER_FUNCSEL << CTRL_OUTOVER__SHIFT;
+		nCtrlValue &= ~CTRL_OEOVER__MASK;
+		nCtrlValue |= OEOVER_FUNCSEL << CTRL_OEOVER__SHIFT;
+		nCtrlValue &= ~CTRL_FUNCSEL__MASK;
+		nCtrlValue |= FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT;
+		write32 (nCtrlReg, nCtrlValue);
+
+		return;
+	}
+
 	if (GPIOModeAlternateFunction0 <= m_Mode && m_Mode <= GPIOModeAlternateFunction8)
 	{
 		if (bInitPin)
@@ -198,7 +224,8 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 		SetPullMode (GPIOPullModeOff);
 	}
 
-	if (PreviousMode > GPIOModeInputPullDown)
+	if (   PreviousMode > GPIOModeInputPullDown
+	    || PreviousMode == GPIOModeNone)
 	{
 		SetAlternateFunction (FUNCSEL_GPIO);
 	}

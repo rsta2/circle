@@ -37,6 +37,7 @@ enum TGPIOVirtualPin
 
 enum TGPIOMode
 {
+	GPIOModeNone,
 	GPIOModeInput,
 	GPIOModeOutput,
 	GPIOModeInputPullUp,

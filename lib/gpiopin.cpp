@@ -77,6 +77,10 @@ void CGPIOPin::AssignPin (unsigned nPin)
 void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 {
 	assert (Mode < GPIOModeUnknown);
+	if (Mode == GPIOModeNone)
+	{
+		Mode = GPIOModeInput;
+	}
 	m_Mode = Mode;
 
 	PeripheralEntry ();
