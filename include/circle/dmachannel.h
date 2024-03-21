@@ -2,7 +2,7 @@
 // dmachannel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -71,17 +71,17 @@ public:
 
 	/// \brief Prepare an I/O read transfer
 	/// \param pDestination Pointer to the destination buffer
-	/// \param nIOAddress	I/O address to be read from (ARM-side or bus address)
+	/// \param ulIOAddress	I/O address to be read from (ARM-side or bus address)
 	/// \param nLength	Number of bytes to be transferred
 	/// \param DREQ		DREQ line for pacing the transfer (see dmacommon.h)
-	void SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ);
+	void SetupIORead (void *pDestination, uintptr ulIOAddress, size_t nLength, TDREQ DREQ);
 
 	/// \brief Prepare an I/O write transfer
-	/// \param nIOAddress	I/O address to be written (ARM-side or bus address)
+	/// \param ulIOAddress	I/O address to be written (ARM-side or bus address)
 	/// \param pSource	Pointer to the source buffer
 	/// \param nLength	Number of bytes to be transferred
 	/// \param DREQ		DREQ line for pacing the transfer (see dmacommon.h)
-	void SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ);
+	void SetupIOWrite (uintptr ulIOAddress, const void *pSource, size_t nLength, TDREQ DREQ);
 
 	/// \brief Prepare a 2D memory copy transfer (copy a number of blocks with optional stride)
 	/// \param pDestination Pointer to the destination buffer

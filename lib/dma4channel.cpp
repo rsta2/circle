@@ -2,7 +2,7 @@
 // dmachannel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -219,25 +219,31 @@ void CDMA4Channel::SetupMemCopy (void *pDestination, const void *pSource, size_t
 	}
 }
 
-void CDMA4Channel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ)
+void CDMA4Channel::SetupIORead (void *pDestination, uintptr ulIOAddress, size_t nLength, TDREQ DREQ)
 {
 	assert (pDestination != 0);
 	assert (nLength > 0);
 	assert (nLength <= LEN4_XLENGTH_MAX);
 
-	nIOAddress &= 0xFFFFFF;
-	assert (nIOAddress != 0);
-	nIOAddress += GPU_IO_BASE;
+#if RASPPI == 4
+	ulIOAddress &= 0xFFFFFF;
+	assert (ulIOAddress != 0);
+	ulIOAddress += GPU_IO_BASE;
+#endif
 
 	assert (m_pControlBlock != 0);
 	m_pControlBlock->nTransferInformation     =   TI4_SRC_DREQ
 						    | (DREQ << TI4_PERMAP_SHIFT)
 						    | TI4_WAIT_RD_RESP
 						    | TI4_WAIT_RESP;
-	m_pControlBlock->nSourceAddress           = nIOAddress;
+	m_pControlBlock->nSourceAddress           = ulIOAddress & 0xFFFFFFFFU;
 	m_pControlBlock->nSourceInformation	  =   (SIZE4_32 << SOURCE4_SIZE_SHIFT)
 						    | (BURST4_DEFAULT << SOURCE4_BURST_LEN_SHIFT)
+#if RASPPI == 4
 						    | (FULL35_ADDR_OFFSET << SOURCE4_ADDR_SHIFT);
+#else
+						    | ((ulIOAddress >> 32) << SOURCE4_ADDR_SHIFT);
+#endif
 	m_pControlBlock->nDestinationAddress      = ADDRESS4_LOW (pDestination);
 	m_pControlBlock->nDestinationInformation  =   (SIZE4_128 << DEST4_SIZE_SHIFT)
 						    | DEST4_INC
@@ -253,15 +259,17 @@ void CDMA4Channel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLeng
 	CleanAndInvalidateDataCacheRange ((uintptr) pDestination, nLength);
 }
 
-void CDMA4Channel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
+void CDMA4Channel::SetupIOWrite (uintptr ulIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
 {
 	assert (pSource != 0);
 	assert (nLength > 0);
 	assert (nLength <= LEN4_XLENGTH_MAX);
 
-	nIOAddress &= 0xFFFFFF;
-	assert (nIOAddress != 0);
-	nIOAddress += GPU_IO_BASE;
+#if RASPPI == 4
+	ulIOAddress &= 0xFFFFFF;
+	assert (ulIOAddress != 0);
+	ulIOAddress += GPU_IO_BASE;
+#endif
 
 	assert (m_pControlBlock != 0);
 	m_pControlBlock->nTransferInformation     =   TI4_DEST_DREQ
@@ -274,10 +282,14 @@ void CDMA4Channel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLe
 						    | (BURST4_DEFAULT << SOURCE4_BURST_LEN_SHIFT)
 						    |    (ADDRESS4_HIGH (pSource)
 						      << SOURCE4_ADDR_SHIFT);
-	m_pControlBlock->nDestinationAddress      = nIOAddress;
+	m_pControlBlock->nDestinationAddress      = ulIOAddress & 0xFFFFFFFFU;
 	m_pControlBlock->nDestinationInformation  =   (SIZE4_32 << DEST4_SIZE_SHIFT)
 						    | (BURST4_DEFAULT << DEST4_BURST_LEN_SHIFT)
+#if RASPPI == 4
 						    | (FULL35_ADDR_OFFSET << DEST4_ADDR_SHIFT);
+#else
+						    | ((ulIOAddress >> 32) << DEST4_ADDR_SHIFT);
+#endif
 	m_pControlBlock->nTransferLength          = nLength << LEN4_XLENGTH_SHIFT;
 	m_pControlBlock->nNextControlBlockAddress = 0;
 
