@@ -571,7 +571,7 @@ unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)
 	if (!(nChannel & ~DMA_CHANNEL__MASK))
 	{
 		// explicit channel allocation
-		assert (nChannel <=  DMA_CHANNEL_MAX);
+		assert (nChannel <=  (RASPPI >= 4 ? DMA_CHANNEL_EXT_MAX : DMA_CHANNEL_MAX));
 		if (m_usDMAChannelMap & (1 << nChannel))
 		{
 			m_usDMAChannelMap &= ~(1 << nChannel);
@@ -585,7 +585,7 @@ unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)
 #if RASPPI <= 4
 		int i = nChannel == DMA_CHANNEL_NORMAL ? 6 : DMA_CHANNEL_MAX;
 #else
-		int i = nChannel == DMA_CHANNEL_MAX;
+		int i = DMA_CHANNEL_MAX;
 #endif
 		int nMin = 0;
 #if RASPPI >= 4
@@ -619,7 +619,7 @@ void CMachineInfo::FreeDMAChannel (unsigned nChannel)
 		return;
 	}
 
-	assert (nChannel <= DMA_CHANNEL_MAX);
+	assert (nChannel <=  (RASPPI >= 4 ? DMA_CHANNEL_EXT_MAX : DMA_CHANNEL_MAX));
 	assert (!(m_usDMAChannelMap & (1 << nChannel)));
 	m_usDMAChannelMap |= 1 << nChannel;
 }
