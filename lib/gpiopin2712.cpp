@@ -21,6 +21,7 @@
 #include <circle/gpiomanager.h>
 #include <circle/bcm2712.h>
 #include <circle/memio.h>
+#include <circle/machineinfo.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
 #include <circle/southbridge.h>
@@ -165,9 +166,15 @@ void CGPIOPin::AssignPin (unsigned nPin)
 	assert (m_nBankPin == MAX_BANK_PINS);
 
 	m_nPin = nPin;
+
+	if (m_nPin >= GPIO_PINS)
+	{
+		m_nPin = CMachineInfo::Get ()->GetGPIOPin ((TGPIOVirtualPin) nPin);
+	}
+
 	assert (m_nPin < GPIO_PINS);
 
-	Pin2Bank (nPin, &m_nBank, &m_nBankPin);
+	Pin2Bank (m_nPin, &m_nBank, &m_nBankPin);
 }
 
 void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)

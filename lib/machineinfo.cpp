@@ -417,12 +417,13 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 	switch (Pin)
 	{
 	case GPIOPinAudioLeft:
-#ifdef USE_PWM_AUDIO_ON_ZERO
+#if defined (USE_PWM_AUDIO_ON_ZERO) || RASPPI >= 5
 		if (   m_MachineModel == MachineModelZero
 		    || m_MachineModel == MachineModelZeroW
-		    || m_MachineModel == MachineModelZero2W)
+		    || m_MachineModel == MachineModelZero2W
+		    || m_MachineModel == MachineModel5)
 		{
-#ifdef USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
+#if defined (USE_GPIO18_FOR_LEFT_PWM_ON_ZERO) || defined (USE_GPIO18_FOR_LEFT_PWM)
 			return 18;
 #else
 			return 12;
@@ -447,12 +448,13 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 		break;
 
 	case GPIOPinAudioRight:
-#ifdef USE_PWM_AUDIO_ON_ZERO
+#if defined (USE_PWM_AUDIO_ON_ZERO) || RASPPI >= 5
 		if (   m_MachineModel == MachineModelZero
 		    || m_MachineModel == MachineModelZeroW
-		    || m_MachineModel == MachineModelZero2W)
+		    || m_MachineModel == MachineModelZero2W
+		    || m_MachineModel == MachineModel5)
 		{
-#ifdef USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
+#if defined (USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO) || defined (USE_GPIO19_FOR_RIGHT_PWM)
 			return 19;
 #else
 			return 13;
@@ -557,7 +559,8 @@ boolean CMachineInfo::ArePWMChannelsSwapped (void) const
 	return    m_MachineModel >= MachineModelAPlus
 	       && m_MachineModel != MachineModelZero
 	       && m_MachineModel != MachineModelZeroW
-	       && m_MachineModel != MachineModelZero2W;
+	       && m_MachineModel != MachineModelZero2W
+	       && m_MachineModel != MachineModel5;
 }
 
 unsigned CMachineInfo::AllocateDMAChannel (unsigned nChannel)
