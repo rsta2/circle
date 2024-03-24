@@ -170,9 +170,13 @@ DEFINE	+= -D__circle__=$(CIRCLEVER) -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB
 	   -D__VCCOREVER__=0x04000000 -U__unix__ -U__linux__ #-DNDEBUG
 
 AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
-CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding -g \
+CFLAGS	+= $(ARCH) -Wall -fsigned-char -g \
 	   $(DEFINE) $(INCLUDE) $(EXTRAINCLUDE) $(OPTIMIZE)
 CPPFLAGS+= $(CFLAGS) $(STANDARD)
+
+ifneq ($(filter 0 1,$(STDLIB_SUPPORT)),)
+CFLAGS += -ffreestanding
+endif
 
 ifneq ($(strip $(CLANG)),1)
 LDFLAGS	+= --section-start=.init=$(LOADADDR)
