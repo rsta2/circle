@@ -135,7 +135,6 @@ TShutdownMode CKernel::Run (void)
 
 	// select the sound device
 	const char *pSoundDevice = m_Options.GetSoundDevice ();
-#if RASPPI <= 4
 	if (strcmp (pSoundDevice, "sndpwm") == 0)
 	{
 		m_pSound = new CPWMSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
@@ -145,10 +144,12 @@ TShutdownMode CKernel::Run (void)
 		m_pSound = new CI2SSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, FALSE,
 						    &m_I2CMaster, DAC_I2C_ADDRESS);
 	}
+#if RASPPI <= 4
 	else if (strcmp (pSoundDevice, "sndhdmi") == 0)
 	{
 		m_pSound = new CHDMISoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
+#endif
 #if RASPPI >= 4
 	else if (strcmp (pSoundDevice, "sndusb") == 0)
 	{
@@ -164,17 +165,6 @@ TShutdownMode CKernel::Run (void)
 		m_pSound = new CPWMSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
 #endif
 	}
-#else
-	if (strcmp (pSoundDevice, "sndi2s") == 0)
-	{
-		m_pSound = new CI2SSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, FALSE,
-						    &m_I2CMaster, DAC_I2C_ADDRESS);
-	}
-	else
-	{
-		m_pSound = new CUSBSoundBaseDevice (SAMPLE_RATE);
-	}
-#endif
 	assert (m_pSound != 0);
 
 	// initialize oscillators

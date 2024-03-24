@@ -11,7 +11,7 @@ SAMPLES
 09-softserial	[5]	GPIO interrupt demonstration, serial interface via non-UART GPIO-pins
 10-usbmouse	[PnP]	Little painting program with USB mouse support
 11-gpioclock	[5]	Using GPIO clock 0 to generate a square wave signal and sampling this signal to display it
-12-pwmsound		Using PWM device and DMA controller to playback a short sound sample
+12-pwmsound	[5]	Using PWM device and DMA controller to playback a short sound sample
 13-pwmoutput		Using PWM device to continously change the brightness of a connected LED
 14-usbprinter	[5]	Printing some text lines on an USB printer (GDI printers do not work)
 15-files	[5]	Root directory listing of a connected USB drive, writing and reading the file "circle.txt"
@@ -40,7 +40,7 @@ SAMPLES
 39-umsdplugging	[PnP,5]	Plug in and remove USB flash drives, list directory
 40-irqlatency	[PnP]	Displays the maximum measured IRQ latency
 41-screenanimations	2D graphical shapes demo on screen without flickering or screen tearing
-42-soundinput		I2S or USB to PWM sound data converter and digital sound recorder
+42-soundinput	[5]	I2S or USB to PWM sound data converter and digital sound recorder
 
 Samples marked with [PnP] are enabled for USB plug-and-play.
 Samples marked with [5] are working on the Raspberry Pi 5.
