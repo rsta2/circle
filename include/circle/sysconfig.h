@@ -53,7 +53,7 @@
 // a virtually unified heap, which uses the whole available memory
 // space. Because this may cause problems with some devices, which
 // explicitly need low memory for DMA, this value defaults to HEAP_LOW.
-// This setting is only of importance for the Raspberry Pi 4.
+// This setting is only of importance for the Raspberry Pi 4 and 5.
 
 #ifndef HEAP_DEFAULT_NEW
 #define HEAP_DEFAULT_NEW	HEAP_LOW
@@ -63,7 +63,7 @@
 // calloc() calls. See the description of HEAP_DEFAULT_NEW for details!
 // Modifying this setting is not recommended, because there are device
 // drivers, which require to allocate low memory for DMA purpose using
-// malloc(). This setting is only of importance for the Raspberry Pi 4.
+// malloc(). This setting is only of importance for the Raspberry Pi 4 and 5.
 
 #ifndef HEAP_DEFAULT_MALLOC
 #define HEAP_DEFAULT_MALLOC	HEAP_LOW
@@ -135,7 +135,7 @@
 
 ///////////////////////////////////////////////////////////////////////
 //
-// Raspberry Pi 2, 3 and 4
+// Raspberry Pi 2, 3, 4 and 5
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -160,11 +160,11 @@
 #endif
 
 // USE_PHYSICAL_COUNTER enables the use of the CPU internal physical
-// counter, which is only available on the Raspberry Pi 2, 3 and 4. Reading
+// counter, which is only available on the Raspberry Pi 2, 3, 4 and 5. Reading
 // this counter is much faster than reading the BCM2835 system timer
 // counter (which is used without this option). It reduces the I/O load
 // too. For some QEMU versions this is the only supported timer option,
-// for other older QEMU versions it does not work. On the Raspberry Pi 4
+// for other older QEMU versions it does not work. On the Raspberry Pi 4 and 5
 // setting this option is required.
 
 #ifndef NO_PHYSICAL_COUNTER
@@ -208,7 +208,7 @@
 // should normally be set. Unfortunately this causes a heavily changed
 // system timing, because it triggers up to 8000 IRQs per second. For
 // USB plug-and-play operation this option must be set in any case.
-// This option has no influence on the Raspberry Pi 4.
+// This option has no influence on the Raspberry Pi 4 and 5.
 
 #ifndef NO_USB_SOF_INTR
 #define USE_USB_SOF_INTR
@@ -222,7 +222,7 @@
 // communication problems with some USB devices. If this option is
 // enabled, USE_USB_SOF_INTR will be enabled too, and the FIQ cannot be
 // used for other purposes. This option has no influence on the
-// Raspberry Pi 4.
+// Raspberry Pi 4 and 5.
 
 //#define USE_USB_FIQ
 
@@ -348,7 +348,7 @@
 // a display connected to work, but some can be used without a display
 // available. Historically the screen initialization was working even
 // without a display connected, without returning an error, but
-// especially on the Raspberry Pi 4 this is not the case any more. Here
+// especially on the Raspberry Pi 4 and 5 this is not the case any more. Here
 // it is required to define this option, otherwise the program
 // initialization will fail without notice. In your own headless
 // applications you should just not use the CScreenDevice class instead
