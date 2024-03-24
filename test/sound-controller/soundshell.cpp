@@ -18,8 +18,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "soundshell.h"
-#if RASPPI <= 4
 #include <circle/sound/pwmsoundbasedevice.h>
+#if RASPPI <= 4
 #include <circle/sound/hdmisoundbasedevice.h>
 #endif
 #include <circle/sound/i2ssoundbasedevice.h>
@@ -55,9 +55,9 @@ const char CSoundShell::HelpMsg[] =
 	"Command\t\tDescription\t\t\t\t\t\tAlias\n"
 	"\n"
 	"start DEV [MODE] [CLK] [I2C]\n"
-	"\t\tStart sound device (snd{i2s"
+	"\t\tStart sound device (snd{pwm|i2s"
 #if RASPPI <= 4
-	"|pwm|hdmi"
+	"|hdmi"
 #endif
 #if RASPPI >= 4
 	"|usb"
@@ -340,7 +340,6 @@ boolean CSoundShell::Start (void)
 
 	// select the sound device
 	assert (m_pInterrupt != 0);
-#if RASPPI <= 4
 	if (strcmp (Token, "sndpwm") == 0)
 	{
 		if (nMode != ModeOutput)
@@ -352,9 +351,7 @@ boolean CSoundShell::Start (void)
 
 		m_pSound[nMode] = new CPWMSoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
-	else
-#endif
-	if (strcmp (Token, "sndi2s") == 0)
+	else if (strcmp (Token, "sndi2s") == 0)
 	{
 		CString ClockMode;
 		if (!GetToken (&ClockMode))
