@@ -49,11 +49,12 @@ Circle supports the following features:
 |                       | Frame buffer (screen driver with escape sequences)  | limited        |
 |                       | UART(s) (Polling and interrupt driver)              | x              |
 |                       | System timer (with kernel timers)                   | x              |
-|                       | Platform DMA controller                             | memcopy only   |
+|                       | Platform DMA controller                             | DMA40 only     |
+|                       | RP1 platform DMA controller (Raspberry Pi 5 only)   | x              |
 |                       | EMMC SD card interface driver                       | x              |
 |                       | SDHOST SD card interface driver (Raspberry Pi 1-3)  |                |
 |                       | PWM output (2 channels)                             |                |
-|                       | PWM sound output (on headphone jack)                |                |
+|                       | PWM sound output (on headphone jack)                | with adapter   |
 |                       | I2C master(s) and slave                             | masters only   |
 |                       | SPI0 master (Polling and DMA driver)                |                |
 |                       | SPI1 auxiliary master (Polling)                     |                |
