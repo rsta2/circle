@@ -2,7 +2,7 @@
 // pwmsoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,10 @@
 //
 #ifndef _circle_sound_pwmsoundbasedevice_h
 #define _circle_sound_pwmsoundbasedevice_h
+
+#if RASPPI >= 5
+	#include <circle/sound/pwmsoundbasedevice-rp1.h>
+#else
 
 #include <circle/sound/soundbasedevice.h>
 #include <circle/interrupt.h>
@@ -110,5 +114,7 @@ private:
 
 	CSpinLock m_SpinLock;
 };
+
+#endif
 
 #endif

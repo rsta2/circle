@@ -30,6 +30,8 @@ class CDMAChannelRP1	/// RP1 platform DMA controller support
 public:
 	enum TDREQ
 	{
+		DREQSourcePWM0		= 24,
+
 		DREQSourceI2S0RX	= 31,
 		DREQSourceI2S0TX	= 32,
 		DREQSourceI2S1RX	= 33,

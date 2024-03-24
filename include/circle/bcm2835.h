@@ -2,7 +2,7 @@
 // bcm2835.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -189,7 +189,7 @@
 #define ARM_PWM_RNG2		(ARM_PWM_BASE + 0x20)
 #define ARM_PWM_DAT2		(ARM_PWM_BASE + 0x24)
 
-#if RASPPI >= 4
+#if RASPPI == 4
 #define ARM_PWM1_BASE		(ARM_IO_BASE + 0x20C800)
 
 #define ARM_PWM1_CTL		(ARM_PWM1_BASE + 0x00)

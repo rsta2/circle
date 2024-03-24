@@ -190,6 +190,18 @@
 
 #endif
 
+#if RASPPI >= 5
+
+// The left PWM audio output pin is by default GPIO12. The following
+// define moves it to GPIO18. For Raspberry Pi 5 only.
+//#define USE_GPIO18_FOR_LEFT_PWM
+
+// The right PWM audio output pin is by default GPIO13. The following
+// define moves it to GPIO19. For Raspberry Pi 5 only.
+//#define USE_GPIO19_FOR_RIGHT_PWM
+
+#endif
+
 ///////////////////////////////////////////////////////////////////////
 //
 // Timing

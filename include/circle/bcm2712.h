@@ -87,6 +87,12 @@
 #define ARM_MACB_END		(ARM_MACB_BASE + 0x3FFF)
 
 //
+// PWM devices (RP1)
+//
+#define ARM_PWM0_BASE		0x1F00098000UL
+#define ARM_PWM0_END		(ARM_PWM0_BASE + 0xFF)
+
+//
 // I2S devices (RP1)
 //
 #define ARM_I2S0_BASE		0x1F000A0000UL
