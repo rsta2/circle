@@ -12,7 +12,7 @@ SAMPLES
 10-usbmouse	[PnP]	Little painting program with USB mouse support
 11-gpioclock	[5]	Using GPIO clock 0 to generate a square wave signal and sampling this signal to display it
 12-pwmsound	[5]	Using PWM device and DMA controller to playback a short sound sample
-13-pwmoutput		Using PWM device to continously change the brightness of a connected LED
+13-pwmoutput	[5]	Using PWM device to continously change the brightness of a connected LED
 14-usbprinter	[5]	Printing some text lines on an USB printer (GDI printers do not work)
 15-files	[5]	Root directory listing of a connected USB drive, writing and reading the file "circle.txt"
 16-i2cping		Transfering data blocks between two Raspberry Pis connected via I2C
