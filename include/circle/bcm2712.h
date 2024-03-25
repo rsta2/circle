@@ -92,6 +92,9 @@
 #define ARM_PWM0_BASE		0x1F00098000UL
 #define ARM_PWM0_END		(ARM_PWM0_BASE + 0xFF)
 
+#define ARM_PWM1_BASE		0x1F0009C000UL
+#define ARM_PWM1_END		(ARM_PWM1_BASE + 0xFF)
+
 //
 // I2S devices (RP1)
 //
