@@ -325,7 +325,8 @@ void sysinit (void)
 	}
 
 	extern int MAINPROC (void);
-	if (MAINPROC () == EXIT_REBOOT)
+	int nResult = MAINPROC ();
+	if (nResult == EXIT_REBOOT)
 	{
 		if (IsChainBootEnabled ())
 		{
@@ -339,6 +340,12 @@ void sysinit (void)
 
 		reboot ();
 	}
+#if RASPPI >= 5
+	else if (nResult == EXIT_POWER_OFF)
+	{
+		poweroff ();
+	}
+#endif
 
 	halt ();
 }
