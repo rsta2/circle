@@ -40,6 +40,8 @@ void reboot (void) NORETURN;
 
 #if RASPPI >= 5
 void poweroff (void) NORETURN;
+
+boolean is_power_button_pressed (void);
 #endif
 
 void set_qemu_exit_status (int nStatus);

@@ -21,6 +21,7 @@
 #include <circle/memio.h>
 #include <circle/bcm2835.h>
 #include <circle/bcm2836.h>
+#include <circle/bcm2712.h>
 #include <circle/machineinfo.h>
 #include <circle/memory.h>
 #include <circle/interrupt.h>
@@ -192,6 +193,28 @@ void poweroff (void)
 	);
 
 	for (;;);
+}
+
+boolean is_power_button_pressed (void)
+{
+	boolean bResult = !(read32 (ARM_GPIO1_DATA0) & BIT (20));
+	if (bResult)
+	{
+		// debounce button
+		unsigned nStartTicks = CTimer::GetClockTicks ();
+		while (CTimer::GetClockTicks () - nStartTicks < CLOCKHZ / 20)
+		{
+			boolean bStatus = !(read32 (ARM_GPIO1_DATA0) & BIT (20));
+			if (bStatus != bResult)
+			{
+				bResult = bStatus;
+
+				nStartTicks = CTimer::GetClockTicks ();
+			}
+		}
+	}
+
+	return bResult;
 }
 
 #endif
