@@ -19,11 +19,45 @@
 //
 #include <rtc/firmwarertc.h>
 #include <circle/bcmpropertytags.h>
+#include <circle/machineinfo.h>
 #include <circle/logger.h>
 #include <assert.h>
 
+LOGMODULE ("fwrtc");
+
 boolean CFirmwareRTC::Initialize (void)
 {
+	const CDeviceTreeBlob *pDTB = CMachineInfo::Get ()->GetDTB ();
+	const TDeviceTreeNode *pRTCNode;
+	const TDeviceTreeProperty *pChargeMicroVolt;
+	if (   !pDTB
+	    || !(pRTCNode = pDTB->FindNode ("/soc/rpi_rtc"))
+	    || !(pChargeMicroVolt = pDTB->FindProperty (pRTCNode, "trickle-charge-microvolt"))
+	    || pDTB->GetPropertyValueLength (pChargeMicroVolt) != 4)
+	{
+		return FALSE;
+	}
+
+	u32 nChargeMicroVolt = pDTB->GetPropertyValueWord (pChargeMicroVolt, 0);
+
+	CBcmPropertyTags Tags;
+	TPropertyTagRTCRegister RTCReg;
+	RTCReg.nRegNum = RTC_REGISTER_BBAT_CHG_VOLTS;
+	RTCReg.nValue = nChargeMicroVolt;
+	if (!Tags.GetTag (PROPTAG_SET_RTC_REG, &RTCReg, sizeof RTCReg, 8))
+	{
+		return FALSE;
+	}
+
+	if (nChargeMicroVolt)
+	{
+		LOGNOTE ("Charging enabled at %.1fV", nChargeMicroVolt / 1000000.0);
+	}
+
+#ifndef NDEBUG
+	//DumpStatus ();
+#endif
+
 	return TRUE;
 }
 
@@ -54,8 +88,6 @@ boolean CFirmwareRTC::Set (const CTime &UTCTime)
 }
 
 #ifndef NDEBUG
-
-LOGMODULE ("fwrtc");
 
 void CFirmwareRTC::DumpStatus (void)
 {
