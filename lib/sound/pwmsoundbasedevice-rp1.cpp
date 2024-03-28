@@ -89,7 +89,6 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 :	CSoundBaseDevice (SoundFormatUnsigned32,
 			  (CLOCK_RATE + nSampleRate/2) / nSampleRate, nSampleRate,
 			  CMachineInfo::Get ()->ArePWMChannelsSwapped ()),
-	m_nSampleRate (nSampleRate),
 	m_nChunkSize (nChunkSize),
 	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
 #ifndef USE_GPIO18_FOR_LEFT_PWM

@@ -70,7 +70,6 @@ private:
 	};
 
 private:
-	unsigned m_nSampleRate;
 	unsigned m_nChunkSize;
 	unsigned m_nRange;
 
