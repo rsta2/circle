@@ -37,7 +37,7 @@ Circle supports the following features:
 |                       | CPU clock rate management                           | x              |
 |                       | Clang/LLVM support (experimental)                   | x              |
 |                       |                                                     |                |
-| Debug support         | Kernel logging to screen, UART and/or syslog server | screen / UART  |
+| Debug support         | Kernel logging to screen, UART and/or syslog server | x              |
 |                       | C-assertions with stack trace                       | x              |
 |                       | Hardware exception handler with stack trace         | x              |
 |                       | GDB support using rpi_stub (Raspberry Pi 2 and 3)   |                |
@@ -53,7 +53,7 @@ Circle supports the following features:
 |                       | RP1 platform DMA controller (Raspberry Pi 5 only)   | x              |
 |                       | EMMC SD card interface driver                       | x              |
 |                       | SDHOST SD card interface driver (Raspberry Pi 1-3)  |                |
-|                       | PWM output (2 channels)                             |                |
+|                       | PWM output (2 channels)                             | 4 channels     |
 |                       | PWM sound output (on headphone jack)                | with adapter   |
 |                       | I2C master(s) and slave                             | masters only   |
 |                       | SPI0 master (Polling and DMA driver)                |                |
