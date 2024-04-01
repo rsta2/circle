@@ -163,6 +163,11 @@ endif
 
 OPTIMIZE ?= -O2
 STANDARD ?= -std=c++14 -Wno-aligned-new
+WARNINGS ?= -Wall
+
+ifeq ($(strip $(CLANG)),1)
+WARNINGS += -Wno-vla-cxx-extension
+endif
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib \
 	   -I $(CIRCLEHOME)/addon/vc4 -I $(CIRCLEHOME)/addon/vc4/interface/khronos/include
@@ -170,7 +175,7 @@ DEFINE	+= -D__circle__=$(CIRCLEVER) -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB
 	   -D__VCCOREVER__=0x04000000 -U__unix__ -U__linux__ #-DNDEBUG
 
 AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
-CFLAGS	+= $(ARCH) -Wall -fsigned-char -g \
+CFLAGS	+= $(ARCH) $(WARNINGS) -fsigned-char -g \
 	   $(DEFINE) $(INCLUDE) $(EXTRAINCLUDE) $(OPTIMIZE)
 CPPFLAGS+= $(CFLAGS) $(STANDARD)
 
