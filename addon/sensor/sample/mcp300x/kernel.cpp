@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #define VREF			3.3f		// Reference voltage (Volt)
 
 #define SPI_MASTER_DEVICE	0		// 0, 4, 5, 6 on Raspberry Pi 4; 0 otherwise
+						// 0-3, 5 on Raspberry Pi 5
 #define SPI_CHIP_SELECT		0		// 0 or 1, or 2 (for SPI1)
 #define SPI_CLOCK_SPEED		1000000		// Hz
 

@@ -2,7 +2,7 @@
 // mcp300x.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,12 +37,16 @@ u8 CMCP300X::s_DifferentialMap[CMCP300X::Channels][CMCP300X::Channels] =
 
 CMCP300X::CMCP300X (CSPIMaster *pSPIMaster, float fVREF, unsigned nChipSelect, unsigned nClockSpeed)
 :	m_pSPIMaster (pSPIMaster),
+#if RASPPI <= 4
 	m_pSPIMasterAUX (0),
+#endif
 	m_fVREF (fVREF),
 	m_nChipSelect (nChipSelect),
 	m_nClockSpeed (nClockSpeed)
 {
 }
+
+#if RASPPI <= 4
 
 CMCP300X::CMCP300X (CSPIMasterAUX *pSPIMasterAUX, float fVREF, unsigned nChipSelect,
 		    unsigned nClockSpeed)
@@ -54,10 +58,14 @@ CMCP300X::CMCP300X (CSPIMasterAUX *pSPIMasterAUX, float fVREF, unsigned nChipSel
 {
 }
 
+#endif
+
 CMCP300X::~CMCP300X (void)
 {
 	m_pSPIMaster = 0;
+#if RASPPI <= 4
 	m_pSPIMasterAUX = 0;
+#endif
 }
 
 float CMCP300X::DoSingleEndedConversion (unsigned nChannel)
@@ -119,6 +127,7 @@ int CMCP300X::DoConversion (u8 nControl)
 	}
 	else
 	{
+#if RASPPI <= 4
 		assert (m_pSPIMasterAUX != 0);
 		m_pSPIMasterAUX->SetClock (m_nClockSpeed);
 
@@ -126,6 +135,9 @@ int CMCP300X::DoConversion (u8 nControl)
 		{
 			return -1;
 		}
+#else
+		assert (0);
+#endif
 	}
 
 	u16 usResult = RxBuffer[1] & 3;
