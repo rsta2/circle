@@ -56,9 +56,9 @@ Circle supports the following features:
 |                       | PWM output (2 channels)                             | 4 channels     |
 |                       | PWM sound output (on headphone jack)                | with adapter   |
 |                       | I2C master(s) and slave                             | masters only   |
-|                       | SPI0 master (Polling and DMA driver)                |                |
+|                       | SPI0 master (Polling and DMA driver)                | polling only   |
 |                       | SPI1 auxiliary master (Polling)                     |                |
-|                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          |                |
+|                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          | SPI1-3 and 5   |
 |                       | SMI master (experimental)                           |                |
 |                       | I2S sound output and input                          | x              |
 |                       | HDMI sound output (without VCHIQ)                   |                |

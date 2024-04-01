@@ -66,7 +66,7 @@ OBJS	+= gpioclock.o gpiomanager.o gpiopin.o gpiopinfiq.o i2cmaster.o i2cmasterir
 	   latencytester.o
 else
 OBJS	+= southbridge.o dmachannel-rp1.o gpiomanager2712.o gpiopin2712.o gpioclock-rp1.o \
-	   pwmoutput-rp1.o i2cmaster-rp1.o macb.o
+	   pwmoutput-rp1.o i2cmaster-rp1.o spimaster-rp1.o macb.o
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),3)
