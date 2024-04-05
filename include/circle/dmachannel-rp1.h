@@ -30,6 +30,17 @@ class CDMAChannelRP1	/// RP1 platform DMA controller support
 public:
 	enum TDREQ
 	{
+		DREQSourceSPI0RX	= 12,
+		DREQSourceSPI0TX	= 13,
+		DREQSourceSPI1RX	= 14,
+		DREQSourceSPI1TX	= 15,
+		DREQSourceSPI2RX	= 16,
+		DREQSourceSPI2TX	= 17,
+		DREQSourceSPI3RX	= 18,
+		DREQSourceSPI3TX	= 19,
+		DREQSourceSPI5RX	= 22,
+		DREQSourceSPI5TX	= 23,
+
 		DREQSourcePWM0		= 24,
 
 		DREQSourceI2S0RX	= 31,
@@ -68,7 +79,9 @@ public:
 	/// \param ulIOAddress	I/O address to be read from (ARM-side or bus address)
 	/// \param ulLength	Number of bytes to be transferred
 	/// \param DREQ		DREQ line for pacing the transfer
-	void SetupIORead (void *pDestination, uintptr ulIOAddress, size_t ulLength, TDREQ DREQ);
+	/// \param nIORegWidth	Width of the I/O register, 1 or 4 byte(s) (default)
+	void SetupIORead (void *pDestination, uintptr ulIOAddress, size_t ulLength, TDREQ DREQ,
+			  unsigned nIORegWidth = 4);
 
 	/// \brief Prepare a cyclic I/O read transfer
 	/// \param ppDestinations Pointer to an array with the destination buffer pointers
@@ -76,16 +89,19 @@ public:
 	/// \param ulIOAddress	I/O address to be read from (ARM-side or bus address)
 	/// \param ulLength	Number of bytes to be transferred per buffer
 	/// \param DREQ		DREQ line for pacing the transfer
+	/// \param nIORegWidth	Width of the I/O register, 1 or 4 byte(s) (default)
 	/// \note Transfer starts from first buffer again, when last buffer has been filled.
 	void SetupCyclicIORead (void *ppDestinations[], uintptr ulIOAddress, unsigned nBuffers,
-				size_t ulLength, TDREQ DREQ);
+				size_t ulLength, TDREQ DREQ, unsigned nIORegWidth = 4);
 
 	/// \brief Prepare an I/O write transfer
 	/// \param ulIOAddress	I/O address to be written (ARM-side or bus address)
 	/// \param pSource	Pointer to the source buffer
 	/// \param ulLength	Number of bytes to be transferred
 	/// \param DREQ		DREQ line for pacing the transfer
-	void SetupIOWrite (uintptr ulIOAddress, const void *pSource, size_t ulLength, TDREQ DREQ);
+	/// \param nIORegWidth	Width of the I/O register, 1 or 4 byte(s) (default)
+	void SetupIOWrite (uintptr ulIOAddress, const void *pSource, size_t ulLength, TDREQ DREQ,
+			   unsigned nIORegWidth = 4);
 
 	/// \brief Prepare a cyclic I/O write transfer
 	/// \param ulIOAddress	I/O address to be written (ARM-side or bus address)
@@ -93,9 +109,10 @@ public:
 	/// \param nBuffers	Number of source buffers
 	/// \param ulLength	Number of bytes to be transferred per buffer
 	/// \param DREQ		DREQ line for pacing the transfer
+	/// \param nIORegWidth	Width of the I/O register, 1 or 4 byte(s) (default)
 	/// \note Transfer starts from first buffer again, when last buffer has been sent.
 	void SetupCyclicIOWrite (uintptr ulIOAddress, const void *ppSources[], unsigned nBuffers,
-				 size_t ulLength, TDREQ DREQ);
+				 size_t ulLength, TDREQ DREQ, unsigned nIORegWidth = 4);
 
 	/// \brief Set completion routine to be called, when the transfer is finished
 	/// \param pRoutine Pointer to the completion routine

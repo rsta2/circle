@@ -41,9 +41,6 @@
 #define AXI_MAX_BURST_LEN	DWAXIDMAC_ARWLEN_8
 #define PRIORITY(chan)		(chan)
 
-// we only support 32-bit device registers
-#define DEVICE_ADDRESS_WIDTH	4
-
 // DMAC device registers
 #define COMMON_REG_LEN		0x100
 #define CHAN_REG_LEN		0x100
@@ -444,13 +441,14 @@ void CDMAChannelRP1::SetupMemCopy (void *pDestination, const void *pSource, size
 }
 
 void CDMAChannelRP1::SetupIORead (void *pDestination, uintptr ulIOAddress, size_t ulLength,
-				  TDREQ DREQ)
+				  TDREQ DREQ, unsigned nIORegWidth)
 {
-	SetupCyclicIORead (&pDestination, ulIOAddress, 1, ulLength, DREQ);
+	SetupCyclicIORead (&pDestination, ulIOAddress, 1, ulLength, DREQ, nIORegWidth);
 }
 
 void CDMAChannelRP1::SetupCyclicIORead (void *ppDestinations[], uintptr ulIOAddress,
-					unsigned nBuffers, size_t ulLength, TDREQ DREQ)
+					unsigned nBuffers, size_t ulLength, TDREQ DREQ,
+					unsigned nIORegWidth)
 {
 	assert (m_nChannel < Channels);
 	assert (!(  read32 (ARM_DMA_RP1_BASE + DMAC_CHEN) 		// channel is idle
@@ -477,7 +475,8 @@ void CDMAChannelRP1::SetupCyclicIORead (void *ppDestinations[], uintptr ulIOAddr
 			nMemWidth = DWAXIDMAC_TRANS_WIDTH_32;
 		}
 
-		u32 nRegWidth = ffs (DEVICE_ADDRESS_WIDTH);
+		assert (nIORegWidth == 1 || nIORegWidth == 4);
+		u32 nRegWidth = ffs (nIORegWidth) - 1;
 
 		if (nMemWidth > nRegWidth)
 		{
@@ -529,13 +528,14 @@ void CDMAChannelRP1::SetupCyclicIORead (void *ppDestinations[], uintptr ulIOAddr
 }
 
 void CDMAChannelRP1::SetupIOWrite (uintptr ulIOAddress, const void *pSource, size_t ulLength,
-				   TDREQ DREQ)
+				   TDREQ DREQ, unsigned nIORegWidth)
 {
-	SetupCyclicIOWrite (ulIOAddress, &pSource, 1, ulLength, DREQ);
+	SetupCyclicIOWrite (ulIOAddress, &pSource, 1, ulLength, DREQ, nIORegWidth);
 }
 
 void CDMAChannelRP1::SetupCyclicIOWrite (uintptr ulIOAddress, const void *ppSources[],
-					 unsigned nBuffers, size_t ulLength, TDREQ DREQ)
+					 unsigned nBuffers, size_t ulLength, TDREQ DREQ,
+					 unsigned nIORegWidth)
 {
 	assert (m_nChannel < Channels);
 	assert (!(  read32 (ARM_DMA_RP1_BASE + DMAC_CHEN) 		// channel is idle
@@ -562,7 +562,8 @@ void CDMAChannelRP1::SetupCyclicIOWrite (uintptr ulIOAddress, const void *ppSour
 			nMemWidth = DWAXIDMAC_TRANS_WIDTH_32;
 		}
 
-		u32 nRegWidth = ffs (DEVICE_ADDRESS_WIDTH);
+		assert (nIORegWidth == 1 || nIORegWidth == 4);
+		u32 nRegWidth = ffs (nIORegWidth) - 1;
 
 		assert (m_pLLI[i]);
 		memset (m_pLLI[i], 0, sizeof *m_pLLI[i]);
