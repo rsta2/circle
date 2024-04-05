@@ -19,6 +19,7 @@
 //
 #include <circle/spimaster.h>
 #include <circle/memio.h>
+#include <circle/sysconfig.h>
 #include <circle/sched/scheduler.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
