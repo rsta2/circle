@@ -2,7 +2,7 @@
 // bcm4343.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,6 +72,8 @@ public:
 	/// \param bHidden Whether to hide the SSID
 	/// \return Operation successful?
 	boolean CreateOpenNet (const char *pSSID, int nChannel, bool bHidden);
+	/// \brief Destroy created open network
+	boolean DestroyOpenNet (void);
 
 	void DumpStatus (void);
 
