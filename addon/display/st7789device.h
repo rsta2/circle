@@ -2,7 +2,7 @@
 // st7789device.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,15 +36,13 @@ public:
 	/// \param nRows    Display size in number of rows (max. 4)
 	/// \param bBlockCursor Use blinking block cursor instead of underline cursor
 	CST7789Device (CSPIMaster *pSPIMaster, CST7789Display *pST7789Display,
-		unsigned nColumns, unsigned nRows,
+		unsigned nColumns, unsigned nRows, bool bDoubleWidth = TRUE,
 		boolean bBlockCursor = FALSE);
 
 	~CST7789Device (void);
 
 	/// \return Operation successful?
 	boolean Initialize (void);
-
-	void DefineCharFont (char chChar, const u8 FontData[8]);
 
 private:
 	void DevClearCursor (void) override;
@@ -53,11 +51,15 @@ private:
 	void DevSetChar (unsigned nPosX, unsigned nPosY, char chChar) override;
 	void DevUpdateDisplay (void) override;
 
-	void WriteByte (u8 nData, int mode);
-
 private:
 	CSPIMaster		*m_pSPIMaster;
 	CST7789Display	*m_pST7789Display;
+
+	unsigned m_nColumns;
+	unsigned m_nRows;
+	unsigned m_nCharW;
+	unsigned m_nCharH;
+	bool     m_bDoubleWidth;
 
 	boolean m_bBlockCursor;
 };
