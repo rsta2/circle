@@ -73,6 +73,8 @@ public:
 	/// \brief Set the global rotation of the display
 	/// \param nRot (0, 90, 180, 270)
 	void SetRotation (unsigned nRot);
+	/// \return Rotation in degrees (0,90,180,270)
+	unsigned GetRotation (void) const	{ return m_nRotation; }
 
 	/// \brief Set display on
 	void On (void);

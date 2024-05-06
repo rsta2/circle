@@ -45,8 +45,14 @@ boolean CST7789Device::Initialize (void)
 	// initialising the character device, so nothing more to be
 	// done here other than checking the dimensions are sensible...
 	
+	unsigned r = m_pST7789Display->GetRotation();
 	unsigned w = m_pST7789Display->GetWidth();
-	unsigned h = m_pST7789Display->GetHeight();
+	unsigned h = m_pST7789Display->GetHeight();	
+	if (r==90 || r==270) {
+		// Swap w/h if rotated
+		w = m_pST7789Display->GetHeight();
+		h = m_pST7789Display->GetWidth();
+	}
 	
 	// st7789display uses the chargenerator, so check some properties here.
 	// NB: By default it uses width/height x 2, but that can be changed
