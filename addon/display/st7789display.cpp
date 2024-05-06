@@ -26,7 +26,6 @@
 //
 #include <display/st7789display.h>
 #include <assert.h>
-#include <stdio.h>
 
 #define ST7789_NOP	0x00
 #define ST7789_SWRESET	0x01
