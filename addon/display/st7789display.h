@@ -70,6 +70,10 @@ public:
 	/// \return Operation successful?
 	boolean Initialize (void);
 
+	/// \brief Set the global rotation of the display
+	/// \param nRot (0, 90, 180, 270)
+	void SetRotation (unsigned nRot);
+
 	/// \brief Set display on
 	void On (void);
 	/// \brief Set display off
@@ -91,8 +95,10 @@ public:
 	/// \param pString 0-terminated string of printable characters
 	/// \param Color RGB565 foreground color with swapped bytes (see: ST7789_COLOR())
 	/// \param BgColor RGB565 background color with swapped bytes (see: ST7789_COLOR())
+	/// \param bDoubleWidth default TRUE for thicker characters on screen
 	void DrawText (unsigned nPosX, unsigned nPosY, const char *pString,
-		       TST7789Color Color, TST7789Color BgColor = ST7789_BLACK_COLOR);
+		       TST7789Color Color, TST7789Color BgColor = ST7789_BLACK_COLOR,
+				bool bDoubleWidth = true);
 
 private:
 	void SetWindow (unsigned x0, unsigned y0, unsigned x1, unsigned y1);
@@ -103,6 +109,9 @@ private:
 	void Data (u8 uchByte)		{ SendByte (uchByte, TRUE); }
 
 	void SendData (const void *pData, size_t nLength);
+	
+	unsigned RotX (unsigned x, unsigned y);
+	unsigned RotY (unsigned x, unsigned y);
 
 private:
 	CSPIMaster *m_pSPIMaster;
@@ -114,6 +123,7 @@ private:
 	unsigned m_CPHA;
 	unsigned m_nClockSpeed;
 	unsigned m_nChipSelect;
+	unsigned m_nRotation;
 
 	CGPIOPin m_DCPin;
 	CGPIOPin m_ResetPin;

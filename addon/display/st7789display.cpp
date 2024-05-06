@@ -26,6 +26,7 @@
 //
 #include <display/st7789display.h>
 #include <assert.h>
+#include <stdio.h>
 
 #define ST7789_NOP	0x00
 #define ST7789_SWRESET	0x01
@@ -112,6 +113,8 @@ CST7789Display::CST7789Display (CSPIMaster *pSPIMaster,
 		m_ResetPin.AssignPin (m_nResetPin);
 		m_ResetPin.SetMode (GPIOModeOutput, FALSE);
 	}
+		
+	m_nRotation = 0;
 }
 
 boolean CST7789Display::Initialize (void)
@@ -212,12 +215,20 @@ boolean CST7789Display::Initialize (void)
 	Command (ST7789_INVON);		// Invert display
 
 	Command (ST7789_SLPOUT);
-
+	
 	Clear ();
 
 	On ();
 
 	return TRUE;
+}
+
+void CST7789Display::SetRotation (unsigned nRot)
+{
+	if (nRot == 0 || nRot == 90 || nRot == 180 || nRot == 270)
+	{
+		m_nRotation = nRot;
+	}
 }
 
 void CST7789Display::On (void)
@@ -252,22 +263,73 @@ void CST7789Display::Clear (TST7789Color Color)
 	}
 }
 
+unsigned CST7789Display::RotX (unsigned x, unsigned y)
+{
+	//   0 -> [x,y]
+	//  90 -> [y, MAX_Y-x]
+	// 180 -> [MAX_X-x, MAX_Y-y]
+	// 270 -> [MAX_X-y, x]
+	switch (m_nRotation)
+	{
+		case 90:
+			return y;
+			break;
+
+		case 180:
+			return m_nWidth - 1 - x;
+			break;
+
+		case 270:
+			return m_nWidth - 1 - y;
+			break;
+
+		default: // 0 or other
+			return x;
+			break;
+	}
+}
+
+unsigned CST7789Display::RotY (unsigned x, unsigned y)
+{
+	switch (m_nRotation)
+	{
+		case 90:
+			return m_nHeight - 1 - x;
+			break;
+
+		case 180:
+			return m_nHeight - 1 - y;
+			break;
+
+		case 270:
+			return x;
+			break;
+
+		default: // 0 or other
+			return y;
+			break;
+	}
+}
+
 void CST7789Display::SetPixel (unsigned nPosX, unsigned nPosY, TST7789Color Color)
 {
-	SetWindow (nPosX, nPosY, nPosX, nPosY);
+	unsigned xc = RotX(nPosX, nPosY);
+	unsigned yc = RotY(nPosX, nPosY);
+	SetWindow (xc, yc, xc, yc);
 
 	SendData (&Color, sizeof Color);
 }
 
 void CST7789Display::DrawText (unsigned nPosX, unsigned nPosY, const char *pString,
-			       TST7789Color Color, TST7789Color BgColor)
+			       TST7789Color Color, TST7789Color BgColor, bool bDoubleWidth)
 {
 	assert (pString != 0);
 
-	unsigned nCharWidth = m_CharGen.GetCharWidth () * 2;
+	unsigned nWidthScaler = (bDoubleWidth ? 2 : 1);
+	unsigned nCharWidth = m_CharGen.GetCharWidth () * nWidthScaler;
 	unsigned nCharHeight = m_CharGen.GetCharHeight () * 2;
 
-	TST7789Color Buffer[nCharHeight][nCharWidth];
+	TST7789Color Buffer[nCharHeight * nCharWidth];
 
 	char chChar;
 	while ((chChar = *pString++) != '\0')
@@ -276,12 +338,52 @@ void CST7789Display::DrawText (unsigned nPosX, unsigned nPosY, const char *pStri
 		{
 			for (unsigned x = 0; x < nCharWidth; x++)
 			{
-				Buffer[y][x] =   m_CharGen.GetPixel (chChar, x/2, y/2)
-					       ? Color : BgColor;
+				TST7789Color pix = m_CharGen.GetPixel (chChar, x/nWidthScaler, y/2)
+											? Color : BgColor;
+				// Rotation determines order of bytes in the buffer
+				switch (m_nRotation)
+				{
+					case 90:
+						// (Last C - C)*rows + R
+						Buffer[(nCharWidth-1-x)*nCharHeight + y] = pix;
+						break;
+					case 180:
+						// (Last R - R)*cols + (Last C - C)
+						Buffer[(nCharHeight-1-y)*nCharWidth + (nCharWidth-1-x)] = pix;
+						break;
+					case 270:
+						// C*rows + (Last R - R)
+						Buffer[x*nCharHeight + nCharHeight - 1 - y] = pix;
+						break;
+					default:
+						// R*cols + C
+						Buffer[y*nCharWidth + x] = pix;
+						break;
+				}
 			}
 		}
-
-		SetWindow (nPosX, nPosY, nPosX+nCharWidth-1, nPosY+nCharHeight-1);
+		
+		// Need to set different corners of the window depending on
+		// the rotation to avoid have negative/inside out windows.
+		unsigned x1=nPosX;
+		unsigned x2=nPosX+nCharWidth-1;
+		unsigned y1=nPosY;
+		unsigned y2=nPosY+nCharHeight-1;
+		switch (m_nRotation)
+		{
+			case 90:
+				SetWindow (RotX(x2,y1), RotY(x2,y1), RotX(x1,y2), RotY(x1,y2));
+				break;
+			case 180:
+				SetWindow (RotX(x2,y2), RotY(x2,y2), RotX(x1,y1), RotY(x1,y1));
+				break;
+			case 270:
+				SetWindow (RotX(x1,y2), RotY(x1,y2), RotX(x2,y1), RotY(x2,y1));
+				break;
+			default:
+				SetWindow (x1, y1, x2, y2);
+				break;
+		}
 
 		SendData (Buffer, sizeof Buffer);
 
