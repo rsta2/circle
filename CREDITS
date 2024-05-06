@@ -96,6 +96,7 @@ Adding WM8960 support to I2S sound driver
 @diyelectromusic
 Adding I2C support to HD44780 display driver
 Adding support for SSD1306 OLED display
+Adding character mode support for ST7789 display
 
 @nickverlinden
 Testing several USB Audio Pro streaming interfaces
