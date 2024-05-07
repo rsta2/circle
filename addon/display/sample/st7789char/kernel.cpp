@@ -38,7 +38,7 @@
 #define BACKLIGHT_PIN	CST7789Display::None
 
 #define COLS  15	// Max 40
-#define ROWS  4		// Max 4
+#define ROWS  4		// Max 10
 #define ROT   0 	// 0,90,180,270
 #define WIDECHARS	TRUE	// Set to false for thin characters
 #define TALLCHARS	TRUE	// Set to false for short characters
