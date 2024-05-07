@@ -214,10 +214,10 @@ boolean CST7789Display::Initialize (void)
 	Command (ST7789_INVON);		// Invert display
 
 	Command (ST7789_SLPOUT);
-	
-	Clear ();
 
 	On ();
+
+	Clear ();
 
 	return TRUE;
 }
