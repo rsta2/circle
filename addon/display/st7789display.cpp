@@ -320,13 +320,14 @@ void CST7789Display::SetPixel (unsigned nPosX, unsigned nPosY, TST7789Color Colo
 }
 
 void CST7789Display::DrawText (unsigned nPosX, unsigned nPosY, const char *pString,
-			       TST7789Color Color, TST7789Color BgColor, bool bDoubleWidth)
+			       TST7789Color Color, TST7789Color BgColor, bool bDoubleWidth, bool bDoubleHeight)
 {
 	assert (pString != 0);
 
 	unsigned nWidthScaler = (bDoubleWidth ? 2 : 1);
+	unsigned nHeightScaler = (bDoubleHeight ? 2 : 1);
 	unsigned nCharWidth = m_CharGen.GetCharWidth () * nWidthScaler;
-	unsigned nCharHeight = m_CharGen.GetCharHeight () * 2;
+	unsigned nCharHeight = m_CharGen.GetCharHeight () * nHeightScaler;
 
 	TST7789Color Buffer[nCharHeight * nCharWidth];
 
@@ -337,7 +338,7 @@ void CST7789Display::DrawText (unsigned nPosX, unsigned nPosY, const char *pStri
 		{
 			for (unsigned x = 0; x < nCharWidth; x++)
 			{
-				TST7789Color pix = m_CharGen.GetPixel (chChar, x/nWidthScaler, y/2)
+				TST7789Color pix = m_CharGen.GetPixel (chChar, x/nWidthScaler, y/nHeightScaler)
 											? Color : BgColor;
 				// Rotation determines order of bytes in the buffer
 				switch (m_nRotation)

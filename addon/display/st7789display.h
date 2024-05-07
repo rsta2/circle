@@ -100,7 +100,7 @@ public:
 	/// \param bDoubleWidth default TRUE for thicker characters on screen
 	void DrawText (unsigned nPosX, unsigned nPosY, const char *pString,
 		       TST7789Color Color, TST7789Color BgColor = ST7789_BLACK_COLOR,
-				bool bDoubleWidth = true);
+			bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE);
 
 private:
 	void SetWindow (unsigned x0, unsigned y0, unsigned x1, unsigned y1);

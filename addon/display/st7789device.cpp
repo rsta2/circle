@@ -23,7 +23,7 @@
 #include <assert.h>
 
 CST7789Device::CST7789Device (CSPIMaster *pSPIMaster, CST7789Display *pST7789Display,
-		unsigned nColumns, unsigned nRows, bool bDoubleWidth,
+		unsigned nColumns, unsigned nRows, bool bDoubleWidth, bool bDoubleHeight,
 		boolean bBlockCursor)
 :	CCharDevice (nColumns, nRows),
 	m_pSPIMaster (pSPIMaster),
@@ -31,6 +31,7 @@ CST7789Device::CST7789Device (CSPIMaster *pSPIMaster, CST7789Display *pST7789Dis
 	m_nColumns (nColumns),
 	m_nRows (nRows),
 	m_bDoubleWidth (bDoubleWidth),
+	m_bDoubleHeight (bDoubleHeight),
 	m_bBlockCursor (bBlockCursor)
 {
 }
@@ -59,7 +60,7 @@ boolean CST7789Device::Initialize (void)
 	//     for the width if required.
 	CCharGenerator cg;
 	m_nCharW = cg.GetCharWidth() * (m_bDoubleWidth ? 2 : 1);
-	m_nCharH = cg.GetCharHeight() * 2;	
+	m_nCharH = cg.GetCharHeight() * (m_bDoubleHeight ? 2 : 1);
 
 	if (m_nColumns * m_nCharW > w)
 	{
@@ -104,7 +105,7 @@ void CST7789Device::DevSetChar (unsigned nPosX, unsigned nPosY, char chChar)
 	unsigned nXC = nPosX * m_nCharW;
 	unsigned nYC = nPosY * m_nCharH;
 
-	m_pST7789Display->DrawText(nXC, nYC, s, ST7789_WHITE_COLOR, ST7789_BLACK_COLOR, m_bDoubleWidth);
+	m_pST7789Display->DrawText(nXC, nYC, s, ST7789_WHITE_COLOR, ST7789_BLACK_COLOR, m_bDoubleWidth, m_bDoubleHeight);
 }
 
 void CST7789Device::DevSetCursor (unsigned nCursorX, unsigned nCursorY)
