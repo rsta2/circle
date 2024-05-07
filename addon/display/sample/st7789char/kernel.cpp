@@ -40,7 +40,8 @@
 #define COLS  15	// Max 40
 #define ROWS  4		// Max 4
 #define ROT   0 	// 0,90,180,270
-#define WIDECHARS	true	// Set to false for thin characters
+#define WIDECHARS	TRUE	// Set to false for thin characters
+#define TALLCHARS	TRUE	// Set to false for short characters
 
 #define MY_COLOR		ST7789_COLOR (31, 31, 15)	// any color
 
@@ -117,7 +118,7 @@ boolean CKernel::Initialize (void)
 	if (bOK)
 	{
 		// Cannot instantiate the ST7789 device until the disply has been initialised
-		m_pLCD = new CST7789Device (&m_SPIMaster, &m_Display, COLS, ROWS, WIDECHARS);
+		m_pLCD = new CST7789Device (&m_SPIMaster, &m_Display, COLS, ROWS, WIDECHARS, TALLCHARS);
 		assert (m_pLCD);
 		bOK = m_pLCD->Initialize ();
 	}

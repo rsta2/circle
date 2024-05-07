@@ -36,7 +36,7 @@ public:
 	/// \param nRows    Display size in number of rows (max. 4)
 	/// \param bBlockCursor Use blinking block cursor instead of underline cursor
 	CST7789Device (CSPIMaster *pSPIMaster, CST7789Display *pST7789Display,
-		unsigned nColumns, unsigned nRows, bool bDoubleWidth = TRUE,
+		unsigned nColumns, unsigned nRows, bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE,
 		boolean bBlockCursor = FALSE);
 
 	~CST7789Device (void);
@@ -60,6 +60,7 @@ private:
 	unsigned m_nCharW;
 	unsigned m_nCharH;
 	bool     m_bDoubleWidth;
+	bool     m_bDoubleHeight;
 
 	boolean m_bBlockCursor;
 };
