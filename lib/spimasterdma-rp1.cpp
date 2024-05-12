@@ -129,7 +129,8 @@ static CDMAChannelRP1::TDREQ s_DREQ[DEVICES][DREQS] =
 LOGMODULE ("spi-rp1");
 
 CSPIMasterDMA::CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
-			      unsigned nClockSpeed, unsigned CPOL, unsigned CPHA, unsigned nDevice)
+			      unsigned nClockSpeed, unsigned CPOL, unsigned CPHA,
+			      boolean bDMAChannelLite, unsigned nDevice)
 :	m_nDevice (nDevice),
 	m_ulBaseAddress (0),
 	m_bValid (FALSE),

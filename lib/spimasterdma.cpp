@@ -52,7 +52,7 @@
 
 CSPIMasterDMA::CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
 			      unsigned nClockSpeed, unsigned CPOL, unsigned CPHA,
-			      boolean bDMAChannelLite)
+			      boolean bDMAChannelLite, unsigned nDevice)
 :	m_nClockSpeed (nClockSpeed),
 	m_CPOL (CPOL),
 	m_CPHA (CPHA),
@@ -66,6 +66,7 @@ CSPIMasterDMA::CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
 	m_nCoreClockRate (CMachineInfo::Get ()->GetClockRate (CLOCK_ID_CORE)),
 	m_pCompletionRoutine (0)
 {
+	assert (nDevice == 0);
 	assert (m_nCoreClockRate > 0);
 }
 

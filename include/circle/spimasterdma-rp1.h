@@ -39,7 +39,7 @@ public:
 public:
 	CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
 		       unsigned nClockSpeed = 500000, unsigned CPOL = 0, unsigned CPHA = 0,
-		       unsigned nDevice = 0);
+		       boolean bDMAChannelLite = TRUE, unsigned nDevice = 0);
 
 	~CSPIMasterDMA (void);
 

@@ -46,7 +46,7 @@ public:
 	// set bDMAChannelLite to FALSE for very high speeds or transfer sizes >= 64K
 	CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
 		       unsigned nClockSpeed = 500000, unsigned CPOL = 0, unsigned CPHA = 0,
-		       boolean bDMAChannelLite = TRUE);
+		       boolean bDMAChannelLite = TRUE, unsigned nDevice = 0);
 	~CSPIMasterDMA (void);
 
 	boolean Initialize (void);
