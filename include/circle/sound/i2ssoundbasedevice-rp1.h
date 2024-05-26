@@ -54,7 +54,8 @@ public:
 			     bool	       bSlave      = FALSE,
 			     CI2CMaster       *pI2CMaster  = 0,
 			     u8		       ucI2CAddress = 0,
-			     TDeviceMode       DeviceMode  = DeviceModeTXOnly);
+			     TDeviceMode       DeviceMode  = DeviceModeTXOnly,
+			     unsigned	       nHWChannels = 2);	// 2 or 8
 
 	virtual ~CI2SSoundBaseDevice (void);
 
@@ -105,11 +106,15 @@ private:
 	CI2CMaster *m_pI2CMaster;
 	u8 m_ucI2CAddress;
 	TDeviceMode m_DeviceMode;
+	unsigned m_nHWChannels;
 
 	CGPIOPin   m_PCMCLKPin;
 	CGPIOPin   m_PCMFSPin;
 	CGPIOPin   m_PCMDINPin;
 	CGPIOPin   m_PCMDOUTPin;
+	CGPIOPin   m_PCMDOUTPin1;
+	CGPIOPin   m_PCMDOUTPin2;
+	CGPIOPin   m_PCMDOUTPin3;
 	CGPIOClock m_Clock;
 
 	uintptr m_ulBase;

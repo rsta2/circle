@@ -3,9 +3,8 @@
 //
 // Supports:
 //	RP1 I2S output and input (not at once)
-//	two 24-bit audio channels
-//	cyclic DMA operation or programmed I/O operation with interrupt
-//	currently used clock is not precise
+//	two (or eight, TX master only) 24-bit audio channels
+//	cyclic DMA operation or programmed I/O (two channels only) operation with interrupt
 //	output tested with PCM5102A and PCM5122 DAC
 //
 // Ported from the Linux driver:
@@ -40,7 +39,7 @@
 #include <circle/util.h>
 #include <assert.h>
 
-#define CHANS		2			// 2 I2S stereo channels
+#define CHANS		2			// 2 I2S stereo channels (per stream)
 #define CHANLEN		32			// width of a channel slot in bits
 
 #define DMA_CHANNEL	0			// TODO: allocate dynamically
@@ -150,8 +149,9 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  bool		    bSlave,
 					  CI2CMaster       *pI2CMaster,
 					  u8                ucI2CAddress,
-					  TDeviceMode       DeviceMode)
-:	CSoundBaseDevice (SoundFormatSigned24_32, 0, nSampleRate),
+					  TDeviceMode       DeviceMode,
+					  unsigned	    nHWChannels)
+:
 #ifdef USE_I2S_SOUND_IRQ
 	m_pInterruptSystem (pInterrupt),
 #else
@@ -162,6 +162,7 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_pI2CMaster (pI2CMaster),
 	m_ucI2CAddress (ucI2CAddress),
 	m_DeviceMode (DeviceMode),
+	m_nHWChannels (nHWChannels),
 	m_PCMCLKPin (18, m_bSlave ? GPIOModeAlternateFunction4 : GPIOModeAlternateFunction2),
 	m_PCMFSPin (19, m_bSlave ? GPIOModeAlternateFunction4 : GPIOModeAlternateFunction2),
 	m_PCMDINPin (20, m_bSlave ? GPIOModeAlternateFunction4 : GPIOModeAlternateFunction2),
@@ -179,11 +180,29 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_bControllerInited (FALSE),
 	m_pController (nullptr)
 {
+	Setup (SoundFormatSigned24_32, 0, nSampleRate, m_nHWChannels, m_nHWChannels, FALSE);
+
 	if (m_DeviceMode == DeviceModeTXRX)
 	{
 		m_State = StateFailed;
 
 		return;
+	}
+
+	if (m_nHWChannels == 8)
+	{
+#ifdef USE_I2S_SOUND_IRQ
+		assert (0);	// 8 channels TX does not work in IRQ mode!
+#endif
+		assert (m_DeviceMode == DeviceModeTXOnly);
+		assert (!m_bSlave);
+
+		m_PCMDOUTPin1.AssignPin (23);
+		m_PCMDOUTPin1.SetMode (GPIOModeAlternateFunction2);
+		m_PCMDOUTPin2.AssignPin (25);
+		m_PCMDOUTPin2.SetMode (GPIOModeAlternateFunction2);
+		m_PCMDOUTPin3.AssignPin (27);
+		m_PCMDOUTPin3.SetMode (GPIOModeAlternateFunction2);
 	}
 
 	CDeviceNameService::Get ()->AddDevice ("sndi2s", this, FALSE);
@@ -372,13 +391,20 @@ boolean CI2SSoundBaseDevice::RunI2S (void)
 	if (m_DeviceMode == DeviceModeTXOnly)
 	{
 		assert (COMP1_TX_ENABLED (nCOMP1));
-
-		write32 (m_ulBase + TCR (0), xCR_FORMAT_S24_LE);
-		write32 (m_ulBase + TFCR (0), m_nFIFOThreshold - 1);
-		write32 (m_ulBase + TER (0), TER_TXCHEN);
+		assert (2 * (COMP1_TX_CHANNELS (nCOMP1) + 1) >= m_nHWChannels);
 
 		nDMACR &= ~(DMACR_DMAEN_TXCH0 * 0xf);
-		nDMACR |= DMACR_DMAEN_TXCH0 | DMACR_DMAEN_TX;
+
+		for (unsigned i = 0; i < m_nHWChannels / 2; i++)
+		{
+			write32 (m_ulBase + TCR (i), xCR_FORMAT_S24_LE);
+			write32 (m_ulBase + TFCR (i), m_nFIFOThreshold - 1);
+			write32 (m_ulBase + TER (i), TER_TXCHEN);
+
+			nDMACR |= DMACR_DMAEN_TXCH0 << i;
+		}
+
+		nDMACR |= DMACR_DMAEN_TX;
 		write32 (m_ulBase + I2S_DMACR, nDMACR);
 
 		write32 (m_ulBase + TXFFR, 1);
@@ -395,6 +421,7 @@ boolean CI2SSoundBaseDevice::RunI2S (void)
 	{
 		assert (m_DeviceMode == DeviceModeRXOnly);
 		assert (COMP1_RX_ENABLED (nCOMP1));
+		assert (m_nHWChannels == 2);
 
 		write32 (m_ulBase + RCR (0), xCR_FORMAT_S24_LE);
 		write32 (m_ulBase + RFCR (0), m_nFIFOThreshold - 1);
