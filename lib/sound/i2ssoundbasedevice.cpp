@@ -11,7 +11,7 @@
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -92,7 +92,8 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  bool		    bSlave,
 					  CI2CMaster       *pI2CMaster,
 					  u8                ucI2CAddress,
-					  TDeviceMode       DeviceMode)
+					  TDeviceMode       DeviceMode,
+					  unsigned	    nHWChannels)
 :	CSoundBaseDevice (SoundFormatSigned24_32, 0, nSampleRate),
 	m_nChunkSize (nChunkSize),
 	m_bSlave (bSlave),
@@ -108,6 +109,7 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 {
 	assert (m_nChunkSize >= 32);
 	assert ((m_nChunkSize & 1) == 0);
+	assert (nHWChannels == 2);
 
 	// start clock and I2S device
 	if (!m_bSlave)

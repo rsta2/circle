@@ -189,6 +189,7 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 		return;
 	}
 
+	assert (m_nHWChannels == 2 || m_nHWChannels == 8);
 	if (m_nHWChannels == 8)
 	{
 #ifdef USE_I2S_SOUND_IRQ

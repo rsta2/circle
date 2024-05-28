@@ -49,8 +49,8 @@ public:
 
 public:
 	CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
-			     unsigned	       nSampleRate = 48000,
-			     unsigned	       nChunkSize  = 128,	// ignored in IRQ mode
+			     unsigned	       nSampleRate = 192000,
+			     unsigned	       nChunkSize  = 8192,	// ignored in IRQ mode
 			     bool	       bSlave      = FALSE,
 			     CI2CMaster       *pI2CMaster  = 0,
 			     u8		       ucI2CAddress = 0,

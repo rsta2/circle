@@ -54,13 +54,15 @@ public:
 	/// \param pI2CMaster	pointer to the I2C master object (0 if no I2C DAC init required)
 	/// \param ucI2CAddress I2C slave address of the DAC (0 for auto probing 0x4C and 0x4D)
 	/// \param DeviceMode	which transfer direction to use?
+	/// \param nHWChannels	number of hardware channels (2 or 8 (Raspberry Pi 5 only))
 	CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 			     unsigned	       nSampleRate = 192000,
 			     unsigned	       nChunkSize  = 8192,
 			     bool	       bSlave      = FALSE,
 			     CI2CMaster       *pI2CMaster  = 0,
 			     u8		       ucI2CAddress = 0,
-			     TDeviceMode       DeviceMode  = DeviceModeTXOnly);
+			     TDeviceMode       DeviceMode  = DeviceModeTXOnly,
+			     unsigned	       nHWChannels = 2);
 
 	virtual ~CI2SSoundBaseDevice (void);
 
