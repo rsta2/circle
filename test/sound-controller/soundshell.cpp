@@ -75,7 +75,7 @@ const char CSoundShell::HelpMsg[] =
 	"\t\t|spdif|defaultin|linein|microphone)\n"
 	"disable JACK\tDisable jack (multi-jack operation only)\n"
 	"controlinfo CTRL CHAN [JACK]\t\t\t\t\t\tinfo\n"
-	"\t\tDisplay control (mute|volume) info\n"
+	"\t\tDisplay control (mute|volume|alc) info\n"
 	"\t\tfor channel (all|l|r|NUM) [and jack]\n"
 	"setcontrol CTRL CHAN VAL [JACK]\t\t\t\t\t\tset\n"
 	"\t\tSet control for channel [and jack] to value\n"
@@ -129,6 +129,7 @@ const CSoundShell::TStringMapping CSoundShell::s_ControlMap[] =
 {
 	{"mute",	CSoundController::ControlMute},
 	{"volume",	CSoundController::ControlVolume},
+	{"alc",		CSoundController::ControlALC},
 	{0,		CSoundController::ControlUnknown}
 };
 
