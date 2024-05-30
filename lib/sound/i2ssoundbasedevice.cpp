@@ -95,6 +95,7 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  TDeviceMode       DeviceMode,
 					  unsigned	    nHWChannels)
 :	CSoundBaseDevice (SoundFormatSigned24_32, 0, nSampleRate),
+	m_nSampleRate (nSampleRate),
 	m_nChunkSize (nChunkSize),
 	m_bSlave (bSlave),
 	m_pI2CMaster (pI2CMaster),
@@ -443,7 +444,10 @@ boolean CI2SSoundBaseDevice::ControllerFactory (void)
 	m_pController = nullptr;
 
 	// WM8960
-	m_pController = new CWM8960SoundController (m_pI2CMaster, m_ucI2CAddress);
+	m_pController = new CWM8960SoundController (m_pI2CMaster, m_ucI2CAddress,
+						    m_nSampleRate,
+						    m_DeviceMode != DeviceModeRXOnly,
+						    m_DeviceMode != DeviceModeTXOnly);
 	assert (m_pController);
 
 	if (m_pController->Probe ())

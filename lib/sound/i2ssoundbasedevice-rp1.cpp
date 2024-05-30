@@ -632,7 +632,10 @@ boolean CI2SSoundBaseDevice::ControllerFactory (void)
 	m_pController = nullptr;
 
 	// WM8960
-	m_pController = new CWM8960SoundController (m_pI2CMaster, m_ucI2CAddress);
+	m_pController = new CWM8960SoundController (m_pI2CMaster, m_ucI2CAddress,
+						    m_nSampleRate,
+						    m_DeviceMode != DeviceModeRXOnly,
+						    m_DeviceMode != DeviceModeTXOnly);
 	assert (m_pController);
 
 	if (m_pController->Probe ())

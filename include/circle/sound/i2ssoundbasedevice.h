@@ -112,6 +112,7 @@ private:
 	boolean ControllerFactory (void);
 
 private:
+	unsigned m_nSampleRate;
 	unsigned m_nChunkSize;
 	bool     m_bSlave;
 	CI2CMaster *m_pI2CMaster;
