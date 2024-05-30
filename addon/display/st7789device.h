@@ -34,6 +34,8 @@ public:
 	/// \param pST7789Display
 	/// \param nColumns Display size in number of columns (max. 40)
 	/// \param nRows    Display size in number of rows (max. 4)
+	/// \param bDoubleWidth Use thicker characters on screen
+	/// \param bDoubleHeight Use higher characters on screen
 	/// \param bBlockCursor Use blinking block cursor instead of underline cursor
 	CST7789Device (CSPIMaster *pSPIMaster, CST7789Display *pST7789Display,
 		unsigned nColumns, unsigned nRows, bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE,

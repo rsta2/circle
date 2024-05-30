@@ -98,6 +98,7 @@ public:
 	/// \param Color RGB565 foreground color with swapped bytes (see: ST7789_COLOR())
 	/// \param BgColor RGB565 background color with swapped bytes (see: ST7789_COLOR())
 	/// \param bDoubleWidth default TRUE for thicker characters on screen
+	/// \param bDoubleHeight default TRUE for higher characters on screen
 	void DrawText (unsigned nPosX, unsigned nPosY, const char *pString,
 		       TST7789Color Color, TST7789Color BgColor = ST7789_BLACK_COLOR,
 			bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE);
