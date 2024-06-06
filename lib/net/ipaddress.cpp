@@ -156,6 +156,13 @@ boolean CIPAddress::IsBroadcast (void) const
 	return m_nAddress == 0xFFFFFFFF;
 }
 
+boolean CIPAddress::IsMulticast (void) const
+{
+	assert (m_bValid);
+	u8 uchAddress0 = m_nAddress & 0xFF;
+	return 224 <= uchAddress0 && uchAddress0 <= 239;
+}
+
 unsigned CIPAddress::GetSize (void) const
 {
 	return IP_ADDRESS_SIZE;

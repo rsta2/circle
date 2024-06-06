@@ -54,6 +54,7 @@ public:
 	boolean IsSet (void) const;
 	boolean IsNull (void) const;
 	boolean IsBroadcast (void) const;
+	boolean IsMulticast (void) const;
 	unsigned GetSize (void) const;
 
 	void Format (CString *pString) const;

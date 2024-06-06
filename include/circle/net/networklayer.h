@@ -2,7 +2,7 @@
 // networklayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ struct TIPHeader
 #define IP_FLAGS_MF			(1 << 5)
 	u8	nTTL;
 #define IP_TTL_DEFAULT			64
+#define IP_TTL_MULTICAST		1
 	u8	nProtocol;				// see: in.h
 	u16	nHeaderChecksum;
 	u8	SourceAddress[IP_ADDRESS_SIZE];

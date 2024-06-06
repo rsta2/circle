@@ -2,7 +2,7 @@
 // networklayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -156,7 +156,7 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 	pHeader->nTotalLength         = le2be16 ((u16) nPacketLength);
 	pHeader->nIdentification      = BE (IP_IDENTIFICATION_DEFAULT);
 	pHeader->nFlagsFragmentOffset = IP_FLAGS_DF | BE (IP_FRAGMENT_OFFSET_FIRST);
-	pHeader->nTTL                 = IP_TTL_DEFAULT;
+	pHeader->nTTL                 = rReceiver.IsMulticast () ? IP_TTL_MULTICAST : IP_TTL_DEFAULT;
 	pHeader->nProtocol            = (u8) nProtocol;
 
 	assert (m_pNetConfig != 0);
@@ -184,7 +184,8 @@ boolean CNetworkLayer::Send (const CIPAddress &rReceiver, const void *pPacket, u
 
 	CIPAddress GatewayIP;
 	const CIPAddress *pNextHop = &rReceiver;
-	if (!pOwnIPAddress->OnSameNetwork (rReceiver, m_pNetConfig->GetNetMask ()))
+	if (   !rReceiver.IsMulticast ()
+	    && !pOwnIPAddress->OnSameNetwork (rReceiver, m_pNetConfig->GetNetMask ()))
 	{
 		const u8 *pGateway = m_RouteCache.GetRoute (rReceiver.Get ());
 		if (pGateway != 0)
