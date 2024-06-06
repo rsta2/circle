@@ -2,7 +2,7 @@
 // netsubsystem.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,6 +53,8 @@ public:
 	CTransportLayer *GetTransportLayer (void);
 
 	boolean IsRunning (void) const;			// is DHCP bound if used?
+
+	const char *GetHostname (void) const;
 
 	static CNetSubSystem *Get (void);
 
