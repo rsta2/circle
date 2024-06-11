@@ -29,7 +29,7 @@ const TUSBDeviceDescriptor CUSBCDCGadget::s_DeviceDescriptor =
 	sizeof (TUSBDeviceDescriptor),
 	DESCRIPTOR_DEVICE,
 	0x200,				// bcdUSB
-	0, 0, 0,
+	2, 0, 0,			// bDeviceClass
 	64,				// wMaxPacketSize0
 	USB_GADGET_VENDOR_ID,
 	USB_GADGET_DEVICE_ID_SERIAL_CDC,
