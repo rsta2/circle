@@ -22,7 +22,6 @@
 //
 #include <circle/usb/gadget/dwusbgadget.h>
 #include <circle/usb/gadget/dwusbgadgetendpoint0.h>
-#include <circle/usb/usb.h>
 #include <circle/sched/scheduler.h>
 #include <circle/machineinfo.h>
 #include <circle/bcmpropertytags.h>
@@ -184,6 +183,13 @@ boolean CDWUSBGadget::UpdatePlugAndPlay (void)
 	}
 
 	return bResult;
+}
+
+int CDWUSBGadget::OnClassOrVendorRequest (const TSetupData *pSetupData, u8 *pData)
+{
+	assert (pSetupData);
+
+	return pSetupData->bmRequestType & REQUEST_IN ? -1 : 0;
 }
 
 boolean CDWUSBGadget::PowerOn (void)
