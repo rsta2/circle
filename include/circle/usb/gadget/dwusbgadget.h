@@ -70,7 +70,7 @@ public:
 
 	/// \brief A class or vendor request has been received on EP0
 	/// \param pSetupData Contents of the Setup packet
-	/// \param pBuffer Received data (host-to-device), or buffer for data to be sent
+	/// \param pData Received data (host-to-device), or buffer for data to be sent
 	/// \return Number of bytes in pData to be sent, or < 0 on error (STALL the request)
 	/// \note By default host-to-device requests will be ignored and other requests will be STALLed
 	virtual int OnClassOrVendorRequest (const TSetupData *pSetupData, u8 *pData);
