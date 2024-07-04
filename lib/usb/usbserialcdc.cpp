@@ -2,7 +2,7 @@
 // usbserialcdc.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <assert.h>
 
 #define SET_LINE_CODING			0x20
+#define SET_CONTROL_LINE_STATE		0x22
 
 struct TLineCoding
 {
@@ -70,7 +71,23 @@ boolean CUSBSerialCDCDevice::Configure (void)
 		return FALSE;
 	}
 
-	return SetLineCoding ();
+	if (!SetLineCoding ())
+	{
+		return FALSE;
+	}
+
+	// enable DTR and RTS
+	if (GetHost ()->ControlMessage (GetEndpoint0 (),
+					REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+					SET_CONTROL_LINE_STATE, 3, m_ucCommunicationsInterfaceNumber,
+					0, 0) < 0)
+	{
+		CLogger::Get ()->Write (From, LogError, "Cannot set control line state");
+
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 boolean CUSBSerialCDCDevice::SetBaudRate (unsigned nBaudRate)
