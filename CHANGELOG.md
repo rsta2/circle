@@ -3,8 +3,49 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+The 47th Step
+-------------
+
+This release provides a number of **new features for the Raspberry Pi 5**, which were already available for earlier models:
+
+* SPI master support (polling and DMA driver)
+* I2S sound (output or input, DMA or programmed I/O operation)
+* PWM sound (requires external circuit on GPIO12/13 or GPIO18/19)
+* PWM output (4 channels)
+* GPIO clocks (GP0-2)
+* `CGPIOPin::WriteAll()` and `CGPIOPin::ReadAll()`
+
+The following **new hardware features of the Raspberry Pi 5** are supported now:
+
+* Real-time clock (class `CFirmwareRTC` in [addon/rtc](addon/rtc))
+* Power button (Function `is_power_button_pressed()`)
+* Function `main()` can return `EXIT_POWER_OFF` to power-off the system
+* 8-channels I2S sound output (via GPIO21/23/25/27, e.g. for HifiBerry DAC8x)
+
+The **WM8960 I2S sound driver** has been revised and provides a better audio quality and the sound controller jack and control functions now. The new sound controller control `ControlALC` (Automatic Level Control) has been defined and implemented for the WM8960. ALC is disabled by default now. The WM8960 driver supports sample rates of 44100 and 48000.
+
+More news:
+
+* A new **IRQ-based driver for the I2C master** of Raspberry Pi 1-4 is available.
+* A **character mode for ST7789-based dot-matrix displays** is available.
+* The **timing of the GPIO pin driver** has been improved on the Raspberry Pi 5 by using the RIO module.
+* There is a **new GPIO pin mode** `GPIOModeNone`, which disables the GPIO pin on the Raspberry Pi 5. On other models it has the same function as `GPIOModeInput`.
+* The new static method `CGPIOPin::SetModeAll()` allows to **set the mode of the GPIO pins 0-31 at once** to input or output.
+* **IP multi-cast support level 1** according to RFC 1112 is implemented (send only).
+* The **LVGL support** has been updated to LVGL v8.3.11.
+
+Fixes:
+
+* The USB serial CDC gadget was not detected on Windows 10.
+* The Raspberry Pi Debug Probe UART did not work with the USB serial CDC driver.
+* The class `CPWMSoundDevice` did not apply the full chunk size.
+
+The recommended firmware and toolchain versions have been updated.
+
 The 46th Step
 -------------
+
+2024-02-28
 
 With this release Circle initially **supports the Raspberry Pi 5**. There are many features, which are not available yet, but important features like USB and networking are supported. Please see the [Circle documentation](https://circle-rpi.readthedocs.io/en/46.0/appendices/raspberry-pi-5.html) for more information on Raspberry Pi 5 support!
 

@@ -8,16 +8,44 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-The 46th Step
+The 47th Step
 -------------
 
-With this release Circle initially **supports the Raspberry Pi 5**. There are many features, which are not available yet, but important features like USB and networking are supported. Please see the [Circle documentation](https://circle-rpi.readthedocs.io/en/46.0/appendices/raspberry-pi-5.html) for more information on Raspberry Pi 5 support!
+This release provides a number of **new features for the Raspberry Pi 5**, which were already available for earlier models:
 
-Circle comes with an **USB serial CDC gadget** now, which allows to communicate with a Circle application from a host computer via a serial interface without an USB serial adapter. This can be tested with the [test/usb-serial-cdc-gadget](test/usb-serial-cdc-gadget/).
+* SPI master support (polling and DMA driver)
+* I2S sound (output or input, DMA or programmed I/O operation)
+* PWM sound (requires external circuit on GPIO12/13 or GPIO18/19)
+* PWM output (4 channels)
+* GPIO clocks (GP0-2)
+* `CGPIOPin::WriteAll()` and `CGPIOPin::ReadAll()`
 
-The **properties file library** in [addon/Properties](addon/Properties/) supports section headers now.
+The following **new hardware features of the Raspberry Pi 5** are supported now:
 
-A possible race condition in `CTimer` has been fixed, which could only occur with the KY-040 rotary encoder module driver.
+* Real-time clock (class `CFirmwareRTC` in [addon/rtc](addon/rtc))
+* Power button (Function `is_power_button_pressed()`)
+* Function `main()` can return `EXIT_POWER_OFF` to power-off the system
+* 8-channels I2S sound output (via GPIO21/23/25/27, e.g. for HifiBerry DAC8x)
+
+The **WM8960 I2S sound driver** has been revised and provides a better audio quality and the sound controller jack and control functions now. The new sound controller control `ControlALC` (Automatic Level Control) has been defined and implemented for the WM8960. ALC is disabled by default now. The WM8960 driver supports sample rates of 44100 and 48000.
+
+More news:
+
+* A new **IRQ-based driver for the I2C master** of Raspberry Pi 1-4 is available.
+* A **character mode for ST7789-based dot-matrix displays** is available.
+* The **timing of the GPIO pin driver** has been improved on the Raspberry Pi 5 by using the RIO module.
+* There is a **new GPIO pin mode** `GPIOModeNone`, which disables the GPIO pin on the Raspberry Pi 5. On other models it has the same function as `GPIOModeInput`.
+* The new static method `CGPIOPin::SetModeAll()` allows to **set the mode of the GPIO pins 0-31 at once** to input or output.
+* **IP multi-cast support level 1** according to RFC 1112 is implemented (send only).
+* The **LVGL support** has been updated to LVGL v8.3.11.
+
+Fixes:
+
+* The USB serial CDC gadget was not detected on Windows 10.
+* The Raspberry Pi Debug Probe UART did not work with the USB serial CDC driver.
+* The class `CPWMSoundDevice` did not apply the full chunk size.
+
+The recommended firmware and toolchain versions have been updated.
 
 Features
 --------
@@ -199,18 +227,8 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CMACBDevice: Driver for MACB/GEM Ethernet NIC of Raspberry Pi 5
-* CSouthbridge: Driver for the RP1 multi-function device of the Raspberry Pi 5
-
-USB library
-
-* CUSBSerialHostDevice: Generic host driver for USB serial devices (was: CUSBSerialDevice)
-* CUSBSubSystem: USB sub-system of the Raspberry Pi 5
-
-USB gadget library
-
-* CUSBCDCGadget: USB serial CDC gadget
-* CUSBCDCGadgetEndpoint: Endpoint of the USB serial CDC gadget
+* CDMAChannelRP1: RP1 platform DMA controller support (for Raspberry Pi 5)
+* CI2CMasterIRQ: Driver for I2C master devices (asynchronous using IRQ, for Raspberry Pi 1-4)
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 
