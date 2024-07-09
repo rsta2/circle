@@ -2,7 +2,7 @@
 // mcp300x.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,12 +40,14 @@ public:
 	CMCP300X (CSPIMaster *pSPIMaster, float fVREF,
 		  unsigned nChipSelect = 0, unsigned nClockSpeed = 1000000);
 
+#if RASPPI <= 4
 	/// \param pSPIMasterAUX Pointer to SPI AUX master object to be used
 	/// \param fVREF Reference voltage (e.g. 3.3)
 	/// \param nChipSelect /CS line (0, 1 or 2)
 	/// \param nClockSpeed SPI clock speed (Hz)
 	CMCP300X (CSPIMasterAUX *pSPIMasterAUX, float fVREF,
 		  unsigned nChipSelect = 0, unsigned nClockSpeed = 1000000);
+#endif
 
 	~CMCP300X (void);
 
@@ -74,7 +76,9 @@ private:
 
 private:
 	CSPIMaster *m_pSPIMaster;
+#if RASPPI <= 4
 	CSPIMasterAUX *m_pSPIMasterAUX;
+#endif
 	float m_fVREF;
 	unsigned m_nChipSelect;
 	unsigned m_nClockSpeed;

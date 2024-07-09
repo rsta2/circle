@@ -2,7 +2,7 @@
 // tcpconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,13 +62,15 @@ class CTCPConnection : public CNetConnection
 public:
 	CTCPConnection (CNetConfig	*pNetConfig,		// active OPEN
 			CNetworkLayer	*pNetworkLayer,
-			CIPAddress	&rForeignIP,
+			const CIPAddress &rForeignIP,
 			u16		 nForeignPort,
 			u16		 nOwnPort);
 	CTCPConnection (CNetConfig	*pNetConfig,		// passive OPEN
 			CNetworkLayer	*pNetworkLayer,
 			u16		 nOwnPort);
 	~CTCPConnection (void);
+
+	const char *GetStateName (void) const;
 
 	int Connect (void);
 	int Accept (CIPAddress *pForeignIP, u16 *pForeignPort);
@@ -77,7 +79,8 @@ public:
 	int Send (const void *pData, unsigned nLength, int nFlags);
 	int Receive (void *pBuffer, int nFlags);
 
-	int SendTo (const void *pData, unsigned nLength, int nFlags, CIPAddress	&rForeignIP, u16 nForeignPort);
+	int SendTo (const void *pData, unsigned nLength, int nFlags,
+		    const CIPAddress &rForeignIP, u16 nForeignPort);
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort);
 
 	int SetOptionBroadcast (boolean bAllowed);
@@ -162,6 +165,8 @@ private:
 	CRetransmissionTimeoutCalculator m_RTOCalculator;
 
 	static unsigned s_nConnections;
+
+	static const char *s_pStateName[];
 };
 
 #endif

@@ -20,7 +20,7 @@ CHn		input voltage (0..VREF, n = 0..7)
 Before build you may have to change the configuration options in the files
 kernel.h (enable the #define USE_SPI_MASTER_AUX to use the SPI1 (AUX) master
 instead of SPI0) and kernel.cpp (e.g. CHANNEL and/or VREF). On the Raspberry Pi
-4 there are additional SPI master devices, which can be used too. Please see the
-file include/circle/spimaster.h for their pinout!
+4 and 5 there are additional SPI master devices, which can be used too. Please
+see the file include/circle/spimaster.h for their pinout!
 
 For more information see the MCP3004/3008 datasheet!

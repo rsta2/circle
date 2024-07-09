@@ -19,6 +19,7 @@ Base library
 * CDeviceTreeBlob: Simple Devicetree blob parser
 * CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
 * CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
+* CDMAChannelRP1: RP1 platform DMA controller support (for Raspberry Pi 5).
 * CExceptionHandler: Generates a stack-trace and a panic message if an abort exception occurs.
 * CGPIOClock: Using GPIO clocks, initialize, start and stop it.
 * CGPIOManager: Interrupt multiplexer for CGPIOPin (only required if GPIO interrupt is used).
@@ -27,6 +28,7 @@ Base library
 * CGenericLock: Locks a resource with or without scheduler.
 * CHeapAllocator: Allocates blocks from a flat memory region.
 * CI2CMaster: Driver for I2C master devices.
+* CI2CMasterIRQ: Driver for I2C master devices - async using IRQ.
 * CI2CSlave: Driver for I2C slave device.
 * CInterruptSystem: Connecting to interrupts, an interrupt handler will be called on interrupt.
 * CKernelOptions: Providing kernel options from file cmdline.txt (see doc/cmdline.txt).

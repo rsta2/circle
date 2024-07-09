@@ -10,9 +10,9 @@ SAMPLES
 08-usbkeyboard	[PnP,5]	Echoing typed characters to screen, or keyboard raw mode
 09-softserial	[5]	GPIO interrupt demonstration, serial interface via non-UART GPIO-pins
 10-usbmouse	[PnP]	Little painting program with USB mouse support
-11-gpioclock		Using GPIO clock 0 to generate a square wave signal and sampling this signal to display it
-12-pwmsound		Using PWM device and DMA controller to playback a short sound sample
-13-pwmoutput		Using PWM device to continously change the brightness of a connected LED
+11-gpioclock	[5]	Using GPIO clock 0 to generate a square wave signal and sampling this signal to display it
+12-pwmsound	[5]	Using PWM device and DMA controller to playback a short sound sample
+13-pwmoutput	[5]	Using PWM device to continously change the brightness of a connected LED
 14-usbprinter	[5]	Printing some text lines on an USB printer (GDI printers do not work)
 15-files	[5]	Root directory listing of a connected USB drive, writing and reading the file "circle.txt"
 16-i2cping		Transfering data blocks between two Raspberry Pis connected via I2C
@@ -21,9 +21,9 @@ SAMPLES
 19-tasks	[5]	Demonstrating the cooperative non-preemtive scheduler
 20-tcpsimple	[5]	Simple TCP echo server
 21-webserver	[5]	Simple HTTP webserver which controls the Act LED
-23-spisimple		Transfers some data bytes to/from a SPI slave device. Dumps the received bytes.
+23-spisimple	[5]	Transfers some data bytes to/from a SPI slave device. Dumps the received bytes.
 24-hwrandom	[5]	Demonstrating the hardware random number generator.
-25-spidma		Transfers some data bytes to/from a SPI slave device using DMA.
+25-spidma	[5]	Transfers some data bytes to/from a SPI slave device using DMA.
 26-cpustress	[5]	Calculates fractal images to stress the CPU. Displays a SoC temperature chart.
 27-usbgamepad	[PnP,5]	Displaying information about an attached USB gamepad and its current state.
 28-touchscreen		Displaying touch events from the official Raspberry Pi touch screen.
@@ -40,7 +40,7 @@ SAMPLES
 39-umsdplugging	[PnP,5]	Plug in and remove USB flash drives, list directory
 40-irqlatency	[PnP]	Displays the maximum measured IRQ latency
 41-screenanimations	2D graphical shapes demo on screen without flickering or screen tearing
-42-soundinput		I2S or USB to PWM sound data converter and digital sound recorder
+42-soundinput	[5]	I2S or USB to PWM sound data converter and digital sound recorder
 
 Samples marked with [PnP] are enabled for USB plug-and-play.
 Samples marked with [5] are working on the Raspberry Pi 5.

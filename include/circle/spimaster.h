@@ -2,7 +2,7 @@
 /// \file spimaster.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 /// - Chip select lines (CE0, CE1) are active low
 /// - Polled operation only
 ///
-/// \details GPIO pin mapping (chip numbers)
+/// \details GPIO pin mapping (chip numbers, Raspberry Pi 1-4)
 /// nDevice | MISO   | MOSI   | SCLK   | CE0    | CE1    | Support
 /// :-----: | :----: | :----: | :----: | :----: | :----: | :------
 /// 0       | GPIO9  | GPIO10 | GPIO11 | GPIO8  | GPIO7  | All boards
@@ -44,6 +44,21 @@
 /// 5       | GPIO13 | GPIO14 | GPIO15 | GPIO12 | GPIO26 | Raspberry Pi 4 only
 /// 6       | GPIO19 | GPIO20 | GPIO21 | GPIO18 | GPIO27 | Raspberry Pi 4 only
 /// GPIO0/1 are normally reserved for ID EEPROM.
+///
+/// \details GPIO pin mapping (Raspberry Pi 5)
+/// nDevice | MISO   | MOSI   | SCLK   | CE0    | CE1    | Support
+/// :-----: | :----: | :----: | :----: | :----: | :----: | :------
+/// 0       | GPIO9  | GPIO10 | GPIO11 | GPIO8  | GPIO7  | Raspberry Pi 5 only
+/// 1       | GPIO19 | GPIO20 | GPIO21 | GPIO18 | GPIO17 | Raspberry Pi 5 only
+/// 2       | GPIO1  | GPIO2  | GPIO3  | GPIO0  | GPIO24 | Raspberry Pi 5 only
+/// 3       | GPIO5  | GPIO6  | GPIO7  | GPIO4  | GPIO25 | Raspberry Pi 5 only
+/// 4       |        |        |        |        |        | None
+/// 5       | GPIO13 | GPIO14 | GPIO15 | GPIO12 | GPIO26 | Raspberry Pi 5 only
+/// GPIO0/1 are normally reserved for ID EEPROM.
+
+#if RASPPI >= 5
+	#include <circle/spimaster-rp1.h>
+#else
 
 class CSPIMaster
 {
@@ -118,5 +133,7 @@ private:
 
 	CSpinLock m_SpinLock;
 };
+
+#endif
 
 #endif

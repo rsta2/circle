@@ -61,11 +61,12 @@ OBJS	+= bcm54213.o
 endif
 
 ifneq ($(strip $(RASPPI)),5)
-OBJS	+= gpioclock.o gpiomanager.o gpiopin.o gpiopinfiq.o i2cmaster.o i2cslave.o \
+OBJS	+= gpioclock.o gpiomanager.o gpiopin.o gpiopinfiq.o i2cmaster.o i2cmasterirq.o i2cslave.o \
 	   pwmoutput.o smimaster.o spimaster.o spimasteraux.o spimasterdma.o usertimer.o \
 	   latencytester.o
 else
-OBJS	+= southbridge.o gpiomanager2712.o gpiopin2712.o i2cmaster-rp1.o macb.o
+OBJS	+= southbridge.o dmachannel-rp1.o gpiomanager2712.o gpiopin2712.o gpioclock-rp1.o \
+	   pwmoutput-rp1.o i2cmaster-rp1.o spimaster-rp1.o spimasterdma-rp1.o macb.o
 endif
 
 ifneq ($(strip $(STDLIB_SUPPORT)),3)

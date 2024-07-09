@@ -229,6 +229,7 @@ enum{
 	CMescan,
 	CMcountry,
 	CMcreate,
+	CMdown,
 };
 
 static Cmdtab cmds[] = {
@@ -252,6 +253,7 @@ static Cmdtab cmds[] = {
 	{CMescan,	"escan", 2},
 	{CMcountry,	"country", 2},
 	{CMcreate,	"create", 4},
+	{CMdown,	"down", 1},
 };
 
 typedef struct Sdpcm Sdpcm;
@@ -2491,6 +2493,10 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 		if ((i = atoi(cb->f[2])) >= 0 && i <= 16) ctlr->chanid = i;
 		else cmderror(cb, "bad channel number");
 		if(ctlr->essid[0]) wlcreateAP(ctlr, ctlr->essid, ctlr->chanid, atoi(cb->f[3]));
+		break;
+	case CMdown:
+		wlcmdint(ctlr, 3, 0);		/* DOWN */
+		ctlr->status = Disconnected;
 		break;
 	}
 	poperror();

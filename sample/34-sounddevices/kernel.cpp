@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -57,9 +57,7 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-#if RASPPI <= 4
 	m_I2CMaster (CMachineInfo::Get ()->GetDevice (DeviceI2CMaster), TRUE),
-#endif
 	m_USBHCI (&m_Interrupt, &m_Timer, FALSE),
 #ifdef USE_VCHIQ_SOUND
 	m_VCHIQ (CMemorySystem::Get (), &m_Interrupt),
@@ -136,7 +134,6 @@ TShutdownMode CKernel::Run (void)
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
 	// select the sound device
-#if RASPPI <= 4
 	const char *pSoundDevice = m_Options.GetSoundDevice ();
 	if (strcmp (pSoundDevice, "sndpwm") == 0)
 	{
@@ -147,10 +144,12 @@ TShutdownMode CKernel::Run (void)
 		m_pSound = new CI2SSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, FALSE,
 						    &m_I2CMaster, DAC_I2C_ADDRESS);
 	}
+#if RASPPI <= 4
 	else if (strcmp (pSoundDevice, "sndhdmi") == 0)
 	{
 		m_pSound = new CHDMISoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
+#endif
 #if RASPPI >= 4
 	else if (strcmp (pSoundDevice, "sndusb") == 0)
 	{
@@ -166,9 +165,6 @@ TShutdownMode CKernel::Run (void)
 		m_pSound = new CPWMSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
 #endif
 	}
-#else
-	m_pSound = new CUSBSoundBaseDevice (SAMPLE_RATE);
-#endif
 	assert (m_pSound != 0);
 
 	// initialize oscillators

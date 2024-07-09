@@ -2,7 +2,7 @@
 // gpiopin2712.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,13 +21,14 @@
 #include <circle/gpiomanager.h>
 #include <circle/bcm2712.h>
 #include <circle/memio.h>
+#include <circle/machineinfo.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
 #include <circle/southbridge.h>
+#include <circle/synchronize.h>
 #include <assert.h>
 
 // TODO: Support non-RP1 GPIO pins
-// TODO: Use SET/CLR registers (if available?)
 
 // See: Raspberry Pi RP1 Peripherals
 //      https://datasheets.raspberrypi.com/rp1/rp1-peripherals.pdf
@@ -44,6 +45,7 @@
 	#define CTRL_FUNCSEL__SHIFT		0
 	#define CTRL_FUNCSEL__MASK		(0x1F << 0)
 		#define FUNCSEL_NULL		31
+		#define FUNCSEL_GPIO		5
 		#define FUNCSEL_ALT_MAX		8
 	#define CTRL_FILTER_CONST_M__SHIFT	5
 	#define CTRL_FILTER_CONST_M__MASK	(0x7F << 5)
@@ -84,6 +86,13 @@
 #define PCIE_INTE(bank)				(ARM_GPIO0_IO_BASE + (bank)*0x4000 + 0x11C)
 #define PCIE_INTF(bank)				(ARM_GPIO0_IO_BASE + (bank)*0x4000 + 0x120)
 #define PCIE_INTS(bank)				(ARM_GPIO0_IO_BASE + (bank)*0x4000 + 0x124)
+#define RIO0_OUT(bank, offset)			(ARM_GPIO0_RIO_BASE + (bank)*0x4000 + (offset) + 0)
+	#define RIO_RW_OFFSET			0x0000
+	#define RIO_XOR_OFFSET			0x1000
+	#define RIO_SET_OFFSET			0x2000
+	#define RIO_CLR_OFFSET			0x3000
+#define RIO0_OE(bank, offset)			(ARM_GPIO0_RIO_BASE + (bank)*0x4000 + (offset) + 4)
+#define RIO0_IN(bank)				(ARM_GPIO0_RIO_BASE + (bank)*0x4000 + 8)
 #define PADS0_CTRL(bank, pin)			(ARM_GPIO0_PADS_BASE + (bank)*0x4000 + 4 + (pin) * 4)
 	#define PADS_SLEWFAST__MASK		BIT (0)
 	#define PADS_SCHMITT__MASK		BIT (1)
@@ -119,7 +128,6 @@ CGPIOPin::CGPIOPin (void)
 	m_nBank (GPIO0_BANKS),
 	m_nBankPin (MAX_BANK_PINS),
 	m_Mode (GPIOModeUnknown),
-	m_nValue (LOW),
 	m_pManager (nullptr),
 	m_pHandler (nullptr),
 	m_Interrupt (GPIOInterruptUnknown),
@@ -132,7 +140,6 @@ CGPIOPin::CGPIOPin (unsigned nPin, TGPIOMode Mode, CGPIOManager *pManager)
 	m_nBank (GPIO0_BANKS),
 	m_nBankPin (MAX_BANK_PINS),
 	m_Mode (GPIOModeUnknown),
-	m_nValue (LOW),
 	m_pManager (pManager),
 	m_pHandler (nullptr),
 	m_Interrupt (GPIOInterruptUnknown),
@@ -159,9 +166,15 @@ void CGPIOPin::AssignPin (unsigned nPin)
 	assert (m_nBankPin == MAX_BANK_PINS);
 
 	m_nPin = nPin;
+
+	if (m_nPin >= GPIO_PINS)
+	{
+		m_nPin = CMachineInfo::Get ()->GetGPIOPin ((TGPIOVirtualPin) nPin);
+	}
+
 	assert (m_nPin < GPIO_PINS);
 
-	Pin2Bank (nPin, &m_nBank, &m_nBankPin);
+	Pin2Bank (m_nPin, &m_nBank, &m_nBankPin);
 }
 
 void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
@@ -171,7 +184,34 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 	assert (m_nBankPin < MAX_BANK_PINS);
 	assert (CSouthbridge::IsInitialized ());
 
+	TGPIOMode PreviousMode = m_Mode;
 	m_Mode = Mode;
+
+	if (m_Mode == GPIOModeNone)
+	{
+		assert (m_nBank < GPIO0_BANKS);
+		assert (m_nBankPin < MAX_BANK_PINS);
+
+		uintptr nPadsReg = PADS0_CTRL (m_nBank, m_nBankPin);
+		u32 nPadsValue = read32 (nPadsReg);
+		nPadsValue |= PADS_OD__MASK;
+		nPadsValue &= ~PADS_IE__MASK;
+		nPadsValue |= PADS_PDE__MASK;
+		nPadsValue &= ~PADS_PUE__MASK;
+		write32 (nPadsReg, nPadsValue);
+
+		uintptr nCtrlReg = GPIO0_CTRL (m_nBank, m_nBankPin);
+		u32 nCtrlValue = read32 (nCtrlReg);
+		nCtrlValue &= ~CTRL_OUTOVER__MASK;
+		nCtrlValue |= OUTOVER_FUNCSEL << CTRL_OUTOVER__SHIFT;
+		nCtrlValue &= ~CTRL_OEOVER__MASK;
+		nCtrlValue |= OEOVER_FUNCSEL << CTRL_OEOVER__SHIFT;
+		nCtrlValue &= ~CTRL_FUNCSEL__MASK;
+		nCtrlValue |= FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT;
+		write32 (nCtrlReg, nCtrlValue);
+
+		return;
+	}
 
 	if (GPIOModeAlternateFunction0 <= m_Mode && m_Mode <= GPIOModeAlternateFunction8)
 	{
@@ -191,36 +231,16 @@ void CGPIOPin::SetMode (TGPIOMode Mode, boolean bInitPin)
 		SetPullMode (GPIOPullModeOff);
 	}
 
-	uintptr nCtrlReg = GPIO0_CTRL (m_nBank, m_nBankPin);
-	u32 nCtrlValue = read32 (nCtrlReg);
-
-	uintptr nPadsReg = PADS0_CTRL (m_nBank, m_nBankPin);
-	u32 nPadsValue = read32 (nPadsReg);
-
-	nCtrlValue &= ~CTRL_FUNCSEL__MASK;
-	nCtrlValue |= FUNCSEL_NULL << CTRL_FUNCSEL__SHIFT;
-
-	if (m_Mode == GPIOModeOutput)
+	if (   PreviousMode > GPIOModeInputPullDown
+	    || PreviousMode == GPIOModeNone)
 	{
-		nPadsValue &= ~PADS_OD__MASK;
-		nPadsValue &= ~PADS_IE__MASK;
-
-		nCtrlValue &= ~CTRL_OEOVER__MASK;
-		nCtrlValue |= OEOVER_ENABLE << CTRL_OEOVER__SHIFT;
-	}
-	else
-	{
-		nPadsValue |= PADS_OD__MASK;
-		nPadsValue |= PADS_IE__MASK;
-
-		nCtrlValue &= ~CTRL_OEOVER__MASK;
-		nCtrlValue |= OEOVER_DISABLE << CTRL_OEOVER__SHIFT;
-		nCtrlValue &= ~CTRL_INOVER__MASK;
-		nCtrlValue |= INOVER_DONT_INVERT << CTRL_INOVER__SHIFT;
+		SetAlternateFunction (FUNCSEL_GPIO);
 	}
 
-	write32 (nPadsReg, nPadsValue);
-	write32 (nCtrlReg, nCtrlValue);
+	write32 (RIO0_OE (m_nBank, m_Mode == GPIOModeOutput ? RIO_SET_OFFSET : RIO_CLR_OFFSET),
+		 BIT (m_nBankPin));
+
+	DataSyncBarrier ();
 
 	if (bInitPin)
 	{
@@ -355,27 +375,9 @@ void CGPIOPin::Write (unsigned nValue)
 	assert (m_nBankPin < MAX_BANK_PINS);
 	assert (nValue <= HIGH);
 
-	m_nValue = nValue;
+	write32 (RIO0_OUT (m_nBank, nValue ? RIO_SET_OFFSET : RIO_CLR_OFFSET), BIT (m_nBankPin));
 
-	boolean bSpinLock =    m_Interrupt != GPIOInterruptUnknown
-			    || m_Interrupt2 != GPIOInterruptUnknown;
-	if (bSpinLock)
-	{
-		m_SpinLock.Acquire ();
-	}
-
-	uintptr nCtrlReg = GPIO0_CTRL (m_nBank, m_nBankPin);
-	u32 nCtrlValue = read32 (nCtrlReg);
-
-	nCtrlValue &= ~CTRL_OUTOVER__MASK;
-	nCtrlValue |= (nValue ? OUTOVER_HIGH : OUTOVER_LOW) << CTRL_OUTOVER__SHIFT;
-
-	write32 (nCtrlReg, nCtrlValue);
-
-	if (bSpinLock)
-	{
-		m_SpinLock.Release ();
-	}
+	DataSyncBarrier ();
 }
 
 unsigned CGPIOPin::Read (void) const
@@ -386,12 +388,17 @@ unsigned CGPIOPin::Read (void) const
 		|| m_Mode == GPIOModeInputPullUp
 		|| m_Mode == GPIOModeInputPullDown);
 
-	return !!(read32 (GPIO0_STATUS (m_nBank, m_nBankPin)) & STATUS_INFILTERED__MASK);
+	return !!(read32 (RIO0_IN (m_nBank)) & BIT (m_nBankPin));
 }
 
 void CGPIOPin::Invert (void)
 {
-	Write (m_nValue ^ 1);
+	assert (m_nBank < GPIO0_BANKS);
+	assert (m_nBankPin < MAX_BANK_PINS);
+
+	write32 (RIO0_OUT (m_nBank, RIO_XOR_OFFSET), BIT (m_nBankPin));
+
+	DataSyncBarrier ();
 }
 
 void CGPIOPin::ConnectInterrupt (TGPIOInterruptHandler *pHandler, void *pParam, boolean bAutoAck)
@@ -548,6 +555,45 @@ void CGPIOPin::AcknowledgeInterrupt (void)
 	write32 (nReg, read32 (nReg) | CTRL_IRQRESET__MASK);
 	// assert (!(read32 (nReg) & CTRL_IRQRESET__MASK));
 	m_SpinLock.Release ();
+}
+
+void CGPIOPin::SetModeAll (u32 nInputMask, u32 nOutputMask)
+{
+	assert (!(nInputMask & nOutputMask));
+
+	if (nInputMask)
+	{
+		write32 (RIO0_OE (0, RIO_CLR_OFFSET), nInputMask);
+	}
+
+	if (nOutputMask)
+	{
+		write32 (RIO0_OE (0, RIO_SET_OFFSET), nOutputMask);
+	}
+
+	DataSyncBarrier ();
+}
+
+void CGPIOPin::WriteAll (u32 nValue, u32 nMask)
+{
+	u32 nClear = ~nValue & nMask;
+	if (nClear)
+	{
+		write32 (RIO0_OUT (0, RIO_CLR_OFFSET), nClear);
+	}
+
+	u32 nSet = nValue & nMask;
+	if (nSet)
+	{
+		write32 (RIO0_OUT (0, RIO_SET_OFFSET), nSet);
+	}
+
+	DataSyncBarrier ();
+}
+
+u32 CGPIOPin::ReadAll (void)
+{
+	return read32 (RIO0_IN (0));
 }
 
 #ifndef NDEBUG

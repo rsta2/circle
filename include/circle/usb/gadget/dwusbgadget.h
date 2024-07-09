@@ -2,7 +2,7 @@
 // dwusbgadget.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/usb/usbcontroller.h>
 #include <circle/usb/gadget/dwusbgadgetendpoint.h>
 #include <circle/usb/dwhciregister.h>
+#include <circle/usb/usb.h>
 #include <circle/interrupt.h>
 #include <circle/types.h>
 
@@ -66,6 +67,13 @@ public:
 	/// \brief Device connection has been suspended / removed
 	/// \note Have to undo AddEndpoints() and CreateDevice() here.
 	virtual void OnSuspend (void) = 0;
+
+	/// \brief A class or vendor request has been received on EP0
+	/// \param pSetupData Contents of the Setup packet
+	/// \param pData Received data (host-to-device), or buffer for data to be sent
+	/// \return Number of bytes in pData to be sent, or < 0 on error (STALL the request)
+	/// \note By default host-to-device requests will be ignored and other requests will be STALLed
+	virtual int OnClassOrVendorRequest (const TSetupData *pSetupData, u8 *pData);
 
 private:
 	boolean PowerOn (void);

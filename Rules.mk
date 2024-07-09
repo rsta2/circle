@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 460000
+CIRCLEVER = 470000
 
 CIRCLEHOME ?= ..
 
@@ -163,6 +163,11 @@ endif
 
 OPTIMIZE ?= -O2
 STANDARD ?= -std=c++14 -Wno-aligned-new
+WARNINGS ?= -Wall
+
+ifeq ($(strip $(CLANG)),1)
+WARNINGS += -Wno-vla-cxx-extension
+endif
 
 INCLUDE	+= -I $(CIRCLEHOME)/include -I $(CIRCLEHOME)/addon -I $(CIRCLEHOME)/app/lib \
 	   -I $(CIRCLEHOME)/addon/vc4 -I $(CIRCLEHOME)/addon/vc4/interface/khronos/include
@@ -170,9 +175,13 @@ DEFINE	+= -D__circle__=$(CIRCLEVER) -DRASPPI=$(RASPPI) -DSTDLIB_SUPPORT=$(STDLIB
 	   -D__VCCOREVER__=0x04000000 -U__unix__ -U__linux__ #-DNDEBUG
 
 AFLAGS	+= $(ARCH) $(DEFINE) $(INCLUDE) $(OPTIMIZE)
-CFLAGS	+= $(ARCH) -Wall -fsigned-char -ffreestanding -g \
+CFLAGS	+= $(ARCH) $(WARNINGS) -fsigned-char -g \
 	   $(DEFINE) $(INCLUDE) $(EXTRAINCLUDE) $(OPTIMIZE)
 CPPFLAGS+= $(CFLAGS) $(STANDARD)
+
+ifneq ($(filter 0 1,$(STDLIB_SUPPORT)),)
+CFLAGS += -ffreestanding
+endif
 
 ifneq ($(strip $(CLANG)),1)
 LDFLAGS	+= --section-start=.init=$(LOADADDR)

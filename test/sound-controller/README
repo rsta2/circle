@@ -43,7 +43,7 @@ sound is transferred to the output device. If only the input device is active,
 the input sound data is ignored and can control an VU meter only.
 
 The following example log shows the communication with an USB audio device (on
-Raspberry Pi 4 only):
+Raspberry Pi 4 and 5 only):
 
 
 Sound Shell
@@ -64,7 +64,7 @@ enable JACK     Enable jack (defaultout|lineout|speaker|headphone|hdmi
                 |spdif|defaultin|linein|microphone)
 disable JACK    Disable jack (multi-jack operation only)
 controlinfo CTRL CHAN [JACK]                                            info
-                Display control (mute|volume) info
+                Display control (mute|volume|alc) info
                 for channel (all|l|r|NUM) [and jack]
 setcontrol CTRL CHAN VAL [JACK]                                         set
                 Set control for channel [and jack] to value

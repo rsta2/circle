@@ -2,7 +2,7 @@
 // dwusbgadgetendpoint0.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_usb_gadget_dwusbgadgetendpoint0_h
 
 #include <circle/usb/gadget/dwusbgadgetendpoint.h>
+#include <circle/usb/usb.h>
 #include <circle/synchronize.h>
 #include <circle/types.h>
 
@@ -56,6 +57,8 @@ private:
 	static const size_t BufferSize = 512;
 	DMA_BUFFER (u8, m_OutBuffer, BufferSize);
 	DMA_BUFFER (u8, m_InBuffer, BufferSize);
+
+	TSetupData m_SetupData;
 };
 
 #endif

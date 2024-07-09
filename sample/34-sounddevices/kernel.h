@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -74,9 +74,7 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CScheduler		m_Scheduler;
-#if RASPPI <= 4
 	CI2CMaster		m_I2CMaster;
-#endif
 	CUSBHCIDevice		m_USBHCI;
 
 #ifdef USE_VCHIQ_SOUND

@@ -2,7 +2,7 @@
 // netconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ class CNetConnection
 public:
 	CNetConnection (CNetConfig	*pNetConfig,
 			CNetworkLayer	*pNetworkLayer,
-			CIPAddress	&rForeignIP,
+			const CIPAddress &rForeignIP,
 			u16		 nForeignPort,
 			u16		 nOwnPort,
 			int		 nProtocol);
@@ -43,8 +43,12 @@ public:
 	virtual ~CNetConnection (void);
 
 	const u8 *GetForeignIP (void) const;
+	u16 GetForeignPort (void) const;
 	u16 GetOwnPort (void) const;
 	int GetProtocol (void) const;
+
+	// returns: string representation for current connection state
+	virtual const char *GetStateName (void) const;
 
 	virtual int Connect (void) = 0;
 	virtual int Accept (CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
@@ -53,7 +57,8 @@ public:
 	virtual int Send (const void *pData, unsigned nLength, int nFlags) = 0;
 	virtual int Receive (void *pBuffer, int nFlags) = 0;
 
-	virtual int SendTo (const void *pData, unsigned nLength, int nFlags, CIPAddress	&rForeignIP, u16 nForeignPort) = 0;
+	virtual int SendTo (const void *pData, unsigned nLength, int nFlags,
+			    const CIPAddress &rForeignIP, u16 nForeignPort) = 0;
 	virtual int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
 
 	virtual int SetOptionBroadcast (boolean bAllowed) = 0;

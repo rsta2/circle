@@ -846,6 +846,8 @@ EXCLUDE_SYMLINKS       = NO
 # exclude all test directories for example use the pattern */test/*
 
 EXCLUDE_PATTERNS       = \
+			 *2712.h \
+			 *-rp1.h \
 			 */sample/* \
 			 */profile/g*.h \
 			 */vc4/vchi* \

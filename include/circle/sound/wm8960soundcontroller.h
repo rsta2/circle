@@ -2,7 +2,7 @@
 // wm8960soundcontroller.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,21 +27,49 @@
 class CWM8960SoundController : public CSoundController		/// Sound controller for WM8960
 {
 public:
-	CWM8960SoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress = 0);
+	CWM8960SoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress,
+				unsigned nSampleRate, boolean bOutSupported, boolean bInSupported);
 
 	boolean Probe (void) override;
 
 	u32 GetOutputProperties (void) const override
 	{
+		if (!m_bOutSupported)
+		{
+			return 0;
+		}
+
+		return PropertyDirectionSupported | PropertyMultiJackOperation;
+	}
+
+	u32 GetInputProperties (void) const override
+	{
+		if (!m_bInSupported)
+		{
+			return 0;
+		}
+
 		return PropertyDirectionSupported;
 	}
 
+	boolean EnableJack (TJack Jack) override;
+	boolean DisableJack (TJack Jack) override;
+
+	const TControlInfo GetControlInfo (TControl Control, TJack Jack,
+					   TChannel Channel) const override;
+	boolean SetControl (TControl Control, TJack Jack, TChannel Channel, int nValue) override;
+
 private:
-	boolean InitWM8960 (u8 uchI2CAddress);
+	boolean WriteReg (u8 nReg, u16 nValue);
 
 private:
 	CI2CMaster *m_pI2CMaster;
 	u8 m_uchI2CAddress;
+	unsigned m_nSampleRate;
+	boolean m_bOutSupported;
+	boolean m_bInSupported;
+
+	u8 m_uchInVolume[2];
 };
 
 #endif

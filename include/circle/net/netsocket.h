@@ -2,7 +2,7 @@
 // netsocket.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ public:
 	/// \param rForeignIP IP address of host to be connected
 	/// \param nForeignPort   Number of port to be connected
 	/// \return Status (0 success, < 0 on error)
-	virtual int Connect (CIPAddress &rForeignIP, u16 nForeignPort) = 0;
+	virtual int Connect (const CIPAddress &rForeignIP, u16 nForeignPort) = 0;
 
 	/// \brief Connect to foreign host/port (TCP), setup foreign host/port address (UDP)
 	/// \param pHost Hostname or IP address string of host to be connected
@@ -85,7 +85,7 @@ public:
 	/// \param nForeignPort	Number of port to be sent to (ignored on TCP socket)
 	/// \return Length of the sent message (< 0 on error)
 	virtual int SendTo (const void *pBuffer, unsigned nLength, int nFlags,
-			    CIPAddress &rForeignIP, u16 nForeignPort) { return -1; }
+			    const CIPAddress &rForeignIP, u16 nForeignPort) { return -1; }
 
 	/// \brief Receive a message from a remote host, return host/port of remote host
 	/// \param pBuffer Pointer to the message buffer

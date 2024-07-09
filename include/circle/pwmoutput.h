@@ -1,8 +1,8 @@
 //
-// pwmoutput.h
+/// \file pwmoutput.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,33 +20,68 @@
 #ifndef _circle_pwmoutput_h
 #define _circle_pwmoutput_h
 
+#if RASPPI >= 5
+	#include <circle/pwmoutput-rp1.h>
+#else
+
 #include <circle/gpioclock.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
 
+#define PWM_CHANNEL1	1	///< First PWM channel
+#define PWM_CHANNEL2	2	///< Second PWM channel
+
 class CPWMOutput
 {
 public:
-	CPWMOutput (TGPIOClockSource Source,		// see gpioclock.h
-		    unsigned	     nDivider,		// 1..4095
-		    unsigned	     nRange,		// Range (see "BCM2835 ARM Peripherals")
-		    boolean	     bMSMode);		// M/S mode (see "BCM2835 ARM Peripherals")
+	/// \param nClockRateHz Frequency of the PWM clock in Hz
+	/// \param nRange Range parameter (see "BCM2835 ARM Peripherals")
+	/// \param bMSMode Enable M/S mode? (see "BCM2835 ARM Peripherals")
+	/// \param bInvert Invert PWM output?
+	/// \param nDevice Device number (normally 0)
+	CPWMOutput (unsigned	     nClockRateHz,
+		    unsigned	     nRange,
+		    boolean	     bMSMode,
+		    boolean	     bInvert = FALSE,
+		    unsigned	     nDevice = 0);
+
+	/// \param Source Clock source to be used (see gpioclock.h)
+	/// \param nDivider Clock divider (1..4095)
+	/// \param nRange Range parameter (see "BCM2835 ARM Peripherals")
+	/// \param bMSMode Enable M/S mode? (see "BCM2835 ARM Peripherals")
+	/// \param bInvert Invert PWM output?
+	/// \param nDevice Device number (normally 0)
+	CPWMOutput (TGPIOClockSource Source,
+		    unsigned	     nDivider,
+		    unsigned	     nRange,
+		    boolean	     bMSMode,
+		    boolean	     bInvert = FALSE,
+		    unsigned	     nDevice = 0);
+
 	~CPWMOutput (void);
 
-	void Start (void);
+	/// \brief Start PWM Operation
+	/// \return Operation successful?
+	boolean Start (void);
+
+	/// \brief Stop PWM Operation
 	void Stop (void);
 
-#define PWM_CHANNEL1	1
-#define PWM_CHANNEL2	2
-	void Write (unsigned nChannel, unsigned nValue);	// nValue: 0..Range
+	/// \param nChannel PWM_CHANNEL1 or PWM_CHANNEL2
+	/// \param nValue Value to be written (0..Range)
+	void Write (unsigned nChannel, unsigned nValue);
 
 private:
 	CGPIOClock m_Clock;
+	unsigned   m_nClockRateHz;
 	unsigned   m_nDivider;
 	unsigned   m_nRange;
 	boolean    m_bMSMode;
+	boolean    m_bInvert;
 	boolean    m_bActive;
 	CSpinLock  m_SpinLock;
 };
+
+#endif
 
 #endif

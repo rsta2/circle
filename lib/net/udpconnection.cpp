@@ -2,7 +2,7 @@
 // udpconnection.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ struct TUDPPrivateData
 
 CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 				CNetworkLayer	*pNetworkLayer,
-				CIPAddress	&rForeignIP,
+				const CIPAddress &rForeignIP,
 				u16		 nForeignPort,
 				u16		 nOwnPort)
 :	CNetConnection (pNetConfig, pNetworkLayer, rForeignIP, nForeignPort, nOwnPort, IPPROTO_UDP),
@@ -196,7 +196,7 @@ int CUDPConnection::Receive (void *pBuffer, int nFlags)
 }
 
 int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
-			    CIPAddress	&rForeignIP, u16 nForeignPort)
+			    const CIPAddress &rForeignIP, u16 nForeignPort)
 {
 	if (m_nErrno < 0)
 	{

@@ -2,7 +2,7 @@
 // transportlayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <circle/net/tcprejector.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/netqueue.h>
+#include <circle/device.h>
 #include <circle/ptrarray.h>
 #include <circle/spinlock.h>
 #include <circle/types.h>
@@ -44,7 +45,7 @@ public:
 	int Bind (u16 nOwnPort, int nProtocol);
 
 	// nOwnPort may be 0 (dynamic port assignment)
-	int Connect (CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol);
+	int Connect (const CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol);
 
 	int Listen (u16 nOwnPort, int nProtocol);
 	int Accept (CIPAddress *pForeignIP, u16 *pForeignPort, int hConnection);
@@ -57,7 +58,7 @@ public:
 	int Receive (void *pBuffer, int nFlags, int hConnection);
 
 	int SendTo (const void *pData, unsigned nLength, int nFlags,
-		    CIPAddress &rForeignIP, u16 nForeignPort, int hConnection);
+		    const CIPAddress &rForeignIP, u16 nForeignPort, int hConnection);
 
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,
@@ -67,6 +68,8 @@ public:
 
 	boolean IsConnected (int hConnection) const;
 	const u8 *GetForeignIP (int hConnection) const;		// returns 0 if not connected
+
+	void ListConnections (CDevice *pTarget);
 
 private:
 	CNetConfig    *m_pNetConfig;

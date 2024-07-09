@@ -2,7 +2,7 @@
 // bcmpropertytags.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,11 +46,13 @@
 #define PROPTAG_GET_THROTTLED		0x00030046
 #define PROPTAG_GET_CLOCK_RATE_MEASURED	0x00030047
 #define PROPTAG_NOTIFY_XHCI_RESET	0x00030058
+#define PROPTAG_GET_RTC_REG		0x00030087
 #define PROPTAG_SET_CLOCK_RATE		0x00038002
 #define PROPTAG_SET_TURBO		0x00038009
 #define PROPTAG_SET_DOMAIN_STATE	0x00038030
 #define PROPTAG_SET_SET_GPIO_STATE	0x00038041
 #define PROPTAG_SET_SDHOST_CLOCK	0x00038042
+#define PROPTAG_SET_RTC_REG		0x00038087
 #define PROPTAG_ALLOCATE_BUFFER		0x00040001
 #define PROPTAG_GET_DISPLAY_DIMENSIONS	0x00040003
 #define PROPTAG_GET_PITCH		0x00040008
@@ -236,6 +238,23 @@ struct TPropertyTagSetClockRate
 	u32		nRate;			// Hz
 	u32		nSkipSettingTurbo;
 	#define SKIP_SETTING_TURBO	1	// when setting ARM clock
+}
+PACKED;
+
+struct TPropertyTagRTCRegister
+{
+	TPropertyTag	Tag;
+	u32		nRegNum;
+	#define RTC_REGISTER_TIME		0	// seconds since 1970-01-01 00:00:00 UTC
+	#define RTC_REGISTER_ALARM		1
+	#define RTC_REGISTER_ALARM_PENDING	2
+	#define RTC_REGISTER_ALARM_ENABLE	3
+	#define RTC_REGISTER_BBAT_CHG_VOLTS	4	// micro-volts
+	#define RTC_REGISTER_BBAT_CHG_VOLTS_MIN	5
+	#define RTC_REGISTER_BBAT_CHG_VOLTS_MAX	6
+	#define RTC_REGISTER_BBAT_VOLTS		7
+	#define RTC_REGISTER_COUNT		8
+	u32		nValue;
 }
 PACKED;
 

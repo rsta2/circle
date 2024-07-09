@@ -2,7 +2,7 @@
 // spimasterdma.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // Supported features:
 //	SPI0 device only
@@ -26,6 +26,10 @@
 #ifndef _circle_spimasterdma_h
 #define _circle_spimasterdma_h
 
+#if RASPPI >= 5
+	#include <circle/spimasterdma-rp1.h>
+#else
+
 #include <circle/interrupt.h>
 #include <circle/dmachannel.h>
 #include <circle/gpiopin.h>
@@ -42,7 +46,7 @@ public:
 	// set bDMAChannelLite to FALSE for very high speeds or transfer sizes >= 64K
 	CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
 		       unsigned nClockSpeed = 500000, unsigned CPOL = 0, unsigned CPHA = 0,
-		       boolean bDMAChannelLite = TRUE);
+		       boolean bDMAChannelLite = TRUE, unsigned nDevice = 0);
 	~CSPIMasterDMA (void);
 
 	boolean Initialize (void);
@@ -83,5 +87,7 @@ private:
 	TSPICompletionRoutine *m_pCompletionRoutine;
 	void *m_pCompletionParam;
 };
+
+#endif
 
 #endif

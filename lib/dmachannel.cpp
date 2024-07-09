@@ -2,7 +2,7 @@
 // dmachannel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -175,12 +175,12 @@ void CDMAChannel::SetupMemCopy (void *pDestination, const void *pSource, size_t 
 	}
 }
 
-void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLength, TDREQ DREQ)
+void CDMAChannel::SetupIORead (void *pDestination, uintptr ulIOAddress, size_t nLength, TDREQ DREQ)
 {
 #if RASPPI >= 4
 	if (m_pDMA4Channel != 0)
 	{
-		m_pDMA4Channel->SetupIORead (pDestination, nIOAddress, nLength, DREQ);
+		m_pDMA4Channel->SetupIORead (pDestination, ulIOAddress, nLength, DREQ);
 
 		return;
 	}
@@ -192,9 +192,9 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 	assert (   !(read32 (ARM_DMACHAN_DEBUG (m_nChannel)) & DEBUG_LITE)
 		|| nLength <= TXFR_LEN_MAX_LITE);
 
-	nIOAddress &= 0xFFFFFF;
-	assert (nIOAddress != 0);
-	nIOAddress += GPU_IO_BASE;
+	ulIOAddress &= 0xFFFFFF;
+	assert (ulIOAddress != 0);
+	ulIOAddress += GPU_IO_BASE;
 
 	assert (m_pControlBlock != 0);
 	m_pControlBlock->nTransferInformation     =   (DREQ << TI_PERMAP_SHIFT)
@@ -203,7 +203,7 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 						    | TI_DEST_WIDTH
 						    | TI_DEST_INC
 						    | TI_WAIT_RESP;
-	m_pControlBlock->nSourceAddress           = nIOAddress;
+	m_pControlBlock->nSourceAddress           = ulIOAddress;
 	m_pControlBlock->nDestinationAddress      = BUS_ADDRESS ((uintptr) pDestination);
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
@@ -215,12 +215,12 @@ void CDMAChannel::SetupIORead (void *pDestination, u32 nIOAddress, size_t nLengt
 	CleanAndInvalidateDataCacheRange ((uintptr) pDestination, nLength);
 }
 
-void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
+void CDMAChannel::SetupIOWrite (uintptr ulIOAddress, const void *pSource, size_t nLength, TDREQ DREQ)
 {
 #if RASPPI >= 4
 	if (m_pDMA4Channel != 0)
 	{
-		m_pDMA4Channel->SetupIOWrite (nIOAddress, pSource, nLength, DREQ);
+		m_pDMA4Channel->SetupIOWrite (ulIOAddress, pSource, nLength, DREQ);
 
 		return;
 	}
@@ -232,9 +232,9 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 	assert (   !(read32 (ARM_DMACHAN_DEBUG (m_nChannel)) & DEBUG_LITE)
 		|| nLength <= TXFR_LEN_MAX_LITE);
 
-	nIOAddress &= 0xFFFFFF;
-	assert (nIOAddress != 0);
-	nIOAddress += GPU_IO_BASE;
+	ulIOAddress &= 0xFFFFFF;
+	assert (ulIOAddress != 0);
+	ulIOAddress += GPU_IO_BASE;
 
 	assert (m_pControlBlock != 0);
 	m_pControlBlock->nTransferInformation     =   (DREQ << TI_PERMAP_SHIFT)
@@ -244,7 +244,7 @@ void CDMAChannel::SetupIOWrite (u32 nIOAddress, const void *pSource, size_t nLen
 						    | TI_DEST_DREQ
 						    | TI_WAIT_RESP;
 	m_pControlBlock->nSourceAddress           = BUS_ADDRESS ((uintptr) pSource);
-	m_pControlBlock->nDestinationAddress      = nIOAddress;
+	m_pControlBlock->nDestinationAddress      = ulIOAddress;
 	m_pControlBlock->nTransferLength          = nLength;
 	m_pControlBlock->n2DModeStride            = 0;
 	m_pControlBlock->nNextControlBlockAddress = 0;

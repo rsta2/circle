@@ -2,7 +2,7 @@
 // dwusbgadgetendpoint0.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 #include <circle/usb/gadget/dwusbgadgetendpoint0.h>
 #include <circle/usb/gadget/dwusbgadget.h>
 #include <circle/usb/dwhci.h>
-#include <circle/usb/usb.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -46,6 +45,9 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 	assert (m_pGadget);
 
 	const TSetupData *pSetupData = reinterpret_cast<TSetupData *> (m_OutBuffer);
+
+	// copy setup packet to be used in OnTransferComplete()
+	memcpy (&m_SetupData, pSetupData, sizeof m_SetupData);
 
 	if (pSetupData->bmRequestType & REQUEST_IN)
 	{
@@ -106,6 +108,29 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			break;
 
 		default:
+			if (   pSetupData->bmRequestType & (REQUEST_CLASS | REQUEST_VENDOR)
+			    && pSetupData->wLength > 0
+			    && pSetupData->wLength <= BufferSize)
+			{
+				assert (m_pGadget);
+				int nLen = m_pGadget->OnClassOrVendorRequest (pSetupData, m_InBuffer);
+				if (nLen > 0)
+				{
+					m_State = StateInDataPhase;
+
+					// EP0 can transfer only up to 127 bytes at once. Therefore
+					// we split greater transfers into multiple transfers, with
+					// up to max. packet size each.
+					m_nBytesLeft = nLen;
+					m_pBufPtr = m_InBuffer;
+
+					BeginTransfer (TransferDataIn, m_pBufPtr,
+							 m_nBytesLeft <= m_nMaxPacketSize
+						       ? m_nBytesLeft : m_nMaxPacketSize);
+					break;
+				}
+			}
+
 			Stall (TRUE);
 			BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 			break;
@@ -139,7 +164,6 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			break;
 
 		default:
-			// Ignore all other OUT requests
 			if (pSetupData->wLength)
 			{
 				m_State = StateOutDataPhase;
@@ -207,6 +231,14 @@ void CDWUSBGadgetEndpoint0::OnTransferComplete (boolean bIn, size_t nLength)
 		break;
 
 	case StateInStatusPhase:
+		assert (m_pGadget);
+		if (   m_SetupData.bmRequestType & (REQUEST_CLASS | REQUEST_VENDOR)
+		    && m_pGadget->OnClassOrVendorRequest (&m_SetupData, m_OutBuffer) < 0)
+		{
+			Stall (TRUE);
+		}
+		// fall through
+
 	case StateOutStatusPhase:
 		m_State = StateIdle;
 		BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));

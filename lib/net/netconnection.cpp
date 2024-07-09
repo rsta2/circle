@@ -2,7 +2,7 @@
 // netconnection.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 CNetConnection::CNetConnection (CNetConfig	*pNetConfig,
 				CNetworkLayer	*pNetworkLayer,
-				CIPAddress	&rForeignIP,
+				const CIPAddress &rForeignIP,
 				u16		 nForeignPort,
 				u16		 nOwnPort,
 				int		 nProtocol)
@@ -46,6 +46,7 @@ CNetConnection::CNetConnection (CNetConfig	*pNetConfig,
 	m_pNetworkLayer (pNetworkLayer),
 	m_nForeignPort (0),
 	m_nOwnPort (nOwnPort),
+	m_nProtocol (nProtocol),
 	m_Checksum (*pNetConfig->GetIPAddress (), nProtocol)
 {
 	assert (m_pNetConfig != 0);
@@ -60,7 +61,18 @@ CNetConnection::~CNetConnection (void)
 
 const u8 *CNetConnection::GetForeignIP (void) const
 {
+	static const u8 NullIP[] = {0, 0, 0, 0};
+	if (!m_ForeignIP.IsSet ())
+	{
+		return NullIP;
+	}
+
 	return m_ForeignIP.Get ();
+}
+
+u16 CNetConnection::GetForeignPort (void) const
+{
+	return m_nForeignPort;
 }
 
 u16 CNetConnection::GetOwnPort (void) const
@@ -72,4 +84,9 @@ u16 CNetConnection::GetOwnPort (void) const
 int CNetConnection::GetProtocol (void) const
 {
 	return m_nProtocol;
+}
+
+const char *CNetConnection::GetStateName (void) const
+{
+	return "";
 }

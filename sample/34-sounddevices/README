@@ -1,16 +1,15 @@
 README 
 
-	On the Raspberry Pi 5 this sample always works in USB mode.
-
 This sample plays a modulated 440 Hz tone via one of the following sound
 devices:
 
-* PWM sound device via the 3.5mm headphone jack
+* PWM sound device via the 3.5mm headphone jack (with adapter on Raspberry Pi 5)
 * I2S sound device using external hardware (tested with PCM5102A and PCM5122 DACs)
-* HDMI sound device via sound-capable HDMI monitor (without VCHIQ, HDMI0 only)
+* HDMI sound device via sound-capable HDMI monitor (without VCHIQ, HDMI0 only,
+  not on Raspberry Pi 5)
 * VCHIQ sound device via sound-capable HDMI monitor or headphone jack (optional)
 * USB sound device using external hardware (supporting USB audio class spec.,
-  for Raspberry Pi 4 only)
+  for Raspberry Pi 4 and 5 only)
 
 By default the sample is built without the VCHIQ option, because this requires
 additional libraries, which have to be built manually. If you want this VCHIQ
@@ -49,6 +48,6 @@ I2C slave address of the DAC in config.h. By default the addresses 0x4C and
 0x4D will be auto-probed. WM8960-based I2S sound cards are also supported with
 the default I2C slave address 0x1A.
 
-USB operation (on Raspberry Pi 4 only) requires an USB audio class streaming
+USB operation (on Raspberry Pi 4/5 only) requires an USB audio class streaming
 device. The USB sound card must be connected before the sample program is
 started and must not be removed, while the program is running.

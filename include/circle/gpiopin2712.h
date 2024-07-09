@@ -2,7 +2,7 @@
 // gpiopin2712.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -84,6 +84,10 @@ public:
 
 	void AcknowledgeInterrupt (void);
 
+	static void SetModeAll (u32 nInputMask, u32 nOutputMask);
+	static void WriteAll (u32 nValue, u32 nMask);
+	static u32 ReadAll (void);
+
 #ifndef NDEBUG
 	static void DumpStatus (void);
 #endif
@@ -102,7 +106,6 @@ private:
 	unsigned  m_nBank;
 	unsigned  m_nBankPin;
 	TGPIOMode m_Mode;
-	unsigned  m_nValue;
 
 	CGPIOManager		*m_pManager;
 	TGPIOInterruptHandler	*m_pHandler;

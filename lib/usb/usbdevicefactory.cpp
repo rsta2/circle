@@ -124,7 +124,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	else if (   pName->Compare ("ven45e-2d1") == 0		// XBox One Controller
 		 || pName->Compare ("ven45e-2dd") == 0		// XBox One Controller (FW 2015)
 		 || pName->Compare ("ven45e-2e3") == 0		// XBox One Elite Controller
-		 || pName->Compare ("ven45e-2ea") == 0)		// XBox One S Controller
+		 || pName->Compare ("ven45e-2ea") == 0		// XBox One S Controller
+		 || pName->Compare ("ven45e-b12") == 0)		// XBox Series X Controller
 	{
 		pResult = new CUSBGamePadXboxOneDevice (pParent);
 	}

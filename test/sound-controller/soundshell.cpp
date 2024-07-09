@@ -2,7 +2,7 @@
 // soundshell.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,10 @@
 //
 #include "soundshell.h"
 #include <circle/sound/pwmsoundbasedevice.h>
-#include <circle/sound/i2ssoundbasedevice.h>
+#if RASPPI <= 4
 #include <circle/sound/hdmisoundbasedevice.h>
+#endif
+#include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/sound/usbsoundbasedevice.h>
 #include <circle/sched/scheduler.h>
 #include <circle/timer.h>
@@ -53,7 +55,10 @@ const char CSoundShell::HelpMsg[] =
 	"Command\t\tDescription\t\t\t\t\t\tAlias\n"
 	"\n"
 	"start DEV [MODE] [CLK] [I2C]\n"
-	"\t\tStart sound device (snd{pwm|i2s|hdmi"
+	"\t\tStart sound device (snd{pwm|i2s"
+#if RASPPI <= 4
+	"|hdmi"
+#endif
 #if RASPPI >= 4
 	"|usb"
 #endif
@@ -70,7 +75,7 @@ const char CSoundShell::HelpMsg[] =
 	"\t\t|spdif|defaultin|linein|microphone)\n"
 	"disable JACK\tDisable jack (multi-jack operation only)\n"
 	"controlinfo CTRL CHAN [JACK]\t\t\t\t\t\tinfo\n"
-	"\t\tDisplay control (mute|volume) info\n"
+	"\t\tDisplay control (mute|volume|alc) info\n"
 	"\t\tfor channel (all|l|r|NUM) [and jack]\n"
 	"setcontrol CTRL CHAN VAL [JACK]\t\t\t\t\t\tset\n"
 	"\t\tSet control for channel [and jack] to value\n"
@@ -124,6 +129,7 @@ const CSoundShell::TStringMapping CSoundShell::s_ControlMap[] =
 {
 	{"mute",	CSoundController::ControlMute},
 	{"volume",	CSoundController::ControlVolume},
+	{"alc",		CSoundController::ControlALC},
 	{0,		CSoundController::ControlUnknown}
 };
 
@@ -417,6 +423,7 @@ boolean CSoundShell::Start (void)
 			break;
 		}
 	}
+#if RASPPI <= 4
 	else if (strcmp (Token, "sndhdmi") == 0)
 	{
 		if (nMode != ModeOutput)
@@ -428,6 +435,7 @@ boolean CSoundShell::Start (void)
 
 		m_pSound[nMode] = new CHDMISoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
+#endif
 #if RASPPI >= 4
 	else if (strcmp (Token, "sndusb") == 0)
 	{

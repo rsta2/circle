@@ -2,7 +2,7 @@
 // pwmoutput.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,13 +60,30 @@
 #define ARM_PWM_STA_STA3	(1 << 11)
 #define ARM_PWM_STA_STA4	(1 << 12)
 
-CPWMOutput::CPWMOutput (TGPIOClockSource Source, unsigned nDivider, unsigned nRange, boolean bMSMode)
+CPWMOutput::CPWMOutput (unsigned nClockRateHz, unsigned nRange, boolean bMSMode,
+			boolean bInvert, unsigned nDevice)
+:	m_Clock (GPIOClockPWM),
+	m_nClockRateHz (nClockRateHz),
+	m_nDivider (0),
+	m_nRange (nRange),
+	m_bMSMode (bMSMode),
+	m_bInvert (bInvert),
+	m_bActive (FALSE)
+{
+	assert (!nDevice);
+}
+
+CPWMOutput::CPWMOutput (TGPIOClockSource Source, unsigned nDivider, unsigned nRange, boolean bMSMode,
+			boolean bInvert, unsigned nDevice)
 :	m_Clock (GPIOClockPWM, Source),
+	m_nClockRateHz (0),
 	m_nDivider (nDivider),
 	m_nRange (nRange),
 	m_bMSMode (bMSMode),
+	m_bInvert (bInvert),
 	m_bActive (FALSE)
 {
+	assert (!nDevice);
 }
 
 CPWMOutput::~CPWMOutput (void)
@@ -77,12 +94,27 @@ CPWMOutput::~CPWMOutput (void)
 	}
 }
 
-void CPWMOutput::Start (void)
+boolean CPWMOutput::Start (void)
 {
 	assert (!m_bActive);
 
-	assert (1 <= m_nDivider && m_nDivider <= 4095);
-	m_Clock.Start (m_nDivider);
+	if (m_nDivider)
+	{
+		assert (1 <= m_nDivider && m_nDivider <= 4095);
+		if (!m_Clock.Start (m_nDivider))
+		{
+			return FALSE;
+		}
+	}
+	else
+	{
+		assert (m_nClockRateHz);
+		if (!m_Clock.StartRate (m_nClockRateHz))
+		{
+			return FALSE;
+		}
+	}
+
 	CTimer::SimpleusDelay (2000);
 
 	PeripheralEntry ();
@@ -96,12 +128,19 @@ void CPWMOutput::Start (void)
 		nControl |= ARM_PWM_CTL_MSEN1 | ARM_PWM_CTL_MSEN2;
 	}
 
+	if (m_bInvert)
+	{
+		nControl |= ARM_PWM_CTL_POLA1 | ARM_PWM_CTL_POLA2;
+	}
+
 	write32 (ARM_PWM_CTL, nControl);
 	CTimer::SimpleusDelay (2000);
 
 	PeripheralExit ();
 
 	m_bActive = TRUE;
+
+	return TRUE;
 }
 
 void CPWMOutput::Stop (void)

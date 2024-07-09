@@ -5,7 +5,7 @@
 //	Does only support Control EP0 and Bulk EPs.
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,10 +22,11 @@
 //
 #include <circle/usb/gadget/dwusbgadget.h>
 #include <circle/usb/gadget/dwusbgadgetendpoint0.h>
-#include <circle/usb/usb.h>
+#include <circle/sched/scheduler.h>
 #include <circle/machineinfo.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/synchronize.h>
+#include <circle/sysconfig.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
 #include <assert.h>
@@ -184,6 +185,13 @@ boolean CDWUSBGadget::UpdatePlugAndPlay (void)
 	return bResult;
 }
 
+int CDWUSBGadget::OnClassOrVendorRequest (const TSetupData *pSetupData, u8 *pData)
+{
+	assert (pSetupData);
+
+	return pSetupData->bmRequestType & REQUEST_IN ? -1 : 0;
+}
+
 boolean CDWUSBGadget::PowerOn (void)
 {
 	CBcmPropertyTags Tags;
@@ -231,7 +239,11 @@ boolean CDWUSBGadget::InitCore (void)
 	USBConfig.Or (DWHCI_CORE_USB_CFG_FORCE_DEV_MODE);
 	USBConfig.Write ();
 
+#ifdef NO_BUSY_WAIT
+	CScheduler::Get ()->MsSleep (25);
+#else
 	CTimer::Get ()->MsDelay (25);
+#endif
 
 	InitCoreDevice ();
 
@@ -244,7 +256,11 @@ void CDWUSBGadget::InitCoreDevice (void)
 	CDWHCIRegister Power (ARM_USB_POWER, 0);
 	Power.Write ();
 
+#ifdef NO_BUSY_WAIT
+	CScheduler::Get ()->MsSleep (40);
+#else
 	CTimer::Get ()->MsDelay (40);
+#endif
 
 	// Set device speed
 	CDWHCIRegister DeviceConfig (DWHCI_DEV_CFG);
@@ -399,7 +415,11 @@ boolean CDWUSBGadget::Reset (void)
 		return FALSE;
 	}
 
+#ifdef NO_BUSY_WAIT
+	CScheduler::Get ()->MsSleep (100);
+#else
 	CTimer::Get ()->MsDelay (100);
+#endif
 
 	return TRUE;
 }

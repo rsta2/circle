@@ -8,16 +8,44 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-The 46th Step
+The 47th Step
 -------------
 
-With this release Circle initially **supports the Raspberry Pi 5**. There are many features, which are not available yet, but important features like USB and networking are supported. Please see the [Circle documentation](https://circle-rpi.readthedocs.io/en/46.0/appendices/raspberry-pi-5.html) for more information on Raspberry Pi 5 support!
+This release provides a number of **new features for the Raspberry Pi 5**, which were already available for earlier models:
 
-Circle comes with an **USB serial CDC gadget** now, which allows to communicate with a Circle application from a host computer via a serial interface without an USB serial adapter. This can be tested with the [test/usb-serial-cdc-gadget](test/usb-serial-cdc-gadget/).
+* SPI master support (polling and DMA driver)
+* I2S sound (output or input, DMA or programmed I/O operation)
+* PWM sound (requires external circuit on GPIO12/13 or GPIO18/19)
+* PWM output (4 channels)
+* GPIO clocks (GP0-2)
+* `CGPIOPin::WriteAll()` and `CGPIOPin::ReadAll()`
 
-The **properties file library** in [addon/Properties](addon/Properties/) supports section headers now.
+The following **new hardware features of the Raspberry Pi 5** are supported now:
 
-A possible race condition in `CTimer` has been fixed, which could only occur with the KY-040 rotary encoder module driver.
+* Real-time clock (class `CFirmwareRTC` in [addon/rtc](addon/rtc))
+* Power button (Function `is_power_button_pressed()`)
+* Function `main()` can return `EXIT_POWER_OFF` to power-off the system
+* 8-channels I2S sound output (via GPIO21/23/25/27, e.g. for HifiBerry DAC8x)
+
+The **WM8960 I2S sound driver** has been revised and provides a better audio quality and the sound controller jack and control functions now. The new sound controller control `ControlALC` (Automatic Level Control) has been defined and implemented for the WM8960. ALC is disabled by default now. The WM8960 driver supports sample rates of 44100 and 48000.
+
+More news:
+
+* A new **IRQ-based driver for the I2C master** of Raspberry Pi 1-4 is available.
+* A **character mode for ST7789-based dot-matrix displays** is available.
+* The **timing of the GPIO pin driver** has been improved on the Raspberry Pi 5 by using the RIO module.
+* There is a **new GPIO pin mode** `GPIOModeNone`, which disables the GPIO pin on the Raspberry Pi 5. On other models it has the same function as `GPIOModeInput`.
+* The new static method `CGPIOPin::SetModeAll()` allows to **set the mode of the GPIO pins 0-31 at once** to input or output.
+* **IP multi-cast support level 1** according to RFC 1112 is implemented (send only).
+* The **LVGL support** has been updated to LVGL v8.3.11.
+
+Fixes:
+
+* The USB serial CDC gadget was not detected on Windows 10.
+* The Raspberry Pi Debug Probe UART did not work with the USB serial CDC driver.
+* The class `CPWMSoundDevice` did not apply the full chunk size.
+
+The recommended firmware and toolchain versions have been updated.
 
 Features
 --------
@@ -37,7 +65,7 @@ Circle supports the following features:
 |                       | CPU clock rate management                           | x              |
 |                       | Clang/LLVM support (experimental)                   | x              |
 |                       |                                                     |                |
-| Debug support         | Kernel logging to screen, UART and/or syslog server | screen / UART  |
+| Debug support         | Kernel logging to screen, UART and/or syslog server | x              |
 |                       | C-assertions with stack trace                       | x              |
 |                       | Hardware exception handler with stack trace         | x              |
 |                       | GDB support using rpi_stub (Raspberry Pi 2 and 3)   |                |
@@ -45,21 +73,22 @@ Circle supports the following features:
 |                       | Software profiling support (single-core)            | x              |
 |                       | QEMU support                                        |                |
 |                       |                                                     |                |
-| SoC devices           | GPIO pins (with interrupt, Act LED) and clocks      | no clocks      |
+| SoC devices           | GPIO pins (with interrupt, Act LED) and clocks      | x              |
 |                       | Frame buffer (screen driver with escape sequences)  | limited        |
 |                       | UART(s) (Polling and interrupt driver)              | x              |
 |                       | System timer (with kernel timers)                   | x              |
-|                       | Platform DMA controller                             | memcopy only   |
+|                       | Platform DMA controller                             | DMA40 only     |
+|                       | RP1 platform DMA controller (Raspberry Pi 5 only)   | x              |
 |                       | EMMC SD card interface driver                       | x              |
 |                       | SDHOST SD card interface driver (Raspberry Pi 1-3)  |                |
-|                       | PWM output (2 channels)                             |                |
-|                       | PWM sound output (on headphone jack)                |                |
+|                       | PWM output (2 channels)                             | 4 channels     |
+|                       | PWM sound output (on headphone jack)                | with adapter   |
 |                       | I2C master(s) and slave                             | masters only   |
-|                       | SPI0 master (Polling and DMA driver)                |                |
+|                       | SPI0 master (Polling and DMA driver)                | x              |
 |                       | SPI1 auxiliary master (Polling)                     |                |
-|                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          |                |
+|                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          | SPI1-3 and 5   |
 |                       | SMI master (experimental)                           |                |
-|                       | I2S sound output and input                          |                |
+|                       | I2S sound output and input                          | x              |
 |                       | HDMI sound output (without VCHIQ)                   |                |
 |                       | Hardware random number generator                    | x              |
 |                       | Watchdog device                                     | x              |
@@ -106,7 +135,7 @@ Building
 
 > Circle does not support 32-bit applications on the Raspberry Pi 5.
 
-This describes building on PC Linux. See the file [doc/windows-build.txt](doc/windows-build.txt) for information about building on Windows. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads). Circle has been tested with the version *12.2.Rel1* (arm-gnu-toolchain-12.2.rel1-x86_64-arm-none-eabi.tar.xz) from this website.
+This describes building on PC Linux. See the file [doc/windows-build.txt](doc/windows-build.txt) for information about building on Windows. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads). Circle has been tested with the version *13.2.Rel1* (arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz) from this website. This is the recommended toolchain for AArch32 builds.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2, 3 or 4) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -146,7 +175,7 @@ AArch64
 
 Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3, 4 or 5. There are also Raspberry Pi 2 versions and the Raspberry Pi Zero 2, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too (with `RASPPI = 3`).
 
-The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads). Circle has been tested with the version *12.2.Rel1* (arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf.tar.xz) from this website.
+The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads). Circle has been tested with the version *13.2.Rel1* (arm-gnu-toolchain-13.2.rel1-x86_64-aarch64-none-elf.tar.xz) from this website. This is the recommended toolchain for AArch64 builds.
 
 There are distro-provided toolchains on certain Linux platforms (e.g. *g++-aarch64-linux-gnu* on Ubuntu or *gcc-c++-aarch64-linux-gnu* on Fedora), which may work with Circle and can be a quick way to use it, but you have to test this by yourself. If you encounter problems (e.g. no reaction at all, link failure with external library) using a distro-provided toolchain, please try the recommended toolchain (see above) first, before reporting an issue.
 
@@ -198,18 +227,8 @@ The following C++ classes were added to Circle:
 
 Base library
 
-* CMACBDevice: Driver for MACB/GEM Ethernet NIC of Raspberry Pi 5
-* CSouthbridge: Driver for the RP1 multi-function device of the Raspberry Pi 5
-
-USB library
-
-* CUSBSerialHostDevice: Generic host driver for USB serial devices (was: CUSBSerialDevice)
-* CUSBSubSystem: USB sub-system of the Raspberry Pi 5
-
-USB gadget library
-
-* CUSBCDCGadget: USB serial CDC gadget
-* CUSBCDCGadgetEndpoint: Endpoint of the USB serial CDC gadget
+* CDMAChannelRP1: RP1 platform DMA controller support (for Raspberry Pi 5)
+* CI2CMasterIRQ: Driver for I2C master devices (asynchronous using IRQ, for Raspberry Pi 1-4)
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 

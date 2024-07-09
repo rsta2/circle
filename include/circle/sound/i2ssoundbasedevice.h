@@ -2,7 +2,7 @@
 // i2ssoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,10 @@
 //
 #ifndef _circle_sound_i2ssoundbasedevice_h
 #define _circle_sound_i2ssoundbasedevice_h
+
+#if RASPPI >= 5
+	#include <circle/sound/i2ssoundbasedevice-rp1.h>
+#else
 
 #include <circle/sound/soundbasedevice.h>
 #include <circle/sound/soundcontroller.h>
@@ -50,13 +54,15 @@ public:
 	/// \param pI2CMaster	pointer to the I2C master object (0 if no I2C DAC init required)
 	/// \param ucI2CAddress I2C slave address of the DAC (0 for auto probing 0x4C and 0x4D)
 	/// \param DeviceMode	which transfer direction to use?
+	/// \param nHWChannels	number of hardware channels (2 or 8 (Raspberry Pi 5 only))
 	CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 			     unsigned	       nSampleRate = 192000,
 			     unsigned	       nChunkSize  = 8192,
 			     bool	       bSlave      = FALSE,
 			     CI2CMaster       *pI2CMaster  = 0,
 			     u8		       ucI2CAddress = 0,
-			     TDeviceMode       DeviceMode  = DeviceModeTXOnly);
+			     TDeviceMode       DeviceMode  = DeviceModeTXOnly,
+			     unsigned	       nHWChannels = 2);
 
 	virtual ~CI2SSoundBaseDevice (void);
 
@@ -106,6 +112,7 @@ private:
 	boolean ControllerFactory (void);
 
 private:
+	unsigned m_nSampleRate;
 	unsigned m_nChunkSize;
 	bool     m_bSlave;
 	CI2CMaster *m_pI2CMaster;
@@ -126,5 +133,7 @@ private:
 	boolean m_bControllerInited;
 	CSoundController *m_pController;
 };
+
+#endif
 
 #endif

@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <circle/types.h>
 #include <assert.h>
 
+#define PWM_CLOCK_RATE	1000000
 #define PWM_RANGE	1024
 
 static const char FromKernel[] = "kernel";
@@ -29,11 +30,25 @@ CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
+#if RASPPI <= 4
 	m_PWMPin1 (18, GPIOModeAlternateFunction5),
 	m_PWMPin2 (19, GPIOModeAlternateFunction5),
-	m_PWMOutput (GPIOClockSourceOscillator, 2, PWM_RANGE, TRUE)
+	#define CHAN1	PWM_CHANNEL1
+	#define CHAN2	PWM_CHANNEL2
+#else
+	m_PWMPin1 (18, GPIOModeAlternateFunction3),
+	m_PWMPin2 (19, GPIOModeAlternateFunction3),
+	#define CHAN1	PWM_CHANNEL3
+	#define CHAN2	PWM_CHANNEL4
+#endif
+	m_PWMOutput (PWM_CLOCK_RATE, PWM_RANGE, TRUE)
 {
 	m_ActLED.Blink (5);	// show we are alive
+
+#if RASPPI >= 5
+	m_PWMPin1.SetDriveStrength (GPIODriveStrength12mA);
+	m_PWMPin2.SetDriveStrength (GPIODriveStrength12mA);
+#endif
 }
 
 CKernel::~CKernel (void)
@@ -82,22 +97,25 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
-	m_PWMOutput.Start ();
+	if (!m_PWMOutput.Start ())
+	{
+		m_Logger.Write (FromKernel, LogPanic, "Cannot start PWM output");
+	}
 
 	while (1)
 	{
 		for (unsigned nValue = 0; nValue <= PWM_RANGE; nValue++)
 		{
-			m_PWMOutput.Write (PWM_CHANNEL1, nValue);
-			m_PWMOutput.Write (PWM_CHANNEL2, PWM_RANGE-nValue);
+			m_PWMOutput.Write (CHAN1, nValue);
+			m_PWMOutput.Write (CHAN2, PWM_RANGE-nValue);
 
 			m_Timer.MsDelay (4);
 		}
 
 		for (unsigned nValue = 0; nValue <= PWM_RANGE; nValue++)
 		{
-			m_PWMOutput.Write (PWM_CHANNEL1, PWM_RANGE-nValue);
-			m_PWMOutput.Write (PWM_CHANNEL2, nValue);
+			m_PWMOutput.Write (CHAN1, PWM_RANGE-nValue);
+			m_PWMOutput.Write (CHAN2, nValue);
 
 			m_Timer.MsDelay (4);
 		}

@@ -37,7 +37,7 @@ be heard on both channels of the headphone.
 USB AUDIO
 
 The input sound data for this program can also come from an USB audio streaming
-device. This is currently only supported on the Raspberry Pi 4. You have to
+device. This is currently only supported on the Raspberry Pi 4 and 5. You have to
 define USE_USB in the file config.h to enable this.
 
 USB audio devices often support setting the input jack (LineIn or Microphone)
@@ -60,7 +60,7 @@ Before build you should add the following system options to the file Config.mk:
 
 	DEFINE += -DNO_BUSY_WAIT -DNO_SDHOST
 
-If you want to use this program on the Raspberry Pi 4, without a connected
+If you want to use this program on the Raspberry Pi 4 or 5, without a connected
 display, you also have to add this option to the file Config.mk:
 
 	DEFINE += -DSCREEN_HEADLESS

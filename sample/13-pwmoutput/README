@@ -1,3 +1,7 @@
 README 
 
-This sample program uses the PWM device to control the output level of GPIO 18 and 19 (GPIO 19 only available on Raspberry Pi Model A+ and B+ and on Raspberry Pi 2). If there is a LED connected (via a resistor) to one of these pins its brightness changes continously. The state of GPIO 19 is opposed to that of GPIO 18. When the LED on GPIO 18 is bright, the LED on GPIO 19 is dark.
+This sample program uses the PWM device to control the output level of GPIO 18
+and 19 (GPIO 19 not available on Raspberry Pi 1 Model A and B). If there is a
+LED connected (via a resistor) to one of these pins its brightness changes
+continuously. The state of GPIO 19 is opposed to that of GPIO 18. When the LED
+on GPIO 18 is bright, the LED on GPIO 19 is dark.

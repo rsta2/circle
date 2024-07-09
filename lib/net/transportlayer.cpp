@@ -2,7 +2,7 @@
 // transportlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <circle/net/tcpconnection.h>
 #include <circle/net/udpconnection.h>
 #include <circle/net/in.h>
+#include <circle/string.h>
 #include <circle/macros.h>
 #include <assert.h>
 
@@ -180,7 +181,7 @@ int CTransportLayer::Bind (u16 nOwnPort, int nProtocol)
 	return i;
 }
 
-int CTransportLayer::Connect (CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol)
+int CTransportLayer::Connect (const CIPAddress &rIPAddress, u16 nPort, u16 nOwnPort, int nProtocol)
 {
 	m_SpinLock.Acquire ();
 
@@ -347,7 +348,7 @@ int CTransportLayer::Receive (void *pBuffer, int nFlags, int hConnection)
 }
 
 int CTransportLayer::SendTo (const void *pData, unsigned nLength, int nFlags,
-			     CIPAddress &rForeignIP, u16 nForeignPort, int hConnection)
+			     const CIPAddress &rForeignIP, u16 nForeignPort, int hConnection)
 {
 	assert (hConnection >= 0);
 	if (   hConnection >= (int) m_pConnection.GetCount ()
@@ -411,4 +412,48 @@ const u8 *CTransportLayer::GetForeignIP (int hConnection) const
 	}
 
 	return ((CNetConnection *) m_pConnection[hConnection])->GetForeignIP ();
+}
+
+void CTransportLayer::ListConnections (CDevice *pTarget)
+{
+	assert (pTarget != 0);
+
+	static const char Header[] = "PROT LOCAL ADDRESS         FOREIGN ADDRESS       STATE\n";
+	pTarget->Write (Header, sizeof Header-1);
+
+	CString OwnIP, Local, Foreign, Line;
+
+	assert (m_pNetConfig != 0);
+	const CIPAddress *pOwnIP = m_pNetConfig->GetIPAddress ();
+	assert (pOwnIP != 0);
+	pOwnIP->Format (&OwnIP);
+
+	for (unsigned i = 0; i < m_pConnection.GetCount (); i++)
+	{
+		if (   m_pConnection[i] == 0
+		    || ((CNetConnection *) m_pConnection[i])->IsTerminated ())
+		{
+			continue;
+		}
+
+		int nProtocol = ((CNetConnection *) m_pConnection[i])->GetProtocol ();
+		assert (nProtocol == IPPROTO_TCP || nProtocol == IPPROTO_UDP);
+		const char *pProtocol = nProtocol == IPPROTO_TCP ? "tcp" : "udp";
+
+		Local.Format ("%s:%u", (const char *) OwnIP,
+			      (unsigned) ((CNetConnection *) m_pConnection[i])->GetOwnPort ());
+
+		const u8 *pForeignIP =
+			((CNetConnection *) m_pConnection[i])->GetForeignIP ();
+		Foreign.Format ("%u.%u.%u.%u:%u",
+			(unsigned) pForeignIP[0], (unsigned) pForeignIP[1],
+			(unsigned) pForeignIP[2], (unsigned) pForeignIP[3],
+			(unsigned) ((CNetConnection *) m_pConnection[i])->GetForeignPort ());
+
+		Line.Format ("%-4s %-21s %-21s %s\n", pProtocol,
+			     (const char *) Local, (const char *) Foreign,
+			     ((CNetConnection *) m_pConnection[i])->GetStateName ());
+
+		pTarget->Write ((const char *) Line, Line.GetLength ());
+	}
 }

@@ -2,7 +2,7 @@
 // pwmsounddevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ unsigned CPWMSoundDevice::GetChunk (u32 *pBuffer, unsigned nChunkSize)
 	assert (m_nChannels == 1 || m_nChannels == 2);
 	assert (m_nBitsPerSample == 8 || m_nBitsPerSample == 16);
 
-	for (unsigned nSample = 0; nSample < nChunkSize / 2;)		// 2 channels on output
+	for (unsigned nSample = 0; nSample < nChunkSize;)
 	{
 		unsigned nValue = *m_pSoundData++;
 		if (m_nBitsPerSample > 8)

@@ -1,0 +1,7 @@
+README
+
+This test sends up to 16 bytes to an I2C device and receives up to 16 bytes from
+the device then. The I2C address of the device, the I2C clock frequency, the
+send bytes and the number of received bytes can be configured in the file
+kernel.cpp. By default the chip ID register of a BMP180 digital air pressure
+sensor is read and displayed. This test uses the IRQ-driven I2C master driver.

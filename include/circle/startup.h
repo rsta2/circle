@@ -31,6 +31,9 @@ extern "C" {
 int main (void);
 #define EXIT_HALT	0
 #define EXIT_REBOOT	1
+#if RASPPI >= 5
+#define EXIT_POWER_OFF	2
+#endif
 
 void sysinit (void) NORETURN;
 
@@ -40,6 +43,8 @@ void reboot (void) NORETURN;
 
 #if RASPPI >= 5
 void poweroff (void) NORETURN;
+
+boolean is_power_button_pressed (void);
 #endif
 
 void set_qemu_exit_status (int nStatus);

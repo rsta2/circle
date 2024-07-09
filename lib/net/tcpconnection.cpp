@@ -13,7 +13,7 @@
 //	user timeout
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -124,11 +124,26 @@ PACKED;
 
 unsigned CTCPConnection::s_nConnections = 0;
 
+const char *CTCPConnection::s_pStateName[] =	// must match TTCPState
+{
+	"CLOSED",
+	"LISTEN",
+	"SYN-SENT",
+	"SYN-RECEIVED",
+	"ESTABLISHED",
+	"FIN-WAIT-1",
+	"FIN-WAIT-2",
+	"CLOSE-WAIT",
+	"CLOSING",
+	"LAST-ACK",
+	"TIME-WAIT"
+};
+
 static const char FromTCP[] = "tcp";
 
 CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 				CNetworkLayer	*pNetworkLayer,
-				CIPAddress	&rForeignIP,
+				const CIPAddress &rForeignIP,
 				u16		 nForeignPort,
 				u16		 nOwnPort)
 :	CNetConnection (pNetConfig, pNetworkLayer, rForeignIP, nForeignPort, nOwnPort, IPPROTO_TCP),
@@ -219,6 +234,11 @@ CTCPConnection::~CTCPConnection (void)
 
 	assert (s_nConnections > 0);
 	s_nConnections--;
+}
+
+const char *CTCPConnection::GetStateName (void) const
+{
+	return s_pStateName[m_State];
 }
 
 int CTCPConnection::Connect (void)
@@ -463,7 +483,7 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 }
 
 int CTCPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
-			    CIPAddress	&rForeignIP, u16 nForeignPort)
+			    const CIPAddress &rForeignIP, u16 nForeignPort)
 {
 	// ignore rForeignIP and nForeignPort
 	return Send (pData, nLength, nFlags);
@@ -1589,25 +1609,11 @@ void CTCPConnection::DumpStatus (void)
 
 TTCPState CTCPConnection::NewState (TTCPState State, unsigned nLine)
 {
-	const static char *StateName[] =	// must match TTCPState
-	{
-		"CLOSED",
-		"LISTEN",
-		"SYN-SENT",
-		"SYN-RECEIVED",
-		"ESTABLISHED",
-		"FIN-WAIT-1",
-		"FIN-WAIT-2",
-		"CLOSE-WAIT",
-		"CLOSING",
-		"LAST-ACK",
-		"TIME-WAIT"
-	};
+	assert (m_State < sizeof s_pStateName / sizeof s_pStateName[0]);
+	assert (State < sizeof s_pStateName / sizeof s_pStateName[0]);
 
-	assert (m_State < sizeof StateName / sizeof StateName[0]);
-	assert (State < sizeof StateName / sizeof StateName[0]);
-
-	CLogger::Get ()->Write (FromTCP, LogDebug, "State %s -> %s at line %u", StateName[m_State], StateName[State], nLine);
+	CLogger::Get ()->Write (FromTCP, LogDebug, "State %s -> %s at line %u",
+				s_pStateName[m_State], s_pStateName[State], nLine);
 
 	return m_State = State;
 }
