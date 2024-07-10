@@ -223,7 +223,8 @@ boolean CXHCIEndpoint::Transfer (CUSBRequest *pURB, unsigned nTimeoutMs)
 	{
 		if (CTimer::Get ()->GetTicks () - nStartTicks >= HZ)
 		{
-			CLogger::Get ()->Write (From, LogDebug, "Transfer timed out");
+			CLogger::Get ()->Write (From, LogDebug, "Transfer timed out (ep %u)",
+						(unsigned) pURB->GetEndpoint ()->GetNumber ());
 #ifdef XHCI_DEBUG
 			m_pDevice->DumpStatus ();
 #endif
