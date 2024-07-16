@@ -487,6 +487,7 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 #else
 	m_hci_ver (0),
 #endif
+	m_capacity ((u64) -1),
 	m_pSCR (0)
 {
 	assert (m_pInterruptSystem != 0);
@@ -661,6 +662,11 @@ u64 CEMMCDevice::Seek (u64 ullOffset)
 	m_ullOffset = ullOffset;
 	
 	return m_ullOffset;
+}
+
+u64 CEMMCDevice::GetSize (void) const
+{
+	return m_capacity;
 }
 
 #ifndef USE_SDHOST
@@ -1387,6 +1393,33 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 	return m_last_cmd_success;
 }
 
+#ifndef USE_EMBEDDED_MMC_CM
+
+u32 CEMMCDevice::GetCSDField (unsigned start, unsigned width) const
+{
+#ifndef USE_SDHOST
+	// TODO: For unknown reason the CRC is not included in the response in EMMC_RESP0
+	// for the SEND_CSD command. This is a workaround to handle this.
+	assert (start >= 8);
+	start -= 8;
+#endif
+
+	unsigned offset = start / 32;
+	unsigned shift = start & 31;
+
+	u32 result = m_csd[offset] >> shift;
+	if (width + shift > 32)
+	{
+		result |= m_csd[offset + 1] << ((32 - shift) % 32);
+	}
+
+	result &= (width < 32 ? 1 << width : 0) - 1;
+
+	return result;
+}
+
+#endif
+
 int CEMMCDevice::CardReset (void)
 {
 #ifndef USE_SDHOST
@@ -1524,6 +1557,11 @@ int CEMMCDevice::CardReset (void)
 	m_device_id[1] = 0;
 	m_device_id[2] = 0;
 	m_device_id[3] = 0;
+
+	m_csd[0] = 0;
+	m_csd[1] = 0;
+	m_csd[2] = 0;
+	m_csd[3] = 0;
 
 	m_card_supports_sdhc = 0;
 	m_card_supports_hs = 0;
@@ -1897,6 +1935,46 @@ int CEMMCDevice::CardReset (void)
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "RCA: %04x", m_card_rca);
 #endif
+
+#ifndef USE_EMBEDDED_MMC_CM
+	// Send CMD9 to get the cards CSD
+	if (!IssueCommand (SEND_CSD, m_card_rca << 16))
+	{
+		LogWrite (LogError, "error sending CMD9");
+
+		return -1;
+	}
+	m_csd[0] = m_last_r0;
+	m_csd[1] = m_last_r1;
+	m_csd[2] = m_last_r2;
+	m_csd[3] = m_last_r3;
+#ifdef EMMC_DEBUG2
+	LogWrite (LogDebug, "Card CSD: %08x%08x%08x%08x", m_csd[3], m_csd[2], m_csd[1], m_csd[0]);
+#endif
+
+	// Calculate device capacity
+	unsigned nSize, nShift;
+	unsigned nCSDVersion = GetCSDField (126, 2);
+	if (nCSDVersion == 0)
+	{
+		nSize = GetCSDField (62, 12) + 1;
+		nShift = GetCSDField (47, 3) + 2;
+	}
+	else if (nCSDVersion == 1)
+	{
+		nSize = GetCSDField (48, 22) + 1;
+		nShift = 10;
+	}
+	else
+	{
+		LogWrite (LogError, "Unknown CSD version %u", nCSDVersion);
+
+		return -1;
+	}
+
+	m_capacity = (u64) (nSize << nShift) * SD_BLOCK_SIZE;
+	LogWrite (LogDebug, "Capacity is %lu MBytes", m_capacity / 0x100000);
+#endif	// #ifndef USE_EMBEDDED_MMC_CM
 
 	// Now select the card (toggles it to transfer state)
 	if (!IssueCommand (SELECT_CARD, m_card_rca << 16))
