@@ -1,6 +1,7 @@
 //
 // kernel.cpp
-// Test for USB Mass Storage Gadget
+//
+// Test for USB Mass Storage Gadget by Mike Messinides
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
@@ -19,29 +20,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <assert.h>
 
 LOGMODULE ("kernel");
-
-//#define MEM_STORAGE
-#define MEM_STORAGE_BLOCKS 16000
-
-#ifdef MEM_STORAGE
- #define DEVICE_DESC "Memory"
-#else
- #define DEVICE_DESC "EMMC"
-#endif
-
-
 
 CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
-	m_MSDGadget (&m_Interrupt,nullptr),
 	m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
-	m_MemStorage (MEM_STORAGE_BLOCKS*BLOCK_SIZE),
-	m_pStgDevice (nullptr) 
+	m_MSDGadget (&m_Interrupt)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -53,66 +40,46 @@ CKernel::~CKernel (void)
 boolean CKernel::Initialize (void)
 {
 	boolean bOK = TRUE;
-	int failVal=0;
 
 	if (bOK)
 	{
 		bOK = m_Screen.Initialize ();
-		if(!bOK)failVal=1;
 	}
 
 	if (bOK)
 	{
 		bOK = m_Serial.Initialize (115200);
-		if(!bOK)failVal=2;
 	}
 
 	if (bOK)
 	{
-		// CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
-		// if (pTarget == 0)
-		// {
-		// 	pTarget = &m_Screen;
-		// }
+		CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
+		if (pTarget == 0)
+		{
+			pTarget = &m_Screen;
+		}
 
-		// //bOK = m_Logger.Initialize (pTarget);
-		// //if(!bOK)failVal=2;
-		// m_Logger.Initialize (pTarget);
-		m_Logger.Initialize(&m_Serial);
+		bOK = m_Logger.Initialize (pTarget);
 	}
 
 	if (bOK)
 	{
 		bOK = m_Interrupt.Initialize ();
-		if(!bOK)failVal=3;
 	}
 
 	if (bOK)
 	{
 		bOK = m_Timer.Initialize ();
-		if(!bOK)failVal=4;
 	}
-
-#ifndef MEM_STORAGE	
 
 	if (bOK)
 	{
 		bOK = m_EMMC.Initialize ();
-		if(!bOK)failVal=5;
-		m_pStgDevice = &m_EMMC;
-	}
-#else
-      m_pStgDevice = &m_MemStorage;
-#endif
-    if(bOK){
-		bOK=m_MSDGadget.Initialize();
-		if(!bOK)failVal=6;
 	}
 
-    if(bOK){
-        m_ActLED.Blink(2,200,500);
-	} else {
-        m_ActLED.Blink(3+failVal,100,200);
+	if(bOK)
+	{
+		bOK = m_MSDGadget.Initialize ();
 	}
 
 	return bOK;
@@ -122,37 +89,17 @@ TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE ("Compile time: " __DATE__ " " __TIME__);
 
+	m_MSDGadget.SetDevice (&m_EMMC);
 
-    m_MSDGadget.SetDevice(m_pStgDevice);
-	LOGNOTE ("cmdline deviceblocks = %s ", m_Options.GetAppOptionString("deviceblocks","[not specified]") );
-	u64 numBlocks=m_Options.GetAppOptionDecimal("deviceblocks",0);//MEM_STORAGE_BLOCKS);
-	if(numBlocks>0){
-		LOGNOTE ("overriding device size");
-		m_MSDGadget.SetDeviceBlocks(numBlocks);	
-	}
-	LOGNOTE ("%s device, number of blocks = %llu ", DEVICE_DESC, m_MSDGadget.GetBlocks() );
-	unsigned count = m_Timer.GetTicks();
-	while (1)
+	for (unsigned nCount = 0; 1; nCount++)
 	{
-		if (m_MSDGadget.UpdatePlugAndPlay ())
-		{
-          
-		}
-		m_MSDGadget.Update();//IO
-		//CTimer::Get ()->MsDelay (25);
-		if(m_Timer.GetTicks() > count+200){
-		  m_ActLED.Blink(1,200,200);
-		  count =m_Timer.GetTicks();
-		}
+		m_MSDGadget.UpdatePlugAndPlay ();
+
+		// must be called from TASK_LEVEL to allow I/O operations
+		m_MSDGadget.Update ();
+
+		m_Screen.Rotor (0, nCount);
 	}
 
 	return ShutdownHalt;
-}
-
-void CKernel::DeviceRemovedHandler (CDevice *pDevice, void *pContext)
-{
-	CKernel *pThis = static_cast<CKernel *> (pContext);
-	assert (pThis);
-
-	LOGDBG ("Device has been detached");
 }

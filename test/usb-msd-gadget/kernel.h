@@ -1,5 +1,5 @@
 //
-// kernel.h (usb-msd-gadget test)
+// kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
@@ -29,9 +29,8 @@
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
-#include "usbmsdgadget.h"
-#include "../../addon/SDCard/emmc.h"
-#include "memdevice.h"
+#include <circle/usb/gadget/usbmsdgadget.h>
+#include <SDCard/emmc.h>
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -52,9 +51,6 @@ public:
 	TShutdownMode Run (void);
 
 private:
-	static void DeviceRemovedHandler (CDevice *pDevice, void *pContext);
-
-private:
 	// do not change this order
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
@@ -66,11 +62,8 @@ private:
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 
+	CEMMCDevice		m_EMMC;
 	CUSBMSDGadget		m_MSDGadget;
-	CEMMCDevice         m_EMMC;
-	CMemDevice          m_MemStorage;
-	CDevice             *m_pStgDevice;
-
 };
 
 #endif
