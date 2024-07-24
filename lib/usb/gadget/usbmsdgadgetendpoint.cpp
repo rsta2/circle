@@ -1,6 +1,7 @@
 //
 // usmstgadgetendpoint.cpp
 //
+// USB Mass Storage Gadget by Mike Messinides
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
@@ -18,8 +19,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include "usbmsdgadgetendpoint.h"
-#include "usbmsdgadget.h"
+#include <circle/usb/gadget/usbmsdgadgetendpoint.h>
+#include <circle/usb/gadget/usbmsdgadget.h>
 #include <circle/logger.h>
 #include <assert.h>
 
@@ -81,7 +82,3 @@ void CUSBMSDGadgetEndpoint::StallRequest(boolean bIn){
 	CDWUSBGadgetEndpoint::Stall(bIn);
 
 }
-
-
-
-

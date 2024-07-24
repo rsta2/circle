@@ -1,6 +1,8 @@
 //
 // usbmstgadgetendpoint.h
 //
+// USB Mass Storage Gadget by Mike Messinides
+//
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
 //
@@ -22,9 +24,6 @@
 
 #include <circle/usb/gadget/dwusbgadgetendpoint.h>
 #include <circle/usb/usb.h>
-#include <circle/device.h>
-#include <circle/synchronize.h>
-#include <circle/spinlock.h>
 #include <circle/types.h>
 
 class CUSBMSDGadget;
@@ -42,28 +41,21 @@ public:
 
 	void OnSuspend (void) override;
 
-	enum TMSDTransferMode //since TTransferMode is protected, can't use in the gadget class
+	enum TMSDTransferMode
 	{
 		TransferCBWOut,	
 		TransferDataOut,
 		TransferDataIn,
 		TransferCSWIn
 
-	};	
+	};
 
 	void BeginTransfer (TMSDTransferMode Mode, void *pBuffer, size_t nLength);
 
 	void StallRequest(boolean bIn);
 
 private:
-    CUSBMSDGadget *m_pGadget;
-
-	static const size_t MaxOutMessageSize = 512;
-	static const size_t MaxInMessageSize = 512;
-	DMA_BUFFER (u8, m_OutBuffer, MaxOutMessageSize);
-	DMA_BUFFER (u8, m_InBuffer, MaxInMessageSize);
-
-	CSpinLock m_SpinLock;
+	CUSBMSDGadget *m_pGadget;
 };
 
 #endif

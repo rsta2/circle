@@ -1,7 +1,7 @@
 //
 // usbmsdgadget.cpp
-// USB Mass Storage Gadget
 //
+// USB Mass Storage Gadget by Mike Messinides
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
@@ -19,15 +19,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include "usbmsdgadget.h"
-#include "usbmsdgadgetendpoint.h"
+#include <circle/usb/gadget/usbmsdgadget.h>
+#include <circle/usb/gadget/usbmsdgadgetendpoint.h>
 #include <circle/logger.h>
 #include <circle/sysconfig.h>
 #include <circle/util.h>
 #include <assert.h>
 
-#define MLOGNOTE(From,...)		CLogger::Get ()->Write (From, LogNotice, __VA_ARGS__)
-#define MLOGDEBUG(From,...)		CLogger::Get ()->Write (From, LogDebug, __VA_ARGS__)
+#define MLOGNOTE(From,...)		//CLogger::Get ()->Write (From, LogNotice, __VA_ARGS__)
+#define MLOGDEBUG(From,...)		//CLogger::Get ()->Write (From, LogDebug, __VA_ARGS__)
 #define MLOGERR(From,...)            CLogger::Get ()->Write (From, LogError,__VA_ARGS__)
 #define DEFAULT_BLOCKS 16000
 
@@ -41,7 +41,7 @@ const TUSBDeviceDescriptor CUSBMSDGadget::s_DeviceDescriptor =
 	0,              //bDeviceProtocol
 	64,				// wMaxPacketSize0
 	USB_GADGET_VENDOR_ID,
-	0xA4A5, //USB_GADGET_DEVICE_ID_SERIAL_CDC, //TODO add define to config
+	USB_GADGET_DEVICE_ID_MSD,
 	0x100,				// bcdDevice
 	1, 2, 0,			// strings
 	1                   //num configurations
@@ -58,7 +58,7 @@ const CUSBMSDGadget::TUSBMSTGadgetConfigurationDescriptor
 		1,
 		0,
 		0x80,			// bmAttributes (bus-powered)
-		100 / 2			// bMaxPower (500mA) todo back to 500
+		500 / 2			// bMaxPower (500mA)
 	},
 	{
 		sizeof (TUSBInterfaceDescriptor),
@@ -529,7 +529,7 @@ void CUSBMSDGadget::Update()
 			offset=m_pDevice->Seek(BLOCK_SIZE*m_nblock_address);
 			MLOGDEBUG("UpdateRead","offset = %u ",offset); 
 			if(offset!=(u64)(-1)){
-					readCount=m_pDevice->Read(m_InBuffer,BLOCK_SIZE); 
+					readCount=m_pDevice->Read(m_InBuffer,BLOCK_SIZE);
 					if(readCount < BLOCK_SIZE){
 							MLOGERR("UpdateRead","readCount = %u ",readCount); 
 							m_CSW.bmCSWStatus=MSD_CSW_STATUS_FAIL;
@@ -602,6 +602,3 @@ void CUSBMSDGadget::Update()
 	//default:
  }
 }
-
-
-

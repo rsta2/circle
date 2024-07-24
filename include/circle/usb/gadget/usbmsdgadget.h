@@ -1,6 +1,7 @@
 //
 // usbmsdgadget.h
-// USB Mass Storage Gadget
+//
+// USB Mass Storage Gadget by Mike Messinides
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
@@ -22,14 +23,14 @@
 #define _circle_usb_gadget_usbmsdgadget_h
 
 #include <circle/usb/gadget/dwusbgadget.h>
-#include "usbmsdgadgetendpoint.h"
+#include <circle/usb/gadget/usbmsdgadgetendpoint.h>
 #include <circle/usb/usb.h>
 #include <circle/interrupt.h>
+#include <circle/device.h>
+#include <circle/synchronize.h>
 #include <circle/macros.h>
 #include <circle/types.h>
-#include <circle/spinlock.h>
 
-#define MSD_BUFFER_SIZE 512
 #define BLOCK_SIZE 512
 
 struct TUSBMSDCBW { //31 bytes
@@ -125,7 +126,9 @@ class CUSBMSDGadget : public CDWUSBGadget	/// USB mass storage device gadget
 {
 public:
 	/// \param pInterruptSystem Pointer to the interrupt system object
-	CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice);
+	/// \param pDevice Pointer to the device, to be controlled by this gadget
+	/// \note SetDevice() has to be called later, when pDevice is not specified here.
+	CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice = nullptr);
 
 	~CUSBMSDGadget (void);
 
@@ -134,7 +137,7 @@ public:
 	/// \param pData Received data (host-to-device), or buffer for data to be sent
 	/// \return Number of bytes in pData to be sent, or < 0 on error (STALL the request)
 	/// \note By default host-to-device requests will be ignored and other requests will be STALLed
-	int OnClassOrVendorRequest (const TSetupData *pSetupData, u8 *pData);
+	int OnClassOrVendorRequest (const TSetupData *pSetupData, u8 *pData) override;
 
     //from bulk EP
 	void OnTransferComplete (boolean bIn, size_t nLength);
@@ -228,8 +231,7 @@ private:
 	TUSBMSDModeSenseReply m_ModeSenseReply {3,0,0,0};
 	TUSBMSDReadCapacityReply m_ReadCapReply {0x7F3E0000,{0,0,2,0}}; //last block =15999, each block is 512 bytes
 	TUSBMSDRequestSenseReply m_ReqSenseReply;
-	TUSBMSDFormatCapacityReply m_FormatCapReply {0,0,0,8,0x803E0000,2,0,{2,0}};
-	CSpinLock m_SpinLock;
+	TUSBMSDFormatCapacityReply m_FormatCapReply {{0,0,0},8,0x803E0000,2,0,{2,0}};
 	static const size_t MaxOutMessageSize = 512;
 	static const size_t MaxInMessageSize = 512;
 	DMA_BUFFER (u8, m_OutBuffer, MaxOutMessageSize);

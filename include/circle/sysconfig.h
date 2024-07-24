@@ -349,6 +349,10 @@
 #define USB_GADGET_DEVICE_ID_SERIAL_CDC	(USB_GADGET_DEVICE_ID_BASE+1)
 #endif
 
+#ifndef USB_GADGET_DEVICE_ID_MSD
+#define USB_GADGET_DEVICE_ID_MSD	(USB_GADGET_DEVICE_ID_BASE+2)
+#endif
+
 ///////////////////////////////////////////////////////////////////////
 //
 // Other
