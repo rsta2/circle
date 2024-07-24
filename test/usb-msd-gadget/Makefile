@@ -1,0 +1,18 @@
+#
+# Makefile
+#
+
+CIRCLEHOME = ../..
+
+OBJS	= main.o kernel.o usbmsdgadget.o usbmsdgadgetendpoint.o memdevice.o
+
+LIBS	= $(CIRCLEHOME)/lib/usb/libusb.a \
+	  $(CIRCLEHOME)/lib/usb/gadget/libusbgadget.a \
+	  $(CIRCLEHOME)/lib/input/libinput.a \
+	  $(CIRCLEHOME)/lib/fs/libfs.a \
+	  $(CIRCLEHOME)/lib/libcircle.a \
+	  $(CIRCLEHOME)/addon/SDcard/libsdcard.a 
+
+include $(CIRCLEHOME)/Rules.mk
+
+-include $(DEPS)
