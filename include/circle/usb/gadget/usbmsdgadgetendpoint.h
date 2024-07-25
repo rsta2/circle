@@ -39,7 +39,8 @@ public:
 
 	void OnTransferComplete (boolean bIn, size_t nLength) override;
 
-	void OnSuspend (void) override;
+private:
+	friend class CUSBMSDGadget;
 
 	enum TMSDTransferMode
 	{

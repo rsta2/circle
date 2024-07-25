@@ -126,43 +126,25 @@ class CUSBMSDGadget : public CDWUSBGadget	/// USB mass storage device gadget
 {
 public:
 	/// \param pInterruptSystem Pointer to the interrupt system object
-	/// \param pDevice Pointer to the device, to be controlled by this gadget
+	/// \param pDevice Pointer to the block device, to be controlled by this gadget
+	/// \note pDevice must be initialized yet, when it is specified here.
 	/// \note SetDevice() has to be called later, when pDevice is not specified here.
 	CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice = nullptr);
 
 	~CUSBMSDGadget (void);
 
-	/// \brief A class or vendor request has been received on EP0
-	/// \param pSetupData Contents of the Setup packet
-	/// \param pData Received data (host-to-device), or buffer for data to be sent
-	/// \return Number of bytes in pData to be sent, or < 0 on error (STALL the request)
-	/// \note By default host-to-device requests will be ignored and other requests will be STALLed
-	int OnClassOrVendorRequest (const TSetupData *pSetupData, u8 *pData) override;
+	/// \param pDevice Pointer to the block device, to be controlled by this gadget
+	/// \note Call this, if pDevice has not been specified in the constructor.
+	void SetDevice (CDevice *pDevice);
 
-    //from bulk EP
-	void OnTransferComplete (boolean bIn, size_t nLength);
+	/// \brief Call this periodically from TASK_LEVEL to allow I/O operations!
+	void Update (void);
 
-	void OnActivate(); //called from OUT ep
-
-	void SetDevice(CDevice* device); //block device for storage
-
-	void SetDeviceBlocks(u64 numBlocks); //used when device does not report size
-
-	void Update();//must be called periodically for IO operations
-
-	u64 GetBlocks();
-
-	enum TMSDState {
-		Init,
-		ReceiveCBW,
-		InvalidCBW,
-		DataIn,
-		DataOut,
-		SentCSW,
-		SendReqSenseReply,
-		DataInRead,
-		DataOutWrite
-	};
+	/// \param nBlocks Capacity of the block device in number of blocks (a 512 bytes)
+	/// \note Used when the block device does not report its size.
+	void SetDeviceBlocks(u64 nBlocks);
+	/// \return Capacity of the block device in number of blocks (a 512 bytes)
+	u64 GetBlocks (void) const;
 
 protected:
 	/// \brief Get device-specific descriptor
@@ -186,6 +168,16 @@ private:
 
 	void OnSuspend (void) override;
 
+	int OnClassOrVendorRequest (const TSetupData *pSetupData, u8 *pData) override;
+
+private:
+	friend class CUSBMSDGadgetEndpoint;
+
+	void OnTransferComplete (boolean bIn, size_t nLength);
+
+	void OnActivate(); //called from OUT ep
+
+private:
 	void HandleSCSICommand();
 
 	void SendCSW();
@@ -222,9 +214,23 @@ private:
 
 	static const char *const s_StringDescriptor[];
 
-	int m_nState=Init;
+	enum TMSDState {
+		Init,
+		ReceiveCBW,
+		InvalidCBW,
+		DataIn,
+		DataOut,
+		SentCSW,
+		SendReqSenseReply,
+		DataInRead,
+		DataOutWrite
+	};
+
+	TMSDState m_nState=Init;
+
 	TUSBMSDCBW m_CBW;
 	TUSBMSDCSW m_CSW;
+
 	TUSBMSDInquiryReply m_InqReply {0,0x80,0x04,0x02,0x1F,0,0,0,{'C','i','r','c','l','e',0,0},
 	                                {'M','a','s','s',' ','S','t','o','r','a','g','e',0,0,0,0},
 									{'0','0','0',0}};
@@ -232,10 +238,12 @@ private:
 	TUSBMSDReadCapacityReply m_ReadCapReply {0x7F3E0000,{0,0,2,0}}; //last block =15999, each block is 512 bytes
 	TUSBMSDRequestSenseReply m_ReqSenseReply;
 	TUSBMSDFormatCapacityReply m_FormatCapReply {{0,0,0},8,0x803E0000,2,0,{2,0}};
+
 	static const size_t MaxOutMessageSize = 512;
 	static const size_t MaxInMessageSize = 512;
 	DMA_BUFFER (u8, m_OutBuffer, MaxOutMessageSize);
 	DMA_BUFFER (u8, m_InBuffer, MaxInMessageSize);
+
 	u32 m_nblock_address;
 	u32 m_nnumber_blocks;
 	u64 m_nDeviceBlocks=0;

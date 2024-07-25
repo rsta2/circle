@@ -188,7 +188,7 @@ void CUSBMSDGadget::InitDeviceSize(u64 blocks)
 	m_MSDReady = true;
 }
 
-u64 CUSBMSDGadget::GetBlocks()
+u64 CUSBMSDGadget::GetBlocks (void) const
 {
     return m_nDeviceBlocks;
 }
@@ -597,8 +597,7 @@ void CUSBMSDGadget::Update()
 		}	
 		break;			
 	}
-
-
-	//default:
+	default:
+		break;
  }
 }

@@ -55,10 +55,6 @@ void CUSBMSDGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
     m_pGadget->OnTransferComplete(bIn, nLength);
 }
 
-void CUSBMSDGadgetEndpoint::OnSuspend (void)
-{
-
-}
 
 void CUSBMSDGadgetEndpoint::BeginTransfer (TMSDTransferMode Mode, void *pBuffer, size_t nLength){
   switch (Mode){
