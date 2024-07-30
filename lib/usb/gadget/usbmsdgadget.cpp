@@ -90,7 +90,7 @@ const char *const CUSBMSDGadget::s_StringDescriptor[] =
 {
 	"\x04\x03\x09\x04",		// Language ID
 	"Circle",
-	"Mass Stg Gadget"
+	"Mass Storage Gadget"
 };
 
 CUSBMSDGadget::CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice)
