@@ -276,11 +276,9 @@ $(TARGET).hex: $(TARGET).img
 # of these commands.  If putty and node are available on the windows 
 # machine we can get around WSL's lack of serial port support
 ifeq ($(strip $(WSL_DISTRO_NAME)),)
-NODE=node 
 PUTTY=putty
 PUTTYSERIALPORT=$(SERIALPORT)
 else
-NODE=node.exe
 PUTTY=putty.exe
 PUTTYSERIALPORT=$(subst /dev/ttyS,COM,$(SERIALPORT))		# Remap to windows name
 endif
@@ -298,7 +296,7 @@ else
 
 # Flash with flashy
 ifeq ($(strip $(USEFLASHY)),1)
-	FLASHY ?= $(NODE) $(CIRCLEHOME)/tools/flashy/flashy.js
+	FLASHY ?= $(CIRCLEHOME)/tools/cflashy
 else
 	FLASHY ?= flashy
 endif
