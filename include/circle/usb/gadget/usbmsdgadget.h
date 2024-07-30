@@ -33,7 +33,8 @@
 
 #define BLOCK_SIZE 512
 
-struct TUSBMSDCBW { //31 bytes
+struct TUSBMSDCBW   //31 bytes
+{
 	u32 dCBWSignature;
 	u32 dCBWTag;
 	u32 dCBWDataTransferLength;
@@ -41,19 +42,22 @@ struct TUSBMSDCBW { //31 bytes
 	unsigned char bCBWLUN;
 	unsigned char bCBWCBLength;
 	unsigned char CBWCB[16];
-} PACKED;
+}
+PACKED;
 
 #define SIZE_CBW 31
 
 #define VALID_CBW_SIG 0x43425355
 #define CSW_SIG 0x53425355
 
-struct TUSBMSDCSW { //13 bytes
+struct TUSBMSDCSW   //13 bytes
+{
 	u32 dCSWSignature=CSW_SIG;
 	u32 dCSWTag;
 	u32 dCSWDataResidue=0;
 	unsigned char bmCSWStatus=0; //0=ok 1=command fail 2=phase error
-} PACKED;
+}
+PACKED;
 
 #define SIZE_CSW 13
 
@@ -62,7 +66,8 @@ struct TUSBMSDCSW { //13 bytes
 #define MSD_CSW_STATUS_PHASE_ERR 2
 
 //reply to SCSI Request Sense Command 0x3
-struct TUSBMSDRequestSenseReply { //14 bytes
+struct TUSBMSDRequestSenseReply   //14 bytes
+{
 	unsigned char bErrCode;
 	unsigned char bSegNum;
 	unsigned char bSenseKey; //=5 command not supported
@@ -75,49 +80,58 @@ struct TUSBMSDRequestSenseReply { //14 bytes
 	unsigned char bSKSVetc;
 	u16           sFieldPointer;
 	u16           sReserved;
-} PACKED;
+}
+PACKED;
 #define SIZE_RSR 14
 
 //reply to SCSI Inquiry Command 0x12
-struct TUSBMSDInquiryReply { //36 bytes
-   unsigned char bPeriphQualDevType;
-   unsigned char bRMB;
-   unsigned char bVersion;
-   unsigned char bRespDataFormatEtc;
-   unsigned char bAddlLength;
-   unsigned char bSCCS;
-   unsigned char bBQUEetc;
-   unsigned char bRELADRetc;
-   unsigned char bVendorID[8];
-   unsigned char bProdID[16];
-   unsigned char bProdRev[4];
-} PACKED;
+struct TUSBMSDInquiryReply   //36 bytes
+{
+	unsigned char bPeriphQualDevType;
+	unsigned char bRMB;
+	unsigned char bVersion;
+	unsigned char bRespDataFormatEtc;
+	unsigned char bAddlLength;
+	unsigned char bSCCS;
+	unsigned char bBQUEetc;
+	unsigned char bRELADRetc;
+	unsigned char bVendorID[8];
+	unsigned char bProdID[16];
+	unsigned char bProdRev[4];
+}
+PACKED;
 #define SIZE_INQR 36
 
 //reply to SCSI Mode Sense(6) 0x1A
-struct TUSBMSDModeSenseReply { //4 bytes
+struct TUSBMSDModeSenseReply   //4 bytes
+{
 	unsigned char bModeDataLen;
 	unsigned char bMedType;
 	unsigned char bDevParam;
 	unsigned char bBlockDecrLen;
-} PACKED;
+}
+PACKED;
 #define SIZE_MODEREP 4
 
 //reply to SCSI Read Capacity 0x25
-struct TUSBMSDReadCapacityReply { //8 bytes
-    u32 nLastBlockAddr=0x7F3E0000; //15999
+struct TUSBMSDReadCapacityReply   //8 bytes
+{
+	u32 nLastBlockAddr=0x7F3E0000; //15999
 	u8 nSectorSize[4];
-} PACKED;
+}
+PACKED;
 #define SIZE_READCAPREP 8
 
-struct TUSBMSDFormatCapacityReply { //10 bytes
+struct TUSBMSDFormatCapacityReply   //10 bytes
+{
 	u8 reserved[3] {0,0,0};
 	u8 capListLength = 8;
 	u32 numBlocks =0x803E0000;
 	u8 descriptor = 2; //formatted media
 	u8 blockLen0 = 0;
 	u8 blockLen[2];
-} PACKED;
+}
+PACKED;
 #define SIZE_FORMATR 10
 
 
@@ -214,7 +228,8 @@ private:
 
 	static const char *const s_StringDescriptor[];
 
-	enum TMSDState {
+	enum TMSDState
+	{
 		Init,
 		ReceiveCBW,
 		InvalidCBW,
@@ -232,10 +247,11 @@ private:
 	TUSBMSDCSW m_CSW;
 
 	TUSBMSDInquiryReply m_InqReply {0,0x80,0x04,0x02,0x1F,0,0,0,{'C','i','r','c','l','e',0,0},
-	                                {'M','a','s','s',' ','S','t','o','r','a','g','e',0,0,0,0},
-									{'0','0','0',0}};
+					{'M','a','s','s',' ','S','t','o','r','a','g','e',0,0,0,0},
+					{'0','0','0',0}};
 	TUSBMSDModeSenseReply m_ModeSenseReply {3,0,0,0};
-	TUSBMSDReadCapacityReply m_ReadCapReply {0x7F3E0000,{0,0,2,0}}; //last block =15999, each block is 512 bytes
+	TUSBMSDReadCapacityReply m_ReadCapReply {0x7F3E0000,{0,0,2,0}};	// last block =15999,
+									// each block is 512 bytes
 	TUSBMSDRequestSenseReply m_ReqSenseReply;
 	TUSBMSDFormatCapacityReply m_FormatCapReply {{0,0,0},8,0x803E0000,2,0,{2,0}};
 

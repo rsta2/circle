@@ -27,7 +27,7 @@
 #define MLOGNOTE(From,...)		//CLogger::Get ()->Write (From, LogNotice, __VA_ARGS__)
 
 CUSBMSDGadgetEndpoint::CUSBMSDGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
-						CUSBMSDGadget *pGadget)
+					      CUSBMSDGadget *pGadget)
 :	CDWUSBGadgetEndpoint (pDesc, pGadget),
 	m_pGadget (pGadget)
 {
@@ -39,7 +39,8 @@ CUSBMSDGadgetEndpoint::~CUSBMSDGadgetEndpoint (void)
 
 }
 
-//the following methods forward to the gadget class to facilitate unified state management of the device
+//the following methods forward to the gadget class to facilitate
+//unified state management of the device
 
 void CUSBMSDGadgetEndpoint::OnActivate (void)
 {
@@ -52,29 +53,32 @@ void CUSBMSDGadgetEndpoint::OnActivate (void)
 void CUSBMSDGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 {
 	MLOGNOTE("MSDEndpoint","Transfer complete nlen= %i",nLength);
-    m_pGadget->OnTransferComplete(bIn, nLength);
+	m_pGadget->OnTransferComplete(bIn, nLength);
 }
 
 
-void CUSBMSDGadgetEndpoint::BeginTransfer (TMSDTransferMode Mode, void *pBuffer, size_t nLength){
-  switch (Mode){
+void CUSBMSDGadgetEndpoint::BeginTransfer (TMSDTransferMode Mode, void *pBuffer, size_t nLength)
+{
+	switch (Mode)
+	{
 	case TMSDTransferMode::TransferCBWOut:
 	case TMSDTransferMode::TransferDataOut:
-	    MLOGNOTE("MSDEndpoint","Begin Transfer Out  nlen= %i",nLength);
-	    CDWUSBGadgetEndpoint::BeginTransfer (TTransferMode::TransferDataOut, pBuffer, nLength);
+		MLOGNOTE("MSDEndpoint","Begin Transfer Out  nlen= %i",nLength);
+		CDWUSBGadgetEndpoint::BeginTransfer (TTransferMode::TransferDataOut, pBuffer, nLength);
 		break;
 	case TMSDTransferMode::TransferDataIn:
 	case TMSDTransferMode::TransferCSWIn:
-	    MLOGNOTE("MSDEndpoint","Begin Transfer In  nlen= %i",nLength);	
-	    CDWUSBGadgetEndpoint::BeginTransfer (TTransferMode::TransferDataIn, pBuffer, nLength);
+		MLOGNOTE("MSDEndpoint","Begin Transfer In  nlen= %i",nLength);
+		CDWUSBGadgetEndpoint::BeginTransfer (TTransferMode::TransferDataIn, pBuffer, nLength);
 		break;
 	default:
-	    assert(0);
-	    break;
-  }
+		assert(0);
+		break;
+	}
 }
 
-void CUSBMSDGadgetEndpoint::StallRequest(boolean bIn){
+void CUSBMSDGadgetEndpoint::StallRequest(boolean bIn)
+{
 	CDWUSBGadgetEndpoint::Stall(bIn);
 
 }

@@ -44,11 +44,10 @@ private:
 
 	enum TMSDTransferMode
 	{
-		TransferCBWOut,	
+		TransferCBWOut,
 		TransferDataOut,
 		TransferDataIn,
 		TransferCSWIn
-
 	};
 
 	void BeginTransfer (TMSDTransferMode Mode, void *pBuffer, size_t nLength);
