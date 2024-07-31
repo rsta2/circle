@@ -63,8 +63,8 @@ right communication parameters.
 after rebuilding do again "make flash".
 
 
-Using the Flash Tool "Flashy"
------------------------------
+Using the Flash Tool "Flashy" (v1)
+----------------------------------
 
 The above procedure describes flashing the device using the traditional python3 based flash
 tool and bootloader.  There is also a new flash tool and bootloader that provide improved 
@@ -137,6 +137,32 @@ For details on using this under WSL, see the [Windows build instructions](window
 
 If you want to use Flashy with the Bluetooth modules HC-05 or HC-06, please see
 [these instructions](https://github.com/rsta2/circle/pull/312).
+
+
+Using the Flash Tool "cFlashy"
+-----------------------------
+
+Because of recent issues with npm packages, used by the original Flashy (v1), there is
+a similar tool as a native executable for Linux and Windows available now in the Circle
+project, which is called "cFlashy", and which supports the most important features of
+Flashy v1 in a compatible way.  To use it:
+
+In your Config.mk set the variable `USEFLASHY`, along with the other settings for Flashy v1:
+
+        USEFLASHY = 0
+
+You can also manually launch cFlashy using:
+
+        tools/cflashy /dev/ttyUSB0 kernel7.hex --flashBaud:2000000
+
+For a full set of command line args, run cFlashy without args:
+
+        tools/cflashy
+
+If you want to use cFlashy with the Bluetooth modules HC-05 or HC-06, you have to set
+a smaller packet size in Config.mk, like this (not tested yet):
+
+        FLASHYFLAGS = --packetsize:32
 
 
 Using "Flashy" v2
