@@ -26,7 +26,7 @@ print("Sending \"" + magicstring + "\" with baudrate of "+ str(serialbaud) + "..
 sys.stdout.flush()
 
 try:
-	ser.write(magicstring)
+	ser.write(magicstring.encode())
 except Exception:
 	print("ERROR: Serial port disconnected. Check connections!")
 	ser.close()
