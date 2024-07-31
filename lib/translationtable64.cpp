@@ -2,7 +2,7 @@
 // translationtable64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -64,7 +64,7 @@ CTranslationTable::CTranslationTable (size_t nMemSize)
 			continue;
 		}
 #elif RASPPI >= 5
-		if (   nBaseAddress >= 4*GIGABYTE
+		if (   nBaseAddress >= 8*GIGABYTE
 		    && !(MEM_IOMEM_AXI_START <= nBaseAddress && nBaseAddress <= MEM_IOMEM_AXI_END)
 		    && !(MEM_IOMEM_SOC_START <= nBaseAddress && nBaseAddress <= MEM_IOMEM_SOC_END)
 		    && !(MEM_IOMEM_PCIE_START <= nBaseAddress && nBaseAddress <= MEM_IOMEM_PCIE_END))
