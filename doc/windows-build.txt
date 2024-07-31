@@ -41,6 +41,10 @@ the Windows start menu and enter:
 This clones the Circle project and builds the sample/21-webserver for the
 Raspberry Pi 3.
 
+The cFlashy tool can be used on Windows (including WSL), like it is described in
+the file bootloader.txt. The serial port must be named like COM3 or /dev/ttyS3
+here.
+
 
 Windows Sub-System for Linux
 ----------------------------
@@ -67,7 +71,7 @@ it to v1 as described here:
 	https://github.com/MicrosoftDocs/WSL/issues/590
 
 To access the serial ports from within the Linux machine use the device name `/dev/ttyS<n>` where
-`<n>` is the COM port number.  eg: COM3 is available as `/dev/ttsS3`.  
+`<n>` is the COM port number.  eg: COM3 is available as `/dev/ttyS3`.
 
 To access an SD card attached to the Windows machine (ie: to copy kernel images to it), from the 
 Linux machine first create a mount point for it:
