@@ -236,3 +236,47 @@ FC000000	64 MByte	Peripherals
 600000000	64 MByte	xHCI controller
 ...
 ------------------------------------------------------------------------------
+
+Circle on Raspberry Pi 5 (AArch64)
+
+------------------------------------------------------------------------------
+Base		Size		Contents		Remarks
+------------------------------------------------------------------------------
+00000000	32 KByte	ARM Trusted Firmware	BL31
+...
+00080000	max. 2 MByte	Kernel image
+				 .init			startup code
+				 .text
+				 .rodata
+				 .init_array		static constructors
+				 .ARM.exidx		unused
+				 .eh_frame		C++ exception frames
+				 .data
+				 .bss
+...
+				Kernel stacks
+00280000	128 KByte	 for Core 0
+002A0000	128 KByte	 for Core 1		may be unused
+002C0000	128 KByte	 for Core 2		may be unused
+002E0000	128 KByte	 for Core 3		may be unused
+
+				Exception stacks
+00300000	32 KByte	 for Core 0
+00308000	32 KByte	 for Core 1		may be unused
+00310000	32 KByte	 for Core 2		may be unused
+00318000	32 KByte	 for Core 3		may be unused
+
+00500000	4 MByte		Coherent region		for property mailbox, MACB, xHCI
+00900000	variable	Heap allocator		"new" and malloc()
+????????	16 MByte	Page allocator		palloc()
+
+????????	variable	GPU memory
+40000000	variable	High heap allocator
+...
+1000000000	16 MByte	AXI peripherals
+...
+107C000000	16 MByte	SoC peripherals
+...
+10F0000000	4 MByte		RP1 peripherals		PCI Bus 0000:01
+...
+------------------------------------------------------------------------------
