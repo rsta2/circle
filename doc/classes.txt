@@ -190,6 +190,7 @@ Net library
 * CICMPHandler: ICMP error message handler and echo (ping) responder.
 * CIPAddress: Encapsulates an IP address.
 * CLinkLayer: Encapsulates the Ethernet MAC layer.
+* CmDNSPublisher: mDNS / Bonjour client task.
 * CMQTTClient: Client for the MQTT IoT protocol.
 * CMQTTReceivePacket: MQTT helper class.
 * CMQTTSendPacket: MQTT helper class.
