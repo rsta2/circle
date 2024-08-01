@@ -15,3 +15,9 @@ rpi4.cfg.diff
 
 Diff file for the JTAG configuration for the Raspberry Pi 4, see the file
 doc/debug-jtag.txt for info!
+
+rpi5.cfg
+kernel_2712.bin
+
+Configuration file and dummy kernel image to be used for SWD debugging on the
+Raspberry Pi 5, see the file doc/debug-swd.txt for info!

@@ -1,5 +1,7 @@
 DEBUG WITH JTAG
 
+	See the file debug-swd.txt, if you are using a Raspberry Pi 5!
+
 A comfortable way to source-code debug Circle applications is possible using the
 JTAG (Joint Test Action Group) interface of the Raspberry Pi. This allows
 multi-core debugging too. This has been tested for AArch64 operation on the
