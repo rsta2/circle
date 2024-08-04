@@ -2,7 +2,7 @@
 // hdmisoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,14 +31,17 @@
 #include <circle/new.h>
 #include <assert.h>
 
-//#define HDMI_DEBUG
+#define HDMI_DEBUG
 
 #if RASPPI <= 3
-	#define REG(name, base, offset, base4, offset4)	\
-					static const u32 Reg##name = (base) + (offset);
+	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
+					static const uintptr Reg##name = (base) + (offset);
+#elif RASPPI == 4
+	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
+					static const uintptr Reg##name = (base4) + (offset4);
 #else
-	#define REG(name, base, offset, base4, offset4)	\
-					static const u32 Reg##name = (base4) + (offset4);
+	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
+					static const uintptr Reg##name = (base5) + (offset5);
 #endif
 
 #define REGBIT(reg, name, bitnr)	static const u32 Bit##reg##name = 1U << (bitnr);
@@ -48,22 +51,22 @@
 
 #define UNUSED		0
 
-REG (AudioPacketConfig, ARM_HDMI_BASE, 0x9C, ARM_HDMI_BASE, 0xB8);
+REG (AudioPacketConfig, ARM_HDMI_BASE, 0x9C, ARM_HDMI_BASE, 0xB8, ARM_HDMI_BASE, 0xC0);
 	REGSHIFT (AudioPacketConfig, CeaMask, 0);
 	REGSHIFT (AudioPacketConfig, BFrameIdentifier, 10);
 	REGBIT (AudioPacketConfig, ZeroDataOnInactiveChannels, 24);
 	REGBIT (AudioPacketConfig, ZeroDataOnSampleFlat, 29);
-REG (CrpConfig, ARM_HDMI_BASE, 0xA8, ARM_HDMI_BASE, 0xC8);	// clock recover
+REG (CrpConfig, ARM_HDMI_BASE, 0xA8, ARM_HDMI_BASE, 0xC8, ARM_HDMI_BASE, 0xD0);	// clock recover
 	REGBIT (CrpConfig, ExternalCtsEnable, 24);
 	REGSHIFT (CrpConfig, ConfigN, 0);
-REG (Cts0, ARM_HDMI_BASE, 0xAC, ARM_HDMI_BASE, 0xCC); 		// clock time stamp
-REG (Cts1, ARM_HDMI_BASE, 0xB0, ARM_HDMI_BASE, 0xD0);
-REG (MaiChannelMap, ARM_HDMI_BASE, 0x90, ARM_HDMI_BASE, 0x9C);
-REG (MaiConfig, ARM_HDMI_BASE, 0x94, ARM_HDMI_BASE, 0xA0);
+REG (Cts0, ARM_HDMI_BASE, 0xAC, ARM_HDMI_BASE, 0xCC, ARM_HDMI_BASE, 0xD4); 	// clock time stamp
+REG (Cts1, ARM_HDMI_BASE, 0xB0, ARM_HDMI_BASE, 0xD0, ARM_HDMI_BASE, 0xD8);
+REG (MaiChannelMap, ARM_HDMI_BASE, 0x90, ARM_HDMI_BASE, 0x9C, ARM_HDMI_BASE, 0xA4);
+REG (MaiConfig, ARM_HDMI_BASE, 0x94, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xA8);
 	REGSHIFT (MaiConfig, ChannelMask, 0);
 	REGBIT (MaiConfig, BitReverse, 26);
 	REGBIT (MaiConfig, FormatReverse, 27);
-REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10);
+REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10, ARM_HD_BASE, 0x10);
 	REGBIT (MaiControl, Reset, 0);
 	REGBIT (MaiControl, ErrorFull, 1);
 	REGBIT (MaiControl, ErrorEmpty, 2);
@@ -76,37 +79,37 @@ REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10);
 	REGBIT (MaiControl, ChannelAlign, 13);
 	//REGBIT (MaiControl, Busy, 14);
 	REGBIT (MaiControl, Delayed, 15);
-REG (MaiData, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x1C);
-REG (MaiFormat, ARM_HD_BASE, 0x1C, ARM_HD_BASE, 0x18);
+REG (MaiData, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x1C, ARM_HD_BASE, 0x1C);
+REG (MaiFormat, ARM_HD_BASE, 0x1C, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x18);
 	REGSHIFT (MaiFormat, SampleRate, 8);
 		REGVALUE (MaiFormat, SampleRate, NotIndicated, 0);
 		REGVALUE (MaiFormat, SampleRate, 8000, 1);
 	REGSHIFT (MaiFormat, AudioFormat, 16);
 		REGVALUE (MaiFormat, AudioFormat, PCM, 2);
-REG (MaiSampleRate, ARM_HD_BASE, 0x2C, ARM_HD_BASE, 0x20);
+REG (MaiSampleRate, ARM_HD_BASE, 0x2C, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x20);
 	REGSHIFT (MaiSampleRate, M, 0);
 	REGMASK (MaiSampleRate, M, 0xFFU);
 	REGSHIFT (MaiSampleRate, N, 8);
 	REGMASK (MaiSampleRate, N, 0xFFFFFF00U);
-REG (MaiThreshold, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x14);
+REG (MaiThreshold, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x14);
 	REGSHIFT (MaiThreshold, DREQLow, 0);
 	REGSHIFT (MaiThreshold, DREQHigh, 8);
 	REGSHIFT (MaiThreshold, PanicLow, 16);
 	REGSHIFT (MaiThreshold, PanicHigh, 24);
 		REGVALUE (MaiThreshold, Any, Default, 16);
-REG (RamPacketAudio0, ARM_HDMI_BASE, 0x490, ARM_RAM_BASE, 0x90);
-REG (RamPacketAudio1, ARM_HDMI_BASE, 0x494, ARM_RAM_BASE, 0x94);
-REG (RamPacketAudio2, ARM_HDMI_BASE, 0x498, ARM_RAM_BASE, 0x98);
-REG (RamPacketAudio8, ARM_HDMI_BASE, 0x4B0, ARM_RAM_BASE, 0xB0);
-REG (RamPacketConfig, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xBC);
+REG (RamPacketAudio0, ARM_HDMI_BASE, 0x490, ARM_RAM_BASE, 0x90, ARM_RAM_BASE, 0x90);
+REG (RamPacketAudio1, ARM_HDMI_BASE, 0x494, ARM_RAM_BASE, 0x94, ARM_RAM_BASE, 0x94);
+REG (RamPacketAudio2, ARM_HDMI_BASE, 0x498, ARM_RAM_BASE, 0x98, ARM_RAM_BASE, 0x98);
+REG (RamPacketAudio8, ARM_HDMI_BASE, 0x4B0, ARM_RAM_BASE, 0xB0, ARM_RAM_BASE, 0xB0);
+REG (RamPacketConfig, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xBC, ARM_HDMI_BASE, 0xC4);
 	REGBIT (RamPacketConfig, AudioPacketIdentifier, 4);
 	REGBIT (RamPacketConfig, Enable, 16);
-REG (RamPacketStatus, ARM_HDMI_BASE, 0xA4, ARM_HDMI_BASE, 0xC4);
+REG (RamPacketStatus, ARM_HDMI_BASE, 0xA4, ARM_HDMI_BASE, 0xC4, ARM_HDMI_BASE, 0xCC);
 	REGBIT (RamPacketStatus, AudioPacketIdentifier, 4);
 #if RASPPI <= 3
 REG (TxPhyControl0, ARM_HDMI_BASE, 0x2C4, UNUSED, UNUSED);
 	REGBIT (TxPhyControl0, RngPowerDown, 25);
-#else
+#elif RASPPI == 4
 REG (TxPhyPowerDownControl, UNUSED, UNUSED, ARM_PHY_BASE, 0x04);
 	REGBIT (TxPhyPowerDownControl, RngGenPowerDown, 4);
 #endif
@@ -341,7 +344,7 @@ boolean CHDMISoundBaseDevice::Start (void)
 
 #if RASPPI <= 3
 	write32 (RegTxPhyControl0, read32 (RegTxPhyControl0) & ~BitTxPhyControl0RngPowerDown);
-#else
+#elif RASPPI == 4
 	write32 (RegTxPhyPowerDownControl,
 		 read32 (RegTxPhyPowerDownControl) & ~BitTxPhyPowerDownControlRngGenPowerDown);
 #endif
@@ -561,7 +564,7 @@ void CHDMISoundBaseDevice::StopHDMI (void)
 
 #if RASPPI <= 3
 	write32 (RegTxPhyControl0, read32 (RegTxPhyControl0) | BitTxPhyControl0RngPowerDown);
-#else
+#elif RASPPI == 4
 	write32 (RegTxPhyPowerDownControl,
 		 read32 (RegTxPhyPowerDownControl) | BitTxPhyPowerDownControlRngGenPowerDown);
 #endif
