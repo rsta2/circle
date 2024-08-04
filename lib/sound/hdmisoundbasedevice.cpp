@@ -31,7 +31,7 @@
 #include <circle/new.h>
 #include <assert.h>
 
-#define HDMI_DEBUG
+//#define HDMI_DEBUG
 
 #if RASPPI <= 3
 	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
@@ -107,10 +107,10 @@ REG (RamPacketConfig, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xBC, ARM_HDMI_BASE, 0
 REG (RamPacketStatus, ARM_HDMI_BASE, 0xA4, ARM_HDMI_BASE, 0xC4, ARM_HDMI_BASE, 0xCC);
 	REGBIT (RamPacketStatus, AudioPacketIdentifier, 4);
 #if RASPPI <= 3
-REG (TxPhyControl0, ARM_HDMI_BASE, 0x2C4, UNUSED, UNUSED);
+REG (TxPhyControl0, ARM_HDMI_BASE, 0x2C4, UNUSED, UNUSED, 0, 0);
 	REGBIT (TxPhyControl0, RngPowerDown, 25);
 #elif RASPPI == 4
-REG (TxPhyPowerDownControl, UNUSED, UNUSED, ARM_PHY_BASE, 0x04);
+REG (TxPhyPowerDownControl, UNUSED, UNUSED, ARM_PHY_BASE, 0x04, 0, 0);
 	REGBIT (TxPhyPowerDownControl, RngGenPowerDown, 4);
 #endif
 
