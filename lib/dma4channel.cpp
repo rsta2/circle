@@ -458,7 +458,7 @@ void CDMA4Channel::InterruptHandler (void)
 	m_bStatus = nCS & CS4_ERROR ? FALSE : TRUE;
 
 	assert (m_pCompletionRoutine != 0);
-	(*m_pCompletionRoutine) (m_nChannel, m_bStatus, m_pCompletionParam);
+	(*m_pCompletionRoutine) (m_nChannel, 0, m_bStatus, m_pCompletionParam);
 }
 
 void CDMA4Channel::InterruptStub (void *pParam)

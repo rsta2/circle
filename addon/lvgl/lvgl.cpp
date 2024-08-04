@@ -2,7 +2,7 @@
 // lvgl.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -266,7 +266,7 @@ void CLVGL::DisplayFlush (lv_disp_drv_t *pDriver, const lv_area_t *pArea, lv_col
 	s_pThis->m_DMAChannel.Start ();
 }
 
-void CLVGL::DisplayFlushComplete (unsigned nChannel, boolean bStatus, void *pParam)
+void CLVGL::DisplayFlushComplete (unsigned nChannel, unsigned nBuffer, boolean bStatus, void *pParam)
 {
 	assert (bStatus);
 
