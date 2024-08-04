@@ -107,12 +107,10 @@ boolean CKernel::Initialize (void)
 		bOK = m_Timer.Initialize ();
 	}
 
-#if RASPPI <= 4
 	if (bOK)
 	{
 		bOK = m_I2CMaster.Initialize ();
 	}
-#endif
 
 	if (bOK)
 	{
