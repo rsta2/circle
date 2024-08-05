@@ -20,9 +20,7 @@
 #include <circle/sound/hdmisoundbasedevice.h>
 #include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
-#include <circle/bcm2835int.h>
 #include <circle/memio.h>
-#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
@@ -129,24 +127,12 @@ CHDMISoundBaseDevice::CHDMISoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_bUsePolling (FALSE),
 	m_bIRQConnected (FALSE),
 	m_State (HDMISoundCreated),
-	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
+	m_pDMAChannel (new CDMAChannel (DMA_CHANNEL_LITE, pInterrupt)),
+	m_pDMABuffer {new u32[m_nChunkSize], new u32[m_nChunkSize]}
 {
 	assert (m_pInterruptSystem != 0);
 	assert (m_nSampleRate > 0);
 	assert (m_nChunkSize % IEC958_SUBFRAMES_PER_BLOCK == 0);
-
-	if (m_nDMAChannel > DMA_CHANNEL_MAX)	// no DMA channel assigned
-	{
-		m_State = HDMISoundError;
-
-		return;
-	}
-
-	// setup and concatenate DMA buffers and control blocks
-	SetupDMAControlBlock (0);
-	SetupDMAControlBlock (1);
-	m_pControlBlock[0]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[1]);
-	m_pControlBlock[1]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[0]);
 
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 }
@@ -162,7 +148,7 @@ CHDMISoundBaseDevice::CHDMISoundBaseDevice (unsigned nSampleRate)
 	m_nSubFrame (0),
 	m_bIRQConnected (FALSE),
 	m_State (HDMISoundCreated),
-	m_nDMAChannel (DMA_CHANNEL_MAX)		// no DMA channel assigned
+	m_pDMAChannel (0)
 {
 	assert (m_nSampleRate > 0);
 
@@ -175,12 +161,6 @@ CHDMISoundBaseDevice::~CHDMISoundBaseDevice (void)
 		|| m_State == HDMISoundIdle
 		|| m_State == HDMISoundError);
 
-	if (   m_nDMAChannel > DMA_CHANNEL_MAX
-	    && !m_bUsePolling)
-	{
-		return;
-	}
-
 	CDeviceNameService::Get ()->RemoveDevice (DeviceName, FALSE);
 
 	ResetHDMI ();
@@ -191,39 +171,8 @@ CHDMISoundBaseDevice::~CHDMISoundBaseDevice (void)
 	}
 
 	// reset and disable DMA channel
-	PeripheralEntry ();
-
-	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
-	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
-	{
-		// do nothing
-	}
-
-	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) & ~(1 << m_nDMAChannel));
-
-	PeripheralExit ();
-
-	// disconnect IRQ
-	assert (m_pInterruptSystem != 0);
-	if (m_bIRQConnected)
-	{
-		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel);
-	}
-
-	m_pInterruptSystem = 0;
-
-	// free DMA channel
-	CMachineInfo::Get ()->FreeDMAChannel (m_nDMAChannel);
-
-	// free buffers
-	m_pControlBlock[0] = 0;
-	m_pControlBlock[1] = 0;
-	delete [] m_pControlBlockBuffer[0];
-	m_pControlBlockBuffer[0] = 0;
-	delete [] m_pControlBlockBuffer[1];
-	m_pControlBlockBuffer[1] = 0;
+	delete m_pDMAChannel;
+	m_pDMAChannel = 0;
 
 	delete [] m_pDMABuffer[0];
 	m_pDMABuffer[0] = 0;
@@ -289,54 +238,28 @@ boolean CHDMISoundBaseDevice::Start (void)
 					m_ulPixelClockRate);
 #endif
 
-		if (!m_bUsePolling)
-		{
-			// enable and reset DMA channel
-			PeripheralEntry ();
-
-			assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-			write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
-			CTimer::SimpleusDelay (1000);
-
-			write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
-			while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
-			{
-				// do nothing
-			}
-
-			PeripheralExit ();
-		}
-
 		RunHDMI ();
 
 		m_State = HDMISoundIdle;
 	}
 
 	assert (m_State == HDMISoundIdle);
-
-	// fill buffer 0
-	m_nNextBuffer = 0;
-
-	if (   !m_bUsePolling
-	    && !GetNextChunk ())
-	{
-		return FALSE;
-	}
-
 	m_State = HDMISoundRunning;
 
+	// start DMA
 	if (!m_bUsePolling)
 	{
-		// connect IRQ
-		assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+		const size_t ulBufferLength = m_nChunkSize * sizeof (u32);
+		memset (m_pDMABuffer[0], 0, ulBufferLength);
+		memset (m_pDMABuffer[1], 0, ulBufferLength);
 
-		if (!m_bIRQConnected)
-		{
-			assert (m_pInterruptSystem != 0);
-			m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel, InterruptStub, this);
+		const void *Buffers[2] = {m_pDMABuffer[0], m_pDMABuffer[1]};
+		assert (m_pDMAChannel != 0);
+		m_pDMAChannel->SetupCyclicIOWrite (RegMaiData, Buffers, 2,
+						   ulBufferLength, DREQSourceHDMI);
 
-			m_bIRQConnected = TRUE;
-		}
+		m_pDMAChannel->SetCompletionRoutine (DMACompletionStub, this);
+		m_pDMAChannel->Start ();
 	}
 
 	// enable HDMI audio operation
@@ -355,46 +278,6 @@ boolean CHDMISoundBaseDevice::Start (void)
 			       | BitMaiControlEnable);
 
 	PeripheralExit ();
-
-	if (m_bUsePolling)
-	{
-		return TRUE;
-	}
-
-	// start DMA
-	PeripheralEntry ();
-
-	assert (!(read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_INT));
-	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nDMAChannel)));
-
-	assert (m_pControlBlock[0] != 0);
-	write32 (ARM_DMACHAN_CONBLK_AD (m_nDMAChannel), BUS_ADDRESS ((uintptr) m_pControlBlock[0]));
-
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
-					         | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
-					         | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
-					         | CS_ACTIVE);
-
-	PeripheralExit ();
-
-	// fill buffer 1
-	if (!GetNextChunk ())
-	{
-		m_SpinLock.Acquire ();
-
-		if (m_State == HDMISoundRunning)
-		{
-			PeripheralEntry ();
-			write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
-			PeripheralExit ();
-
-			StopHDMI ();
-
-			m_State = HDMISoundTerminating;
-		}
-
-		m_SpinLock.Release ();
-	}
 
 	return TRUE;
 }
@@ -418,6 +301,16 @@ void CHDMISoundBaseDevice::Cancel (void)
 	if (m_State == HDMISoundRunning)
 	{
 		m_State = HDMISoundCancelled;
+
+		m_SpinLock.Release ();
+
+		assert (m_pDMAChannel);
+		m_pDMAChannel->Cancel ();
+		StopHDMI ();
+
+		m_SpinLock.Acquire ();
+
+		m_State = HDMISoundIdle;
 	}
 
 	m_SpinLock.Release ();
@@ -426,8 +319,7 @@ void CHDMISoundBaseDevice::Cancel (void)
 boolean CHDMISoundBaseDevice::IsActive (void) const
 {
 	return    m_State == HDMISoundRunning
-	       || m_State == HDMISoundCancelled
-	       || m_State == HDMISoundTerminating;
+	       || m_State == HDMISoundCancelled;
 }
 
 boolean CHDMISoundBaseDevice::IsWritable (void)
@@ -457,30 +349,6 @@ void CHDMISoundBaseDevice::WriteSample (s32 nSample)
 	{
 		m_nSubFrame = 0;
 	}
-}
-
-boolean CHDMISoundBaseDevice::GetNextChunk (void)
-{
-	assert (m_pDMABuffer[m_nNextBuffer] != 0);
-
-	unsigned nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
-	if (nChunkSize == 0)
-	{
-		return FALSE;
-	}
-
-	unsigned nTransferLength = nChunkSize * sizeof (u32);
-	assert (nTransferLength <= TXFR_LEN_MAX_LITE);
-
-	assert (m_pControlBlock[m_nNextBuffer] != 0);
-	m_pControlBlock[m_nNextBuffer]->nTransferLength = nTransferLength;
-
-	CleanAndInvalidateDataCacheRange ((uintptr) m_pDMABuffer[m_nNextBuffer], nTransferLength);
-	CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock[m_nNextBuffer], sizeof (TDMAControlBlock));
-
-	m_nNextBuffer ^= 1;
-
-	return TRUE;
 }
 
 void CHDMISoundBaseDevice::RunHDMI (void)
@@ -572,98 +440,54 @@ void CHDMISoundBaseDevice::StopHDMI (void)
 	PeripheralExit ();
 }
 
-void CHDMISoundBaseDevice::InterruptHandler (void)
+void CHDMISoundBaseDevice::DMACompletionRoutine (unsigned nChannel, unsigned nBuffer,
+						 boolean bStatus)
 {
-	assert (m_State != HDMISoundIdle);
-	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+	assert (m_pDMAChannel != 0);
 
-	PeripheralEntry ();
+	m_SpinLock.Acquire ();
 
-#ifndef NDEBUG
-	u32 nIntStatus = read32 (ARM_DMA_INT_STATUS);
-#endif
-	u32 nIntMask = 1 << m_nDMAChannel;
-	assert (nIntStatus & nIntMask);
-	write32 (ARM_DMA_INT_STATUS, nIntMask);
-
-	u32 nCS = read32 (ARM_DMACHAN_CS (m_nDMAChannel));
-	assert (nCS & CS_INT);
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel), nCS);	// reset CS_INT
-
-	PeripheralExit ();
-
-	if (nCS & CS_ERROR)
+	if (m_State != HDMISoundRunning)
 	{
-		StopHDMI ();
-
-		m_State = HDMISoundError;
+		m_SpinLock.Release ();
 
 		return;
 	}
 
-	m_SpinLock.Acquire ();
-
-	switch (m_State)
+	if (!bStatus)
 	{
-	case HDMISoundRunning:
-		if (GetNextChunk ())
-		{
-			break;
-		}
-		// fall through
+		m_State = HDMISoundError;
 
-	case HDMISoundCancelled:
-		PeripheralEntry ();
-		write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
-		PeripheralExit ();
+		m_SpinLock.Release ();
 
-		m_State = HDMISoundTerminating;
-		break;
+		m_pDMAChannel->Cancel ();
+		StopHDMI ();
 
-	case HDMISoundTerminating:
+		return;
+	}
+
+	assert (nBuffer < 2);
+	assert (m_pDMABuffer[nBuffer]);
+	assert (m_nChunkSize);
+
+	if (GetChunk (m_pDMABuffer[nBuffer], m_nChunkSize) < m_nChunkSize)
+	{
+		m_pDMAChannel->Cancel ();
 		StopHDMI ();
 
 		m_State = HDMISoundIdle;
-		break;
-
-	default:
-		assert (0);
-		break;
 	}
 
 	m_SpinLock.Release ();
 }
 
-void CHDMISoundBaseDevice::InterruptStub (void *pParam)
+void CHDMISoundBaseDevice::DMACompletionStub (unsigned nChannel, unsigned nBuffer,
+					      boolean bStatus, void *pParam)
 {
 	CHDMISoundBaseDevice *pThis = (CHDMISoundBaseDevice *) pParam;
 	assert (pThis != 0);
 
-	pThis->InterruptHandler ();
-}
-
-void CHDMISoundBaseDevice::SetupDMAControlBlock (unsigned nID)
-{
-	assert (nID <= 1);
-
-	m_pDMABuffer[nID] = new (HEAP_DMA30) u32[m_nChunkSize];
-	assert (m_pDMABuffer[nID] != 0);
-
-	m_pControlBlockBuffer[nID] = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
-	assert (m_pControlBlockBuffer[nID] != 0);
-	m_pControlBlock[nID] = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer[nID] + 31) & ~31);
-
-	m_pControlBlock[nID]->nTransferInformation     =   (DREQSourceHDMI << TI_PERMAP_SHIFT)
-						         | (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
-						         | TI_SRC_INC
-						         | TI_SRC_DREQ
-						         | TI_WAIT_RESP
-						         | TI_INTEN;
-	m_pControlBlock[nID]->nSourceAddress           = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
-	m_pControlBlock[nID]->nDestinationAddress      = (RegMaiData & 0xFFFFFF) + GPU_IO_BASE;
-	m_pControlBlock[nID]->n2DModeStride            = 0;
-	m_pControlBlock[nID]->nReserved[0]	       = 0;
-	m_pControlBlock[nID]->nReserved[1]	       = 0;
+	pThis->DMACompletionRoutine (nChannel, nBuffer, bStatus);
 }
 
 void CHDMISoundBaseDevice::ResetHDMI (void)

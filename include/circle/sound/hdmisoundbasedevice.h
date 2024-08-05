@@ -2,7 +2,7 @@
 // hdmisoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@ enum THDMISoundState
 	HDMISoundIdle,
 	HDMISoundRunning,
 	HDMISoundCancelled,
-	HDMISoundTerminating,
 	HDMISoundError,
 	HDMISoundUnknown
 };
@@ -100,10 +99,9 @@ private:
 	void RunHDMI (void);
 	void StopHDMI (void);
 
-	void InterruptHandler (void);
-	static void InterruptStub (void *pParam);
-
-	void SetupDMAControlBlock (unsigned nID);
+	void DMACompletionRoutine (unsigned nChannel, unsigned nBuffer, boolean bStatus);
+	static void DMACompletionStub (unsigned nChannel, unsigned nBuffer,
+				       boolean bStatus, void *pParam);
 
 	void ResetHDMI (void);
 	boolean SetAudioInfoFrame (void);
@@ -136,12 +134,8 @@ private:
 	boolean m_bIRQConnected;
 	volatile THDMISoundState m_State;
 
-	unsigned m_nDMAChannel;
+	CDMAChannel *m_pDMAChannel;
 	u32 *m_pDMABuffer[2];
-	u8 *m_pControlBlockBuffer[2];
-	TDMAControlBlock *m_pControlBlock[2];
-
-	unsigned m_nNextBuffer;			// 0 or 1
 
 	CSpinLock m_SpinLock;
 };
