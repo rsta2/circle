@@ -458,6 +458,14 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate,
 		nLCRH |= LCRH_PEN_MASK | LCRH_EPS_MASK;
 		break;
 
+	case ParitySpace:
+		nLCRH |= LCRH_PEN_MASK | LCRH_SPS_MASK | LCRH_EPS_MASK;
+		break;
+
+	case ParityMark:
+		nLCRH |= LCRH_PEN_MASK | LCRH_SPS_MASK;
+		break;
+
 	default:
 		assert (0);
 		break;
@@ -658,6 +666,83 @@ void CSerialDevice::SetOptions (unsigned nOptions)
 	m_nOptions = nOptions;
 }
 
+void CSerialDevice::SetParity (TParity Parity)
+{
+	while (IsTransmitting ())
+	{
+		// just wait
+	}
+
+	PeripheralEntry ();
+
+	write32 (ARM_UART_CR, read32 (ARM_UART_CR) & ~CR_UART_EN_MASK);
+
+	while (IsTransmitting ())
+	{
+		// just wait
+	}
+
+	u32 nLCRH = read32 (ARM_UART_LCRH);
+	nLCRH &= ~(LCRH_PEN_MASK | LCRH_SPS_MASK | LCRH_EPS_MASK);
+
+	switch (Parity)
+	{
+	case ParityNone:
+		break;
+
+	case ParityOdd:
+		nLCRH |= LCRH_PEN_MASK;
+		break;
+
+	case ParityEven:
+		nLCRH |= LCRH_PEN_MASK | LCRH_EPS_MASK;
+		break;
+
+	case ParitySpace:
+		nLCRH |= LCRH_PEN_MASK | LCRH_SPS_MASK | LCRH_EPS_MASK;
+		break;
+
+	case ParityMark:
+		nLCRH |= LCRH_PEN_MASK | LCRH_SPS_MASK;
+		break;
+
+	default:
+		assert (0);
+		break;
+	}
+
+	write32 (ARM_UART_LCRH, nLCRH);
+
+	write32 (ARM_UART_CR, read32 (ARM_UART_CR) | CR_UART_EN_MASK);
+
+	PeripheralExit ();
+}
+
+boolean CSerialDevice::IsTransmitting (void) const
+{
+	if (   m_pInterruptSystem != 0
+	    && m_nTxInPtr != m_nTxOutPtr)
+	{
+		return TRUE;
+	}
+
+	PeripheralEntry ();
+
+	u32 nFR = read32 (ARM_UART_FR);
+
+	PeripheralExit ();
+
+	return !!(nFR & FR_BUSY_MASK);
+}
+
+void CSerialDevice::RegisterCharReceivedHandler (TCharReceivedHandler *pHandler, void *pParam)
+{
+	assert (m_pInterruptSystem != 0);
+
+	m_pParam = pParam;
+	m_pCharReceivedHandler = pHandler;
+}
+
 void CSerialDevice::RegisterMagicReceivedHandler (const char *pMagic, TMagicReceivedHandler *pHandler)
 {
 	assert (m_pInterruptSystem != 0);
@@ -788,6 +873,10 @@ void CSerialDevice::InterruptHandler (void)
 {
 	boolean bMagicReceived = FALSE;
 
+	boolean bCharReceived = FALSE;
+	u8 uchChar;
+	int nStatus;
+
 	m_SpinLock.Acquire ();
 
 	PeripheralEntry ();
@@ -842,7 +931,17 @@ void CSerialDevice::InterruptHandler (void)
 			}
 		}
 
-		if (((m_nRxInPtr+1) & SERIAL_BUF_MASK) != m_nRxOutPtr)
+		if (m_pCharReceivedHandler != 0)
+		{
+			bCharReceived = TRUE;
+			uchChar = nDR & 0xFF;
+
+			nStatus = m_nRxStatus;
+			m_nRxStatus = 0;
+
+			break;
+		}
+		else if (((m_nRxInPtr+1) & SERIAL_BUF_MASK) != m_nRxOutPtr)
 		{
 			m_RxBuffer[m_nRxInPtr++] = nDR & 0xFF;
 			m_nRxInPtr &= SERIAL_BUF_MASK;
@@ -878,6 +977,11 @@ void CSerialDevice::InterruptHandler (void)
 	if (bMagicReceived)
 	{
 		(*m_pMagicReceivedHandler) ();
+	}
+
+	if (bCharReceived)
+	{
+		(*m_pCharReceivedHandler) (uchChar, nStatus, m_pParam);
 	}
 }
 

@@ -98,6 +98,8 @@ public:
 		ParityNone,
 		ParityOdd,
 		ParityEven,
+		ParitySpace,		///< parity bit is 0
+		ParityMark,		///< parity bit is 1
 		ParityUnknown
 	};
 
@@ -115,7 +117,7 @@ public:
 	/// \param nBaudrate Baud rate in bits per second
 	/// \param nDataBits Number of data bits (5..8, default 8)
 	/// \param nStopBits Number of stop bits (1..2, default 1)
-	/// \param Parity Parity setting (ParityNone (default), ParityOdd or ParityEven)
+	/// \param Parity Parity setting
 	/// \return Operation successful?
 #ifndef USE_RPI_STUB_AT
 	boolean Initialize (unsigned nBaudrate = 115200,
@@ -140,6 +142,24 @@ public:
 	unsigned GetOptions (void) const;
 	/// \param nOptions Serial options mask (see serial options)
 	void SetOptions (unsigned nOptions);
+
+	/// \brief Modifiy the partity setting
+	/// \param Parity Parity setting
+	/// \note This will disable the UART for a small time.
+	void SetParity (TParity Parity);
+
+	/// \return Is the transmitter busy, transmitting characters?
+	boolean IsTransmitting (void) const;
+
+	/// \param uchChar Character code
+	/// \param nStatus SERIAL_ERROR_* code as a negative value, or 0 (no error)
+	/// \param pParam User parameter
+	typedef void TCharReceivedHandler (u8 uchChar, int nStatus, void *pParam);
+	/// \param pHandler Handler which is called, when a character has been received
+	/// \param pParam User parameter, which is handed over to the handler
+	/// \note Read() does not work, when this handler is registered.
+	/// \note Does only work with interrupt driver.
+	void RegisterCharReceivedHandler (TCharReceivedHandler *pHandler, void *pParam);
 
 	typedef void TMagicReceivedHandler (void);
 	/// \param pMagic String for which is searched in the received data\n
@@ -194,6 +214,9 @@ private:
 	volatile unsigned m_nTxOutPtr;
 
 	unsigned m_nOptions;
+
+	TCharReceivedHandler *m_pCharReceivedHandler;
+	void *m_pParam;
 
 	const char *m_pMagic;
 	const char *m_pMagicPtr;
