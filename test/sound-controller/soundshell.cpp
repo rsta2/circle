@@ -19,9 +19,7 @@
 //
 #include "soundshell.h"
 #include <circle/sound/pwmsoundbasedevice.h>
-#if RASPPI <= 4
 #include <circle/sound/hdmisoundbasedevice.h>
-#endif
 #include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/sound/usbsoundbasedevice.h>
 #include <circle/sched/scheduler.h>
@@ -55,10 +53,7 @@ const char CSoundShell::HelpMsg[] =
 	"Command\t\tDescription\t\t\t\t\t\tAlias\n"
 	"\n"
 	"start DEV [MODE] [CLK] [I2C]\n"
-	"\t\tStart sound device (snd{pwm|i2s"
-#if RASPPI <= 4
-	"|hdmi"
-#endif
+	"\t\tStart sound device (snd{pwm|i2s|hdmi"
 #if RASPPI >= 4
 	"|usb"
 #endif
@@ -423,7 +418,6 @@ boolean CSoundShell::Start (void)
 			break;
 		}
 	}
-#if RASPPI <= 4
 	else if (strcmp (Token, "sndhdmi") == 0)
 	{
 		if (nMode != ModeOutput)
@@ -435,7 +429,6 @@ boolean CSoundShell::Start (void)
 
 		m_pSound[nMode] = new CHDMISoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
-#endif
 #if RASPPI >= 4
 	else if (strcmp (Token, "sndusb") == 0)
 	{

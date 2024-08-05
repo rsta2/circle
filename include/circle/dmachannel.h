@@ -83,6 +83,16 @@ public:
 	/// \param DREQ		DREQ line for pacing the transfer (see dmacommon.h)
 	void SetupIOWrite (uintptr ulIOAddress, const void *pSource, size_t nLength, TDREQ DREQ);
 
+	/// \brief Prepare a cyclic I/O write transfer
+	/// \param ulIOAddress	I/O address to be written (ARM-side or bus address)
+	/// \param ppSources	Pointer to an array with the source buffer pointers
+	/// \param nBuffers	Number of source buffers
+	/// \param ulLength	Number of bytes to be transferred per buffer
+	/// \param DREQ		DREQ line for pacing the transfer (see dmacommon.h)
+	/// \note Transfer starts from first buffer again, when last buffer has been sent.
+	void SetupCyclicIOWrite (uintptr ulIOAddress, const void *ppSources[], unsigned nBuffers,
+				 size_t ulLength, TDREQ DREQ);
+
 	/// \brief Prepare a 2D memory copy transfer (copy a number of blocks with optional stride)
 	/// \param pDestination Pointer to the destination buffer
 	/// \param pSource	Pointer to the (continuous) source buffer
@@ -107,12 +117,15 @@ public:
 
 	/// \brief Wait for the completion of the DMA transfer
 	/// \return Has the transfer been successful?
-	/// \note This is for synchronous calls without completion routine.
+	/// \note This is for synchronous calls without completion routine (non-cyclic only).
 	boolean Wait (void);
 
 	/// \brief Get status of the DMA transfer, to be called in the completion routine
 	/// \return Has the transfer been successful?
 	boolean GetStatus (void);
+
+	/// \brief Cancel running DMA transfer and wait for termination
+	void Cancel (void);
 
 private:
 	void InterruptHandler (void);
@@ -121,8 +134,13 @@ private:
 private:
 	unsigned m_nChannel;
 
-	u8 *m_pControlBlockBuffer;
-	TDMAControlBlock *m_pControlBlock;
+	static const int MaxCyclicBuffers = 4;
+	TDMAControlBlock *m_pControlBlock[MaxCyclicBuffers];
+
+	unsigned m_nBuffers;
+	volatile unsigned m_nCurrentBuffer;
+
+	const void *m_pBuffer[MaxCyclicBuffers];
 
 	CInterruptSystem *m_pInterruptSystem;
 	boolean m_bIRQConnected;
