@@ -219,6 +219,7 @@ CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFI
 	m_nTxInPtr (0),
 	m_nTxOutPtr (0),
 	m_nOptions (SERIAL_OPTION_ONLCR),
+	m_pCharReceivedHandler (0),
 	m_pMagic (0),
 	m_SpinLock (bUseFIQ ? FIQ_LEVEL : IRQ_LEVEL)
 #ifdef REALTIME
