@@ -97,6 +97,9 @@ TShutdownMode CKernel::Run (void)
 
 	m_Logger.Write (FromKernel, LogNotice, "Please attach an USB keyboard, if not already done!");
 
+	// Turn on the block cursor
+	//m_Screen.SetCursorBlock(TRUE);
+
 	for (unsigned nCount = 0; m_ShutdownMode == ShutdownNone; nCount++)
 	{
 		// This must be called from TASK_LEVEL to update the tree of connected USB devices.
@@ -116,7 +119,6 @@ TShutdownMode CKernel::Run (void)
 #else
 				m_pKeyboard->RegisterKeyStatusHandlerRaw (KeyStatusHandlerRaw);
 #endif
-
 				m_Logger.Write (FromKernel, LogNotice, "Just type something!");
 			}
 		}
@@ -181,7 +183,6 @@ void CKernel::KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned cha
 void CKernel::KeyboardRemovedHandler (CDevice *pDevice, void *pContext)
 {
 	assert (s_pThis != 0);
-
 	CLogger::Get ()->Write (FromKernel, LogDebug, "Keyboard removed");
 
 	s_pThis->m_pKeyboard = 0;

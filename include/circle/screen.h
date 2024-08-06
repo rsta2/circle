@@ -139,6 +139,7 @@ struct TScreenStatus
 	unsigned	nCursorX;
 	unsigned	nCursorY;
 	boolean		bCursorOn;
+	boolean		bCursorBlock;
 	TScreenColor	Color;
 	TScreenColor	BackgroundColor;
 	boolean		ReverseAttribute;
@@ -215,6 +216,9 @@ public:
 	/// \param nCount Phase (angle) of the current rotor symbol (0..3)
 	void Rotor (unsigned nIndex, unsigned nCount);
 
+	/// \brief Implements a block cursor instead of the default underline
+	void SetCursorBlock(boolean bCursorBlock);
+
 private:
 #ifndef SCREEN_HEADLESS
 	void Write (char chChar);
@@ -277,6 +281,7 @@ private:
 	unsigned	 m_nCursorX;
 	unsigned	 m_nCursorY;
 	boolean		 m_bCursorOn;
+	boolean		 m_bCursorBlock;
 	boolean		 m_bCursorVisible;
 	TScreenColor	 m_Color;
 	TScreenColor	 m_BackgroundColor;
