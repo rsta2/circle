@@ -116,3 +116,6 @@ Providing Dvorak keyboard layout
 
 Mike Messinides
 USB Mass Storage gadget driver
+
+Joshua Norrid
+Adding block cursor support to CScreenDevice
