@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -126,15 +126,8 @@ boolean CScreenDevice::Initialize (void)
 		m_nHeight = m_pFrameBuffer->GetHeight ();
 
 		// Define bytes for pixels of BLOCK or underline cursors
-		if (m_bCursorBlock) {
-			m_pCursorPixels = new TScreenColor[
-				m_CharGen.GetCharWidth () * 
-			       (m_CharGen.GetCharHeight ())];
-		} else {
-			m_pCursorPixels = new TScreenColor[
-				m_CharGen.GetCharWidth () * 
-			       (m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ())];
-		}
+		m_pCursorPixels = new TScreenColor[  m_CharGen.GetCharWidth ()
+						   * m_CharGen.GetCharHeight ()];
 
 		// Fail if we couldn't malloc the backing store for cursor pixels
 		if (!m_pCursorPixels)
@@ -1031,7 +1024,7 @@ void CScreenDevice::InvertCursor (void)
 	if (m_bCursorBlock)
 	{
 		TScreenColor *pPixelData = m_pCursorPixels;
-		for (unsigned y = m_CharGen.GetCharHeight () - (m_CharGen.GetCharHeight () -1); y < m_CharGen.GetCharHeight (); y++)
+		for (unsigned y = 1; y < m_CharGen.GetCharHeight (); y++)
 		{
 			for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 			{
@@ -1042,7 +1035,7 @@ void CScreenDevice::InvertCursor (void)
 					*pPixelData++ = GetPixel (m_nCursorX + x, m_nCursorY + y);
 
 					// Plot the BLOCK with the current FG Colour
-					SetPixel (m_nCursorX + x, m_nCursorY + y, m_Color);				
+					SetPixel (m_nCursorX + x, m_nCursorY + y, m_Color);
 				}
 				else
 				{
@@ -1051,9 +1044,8 @@ void CScreenDevice::InvertCursor (void)
 				}
 			}
 		}
-	
 	}
-	
+
 	m_bCursorVisible = !m_bCursorVisible;
 }
 
