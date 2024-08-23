@@ -5,7 +5,7 @@
 //	Copyright (C) 2021  D. Rimron
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -71,6 +71,9 @@ TShutdownMode CKernel::Run (void)
 	CString Message;
 	
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
+
+	// Turn on the block cursor
+	//m_Screen.SetCursorBlock(TRUE);
 
 	m_Screen.Write ("\u001b[7mCircle ANSI Code Test\u001b[0m\n", 30);
 
