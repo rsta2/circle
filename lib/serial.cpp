@@ -226,6 +226,11 @@ CSerialDevice::CSerialDevice (CInterruptSystem *pInterruptSystem, boolean bUseFI
 	, m_LineSpinLock (TASK_LEVEL)
 #endif
 {
+#if RASPPI == 5
+	s_IRQ[10] =   CMachineInfo::Get ()->GetSoCStepping () >= SoCSteppingD0
+		    ? ARM_IRQ_UART_D0 : ARM_IRQ_UART;
+#endif
+
 	if (   m_nDevice >= SERIAL_DEVICES
 	    || s_GPIOConfig[nDevice][0][VALUE_PIN] > GPIO_PINS
 	   )
