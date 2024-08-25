@@ -511,13 +511,14 @@ sdioinit(void)
 	gpioset(28, 1);		/* switch WLAN on */
 	microdelay(150000);
 
-	/* TODO: for BCM2712 C0 only */
-	gpiosel(30, Func4); gpiopulloff(30);	/* sdio_clk */
-	gpiosel(31, Func4); gpiopullup(31);	/* sdio_cmd */
-	gpiosel(32, Func4); gpiopullup(32);	/* sdio_d0 */
-	gpiosel(33, Func3); gpiopullup(33);	/* sdio_d1 */
-	gpiosel(34, Func4); gpiopullup(34);	/* sdio_d2 */
-	gpiosel(35, Func3); gpiopullup(35);	/* sdio_d3 */
+	int d0 = get_soc_stepping() >= SOC_STEPPING_D0;		/* BCM2712D0 has different mapping */
+
+	gpiosel(30, d0 ? Func1 : Func4); gpiopulloff(30);	/* sdio_clk */
+	gpiosel(31, d0 ? Func1 : Func4); gpiopullup(31);	/* sdio_cmd */
+	gpiosel(32, d0 ? Func1 : Func4); gpiopullup(32);	/* sdio_d0 */
+	gpiosel(33, d0 ? Func1 : Func3); gpiopullup(33);	/* sdio_d1 */
+	gpiosel(34, d0 ? Func1 : Func4); gpiopullup(34);	/* sdio_d2 */
+	gpiosel(35, d0 ? Func1 : Func3); gpiopullup(35);	/* sdio_d3 */
 #endif
 	sdio.init();
 	sdio.enable();
