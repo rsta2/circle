@@ -21,6 +21,7 @@
 #include <circle/gpioclock.h>
 #include <circle/sysconfig.h>
 #include <circle/startup.h>
+#include <circle/util.h>
 #include <assert.h>
 
 static struct
@@ -151,6 +152,7 @@ CMachineInfo::CMachineInfo (void)
 	m_nModelMajor (0),
 	m_nModelRevision (0),
 	m_SoCType (SoCTypeUnknown),
+	m_SoCStepping (SoCSteppingDefault),
 	m_nRAMSize (0),
 #if RASPPI <= 3
 	m_usDMAChannelMap (0x1F35)	// default mapping
@@ -169,7 +171,11 @@ CMachineInfo::CMachineInfo (void)
 		m_nModelMajor	 = s_pThis->m_nModelMajor;
 		m_nModelRevision = s_pThis->m_nModelRevision;
 		m_SoCType	 = s_pThis->m_SoCType;
+		m_SoCStepping	 = s_pThis->m_SoCStepping;
 		m_nRAMSize	 = s_pThis->m_nRAMSize;
+#if RASPPI >= 4
+		m_pDTB		 = s_pThis->m_pDTB;
+#endif
 
 		return;
 	}
@@ -225,6 +231,21 @@ CMachineInfo::CMachineInfo (void)
 		return;
 #endif
 	}
+
+#if RASPPI == 5
+	const TDeviceTreeNode *pGPUNode;
+	const TDeviceTreeProperty *pCompatible;
+	const u8 *pValue;
+
+	if (   m_pDTB
+	    && (pGPUNode = m_pDTB->FindNode ("/axi/gpu"))
+	    && (pCompatible = m_pDTB->FindProperty (pGPUNode, "compatible"))
+	    && (pValue = m_pDTB->GetPropertyValue (pCompatible))
+	    && strcmp (reinterpret_cast<const char *> (pValue), "brcm,bcm2712d0-vc6") == 0)
+	{
+		m_SoCStepping = SoCSteppingD0;
+	}
+#endif
 
 	m_nRevisionRaw = BoardRevision.nValue;
 	if (m_nRevisionRaw & (1 << 23))		// new revision scheme?
@@ -325,6 +346,11 @@ unsigned CMachineInfo::GetModelRevision (void) const
 TSoCType CMachineInfo::GetSoCType (void) const
 {
 	return m_SoCType;
+}
+
+TSoCStepping CMachineInfo::GetSoCStepping (void) const
+{
+	return m_SoCStepping;
 }
 
 unsigned CMachineInfo::GetRAMSize (void) const
