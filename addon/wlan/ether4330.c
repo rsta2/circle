@@ -2136,8 +2136,13 @@ wlinit(Ether *edev, Ctlr *ctlr)
 	char *p;
 	static uchar keepalive[12] = {1, 0, 11, 0, 0xd8, 0xd6, 0, 0, 0, 0, 0, 0};
 
+#if RASPPI >= 5
+	memmove(ea, edev->ea, Eaddrlen);
+	wlsetvar(ctlr, "cur_etheraddr", ea, Eaddrlen);
+#else
 	wlgetvar(ctlr, "cur_etheraddr", ea, Eaddrlen);
 	memmove(edev->ea, ea, Eaddrlen);
+#endif
 	memmove(edev->addr, ea, Eaddrlen);
 	print("ether4330: addr %02X:%02X:%02X:%02X:%02X:%02X\n",
 	      ea[0], ea[1], ea[2], ea[3], ea[4], ea[5]);
