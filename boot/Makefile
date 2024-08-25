@@ -11,8 +11,8 @@
 # Use most recent firmware test revision
 #FIRMWARE = master
 
-# Use firmware revision built/committed on: Feb 29 2024
-FIRMWARE ?= dc94391863445ab867782d25ca6ae1e88579df5d
+# Use firmware revision built/committed on: May 24 2024
+FIRMWARE ?= 458df3adc11fccc3d26d3d6d8864738459290416
 
 BASEURL = https://github.com/raspberrypi/firmware/blob/$(FIRMWARE)/boot
 
@@ -20,7 +20,9 @@ FILES = LICENCE.broadcom COPYING.linux \
 	bootcode.bin start.elf fixup.dat start4.elf fixup4.dat \
 	start_cd.elf fixup_cd.dat start4cd.elf fixup4cd.dat \
 	bcm2710-rpi-zero-2-w.dtb bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb bcm2711-rpi-cm4.dtb \
-	bcm2712-rpi-5-b.dtb
+	bcm2712-rpi-5-b.dtb bcm2712d0-rpi-5-b.dtb
+
+OVERLAYS = bcm2712d0.dtbo
 
 FILES32 = armstub7-rpi4.bin kernel.img kernel7.img kernel7l.img
 FILES64 = armstub8-rpi4.bin kernel8.img kernel8-rpi4.img kernel_2712.img
@@ -30,6 +32,11 @@ firmware: clean
 	do \
 		echo Downloading $$file ... ; \
 		wget -q -O $$file $(BASEURL)/$$file?raw=true ; \
+	done
+	@for file in $(OVERLAYS) ; \
+	do \
+		echo Downloading $$file ... ; \
+		wget -q -O $$file $(BASEURL)/overlays/$$file?raw=true ; \
 	done
 
 all: firmware armstub bootloader
@@ -66,6 +73,12 @@ install: firmware armstub bootloader armstub64 bootloader64
 		echo Copying $$file ... ; \
 		cp $$file $(SDCARD) ; \
 	done
+	-mkdir $(SDCARD)/overlays
+	@for file in $(OVERLAYS) ; \
+	do \
+		echo Copying $$file ... ; \
+		cp $$file $(SDCARD)/overlays ; \
+	done
 	cp config32.txt $(SDCARD)
 	cp config64.txt $(SDCARD)
 	sync
@@ -86,11 +99,17 @@ install64: firmware armstub64 bootloader64
 		echo Copying $$file ... ; \
 		cp $$file $(SDCARD) ; \
 	done
+	-mkdir $(SDCARD)/overlays
+	@for file in $(OVERLAYS) ; \
+	do \
+		echo Copying $$file ... ; \
+		cp $$file $(SDCARD)/overlays ; \
+	done
 	cp config64.txt $(SDCARD)/config.txt
 	sync
 endif
 
 clean:
-	rm -f bootcode.bin fixup*.dat start*.elf bcm*.dtb kernel*.img armstub*.bin LICENCE.broadcom COPYING.linux
+	rm -f bootcode.bin fixup*.dat start*.elf bcm*.dtb *.dtbo kernel*.img armstub*.bin LICENCE.broadcom COPYING.linux
 	make clean -C "../tools/bootloader"
 	make clean -C armstub

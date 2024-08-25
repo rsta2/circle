@@ -19,7 +19,7 @@ To download the Raspberry Pi firmware files just enter in this directory:
 
 This will provide the following files:
 
-	bootcode.bin		boot loader (not used on Raspberry Pi 4)
+	bootcode.bin		boot loader (not used on Raspberry Pi 4-5)
 	start.elf		firmware executable for  Raspberry Pi 1-3
 	start4.elf		firmware executable for  Raspberry Pi 4
 	fixup.dat		relocation information for start.elf
@@ -28,7 +28,9 @@ This will provide the following files:
 	bcm2711-rpi-400.dtb	device tree binary needed for Raspberry Pi 400
 	bcm2711-rpi-cm4.dtb	device tree binary needed for Compute Module 4
 	bcm2712-rpi-5-b.dtb	device tree binary needed for Raspberry Pi 5
+	bcm2712d0-rpi-5-b.dtb	device tree binary needed for Raspberry Pi 5
 	bcm2710-rpi-zero-2-w.dtb device tree binary needed for Raspberry Pi Zero 2 W
+	bcm2712d0.dtbo		device tree overlay needed for Raspberry Pi 5
 	LICENCE.broadcom	firmware license
 	COPYING.linux		license for the device tree binaries
 	start_cd.elf		cut-down firmware for Raspberry Pi 1-3 (option)
@@ -43,6 +45,9 @@ needed.
 
 In any case you have to copy these files onto the first FAT partition on a SD
 card along with the kernel*.img file of your Circle application.
+
+The device tree overlay bcm2712d0.dtbo must be copied into the directory
+overlays/ on the SD card.
 
 FIQ SUPPORT ON RASPBERRY PI 4, 400, CM4
 
@@ -65,6 +70,7 @@ The Raspberry Pi 5 has an EEPROM, which contains the firmware. Therefore only
 these additional files are required on the SD card (beside kernel*.img):
 
 	bcm2712-rpi-5-b.dtb
+	overlays/bcm2712d0.dtbo
 	config.txt		(copied from config64.txt)
 
 QUICK INSTALL
