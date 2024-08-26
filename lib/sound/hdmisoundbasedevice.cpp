@@ -91,9 +91,13 @@ REG (MaiSampleRate, ARM_HD_BASE, 0x2C, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x20);
 	REGMASK (MaiSampleRate, N, 0xFFFFFF00U);
 REG (MaiThreshold, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x14);
 	REGSHIFT (MaiThreshold, DREQLow, 0);
+	REGSHIFT (MaiThreshold, DREQLowD0, 0);
 	REGSHIFT (MaiThreshold, DREQHigh, 8);
+	REGSHIFT (MaiThreshold, DREQHighD0, 7);
 	REGSHIFT (MaiThreshold, PanicLow, 16);
+	REGSHIFT (MaiThreshold, PanicLowD0, 15);
 	REGSHIFT (MaiThreshold, PanicHigh, 24);
+	REGSHIFT (MaiThreshold, PanicHighD0, 23);
 		REGVALUE (MaiThreshold, Any, Default, 16);
 REG (RamPacketAudio0, ARM_HDMI_BASE, 0x490, ARM_RAM_BASE, 0x90, ARM_RAM_BASE, 0x90);
 REG (RamPacketAudio1, ARM_HDMI_BASE, 0x494, ARM_RAM_BASE, 0x94, ARM_RAM_BASE, 0x94);
@@ -255,8 +259,14 @@ boolean CHDMISoundBaseDevice::Start (void)
 
 		const void *Buffers[2] = {m_pDMABuffer[0], m_pDMABuffer[1]};
 		assert (m_pDMAChannel != 0);
-		m_pDMAChannel->SetupCyclicIOWrite (RegMaiData, Buffers, 2,
-						   ulBufferLength, DREQSourceHDMI);
+		TDREQ DREQ = DREQSourceHDMI;
+#if RASPPI == 5
+		if (CMachineInfo::Get ()->GetSoCStepping () >= SoCSteppingD0)
+		{
+			DREQ = DREQSourceHDMI_D0;
+		}
+#endif
+		m_pDMAChannel->SetupCyclicIOWrite (RegMaiData, Buffers, 2, ulBufferLength, DREQ);
 
 		m_pDMAChannel->SetCompletionRoutine (DMACompletionStub, this);
 		m_pDMAChannel->Start ();
@@ -383,6 +393,7 @@ void CHDMISoundBaseDevice::RunHDMI (void)
 				  | MaiThresholdAnyDefault << ShiftMaiThresholdPanicLow
 				  | MaiThresholdAnyDefault << ShiftMaiThresholdDREQHigh
 				  | MaiThresholdAnyDefault << ShiftMaiThresholdDREQLow},
+#define MAI_THRESHOLD_INDEX	3
 		{RegMaiConfig,   BitMaiConfigBitReverse | BitMaiConfigFormatReverse
 			       | 0b11 << ShiftMaiConfigChannelMask},
 #if RASPPI <= 3
@@ -400,6 +411,16 @@ void CHDMISoundBaseDevice::RunHDMI (void)
 		{RegCts1, nCTS},
 		{0}
 	};
+
+#if RASPPI == 5
+	if (CMachineInfo::Get ()->GetSoCStepping () >= SoCSteppingD0)
+	{
+		InitValues[MAI_THRESHOLD_INDEX].nValue =   0x10 << ShiftMaiThresholdPanicHighD0
+							 | 0x10 << ShiftMaiThresholdPanicLowD0
+							 | 0x1C << ShiftMaiThresholdDREQHighD0
+							 | 0x1C << ShiftMaiThresholdDREQLowD0;
+	}
+#endif
 
 	PeripheralEntry ();
 
