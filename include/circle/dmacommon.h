@@ -37,6 +37,7 @@ enum TDREQ
 	DREQSourceSPIRX	 = 7,
 #if RASPPI >= 4
 	DREQSourceHDMI	 = 10,
+	DREQSourceHDMI_D0 = 12,
 #endif
 	DREQSourceEMMC	 = 11,
 	DREQSourceUARTTX = 12,

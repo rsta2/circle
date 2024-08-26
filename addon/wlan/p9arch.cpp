@@ -30,8 +30,19 @@ void gpiosel (unsigned pin, gpio_mode_t mode)
 
 	PeripheralExit ();
 #else
-	uintptr nSelReg = ARM_PINCTRL1_BASE + (pin / 8) * 4;
-	unsigned nShift = (pin % 8) * 4;
+	uintptr nSelReg = ARM_PINCTRL1_BASE;
+	unsigned nShift;
+	if (get_soc_stepping () < SOC_STEPPING_D0)
+	{
+		nSelReg += (pin / 8) * 4;
+		nShift = (pin % 8) * 4;
+	}
+	else
+	{
+		assert (28 <= pin && pin <= 35);
+		nSelReg += (pin < 32 ? 2 : 3) * 4;
+		nShift = ((pin - 24) % 8) * 4;
+	}
 
 	u32 nValue = read32 (nSelReg);
 	nValue &= ~(0xF << nShift);
@@ -72,11 +83,21 @@ static void gpiopull (unsigned pin, unsigned mode)
 	nValue |= mode << nShift;
 	write32 (nModeReg, nValue);
 #else
-	// See: https://forums.raspberrypi.com/viewtopic.php?t=362326#p2174597
-	u32 offset = pin + 112;			// TODO: for BCM2712 C0 only
-	u32 pad_bit = (offset % 15) * 2;
+	u32 pad_bit;
 	uintptr pad_base = ARM_PINCTRL1_BASE;
-	pad_base += (uintptr) ((offset / 15) * 4);
+	if (get_soc_stepping () < SOC_STEPPING_D0)
+	{
+		// See: https://forums.raspberrypi.com/viewtopic.php?t=362326#p2174597
+		u32 offset = pin + 112;
+		pad_bit = (offset % 15) * 2;
+		pad_base += (uintptr) ((offset / 15) * 4);
+	}
+	else
+	{
+		assert (28 <= pin && pin <= 35);
+		pad_bit = ((pin - 18) % 15) * 2;
+		pad_base += (uintptr) ((pin < 33 ? 5 : 6) * 4);
+	}
 
 	u32 val = read32 (pad_base);
 	val &= ~(3 << pad_bit);
@@ -115,6 +136,11 @@ void gpioset (unsigned pin, unsigned val)
 	{
 		write32 (ARM_GPIO1_DATA0, read32 (ARM_GPIO1_DATA0) & ~BIT (pin));
 	}
+}
+
+unsigned get_soc_stepping (void)
+{
+	return CMachineInfo::Get ()->GetSoCStepping ();
 }
 
 #endif
