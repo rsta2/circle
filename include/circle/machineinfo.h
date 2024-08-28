@@ -62,11 +62,11 @@ enum TSoCType
 	SoCTypeUnknown
 };
 
-enum TSoCStepping
+enum TSoCStepping : u8
 {
-	SoCSteppingDefault,
-	SoCSteppingD0		= 0xD0,
-	SoCSteppingUnknown
+	SoCSteppingC1		= 0x21,
+	SoCSteppingD0		= 0x30,
+	SoCSteppingUnknown	= 0xFF
 };
 
 enum TDeviceId

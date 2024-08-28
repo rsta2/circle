@@ -21,6 +21,8 @@
 #include <circle/gpioclock.h>
 #include <circle/sysconfig.h>
 #include <circle/startup.h>
+#include <circle/bcm2712.h>
+#include <circle/memio.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -152,7 +154,7 @@ CMachineInfo::CMachineInfo (void)
 	m_nModelMajor (0),
 	m_nModelRevision (0),
 	m_SoCType (SoCTypeUnknown),
-	m_SoCStepping (SoCSteppingDefault),
+	m_SoCStepping (SoCSteppingUnknown),
 	m_nRAMSize (0),
 #if RASPPI <= 3
 	m_usDMAChannelMap (0x1F35)	// default mapping
@@ -233,17 +235,11 @@ CMachineInfo::CMachineInfo (void)
 	}
 
 #if RASPPI == 5
-	const TDeviceTreeNode *pGPUNode;
-	const TDeviceTreeProperty *pCompatible;
-	const u8 *pValue;
-
-	if (   m_pDTB
-	    && (pGPUNode = m_pDTB->FindNode ("/axi/gpu"))
-	    && (pCompatible = m_pDTB->FindProperty (pGPUNode, "compatible"))
-	    && (pValue = m_pDTB->GetPropertyValue (pCompatible))
-	    && strcmp (reinterpret_cast<const char *> (pValue), "brcm,bcm2712d0-vc6") == 0)
+	// See: https://forums.raspberrypi.com/viewtopic.php?p=2247906#p2247856
+	u32 nStepping = read32 (ARM_SOC_STEPPING);
+	if ((nStepping >> 16) == 0x2712)
 	{
-		m_SoCStepping = SoCSteppingD0;
+		m_SoCStepping = static_cast<TSoCStepping> (nStepping & 0xFF);
 	}
 #endif
 
