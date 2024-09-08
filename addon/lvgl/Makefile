@@ -3,11 +3,13 @@
 #
 
 CIRCLEHOME = ../..
+LVGL_DIR = lvgl
 
-LVGL_DIR = .
-LVGL_DIR_NAME = lvgl
+ifeq (,$(wildcard $(LVGL_DIR)/lvgl.mk))
+    $(error LVGL submodule not checked out!)
+endif
 
-include $(LVGL_DIR)/lvgl/lvgl.mk
+include $(LVGL_DIR)/lvgl.mk
 
 OBJS = lvgl.o $(CSRCS:.c=.o)
 
