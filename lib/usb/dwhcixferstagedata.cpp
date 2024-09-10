@@ -2,7 +2,7 @@
 // dwhcixferstagedata.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -518,8 +518,12 @@ u32 CDWHCITransferStageData::GetStatusMask (void) const
 			 | DWHCI_HOST_CHAN_INT_NAK
 			 | DWHCI_HOST_CHAN_INT_NYET;
 	}
-	
-	return	nMask;
+	else if (m_pURB->IsCompleteOnNAK ())
+	{
+		nMask |= DWHCI_HOST_CHAN_INT_NAK;
+	}
+
+	return nMask;
 }
 
 u32 CDWHCITransferStageData::GetTransactionStatus (void) const
