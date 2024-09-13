@@ -54,6 +54,8 @@ public:
 
 	const unsigned *GetTouchScreen (void) const;	// returns 4 values (nullptr if unset)
 
+	unsigned GetBacklight (void) const;		// returns 0, if not defined
+
 	// for application-defined options:
 	const char *GetAppOptionString (const char *pOption, const char *pDefault = nullptr) const;
 	unsigned GetAppOptionDecimal (const char *pOption, unsigned nDefault = -1) const;
@@ -107,6 +109,8 @@ private:
 	};
 
 	TAppOption *m_pAppOptionList;
+
+        unsigned m_nBacklight;
 
 	static CKernelOptions *s_pThis;
 };

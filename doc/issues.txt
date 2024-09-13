@@ -51,6 +51,10 @@ Known issues of Circle are:
 * The WLAN connection is delicate on the Raspberry Pi 5, when a HDMI display is
   used at the same time.
 
+* The Official Touchscreen may not initialize successfully. If you have an old
+  controller (v1.0), the backlight is not set by the firmware on startup. To
+  resolve this set the option backlight=150 in the file cmdline.txt. See the
+  file doc/cmdline.txt for details.
 
 You can see or report further issues here:
 
