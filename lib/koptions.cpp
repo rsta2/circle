@@ -39,7 +39,8 @@ CKernelOptions::CKernelOptions (void)
 	m_nSoCMaxTemp (60),
 	m_nGPIOFanPin (0),
 	m_bTouchScreenValid (FALSE),
-	m_pAppOptionList (nullptr)
+	m_pAppOptionList (nullptr),
+        m_nBacklight (0)
 {
 	strcpy (m_LogDevice, "tty1");
 	strcpy (m_KeyMap, DEFAULT_KEYMAP);
@@ -181,6 +182,15 @@ CKernelOptions::CKernelOptions (void)
 		{
 			m_bTouchScreenValid = GetDecimals (pValue, m_TouchScreen, 4);
 		}
+		else if (strcmp (pOption, "backlight") == 0)
+		{
+			unsigned nValue;
+			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
+			    && 1 <= nValue && nValue <= 255)
+			{
+				m_nBacklight = nValue;
+			}
+		}
 		else
 		{
 			TAppOption *pAppOption = new TAppOption;
@@ -290,6 +300,11 @@ unsigned CKernelOptions::GetGPIOFanPin (void) const
 const unsigned *CKernelOptions::GetTouchScreen (void) const
 {
 	return m_bTouchScreenValid ? m_TouchScreen : nullptr;
+}
+
+unsigned CKernelOptions::GetBacklight (void) const
+{
+	return m_nBacklight;
 }
 
 const char *CKernelOptions::GetAppOptionString (const char *pOption, const char *pDefault) const
