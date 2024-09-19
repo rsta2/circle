@@ -91,13 +91,15 @@ REG (MaiSampleRate, ARM_HD_BASE, 0x2C, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x20);
 	REGMASK (MaiSampleRate, N, 0xFFFFFF00U);
 REG (MaiThreshold, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x14);
 	REGSHIFT (MaiThreshold, DREQLow, 0);
-	REGSHIFT (MaiThreshold, DREQLowD0, 0);
 	REGSHIFT (MaiThreshold, DREQHigh, 8);
-	REGSHIFT (MaiThreshold, DREQHighD0, 7);
 	REGSHIFT (MaiThreshold, PanicLow, 16);
-	REGSHIFT (MaiThreshold, PanicLowD0, 15);
 	REGSHIFT (MaiThreshold, PanicHigh, 24);
+#if RASPPI == 5
+	REGSHIFT (MaiThreshold, DREQLowD0, 0);
+	REGSHIFT (MaiThreshold, DREQHighD0, 7);
+	REGSHIFT (MaiThreshold, PanicLowD0, 15);
 	REGSHIFT (MaiThreshold, PanicHighD0, 23);
+#endif
 		REGVALUE (MaiThreshold, Any, Default, 16);
 REG (RamPacketAudio0, ARM_HDMI_BASE, 0x490, ARM_RAM_BASE, 0x90, ARM_RAM_BASE, 0x90);
 REG (RamPacketAudio1, ARM_HDMI_BASE, 0x494, ARM_RAM_BASE, 0x94, ARM_RAM_BASE, 0x94);
