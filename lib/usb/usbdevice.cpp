@@ -2,7 +2,7 @@
 // usbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -263,9 +263,11 @@ boolean CUSBDevice::Initialize (void)
 
 	u8 ucConfigIndex = DESCRIPTOR_INDEX_DEFAULT;
 
-	// special support for QEMU Ethernet device
-	if (   m_pDeviceDesc->idVendor  == 0x0525	// NetChip
-	    && m_pDeviceDesc->idProduct == 0xA4A2)	// Ethernet/RNDIS Gadget
+	// special support for CDC Ethernet devices
+	if (   (   m_pDeviceDesc->idVendor  == 0x0525	// NetChip
+	        && m_pDeviceDesc->idProduct == 0xA4A2)	// Ethernet/RNDIS Gadget (QEMU)
+	    || (   m_pDeviceDesc->idVendor  == 0x0BDA	// Realtek
+	        && m_pDeviceDesc->idProduct == 0x8152))	// RTL8152
 	{
 		ucConfigIndex++;
 	}
