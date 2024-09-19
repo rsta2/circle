@@ -2,7 +2,7 @@
 // usbfunction.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -158,7 +158,8 @@ void CUSBFunction::ConfigurationError (const char *pSource) const
 	m_pConfigParser->Error (pSource);
 }
 
-boolean CUSBFunction::SelectInterfaceByClass (u8 uchClass, u8 uchSubClass, u8 uchProtocol)
+boolean CUSBFunction::SelectInterfaceByClass (u8 uchClass, u8 uchSubClass, u8 uchProtocol,
+					      unsigned nMinEndpoints)
 {
 	assert (m_pInterfaceDesc != 0);
 	assert (m_pConfigParser != 0);
@@ -168,7 +169,8 @@ boolean CUSBFunction::SelectInterfaceByClass (u8 uchClass, u8 uchSubClass, u8 uc
 	{
 		if (   m_pInterfaceDesc->bInterfaceClass    == uchClass
 		    && m_pInterfaceDesc->bInterfaceSubClass == uchSubClass
-		    && m_pInterfaceDesc->bInterfaceProtocol == uchProtocol)
+		    && m_pInterfaceDesc->bInterfaceProtocol == uchProtocol
+		    && m_pInterfaceDesc->bNumEndpoints      >= nMinEndpoints)
 		{
 			return TRUE;
 		}
