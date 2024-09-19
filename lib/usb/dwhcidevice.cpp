@@ -1712,7 +1712,8 @@ boolean CDWHCIDevice::WaitForBit (CDWHCIRegister *pRegister,
 
 void CDWHCIDevice::LogTransactionFailed (u32 nStatus)
 {
-	if (CurrentExecutionLevel () < FIQ_LEVEL)
+	if (   CurrentExecutionLevel () < FIQ_LEVEL
+	    && (nStatus & (DWHCI_HOST_CHAN_INT_AHB_ERROR | DWHCI_HOST_CHAN_INT_STALL)))
 	{
 		LOGWARN ("Transaction failed (status 0x%X)", nStatus);
 	}
