@@ -267,7 +267,9 @@ boolean CUSBDevice::Initialize (void)
 	if (   (   m_pDeviceDesc->idVendor  == 0x0525	// NetChip
 	        && m_pDeviceDesc->idProduct == 0xA4A2)	// Ethernet/RNDIS Gadget (QEMU)
 	    || (   m_pDeviceDesc->idVendor  == 0x0BDA	// Realtek
-	        && m_pDeviceDesc->idProduct == 0x8152))	// RTL8152
+	        && m_pDeviceDesc->idProduct == 0x8152)	// RTL8152
+	    || (   m_pDeviceDesc->idVendor  == 0x0BDA	// Realtek
+	        && m_pDeviceDesc->idProduct == 0x8153))	// RTL8153
 	{
 		ucConfigIndex++;
 	}
