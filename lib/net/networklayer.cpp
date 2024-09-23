@@ -26,7 +26,8 @@
 CNetworkLayer::CNetworkLayer (CNetConfig *pNetConfig, CLinkLayer *pLinkLayer)
 :	m_pNetConfig (pNetConfig),
 	m_pLinkLayer (pLinkLayer),
-	m_pICMPHandler (0)
+	m_pICMPHandler (0),
+	m_pICMPRxQueue2 (0)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pLinkLayer != 0);
@@ -34,6 +35,9 @@ CNetworkLayer::CNetworkLayer (CNetConfig *pNetConfig, CLinkLayer *pLinkLayer)
 
 CNetworkLayer::~CNetworkLayer (void)
 {
+	delete m_pICMPRxQueue2;
+	m_pICMPRxQueue2 = 0;
+
 	delete m_pICMPHandler;
 	m_pICMPHandler = 0;
 
@@ -127,6 +131,16 @@ void CNetworkLayer::Process (void)
 
 		if (pHeader->nProtocol == IPPROTO_ICMP)
 		{
+			if (m_pICMPRxQueue2 != 0)
+			{
+				TNetworkPrivateData *pParam2 = new TNetworkPrivateData;
+				assert (pParam2 != 0);
+				memcpy (pParam2, pParam, sizeof *pParam);
+
+				m_pICMPRxQueue2->Enqueue (Buffer+nHeaderLength, nResultLength,
+							  pParam2);
+			}
+
 			m_ICMPRxQueue.Enqueue (Buffer+nHeaderLength, nResultLength, pParam);
 		}
 		else
@@ -271,6 +285,68 @@ boolean CNetworkLayer::ReceiveNotification (TICMPNotificationType *pType,
 
 	assert (pReceivePort != 0);
 	*pReceivePort = Notification.nDestinationPort;
+
+	return TRUE;
+}
+
+void CNetworkLayer::EnableReceiveICMP (boolean bEnable)
+{
+	if (bEnable)
+	{
+		if (m_pICMPRxQueue2 == 0)
+		{
+			m_pICMPRxQueue2 = new CNetQueue;
+			assert (m_pICMPRxQueue2 != 0);
+		}
+	}
+	else
+	{
+		if (m_pICMPRxQueue2 != 0)
+		{
+			void *pParam;
+			u8 Buffer[FRAME_BUFFER_SIZE];
+			while (m_pICMPRxQueue2->Dequeue (Buffer, &pParam))
+			{
+				TNetworkPrivateData *pData = (TNetworkPrivateData *) pParam;
+				delete pData;
+			}
+
+			delete m_pICMPRxQueue2;
+			m_pICMPRxQueue2 = 0;
+		}
+	}
+}
+
+boolean CNetworkLayer::ReceiveICMP (void *pBuffer, unsigned *pResultLength,
+				    CIPAddress *pSender, CIPAddress *pReceiver)
+{
+	if (m_pICMPRxQueue2 == 0)
+	{
+		return FALSE;
+	}
+
+	void *pParam;
+	assert (pBuffer != 0);
+	assert (pResultLength != 0);
+	*pResultLength = m_pICMPRxQueue2->Dequeue (pBuffer, &pParam);
+	if (*pResultLength == 0)
+	{
+		return FALSE;
+	}
+
+	TNetworkPrivateData *pData = (TNetworkPrivateData *) pParam;
+	assert (pData != 0);
+
+	assert (pData->nProtocol == IPPROTO_ICMP);
+
+	assert (pSender != 0);
+	pSender->Set (pData->SourceAddress);
+
+	assert (pReceiver != 0);
+	pReceiver->Set (pData->DestinationAddress);
+
+	delete pData;
+	pData = 0;
 
 	return TRUE;
 }

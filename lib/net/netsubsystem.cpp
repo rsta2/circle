@@ -150,6 +150,11 @@ CLinkLayer *CNetSubSystem::GetLinkLayer (void)
 	return &m_LinkLayer;
 }
 
+CNetworkLayer *CNetSubSystem::GetNetworkLayer (void)
+{
+	return &m_NetworkLayer;
+}
+
 CTransportLayer *CNetSubSystem::GetTransportLayer (void)
 {
 	return &m_TransportLayer;
