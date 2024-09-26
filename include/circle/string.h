@@ -46,6 +46,7 @@ public:
 	size_t GetLength (void) const;
 
 	void Append (const char *pString);
+	void Append (const char chChar);
 	int Compare (const char *pString) const;
 	int Find (char chChar) const;			// returns index or -1 if not found
 

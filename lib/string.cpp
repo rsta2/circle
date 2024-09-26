@@ -124,10 +124,7 @@ CString &CString::operator = (CString &&rrString)
 
 CString &CString::operator += (const char chChar)
 {
-	char chr[2];
-	chr[0] = chChar;
-	chr[1] = '\0';
-	Append (chr);
+	Append (chChar);
 
 	return *this;
 }
@@ -164,7 +161,14 @@ size_t CString::GetLength (void) const
 	
 	return strlen (m_pBuffer);
 }
+void CString::Append (const char chChar)
+{
+	char chrs[2];
 
+	chrs[0] = chChar;
+	chrs[1] = 0;
+	Append( chrs );
+}
 void CString::Append (const char *pString)
 {
 	m_nSize = 1;		// for terminating '\0'
