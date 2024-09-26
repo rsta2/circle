@@ -122,6 +122,39 @@ CString &CString::operator = (CString &&rrString)
 	return *this;
 }
 
+CString &CString::operator += (const char chChar)
+{
+	char chr[2];
+	chr[0] = chChar;
+	chr[1] = '\0';
+	Append (chr);
+
+	return *this;
+}
+
+CString &CString::operator += (const char *pString)
+{
+	Append (pString);
+
+	return *this;
+}
+
+CString &CString::operator += (const CString &rString)
+{
+	Append (rString.c_str());
+
+	return *this;
+}
+
+const char* CString::c_str (void) const
+{
+	if (m_pBuffer == 0)
+	{
+		return "";
+	}
+	return m_pBuffer;
+}
+
 size_t CString::GetLength (void) const
 {
 	if (m_pBuffer == 0)

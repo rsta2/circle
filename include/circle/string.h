@@ -37,6 +37,12 @@ public:
 	CString &operator = (const CString &rString);
 	CString &operator = (CString &&rrString);
 
+	CString &operator += (const char chChar);
+	CString &operator += (const char *pString);
+	CString &operator += (const CString &rString);
+
+	const char* c_str (void) const;
+
 	size_t GetLength (void) const;
 
 	void Append (const char *pString);
