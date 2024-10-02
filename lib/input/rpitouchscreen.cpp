@@ -102,7 +102,17 @@ void CRPiTouchScreen::Update (void)
 {
 	TFT5406Buffer Regs;
 	assert (m_pFT5406Buffer != 0);
-	memcpy (&Regs, m_pFT5406Buffer, sizeof *m_pFT5406Buffer);
+
+	// Cannot use memcpy() here, because the optimizer may optimize this out,
+	// and may generate unaligned memory accesses to uncached memory regions.
+	volatile u8 *pDst = reinterpret_cast<volatile u8 *> (&Regs);
+	volatile u8 *pSrc = reinterpret_cast<volatile u8 *> (m_pFT5406Buffer);
+	size_t nLen = sizeof *m_pFT5406Buffer;
+	while (nLen--)
+	{
+		*pDst++ = *pSrc++;
+	}
+
 	*(volatile u8 *) &m_pFT5406Buffer->NumPoints = 99;
 
 	// Do not output if theres no new information (NumPoints is 99)
