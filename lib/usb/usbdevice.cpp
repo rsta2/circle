@@ -263,6 +263,7 @@ boolean CUSBDevice::Initialize (void)
 
 	u8 ucConfigIndex = DESCRIPTOR_INDEX_DEFAULT;
 
+#ifndef EXCLUDE_USB_NET
 	// special support for CDC Ethernet devices
 	if (   (   m_pDeviceDesc->idVendor  == 0x0525	// NetChip
 	        && m_pDeviceDesc->idProduct == 0xA4A2)	// Ethernet/RNDIS Gadget (QEMU)
@@ -273,6 +274,7 @@ boolean CUSBDevice::Initialize (void)
 	{
 		ucConfigIndex++;
 	}
+#endif
 
 	if (m_pHost->GetDescriptor (m_pEndpoint0,
 				    DESCRIPTOR_CONFIGURATION, ucConfigIndex,
