@@ -49,7 +49,7 @@ enum TDREQ
 
 /// \brief Transfer completion routine
 /// \param nChannel Number of DMA channel
-/// \param nBuffer  Number of cyclic buffer (currently always 0)
+/// \param nBuffer  Number of cyclic buffer (0-N, 0 if not cyclic)
 /// \param bStatus  TRUE for successful transfer, FALSE on error
 /// \param pParam   User parameter
 typedef void TDMACompletionRoutine (unsigned nChannel, unsigned nBuffer,
