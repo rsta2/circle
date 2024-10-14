@@ -119,3 +119,8 @@ USB Mass Storage gadget driver
 
 Joshua Norrid
 Adding block cursor support to CScreenDevice
+
+@SteveSpencer
+Adding backlight cmdline.txt option
+Adding RTL8153 NIC support
+Extending class CString
