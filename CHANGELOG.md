@@ -3,8 +3,42 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+The 48th Step
+-------------
+
+This release comes with **USB mass-storage device gadget** support. *test/usb-msd-gadget* shows, how this can be used to provide direct access to the SD card via USB. Furthermore this version supports **HDMI sound for the Raspberry Pi 5**. The sound samples and tests have been updated to use this. The **Raspberry Pi 5 with BCM2712 stepping D0** is supported. The **LVGL support** has been updated to **version 9.2.0**.
+
+The network library has been updated to support the receiving of ICMP packets in applications. This is used in *test/ping-client* to implement a **ping client**. Raspberry Pi models without an on-board Ethernet NIC can be used with **RTL8152 and RTL8153 USB Ethernet adapters** to access a network.
+
+The platform **DMA** controller drivers support **cyclic write transfers** now. To implement this, it was necessary to extend the type `TDMACompletionRoutine` by a buffer index. If you directly use DMA transfers in your application, you have to update your DMA completion routine.
+
+There is a complete rewrite of the Flashy **serial bootloader tool in C**, which is called cFlashy and which does not need a Node-JS environment any more. You can define `USEFLASHY=0` in the file *Config.mk* to enable it. See [doc/bootloader.txt](doc/bootloader.txt) for details.
+
+More news:
+
+* A class `CmDNSPublisher` was added, which can be used to publish services to mDNS (aka Bonjour) in a local network. See *test/mdns-publisher* for an example.
+* There is a new option `backlight=` for *cmdline.txt* for setting the backlight level for the Official 7" Raspberry Pi touchscreen. For some versions of this touchscreen this option is required.
+* The class `CSerialDevice` now supports modifying the parity setting (including a mark or space parity) and a per character receive for specific RS-485 applications.
+* A block cursor can be enabled on the screen using `CScreenDevice::SetCursorBlock()`. See *test/screen-ansi-colors* for an example.
+* The SD card driver implements the `GetSize()` method now.
+* Only serious USB transaction errors are logged on Raspberry Pi 1-3 any more.
+* The new doc file [doc/debug-swd.txt](doc/debug-swd.txt) explains SWD debugging on the Raspberry Pi 5 using the Raspberry Pi Debug Probe adapter.
+
+Fixes:
+
+* Only 4 GB RAM were usable, even on Raspberry Pi 5 with 8 GB RAM.
+* The MAC address for WLAN access is read from the device tree on the Raspberry Pi 5 now, as it is required. Before always the same address was used.
+* The Official 7" Raspberry Pi touchscreen did not work with circle-stdlib.
+* The MQTT client delivered an invalid payload in `OnMessage()`, when there were multiple MQTT publish messages arriving in one network packet.
+* The access to USB bulk endpoints on the Raspberry Pi 1-3 in no-hub configurations was occupying the whole USB bandwidth, which was not allowing to access other endpoints on the same USB device.
+* The I2C master was not initialized on the Raspberry Pi 5 in *sample/34-sounddevices*.
+
+The recommended firmware version has been updated and is required to use the Raspberry Pi 5 with BCM2712 stepping D0. Please note that the file *bcm2712d0.dtbo* has to be copied into the directory *overlays/* on the SD card.
+
 The 47th Step
 -------------
+
+2024-07-09
 
 This release provides a number of **new features for the Raspberry Pi 5**, which were already available for earlier models:
 
