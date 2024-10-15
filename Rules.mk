@@ -323,4 +323,4 @@ monitor:
 # Monitor in terminal (Linux only)
 cat:
 	stty -F $(SERIALPORT) $(USERBAUD) cs8 -cstopb -parenb -icrnl
-	cat $(SERIALPORT)
+	tail -f $(SERIALPORT)
