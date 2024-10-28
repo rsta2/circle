@@ -119,7 +119,7 @@ Circle supports the following features:
 |                       | (not on Raspberry Pi 4)                             |                |
 |                       | uGUI (by Achim Doebler)                             |                |
 |                       | LVGL (by LVGL Kft)                                  | x              |
-|                       | 2D graphics class in base library                   |                |
+|                       | 2D graphics class in base library                   | x              |
 |                       |                                                     |                |
 | Not supported         | Bluetooth                                           |                |
 

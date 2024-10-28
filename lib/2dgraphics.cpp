@@ -5,7 +5,7 @@
 //	Copyright (C) 2021  Stephane Damo
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,6 +39,8 @@ C2DGraphics::C2DGraphics (unsigned nWidth, unsigned nHeight, boolean bVSync, uns
 
 C2DGraphics::~C2DGraphics (void)
 {
+	delete [] m_Buffer;
+
 	if(m_pFrameBuffer)
 	{
 		delete m_pFrameBuffer;
@@ -47,8 +49,12 @@ C2DGraphics::~C2DGraphics (void)
 
 boolean C2DGraphics::Initialize (void)
 {
+#if RASPPI <= 4
 	m_pFrameBuffer = new CBcmFrameBuffer (m_nWidth, m_nHeight, DEPTH, m_nWidth, 2*m_nHeight,
 					      m_nDisplay, TRUE);
+#else
+	m_pFrameBuffer = new CBcmFrameBuffer (m_nWidth, m_nHeight, DEPTH, 0, 0, m_nDisplay, FALSE);
+#endif
 	
 #if DEPTH == 8
 	m_pFrameBuffer->SetPalette (RED_COLOR, RED_COLOR16);
@@ -76,8 +82,13 @@ boolean C2DGraphics::Initialize (void)
 	m_baseBuffer = (TScreenColor *) (uintptr) m_pFrameBuffer->GetBuffer();
 	m_nWidth = m_pFrameBuffer->GetWidth();
 	m_nHeight = m_pFrameBuffer->GetHeight();
-	m_Buffer = m_baseBuffer + m_nWidth * m_nHeight;
-	
+
+	m_Buffer = new TScreenColor[m_nWidth * m_nHeight];
+	if (!m_Buffer)
+	{
+		return FALSE;
+	}
+
 	return TRUE;
 }
 
@@ -89,6 +100,7 @@ boolean C2DGraphics::Resize (unsigned nWidth, unsigned nHeight)
 	m_nWidth = nWidth;
 	m_nHeight = nHeight;
 
+	delete [] m_Buffer;
 	m_Buffer = 0;
 	m_bBufferSwapped = TRUE;
 
@@ -361,15 +373,17 @@ TScreenColor* C2DGraphics::GetBuffer ()
 
 void C2DGraphics::UpdateDisplay()
 {
-	
+#if RASPPI <= 4
 	if(m_bVSync)
 	{
-		m_pFrameBuffer->SetVirtualOffset(0, m_bBufferSwapped ? m_nHeight : 0);
 		m_pFrameBuffer->WaitForVerticalSync();
+		memcpy (m_baseBuffer + m_bBufferSwapped * m_nWidth * m_nHeight, m_Buffer,
+			m_nWidth * m_nHeight * sizeof(TScreenColor));
+		m_pFrameBuffer->SetVirtualOffset(0, m_bBufferSwapped ? m_nHeight : 0);
 		m_bBufferSwapped = !m_bBufferSwapped;
-		m_Buffer = m_baseBuffer + m_bBufferSwapped * m_nWidth * m_nHeight;
 	}
 	else
+#endif
 	{
 		memcpy(m_baseBuffer, m_Buffer, m_nWidth * m_nHeight * sizeof(TScreenColor));
 	}
