@@ -85,7 +85,7 @@ Circle supports the following features:
 |                       | HDMI sound output (without VCHIQ)                   | x              |
 |                       | Hardware random number generator                    | x              |
 |                       | Watchdog device                                     | x              |
-|                       | Official Raspberry Pi touch screen                  |                |
+|                       | Official Raspberry Pi touch screen (v1 only)        |                |
 |                       | VCHIQ interface and audio service drivers           |                |
 |                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |                |
 |                       | MACB / GEM Gigabit Ethernet NIC of Raspberry Pi 5   | x              |
