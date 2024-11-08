@@ -308,13 +308,13 @@ CMachineInfo::~CMachineInfo (void)
 {
 	m_MachineModel = MachineModelUnknown;
 
-#if RASPPI >= 4
-	delete m_pDTB;
-	m_pDTB = 0;
-#endif
-
 	if (s_pThis == this)
 	{
+#if RASPPI >= 4
+		delete m_pDTB;
+		m_pDTB = 0;
+#endif
+
 		s_pThis = 0;
 	}
 }
