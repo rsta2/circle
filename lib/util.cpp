@@ -2,7 +2,7 @@
 // util.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -277,6 +277,25 @@ char *strcat (char *pDest, const char *pSrc)
 	}
 
 	while (*pSrc)
+	{
+		*p++ = *pSrc++;
+	}
+
+	*p = '\0';
+
+	return pDest;
+}
+
+char *strncat (char *pDest, const char *pSrc, size_t nMaxLen)
+{
+	char *p = pDest;
+
+	while (*p)
+	{
+		p++;
+	}
+
+	while (*pSrc && nMaxLen--)
 	{
 		*p++ = *pSrc++;
 	}

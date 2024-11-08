@@ -21,6 +21,9 @@
 #include <circle/gpioclock.h>
 #include <circle/sysconfig.h>
 #include <circle/startup.h>
+#include <circle/bcm2712.h>
+#include <circle/memio.h>
+#include <circle/util.h>
 #include <assert.h>
 
 static struct
@@ -151,6 +154,7 @@ CMachineInfo::CMachineInfo (void)
 	m_nModelMajor (0),
 	m_nModelRevision (0),
 	m_SoCType (SoCTypeUnknown),
+	m_SoCStepping (SoCSteppingUnknown),
 	m_nRAMSize (0),
 #if RASPPI <= 3
 	m_usDMAChannelMap (0x1F35)	// default mapping
@@ -169,7 +173,11 @@ CMachineInfo::CMachineInfo (void)
 		m_nModelMajor	 = s_pThis->m_nModelMajor;
 		m_nModelRevision = s_pThis->m_nModelRevision;
 		m_SoCType	 = s_pThis->m_SoCType;
+		m_SoCStepping	 = s_pThis->m_SoCStepping;
 		m_nRAMSize	 = s_pThis->m_nRAMSize;
+#if RASPPI >= 4
+		m_pDTB		 = s_pThis->m_pDTB;
+#endif
 
 		return;
 	}
@@ -225,6 +233,15 @@ CMachineInfo::CMachineInfo (void)
 		return;
 #endif
 	}
+
+#if RASPPI == 5
+	// See: https://forums.raspberrypi.com/viewtopic.php?p=2247906#p2247856
+	u32 nStepping = read32 (ARM_SOC_STEPPING);
+	if ((nStepping >> 16) == 0x2712)
+	{
+		m_SoCStepping = static_cast<TSoCStepping> (nStepping & 0xFF);
+	}
+#endif
 
 	m_nRevisionRaw = BoardRevision.nValue;
 	if (m_nRevisionRaw & (1 << 23))		// new revision scheme?
@@ -291,13 +308,13 @@ CMachineInfo::~CMachineInfo (void)
 {
 	m_MachineModel = MachineModelUnknown;
 
-#if RASPPI >= 4
-	delete m_pDTB;
-	m_pDTB = 0;
-#endif
-
 	if (s_pThis == this)
 	{
+#if RASPPI >= 4
+		delete m_pDTB;
+		m_pDTB = 0;
+#endif
+
 		s_pThis = 0;
 	}
 }
@@ -325,6 +342,11 @@ unsigned CMachineInfo::GetModelRevision (void) const
 TSoCType CMachineInfo::GetSoCType (void) const
 {
 	return m_SoCType;
+}
+
+TSoCStepping CMachineInfo::GetSoCStepping (void) const
+{
+	return m_SoCStepping;
 }
 
 unsigned CMachineInfo::GetRAMSize (void) const

@@ -19,6 +19,7 @@
 //
 #include <circle/bcmframebuffer.h>
 #include <circle/util.h>
+#include <circle/koptions.h>
 
 const TBcmFrameBufferInitTags CBcmFrameBuffer::s_InitTags =
 {
@@ -167,7 +168,23 @@ boolean CBcmFrameBuffer::Initialize (void)
 	m_nBufferSize = m_InitTags.AllocateBuffer.nBufferSize;
 	m_nPitch      = m_InitTags.GetPitch.nValue;
 
-	return UpdatePalette ();
+	boolean bOK = UpdatePalette();
+	if (bOK)
+	{
+		unsigned nBrightness = 0;
+
+		CKernelOptions* pOptions = CKernelOptions::Get();
+		if (pOptions)
+		{
+			nBrightness = pOptions->GetBacklight();
+		}
+
+		if (nBrightness != 0)
+		{
+			bOK = SetBacklightBrightness (nBrightness);
+		}
+	}
+	return bOK;
 }
 
 unsigned CBcmFrameBuffer::GetWidth (void) const

@@ -4,7 +4,7 @@
 // C++ wrapper for LVGL with mouse and touch screen support
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,17 +44,17 @@ public:
 	void Update (boolean bPlugAndPlayUpdated = FALSE);
 
 private:
-	static void DisplayFlush (lv_disp_drv_t *pDriver, const lv_area_t *pArea,
-				  lv_color_t *pBuffer);
-	static void DisplayFlushComplete (unsigned nChannel, boolean bStatus, void *pParam);
+	static void DisplayFlush (lv_display_t *pDisplay, const lv_area_t *pArea, u8 *pBuffer);
+	static void DisplayFlushComplete (unsigned nChannel, unsigned nBuffer,
+					  boolean bStatus, void *pParam);
 
-	static void PointerRead (lv_indev_drv_t *pDriver, lv_indev_data_t *pData);
+	static void PointerRead (lv_indev_t *pIndev, lv_indev_data_t *pData);
 	static void MouseEventHandler (TMouseEvent Event, unsigned nButtons,
 				       unsigned nPosX, unsigned nPosY, int nWheelMove);
 	static void TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
 					     unsigned nPosX, unsigned nPosY);
 
-	static void LogPrint (const char *pMessage);
+	static void LogPrint (lv_log_level_t LogLevel, const char *pMessage);
 
 	static void MouseRemovedHandler (CDevice *pDevice, void *pContext);
 
@@ -65,8 +65,8 @@ private:
 #endif
 
 private:
-	lv_color_t *m_pBuffer1;
-	lv_color_t *m_pBuffer2;
+	u16 *m_pBuffer1;
+	u16 *m_pBuffer2;
 
 	CScreenDevice *m_pScreen;
 	CBcmFrameBuffer *m_pFrameBuffer;

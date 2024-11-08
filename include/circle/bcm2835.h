@@ -370,16 +370,20 @@
 #define ARM_VCHIQ_END		(ARM_VCHIQ_BASE + 0x0F)
 
 //
-// VC4/5 HDMI
+// VC4/5/6 HDMI
 //
 #if RASPPI <= 3
 #define ARM_HDMI_BASE		(ARM_IO_BASE + 0x902000)
 #define ARM_HD_BASE		(ARM_IO_BASE + 0x808000)
-#else
+#elif RASPPI == 4
 #define ARM_HDMI_BASE		(ARM_IO_BASE + 0xF00700)
 #define ARM_HD_BASE		(ARM_IO_BASE + 0xF20000)
 #define ARM_PHY_BASE		(ARM_IO_BASE + 0xF00F00)
 #define ARM_RAM_BASE		(ARM_IO_BASE + 0xF01B00)
+#else
+#define ARM_HDMI_BASE		(ARM_IO_BASE + 0x701400)
+#define ARM_HD_BASE		(ARM_IO_BASE + 0x720000)
+#define ARM_RAM_BASE		(ARM_IO_BASE + 0x703800)
 #endif
 
 //

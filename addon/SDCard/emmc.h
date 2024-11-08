@@ -64,6 +64,8 @@ public:
 
 	u64 Seek (u64 ullOffset);
 
+	u64 GetSize (void) const;
+
 	const u32 *GetID (void);
 
 private:
@@ -85,6 +87,10 @@ private:
 	void HandleInterrupts (void);
 #endif
 	boolean IssueCommand (u32 command, u32 argument, int timeout = 500000);
+
+#ifndef USE_EMBEDDED_MMC_CM
+	u32 GetCSDField (unsigned start, unsigned width) const;
+#endif
 
 	int CardReset (void);
 	int CardInit (void);
@@ -126,6 +132,9 @@ private:
 
 	// was: struct emmc_block_dev
 	u32 m_device_id[4];
+
+	u32 m_csd[4];
+	u64 m_capacity;
 
 	u32 m_card_supports_sdhc;
 	u32 m_card_supports_hs;

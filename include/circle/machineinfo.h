@@ -2,7 +2,7 @@
 // machineinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,6 +62,13 @@ enum TSoCType
 	SoCTypeUnknown
 };
 
+enum TSoCStepping : u8
+{
+	SoCSteppingC1		= 0x21,
+	SoCSteppingD0		= 0x30,
+	SoCSteppingUnknown	= 0xFF
+};
+
 enum TDeviceId
 {
 	DeviceI2CMaster,
@@ -89,6 +96,7 @@ public:
 	unsigned GetModelMajor (void) const;		// 1..3, 0 on error
 	unsigned GetModelRevision (void) const;		// 1-based, 0 on error
 	TSoCType GetSoCType (void) const;
+	TSoCStepping GetSoCStepping (void) const;
 	unsigned GetRAMSize (void) const;		// MByte, 0 on error
 
 	const char *GetSoCName (void) const;
@@ -159,6 +167,7 @@ private:
 	unsigned	m_nModelMajor	  MAXALIGN;
 	unsigned	m_nModelRevision  MAXALIGN;
 	TSoCType	m_SoCType	  MAXALIGN;
+	TSoCStepping	m_SoCStepping	  MAXALIGN;
 	unsigned	m_nRAMSize	  MAXALIGN;
 
 	u16		m_usDMAChannelMap MAXALIGN;	// channel bit set if channel is free

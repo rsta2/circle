@@ -2,7 +2,7 @@
 /// \file dmacommon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ enum TDREQ
 	DREQSourceSPIRX	 = 7,
 #if RASPPI >= 4
 	DREQSourceHDMI	 = 10,
+	DREQSourceHDMI_D0 = 12,
 #endif
 	DREQSourceEMMC	 = 11,
 	DREQSourceUARTTX = 12,
@@ -46,7 +47,13 @@ enum TDREQ
 #endif
 };
 
-typedef void TDMACompletionRoutine (unsigned nChannel, boolean bStatus, void *pParam);
+/// \brief Transfer completion routine
+/// \param nChannel Number of DMA channel
+/// \param nBuffer  Number of cyclic buffer (0-N, 0 if not cyclic)
+/// \param bStatus  TRUE for successful transfer, FALSE on error
+/// \param pParam   User parameter
+typedef void TDMACompletionRoutine (unsigned nChannel, unsigned nBuffer,
+				    boolean bStatus, void *pParam);
 
 //
 // Legacy platform DMA controller

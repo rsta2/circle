@@ -113,3 +113,14 @@ Helping to get WLAN working on Raspberry Pi 5
 
 Joe Strout
 Providing Dvorak keyboard layout
+
+Mike Messinides
+USB Mass Storage gadget driver
+
+Joshua Norrid
+Adding block cursor support to CScreenDevice
+
+@SteveSpencer
+Adding backlight cmdline.txt option
+Adding RTL8153 NIC support
+Extending class CString

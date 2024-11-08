@@ -1,0 +1,81 @@
+DEBUG WITH SWD
+
+A comfortable way to source-code debug Circle applications is possible using the
+SWD (Serial Wire Debug) interface of the Raspberry Pi 5. This allows multi-core
+debugging too.
+
+Herein SWD debugging with the "Raspberry Pi Debug Probe" interface is described.
+The interface ("D" labeled port) has to be connected to the dedicated UART
+connector of the Raspberry Pi 5. This can be done using the JST-to-JST cable,
+which comes with the Raspberry Pi Debug Probe:
+
+	https://datasheets.raspberrypi.com/debug/debug-swd-cable-specification.pdf
+
+A free on-chip-debugger software is OpenOCD. Normally you need to download and
+build the sources by yourself, if there is no recent binary package for your
+host system here:
+
+	https://openocd.org/pages/getting-openocd.html
+
+Building OpenOCD requires libusb[-dev] installed on your computer. To build:
+
+	git clone https://git.code.sf.net/p/openocd/code openocd-code
+	cd openocd-code
+	./bootstrap
+	./configure
+	make
+	sudo make install
+
+A configuration file for OpenOCD for the Raspberry Pi 5 is in the directory
+tools/template/ of the Circle project with the name rpi5.cfg. A configuration
+file for the Debug Probe interface comes with OpenOCD in the directory
+tcl/interface/ and has the name cmsis-dap.cfg. Copy both files into the
+directory, from where you want to start OpenOCD later.
+
+Now you have to add the following setting to your config.txt file on the SD
+card, to enable the SWD function on the UART connector of the Raspberry Pi 5:
+
+	enable_jtag_gpio=1
+
+You need some (dummy) kernel_2712.img file on the SD card for boot. You can
+install the file kernel_2712.bin from the tools/template/ directory (rename it to
+kernel_2712.img). It only contains one branch instruction and lets the Raspberry
+Pi wait, until the debugger is connected.
+
+Now insert your SD card into the Raspberry Pi, connect the SWD interface to your
+Raspberry Pi 5 (as described above) and to your host PC (via USB), start the
+Raspberry Pi and enter in a shell on the host:
+
+	$ openocd -f cmsis-dap.cfg -f rpi5.cfg
+
+OpenOCD should start and detect the SWD interface and the connected Raspberry
+Pi. Go to your application's source directory, build it and enter:
+
+	$ gdb kernel_2712.elf
+
+	(gdb) target extended-remote :3333
+	(gdb) load
+	(gdb) tb main
+	(gdb) cont
+
+This will start GDB, connect to the OpenOCD port for core 0, load the program,
+set a temporary breakpoint at "main" and runs the program until this breakpoint
+is hit. Now you can continue to debug as you want.
+
+For multi-core debugging you have start multiple instances of GBD and to connect
+the ports 3334 (core 1), 3335 (core 2) and 3336 (core 3) within GDB.
+
+
+USING A SERIAL INTERFACE
+
+Because the debug interface is connected to the UART connector, you cannot
+access the default serial interface ttyS11 (device number 10). If you want to
+use a serial interface, connect it to GPIO14/15 (as on earlier Raspberry Pi
+models) and add the following option to the file Config.mk before build:
+
+	DEFINE += -DSERIAL_DEVICE_DEFAULT=0
+
+To redirect the logging messages to the serial interface in most Circle samples,
+you have to add the following option to the file cmdline.txt:
+
+	logdev=ttyS1

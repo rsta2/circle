@@ -107,12 +107,10 @@ boolean CKernel::Initialize (void)
 		bOK = m_Timer.Initialize ();
 	}
 
-#if RASPPI <= 4
 	if (bOK)
 	{
 		bOK = m_I2CMaster.Initialize ();
 	}
-#endif
 
 	if (bOK)
 	{
@@ -144,12 +142,10 @@ TShutdownMode CKernel::Run (void)
 		m_pSound = new CI2SSoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, FALSE,
 						    &m_I2CMaster, DAC_I2C_ADDRESS);
 	}
-#if RASPPI <= 4
 	else if (strcmp (pSoundDevice, "sndhdmi") == 0)
 	{
 		m_pSound = new CHDMISoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
-#endif
 #if RASPPI >= 4
 	else if (strcmp (pSoundDevice, "sndusb") == 0)
 	{

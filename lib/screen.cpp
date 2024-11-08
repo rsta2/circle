@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,6 +53,7 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtua
 	m_nCursorX (0),
 	m_nCursorY (0),
 	m_bCursorOn (TRUE),
+	m_bCursorBlock (FALSE),
 	m_bCursorVisible (FALSE),
 	m_Color (NORMAL_COLOR),
 	m_BackgroundColor (BLACK_COLOR),
@@ -124,10 +125,10 @@ boolean CScreenDevice::Initialize (void)
 		m_nWidth  = m_pFrameBuffer->GetWidth ();
 		m_nHeight = m_pFrameBuffer->GetHeight ();
 
-		m_pCursorPixels = new TScreenColor[
-					m_CharGen.GetCharWidth () * 
-				       (m_CharGen.GetCharHeight () - m_CharGen.GetUnderline ())];
-		
+		// Define bytes for pixels of BLOCK or underline cursors
+		m_pCursorPixels = new TScreenColor[  m_CharGen.GetCharWidth ()
+						   * m_CharGen.GetCharHeight ()];
+
 		// Fail if we couldn't malloc the backing store for cursor pixels
 		if (!m_pCursorPixels)
 		{
@@ -233,6 +234,7 @@ TScreenStatus CScreenDevice::GetStatus (void)
 	Status.nCursorX   = m_nCursorX;
 	Status.nCursorY   = m_nCursorY;
 	Status.bCursorOn  = m_bCursorOn;
+	Status.bCursorBlock = m_bCursorBlock;
 	Status.Color      = m_Color;
 	Status.BackgroundColor = m_BackgroundColor;
 	Status.ReverseAttribute = m_ReverseAttribute;
@@ -270,6 +272,7 @@ boolean CScreenDevice::SetStatus (const TScreenStatus &Status)
 	m_nCursorX   = Status.nCursorX;
 	m_nCursorY   = Status.nCursorY;
 	m_bCursorOn  = Status.bCursorOn;
+	m_bCursorBlock = Status.bCursorBlock;
 	m_Color      = Status.Color;
 	m_BackgroundColor = Status.BackgroundColor;
 	m_ReverseAttribute = Status.ReverseAttribute;
@@ -768,6 +771,11 @@ void CScreenDevice::SetCursorMode (boolean bVisible)
 	m_bCursorOn = bVisible;
 }
 
+void CScreenDevice::SetCursorBlock (boolean bCursorBlock)
+{
+	m_bCursorBlock = bCursorBlock;
+}
+
 void CScreenDevice::SetScrollRegion (unsigned nStartRow, unsigned nEndRow)
 {
 	unsigned nScrollStart = (nStartRow - 1) * m_CharGen.GetCharHeight ();
@@ -986,24 +994,54 @@ void CScreenDevice::InvertCursor (void)
 		return;
 	}
 
-	TScreenColor *pPixelData = m_pCursorPixels;
-	for (unsigned y = m_CharGen.GetUnderline (); y < m_CharGen.GetCharHeight (); y++)
+	// Use an underline cursor (DEFAULT)
+	if (!m_bCursorBlock)
 	{
-		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
+		TScreenColor *pPixelData = m_pCursorPixels;
+		for (unsigned y = m_CharGen.GetUnderline (); y < m_CharGen.GetCharHeight (); y++)
 		{
-			// Is the cursor currently visible?
-			if (!m_bCursorVisible)
+			for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 			{
-				// Store the old pixel
-				*pPixelData++ = GetPixel (m_nCursorX + x, m_nCursorY + y);
+				// Is the cursor currently visible?
+				if (!m_bCursorVisible)
+				{
+					// Store the old pixel
+					*pPixelData++ = GetPixel (m_nCursorX + x, m_nCursorY + y);
 
-				// Plot the underscore with the current FG Colour
-				SetPixel (m_nCursorX + x, m_nCursorY + y, m_Color);
+					// Plot the underscore with the current FG Colour
+					SetPixel (m_nCursorX + x, m_nCursorY + y, m_Color);
+				}
+				else
+				{
+					// Restore the backingstore for the cursor colour
+					SetPixel (m_nCursorX + x, m_nCursorY + y, *pPixelData++);
+				}
 			}
-			else
+		}
+	}
+
+	// Use a block cursor
+	if (m_bCursorBlock)
+	{
+		TScreenColor *pPixelData = m_pCursorPixels;
+		for (unsigned y = 1; y < m_CharGen.GetCharHeight (); y++)
+		{
+			for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 			{
-				// Restore the backinstore for the cursor colour
-				SetPixel (m_nCursorX + x, m_nCursorY + y, *pPixelData++);
+				// Is the cursor currently visible?
+				if (!m_bCursorVisible)
+				{
+					// Store the old pixel
+					*pPixelData++ = GetPixel (m_nCursorX + x, m_nCursorY + y);
+
+					// Plot the BLOCK with the current FG Colour
+					SetPixel (m_nCursorX + x, m_nCursorY + y, m_Color);
+				}
+				else
+				{
+					// Restore the backingstore for the cursor colour
+					SetPixel (m_nCursorX + x, m_nCursorY + y, *pPixelData++);
+				}
 			}
 		}
 	}

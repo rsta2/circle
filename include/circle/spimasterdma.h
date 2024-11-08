@@ -66,7 +66,8 @@ public:
 
 private:
 	void DMACompletionRoutine (boolean bStatus);
-	static void DMACompletionStub (unsigned nChannel, boolean bStatus, void *pParam);
+	static void DMACompletionStub (unsigned nChannel, unsigned nBuffer,
+				       boolean bStatus, void *pParam);
 
 private:
 	unsigned m_nClockSpeed;

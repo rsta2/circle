@@ -8,44 +8,37 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-The 47th Step
+The 48th Step
 -------------
 
-This release provides a number of **new features for the Raspberry Pi 5**, which were already available for earlier models:
+This release comes with **USB mass-storage device gadget** support. *test/usb-msd-gadget* shows, how this can be used to provide direct access to the SD card via USB. Furthermore this version supports **HDMI sound for the Raspberry Pi 5**. The sound samples and tests have been updated to use this. The **Raspberry Pi 5 with BCM2712 stepping D0** is supported. The **LVGL support** has been updated to **version 9.2.0**.
 
-* SPI master support (polling and DMA driver)
-* I2S sound (output or input, DMA or programmed I/O operation)
-* PWM sound (requires external circuit on GPIO12/13 or GPIO18/19)
-* PWM output (4 channels)
-* GPIO clocks (GP0-2)
-* `CGPIOPin::WriteAll()` and `CGPIOPin::ReadAll()`
+The network library has been updated to support the receiving of ICMP packets in applications. This is used in *test/ping-client* to implement a **ping client**. Raspberry Pi models without an on-board Ethernet NIC can be used with **RTL8152 and RTL8153 USB Ethernet adapters** to access a network.
 
-The following **new hardware features of the Raspberry Pi 5** are supported now:
+The platform **DMA** controller drivers support **cyclic write transfers** now. To implement this, it was necessary to extend the type `TDMACompletionRoutine` by a buffer index. If you directly use DMA transfers in your application, you have to update your DMA completion routine.
 
-* Real-time clock (class `CFirmwareRTC` in [addon/rtc](addon/rtc))
-* Power button (Function `is_power_button_pressed()`)
-* Function `main()` can return `EXIT_POWER_OFF` to power-off the system
-* 8-channels I2S sound output (via GPIO21/23/25/27, e.g. for HifiBerry DAC8x)
-
-The **WM8960 I2S sound driver** has been revised and provides a better audio quality and the sound controller jack and control functions now. The new sound controller control `ControlALC` (Automatic Level Control) has been defined and implemented for the WM8960. ALC is disabled by default now. The WM8960 driver supports sample rates of 44100 and 48000.
+There is a complete rewrite of the Flashy **serial bootloader tool in C**, which is called cFlashy and which does not need a Node-JS environment any more. You can define `USEFLASHY=0` in the file *Config.mk* to enable it. See [doc/bootloader.txt](doc/bootloader.txt) for details.
 
 More news:
 
-* A new **IRQ-based driver for the I2C master** of Raspberry Pi 1-4 is available.
-* A **character mode for ST7789-based dot-matrix displays** is available.
-* The **timing of the GPIO pin driver** has been improved on the Raspberry Pi 5 by using the RIO module.
-* There is a **new GPIO pin mode** `GPIOModeNone`, which disables the GPIO pin on the Raspberry Pi 5. On other models it has the same function as `GPIOModeInput`.
-* The new static method `CGPIOPin::SetModeAll()` allows to **set the mode of the GPIO pins 0-31 at once** to input or output.
-* **IP multi-cast support level 1** according to RFC 1112 is implemented (send only).
-* The **LVGL support** has been updated to LVGL v8.3.11.
+* A class `CmDNSPublisher` was added, which can be used to publish services to mDNS (aka Bonjour) in a local network. See *test/mdns-publisher* for an example.
+* There is a new option `backlight=` for *cmdline.txt* for setting the backlight level for the Official 7" Raspberry Pi touchscreen. For some versions of this touchscreen this option is required.
+* The class `CSerialDevice` now supports modifying the parity setting (including a mark or space parity) and a per character receive for specific RS-485 applications.
+* A block cursor can be enabled on the screen using `CScreenDevice::SetCursorBlock()`. See *test/screen-ansi-colors* for an example.
+* The SD card driver implements the `GetSize()` method now.
+* Only serious USB transaction errors are logged on Raspberry Pi 1-3 any more.
+* The new doc file [doc/debug-swd.txt](doc/debug-swd.txt) explains SWD debugging on the Raspberry Pi 5 using the Raspberry Pi Debug Probe adapter.
 
 Fixes:
 
-* The USB serial CDC gadget was not detected on Windows 10.
-* The Raspberry Pi Debug Probe UART did not work with the USB serial CDC driver.
-* The class `CPWMSoundDevice` did not apply the full chunk size.
+* Only 4 GB RAM were usable, even on Raspberry Pi 5 with 8 GB RAM.
+* The MAC address for WLAN access is read from the device tree on the Raspberry Pi 5 now, as it is required. Before always the same address was used.
+* The Official 7" Raspberry Pi touchscreen did not work with circle-stdlib.
+* The MQTT client delivered an invalid payload in `OnMessage()`, when there were multiple MQTT publish messages arriving in one network packet.
+* The access to USB bulk endpoints on the Raspberry Pi 1-3 in no-hub configurations was occupying the whole USB bandwidth, which was not allowing to access other endpoints on the same USB device.
+* The I2C master was not initialized on the Raspberry Pi 5 in *sample/34-sounddevices*.
 
-The recommended firmware and toolchain versions have been updated.
+The recommended firmware version has been updated and is required to use the Raspberry Pi 5 with BCM2712 stepping D0. Please note that the file *bcm2712d0.dtbo* has to be copied into the directory *overlays/* on the SD card.
 
 Features
 --------
@@ -87,12 +80,12 @@ Circle supports the following features:
 |                       | SPI0 master (Polling and DMA driver)                | x              |
 |                       | SPI1 auxiliary master (Polling)                     |                |
 |                       | SPI3-6 masters of Raspberry Pi 4 (Polling)          | SPI1-3 and 5   |
-|                       | SMI master (experimental)                           |                |
+|                       | SMI master                                          |                |
 |                       | I2S sound output and input                          | x              |
-|                       | HDMI sound output (without VCHIQ)                   |                |
+|                       | HDMI sound output (without VCHIQ)                   | x              |
 |                       | Hardware random number generator                    | x              |
 |                       | Watchdog device                                     | x              |
-|                       | Official Raspberry Pi touch screen                  |                |
+|                       | Official Raspberry Pi touch screen (v1 only)        |                |
 |                       | VCHIQ interface and audio service drivers           |                |
 |                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |                |
 |                       | MACB / GEM Gigabit Ethernet NIC of Raspberry Pi 5   | x              |
@@ -103,6 +96,7 @@ Circle supports the following features:
 |                       | HID class device drivers (keyboard, mouse, gamepad) | x              |
 |                       | Driver for on-board Ethernet device (SMSC951x)      |                |
 |                       | Driver for on-board Ethernet device (LAN7800)       |                |
+|                       | Driver for CDC Ethernet devices (RTL815x, QEMU)     |                |
 |                       | Driver for USB mass storage devices (bulk only)     | x              |
 |                       | Driver for USB audio streaming devices (RPi 4 only) | x              |
 |                       | Drivers for different USB serial devices            | x              |
@@ -110,13 +104,14 @@ Circle supports the following features:
 |                       | Touchscreen driver (digitizer mode)                 | x              |
 |                       | Printer driver                                      | x              |
 |                       | MIDI gadget driver                                  |                |
-|                       | Serial CDC gadget driver (experimental)             |                |
+|                       | Serial CDC gadget driver                            |                |
+|                       | Mass-storage device gadget driver                   |                |
 |                       |                                                     |                |
 | File systems          | Internal FAT driver (limited function)              | x              |
 |                       | FatFs driver (full function, by ChaN)               | x              |
 |                       |                                                     |                |
 | TCP/IP networking     | Protocols: ARP, IP, ICMP, UDP, TCP                  | x              |
-|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog, MQTT         | x              |
+|                       | Clients: DHCP, DNS, NTP, HTTP, Syslog, MQTT, mDNS   | x              |
 |                       | Servers: HTTP, TFTP                                 | x              |
 |                       | BSD-like C++ socket API                             | x              |
 |                       |                                                     |                |
@@ -225,10 +220,14 @@ Classes
 
 The following C++ classes were added to Circle:
 
-Base library
+USB gadget library
 
-* CDMAChannelRP1: RP1 platform DMA controller support (for Raspberry Pi 5)
-* CI2CMasterIRQ: Driver for I2C master devices (asynchronous using IRQ, for Raspberry Pi 1-4)
+* CUSBMSDGadget: USB mass storage device gadget
+* CUSBMSDGadgetEndpoint: Endpoint of the USB mass storage gadget
+
+Net library
+
+* CmDNSPublisher: mDNS / Bonjour client task
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 
@@ -247,6 +246,7 @@ Additional Topics
 * [USB plug-and-play](doc/usb-plug-and-play.txt)
 * [Debugging support](doc/debug.txt)
 * [JTAG debugging](doc/debug-jtag.txt)
+* [SWD debugging (Raspberry Pi 5)](doc/debug-swd.txt)
 * [QEMU support](doc/qemu.txt)
 * [Eclipse IDE support](doc/eclipse-support.txt)
 * [About real-time applications](doc/realtime.txt)

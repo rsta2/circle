@@ -143,6 +143,8 @@ USB gadget library
 * CDWUSBGadgetEndpoint0: Endpoint 0 of a DW USB gadget
 * CUSBMIDIGadget: USB MIDI (v1.0) gadget
 * CUSBMIDIGadgetEndpoint: Endpoint of the USB MIDI gadget
+* CUSBMSDGadget: USB mass storage device gadget
+* CUSBMSDGadgetEndpoint: Endpoint of the USB mass storage gadget
 
 Input library
 
@@ -188,6 +190,7 @@ Net library
 * CICMPHandler: ICMP error message handler and echo (ping) responder.
 * CIPAddress: Encapsulates an IP address.
 * CLinkLayer: Encapsulates the Ethernet MAC layer.
+* CmDNSPublisher: mDNS / Bonjour client task.
 * CMQTTClient: Client for the MQTT IoT protocol.
 * CMQTTReceivePacket: MQTT helper class.
 * CMQTTSendPacket: MQTT helper class.

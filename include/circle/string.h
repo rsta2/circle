@@ -37,9 +37,16 @@ public:
 	CString &operator = (const CString &rString);
 	CString &operator = (CString &&rrString);
 
+	CString &operator += (const char chChar);
+	CString &operator += (const char *pString);
+	CString &operator += (const CString &rString);
+
+	const char* c_str (void) const;
+
 	size_t GetLength (void) const;
 
 	void Append (const char *pString);
+	void Append (const char chChar);
 	int Compare (const char *pString) const;
 	int Find (char chChar) const;			// returns index or -1 if not found
 

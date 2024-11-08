@@ -2,7 +2,7 @@
 // usbcdcethernet.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,9 +43,14 @@ public:
 	boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength);
 
 private:
+	u8 GetMACAddressStringIndex (void);	// returns 0 on error
+
 	boolean InitMACAddress (u8 iMACAddress);
 
 private:
+	u8 m_iMACAddress;
+	boolean m_bInterfaceOK;
+
 	CUSBEndpoint *m_pEndpointBulkIn;
 	CUSBEndpoint *m_pEndpointBulkOut;
 

@@ -52,6 +52,7 @@ public:
 
 private:
 	static void KeyPressedHandler (const char *pString);
+	
 	static void ShutdownHandler (void);
 
 	static void KeyStatusHandlerRaw (unsigned char ucModifiers, const unsigned char RawKeys[6]);

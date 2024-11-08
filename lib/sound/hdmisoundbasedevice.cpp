@@ -2,7 +2,7 @@
 // hdmisoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,9 +20,7 @@
 #include <circle/sound/hdmisoundbasedevice.h>
 #include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
-#include <circle/bcm2835int.h>
 #include <circle/memio.h>
-#include <circle/machineinfo.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
@@ -34,11 +32,14 @@
 //#define HDMI_DEBUG
 
 #if RASPPI <= 3
-	#define REG(name, base, offset, base4, offset4)	\
-					static const u32 Reg##name = (base) + (offset);
+	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
+					static const uintptr Reg##name = (base) + (offset);
+#elif RASPPI == 4
+	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
+					static const uintptr Reg##name = (base4) + (offset4);
 #else
-	#define REG(name, base, offset, base4, offset4)	\
-					static const u32 Reg##name = (base4) + (offset4);
+	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
+					static const uintptr Reg##name = (base5) + (offset5);
 #endif
 
 #define REGBIT(reg, name, bitnr)	static const u32 Bit##reg##name = 1U << (bitnr);
@@ -48,22 +49,22 @@
 
 #define UNUSED		0
 
-REG (AudioPacketConfig, ARM_HDMI_BASE, 0x9C, ARM_HDMI_BASE, 0xB8);
+REG (AudioPacketConfig, ARM_HDMI_BASE, 0x9C, ARM_HDMI_BASE, 0xB8, ARM_HDMI_BASE, 0xC0);
 	REGSHIFT (AudioPacketConfig, CeaMask, 0);
 	REGSHIFT (AudioPacketConfig, BFrameIdentifier, 10);
 	REGBIT (AudioPacketConfig, ZeroDataOnInactiveChannels, 24);
 	REGBIT (AudioPacketConfig, ZeroDataOnSampleFlat, 29);
-REG (CrpConfig, ARM_HDMI_BASE, 0xA8, ARM_HDMI_BASE, 0xC8);	// clock recover
+REG (CrpConfig, ARM_HDMI_BASE, 0xA8, ARM_HDMI_BASE, 0xC8, ARM_HDMI_BASE, 0xD0);	// clock recover
 	REGBIT (CrpConfig, ExternalCtsEnable, 24);
 	REGSHIFT (CrpConfig, ConfigN, 0);
-REG (Cts0, ARM_HDMI_BASE, 0xAC, ARM_HDMI_BASE, 0xCC); 		// clock time stamp
-REG (Cts1, ARM_HDMI_BASE, 0xB0, ARM_HDMI_BASE, 0xD0);
-REG (MaiChannelMap, ARM_HDMI_BASE, 0x90, ARM_HDMI_BASE, 0x9C);
-REG (MaiConfig, ARM_HDMI_BASE, 0x94, ARM_HDMI_BASE, 0xA0);
+REG (Cts0, ARM_HDMI_BASE, 0xAC, ARM_HDMI_BASE, 0xCC, ARM_HDMI_BASE, 0xD4); 	// clock time stamp
+REG (Cts1, ARM_HDMI_BASE, 0xB0, ARM_HDMI_BASE, 0xD0, ARM_HDMI_BASE, 0xD8);
+REG (MaiChannelMap, ARM_HDMI_BASE, 0x90, ARM_HDMI_BASE, 0x9C, ARM_HDMI_BASE, 0xA4);
+REG (MaiConfig, ARM_HDMI_BASE, 0x94, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xA8);
 	REGSHIFT (MaiConfig, ChannelMask, 0);
 	REGBIT (MaiConfig, BitReverse, 26);
 	REGBIT (MaiConfig, FormatReverse, 27);
-REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10);
+REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10, ARM_HD_BASE, 0x10);
 	REGBIT (MaiControl, Reset, 0);
 	REGBIT (MaiControl, ErrorFull, 1);
 	REGBIT (MaiControl, ErrorEmpty, 2);
@@ -76,38 +77,44 @@ REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10);
 	REGBIT (MaiControl, ChannelAlign, 13);
 	//REGBIT (MaiControl, Busy, 14);
 	REGBIT (MaiControl, Delayed, 15);
-REG (MaiData, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x1C);
-REG (MaiFormat, ARM_HD_BASE, 0x1C, ARM_HD_BASE, 0x18);
+REG (MaiData, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x1C, ARM_HD_BASE, 0x1C);
+REG (MaiFormat, ARM_HD_BASE, 0x1C, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x18);
 	REGSHIFT (MaiFormat, SampleRate, 8);
 		REGVALUE (MaiFormat, SampleRate, NotIndicated, 0);
 		REGVALUE (MaiFormat, SampleRate, 8000, 1);
 	REGSHIFT (MaiFormat, AudioFormat, 16);
 		REGVALUE (MaiFormat, AudioFormat, PCM, 2);
-REG (MaiSampleRate, ARM_HD_BASE, 0x2C, ARM_HD_BASE, 0x20);
+REG (MaiSampleRate, ARM_HD_BASE, 0x2C, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x20);
 	REGSHIFT (MaiSampleRate, M, 0);
 	REGMASK (MaiSampleRate, M, 0xFFU);
 	REGSHIFT (MaiSampleRate, N, 8);
 	REGMASK (MaiSampleRate, N, 0xFFFFFF00U);
-REG (MaiThreshold, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x14);
+REG (MaiThreshold, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x14);
 	REGSHIFT (MaiThreshold, DREQLow, 0);
 	REGSHIFT (MaiThreshold, DREQHigh, 8);
 	REGSHIFT (MaiThreshold, PanicLow, 16);
 	REGSHIFT (MaiThreshold, PanicHigh, 24);
+#if RASPPI == 5
+	REGSHIFT (MaiThreshold, DREQLowD0, 0);
+	REGSHIFT (MaiThreshold, DREQHighD0, 7);
+	REGSHIFT (MaiThreshold, PanicLowD0, 15);
+	REGSHIFT (MaiThreshold, PanicHighD0, 23);
+#endif
 		REGVALUE (MaiThreshold, Any, Default, 16);
-REG (RamPacketAudio0, ARM_HDMI_BASE, 0x490, ARM_RAM_BASE, 0x90);
-REG (RamPacketAudio1, ARM_HDMI_BASE, 0x494, ARM_RAM_BASE, 0x94);
-REG (RamPacketAudio2, ARM_HDMI_BASE, 0x498, ARM_RAM_BASE, 0x98);
-REG (RamPacketAudio8, ARM_HDMI_BASE, 0x4B0, ARM_RAM_BASE, 0xB0);
-REG (RamPacketConfig, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xBC);
+REG (RamPacketAudio0, ARM_HDMI_BASE, 0x490, ARM_RAM_BASE, 0x90, ARM_RAM_BASE, 0x90);
+REG (RamPacketAudio1, ARM_HDMI_BASE, 0x494, ARM_RAM_BASE, 0x94, ARM_RAM_BASE, 0x94);
+REG (RamPacketAudio2, ARM_HDMI_BASE, 0x498, ARM_RAM_BASE, 0x98, ARM_RAM_BASE, 0x98);
+REG (RamPacketAudio8, ARM_HDMI_BASE, 0x4B0, ARM_RAM_BASE, 0xB0, ARM_RAM_BASE, 0xB0);
+REG (RamPacketConfig, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xBC, ARM_HDMI_BASE, 0xC4);
 	REGBIT (RamPacketConfig, AudioPacketIdentifier, 4);
 	REGBIT (RamPacketConfig, Enable, 16);
-REG (RamPacketStatus, ARM_HDMI_BASE, 0xA4, ARM_HDMI_BASE, 0xC4);
+REG (RamPacketStatus, ARM_HDMI_BASE, 0xA4, ARM_HDMI_BASE, 0xC4, ARM_HDMI_BASE, 0xCC);
 	REGBIT (RamPacketStatus, AudioPacketIdentifier, 4);
 #if RASPPI <= 3
-REG (TxPhyControl0, ARM_HDMI_BASE, 0x2C4, UNUSED, UNUSED);
+REG (TxPhyControl0, ARM_HDMI_BASE, 0x2C4, UNUSED, UNUSED, 0, 0);
 	REGBIT (TxPhyControl0, RngPowerDown, 25);
-#else
-REG (TxPhyPowerDownControl, UNUSED, UNUSED, ARM_PHY_BASE, 0x04);
+#elif RASPPI == 4
+REG (TxPhyPowerDownControl, UNUSED, UNUSED, ARM_PHY_BASE, 0x04, 0, 0);
 	REGBIT (TxPhyPowerDownControl, RngGenPowerDown, 4);
 #endif
 
@@ -126,24 +133,12 @@ CHDMISoundBaseDevice::CHDMISoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_bUsePolling (FALSE),
 	m_bIRQConnected (FALSE),
 	m_State (HDMISoundCreated),
-	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
+	m_pDMAChannel (new CDMAChannel (DMA_CHANNEL_LITE, pInterrupt)),
+	m_pDMABuffer {new u32[m_nChunkSize], new u32[m_nChunkSize]}
 {
 	assert (m_pInterruptSystem != 0);
 	assert (m_nSampleRate > 0);
 	assert (m_nChunkSize % IEC958_SUBFRAMES_PER_BLOCK == 0);
-
-	if (m_nDMAChannel > DMA_CHANNEL_MAX)	// no DMA channel assigned
-	{
-		m_State = HDMISoundError;
-
-		return;
-	}
-
-	// setup and concatenate DMA buffers and control blocks
-	SetupDMAControlBlock (0);
-	SetupDMAControlBlock (1);
-	m_pControlBlock[0]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[1]);
-	m_pControlBlock[1]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[0]);
 
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 }
@@ -159,7 +154,7 @@ CHDMISoundBaseDevice::CHDMISoundBaseDevice (unsigned nSampleRate)
 	m_nSubFrame (0),
 	m_bIRQConnected (FALSE),
 	m_State (HDMISoundCreated),
-	m_nDMAChannel (DMA_CHANNEL_MAX)		// no DMA channel assigned
+	m_pDMAChannel (0)
 {
 	assert (m_nSampleRate > 0);
 
@@ -172,12 +167,6 @@ CHDMISoundBaseDevice::~CHDMISoundBaseDevice (void)
 		|| m_State == HDMISoundIdle
 		|| m_State == HDMISoundError);
 
-	if (   m_nDMAChannel > DMA_CHANNEL_MAX
-	    && !m_bUsePolling)
-	{
-		return;
-	}
-
 	CDeviceNameService::Get ()->RemoveDevice (DeviceName, FALSE);
 
 	ResetHDMI ();
@@ -188,39 +177,8 @@ CHDMISoundBaseDevice::~CHDMISoundBaseDevice (void)
 	}
 
 	// reset and disable DMA channel
-	PeripheralEntry ();
-
-	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
-	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
-	{
-		// do nothing
-	}
-
-	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) & ~(1 << m_nDMAChannel));
-
-	PeripheralExit ();
-
-	// disconnect IRQ
-	assert (m_pInterruptSystem != 0);
-	if (m_bIRQConnected)
-	{
-		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel);
-	}
-
-	m_pInterruptSystem = 0;
-
-	// free DMA channel
-	CMachineInfo::Get ()->FreeDMAChannel (m_nDMAChannel);
-
-	// free buffers
-	m_pControlBlock[0] = 0;
-	m_pControlBlock[1] = 0;
-	delete [] m_pControlBlockBuffer[0];
-	m_pControlBlockBuffer[0] = 0;
-	delete [] m_pControlBlockBuffer[1];
-	m_pControlBlockBuffer[1] = 0;
+	delete m_pDMAChannel;
+	m_pDMAChannel = 0;
 
 	delete [] m_pDMABuffer[0];
 	m_pDMABuffer[0] = 0;
@@ -286,54 +244,34 @@ boolean CHDMISoundBaseDevice::Start (void)
 					m_ulPixelClockRate);
 #endif
 
-		if (!m_bUsePolling)
-		{
-			// enable and reset DMA channel
-			PeripheralEntry ();
-
-			assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-			write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
-			CTimer::SimpleusDelay (1000);
-
-			write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
-			while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
-			{
-				// do nothing
-			}
-
-			PeripheralExit ();
-		}
-
 		RunHDMI ();
 
 		m_State = HDMISoundIdle;
 	}
 
 	assert (m_State == HDMISoundIdle);
-
-	// fill buffer 0
-	m_nNextBuffer = 0;
-
-	if (   !m_bUsePolling
-	    && !GetNextChunk ())
-	{
-		return FALSE;
-	}
-
 	m_State = HDMISoundRunning;
 
+	// start DMA
 	if (!m_bUsePolling)
 	{
-		// connect IRQ
-		assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+		const size_t ulBufferLength = m_nChunkSize * sizeof (u32);
+		memset (m_pDMABuffer[0], 0, ulBufferLength);
+		memset (m_pDMABuffer[1], 0, ulBufferLength);
 
-		if (!m_bIRQConnected)
+		const void *Buffers[2] = {m_pDMABuffer[0], m_pDMABuffer[1]};
+		assert (m_pDMAChannel != 0);
+		TDREQ DREQ = DREQSourceHDMI;
+#if RASPPI == 5
+		if (CMachineInfo::Get ()->GetSoCStepping () >= SoCSteppingD0)
 		{
-			assert (m_pInterruptSystem != 0);
-			m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel, InterruptStub, this);
-
-			m_bIRQConnected = TRUE;
+			DREQ = DREQSourceHDMI_D0;
 		}
+#endif
+		m_pDMAChannel->SetupCyclicIOWrite (RegMaiData, Buffers, 2, ulBufferLength, DREQ);
+
+		m_pDMAChannel->SetCompletionRoutine (DMACompletionStub, this);
+		m_pDMAChannel->Start ();
 	}
 
 	// enable HDMI audio operation
@@ -341,7 +279,7 @@ boolean CHDMISoundBaseDevice::Start (void)
 
 #if RASPPI <= 3
 	write32 (RegTxPhyControl0, read32 (RegTxPhyControl0) & ~BitTxPhyControl0RngPowerDown);
-#else
+#elif RASPPI == 4
 	write32 (RegTxPhyPowerDownControl,
 		 read32 (RegTxPhyPowerDownControl) & ~BitTxPhyPowerDownControlRngGenPowerDown);
 #endif
@@ -352,46 +290,6 @@ boolean CHDMISoundBaseDevice::Start (void)
 			       | BitMaiControlEnable);
 
 	PeripheralExit ();
-
-	if (m_bUsePolling)
-	{
-		return TRUE;
-	}
-
-	// start DMA
-	PeripheralEntry ();
-
-	assert (!(read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_INT));
-	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nDMAChannel)));
-
-	assert (m_pControlBlock[0] != 0);
-	write32 (ARM_DMACHAN_CONBLK_AD (m_nDMAChannel), BUS_ADDRESS ((uintptr) m_pControlBlock[0]));
-
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
-					         | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
-					         | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
-					         | CS_ACTIVE);
-
-	PeripheralExit ();
-
-	// fill buffer 1
-	if (!GetNextChunk ())
-	{
-		m_SpinLock.Acquire ();
-
-		if (m_State == HDMISoundRunning)
-		{
-			PeripheralEntry ();
-			write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
-			PeripheralExit ();
-
-			StopHDMI ();
-
-			m_State = HDMISoundTerminating;
-		}
-
-		m_SpinLock.Release ();
-	}
 
 	return TRUE;
 }
@@ -415,6 +313,16 @@ void CHDMISoundBaseDevice::Cancel (void)
 	if (m_State == HDMISoundRunning)
 	{
 		m_State = HDMISoundCancelled;
+
+		m_SpinLock.Release ();
+
+		assert (m_pDMAChannel);
+		m_pDMAChannel->Cancel ();
+		StopHDMI ();
+
+		m_SpinLock.Acquire ();
+
+		m_State = HDMISoundIdle;
 	}
 
 	m_SpinLock.Release ();
@@ -423,8 +331,7 @@ void CHDMISoundBaseDevice::Cancel (void)
 boolean CHDMISoundBaseDevice::IsActive (void) const
 {
 	return    m_State == HDMISoundRunning
-	       || m_State == HDMISoundCancelled
-	       || m_State == HDMISoundTerminating;
+	       || m_State == HDMISoundCancelled;
 }
 
 boolean CHDMISoundBaseDevice::IsWritable (void)
@@ -454,30 +361,6 @@ void CHDMISoundBaseDevice::WriteSample (s32 nSample)
 	{
 		m_nSubFrame = 0;
 	}
-}
-
-boolean CHDMISoundBaseDevice::GetNextChunk (void)
-{
-	assert (m_pDMABuffer[m_nNextBuffer] != 0);
-
-	unsigned nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
-	if (nChunkSize == 0)
-	{
-		return FALSE;
-	}
-
-	unsigned nTransferLength = nChunkSize * sizeof (u32);
-	assert (nTransferLength <= TXFR_LEN_MAX_LITE);
-
-	assert (m_pControlBlock[m_nNextBuffer] != 0);
-	m_pControlBlock[m_nNextBuffer]->nTransferLength = nTransferLength;
-
-	CleanAndInvalidateDataCacheRange ((uintptr) m_pDMABuffer[m_nNextBuffer], nTransferLength);
-	CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock[m_nNextBuffer], sizeof (TDMAControlBlock));
-
-	m_nNextBuffer ^= 1;
-
-	return TRUE;
 }
 
 void CHDMISoundBaseDevice::RunHDMI (void)
@@ -512,6 +395,7 @@ void CHDMISoundBaseDevice::RunHDMI (void)
 				  | MaiThresholdAnyDefault << ShiftMaiThresholdPanicLow
 				  | MaiThresholdAnyDefault << ShiftMaiThresholdDREQHigh
 				  | MaiThresholdAnyDefault << ShiftMaiThresholdDREQLow},
+#define MAI_THRESHOLD_INDEX	3
 		{RegMaiConfig,   BitMaiConfigBitReverse | BitMaiConfigFormatReverse
 			       | 0b11 << ShiftMaiConfigChannelMask},
 #if RASPPI <= 3
@@ -529,6 +413,16 @@ void CHDMISoundBaseDevice::RunHDMI (void)
 		{RegCts1, nCTS},
 		{0}
 	};
+
+#if RASPPI == 5
+	if (CMachineInfo::Get ()->GetSoCStepping () >= SoCSteppingD0)
+	{
+		InitValues[MAI_THRESHOLD_INDEX].nValue =   0x10 << ShiftMaiThresholdPanicHighD0
+							 | 0x10 << ShiftMaiThresholdPanicLowD0
+							 | 0x1C << ShiftMaiThresholdDREQHighD0
+							 | 0x1C << ShiftMaiThresholdDREQLowD0;
+	}
+#endif
 
 	PeripheralEntry ();
 
@@ -561,7 +455,7 @@ void CHDMISoundBaseDevice::StopHDMI (void)
 
 #if RASPPI <= 3
 	write32 (RegTxPhyControl0, read32 (RegTxPhyControl0) | BitTxPhyControl0RngPowerDown);
-#else
+#elif RASPPI == 4
 	write32 (RegTxPhyPowerDownControl,
 		 read32 (RegTxPhyPowerDownControl) | BitTxPhyPowerDownControlRngGenPowerDown);
 #endif
@@ -569,98 +463,54 @@ void CHDMISoundBaseDevice::StopHDMI (void)
 	PeripheralExit ();
 }
 
-void CHDMISoundBaseDevice::InterruptHandler (void)
+void CHDMISoundBaseDevice::DMACompletionRoutine (unsigned nChannel, unsigned nBuffer,
+						 boolean bStatus)
 {
-	assert (m_State != HDMISoundIdle);
-	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
+	assert (m_pDMAChannel != 0);
 
-	PeripheralEntry ();
+	m_SpinLock.Acquire ();
 
-#ifndef NDEBUG
-	u32 nIntStatus = read32 (ARM_DMA_INT_STATUS);
-#endif
-	u32 nIntMask = 1 << m_nDMAChannel;
-	assert (nIntStatus & nIntMask);
-	write32 (ARM_DMA_INT_STATUS, nIntMask);
-
-	u32 nCS = read32 (ARM_DMACHAN_CS (m_nDMAChannel));
-	assert (nCS & CS_INT);
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel), nCS);	// reset CS_INT
-
-	PeripheralExit ();
-
-	if (nCS & CS_ERROR)
+	if (m_State != HDMISoundRunning)
 	{
-		StopHDMI ();
-
-		m_State = HDMISoundError;
+		m_SpinLock.Release ();
 
 		return;
 	}
 
-	m_SpinLock.Acquire ();
-
-	switch (m_State)
+	if (!bStatus)
 	{
-	case HDMISoundRunning:
-		if (GetNextChunk ())
-		{
-			break;
-		}
-		// fall through
+		m_State = HDMISoundError;
 
-	case HDMISoundCancelled:
-		PeripheralEntry ();
-		write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
-		PeripheralExit ();
+		m_SpinLock.Release ();
 
-		m_State = HDMISoundTerminating;
-		break;
+		m_pDMAChannel->Cancel ();
+		StopHDMI ();
 
-	case HDMISoundTerminating:
+		return;
+	}
+
+	assert (nBuffer < 2);
+	assert (m_pDMABuffer[nBuffer]);
+	assert (m_nChunkSize);
+
+	if (GetChunk (m_pDMABuffer[nBuffer], m_nChunkSize) < m_nChunkSize)
+	{
+		m_pDMAChannel->Cancel ();
 		StopHDMI ();
 
 		m_State = HDMISoundIdle;
-		break;
-
-	default:
-		assert (0);
-		break;
 	}
 
 	m_SpinLock.Release ();
 }
 
-void CHDMISoundBaseDevice::InterruptStub (void *pParam)
+void CHDMISoundBaseDevice::DMACompletionStub (unsigned nChannel, unsigned nBuffer,
+					      boolean bStatus, void *pParam)
 {
 	CHDMISoundBaseDevice *pThis = (CHDMISoundBaseDevice *) pParam;
 	assert (pThis != 0);
 
-	pThis->InterruptHandler ();
-}
-
-void CHDMISoundBaseDevice::SetupDMAControlBlock (unsigned nID)
-{
-	assert (nID <= 1);
-
-	m_pDMABuffer[nID] = new (HEAP_DMA30) u32[m_nChunkSize];
-	assert (m_pDMABuffer[nID] != 0);
-
-	m_pControlBlockBuffer[nID] = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
-	assert (m_pControlBlockBuffer[nID] != 0);
-	m_pControlBlock[nID] = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer[nID] + 31) & ~31);
-
-	m_pControlBlock[nID]->nTransferInformation     =   (DREQSourceHDMI << TI_PERMAP_SHIFT)
-						         | (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
-						         | TI_SRC_INC
-						         | TI_SRC_DREQ
-						         | TI_WAIT_RESP
-						         | TI_INTEN;
-	m_pControlBlock[nID]->nSourceAddress           = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
-	m_pControlBlock[nID]->nDestinationAddress      = (RegMaiData & 0xFFFFFF) + GPU_IO_BASE;
-	m_pControlBlock[nID]->n2DModeStride            = 0;
-	m_pControlBlock[nID]->nReserved[0]	       = 0;
-	m_pControlBlock[nID]->nReserved[1]	       = 0;
+	pThis->DMACompletionRoutine (nChannel, nBuffer, bStatus);
 }
 
 void CHDMISoundBaseDevice::ResetHDMI (void)

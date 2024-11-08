@@ -1,0 +1,5 @@
+README
+
+This test program sends ICMP echo (ping) packets to a server and displays
+received replies. You have to configure the IP address of the server, before
+building the program.

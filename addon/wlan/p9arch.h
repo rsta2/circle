@@ -45,6 +45,9 @@ void gpiopullup (unsigned pin);
 
 #if RASPPI >= 5
 void gpioset (unsigned pin, unsigned val);
+
+unsigned get_soc_stepping (void);
+#define SOC_STEPPING_D0	0x30
 #endif
 
 unsigned getclkrate (unsigned clk);

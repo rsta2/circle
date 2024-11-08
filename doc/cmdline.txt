@@ -70,3 +70,6 @@ gpiofanpin=2			GPIO pin number (SoC number, not header position) to which the
 touchscreen=140,3960,340,3920	Set calibration coordinates for USB touchscreens
 				(minimum x, maximum x, minimum y, maximum y)
 				Use tools/touchscreen-calibrator to determine the values!
+
+backlight=150			Set an initial backlight value for the Raspberry Pi Touchscreen.
+				This should only be necessary for the older control board (v1.0).

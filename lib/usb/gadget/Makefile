@@ -27,7 +27,9 @@ include $(CIRCLEHOME)/Rules.mk
 ifneq ($(strip $(RASPPI)),5)
 OBJS	= dwusbgadget.o dwusbgadgetendpoint.o dwusbgadgetendpoint0.o \
 	  usbmidigadget.o usbmidigadgetendpoint.o \
-	  usbcdcgadget.o usbcdcgadgetendpoint.o
+	  usbcdcgadget.o usbcdcgadgetendpoint.o \
+	  usbmsdgadget.o usbmsdgadgetendpoint.o
+
 endif
 
 libusbgadget.a: $(OBJS)

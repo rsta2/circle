@@ -511,13 +511,14 @@ sdioinit(void)
 	gpioset(28, 1);		/* switch WLAN on */
 	microdelay(150000);
 
-	/* TODO: for BCM2712 C0 only */
-	gpiosel(30, Func4); gpiopulloff(30);	/* sdio_clk */
-	gpiosel(31, Func4); gpiopullup(31);	/* sdio_cmd */
-	gpiosel(32, Func4); gpiopullup(32);	/* sdio_d0 */
-	gpiosel(33, Func3); gpiopullup(33);	/* sdio_d1 */
-	gpiosel(34, Func4); gpiopullup(34);	/* sdio_d2 */
-	gpiosel(35, Func3); gpiopullup(35);	/* sdio_d3 */
+	int d0 = get_soc_stepping() >= SOC_STEPPING_D0;		/* BCM2712D0 has different mapping */
+
+	gpiosel(30, d0 ? Func1 : Func4); gpiopulloff(30);	/* sdio_clk */
+	gpiosel(31, d0 ? Func1 : Func4); gpiopullup(31);	/* sdio_cmd */
+	gpiosel(32, d0 ? Func1 : Func4); gpiopullup(32);	/* sdio_d0 */
+	gpiosel(33, d0 ? Func1 : Func3); gpiopullup(33);	/* sdio_d1 */
+	gpiosel(34, d0 ? Func1 : Func4); gpiopullup(34);	/* sdio_d2 */
+	gpiosel(35, d0 ? Func1 : Func3); gpiopullup(35);	/* sdio_d3 */
 #endif
 	sdio.init();
 	sdio.enable();
@@ -2135,8 +2136,13 @@ wlinit(Ether *edev, Ctlr *ctlr)
 	char *p;
 	static uchar keepalive[12] = {1, 0, 11, 0, 0xd8, 0xd6, 0, 0, 0, 0, 0, 0};
 
+#if RASPPI >= 5
+	memmove(ea, edev->ea, Eaddrlen);
+	wlsetvar(ctlr, "cur_etheraddr", ea, Eaddrlen);
+#else
 	wlgetvar(ctlr, "cur_etheraddr", ea, Eaddrlen);
 	memmove(edev->ea, ea, Eaddrlen);
+#endif
 	memmove(edev->addr, ea, Eaddrlen);
 	print("ether4330: addr %02X:%02X:%02X:%02X:%02X:%02X\n",
 	      ea[0], ea[1], ea[2], ea[3], ea[4], ea[5]);

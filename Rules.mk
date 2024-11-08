@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 470000
+CIRCLEVER = 480000
 
 CIRCLEHOME ?= ..
 
@@ -276,7 +276,7 @@ $(TARGET).hex: $(TARGET).img
 # of these commands.  If putty and node are available on the windows 
 # machine we can get around WSL's lack of serial port support
 ifeq ($(strip $(WSL_DISTRO_NAME)),)
-NODE=node 
+NODE=node
 PUTTY=putty
 PUTTYSERIALPORT=$(SERIALPORT)
 else
@@ -299,6 +299,8 @@ else
 # Flash with flashy
 ifeq ($(strip $(USEFLASHY)),1)
 	FLASHY ?= $(NODE) $(CIRCLEHOME)/tools/flashy/flashy.js
+else ifeq ($(strip $(USEFLASHY)),0)
+	FLASHY ?= $(CIRCLEHOME)/tools/cflashy
 else
 	FLASHY ?= flashy
 endif
@@ -321,4 +323,4 @@ monitor:
 # Monitor in terminal (Linux only)
 cat:
 	stty -F $(SERIALPORT) $(USERBAUD) cs8 -cstopb -parenb -icrnl
-	cat $(SERIALPORT)
+	tail -f $(SERIALPORT)

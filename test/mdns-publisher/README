@@ -1,0 +1,16 @@
+README
+
+This test publishes a "_apple-midi._udp" service using mDNS / Bonjour. The
+service itself is not implemented. After 60 seconds the service is unpublished
+again. You might have to open your personal firewall for this test.
+
+On a Linux host you can browse mDNS services using:
+
+$ avahi-browse -r _apple-midi._udp
++ enp1s0 IPv4 MIDI-Test                                     _apple-midi._udp     local
+= enp1s0 IPv4 MIDI-Test                                     _apple-midi._udp     local
+   hostname = [raspberrypi.local]
+   address = [192.168.0.151]
+   port = [5004]
+   txt = ["Sample service"]
+- enp1s0 IPv4 MIDI-Test                                     _apple-midi._udp     local

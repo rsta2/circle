@@ -2,7 +2,7 @@
 // usbcdcethernet.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,8 @@ static const char FromCDCEthernet[] = "ucdceth";
 
 CUSBCDCEthernetDevice::CUSBCDCEthernetDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
+	m_iMACAddress (GetMACAddressStringIndex ()),
+	m_bInterfaceOK (SelectInterfaceByClass (10, 0, 0, 2)),
 	m_pEndpointBulkIn (0),
 	m_pEndpointBulkOut (0)
 {
@@ -59,38 +61,7 @@ CUSBCDCEthernetDevice::~CUSBCDCEthernetDevice (void)
 
 boolean CUSBCDCEthernetDevice::Configure (void)
 {
-	// find Ethernet Networking Functional Descriptor
-	const TEthernetNetworkingFunctionalDescriptor *pEthernetDesc;
-	while ((pEthernetDesc = (TEthernetNetworkingFunctionalDescriptor *)
-				GetDescriptor (DESCRIPTOR_CS_INTERFACE)) != 0)
-	{
-		if (pEthernetDesc->bDescriptorSubtype == ETHERNET_NETWORKING_FUNCTIONAL_DESCRIPTOR)
-		{
-			break;
-		}
-	}
-
-	if (pEthernetDesc == 0)
-	{
-		ConfigurationError (FromCDCEthernet);
-
-		return FALSE;
-	}
-
-	// find Data Class Interface
-	const TUSBInterfaceDescriptor *pInterfaceDesc;
-	while ((pInterfaceDesc = (TUSBInterfaceDescriptor *) GetDescriptor (DESCRIPTOR_INTERFACE)) != 0)
-	{
-		if (   pInterfaceDesc->bInterfaceClass    == 0x0A
-		    && pInterfaceDesc->bInterfaceSubClass == 0x00
-		    && pInterfaceDesc->bInterfaceProtocol == 0x00
-		    && pInterfaceDesc->bNumEndpoints      >= 2)
-		{
-			break;
-		}
-	}
-
-	if (pInterfaceDesc == 0)
+	if (!m_bInterfaceOK)
 	{
 		ConfigurationError (FromCDCEthernet);
 
@@ -98,7 +69,8 @@ boolean CUSBCDCEthernetDevice::Configure (void)
 	}
 
 	// init MAC address
-	if (!InitMACAddress (pEthernetDesc->iMACAddress))
+	if (   !m_iMACAddress
+	    || !InitMACAddress (m_iMACAddress))
 	{
 		CLogger::Get ()->Write (FromCDCEthernet, LogError, "Cannot get MAC address");
 
@@ -196,6 +168,23 @@ boolean CUSBCDCEthernetDevice::ReceiveFrame (void *pBuffer, unsigned *pResultLen
 	*pResultLength = nResultLength;
 
 	return TRUE;
+}
+
+u8 CUSBCDCEthernetDevice::GetMACAddressStringIndex (void)
+{
+	// find Ethernet Networking Functional Descriptor
+	const TEthernetNetworkingFunctionalDescriptor *pEthernetDesc;
+	while ((pEthernetDesc = (TEthernetNetworkingFunctionalDescriptor *)
+				GetDescriptor (DESCRIPTOR_CS_INTERFACE)) != 0)
+	{
+		if (pEthernetDesc->bDescriptorSubtype == ETHERNET_NETWORKING_FUNCTIONAL_DESCRIPTOR)
+		{
+			assert (pEthernetDesc->iMACAddress != 0);
+			return pEthernetDesc->iMACAddress;
+		}
+	}
+
+	return 0;
 }
 
 boolean CUSBCDCEthernetDevice::InitMACAddress (u8 iMACAddress)

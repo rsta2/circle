@@ -73,10 +73,13 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBStandardHub (pParent);
 	}
+#ifndef EXCLUDE_USB_STORAGE
 	else if (pName->Compare ("int8-6-50") == 0)
 	{
 		pResult = new CUSBBulkOnlyMassStorageDevice (pParent);
 	}
+#endif
+#ifndef EXCLUDE_USB_KEYB
 	else if (pName->Compare ("int3-1-1") == 0)
 	{
 		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
@@ -89,10 +92,13 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 
 		delete pVendor;
 	}
+#endif
+#ifndef EXCLUDE_USB_MOUSE
 	else if (pName->Compare ("int3-1-2") == 0)
 	{
 		pResult = new CUSBMouseDevice (pParent);
 	}
+#endif
 	else if (   pName->Compare ("int3-0-0") == 0
 		 || pName->Compare ("int3-0-2") == 0
 		 || pName->Compare ("int3-1-0") == 0)
@@ -107,6 +113,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 
 		delete pVendor;
 	}
+#ifndef EXCLUDE_USB_GAMEPAD
 	else if (pName->Compare ("ven54c-268") == 0)
 	{
 		pResult = new CUSBGamePadPS3Device (pParent);
@@ -133,11 +140,15 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBGamePadSwitchProDevice (pParent);
 	}
+#endif
+#ifndef EXCLUDE_USB_PRINTER
 	else if (   pName->Compare ("int7-1-1") == 0
 		 || pName->Compare ("int7-1-2") == 0)
 	{
 		pResult = new CUSBPrinterDevice (pParent);
 	}
+#endif
+#ifndef EXCLUDE_USB_NET
 	else if (pName->Compare ("ven424-ec00") == 0)
 	{
 		pResult = new CSMSC951xDevice (pParent);
@@ -146,16 +157,22 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CLAN7800Device (pParent);
 	}
+#endif
+#ifndef EXCLUDE_USB_BLUETOOTH
 	else if (   pName->Compare ("inte0-1-1") == 0
 		 || pName->Compare ("ven50d-65a") == 0)		// Belkin F8T065BF Mini Bluetooth 4.0 Adapter
 	{
 		pResult = new CUSBBluetoothDevice (pParent);
 	}
+#endif
+#ifndef EXCLUDE_USB_MIDI
 	else if (   pName->Compare ("int1-3-0") == 0
 		 || pName->Compare ("ven582-12a") == 0)		// Roland UM-ONE MIDI interface
 	{
 		pResult = new CUSBMIDIHostDevice (pParent);
 	}
+#endif
+#ifndef EXCLUDE_USB_AUDIO
 #if RASPPI >= 4
 	else if (   pName->Compare ("int1-1-0") == 0
 		 || pName->Compare ("int1-1-20") == 0)
@@ -168,10 +185,14 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		pResult = new CUSBAudioStreamingDevice (pParent);
 	}
 #endif
+#endif
+#ifndef EXCLUDE_USB_NET
 	else if (pName->Compare ("int2-6-0") == 0)
 	{
 		pResult = new CUSBCDCEthernetDevice (pParent);
 	}
+#endif
+#ifndef EXCLUDE_USB_SERIAL
 	else if (   pName->Compare ("int2-2-0") == 0
 		 || pName->Compare ("int2-2-1") == 0)
 	{
@@ -193,6 +214,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBSerialFT231XDevice (pParent);
 	}
+#endif
 	// new devices follow
 
 	if (pResult != 0)
@@ -207,6 +229,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 
 CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 {
+#ifndef EXCLUDE_USB_TOUCHSCREEN
 	// Must copy parent function here, because we consume the HID report descriptor,
 	// which is requested again later by the HID Use Page specific driver class.
 	CUSBFunction TempFunction (pParent);
@@ -280,8 +303,13 @@ CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 			return new CUSBTouchScreenDevice (pParent);
 		}
 	}
+#endif
 
+#ifndef EXCLUDE_USB_GAMEPAD
 	return new CUSBGamePadStandardDevice (pParent);
+#else
+	return 0;
+#endif
 }
 
 boolean CUSBDeviceFactory::FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable)

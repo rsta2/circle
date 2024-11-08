@@ -28,6 +28,11 @@
 #include <circle/bcm2835.h>
 
 //
+// SoC stepping register
+//
+#define ARM_SOC_STEPPING	0x1001504004UL
+
+//
 // Second level interrupt controller (RP1)
 //
 #define ARM_RP1_INTC		0x1F00108000UL

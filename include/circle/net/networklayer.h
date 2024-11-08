@@ -85,6 +85,11 @@ public:
 				     u16 *pSendPort, u16 *pReceivePort,
 				     int *pProtocol);
 
+	void EnableReceiveICMP (boolean bEnable);
+	// pBuffer must have size FRAME_BUFFER_SIZE
+	boolean ReceiveICMP (void *pBuffer, unsigned *pResultLength,
+			     CIPAddress *pSender, CIPAddress *pReceiver);
+
 private:
 	void AddRoute (const u8 *pDestIP, const u8 *pGatewayIP);
 	const u8 *GetGateway (const u8 *pDestIP) const;
@@ -102,6 +107,8 @@ private:
 	CNetQueue m_RxQueue;
 	CNetQueue m_ICMPRxQueue;
 	CNetQueue m_ICMPNotificationQueue;
+
+	CNetQueue *m_pICMPRxQueue2;
 
 	CRouteCache m_RouteCache;
 };
