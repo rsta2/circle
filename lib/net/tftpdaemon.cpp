@@ -2,7 +2,7 @@
 // tftpdaemon.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -313,8 +313,8 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 				}
 
 				if (   nResult == sizeof AckPacket
-				    || AckPacket.OpCode == BE (OP_CODE_ACK)
-				    || AckPacket.BlockNumber == le2be16 (usBlockNumber))
+				    && AckPacket.OpCode == BE (OP_CODE_ACK)
+				    && AckPacket.BlockNumber == le2be16 (usBlockNumber))
 				{
 					break;
 				}
