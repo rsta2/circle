@@ -80,7 +80,7 @@ CMouseBehaviour::~CMouseBehaviour (void)
 	}
 }
 
-boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
+boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight, boolean bCursor)
 {
 	assert (m_nScreenWidth == 0);
 	m_nScreenWidth = nScreenWidth;
@@ -90,10 +90,17 @@ boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
 	m_nScreenHeight = nScreenHeight;
 	assert (m_nScreenHeight > 0);
 
+	m_bCursor = bCursor;
+
 	m_nPosX = (m_nScreenWidth+1) / 2;
 	m_nPosY = (m_nScreenHeight+1) / 2;
 
 #if RASPPI <= 4
+	if (!m_bCursor)
+	{
+		return TRUE;
+	}
+
 	CBcmPropertyTags Tags;
 	TPropertyTagSetCursorInfo TagSetCursorInfo;
 	TagSetCursorInfo.nWidth = CURSOR_WIDTH;
@@ -259,6 +266,11 @@ void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX,
 boolean CMouseBehaviour::SetCursorState (unsigned nPosX, unsigned nPosY, boolean bVisible)
 {
 #if RASPPI <= 4
+	if (!m_bCursor)
+	{
+		return TRUE;
+	}
+
 	CBcmPropertyTags Tags;
 	TPropertyTagSetCursorState TagSetCursorState;
 	TagSetCursorState.nEnable = bVisible ? CURSOR_ENABLE_VISIBLE : CURSOR_ENABLE_INVISIBLE;
