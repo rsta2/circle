@@ -2,7 +2,7 @@
 // bcmframebuffer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,10 @@
 #ifndef _circle_bcmframebuffer_h
 #define _circle_bcmframebuffer_h
 
+#include <circle/display.h>
 #include <circle/bcmpropertytags.h>
+#include <circle/dmachannel.h>
+#include <circle/sysconfig.h>
 #include <circle/types.h>
 
 #define PALETTE_ENTRIES		256
@@ -35,7 +38,7 @@ struct TBcmFrameBufferInitTags
 	TPropertyTagSimple		GetPitch;
 };
 
-class CBcmFrameBuffer
+class CBcmFrameBuffer : public CDisplay
 {
 public:
 	CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nDepth,
@@ -47,6 +50,12 @@ public:
 	void SetPalette32 (u8 nIndex, u32 nRGBA);	// with Depth <= 8 only
 
 	boolean Initialize (void);
+
+	void SetPixel (unsigned nPosX, unsigned nPosY, TRawColor nColor);
+
+	void SetArea (const TArea &rArea, const void *pPixels,
+		      TAreaCompletionRoutine *pRoutine = nullptr,
+		      void *pParam = nullptr);
 
 	u32 GetWidth (void) const;
 	u32 GetHeight (void) const;
@@ -74,6 +83,11 @@ public:
 private:
 	void SetDisplay (void);
 
+#ifdef SCREEN_DMA_BURST_LENGTH
+	static void DMACompletionRoutine (unsigned nChannel, unsigned nBuffer,
+					  boolean bStatus, void *pParam);
+#endif
+
 private:
 	u32 m_nWidth;
 	u32 m_nHeight;
@@ -90,6 +104,12 @@ private:
 
 	TBcmFrameBufferInitTags m_InitTags;
 	static const TBcmFrameBufferInitTags s_InitTags;
+
+#ifdef SCREEN_DMA_BURST_LENGTH
+	CDMAChannel m_DMAChannel;
+	TAreaCompletionRoutine *m_pCompletionRoutine;
+	void *m_pCompletionParam;
+#endif
 
 #if RASPPI >= 4
 	static unsigned s_nDisplays;
