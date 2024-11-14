@@ -5,7 +5,7 @@
 //	Copyright (C) 2021  Stephane Damo
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,23 +41,11 @@ static signed char sineTbl[256]=
 static unsigned g_seed;
 static unsigned shapeType;
 
-#if DEPTH == 8
-static const TScreenColor Black = NORMAL_COLOR;
-static const TScreenColor Gray  = HALF_COLOR;
-static const TScreenColor Red   = HIGH_COLOR;
-#elif DEPTH == 16
-static const TScreenColor Black = COLOR16 (0,0,0);
-static const TScreenColor Gray  = COLOR16 (10,10,10);
-static const TScreenColor Red   = COLOR16 (31,10,10);
-#elif DEPTH == 32
-static const TScreenColor Black = COLOR32 (0,0,0, 255);
-static const TScreenColor Gray  = COLOR32 (170,170,170, 255);
-static const TScreenColor Red   = COLOR32 (255,170,170, 255);
-#else
-	#error Screen DEPTH must be 8, 16 or 32!
-#endif
+static const T2DColor Black = CDisplay::Black;
+static const T2DColor Gray = CDisplay::White;
+static const T2DColor Red = CDisplay::BrightRed;
 
-static TScreenColor spriteData[64]=
+static T2DColor spriteData[64]=
 {
 	Red,Gray,Gray,Gray,Gray,Gray,Gray,Red,
 	Gray,Red,Gray,Gray,Gray,Gray,Red,Gray,
@@ -75,9 +63,11 @@ static unsigned randomNumber()
 	return (g_seed>>16)&0x7fff;
 }
 
-CGraphicShape::CGraphicShape (unsigned nDisplayWidth, unsigned nDisplayHeight)
-:	m_nDisplayWidth (nDisplayWidth),
-	m_nDisplayHeight (nDisplayHeight)
+CGraphicShape::CGraphicShape (C2DGraphics *p2DGraphics)
+:	m_p2DGraphics (p2DGraphics),
+	m_nDisplayWidth (p2DGraphics->GetWidth ()),
+	m_nDisplayHeight (p2DGraphics->GetHeight ()),
+	m_Sprite (p2DGraphics)
 {
 	m_nSpeed = 0.5f+(randomNumber() % 256)*0.1f;
 
@@ -98,26 +88,23 @@ CGraphicShape::CGraphicShape (unsigned nDisplayWidth, unsigned nDisplayHeight)
 		m_nParam2 = 2+(randomNumber() % 32);
 	}
 
-#if DEPTH == 8
-	m_Color = randomNumber() % 16;
-#elif DEPTH == 16
-	m_Color = randomNumber();
-#elif DEPTH == 32
-	m_Color = COLOR32 (randomNumber() % 256, randomNumber() % 256, randomNumber() % 256, 255);
-#else
-	#error Screen DEPTH must be 8, 16 or 32!
-#endif
+	m_Color = COLOR2D (randomNumber() % 256, randomNumber() % 256, randomNumber() % 256);
 	
 	m_nPosX = randomNumber()%m_nDisplayWidth;
 	
 	m_nPosY = randomNumber()%m_nDisplayHeight;
+
+	if (m_nType == GRAPHICSHAPE_SPRITE_TRANSPARENTCOLOR)
+	{
+		m_Sprite.Set (8, 8, spriteData);
+	}
 }
 
 CGraphicShape::~CGraphicShape (void)
 {
 }
 
-void CGraphicShape::Draw (C2DGraphics* renderer)
+void CGraphicShape::Draw (void)
 {
 	m_nPosX += m_nSpeed * sineTbl[(m_nAngle+64)%256]*(1.f/128)*0.1f;
 	m_nPosY += m_nSpeed * sineTbl[m_nAngle]*(1.f/128)*0.1f;
@@ -145,31 +132,33 @@ void CGraphicShape::Draw (C2DGraphics* renderer)
 	switch(m_nType)
 	{
 		case GRAPHICSHAPE_RECT:
-			renderer->DrawRect(m_nPosX, m_nPosY, m_nParam1, m_nParam2, m_Color);
+			m_p2DGraphics->DrawRect(m_nPosX, m_nPosY, m_nParam1, m_nParam2, m_Color);
 			break;
 			
 		case GRAPHICSHAPE_OUTLINE:
-			renderer->DrawRectOutline(m_nPosX, m_nPosY, m_nParam1, m_nParam2, m_Color);
+			m_p2DGraphics->DrawRectOutline(m_nPosX, m_nPosY, m_nParam1, m_nParam2, m_Color);
 			break;
 			
 		case GRAPHICSHAPE_LINE:
-			renderer->DrawLine(m_nPosX, m_nPosY, m_nPosX+m_nParam1, m_nPosY+m_nParam2, m_Color);
+			m_p2DGraphics->DrawLine(m_nPosX, m_nPosY, m_nPosX+m_nParam1, m_nPosY+m_nParam2, m_Color);
 			break;
 			
 		case GRAPHICSHAPE_CIRCLE:
-			renderer->DrawCircle(m_nPosX, m_nPosY, m_nParam1, m_Color);
+			m_p2DGraphics->DrawCircle(m_nPosX, m_nPosY, m_nParam1, m_Color);
 			break;
 			
 		case GRAPHICSHAPE_CIRCLEOUTLINE:
-			renderer->DrawCircleOutline(m_nPosX, m_nPosY, m_nParam1, m_Color);
+			m_p2DGraphics->DrawCircleOutline(m_nPosX, m_nPosY, m_nParam1, m_Color);
 			break;
 			
 		case GRAPHICSHAPE_SPRITE_TRANSPARENTCOLOR:
-			renderer->DrawImageTransparent(m_nPosX, m_nPosY, 8, 8, spriteData, Black);
+			m_p2DGraphics->DrawImageTransparent(m_nPosX, m_nPosY,
+						       m_Sprite.GetWidth (), m_Sprite.GetHeight (),
+						       m_Sprite.GetPixels (), Black);
 			break;
 
 		case GRAPHICSHAPE_TEXT:
-			renderer->DrawText(m_nPosX, m_nPosY, m_Color, "Hello Circle!", C2DGraphics::AlignCenter);
+			m_p2DGraphics->DrawText(m_nPosX, m_nPosY, m_Color, "Hello Circle!", C2DGraphics::AlignCenter);
 			break;
 	}
 	

@@ -5,7 +5,7 @@
 //	Copyright (C) 2021  Stephane Damo
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 #ifndef _graphicshape_h
 #define _graphicshape_h
 
-#include <circle/screen.h>
 #include <circle/2dgraphics.h>
 
 enum
@@ -41,12 +40,13 @@ enum
 class CGraphicShape
 {
 public:
-	CGraphicShape (unsigned nDisplayWidth, unsigned nDisplayHeight);
+	CGraphicShape (C2DGraphics *p2DGraphics);
 	~CGraphicShape (void);
 
-	void Draw(C2DGraphics* renderer);
+	void Draw (void);
 
 private:
+	C2DGraphics *m_p2DGraphics;
 	unsigned m_nDisplayWidth;
 	unsigned m_nDisplayHeight;
 	unsigned m_nType;
@@ -56,7 +56,8 @@ private:
 	float m_nSpeed;
 	unsigned m_nParam1;
 	unsigned m_nParam2;
-	TScreenColor m_Color;
+	T2DColor m_Color;
+	C2DImage m_Sprite;
 };
 
 #endif
