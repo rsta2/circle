@@ -249,8 +249,10 @@
 // over 2 are normally not useful, because the system bus gets congested
 // with it.
 
+#ifndef NO_SCREEN_DMA_BURST_LENGTH
 #ifndef SCREEN_DMA_BURST_LENGTH
 #define SCREEN_DMA_BURST_LENGTH	2
+#endif
 #endif
 
 // CALIBRATE_DELAY activates the calibration of the delay loop. Because
