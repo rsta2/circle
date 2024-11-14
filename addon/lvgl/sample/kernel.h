@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,6 +34,11 @@
 #include <lvgl/lvgl.h>
 #include <circle/types.h>
 
+#ifdef USE_ST7789
+	#include <circle/spimaster.h>
+	#include <display/st7789display.h>
+#endif
+
 enum TShutdownMode
 {
 	ShutdownNone,
@@ -64,7 +69,13 @@ private:
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
 
+#ifdef USE_ST7789
+	CSPIMaster		m_SPIMaster;
+	CST7789Display		m_ST7789;
+#else
 	CRPiTouchScreen		m_RPiTouchScreen;
+#endif
+
 	CLVGL			m_GUI;
 };
 
