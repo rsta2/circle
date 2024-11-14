@@ -122,6 +122,9 @@ boolean CLVGL::Initialize (void)
 	{
 		if (m_pMouseDevice->Setup (nWidth, nHeight, FALSE))
 		{
+			m_PointerData.point.x = (nWidth+1) / 2;
+			m_PointerData.point.y = (nHeight+1) / 2;
+
 			m_pMouseDevice->ShowCursor (TRUE);
 
 			m_pMouseDevice->RegisterEventHandler (MouseEventHandler);
@@ -180,6 +183,9 @@ void CLVGL::Update (boolean bPlugAndPlayUpdated)
 			if (m_pMouseDevice->Setup (m_pDisplay->GetWidth (),
 						   m_pDisplay->GetHeight (), FALSE))
 			{
+				m_PointerData.point.x = (m_pDisplay->GetWidth ()+1) / 2;
+				m_PointerData.point.y = (m_pDisplay->GetHeight ()+1) / 2;
+
 				m_pMouseDevice->ShowCursor (TRUE);
 
 				m_pMouseDevice->RegisterEventHandler (MouseEventHandler);
