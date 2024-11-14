@@ -17,6 +17,7 @@ Base library
 * CDevice: Base class for all devices
 * CDeviceNameService: Devices can be registered by name and retrieved later by this name
 * CDeviceTreeBlob: Simple Devicetree blob parser
+* CDisplay: Base class for dot-matrix display drivers.
 * CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
 * CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
 * CDMAChannelRP1: RP1 platform DMA controller support (for Raspberry Pi 5).
