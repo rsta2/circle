@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 //
 #include <display/st7789display.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 #define ST7789_NOP	0x00
@@ -51,6 +52,7 @@
 #define ST7789_MADCTL	0x36
 #define ST7789_COLMOD	0x3A
 
+#define RAMCTRL		0xB0
 #define ST7789_FRMCTR1	0xB1
 #define ST7789_FRMCTR2	0xB2
 #define ST7789_FRMCTR3	0xB3
@@ -86,8 +88,9 @@ CST7789Display::CST7789Display (CSPIMaster *pSPIMaster,
 				unsigned nDCPin, unsigned nResetPin, unsigned nBackLightPin,
 				unsigned nWidth, unsigned nHeight,
 				unsigned CPOL, unsigned CPHA, unsigned nClockSpeed,
-				unsigned nChipSelect)
-:	m_pSPIMaster (pSPIMaster),
+				unsigned nChipSelect, boolean bSwapColorBytes)
+:	CDisplay (bSwapColorBytes ? RGB565_BE : RGB565),
+	m_pSPIMaster (pSPIMaster),
 	m_nResetPin (nResetPin),
 	m_nBackLightPin (nBackLightPin),
 	m_nWidth (nWidth),
@@ -96,8 +99,8 @@ CST7789Display::CST7789Display (CSPIMaster *pSPIMaster,
 	m_CPHA (CPHA),
 	m_nClockSpeed (nClockSpeed),
 	m_nChipSelect (nChipSelect),
-	m_DCPin (nDCPin, GPIOModeOutput),
-	m_pTimer (CTimer::Get ())
+	m_bSwapColorBytes (bSwapColorBytes),
+	m_DCPin (nDCPin, GPIOModeOutput)
 {
 	assert (nDCPin != None);
 
@@ -119,27 +122,26 @@ CST7789Display::CST7789Display (CSPIMaster *pSPIMaster,
 boolean CST7789Display::Initialize (void)
 {
 	assert (m_pSPIMaster != 0);
-	assert (m_pTimer != 0);
 
 	if (m_nBackLightPin != None)
 	{
 		m_BackLightPin.Write (LOW);
-		m_pTimer->MsDelay (100);
+		CTimer::SimpleMsDelay (100);
 		m_BackLightPin.Write (HIGH);
 	}
 
 	if (m_nResetPin != None)
 	{
 		m_ResetPin.Write (HIGH);
-		m_pTimer->MsDelay (50);
+		CTimer::SimpleMsDelay (50);
 		m_ResetPin.Write (LOW);
-		m_pTimer->MsDelay (50);
+		CTimer::SimpleMsDelay (50);
 		m_ResetPin.Write (HIGH);
-		m_pTimer->MsDelay (50);
+		CTimer::SimpleMsDelay (50);
 	}
 
 	Command (ST7789_SWRESET);	// Software reset
-	m_pTimer->MsDelay (150);
+	CTimer::SimpleMsDelay (150);
 
 	Command (ST7789_MADCTL);
 	Data (0x70);
@@ -153,6 +155,10 @@ boolean CST7789Display::Initialize (void)
 
 	Command (ST7789_COLMOD);
 	Data (0x05);
+
+	Command (RAMCTRL);		// Set Endian Mode
+	Data (0x00);
+	Data (m_bSwapColorBytes ? 0xF0 : 0xF8);
 
 	Command (ST7789_GCTRL);
 	Data (0x14);
@@ -232,10 +238,8 @@ void CST7789Display::SetRotation (unsigned nRot)
 
 void CST7789Display::On (void)
 {
-	assert (m_pTimer != 0);
-
 	Command (ST7789_DISPON);
-	m_pTimer->MsDelay (100);
+	CTimer::SimpleMsDelay (100);
 }
 
 void CST7789Display::Off (void)
@@ -388,6 +392,41 @@ void CST7789Display::DrawText (unsigned nPosX, unsigned nPosY, const char *pStri
 		SendData (Buffer, sizeof Buffer);
 
 		nPosX += nCharWidth;
+	}
+}
+
+void CST7789Display::SetPixel (unsigned nPosX, unsigned nPosY, TRawColor nColor)
+{
+	SetWindow (nPosX, nPosY, nPosX, nPosY);
+
+	u16 usColor = (u16) nColor;
+	SendData (&usColor, sizeof usColor);
+}
+
+void CST7789Display::SetArea (const TArea &rArea, const void *pPixels,
+			      TAreaCompletionRoutine *pRoutine, void *pParam)
+{
+	SetWindow (rArea.x1, rArea.y1, rArea.x2, rArea.y2);
+
+	size_t ulSize = (rArea.y2 - rArea.y1 + 1) * (rArea.x2 - rArea.x1 + 1) * sizeof (u16);
+	while (ulSize)
+	{
+		// The BCM2835 SPI master has a transfer size limit.
+		// TODO: Request this parameter from the SPI master driver.
+		const size_t MaxTransferSize = 0xFFFC;
+
+		size_t ulBlockSize = ulSize >= MaxTransferSize ? MaxTransferSize : ulSize;
+
+		SendData (pPixels, ulBlockSize);
+
+		pPixels = (const void *) ((uintptr) pPixels + ulBlockSize);
+
+		ulSize -= ulBlockSize;
+	}
+
+	if (pRoutine)
+	{
+		(*pRoutine) (pParam);
 	}
 }
 
