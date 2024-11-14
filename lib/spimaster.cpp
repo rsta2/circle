@@ -2,7 +2,7 @@
 // spimaster.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -305,7 +305,7 @@ int CSPIMaster::WriteRead (unsigned nChipSelect, const void *pWriteBuffer, void 
 
 	if (m_nCSHoldTime > 0)
 	{
-		CTimer::Get ()->usDelay (m_nCSHoldTime);
+		CTimer::SimpleusDelay (m_nCSHoldTime);
 
 		m_nCSHoldTime = 0;
 	}
