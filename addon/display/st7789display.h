@@ -110,7 +110,7 @@ public:
 	/// \brief Set a single pixel to color
 	/// \param nPosX X-position (0..width-1)
 	/// \param nPosY Y-postion (0..height-1)
-	/// \param Color Raw color value (RGB565 or RGB565_BE)
+	/// \param nColor Raw color value (RGB565 or RGB565_BE)
 	/// \note This method does not support display rotation.
 	void SetPixel (unsigned nPosX, unsigned nPosY, TRawColor nColor);
 
