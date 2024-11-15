@@ -157,21 +157,22 @@ boolean C2DGraphics::Initialize (void)
 		m_pDisplay = m_pFrameBuffer;
 	
 #if DEPTH == 8
-		m_pFrameBuffer->SetPalette (RED_COLOR, RED_COLOR16);
-		m_pFrameBuffer->SetPalette (GREEN_COLOR, GREEN_COLOR16);
-		m_pFrameBuffer->SetPalette (YELLOW_COLOR, YELLOW_COLOR16);
-		m_pFrameBuffer->SetPalette (BLUE_COLOR, BLUE_COLOR16);
-		m_pFrameBuffer->SetPalette (MAGENTA_COLOR, MAGENTA_COLOR16);
-		m_pFrameBuffer->SetPalette (CYAN_COLOR, CYAN_COLOR16);
-		m_pFrameBuffer->SetPalette (WHITE_COLOR, WHITE_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_BLACK_COLOR, BRIGHT_BLACK_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_RED_COLOR, BRIGHT_RED_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_GREEN_COLOR, BRIGHT_GREEN_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_YELLOW_COLOR, BRIGHT_YELLOW_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_BLUE_COLOR, BRIGHT_BLUE_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_MAGENTA_COLOR, BRIGHT_MAGENTA_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_CYAN_COLOR, BRIGHT_CYAN_COLOR16);
-		m_pFrameBuffer->SetPalette (BRIGHT_WHITE_COLOR, BRIGHT_WHITE_COLOR16);
+		m_pFrameBuffer->SetPalette (0, BLACK_COLOR);
+		m_pFrameBuffer->SetPalette (1, RED_COLOR16);
+		m_pFrameBuffer->SetPalette (2, GREEN_COLOR16);
+		m_pFrameBuffer->SetPalette (3, YELLOW_COLOR16);
+		m_pFrameBuffer->SetPalette (4, BLUE_COLOR16);
+		m_pFrameBuffer->SetPalette (5, MAGENTA_COLOR16);
+		m_pFrameBuffer->SetPalette (6, CYAN_COLOR16);
+		m_pFrameBuffer->SetPalette (7, WHITE_COLOR16);
+		m_pFrameBuffer->SetPalette (8, BRIGHT_BLACK_COLOR16);
+		m_pFrameBuffer->SetPalette (9, BRIGHT_RED_COLOR16);
+		m_pFrameBuffer->SetPalette (10, BRIGHT_GREEN_COLOR16);
+		m_pFrameBuffer->SetPalette (11, BRIGHT_YELLOW_COLOR16);
+		m_pFrameBuffer->SetPalette (12, BRIGHT_BLUE_COLOR16);
+		m_pFrameBuffer->SetPalette (13, BRIGHT_MAGENTA_COLOR16);
+		m_pFrameBuffer->SetPalette (14, BRIGHT_CYAN_COLOR16);
+		m_pFrameBuffer->SetPalette (15, BRIGHT_WHITE_COLOR16);
 #endif
 
 		if (!m_pFrameBuffer || !m_pFrameBuffer->Initialize ())
