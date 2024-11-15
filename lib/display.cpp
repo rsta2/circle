@@ -114,7 +114,26 @@ CDisplay::TColor CDisplay::GetColor (TRawColor nColor) const
 		return nColor ? BrightWhite : Black;
 
 	case I8:
-		return (TColor) nColor;
+		switch (nColor)
+		{
+		default:
+		case 0:		return Black;
+		case 1:		return Red;
+		case 2:		return Green;
+		case 3:		return Yellow;
+		case 4:		return Blue;
+		case 5:		return Magenta;
+		case 6:		return Cyan;
+		case 7:		return White;
+		case 8:		return BrightBlack;
+		case 9:		return BrightRed;
+		case 10:	return BrightGreen;
+		case 11:	return BrightYellow;
+		case 12:	return BrightBlue;
+		case 13:	return BrightMagenta;
+		case 14:	return BrightCyan;
+		case 15:	return BrightWhite;
+		}
 
 	default:
 		return Black;
