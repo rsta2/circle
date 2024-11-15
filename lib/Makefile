@@ -24,7 +24,7 @@ OBJS	= actled.o alloc.o assert.o display.o bcmframebuffer.o bcmmailbox.o \
 	  dmachannel.o \
 	  koptions.o \
 	  logger.o machineinfo.o multicore.o nulldevice.o ptrarray.o ptrlist.o \
-	  qemu.o screen.o serial.o \
+	  qemu.o terminal.o screen.o serial.o \
 	  spinlock.o \
 	  string.o sysinit.o time.o timer.o tracer.o util.o \
 	  util_fast.o virtualgpiopin.o chainboot.o macaddress.o netdevice.o \
