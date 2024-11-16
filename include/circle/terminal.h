@@ -67,11 +67,16 @@ public:
 	/// \return Number of written characters
 	int Write (const void *pBuffer, size_t nCount) override;
 
-	/// \brief Set a pixel to a specific color
+	/// \brief Set a pixel to a specific logical color
 	/// \param nPosX X-Position of the pixel (based on 0)
 	/// \param nPosY Y-Position of the pixel (based on 0)
-	/// \param Color The color to be set
+	/// \param Color The logical color to be set
 	void SetPixel (unsigned nPosX, unsigned nPosY, TTerminalColor Color);
+	/// \brief Set a pixel to a specific raw color
+	/// \param nPosX X-Position of the pixel (based on 0)
+	/// \param nPosY Y-Position of the pixel (based on 0)
+	/// \param nColor The raw color to be set
+	void SetPixel (unsigned nPosX, unsigned nPosY, CDisplay::TRawColor nColor);
 	/// \brief Get the color value of a pixel
 	/// \param nPosX X-Position of the pixel (based on 0)
 	/// \param nPosY Y-Position of the pixel (based on 0)
@@ -85,6 +90,39 @@ public:
 
 	/// \brief Enables a block cursor instead of the default underline
 	void SetCursorBlock (boolean bCursorBlock);
+
+public:
+	/// \brief Set a pixel to a specific raw color
+	/// \param nPosX X-Position of the pixel (based on 0)
+	/// \param nPosY Y-Position of the pixel (based on 0)
+	/// \param nColor The raw color to be set
+	/// \note This method allows the direct access to the internal buffer.
+	void SetRawPixel (unsigned nPosX, unsigned nPosY, CDisplay::TRawColor nColor)
+	{
+		switch (m_nDepth)
+		{
+		case 8:		m_pBuffer8[m_nWidth * nPosY + nPosX] = (u8) nColor;	break;
+		case 16:	m_pBuffer16[m_nWidth * nPosY + nPosX] = (u16) nColor;	break;
+		case 32:	m_pBuffer32[m_nWidth * nPosY + nPosX] = nColor;		break;
+		}
+	}
+
+	/// \brief Get the raw color value of a pixel
+	/// \param nPosX X-Position of the pixel (based on 0)
+	/// \param nPosY Y-Position of the pixel (based on 0)
+	/// \return The requested raw color value
+	/// \note This method allows the direct access to the internal buffer.
+	CDisplay::TRawColor GetRawPixel (unsigned nPosX, unsigned nPosY)
+	{
+		switch (m_nDepth)
+		{
+		case 8:		return m_pBuffer8[m_nWidth * nPosY + nPosX];
+		case 16:	return m_pBuffer16[m_nWidth * nPosY + nPosX];
+		case 32:	return m_pBuffer32[m_nWidth * nPosY + nPosX];
+		}
+
+		return 0;
+	}
 
 private:
 	void Write (char chChar);
@@ -120,28 +158,7 @@ private:
 	void InvertCursor (void);
 
 private:
-	void SetRawPixel (unsigned nPosX, unsigned nPosY, CDisplay::TRawColor nColor)
-	{
-		switch (m_nDepth)
-		{
-		case 8:		m_pBuffer8[m_nWidth * nPosY + nPosX] = (u8) nColor;	break;
-		case 16:	m_pBuffer16[m_nWidth * nPosY + nPosX] = (u16) nColor;	break;
-		case 32:	m_pBuffer32[m_nWidth * nPosY + nPosX] = nColor;		break;
-		}
-	}
-
-	CDisplay::TRawColor GetRawPixel (unsigned nPosX, unsigned nPosY)
-	{
-		switch (m_nDepth)
-		{
-		case 8:		return m_pBuffer8[m_nWidth * nPosY + nPosX];
-		case 16:	return m_pBuffer16[m_nWidth * nPosY + nPosX];
-		case 32:	return m_pBuffer32[m_nWidth * nPosY + nPosX];
-		}
-
-		return 0;
-	}
-
+	// We always update entire pixel lines.
 	void SetUpdateArea (unsigned nPosY1, unsigned nPosY2)
 	{
 		if (nPosY1 < m_UpdateArea.y1)

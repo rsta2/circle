@@ -203,7 +203,18 @@ int CTerminalDevice::Write (const void *pBuffer, size_t nCount)
 
 void CTerminalDevice::SetPixel (unsigned nPosX, unsigned nPosY, TTerminalColor Color)
 {
-	m_pDisplay->SetPixel (nPosX, nPosY, m_pDisplay->GetColor (Color));
+	CDisplay::TRawColor nColor = m_pDisplay->GetColor (Color);
+
+	SetRawPixel (nPosX, nPosY, nColor);
+
+	m_pDisplay->SetPixel (nPosX, nPosY, nColor);
+}
+
+void CTerminalDevice::SetPixel (unsigned nPosX, unsigned nPosY, CDisplay::TRawColor nColor)
+{
+	SetRawPixel (nPosX, nPosY, nColor);
+
+	m_pDisplay->SetPixel (nPosX, nPosY, nColor);
 }
 
 TTerminalColor CTerminalDevice::GetPixel (unsigned nPosX, unsigned nPosY)
