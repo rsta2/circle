@@ -1,9 +1,9 @@
 //
-// screen.h
+/// \file screen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -22,11 +22,9 @@
 
 #include <circle/device.h>
 #include <circle/bcmframebuffer.h>
+#include <circle/terminal.h>
 #include <circle/chargenerator.h>
-#include <circle/dmachannel.h>
-#include <circle/spinlock.h>
 #include <circle/sysconfig.h>
-#include <circle/macros.h>
 #include <circle/types.h>
 
 #ifndef DEPTH
@@ -38,7 +36,6 @@
 					| ((green) & 0x1F) << 6 \
 					| ((blue) & 0x1F))
 
-// BGRA (was RGBA with older firmware)
 #define COLOR32(red, green, blue, alpha)  (((blue) & 0xFF)       \
 					| ((green) & 0xFF) << 8  \
 					| ((red) & 0xFF)   << 16 \
@@ -69,7 +66,7 @@
 	#define BRIGHT_MAGENTA_COLOR16		COLOR16 (255 >> 3, 85 >> 3, 255 >> 3)
 	#define BRIGHT_CYAN_COLOR16		COLOR16 (85 >> 3, 255 >> 3, 255 >> 3)
 	#define BRIGHT_WHITE_COLOR16		COLOR16 (255 >> 3, 255 >> 3, 255 >> 3)
-	
+
 	#define RED_COLOR			1
 	#define GREEN_COLOR			2
 	#define YELLOW_COLOR			3
@@ -129,32 +126,14 @@
 	#error DEPTH must be 8, 16 or 32
 #endif
 
-struct TScreenStatus
-{
-	TScreenColor   *pContent;
-	unsigned	nSize;
-	unsigned	nState;
-	unsigned	nScrollStart;
-	unsigned	nScrollEnd;
-	unsigned	nCursorX;
-	unsigned	nCursorY;
-	boolean		bCursorOn;
-	boolean		bCursorBlock;
-	TScreenColor	Color;
-	TScreenColor	BackgroundColor;
-	boolean		ReverseAttribute;
-	boolean		bInsertOn;
-	unsigned	nParam1;
-	unsigned	nParam2;
-	boolean		bUpdated;
-};
+/// \note For compatibility and performance this class works with raw colors.
 
 class CScreenDevice : public CDevice	/// Writing characters to screen
 {
 public:
 	/// \param nWidth   Screen width in pixels (0 for default resolution)
 	/// \param nHeight  Screen height in pixels (0 for default resolution)
-	/// \param bVirtual FALSE for physical screen, TRUE for virtual screen buffer
+	/// \param bVirtual Dummy parameter (must be FALSE)
 	/// \param nDisplay Zero-based display number (for Raspberry Pi 4)
 	CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual = FALSE,
 		       unsigned nDisplay = 0);
@@ -185,12 +164,6 @@ public:
 #ifndef SCREEN_HEADLESS
 	/// \return Pointer to frame buffer object
 	CBcmFrameBuffer *GetFrameBuffer (void);
-
-	/// \return Current screen status to be written back with SetStatus()
-	TScreenStatus GetStatus (void);
-	/// \param Status Screen status previously returned from GetStatus()
-	/// \return FALSE on failure (screen is currently updated and cannot be written)
-	boolean SetStatus (const TScreenStatus &Status);
 #endif
 
 	/// \brief Write characters to screen
@@ -220,80 +193,17 @@ public:
 	void SetCursorBlock(boolean bCursorBlock);
 
 private:
-#ifndef SCREEN_HEADLESS
-	void Write (char chChar);
-
-	void CarriageReturn (void);
-	void ClearDisplayEnd (void) MAXOPT;
-	void ClearLineEnd (void);
-	void CursorDown (void);
-	void CursorHome (void);
-	void CursorLeft (void);
-	void CursorMove (unsigned nRow, unsigned nColumn);
-	void CursorRight (void);
-	void CursorUp (void);
-	void DeleteChars (unsigned nCount);
-	void DeleteLines (unsigned nCount);
-	void DisplayChar (char chChar);
-	void EraseChars (unsigned nCount);
-	TScreenColor GetTextBackgroundColor (void);
-	TScreenColor GetTextColor (void);
-	void InsertLines (unsigned nCount);
-	void InsertMode (boolean bBegin);
-	void NewLine (void);
-	void ReverseScroll (void);
-	void SetCursorMode (boolean bVisible);
-	void SetScrollRegion (unsigned nStartRow, unsigned nEndRow);
-	void SetStandoutMode (unsigned nMode);
-	void Tabulator (void);
-
-	void Scroll (void) MAXOPT;
-
-	void DisplayChar (char chChar, unsigned nPosX, unsigned nPosY, TScreenColor Color);
-	void EraseChar (unsigned nPosX, unsigned nPosY);
-	void InvertCursor (void);
-#endif
-
-private:
 	unsigned	 m_nInitWidth;
 	unsigned	 m_nInitHeight;
-#ifndef SCREEN_HEADLESS
-	boolean		 m_bVirtual;
-#endif
 	unsigned	 m_nDisplay;
 #ifndef SCREEN_HEADLESS
 	CBcmFrameBuffer	*m_pFrameBuffer;
-#endif
-	CCharGenerator	 m_CharGen;
-#ifndef SCREEN_HEADLESS
-	TScreenColor	*m_pCursorPixels;
-	TScreenColor  	*m_pBuffer;
-	unsigned	 m_nSize;
-	unsigned	 m_nPitch;
-#endif
+	CTerminalDevice	*m_pTerminal;
+#else
 	unsigned	 m_nWidth;
 	unsigned	 m_nHeight;
 	unsigned	 m_nUsedHeight;
-#ifndef SCREEN_HEADLESS
-	unsigned	 m_nState;
-	unsigned	 m_nScrollStart;
-	unsigned	 m_nScrollEnd;
-	unsigned	 m_nCursorX;
-	unsigned	 m_nCursorY;
-	boolean		 m_bCursorOn;
-	boolean		 m_bCursorBlock;
-	boolean		 m_bCursorVisible;
-	TScreenColor	 m_Color;
-	TScreenColor	 m_BackgroundColor;
-	boolean		 m_ReverseAttribute;
-	boolean		 m_bInsertOn;
-	unsigned	 m_nParam1;
-	unsigned	 m_nParam2;
-	boolean		 m_bUpdated;
-#ifdef SCREEN_DMA_BURST_LENGTH
-	CDMAChannel	 m_DMAChannel;
-#endif
-	CSpinLock	 m_SpinLock;
+	CCharGenerator	 m_CharGen;
 #endif
 };
 
