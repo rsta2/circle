@@ -203,6 +203,12 @@ int CTerminalDevice::Write (const void *pBuffer, size_t nCount)
 
 void CTerminalDevice::SetPixel (unsigned nPosX, unsigned nPosY, TTerminalColor Color)
 {
+	if (   nPosX >= m_nWidth
+	    || nPosY >= m_nHeight)
+	{
+		return;
+	}
+
 	CDisplay::TRawColor nColor = m_pDisplay->GetColor (Color);
 
 	SetRawPixel (nPosX, nPosY, nColor);
@@ -212,6 +218,12 @@ void CTerminalDevice::SetPixel (unsigned nPosX, unsigned nPosY, TTerminalColor C
 
 void CTerminalDevice::SetPixel (unsigned nPosX, unsigned nPosY, CDisplay::TRawColor nColor)
 {
+	if (   nPosX >= m_nWidth
+	    || nPosY >= m_nHeight)
+	{
+		return;
+	}
+
 	SetRawPixel (nPosX, nPosY, nColor);
 
 	m_pDisplay->SetPixel (nPosX, nPosY, nColor);
@@ -219,6 +231,12 @@ void CTerminalDevice::SetPixel (unsigned nPosX, unsigned nPosY, CDisplay::TRawCo
 
 TTerminalColor CTerminalDevice::GetPixel (unsigned nPosX, unsigned nPosY)
 {
+	if (   nPosX >= m_nWidth
+	    || nPosY >= m_nHeight)
+	{
+		return CDisplay::Black;
+	}
+
 	return m_pDisplay->GetColor (GetRawPixel (nPosX, nPosY));
 }
 
