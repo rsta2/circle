@@ -240,31 +240,6 @@ TTerminalColor CTerminalDevice::GetPixel (unsigned nPosX, unsigned nPosY)
 	return m_pDisplay->GetColor (GetRawPixel (nPosX, nPosY));
 }
 
-void CTerminalDevice::Rotor (unsigned nIndex, unsigned nCount)
-{
-	static u8 Pos[4][2] =
-	{     // x, y
-		{0, 1},
-		{1, 0},
-		{2, 1},
-		{1, 2}
-	};
-
-	// in top right corner
-	nIndex %= Rotors;
-	unsigned nPosX = 2 + m_nWidth - (nIndex + 1) * m_CharGen.GetCharWidth ();
-	unsigned nPosY = 2;
-
-	// Remove previous pixel
-	nCount &= 4-1;
-	SetPixel (nPosX + Pos[nCount][0], nPosY + Pos[nCount][1], CDisplay::Black);
-
-	// Set next pixel
-	nCount++;
-	nCount &= 4-1;
-	SetPixel (nPosX + Pos[nCount][0], nPosY + Pos[nCount][1], CDisplay::HighColor);
-}
-
 void CTerminalDevice::SetCursorBlock (boolean bCursorBlock)
 {
 	m_bCursorBlock = bCursorBlock;

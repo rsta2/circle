@@ -193,6 +193,9 @@ public:
 	void SetCursorBlock(boolean bCursorBlock);
 
 private:
+	static const unsigned Rotors = 4;
+
+private:
 	unsigned	 m_nInitWidth;
 	unsigned	 m_nInitHeight;
 	unsigned	 m_nDisplay;

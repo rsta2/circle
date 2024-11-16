@@ -146,7 +146,27 @@ TScreenColor CScreenDevice::GetPixel (unsigned nPosX, unsigned nPosY)
 
 void CScreenDevice::Rotor (unsigned nIndex, unsigned nCount)
 {
-	m_pTerminal->Rotor (nIndex, nCount);
+	static u8 Pos[4][2] =
+	{     // x, y
+		{0, 1},
+		{1, 0},
+		{2, 1},
+		{1, 2}
+	};
+
+	// in top right corner
+	nIndex %= Rotors;
+	unsigned nPosX = 2 + m_pTerminal->GetWidth () - (nIndex + 1) * 8;
+	unsigned nPosY = 2;
+
+	// Remove previous pixel
+	nCount &= 4-1;
+	SetPixel (nPosX + Pos[nCount][0], nPosY + Pos[nCount][1], BLACK_COLOR);
+
+	// Set next pixel
+	nCount++;
+	nCount &= 4-1;
+	SetPixel (nPosX + Pos[nCount][0], nPosY + Pos[nCount][1], HIGH_COLOR);
 }
 
 void CScreenDevice::SetCursorBlock (boolean bCursorBlock)

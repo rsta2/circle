@@ -83,11 +83,6 @@ public:
 	/// \return The requested color value (CDisplay::Black if not matches)
 	TTerminalColor GetPixel (unsigned nPosX, unsigned nPosY);
 
-	/// \brief Displays rotating symbols in the upper right corner of the screen
-	/// \param nIndex Index of the rotor to be displayed (0..3)
-	/// \param nCount Phase (angle) of the current rotor symbol (0..3)
-	void Rotor (unsigned nIndex, unsigned nCount);
-
 	/// \brief Enables a block cursor instead of the default underline
 	void SetCursorBlock (boolean bCursorBlock);
 
@@ -173,8 +168,6 @@ private:
 	}
 
 private:
-	static const unsigned Rotors = 4;
-
 	enum TState
 	{
 		StateStart,
