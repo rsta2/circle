@@ -34,12 +34,15 @@ public:
 	/// \param pST7789Display
 	/// \param nColumns Display size in number of columns (max. 40)
 	/// \param nRows    Display size in number of rows (max. 4)
+	/// \param rFont    Font to be used
 	/// \param bDoubleWidth Use thicker characters on screen
 	/// \param bDoubleHeight Use higher characters on screen
 	/// \param bBlockCursor Use blinking block cursor instead of underline cursor
 	CST7789Device (CSPIMaster *pSPIMaster, CST7789Display *pST7789Display,
-		unsigned nColumns, unsigned nRows, bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE,
-		boolean bBlockCursor = FALSE);
+		       unsigned nColumns, unsigned nRows,
+		       const TFont &rFont = Font8x16,
+		       bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE,
+		       boolean bBlockCursor = FALSE);
 
 	~CST7789Device (void);
 
@@ -61,6 +64,7 @@ private:
 	unsigned m_nRows;
 	unsigned m_nCharW;
 	unsigned m_nCharH;
+	const TFont &m_rFont;
 	bool     m_bDoubleWidth;
 	bool     m_bDoubleHeight;
 

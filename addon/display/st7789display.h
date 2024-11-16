@@ -103,9 +103,11 @@ public:
 	/// \param BgColor RGB565 background color with swapped bytes (see: ST7789_COLOR())
 	/// \param bDoubleWidth default TRUE for thicker characters on screen
 	/// \param bDoubleHeight default TRUE for higher characters on screen
+	/// \param rFont Font to be used
 	void DrawText (unsigned nPosX, unsigned nPosY, const char *pString,
 		       TST7789Color Color, TST7789Color BgColor = ST7789_BLACK_COLOR,
-			bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE);
+		       bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE,
+		       const TFont &rFont = Font8x16);
 
 	/// \brief Set a single pixel to color
 	/// \param nPosX X-position (0..width-1)
@@ -154,8 +156,6 @@ private:
 	CGPIOPin m_DCPin;
 	CGPIOPin m_ResetPin;
 	CGPIOPin m_BackLightPin;
-
-	CCharGenerator m_CharGen;
 };
 
 #endif
