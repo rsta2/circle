@@ -19,19 +19,19 @@
 //
 #include <circle/screen.h>
 #include <circle/devicenameservice.h>
-#include <assert.h>
 
 #ifndef SCREEN_HEADLESS
 
-CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual,
-			      unsigned nDisplay)
+CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, const TFont &rFont,
+			      CCharGenerator::TFontFlags FontFlags, unsigned nDisplay)
 :	m_nInitWidth (nWidth),
 	m_nInitHeight (nHeight),
 	m_nDisplay (nDisplay),
+	m_rFont (rFont),
+	m_FontFlags (FontFlags),
 	m_pFrameBuffer (nullptr),
 	m_pTerminal (nullptr)
 {
-	assert (!bVirtual);
 }
 
 CScreenDevice::~CScreenDevice (void)
@@ -81,7 +81,7 @@ boolean CScreenDevice::Initialize (void)
 		return FALSE;
 	}
 
-	m_pTerminal = new CTerminalDevice (m_pFrameBuffer, m_nDisplay);
+	m_pTerminal = new CTerminalDevice (m_pFrameBuffer, m_rFont, m_FontFlags, m_nDisplay);
 	if (!m_pTerminal)
 	{
 		return FALSE;
@@ -178,11 +178,12 @@ void CScreenDevice::SetCursorBlock (boolean bCursorBlock)
 
 static const char DevicePrefix[] = "tty";
 
-CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual,
-			      unsigned nDisplay)
+CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, const TFont &rFont,
+			      CCharGenerator::TFontFlags FontFlags, unsigned nDisplay)
 :	m_nInitWidth (nWidth),
 	m_nInitHeight (nHeight),
-	m_nDisplay (nDisplay)
+	m_nDisplay (nDisplay),
+	m_CharGen (rFont, FontFlags)
 {
 }
 

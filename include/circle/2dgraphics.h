@@ -200,9 +200,12 @@ public:
 	/// \param Color Text color
 	/// \param pText 0-terminated C-string
 	/// \param Align Horizontal text alignment
-	/// \note Uses the 8x16 system font
+	/// \param rFont Font to be used
+	/// \param FontFlags Font flags
 	/// \note Background is transparent
-	void DrawText (unsigned nX, unsigned nY, T2DColor Color, const char *pText, TTextAlign Align = AlignLeft);
+	void DrawText (unsigned nX, unsigned nY, T2DColor Color, const char *pText,
+		       TTextAlign Align = AlignLeft, const TFont &rFont = DEFAULT_FONT,
+		       CCharGenerator::TFontFlags FontFlags = CCharGenerator::FontFlagsNone);
 
 	/// \brief Gets raw access to the drawing buffer
 	/// \return Pointer to the buffer
@@ -267,8 +270,6 @@ private:
 
 	boolean m_bVSync;
 	boolean m_bBufferSwapped;
-
-	CCharGenerator m_Font;
 };
 
 #endif

@@ -133,9 +133,11 @@ class CScreenDevice : public CDevice	/// Writing characters to screen
 public:
 	/// \param nWidth   Screen width in pixels (0 for default resolution)
 	/// \param nHeight  Screen height in pixels (0 for default resolution)
-	/// \param bVirtual Dummy parameter (must be FALSE)
+	/// \param rFont    Font to be used
+	/// \param FontFlags Font flags
 	/// \param nDisplay Zero-based display number (for Raspberry Pi 4)
-	CScreenDevice (unsigned nWidth, unsigned nHeight, boolean bVirtual = FALSE,
+	CScreenDevice (unsigned nWidth, unsigned nHeight, const TFont &rFont = DEFAULT_FONT,
+		       CCharGenerator::TFontFlags FontFlags = CCharGenerator::FontFlagsNone,
 		       unsigned nDisplay = 0);
 
 	~CScreenDevice (void);
@@ -200,6 +202,8 @@ private:
 	unsigned	 m_nInitHeight;
 	unsigned	 m_nDisplay;
 #ifndef SCREEN_HEADLESS
+	const TFont	&m_rFont;
+	CCharGenerator::TFontFlags m_FontFlags;
 	CBcmFrameBuffer	*m_pFrameBuffer;
 	CTerminalDevice	*m_pTerminal;
 #else

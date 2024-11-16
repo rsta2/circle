@@ -29,7 +29,8 @@ OBJS	= actled.o alloc.o assert.o display.o bcmframebuffer.o bcmmailbox.o \
 	  string.o sysinit.o time.o timer.o tracer.o util.o \
 	  util_fast.o virtualgpiopin.o chainboot.o macaddress.o netdevice.o \
 	  new.o heapallocator.o pageallocator.o setjmp.o numberpool.o \
-	  writebuffer.o 2dgraphics.o ptrlistfiq.o
+	  writebuffer.o 2dgraphics.o ptrlistfiq.o \
+	  font8x8.o font8x10.o font8x12.o font8x14.o font8x16.o
 
 OBJS32	= cache-v7.o exceptionhandler.o exceptionstub.o memory.o pagetable.o \
 	  startup.o synchronize.o

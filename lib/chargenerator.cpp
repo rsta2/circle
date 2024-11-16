@@ -3,7 +3,7 @@
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
 // Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -18,77 +18,31 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/chargenerator.h>
-#include <circle/font.h>
-#include <assert.h>
 
-#undef GIMP_HEADER			// if font saved with GIMP with .h extension
-
-#define FIRSTCHAR	0x21
-#define LASTCHAR	0xFF
-#define CHARCOUNT	(LASTCHAR - FIRSTCHAR + 1)
-
-CCharGenerator::CCharGenerator (void)
-#ifdef GIMP_HEADER
-:	m_nCharWidth (width / CHARCOUNT)
-#else
-:	m_nCharWidth (width)
-#endif
+CCharGenerator::CCharGenerator (const TFont &rFont, TFontFlags Flags)
+:	m_rFont (rFont),
+	m_nWidthMult (Flags & FontFlagsDoubleWidth ? 2 : 1),
+	m_nHeightMult (Flags & FontFlagsDoubleHeight ? 2 : 1),
+	m_nCharWidth (rFont.width * m_nWidthMult),
+	m_nCharHeight ((rFont.height + rFont.extra_height) * m_nHeightMult),
+	m_nUnderline (rFont.height * m_nHeightMult)
 {
 }
 
-CCharGenerator::~CCharGenerator (void)
-{
-}
-
-unsigned CCharGenerator::GetCharWidth (void) const
-{
-	return m_nCharWidth;
-}
-
-unsigned CCharGenerator::GetCharHeight (void) const
-{
-#ifdef GIMP_HEADER
-	return height;
-#else
-	return height + extraheight;
-#endif
-}
-
-unsigned CCharGenerator::GetUnderline (void) const
-{
-#ifdef GIMP_HEADER
-	return height-3;
-#else
-	return height;
-#endif
-}
-
-boolean CCharGenerator::GetPixel (char chAscii, unsigned nPosX, unsigned nPosY) const
+CCharGenerator::TPixelLine CCharGenerator::GetPixelLine (char chAscii, unsigned nPosY) const
 {
 	unsigned nAscii = (u8) chAscii;
-	if (   nAscii < FIRSTCHAR
-	    || nAscii > LASTCHAR)
+	if (   nAscii < m_rFont.first_char
+	    || nAscii > m_rFont.last_char
+	    || nPosY >= m_nUnderline)
 	{
 		return FALSE;
 	}
 
-	unsigned nIndex = nAscii - FIRSTCHAR;
-	assert (nIndex < CHARCOUNT);
-
-	assert (nPosX < m_nCharWidth);
-
-#ifdef GIMP_HEADER
-	assert (nPosY < height);
-	unsigned nOffset = nPosY * width + nIndex * m_nCharWidth + nPosX;
-
-	assert (nOffset < sizeof header_data / sizeof header_data[0]);
-	return header_data[nOffset] ? TRUE : FALSE;
-#else
-	if (nPosY >= height)
+	if (m_nHeightMult == 2)
 	{
-		return FALSE;
+		nPosY >>= 1;
 	}
 
-	return font_data[nIndex][nPosY] & (0x80 >> nPosX) ? TRUE : FALSE;
-#endif
+	return m_rFont.data[(nAscii - m_rFont.first_char) * m_rFont.height + nPosY];
 }

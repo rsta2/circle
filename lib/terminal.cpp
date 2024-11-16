@@ -25,9 +25,12 @@
 
 static const char DevicePrefix[] = "tty";
 
-CTerminalDevice::CTerminalDevice (CDisplay *pDisplay, unsigned nDeviceIndex)
+CTerminalDevice::CTerminalDevice (CDisplay *pDisplay, const TFont &rFont,
+				  CCharGenerator::TFontFlags FontFlags,
+				  unsigned nDeviceIndex)
 :	m_pDisplay (pDisplay),
 	m_nDeviceIndex (nDeviceIndex),
+	m_CharGen (rFont, FontFlags),
 	m_pCursorPixels (nullptr),
 	m_pBuffer8 (nullptr),
 	m_nSize (0),
@@ -914,9 +917,11 @@ void CTerminalDevice::DisplayChar (char chChar, unsigned nPosX, unsigned nPosY,
 {
 	for (unsigned y = 0; y < m_CharGen.GetCharHeight (); y++)
 	{
+		CCharGenerator::TPixelLine Line = m_CharGen.GetPixelLine (chChar, y);
+
 		for (unsigned x = 0; x < m_CharGen.GetCharWidth (); x++)
 		{
-			SetRawPixel (nPosX + x, nPosY + y,   m_CharGen.GetPixel (chChar, x, y)
+			SetRawPixel (nPosX + x, nPosY + y,   m_CharGen.GetPixel (x, Line)
 							   ? nColor : GetTextBackgroundColor ());
 		}
 	}

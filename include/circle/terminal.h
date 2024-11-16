@@ -35,8 +35,12 @@ class CTerminalDevice : public CDevice	/// Terminal support for dot-matrix displ
 {
 public:
 	/// \param pDisplay Pointer to display driver
+	/// \param rFont Font to be used
+	/// \param FontFlags Font flags
 	/// \param nDeviceIndex Instance number in device name service (0 -> "tty1");
-	CTerminalDevice (CDisplay *pDisplay, unsigned nDeviceIndex = 0);
+	CTerminalDevice (CDisplay *pDisplay, const TFont &rFont = DEFAULT_FONT,
+		         CCharGenerator::TFontFlags FontFlags = CCharGenerator::FontFlagsNone,
+			 unsigned nDeviceIndex = 0);
 
 	~CTerminalDevice (void);
 

@@ -453,10 +453,13 @@ void C2DGraphics::DrawPixel (unsigned nX, unsigned nY, T2DColor Color)
 	SetPixel (nX, nY, nColor);
 }
 
-void C2DGraphics::DrawText (unsigned nX, unsigned nY, T2DColor Color,
-			    const char *pText, TTextAlign Align)
+void C2DGraphics::DrawText (unsigned nX, unsigned nY, T2DColor Color, const char *pText,
+			    TTextAlign Align, const TFont &rFont,
+			    CCharGenerator::TFontFlags FontFlags)
 {
-	unsigned nWidth = strlen (pText) * m_Font.GetCharWidth ();
+	CCharGenerator Font (rFont, FontFlags);
+
+	unsigned nWidth = strlen (pText) * Font.GetCharWidth ();
 	if (Align == AlignRight)
 	{
 		nX -= nWidth;
@@ -468,20 +471,22 @@ void C2DGraphics::DrawText (unsigned nX, unsigned nY, T2DColor Color,
 
 	if (   nX > m_nWidth
 	    || nX + nWidth > m_nWidth
-	    || nY + m_Font.GetUnderline () > m_nHeight)
+	    || nY + Font.GetUnderline () > m_nHeight)
 	{
 		return;
 	}
 
 	CDisplay::TRawColor nColor = m_pDisplay->GetColor (Color);
 
-	for (; *pText != '\0'; pText++, nX += m_Font.GetCharWidth ())
+	for (; *pText != '\0'; pText++, nX += Font.GetCharWidth ())
 	{
-		for (unsigned y = 0; y < m_Font.GetUnderline (); y++)
+		for (unsigned y = 0; y < Font.GetUnderline (); y++)
 		{
-			for (unsigned x = 0; x < m_Font.GetCharWidth (); x++)
+			CCharGenerator::TPixelLine Line = Font.GetPixelLine (*pText, y);
+
+			for (unsigned x = 0; x < Font.GetCharWidth (); x++)
 			{
-				if (m_Font.GetPixel (*pText, x, y))
+				if (Font.GetPixel (x, Line))
 				{
 					SetPixel (nX + x, nY + y, nColor);
 				}
