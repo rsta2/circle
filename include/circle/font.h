@@ -22,8 +22,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _font_h
-#define _font_h
+#ifndef _circle_font_h
+#define _circle_font_h
 
 static const unsigned width       = 8;
 static const unsigned height      = 16;
