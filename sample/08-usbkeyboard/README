@@ -27,3 +27,12 @@ key-pressed handler. To test this please change the #if in CKernel::Run() in the
 file kernel.cpp. You can also use it to discover to physical key codes if you
 want to construct your own keymap (file lib/input/keymap_??.h). Note that it
 depends on the keyboard how many keys it can detect simultaneous (maximum is 6).
+
+
+This example can be used on a ST7789 SPI display too. For it you have to update
+the display configuration in the file st7789config.h and must enable the
+following definition in the Makefile before build:
+
+USE_ST7789 = 1
+
+You have to build the library in addon/display/ before build.

@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,6 +32,12 @@
 #include <circle/usb/usbhcidevice.h>
 #include <circle/usb/usbkeyboard.h>
 #include <circle/types.h>
+
+#ifdef USE_ST7789
+	#include <circle/terminal.h>
+	#include <circle/spimaster.h>
+	#include <display/st7789display.h>
+#endif
 
 enum TShutdownMode
 {
@@ -64,7 +70,13 @@ private:
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
+#ifndef USE_ST7789
 	CScreenDevice		m_Screen;
+#else
+	CSPIMaster		m_SPIMaster;
+	CST7789Display		m_ST7789;
+	CTerminalDevice		m_Screen;
+#endif
 	CSerialDevice		m_Serial;
 	CExceptionHandler	m_ExceptionHandler;
 	CInterruptSystem	m_Interrupt;
