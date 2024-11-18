@@ -66,6 +66,7 @@ Base library
 * CTranslationTable: Encapsulates a translation table to be used by MMU (AArch64).
 * CUserTimer: Fine grained user programmable interrupt timer (based on ARM_IRQ_TIMER1)
 * CVirtualGPIOPin: Encapsulates a "virtual" GPIO pin controlled by the VideoCore (Output only).
+* CWindowDisplay: Non-overlapping window on a display.
 * CWriteBufferDevice: Filter for buffered write to (e.g. screen) device.
 
 USB library

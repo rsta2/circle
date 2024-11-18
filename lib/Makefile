@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-OBJS	= actled.o alloc.o assert.o display.o bcmframebuffer.o bcmmailbox.o \
+OBJS	= actled.o alloc.o assert.o display.o windowdisplay.o bcmframebuffer.o bcmmailbox.o \
 	  bcmpropertytags.o bcmwatchdog.o chargenerator.o classallocator.o \
 	  cputhrottle.o debug.o delayloop.o device.o devicenameservice.o \
 	  dmachannel.o \
