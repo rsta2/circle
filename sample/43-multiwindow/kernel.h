@@ -32,6 +32,7 @@
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/usbhcidevice.h>
+#include <circle/input/rpitouchscreen.h>
 #include <circle/types.h>
 #include <lvgl/lvgl.h>
 #include "multicoredemo.h"
@@ -69,6 +70,9 @@ private:
 	CUSBHCIDevice		m_USBHCI;
 
 	CMultiCoreDemo		*m_pDemo;
+#if RASPPI <= 4
+	CRPiTouchScreen		 m_Touchscreen;
+#endif
 	CLVGL			*m_pGUI;
 };
 

@@ -110,6 +110,10 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
+#if RASPPI <= 4
+		m_Touchscreen.Initialize ();
+#endif
+
 		assert (m_pWindow[LVGL_WINDOW]);
 		m_pGUI = new CLVGL (m_pWindow[LVGL_WINDOW]);
 		assert (m_pGUI);
