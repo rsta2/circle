@@ -81,7 +81,7 @@ boolean CScreenDevice::Initialize (void)
 		return FALSE;
 	}
 
-	m_pTerminal = new CTerminalDevice (m_pFrameBuffer, m_rFont, m_FontFlags, m_nDisplay);
+	m_pTerminal = new CTerminalDevice (m_pFrameBuffer, m_nDisplay, m_rFont, m_FontFlags);
 	if (!m_pTerminal)
 	{
 		return FALSE;

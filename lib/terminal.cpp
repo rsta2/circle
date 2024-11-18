@@ -25,9 +25,8 @@
 
 static const char DevicePrefix[] = "tty";
 
-CTerminalDevice::CTerminalDevice (CDisplay *pDisplay, const TFont &rFont,
-				  CCharGenerator::TFontFlags FontFlags,
-				  unsigned nDeviceIndex)
+CTerminalDevice::CTerminalDevice (CDisplay *pDisplay, unsigned nDeviceIndex,
+				  const TFont &rFont, CCharGenerator::TFontFlags FontFlags)
 :	m_pDisplay (pDisplay),
 	m_nDeviceIndex (nDeviceIndex),
 	m_CharGen (rFont, FontFlags),
