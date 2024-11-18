@@ -110,6 +110,7 @@ public:
 	/// \brief Set completion routine to be called, when the transfer is finished
 	/// \param pRoutine Pointer to the completion routine
 	/// \param pParam   User parameter
+	/// \note Must be called before starting every new asynchronous transfer.
 	void SetCompletionRoutine (TDMACompletionRoutine *pRoutine, void *pParam);
 
 	/// \brief Start the DMA transfer
