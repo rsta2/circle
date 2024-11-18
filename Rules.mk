@@ -163,6 +163,7 @@ endif
 
 OPTIMIZE ?= -O2
 STANDARD ?= -std=c++14 -Wno-aligned-new
+C_STANDARD ?= -std=gnu99
 WARNINGS ?= -Wall
 
 ifeq ($(strip $(CLANG)),1)
@@ -202,7 +203,7 @@ endif
 
 %.o: %.c
 	@echo "  CC    $@"
-	@$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
+	@$(CC) $(CFLAGS) $(C_STANDARD) -c -o $@ $<
 
 %.o: %.cpp
 	@echo "  CPP   $@"
