@@ -245,15 +245,18 @@ void CBcmFrameBuffer::SetArea (const TArea &rArea, const void *pPixels,
 		m_DMAChannel.Wait ();
 	}
 #else
+	size_t ulWidth = rArea.x2 - rArea.x1 + 1;
+	size_t ulBlockLength = ulWidth * m_nDepth/8;
+
 	switch (m_nDepth)
 	{
 	case 8: {
 			auto p = PTR_ADD (u8 *, m_nBufferPtr, rArea.x1, rArea.y1 * m_nPitch);
 			auto q = static_cast<const u8 *> (pPixels);
 
-			for (unsigned y = rArea.y1; y <= rArea.y2; y++, q += m_nWidth)
+			for (unsigned y = rArea.y1; y <= rArea.y2; y++, q += ulWidth)
 			{
-				memcpy (p, q, m_nWidth * sizeof *p);
+				memcpy (p, q, ulBlockLength);
 
 				p = PTR_ADD (u8 *, p, 0, m_nPitch);
 			}
@@ -263,9 +266,9 @@ void CBcmFrameBuffer::SetArea (const TArea &rArea, const void *pPixels,
 			auto p = PTR_ADD (u16 *, m_nBufferPtr, rArea.x1, rArea.y1 * m_nPitch);
 			auto q = static_cast<const u16 *> (pPixels);
 
-			for (unsigned y = rArea.y1; y <= rArea.y2; y++, q += m_nWidth)
+			for (unsigned y = rArea.y1; y <= rArea.y2; y++, q += ulWidth)
 			{
-				memcpy (p, q, m_nWidth * sizeof *p);
+				memcpy (p, q, ulBlockLength);
 
 				p = PTR_ADD (u16 *, p, 0, m_nPitch);
 			}
@@ -275,9 +278,9 @@ void CBcmFrameBuffer::SetArea (const TArea &rArea, const void *pPixels,
 			auto p = PTR_ADD (u32 *, m_nBufferPtr, rArea.x1, rArea.y1 * m_nPitch);
 			auto q = static_cast<const u32 *> (pPixels);
 
-			for (unsigned y = rArea.y1; y <= rArea.y2; y++, q += m_nWidth)
+			for (unsigned y = rArea.y1; y <= rArea.y2; y++, q += ulWidth)
 			{
-				memcpy (p, q, m_nWidth * sizeof *p);
+				memcpy (p, q, ulBlockLength);
 
 				p = PTR_ADD (u32 *, p, 0, m_nPitch);
 			}
