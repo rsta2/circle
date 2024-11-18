@@ -289,15 +289,18 @@ void CLVGL::MouseEventHandler (TMouseEvent Event, unsigned nButtons,
 }
 
 void CLVGL::TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
-					  unsigned nPosX, unsigned nPosY)
+				     unsigned nPosX, unsigned nPosY)
 {
 	assert (s_pThis != 0);
+	assert (s_pThis->m_pDisplay != 0);
 
 	switch (Event)
 	{
 	case TouchScreenEventFingerDown:
 	case TouchScreenEventFingerMove:
-		if (nID == 0)
+		if (   nID == 0
+		    && nPosX < s_pThis->m_pDisplay->GetWidth ()
+		    && nPosY < s_pThis->m_pDisplay->GetHeight ())
 		{
 			s_pThis->m_PointerData.state = LV_INDEV_STATE_PRESSED;
 			s_pThis->m_PointerData.point.x = nPosX;
