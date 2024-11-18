@@ -21,6 +21,7 @@
 #include <circle/interrupt.h>
 #include <circle/util.h>
 #include <circle/koptions.h>
+#include <circle/atomic.h>
 
 #define PTR_ADD(type, ptr, items, bytes)	((type) ((uintptr) (ptr) + (bytes)) + (items))
 
@@ -57,7 +58,8 @@ CBcmFrameBuffer::CBcmFrameBuffer (unsigned nWidth, unsigned nHeight, unsigned nD
 	m_nPitch (0),
 	m_pTagSetPalette (0)
 #ifdef SCREEN_DMA_BURST_LENGTH
-	, m_DMAChannel (DMA_CHANNEL_NORMAL, CInterruptSystem::Get ())
+	, m_DMAChannel (DMA_CHANNEL_NORMAL, CInterruptSystem::Get ()),
+	m_nDMAInUse (0)
 #endif
 {
 	if (m_nDisplay >= GetNumDisplays ())
@@ -219,6 +221,11 @@ void CBcmFrameBuffer::SetArea (const TArea &rArea, const void *pPixels,
 			       TAreaCompletionRoutine *pRoutine, void *pParam)
 {
 #ifdef SCREEN_DMA_BURST_LENGTH
+	while (AtomicCompareExchange (&m_nDMAInUse, 0, 1))
+	{
+		// TODO: Yield with NO_BUSY_WAIT, when on core 0 in TASK_LEVEL
+	}
+
 	u32 x1 = rArea.x1;
 	u32 x2 = rArea.x2;
 	u32 y1 = rArea.y1;
@@ -243,6 +250,8 @@ void CBcmFrameBuffer::SetArea (const TArea &rArea, const void *pPixels,
 	{
 		m_DMAChannel.Start ();
 		m_DMAChannel.Wait ();
+
+		AtomicSet (&m_nDMAInUse, 0);
 	}
 #else
 	size_t ulWidth = rArea.x2 - rArea.x1 + 1;
@@ -300,6 +309,8 @@ void CBcmFrameBuffer::DMACompletionRoutine (unsigned nChannel, unsigned nBuffer,
 					    boolean bStatus, void *pParam)
 {
 	CBcmFrameBuffer *pThis = static_cast<CBcmFrameBuffer *> (pParam);
+
+	AtomicSet (&pThis->m_nDMAInUse, 0);
 
 	(*pThis->m_pCompletionRoutine) (pThis->m_pCompletionParam);
 }

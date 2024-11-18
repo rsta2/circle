@@ -109,6 +109,7 @@ private:
 	CDMAChannel m_DMAChannel;
 	TAreaCompletionRoutine *m_pCompletionRoutine;
 	void *m_pCompletionParam;
+	volatile int m_nDMAInUse;
 #endif
 
 #if RASPPI >= 4
