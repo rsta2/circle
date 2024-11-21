@@ -1,6 +1,6 @@
 README
 
-	For ST7789 support see below.
+	For SPI display support see below.
 
 This sample program demonstrates some features of the LVGL embedded GUI
 library v9.2.0 ((c) 2021 LVGL Kft):
@@ -29,10 +29,12 @@ direct the log output to the serial interface:
 	logdev=ttyS1
 
 
-This sample can be used on a ST7789 SPI display too. For it you have to update
-the display configuration in the file st7789config.h and must enable the
-following definition in the Makefile before build:
+This example can be used on a ST7789- or ILI9314-based SPI display too. For it
+you have to update the configuration for your display in the file
+addon/display/displayconfig.h and must enable one (!) of the following
+definitions in the Makefile before build:
 
-	USE_ST7789 = 1
+SPI_DISPLAY = DISPLAY_TYPE_ST7789
+SPI_DISPLAY = DISPLAY_TYPE_ILI9341
 
-You have to build the library in addon/display/ before build too.
+You also have to build the library in addon/display/ before build.

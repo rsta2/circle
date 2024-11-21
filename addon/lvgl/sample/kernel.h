@@ -34,9 +34,9 @@
 #include <lvgl/lvgl.h>
 #include <circle/types.h>
 
-#ifdef USE_ST7789
+#ifdef SPI_DISPLAY
 	#include <circle/spimaster.h>
-	#include <display/st7789display.h>
+	#include <display/sampleconfig.h>
 #endif
 
 enum TShutdownMode
@@ -69,9 +69,9 @@ private:
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
 
-#ifdef USE_ST7789
+#ifdef SPI_DISPLAY
 	CSPIMaster		m_SPIMaster;
-	CST7789Display		m_ST7789;
+	DISPLAY_CLASS		m_SPIDisplay;
 #else
 	CRPiTouchScreen		m_RPiTouchScreen;
 #endif

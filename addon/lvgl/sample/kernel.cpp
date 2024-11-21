@@ -20,10 +20,6 @@
 #include "kernel.h"
 #include "../lvgl/demos/lv_demos.h"
 
-#ifdef USE_ST7789
-	#include "st7789config.h"
-#endif
-
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
@@ -31,13 +27,12 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),
-#ifndef USE_ST7789
+#ifndef SPI_DISPLAY
 	m_GUI (&m_Screen)
 #else
 	m_SPIMaster (SPI_CLOCK_SPEED, SPI_CPOL, SPI_CPHA, SPI_MASTER_DEVICE),
-	m_ST7789 (&m_SPIMaster, DC_PIN, RESET_PIN, BACKLIGHT_PIN, WIDTH, HEIGHT,
-		  SPI_CPOL, SPI_CPHA, SPI_CLOCK_SPEED, SPI_CHIP_SELECT, FALSE),
-	m_GUI (&m_ST7789)
+	m_SPIDisplay (&m_SPIMaster, DISPLAY_PARAMETERS, FALSE),	// FALSE: use RGB565, not RGB565_BE
+	m_GUI (&m_SPIDisplay)
 #endif
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -87,7 +82,7 @@ boolean CKernel::Initialize (void)
 		bOK = m_USBHCI.Initialize ();
 	}
 
-#ifdef USE_ST7789
+#ifdef SPI_DISPLAY
 	if (bOK)
 	{
 		bOK = m_SPIMaster.Initialize ();
@@ -95,7 +90,11 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		bOK = m_ST7789.Initialize ();
+#ifdef DISPLAY_ROTATION
+		m_SPIDisplay.SetRotation (DISPLAY_ROTATION);
+#endif
+
+		bOK = m_SPIDisplay.Initialize ();
 	}
 #else
 	if (bOK)
