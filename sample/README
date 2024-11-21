@@ -7,7 +7,7 @@ SAMPLES
 05-usbsimple	[5]	Displaying USB device descriptor of root hub
 06-ethernet	[5]	Receiving broadcasts from Ethernet
 07-usbstorage	[5]	Displaying partition table from master boot record (MBR)
-08-usbkeyboard	[PnP,5]	Echoing typed characters to screen, or keyboard raw mode
+08-usbkeyboard	[PnP,5]	Echoing typed characters to screen or SPI display, or keyboard raw mode
 09-softserial	[5]	GPIO interrupt demonstration, serial interface via non-UART GPIO-pins
 10-usbmouse	[PnP]	Little painting program with USB mouse support
 11-gpioclock	[5]	Using GPIO clock 0 to generate a square wave signal and sampling this signal to display it
@@ -39,7 +39,7 @@ SAMPLES
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
 39-umsdplugging	[PnP,5]	Plug in and remove USB flash drives, list directory
 40-irqlatency	[PnP]	Displays the maximum measured IRQ latency
-41-screenanimations [5]	2D graphical shapes demo on screen without flickering or on ST7789 display
+41-screenanimations [5]	2D graphical shapes demo on screen without flickering or on SPI display
 42-soundinput	[5]	I2S or USB to PWM sound data converter and digital sound recorder
 43-multiwindow	[5]	Demonstrating multiple non-overlapping windows on a screen (Multi-core only)
 
