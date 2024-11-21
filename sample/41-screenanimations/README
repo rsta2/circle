@@ -6,10 +6,12 @@ SD(HC) card to change the frame buffer size:
 
 width=640 height=480
 
-This example can be used on a ST7789 SPI display too. For it you have to update
-the display configuration in the file st7789config.h and must enable the
-following definition in the Makefile before build:
+This example can be used on a ST7789- or ILI9314-based SPI display too. For it
+you have to update the configuration for your display in the file
+addon/display/displayconfig.h and must enable one (!) of the following
+definitions in the Makefile before build:
 
-USE_ST7789 = 1
+SPI_DISPLAY = DISPLAY_TYPE_ST7789
+SPI_DISPLAY = DISPLAY_TYPE_ILI9341
 
-You have to build the library in addon/display/ before build.
+You also have to build the library in addon/display/ before build.

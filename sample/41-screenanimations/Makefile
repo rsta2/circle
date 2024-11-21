@@ -2,19 +2,21 @@
 # Makefile
 #
 
-#USE_ST7789 = 1
+# define only one
+#SPI_DISPLAY = DISPLAY_TYPE_ST7789
+#SPI_DISPLAY = DISPLAY_TYPE_ILI9341
 
 CIRCLEHOME = ../..
 
 OBJS	= main.o kernel.o graphicshape.o
 
-ifeq ($(strip $(USE_ST7789)),1)
+LIBS	= $(CIRCLEHOME)/lib/libcircle.a
+
+ifneq ($(strip $(SPI_DISPLAY)),)
 LIBS	+= $(CIRCLEHOME)/addon/display/libdisplay.a
 
-CFLAGS	+= -DUSE_ST7789=$(USE_ST7789)
+CFLAGS	+= -DSPI_DISPLAY=$(SPI_DISPLAY)
 endif
-
-LIBS	+= $(CIRCLEHOME)/lib/libcircle.a
 
 include $(CIRCLEHOME)/Rules.mk
 

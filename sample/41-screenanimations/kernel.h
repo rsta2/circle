@@ -26,9 +26,9 @@
 #include <circle/types.h>
 #include "graphicshape.h"
 
-#ifdef USE_ST7789
+#ifdef SPI_DISPLAY
 	#include <circle/spimaster.h>
-	#include <display/st7789display.h>
+	#include <display/sampleconfig.h>
 #endif
 
 enum TShutdownMode
@@ -55,9 +55,9 @@ private:
 	// do not change this order
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
-#ifdef USE_ST7789
+#ifdef SPI_DISPLAY
 	CSPIMaster		m_SPIMaster;
-	CST7789Display		m_ST7789;
+	DISPLAY_CLASS		m_SPIDisplay;
 #endif
 	C2DGraphics		m_2DGraphics;
 	CGraphicShape		*m_pShape[nShapes];

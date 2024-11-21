@@ -19,19 +19,14 @@
 //
 #include "kernel.h"
 
-#ifdef USE_ST7789
-	#include "st7789config.h"
-#endif
-
 CKernel::CKernel (void)
 :
-#ifndef USE_ST7789
+#ifndef SPI_DISPLAY
 	m_2DGraphics (m_Options.GetWidth (), m_Options.GetHeight (), TRUE)
 #else
 	m_SPIMaster (SPI_CLOCK_SPEED, SPI_CPOL, SPI_CPHA, SPI_MASTER_DEVICE),
-	m_ST7789 (&m_SPIMaster, DC_PIN, RESET_PIN, BACKLIGHT_PIN, WIDTH, HEIGHT,
-		  SPI_CPOL, SPI_CPHA, SPI_CLOCK_SPEED, SPI_CHIP_SELECT),
-	m_2DGraphics (&m_ST7789)
+	m_SPIDisplay (&m_SPIMaster, DISPLAY_PARAMETERS),
+	m_2DGraphics (&m_SPIDisplay)
 #endif
 {
 	m_ActLED.Blink (5);
@@ -43,16 +38,21 @@ CKernel::~CKernel (void)
 
 boolean CKernel::Initialize (void)
 {
-#ifdef USE_ST7789
+#ifdef SPI_DISPLAY
 	if (!m_SPIMaster.Initialize ())
 	{
 		return FALSE;
 	}
 
-	if (!m_ST7789.Initialize ())
+#ifdef DISPLAY_ROTATION
+	m_SPIDisplay.SetRotation (DISPLAY_ROTATION);
+#endif
+
+	if (!m_SPIDisplay.Initialize ())
 	{
 		return FALSE;
 	}
+
 #endif
 
 	return m_2DGraphics.Initialize ();
