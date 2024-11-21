@@ -2,7 +2,9 @@
 # Makefile
 #
 
-#USE_ST7789 = 1
+# define only one
+#SPI_DISPLAY = DISPLAY_TYPE_ST7789
+#SPI_DISPLAY = DISPLAY_TYPE_ILI9341
 
 CIRCLEHOME = ../..
 
@@ -13,10 +15,10 @@ LIBS	= $(CIRCLEHOME)/lib/usb/libusb.a \
 	  $(CIRCLEHOME)/lib/fs/libfs.a \
 	  $(CIRCLEHOME)/lib/libcircle.a
 
-ifeq ($(strip $(USE_ST7789)),1)
+ifneq ($(strip $(SPI_DISPLAY)),)
 LIBS	+= $(CIRCLEHOME)/addon/display/libdisplay.a
 
-CFLAGS	+= -DUSE_ST7789=$(USE_ST7789)
+CFLAGS	+= -DSPI_DISPLAY=$(SPI_DISPLAY)
 endif
 
 include $(CIRCLEHOME)/Rules.mk

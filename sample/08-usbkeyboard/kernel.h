@@ -33,10 +33,10 @@
 #include <circle/usb/usbkeyboard.h>
 #include <circle/types.h>
 
-#ifdef USE_ST7789
-	#include <circle/terminal.h>
+#ifdef SPI_DISPLAY
 	#include <circle/spimaster.h>
-	#include <display/st7789display.h>
+	#include <circle/terminal.h>
+	#include <display/sampleconfig.h>
 #endif
 
 enum TShutdownMode
@@ -70,11 +70,11 @@ private:
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
-#ifndef USE_ST7789
+#ifndef SPI_DISPLAY
 	CScreenDevice		m_Screen;
 #else
 	CSPIMaster		m_SPIMaster;
-	CST7789Display		m_ST7789;
+	DISPLAY_CLASS		m_SPIDisplay;
 	CTerminalDevice		m_Screen;
 #endif
 	CSerialDevice		m_Serial;
