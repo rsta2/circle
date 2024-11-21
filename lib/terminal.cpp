@@ -49,7 +49,8 @@ CTerminalDevice::CTerminalDevice (CDisplay *pDisplay, unsigned nDeviceIndex,
 	m_Color (0),
 	m_BackgroundColor (0),
 	m_bReverseAttribute (FALSE),
-	m_bInsertOn (FALSE)
+	m_bInsertOn (FALSE),
+	m_bAutoPage (FALSE)
 #ifdef REALTIME
 	, m_SpinLock (TASK_LEVEL)
 #endif
@@ -134,6 +135,7 @@ boolean CTerminalDevice::Resize (void)
 	m_BackgroundColor = 0;
 	m_bReverseAttribute = FALSE;
 	m_bInsertOn = FALSE;
+	m_bAutoPage = FALSE;
 
 	return Initialize ();
 }
@@ -290,6 +292,10 @@ void CTerminalDevice::Write (char chChar)
 
 		case '[':
 			m_State = StateBracket;
+			break;
+
+		case 'd':
+			m_State = StateAutoPage;
 			break;
 
 		default:
@@ -516,6 +522,25 @@ void CTerminalDevice::Write (char chChar)
 		}
 		break;
 
+	case StateAutoPage:
+		switch (chChar)
+		{
+		case '+':
+			SetAutoPageMode (TRUE);
+			m_State = StateStart;
+			break;
+
+		case '*':
+			SetAutoPageMode (FALSE);
+			m_State = StateStart;
+			break;
+
+		default:
+			m_State = StateStart;
+			break;
+		}
+		break;
+
 	default:
 		m_State = StateStart;
 		break;
@@ -575,9 +600,16 @@ void CTerminalDevice::CursorDown (void)
 	m_nCursorY += m_CharGen.GetCharHeight ();
 	if (m_nCursorY >= m_nScrollEnd)
 	{
-		Scroll ();
+		if (!m_bAutoPage)
+		{
+			Scroll ();
 
-		m_nCursorY -= m_CharGen.GetCharHeight ();
+			m_nCursorY -= m_CharGen.GetCharHeight ();
+		}
+		else
+		{
+			m_nCursorY = 0;
+		}
 	}
 }
 
@@ -706,6 +738,11 @@ void CTerminalDevice::ReverseScroll (void)
 	{
 		InsertLines (1);
 	}
+}
+
+void CTerminalDevice::SetAutoPageMode (boolean bEnable)
+{
+	m_bAutoPage = bEnable;
 }
 
 void CTerminalDevice::SetCursorMode (boolean bVisible)

@@ -145,6 +145,7 @@ private:
 	void InsertMode (boolean bBegin);
 	void NewLine (void);
 	void ReverseScroll (void);
+	void SetAutoPageMode (boolean bEnable);
 	void SetCursorMode (boolean bVisible);
 	void SetScrollRegion (unsigned nStartRow, unsigned nEndRow);
 	void SetStandoutMode (unsigned nMode);
@@ -181,7 +182,8 @@ private:
 		StateQuestionMark,
 		StateSemicolon,
 		StateNumber2,
-		StateNumber3
+		StateNumber3,
+		StateAutoPage
 	};
 
 private:
@@ -216,6 +218,7 @@ private:
 	boolean		     m_bInsertOn;
 	unsigned	     m_nParam1;
 	unsigned	     m_nParam2;
+	boolean		     m_bAutoPage;
 	CSpinLock	     m_SpinLock;
 };
 
