@@ -160,6 +160,7 @@ Input library
 * CMouseDevice: Generic mouse interface device
 * CRPiTouchScreen: Driver for the official Raspberry Pi touch screen
 * CTouchScreenDevice: Generic touch screen interface device
+* CXPT2046TouchScreen: Driver for XPT2046-based touch screens
 
 FS library
 

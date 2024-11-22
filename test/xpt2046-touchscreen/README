@@ -1,0 +1,9 @@
+README
+
+This test program works with ILI9341- or ST7789-based touchscreens with the
+XPT2046 touch controller. Its a modified version of the sample/28-touchscreen.
+See its README for more info!
+
+You have to update the configuration in addon/display/sampleconfig.h and in
+kernel.cpp and have to build addon/display/libdisplay.a before you can build
+this test.
