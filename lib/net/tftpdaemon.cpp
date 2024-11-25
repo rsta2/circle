@@ -182,6 +182,14 @@ void CTFTPDaemon::Run (void)
 			continue;
 		}
 
+		if (!IsAccessAllowed (&ForeignIP, m_Filename, usOpCode == OP_CODE_WRQ))
+		{
+			SendError (ERROR_CODE_ACCESS, "Access violation",
+				   &ForeignIP, usForeignPort);
+
+			continue;
+		}
+
 		CString IPString;
 		ForeignIP.Format (&IPString);
 		CLogger::Get ()->Write (FromTFPTDaemon, LogDebug, "Incoming %s request from %s",
