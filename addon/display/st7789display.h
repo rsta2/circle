@@ -64,6 +64,8 @@ public:
 			unsigned CPOL = 0, unsigned CPHA = 0, unsigned nClockSpeed = 15000000,
 			unsigned nChipSelect = 0, boolean bSwapColorBytes = TRUE);
 
+	~CST7789Display (void);
+
 	/// \return Display width in number of pixels
 	unsigned GetWidth (void) const		{ return m_nWidth; }
 	/// \return Display height in number of pixels
@@ -113,7 +115,6 @@ public:
 	/// \param nPosX X-position (0..width-1)
 	/// \param nPosY Y-postion (0..height-1)
 	/// \param nColor Raw color value (RGB565 or RGB565_BE)
-	/// \note This method does not support display rotation.
 	void SetPixel (unsigned nPosX, unsigned nPosY, TRawColor nColor);
 
 	/// \brief Set area (rectangle) on the display to the raw colors in pPixels
@@ -121,7 +122,6 @@ public:
 	/// \param pPixels Pointer to array with raw color values (RGB565 or RGB565_BE)
 	/// \param pRoutine Routine to be called on completion
 	/// \param pParam User parameter to be handed over to completion routine
-	/// \note This method does not support display rotation.
 	void SetArea (const TArea &rArea, const void *pPixels,
 		      TAreaCompletionRoutine *pRoutine = nullptr,
 		      void *pParam = nullptr);
@@ -152,6 +152,7 @@ private:
 	boolean m_bSwapColorBytes;
 
 	unsigned m_nRotation;
+	u16 *m_pBuffer;
 
 	CGPIOPin m_DCPin;
 	CGPIOPin m_ResetPin;

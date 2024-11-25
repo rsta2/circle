@@ -117,6 +117,14 @@ CST7789Display::CST7789Display (CSPIMaster *pSPIMaster,
 	}
 		
 	m_nRotation = 0;
+
+	m_pBuffer = new u16[m_nWidth * m_nHeight];
+	assert (m_pBuffer != 0);
+}
+
+CST7789Display::~CST7789Display (void)
+{
+	delete [] m_pBuffer;
 }
 
 boolean CST7789Display::Initialize (void)
@@ -399,18 +407,71 @@ void CST7789Display::DrawText (unsigned nPosX, unsigned nPosY, const char *pStri
 
 void CST7789Display::SetPixel (unsigned nPosX, unsigned nPosY, TRawColor nColor)
 {
-	SetWindow (nPosX, nPosY, nPosX, nPosY);
-
-	u16 usColor = (u16) nColor;
-	SendData (&usColor, sizeof usColor);
+	SetPixel (nPosX, nPosY, (TST7789Color) nColor);
 }
 
 void CST7789Display::SetArea (const TArea &rArea, const void *pPixels,
 			      TAreaCompletionRoutine *pRoutine, void *pParam)
 {
-	SetWindow (rArea.x1, rArea.y1, rArea.x2, rArea.y2);
+	int nWidth = rArea.x2 - rArea.x1 + 1;
+	int nHeight = rArea.y2 - rArea.y1 + 1;
 
-	size_t ulSize = (rArea.y2 - rArea.y1 + 1) * (rArea.x2 - rArea.x1 + 1) * sizeof (u16);
+	if (m_nRotation == 0)
+	{
+		SetWindow (rArea.x1, rArea.y1, rArea.x2, rArea.y2);
+	}
+	else
+	{
+		const u16 *pFrom = (const u16 *) pPixels;
+		u16 *pTo = m_pBuffer;
+
+		switch (m_nRotation)
+		{
+		case 90:
+			SetWindow (m_nWidth-rArea.y2-1, rArea.x1,
+				   m_nWidth-rArea.y1-1, rArea.x2);
+			for (int x = 0; x < nWidth; x++)
+			{
+				for (int y = nHeight-1; y >= 0; y--)
+				{
+					*pTo++ = pFrom[x + y * nWidth];
+				}
+			}
+			break;
+
+		case 180:
+			SetWindow (m_nWidth-rArea.x2-1, m_nHeight-rArea.y2-1,
+				   m_nWidth-rArea.x1-1, m_nHeight-rArea.y1-1);
+			for (int y = nHeight-1; y >= 0; y--)
+			{
+				for (int x = nWidth-1; x >= 0; x--)
+				{
+					*pTo++ = pFrom[x + y * nWidth];
+				}
+			}
+			break;
+
+		case 270:
+			SetWindow (rArea.y1, m_nHeight-rArea.x2-1,
+				   rArea.y2, m_nHeight-rArea.x1-1);
+			for (int x = nWidth-1; x >= 0; x--)
+			{
+				for (int y = 0; y < nHeight; y++)
+				{
+					*pTo++ = pFrom[x + y * nWidth];
+				}
+			}
+			break;
+
+		default:
+			assert (0);
+			break;
+		}
+
+		pPixels = m_pBuffer;
+	}
+
+	size_t ulSize = nWidth * nHeight * sizeof (u16);
 	while (ulSize)
 	{
 		// The BCM2835 SPI master has a transfer size limit.

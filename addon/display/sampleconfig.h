@@ -31,6 +31,8 @@
 
 #if SPI_DISPLAY == DISPLAY_TYPE_ST7789
 
+#define DISPLAY_ROTATION	0		// degrees counterclockwise; 0, 90, 180 or 270
+
 #define SPI_MASTER_DEVICE	0		// 0, 4, 5, 6 on Raspberry Pi 4;
 						// 0, 1, 3, 5 on Raspberry Pi 5; 0 otherwise
 #define SPI_CLOCK_SPEED		15000000	// Hz
