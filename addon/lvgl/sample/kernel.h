@@ -37,6 +37,9 @@
 #ifdef SPI_DISPLAY
 	#include <circle/spimaster.h>
 	#include <display/sampleconfig.h>
+#elif defined (I2C_DISPLAY)
+	#include <circle/i2cmaster.h>
+	#include <display/sampleconfig.h>
 #endif
 
 enum TShutdownMode
@@ -72,6 +75,9 @@ private:
 #ifdef SPI_DISPLAY
 	CSPIMaster		m_SPIMaster;
 	DISPLAY_CLASS		m_SPIDisplay;
+#elif defined (I2C_DISPLAY)
+	CI2CMaster		m_I2CMaster;
+	DISPLAY_CLASS		m_I2CDisplay;
 #else
 	CRPiTouchScreen		m_RPiTouchScreen;
 #endif

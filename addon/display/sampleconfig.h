@@ -24,6 +24,7 @@
 
 #define DISPLAY_TYPE_ST7789	1
 #define DISPLAY_TYPE_ILI9341	2
+#define DISPLAY_TYPE_SSD1306	3
 
 //// Configuration for ST7789-based SPI displays ///////////////////////////////
 
@@ -76,6 +77,24 @@
 				SPI_CPOL, SPI_CPHA, SPI_CLOCK_SPEED, SPI_CHIP_SELECT
 
 #include <display/ili9341display.h>
+
+//// Configuration for SSD1306-based I2C displays //////////////////////////////
+
+#elif I2C_DISPLAY == DISPLAY_TYPE_SSD1306
+
+#define DISPLAY_ROTATION	0		// degrees; 0 or 180
+
+#define I2C_MASTER_DEVICE	(CMachineInfo::Get ()->GetDevice (DeviceI2CMaster))
+#define I2C_CLOCK_SPEED		0		// Hz; 0 for system default
+#define I2C_SLAVE_ADDRESS	0x3C		// or 0x3D
+
+#define WIDTH			128		// display width in pixels; fixed
+#define HEIGHT			32		// display height in pixels; or 64
+
+#define DISPLAY_CLASS		CSSD1306Display
+#define DISPLAY_PARAMETERS	WIDTH, HEIGHT, I2C_SLAVE_ADDRESS, I2C_CLOCK_SPEED
+
+#include <display/ssd1306display.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 
