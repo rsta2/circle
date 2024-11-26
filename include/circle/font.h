@@ -32,6 +32,7 @@ struct TFont
 	const unsigned char *data;
 };
 
+extern const TFont Font6x7;
 extern const TFont Font8x8;
 extern const TFont Font8x10;
 extern const TFont Font8x12;

@@ -70,7 +70,7 @@ public:
 			nPosX >>= 1;
 		}
 
-		return !!(Line & (0x80 >> nPosX));
+		return !!(Line & (1 << (m_nCharWidthOrig-1 - nPosX)));
 	}
 
 	/// \param chAscii Character code (normally Latin1)
@@ -88,6 +88,7 @@ private:
 	unsigned m_nHeightMult;
 
 	unsigned m_nCharWidth;
+	unsigned m_nCharWidthOrig;
 	unsigned m_nCharHeight;
 	unsigned m_nUnderline;
 };

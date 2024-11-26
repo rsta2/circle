@@ -24,6 +24,7 @@ CCharGenerator::CCharGenerator (const TFont &rFont, TFontFlags Flags)
 	m_nWidthMult (Flags & FontFlagsDoubleWidth ? 2 : 1),
 	m_nHeightMult (Flags & FontFlagsDoubleHeight ? 2 : 1),
 	m_nCharWidth (rFont.width * m_nWidthMult),
+	m_nCharWidthOrig (rFont.width),
 	m_nCharHeight ((rFont.height + rFont.extra_height) * m_nHeightMult),
 	m_nUnderline (rFont.height * m_nHeightMult)
 {
