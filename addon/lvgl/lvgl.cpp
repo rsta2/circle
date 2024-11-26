@@ -94,7 +94,6 @@ boolean CLVGL::Initialize (void)
 	}
 
 	assert (m_pDisplay != 0);
-	assert (m_pDisplay->GetDepth () == LV_COLOR_DEPTH);
 	size_t nWidth = m_pDisplay->GetWidth ();
 	size_t nHeight = m_pDisplay->GetHeight ();
 
@@ -113,6 +112,16 @@ boolean CLVGL::Initialize (void)
 	}
 
 	static lv_display_t *display = lv_display_create (nWidth, nHeight);
+
+	if (m_pDisplay->GetDepth () == 1)
+	{
+		lv_display_set_color_format (display, LV_COLOR_FORMAT_I1);
+	}
+	else
+	{
+		assert (m_pDisplay->GetDepth () == LV_COLOR_DEPTH);
+	}
+
 	lv_display_set_flush_cb (display, DisplayFlush);
 	lv_display_set_buffers (display, m_pBuffer1, m_pBuffer2, nBufSizePixels * sizeof (u16),
 				LV_DISP_RENDER_MODE_PARTIAL);
@@ -237,6 +246,11 @@ void CLVGL::DisplayFlush (lv_display_t *pDisplay, const lv_area_t *pArea, u8 *pB
 	assert (pBuffer != 0);
 
 	assert (s_pThis->m_pDisplay != 0);
+	if (s_pThis->m_pDisplay->GetDepth () == 1)
+	{
+		pBuffer += 8;		// ignore palette
+	}
+
 	assert (pDisplay != 0);
 	s_pThis->m_pDisplay->SetArea (Area, pBuffer, DisplayFlushComplete, pDisplay);
 }
