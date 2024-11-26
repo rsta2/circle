@@ -36,6 +36,7 @@ CTerminalDevice::CTerminalDevice (CDisplay *pDisplay, unsigned nDeviceIndex,
 	m_nPitch (0),
 	m_nWidth (0),
 	m_nHeight (0),
+	m_nUsedWidth (0),
 	m_nUsedHeight (0),
 	m_nDepth (0),
 	m_State (StateStart),
@@ -78,6 +79,12 @@ boolean CTerminalDevice::Initialize (void)
 	m_nSize   = m_nWidth * m_nHeight * m_nDepth/8;
 	m_nPitch  = m_nWidth * m_nDepth/8;
 
+	if (   m_nDepth == 1
+	    && m_nWidth % 8 != 0)
+	{
+		return FALSE;
+	}
+
 	m_pBuffer8 = new u8[m_nSize];
 	if (!m_pBuffer8)
 	{
@@ -91,6 +98,7 @@ boolean CTerminalDevice::Initialize (void)
 		return FALSE;
 	}
 
+	m_nUsedWidth = m_nWidth / m_CharGen.GetCharWidth () * m_CharGen.GetCharWidth ();
 	m_nUsedHeight = m_nHeight / m_CharGen.GetCharHeight () * m_CharGen.GetCharHeight ();
 	m_nScrollEnd = m_nUsedHeight;
 
@@ -152,7 +160,7 @@ unsigned CTerminalDevice::GetHeight (void) const
 
 unsigned CTerminalDevice::GetColumns (void) const
 {
-	return m_nWidth / m_CharGen.GetCharWidth ();
+	return m_nUsedWidth / m_CharGen.GetCharWidth ();
 }
 
 unsigned CTerminalDevice::GetRows (void) const
@@ -558,11 +566,20 @@ void CTerminalDevice::ClearDisplayEnd (void)
 
 	unsigned nPosY = m_nCursorY + m_CharGen.GetCharHeight ();
 	unsigned nOffset = nPosY * m_nWidth;
-	unsigned nSize = m_nSize / (m_nDepth/8) - nOffset;
 
 	switch (m_nDepth)
 	{
+	case 1: {
+			nOffset /= 8;
+			unsigned nSize = m_nSize - nOffset;
+			for (u8 *pBuffer = m_pBuffer8 + nOffset; nSize--;)
+			{
+				*pBuffer++ = m_BackgroundColor ? 0xFF : 0;
+			}
+		} break;
+
 	case 8: {
+			unsigned nSize = m_nSize - nOffset;
 			for (u8 *pBuffer = m_pBuffer8 + nOffset; nSize--;)
 			{
 				*pBuffer++ = (u8) m_BackgroundColor;
@@ -570,6 +587,7 @@ void CTerminalDevice::ClearDisplayEnd (void)
 		} break;
 
 	case 16: {
+			unsigned nSize = m_nSize / 2 - nOffset;
 			for (u16 *pBuffer = m_pBuffer16 + nOffset; nSize--;)
 			{
 				*pBuffer++ = (u16) m_BackgroundColor;
@@ -577,6 +595,7 @@ void CTerminalDevice::ClearDisplayEnd (void)
 		} break;
 
 	case 32: {
+			unsigned nSize = m_nSize / 4 - nOffset;
 			for (u32 *pBuffer = m_pBuffer32 + nOffset; nSize--;)
 			{
 				*pBuffer++ = (u32) m_BackgroundColor;
@@ -589,9 +608,18 @@ void CTerminalDevice::ClearDisplayEnd (void)
 
 void CTerminalDevice::ClearLineEnd (void)
 {
-	for (unsigned nPosX = m_nCursorX; nPosX < m_nWidth; nPosX += m_CharGen.GetCharWidth ())
+	for (unsigned nPosX = m_nCursorX; nPosX < m_nUsedWidth; nPosX += m_CharGen.GetCharWidth ())
 	{
 		EraseChar (nPosX, m_nCursorY);
+	}
+
+	for (unsigned nPosX = m_nUsedWidth; nPosX < m_nWidth; nPosX++)
+	{
+		for (unsigned nPosY = m_nCursorY;
+		     nPosY < m_nCursorY + m_CharGen.GetCharHeight (); nPosY++)
+		{
+			SetRawPixel (nPosX, nPosY, m_BackgroundColor);
+		}
 	}
 }
 
@@ -629,7 +657,7 @@ void CTerminalDevice::CursorLeft (void)
 	{
 		if (m_nCursorY > m_nScrollStart)
 		{
-			m_nCursorX = m_nWidth - m_CharGen.GetCharWidth ();
+			m_nCursorX = m_nUsedWidth - m_CharGen.GetCharWidth ();
 			m_nCursorY -= m_CharGen.GetCharHeight ();
 		}
 	}
@@ -640,7 +668,7 @@ void CTerminalDevice::CursorMove (unsigned nRow, unsigned nColumn)
 	unsigned nPosX = (nColumn - 1) * m_CharGen.GetCharWidth ();
 	unsigned nPosY = (nRow - 1) * m_CharGen.GetCharHeight ();
 
-	if (   nPosX < m_nWidth
+	if (   nPosX < m_nUsedWidth
 	    && nPosY >= m_nScrollStart
 	    && nPosY < m_nScrollEnd)
 	{
@@ -652,7 +680,7 @@ void CTerminalDevice::CursorMove (unsigned nRow, unsigned nColumn)
 void CTerminalDevice::CursorRight (void)
 {
 	m_nCursorX += m_CharGen.GetCharWidth ();
-	if (m_nCursorX >= m_nWidth)
+	if (m_nCursorX >= m_nUsedWidth)
 	{
 		NewLine ();
 	}
@@ -694,9 +722,9 @@ void CTerminalDevice::EraseChars (unsigned nCount)
 	}
 
 	unsigned nEndX = m_nCursorX + nCount * m_CharGen.GetCharWidth ();
-	if (nEndX > m_nWidth)
+	if (nEndX > m_nUsedWidth)
 	{
-		nEndX = m_nWidth;
+		nEndX = m_nUsedWidth;
 	}
 
 	for (unsigned nPosX = m_nCursorX; nPosX < nEndX; nPosX += m_CharGen.GetCharWidth ())
@@ -899,7 +927,7 @@ void CTerminalDevice::Tabulator (void)
 	unsigned nTabWidth = m_CharGen.GetCharWidth () * 8;
 
 	m_nCursorX = ((m_nCursorX + nTabWidth) / nTabWidth) * nTabWidth;
-	if (m_nCursorX >= m_nWidth)
+	if (m_nCursorX >= m_nUsedWidth)
 	{
 		NewLine ();
 	}
@@ -923,6 +951,15 @@ void CTerminalDevice::Scroll (void)
 	nSize = m_nWidth * nLines;
 	switch (m_nDepth)
 	{
+	case 1: {
+			nSize /= 8;
+			for (u8 *p = (u8 *) pTo; nSize--;)
+			{
+				*p++ = m_BackgroundColor ? 0xFF : 0;
+			}
+		}
+		break;
+
 	case 8: {
 			for (u8 *p = (u8 *) pTo; nSize--;)
 			{

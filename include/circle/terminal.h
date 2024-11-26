@@ -100,6 +100,20 @@ public:
 	{
 		switch (m_nDepth)
 		{
+		case 1: {
+				u8 *pBuffer = &m_pBuffer8[(m_nWidth * nPosY + nPosX) / 8];
+				u8 uchMask = 0x80 >> (nPosX & 7);
+				if (nColor)
+				{
+					*pBuffer |= uchMask;
+				}
+				else
+				{
+					*pBuffer &= ~uchMask;
+				}
+			}
+			break;
+
 		case 8:		m_pBuffer8[m_nWidth * nPosY + nPosX] = (u8) nColor;	break;
 		case 16:	m_pBuffer16[m_nWidth * nPosY + nPosX] = (u16) nColor;	break;
 		case 32:	m_pBuffer32[m_nWidth * nPosY + nPosX] = nColor;		break;
@@ -115,6 +129,13 @@ public:
 	{
 		switch (m_nDepth)
 		{
+		case 1: {
+				u8 *pBuffer = &m_pBuffer8[(m_nWidth * nPosY + nPosX) / 8];
+				u8 uchMask = 0x80 >> (nPosX & 7);
+				return !!(*pBuffer & uchMask);
+			}
+			break;
+
 		case 8:		return m_pBuffer8[m_nWidth * nPosY + nPosX];
 		case 16:	return m_pBuffer16[m_nWidth * nPosY + nPosX];
 		case 32:	return m_pBuffer32[m_nWidth * nPosY + nPosX];
@@ -201,6 +222,7 @@ private:
 	unsigned	     m_nPitch;
 	unsigned	     m_nWidth;
 	unsigned	     m_nHeight;
+	unsigned	     m_nUsedWidth;
 	unsigned	     m_nUsedHeight;
 	unsigned	     m_nDepth;
 	CDisplay::TArea	     m_UpdateArea;
