@@ -50,7 +50,7 @@ void C2DImage::Set (unsigned nWidth, unsigned nHeight, const T2DColor *pData)
 
 	m_nWidth = nWidth;
 	m_nHeight = nHeight;
-	m_nDataSize = nWidth * nHeight * m_pDisplay->GetDepth ()/8;
+	m_nDataSize = (nWidth * m_pDisplay->GetDepth () + 7) / 8 * nHeight;
 	assert (m_nDataSize);
 
 	delete [] m_pData;
@@ -61,6 +61,29 @@ void C2DImage::Set (unsigned nWidth, unsigned nHeight, const T2DColor *pData)
 
 	switch (m_pDisplay->GetDepth ())
 	{
+	case 1: {
+			u8 *p = m_pData;
+			for (unsigned y = 0; y < m_nHeight; y++)
+			{
+				for (unsigned x = 0; x < m_nWidth; x += 8)
+				{
+					u8 uchByte = 0;
+					for (unsigned i = 0; i < 8; i++)
+					{
+						if (x + i >= m_nWidth)
+						{
+							break;
+						}
+
+						uchByte |=   m_pDisplay->GetColor (*pData++)
+							   ? 0x80 >> i : 0;
+					}
+
+					*p++ = uchByte;
+				}
+			}
+		} break;
+
 	case 8: {
 			u8 *p = m_pData;
 			for (unsigned i = 0; i < m_nDataSize; i += sizeof (u8))
@@ -184,7 +207,12 @@ boolean C2DGraphics::Initialize (void)
 	m_nWidth = m_pDisplay->GetWidth();
 	m_nHeight = m_pDisplay->GetHeight();
 	m_nDepth = m_pDisplay->GetDepth();
-	assert (m_nDepth >= 8);
+
+	if (   m_nDepth == 1
+	    && m_nWidth % 8 != 0)
+	{
+		return FALSE;
+	}
 
 	m_pBuffer8 = new u8[m_nWidth * m_nHeight * m_nDepth/8];
 	if (!m_pBuffer8)
@@ -412,7 +440,7 @@ void C2DGraphics::DrawImageRect (unsigned nX, unsigned nY, unsigned nWidth, unsi
 	{
 		for(unsigned j=0; j<nWidth; j++)
 		{
-			SetPixel (nX + j, nY + i, GetPixel (&PixelBuffer));
+			SetPixel (nX + j, nY + i, GetPixel (&PixelBuffer, j));
 		}
 	}
 }
@@ -432,7 +460,7 @@ void C2DGraphics::DrawImageRectTransparent (unsigned nX, unsigned nY, unsigned n
 
 		for(unsigned j=0; j<nWidth; j++)
 		{
-			CDisplay::TRawColor sourcePixel = GetPixel (&pPixels);
+			CDisplay::TRawColor sourcePixel = GetPixel (&pPixels, j);
 			if(sourcePixel != TransparentColor)
 			{
 				SetPixel (nX + j, nY + i, sourcePixel);

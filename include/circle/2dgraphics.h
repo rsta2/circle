@@ -223,16 +223,40 @@ private:
 	{
 		switch (m_nDepth)
 		{
+		case 1: {
+				u8 *pBuffer = &m_pBuffer8[(m_nWidth * nY + nX) / 8];
+				u8 uchMask = 0x80 >> (nX & 7);
+				if (nColor)
+				{
+					*pBuffer |= uchMask;
+				}
+				else
+				{
+					*pBuffer &= ~uchMask;
+				}
+			}
+			break;
+
 		case 8:		m_pBuffer8[m_nWidth * nY + nX] = nColor;	break;
 		case 16:	m_pBuffer16[m_nWidth * nY + nX] = nColor;	break;
 		case 32:	m_pBuffer32[m_nWidth * nY + nX] = nColor;	break;
 		}
 	}
 
-	CDisplay::TRawColor GetPixel (const void **ppPixelBuffer)
+	CDisplay::TRawColor GetPixel (const void **ppPixelBuffer, unsigned nOffsetX)
 	{
 		switch (m_nDepth)
 		{
+		case 1: {
+				const u8 **pp = reinterpret_cast<const u8 **> (ppPixelBuffer);
+				CDisplay::TRawColor nColor = !!(**pp & (0x80 >> (nOffsetX & 7)));
+				if ((nOffsetX & 7) == 7)
+				{
+					(*pp)++;
+				}
+				return nColor;
+			}
+
 		case 8: {
 				const u8 **pp = reinterpret_cast<const u8 **> (ppPixelBuffer);
 				return *(*pp)++;
