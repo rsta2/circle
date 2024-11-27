@@ -37,6 +37,10 @@
 	#include <circle/spimaster.h>
 	#include <circle/terminal.h>
 	#include <display/sampleconfig.h>
+#elif defined (I2C_DISPLAY)
+	#include <circle/i2cmaster.h>
+	#include <circle/terminal.h>
+	#include <display/sampleconfig.h>
 #endif
 
 enum TShutdownMode
@@ -70,12 +74,16 @@ private:
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
-#ifndef SPI_DISPLAY
-	CScreenDevice		m_Screen;
-#else
+#ifdef SPI_DISPLAY
 	CSPIMaster		m_SPIMaster;
 	DISPLAY_CLASS		m_SPIDisplay;
 	CTerminalDevice		m_Screen;
+#elif defined (I2C_DISPLAY)
+	CI2CMaster		m_I2CMaster;
+	DISPLAY_CLASS		m_I2CDisplay;
+	CTerminalDevice		m_Screen;
+#else
+	CScreenDevice		m_Screen;
 #endif
 	CSerialDevice		m_Serial;
 	CExceptionHandler	m_ExceptionHandler;
