@@ -39,7 +39,7 @@ SAMPLES
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
 39-umsdplugging	[PnP,5]	Plug in and remove USB flash drives, list directory
 40-irqlatency	[PnP]	Displays the maximum measured IRQ latency
-41-screenanimations [5]	2D graphical shapes demo on screen without flickering or on SPI display
+41-screenanimations [5]	2D graphical shapes demo on screen without flickering or on SPI/I2C display
 42-soundinput	[5]	I2S or USB to PWM sound data converter and digital sound recorder
 43-multiwindow	[5]	Demonstrating multiple non-overlapping windows on a screen (Multi-core only)
 
