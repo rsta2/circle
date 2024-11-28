@@ -21,6 +21,7 @@
 #define _circle_input_mouse_h
 
 #include <circle/device.h>
+#include <circle/display.h>
 #include <circle/input/mousebehaviour.h>
 #include <circle/numberpool.h>
 #include <circle/types.h>
@@ -41,11 +42,10 @@ public:
 	~CMouseDevice (void);
 
 	/// \brief Setup mouse device in cooked mode
-	/// \param nScreenWidth  Width of the screen in pixels
-	/// \param nScreenHeight Height of the screen in pixels
+	/// \param pDisplay Show the mouse on this display
 	/// \param bCursor Support mouse cursor
 	/// \return FALSE on failure
-	boolean Setup (unsigned nScreenWidth, unsigned nScreenHeight, boolean bCursor = TRUE);
+	boolean Setup (CDisplay *pDisplay, boolean bCursor = TRUE);
 
 	/// \brief Undo Setup()
 	/// \note Call this before resizing the screen!

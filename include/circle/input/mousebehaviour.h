@@ -20,6 +20,7 @@
 #ifndef _circle_input_mousebehaviour_h
 #define _circle_input_mousebehaviour_h
 
+#include <circle/display.h>
 #include <circle/types.h>
 
 enum TMouseEvent
@@ -48,7 +49,7 @@ public:
 	~CMouseBehaviour (void);
 
 	// returns FALSE on failure
-	boolean Setup (unsigned nScreenWidth, unsigned nScreenHeight, boolean bCursor);
+	boolean Setup (CDisplay *pDisplay, boolean bCursor);
 
 	void Release (void);
 
@@ -68,6 +69,10 @@ private:
 private:
 	unsigned m_nScreenWidth;
 	unsigned m_nScreenHeight;
+	unsigned m_nWindowWidth;
+	unsigned m_nWindowHeight;
+	unsigned m_nWindowOffsetX;
+	unsigned m_nWindowOffsetY;
 	boolean m_bCursor;
 
 	unsigned m_nPosX;

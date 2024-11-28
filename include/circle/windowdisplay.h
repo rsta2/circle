@@ -53,6 +53,13 @@ public:
 		      TAreaCompletionRoutine *pRoutine = nullptr,
 		      void *pParam = nullptr) override;
 
+	/// \return Parent display
+	CDisplay *GetParent (void) const override;
+	/// \return X-offset in pixels of this window display in the parent display
+	unsigned GetOffsetX (void) const override;
+	/// \return Y-offset in pixels of this window display in the parent display
+	unsigned GetOffsetY (void) const override;
+
 private:
 	CDisplay *m_pDisplay;
 	TArea m_Area;

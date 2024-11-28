@@ -139,3 +139,18 @@ CDisplay::TColor CDisplay::GetColor (TRawColor nColor) const
 		return Black;
 	}
 }
+
+CDisplay *CDisplay::GetParent (void) const
+{
+	return nullptr;
+}
+
+unsigned CDisplay::GetOffsetX (void) const
+{
+	return 0;
+}
+
+unsigned CDisplay::GetOffsetY (void) const
+{
+	return 0;
+}

@@ -46,9 +46,9 @@ CMouseDevice::~CMouseDevice (void)
 	s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 }
 
-boolean CMouseDevice::Setup (unsigned nScreenWidth, unsigned nScreenHeight, boolean bCursor)
+boolean CMouseDevice::Setup (CDisplay *pDisplay, boolean bCursor)
 {
-	return m_Behaviour.Setup (nScreenWidth, nScreenHeight, bCursor);
+	return m_Behaviour.Setup (pDisplay, bCursor);
 }
 
 void CMouseDevice::Release (void)

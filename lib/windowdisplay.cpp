@@ -75,3 +75,18 @@ void CWindowDisplay::SetArea (const TArea &rArea, const void *pPixels,
 		m_pDisplay->SetArea (Area, pPixels, pRoutine, pParam);
 	}
 }
+
+CDisplay *CWindowDisplay::GetParent (void) const
+{
+	return m_pDisplay;
+}
+
+unsigned CWindowDisplay::GetOffsetX (void) const
+{
+	return m_Area.x1;
+}
+
+unsigned CWindowDisplay::GetOffsetY (void) const
+{
+	return m_Area.y1;
+}

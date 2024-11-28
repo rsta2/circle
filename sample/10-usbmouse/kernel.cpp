@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -162,7 +162,7 @@ TShutdownMode CKernel::Run (void)
 
 				m_Screen.Write (ClearScreen, sizeof ClearScreen-1);
 
-				if (!m_pMouse->Setup (m_Screen.GetWidth (), m_Screen.GetHeight ()))
+				if (!m_pMouse->Setup (m_Screen.GetFrameBuffer ()))
 				{
 					m_Logger.Write (FromKernel, LogPanic, "Cannot setup mouse");
 				}

@@ -117,6 +117,13 @@ public:
 			      TAreaCompletionRoutine *pRoutine = nullptr,
 			      void *pParam = nullptr) = 0;
 
+	/// \return Parent display (nullptr if none)
+	virtual CDisplay *GetParent (void) const;
+	/// \return X-offset in pixels of this window display in the parent display
+	virtual unsigned GetOffsetX (void) const;
+	/// \return Y-offset in pixels of this window display in the parent display
+	virtual unsigned GetOffsetY (void) const;
+
 private:
 	TColorModel m_ColorModel;
 };
