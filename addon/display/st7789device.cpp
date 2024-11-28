@@ -27,14 +27,12 @@ CST7789Device::CST7789Device (CSPIMaster *pSPIMaster, CST7789Display *pST7789Dis
 			      const TFont &rFont, bool bDoubleWidth, bool bDoubleHeight,
 			      boolean bBlockCursor)
 :	CCharDevice (nColumns, nRows),
-	m_pSPIMaster (pSPIMaster),
 	m_pST7789Display (pST7789Display),
 	m_nColumns (nColumns),
 	m_nRows (nRows),
 	m_rFont (rFont),
 	m_bDoubleWidth (bDoubleWidth),
-	m_bDoubleHeight (bDoubleHeight),
-	m_bBlockCursor (bBlockCursor)
+	m_bDoubleHeight (bDoubleHeight)
 {
 }
 

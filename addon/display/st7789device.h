@@ -57,7 +57,6 @@ private:
 	void DevUpdateDisplay (void) override;
 
 private:
-	CSPIMaster		*m_pSPIMaster;
 	CST7789Display	*m_pST7789Display;
 
 	unsigned m_nColumns;
@@ -67,8 +66,6 @@ private:
 	const TFont &m_rFont;
 	bool     m_bDoubleWidth;
 	bool     m_bDoubleHeight;
-
-	boolean m_bBlockCursor;
 };
 
 #endif

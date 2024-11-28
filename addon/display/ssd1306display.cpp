@@ -246,7 +246,8 @@ boolean CSSD1306Display::WriteMemory (unsigned nColumnStart, unsigned nColumnEnd
 	}
 
 	assert (pData);
-	u8 Buffer[1 + ulDataSize] = {DATA};
+	u8 Buffer[1 + ulDataSize];
+	Buffer[0] = DATA;
 	memcpy (Buffer + 1, pData, ulDataSize);
 
 	return m_pI2CMaster->Write (m_uchI2CAddress, Buffer, sizeof Buffer) == (int) sizeof Buffer;
