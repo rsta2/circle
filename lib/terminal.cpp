@@ -21,6 +21,7 @@
 #include <circle/devicenameservice.h>
 #include <circle/synchronize.h>
 #include <circle/sysconfig.h>
+#include <circle/timer.h>
 #include <circle/util.h>
 
 static const char DevicePrefix[] = "tty";
@@ -51,7 +52,8 @@ CTerminalDevice::CTerminalDevice (CDisplay *pDisplay, unsigned nDeviceIndex,
 	m_BackgroundColor (0),
 	m_bReverseAttribute (FALSE),
 	m_bInsertOn (FALSE),
-	m_bAutoPage (FALSE)
+	m_bAutoPage (FALSE),
+	m_bDelayedUpdate (FALSE)
 #ifdef REALTIME
 	, m_SpinLock (TASK_LEVEL)
 #endif
@@ -116,6 +118,9 @@ boolean CTerminalDevice::Initialize (void)
 	m_UpdateArea.y2 = m_nHeight-1;
 	m_pDisplay->SetArea (m_UpdateArea, m_pBuffer8);
 
+	m_UpdateArea.y1 = m_nHeight;
+	m_UpdateArea.y2 = 0;
+
 	if (!CDeviceNameService::Get ()->GetDevice (DevicePrefix, m_nDeviceIndex+1, FALSE))
 	{
 		CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceIndex+1, this, FALSE);
@@ -144,6 +149,7 @@ boolean CTerminalDevice::Resize (void)
 	m_bReverseAttribute = FALSE;
 	m_bInsertOn = FALSE;
 	m_bAutoPage = FALSE;
+	m_bDelayedUpdate = FALSE;
 
 	return Initialize ();
 }
@@ -185,9 +191,6 @@ int CTerminalDevice::Write (const void *pBuffer, size_t nCount)
 
 	m_SpinLock.Acquire ();
 
-	m_UpdateArea.y1 = m_nHeight;
-	m_UpdateArea.y2 = 0;
-
 	InvertCursor ();
 
 	const char *pChar = (const char *) pBuffer;
@@ -203,9 +206,13 @@ int CTerminalDevice::Write (const void *pBuffer, size_t nCount)
 	InvertCursor ();
 
 	// Update display
-	if (m_UpdateArea.y1 <= m_UpdateArea.y2)
+	if (   !m_bDelayedUpdate
+	    && m_UpdateArea.y1 <= m_UpdateArea.y2)
 	{
 		m_pDisplay->SetArea (m_UpdateArea, m_pBuffer8 + m_UpdateArea.y1 * m_nPitch);
+
+		m_UpdateArea.y1 = m_nHeight;
+		m_UpdateArea.y2 = 0;
 	}
 
 	m_SpinLock.Release ();
@@ -255,6 +262,36 @@ TTerminalColor CTerminalDevice::GetPixel (unsigned nPosX, unsigned nPosY)
 void CTerminalDevice::SetCursorBlock (boolean bCursorBlock)
 {
 	m_bCursorBlock = bCursorBlock;
+}
+
+void CTerminalDevice::Update (unsigned nMillis)
+{
+	if (!m_bDelayedUpdate)
+	{
+		m_bDelayedUpdate = TRUE;
+
+		m_nLastUpdateTicks = CTimer::GetClockTicks ();
+
+		return;
+	}
+
+	m_SpinLock.Acquire ();
+
+	unsigned nTicks = CTimer::GetClockTicks ();
+
+	if (   m_UpdateArea.y1 <= m_UpdateArea.y2
+	    && (   !nMillis
+		|| nTicks - m_nLastUpdateTicks >= nMillis * CLOCKHZ / 1000))
+	{
+		m_pDisplay->SetArea (m_UpdateArea, m_pBuffer8 + m_UpdateArea.y1 * m_nPitch);
+
+		m_UpdateArea.y1 = m_nHeight;
+		m_UpdateArea.y2 = 0;
+
+		m_nLastUpdateTicks = nTicks;
+	}
+
+	m_SpinLock.Release ();
 }
 
 void CTerminalDevice::Write (char chChar)

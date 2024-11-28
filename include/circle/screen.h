@@ -194,6 +194,12 @@ public:
 	/// \brief Implements a block cursor instead of the default underline
 	void SetCursorBlock(boolean bCursorBlock);
 
+	/// \brief Update the display from internal display buffer
+	/// \param nMillis Update only, when N ms were passed since previous update (0 to disable)
+	/// \note Once this method has been called, the display is only updated,
+	///	  when this method is called and only in the given time interval.
+	void Update (unsigned nMillis = 0);
+
 private:
 	static const unsigned Rotors = 4;
 

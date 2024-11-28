@@ -90,6 +90,12 @@ public:
 	/// \brief Enables a block cursor instead of the default underline
 	void SetCursorBlock (boolean bCursorBlock);
 
+	/// \brief Update the display from internal display buffer
+	/// \param nMillis Update only, when N ms were passed since previous update (0 to disable)
+	/// \note Once this method has been called, the display is only updated,
+	///	  when this method is called and only in the given time interval.
+	void Update (unsigned nMillis = 0);
+
 public:
 	/// \brief Set a pixel to a specific raw color
 	/// \param nPosX X-Position of the pixel (based on 0)
@@ -241,6 +247,8 @@ private:
 	unsigned	     m_nParam1;
 	unsigned	     m_nParam2;
 	boolean		     m_bAutoPage;
+	boolean		     m_bDelayedUpdate;
+	unsigned	     m_nLastUpdateTicks;
 	CSpinLock	     m_SpinLock;
 };
 
