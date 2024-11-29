@@ -75,11 +75,12 @@ boolean CUGUI::Initialize (void)
 	m_pTouchScreen = (CTouchScreenDevice *) CDeviceNameService::Get ()->GetDevice ("touch1", FALSE);
 	if (m_pTouchScreen != 0)
 	{
+		m_pTouchScreen->Setup (m_pScreen->GetFrameBuffer ());
+
 		const unsigned *pCalibration = CKernelOptions::Get ()->GetTouchScreen ();
 		if (pCalibration != 0)
 		{
-			m_pTouchScreen->SetCalibration (pCalibration, m_pScreen->GetWidth (),
-							m_pScreen->GetHeight ());
+			m_pTouchScreen->SetCalibration (pCalibration);
 		}
 
 		m_pTouchScreen->RegisterEventHandler (TouchScreenEventStub);

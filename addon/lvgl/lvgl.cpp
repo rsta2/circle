@@ -151,10 +151,12 @@ boolean CLVGL::Initialize (void)
 		m_pTouchScreen = (CTouchScreenDevice *) CDeviceNameService::Get ()->GetDevice ("touch1", FALSE);
 		if (m_pTouchScreen != 0)
 		{
+			m_pTouchScreen->Setup (m_pDisplay);
+
 			const unsigned *pCalibration = CKernelOptions::Get ()->GetTouchScreen ();
 			if (pCalibration != 0)
 			{
-				m_pTouchScreen->SetCalibration (pCalibration, nWidth, nHeight);
+				m_pTouchScreen->SetCalibration (pCalibration);
 			}
 
 			m_pTouchScreen->RegisterEventHandler (TouchScreenEventHandler);

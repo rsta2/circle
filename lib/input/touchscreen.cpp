@@ -2,7 +2,7 @@
 // touchscreen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,13 +28,14 @@ static const char DevicePrefix[] = "touch";
 CTouchScreenDevice::CTouchScreenDevice (TTouchScreenUpdateHandler *pUpdateHandler, void *pParam)
 :	m_pUpdateHandler (pUpdateHandler),
 	m_pUpdateParam (pParam),
+	m_pDisplay (0),
+	m_pParent (0),
 	m_pEventHandler (0),
+	m_bIsCalibrated (FALSE),
 	m_nScaleX (1000),
 	m_nScaleY (1000),
 	m_nOffsetX (0),
 	m_nOffsetY (0),
-	m_nWidth (10000),
-	m_nHeight (10000),
 	m_nDeviceNumber (s_DeviceNumberPool.AllocateNumber (TRUE, DevicePrefix))
 {
 	CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDeviceNumber, this, FALSE);
@@ -42,12 +43,29 @@ CTouchScreenDevice::CTouchScreenDevice (TTouchScreenUpdateHandler *pUpdateHandle
 
 CTouchScreenDevice::~CTouchScreenDevice (void)
 {
+	m_pDisplay = 0;
+	m_pParent = 0;
+
 	m_pUpdateHandler = 0;
 	m_pEventHandler = 0;
 
 	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
 
 	s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
+}
+
+void CTouchScreenDevice::Setup (CDisplay *pDisplay)
+{
+	assert (!m_pDisplay);
+	m_pDisplay = pDisplay;
+	assert (m_pDisplay);
+
+	m_pParent = m_pDisplay->GetParent ();
+	assert (!m_pParent || !m_pParent->GetParent ());	// windows may not be nested
+	if (!m_pParent)
+	{
+		m_pParent = m_pDisplay;
+	}
 }
 
 void CTouchScreenDevice::Update (void)
@@ -65,13 +83,10 @@ void CTouchScreenDevice::RegisterEventHandler (TTouchScreenEventHandler *pEventH
 	assert (m_pEventHandler != 0);
 }
 
-boolean CTouchScreenDevice::SetCalibration (const unsigned Coords[4],
-					    unsigned nWidth, unsigned nHeight)
+boolean CTouchScreenDevice::SetCalibration (const unsigned Coords[4])
 {
 	if (   Coords[0] >= Coords[1]
-	    || Coords[2] >= Coords[3]
-	    || nWidth == 0
-	    || nHeight == 0)
+	    || Coords[2] >= Coords[3])
 	{
 		return FALSE;
 	}
@@ -84,14 +99,15 @@ boolean CTouchScreenDevice::SetCalibration (const unsigned Coords[4],
 		return FALSE;
 	}
 
-	m_nScaleX = 1000 * nWidth / nTouchWidth;
+	assert (m_pParent);
+
+	m_nScaleX = 1000 * m_pParent->GetWidth () / nTouchWidth;
 	m_nOffsetX = Coords[0] * m_nScaleX/1000;
 
-	m_nScaleY = 1000 * nHeight / nTouchHeight;
+	m_nScaleY = 1000 * m_pParent->GetHeight () / nTouchHeight;
 	m_nOffsetY = Coords[2] * m_nScaleY/1000;
 
-	m_nWidth = nWidth;
-	m_nHeight = nHeight;
+	m_bIsCalibrated = TRUE;
 
 	return TRUE;
 }
@@ -106,8 +122,13 @@ void CTouchScreenDevice::ReportHandler (TTouchScreenEvent Event,
 			nPosX = nPosX * m_nScaleX/1000 - m_nOffsetX;
 			nPosY = nPosY * m_nScaleY/1000 - m_nOffsetY;
 
-			if (   nPosX < m_nWidth
-			    && nPosY < m_nHeight)
+			assert (m_pDisplay);
+			nPosX -= m_pDisplay->GetOffsetX ();
+			nPosY -= m_pDisplay->GetOffsetY ();
+
+			if (   !m_bIsCalibrated
+			    || (   nPosX < m_pDisplay->GetWidth ()
+				&& nPosY < m_pDisplay->GetHeight ()))
 			{
 				(*m_pEventHandler) (Event, nID, nPosX, nPosY);
 			}
