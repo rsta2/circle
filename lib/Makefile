@@ -18,18 +18,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-OBJS	= actled.o alloc.o assert.o bcmframebuffer.o bcmmailbox.o \
+OBJS	= actled.o alloc.o assert.o display.o windowdisplay.o bcmframebuffer.o bcmmailbox.o \
 	  bcmpropertytags.o bcmwatchdog.o chargenerator.o classallocator.o \
 	  cputhrottle.o debug.o delayloop.o device.o devicenameservice.o \
 	  dmachannel.o \
 	  koptions.o \
 	  logger.o machineinfo.o multicore.o nulldevice.o ptrarray.o ptrlist.o \
-	  qemu.o screen.o serial.o \
+	  qemu.o terminal.o screen.o serial.o \
 	  spinlock.o \
 	  string.o sysinit.o time.o timer.o tracer.o util.o \
 	  util_fast.o virtualgpiopin.o chainboot.o macaddress.o netdevice.o \
 	  new.o heapallocator.o pageallocator.o setjmp.o numberpool.o \
-	  writebuffer.o 2dgraphics.o ptrlistfiq.o
+	  writebuffer.o 2dgraphics.o ptrlistfiq.o \
+	  font6x7.o font8x8.o font8x10.o font8x12.o font8x14.o font8x16.o
 
 OBJS32	= cache-v7.o exceptionhandler.o exceptionstub.o memory.o pagetable.o \
 	  startup.o synchronize.o

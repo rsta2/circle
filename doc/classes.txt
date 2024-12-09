@@ -17,6 +17,7 @@ Base library
 * CDevice: Base class for all devices
 * CDeviceNameService: Devices can be registered by name and retrieved later by this name
 * CDeviceTreeBlob: Simple Devicetree blob parser
+* CDisplay: Base class for dot-matrix display drivers.
 * CDMA4Channel: Platform DMA4 "large address" controller support (helper class).
 * CDMAChannel: Platform DMA controller support (I/O read/write, memory copy).
 * CDMAChannelRP1: RP1 platform DMA controller support (for Raspberry Pi 5).
@@ -58,12 +59,14 @@ Base library
 * CSPIMasterAUX: Driver for the auxiliary SPI master (SPI1).
 * CSPIMasterDMA: Driver for SPI0 master device. Asynchronous DMA operation.
 * CString: Simple string manipulation class, Format() method works like printf() (but has less formating options)
+* CTerminalDevice: Terminal support for dot-matrix displays.
 * CTime: Holds, makes and breaks the time.
 * CTimer: Manages the system clock, supports kernel timers and a calibrated delay loop.
 * CTracer: Collects tracing events in a ring buffer for debugging and dumps them to the logger later.
 * CTranslationTable: Encapsulates a translation table to be used by MMU (AArch64).
 * CUserTimer: Fine grained user programmable interrupt timer (based on ARM_IRQ_TIMER1)
 * CVirtualGPIOPin: Encapsulates a "virtual" GPIO pin controlled by the VideoCore (Output only).
+* CWindowDisplay: Non-overlapping window on a display.
 * CWriteBufferDevice: Filter for buffered write to (e.g. screen) device.
 
 USB library
@@ -157,6 +160,7 @@ Input library
 * CMouseDevice: Generic mouse interface device
 * CRPiTouchScreen: Driver for the official Raspberry Pi touch screen
 * CTouchScreenDevice: Generic touch screen interface device
+* CXPT2046TouchScreen: Driver for XPT2046-based touch screens
 
 FS library
 

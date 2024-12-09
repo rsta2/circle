@@ -6,6 +6,7 @@ CIRCLEHOME = ../..
 
 LVGL_DIR = .
 LVGL_DIR_NAME = lvgl
+LVGL_PATH = ./lvgl
 
 include $(LVGL_DIR)/lvgl/lvgl.mk
 

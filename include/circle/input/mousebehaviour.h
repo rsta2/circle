@@ -2,7 +2,7 @@
 // mousebehaviour.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #ifndef _circle_input_mousebehaviour_h
 #define _circle_input_mousebehaviour_h
 
+#include <circle/display.h>
 #include <circle/types.h>
 
 enum TMouseEvent
@@ -47,7 +48,8 @@ public:
 	CMouseBehaviour (void);
 	~CMouseBehaviour (void);
 
-	boolean Setup (unsigned nScreenWidth, unsigned nScreenHeight);	// returns FALSE on failure
+	// returns FALSE on failure
+	boolean Setup (CDisplay *pDisplay, boolean bCursor);
 
 	void Release (void);
 
@@ -62,11 +64,16 @@ public:
 	void MouseStatusChanged (unsigned nButtons, int nDisplacementX, int nDisplacementY, int nWheelMove);
 
 private:
-	static boolean SetCursorState (unsigned nPosX, unsigned nPosY, boolean bVisible);
+	boolean SetCursorState (unsigned nPosX, unsigned nPosY, boolean bVisible);
 
 private:
 	unsigned m_nScreenWidth;
 	unsigned m_nScreenHeight;
+	unsigned m_nWindowWidth;
+	unsigned m_nWindowHeight;
+	unsigned m_nWindowOffsetX;
+	unsigned m_nWindowOffsetY;
+	boolean m_bCursor;
 
 	unsigned m_nPosX;
 	unsigned m_nPosY;

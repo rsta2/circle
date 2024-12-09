@@ -28,20 +28,17 @@
 
 CLVGL *CLVGL::s_pThis = 0;
 
-CLVGL::CLVGL (CScreenDevice *pScreen, CInterruptSystem *pInterrupt)
+CLVGL::CLVGL (CScreenDevice *pScreen)
 :	m_pBuffer1 (0),
 	m_pBuffer2 (0),
 	m_pScreen (pScreen),
-	m_pFrameBuffer (0),
-	m_DMAChannel (DMA_CHANNEL_NORMAL, pInterrupt),
+	m_pDisplay (0),
 	m_nLastUpdate (0),
 	m_pMouseDevice (0),
 	m_pTouchScreen (0),
-	m_nLastTouchUpdate (0)
-#if RASPPI >= 5
-	, m_pIndev (0),
+	m_nLastTouchUpdate (0),
+	m_pIndev (0),
 	m_pCursorDesc (0)
-#endif
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -51,20 +48,17 @@ CLVGL::CLVGL (CScreenDevice *pScreen, CInterruptSystem *pInterrupt)
 	m_PointerData.point.y = 0;
 }
 
-CLVGL::CLVGL (CBcmFrameBuffer *pFrameBuffer, CInterruptSystem *pInterrupt)
+CLVGL::CLVGL (CDisplay *pDisplay)
 :	m_pBuffer1 (0),
 	m_pBuffer2 (0),
 	m_pScreen (0),
-	m_pFrameBuffer (pFrameBuffer),
-	m_DMAChannel (DMA_CHANNEL_NORMAL, pInterrupt),
+	m_pDisplay (pDisplay),
 	m_nLastUpdate (0),
 	m_pMouseDevice (0),
 	m_pTouchScreen (0),
-	m_nLastTouchUpdate (0)
-#if RASPPI >= 5
-	, m_pIndev (0),
+	m_nLastTouchUpdate (0),
+	m_pIndev (0),
 	m_pCursorDesc (0)
-#endif
 {
 	assert (s_pThis == 0);
 	s_pThis = this;
@@ -78,13 +72,11 @@ CLVGL::~CLVGL (void)
 {
 	s_pThis = 0;
 
-#if RASPPI >= 5
 	delete m_pCursorDesc;
-#endif
 
 	m_pTouchScreen = 0;
 	m_pMouseDevice = 0;
-	m_pFrameBuffer = 0;
+	m_pDisplay = 0;
 	m_pScreen = 0;
 
 	delete [] m_pBuffer1;
@@ -95,16 +87,15 @@ CLVGL::~CLVGL (void)
 
 boolean CLVGL::Initialize (void)
 {
-	if (m_pFrameBuffer == 0)
+	if (m_pDisplay == 0)
 	{
 		assert (m_pScreen != 0);
-		m_pFrameBuffer = m_pScreen->GetFrameBuffer ();
+		m_pDisplay = m_pScreen->GetFrameBuffer ();
 	}
 
-	assert (m_pFrameBuffer != 0);
-	assert (m_pFrameBuffer->GetDepth () == LV_COLOR_DEPTH);
-	size_t nWidth = m_pFrameBuffer->GetWidth ();
-	size_t nHeight = m_pFrameBuffer->GetHeight ();
+	assert (m_pDisplay != 0);
+	size_t nWidth = m_pDisplay->GetWidth ();
+	size_t nHeight = m_pDisplay->GetHeight ();
 
 	lv_init ();
 
@@ -121,6 +112,16 @@ boolean CLVGL::Initialize (void)
 	}
 
 	static lv_display_t *display = lv_display_create (nWidth, nHeight);
+
+	if (m_pDisplay->GetDepth () == 1)
+	{
+		lv_display_set_color_format (display, LV_COLOR_FORMAT_I1);
+	}
+	else
+	{
+		assert (m_pDisplay->GetDepth () == LV_COLOR_DEPTH);
+	}
+
 	lv_display_set_flush_cb (display, DisplayFlush);
 	lv_display_set_buffers (display, m_pBuffer1, m_pBuffer2, nBufSizePixels * sizeof (u16),
 				LV_DISP_RENDER_MODE_PARTIAL);
@@ -128,8 +129,11 @@ boolean CLVGL::Initialize (void)
 	m_pMouseDevice = (CMouseDevice *) CDeviceNameService::Get ()->GetDevice ("mouse1", FALSE);
 	if (m_pMouseDevice != 0)
 	{
-		if (m_pMouseDevice->Setup (nWidth, nHeight))
+		if (m_pMouseDevice->Setup (m_pDisplay, FALSE))
 		{
+			m_PointerData.point.x = (nWidth+1) / 2;
+			m_PointerData.point.y = (nHeight+1) / 2;
+
 			m_pMouseDevice->ShowCursor (TRUE);
 
 			m_pMouseDevice->RegisterEventHandler (MouseEventHandler);
@@ -147,10 +151,12 @@ boolean CLVGL::Initialize (void)
 		m_pTouchScreen = (CTouchScreenDevice *) CDeviceNameService::Get ()->GetDevice ("touch1", FALSE);
 		if (m_pTouchScreen != 0)
 		{
+			m_pTouchScreen->Setup (m_pDisplay);
+
 			const unsigned *pCalibration = CKernelOptions::Get ()->GetTouchScreen ();
 			if (pCalibration != 0)
 			{
-				m_pTouchScreen->SetCalibration (pCalibration, nWidth, nHeight);
+				m_pTouchScreen->SetCalibration (pCalibration);
 			}
 
 			m_pTouchScreen->RegisterEventHandler (TouchScreenEventHandler);
@@ -160,18 +166,15 @@ boolean CLVGL::Initialize (void)
 	static lv_indev_t *indev = lv_indev_create ();
 	lv_indev_set_type (indev, LV_INDEV_TYPE_POINTER);
 	lv_indev_set_read_cb (indev, PointerRead);
-#if RASPPI >= 5
+
 	assert (m_pIndev == 0);
 	m_pIndev = indev;
-#endif
 
-#if RASPPI >= 5
 	if (m_pMouseDevice != 0)
 	{
 		assert (m_pIndev != 0);
 		SetupCursor (m_pIndev);
 	}
-#endif
 
 	CTimer::Get ()->RegisterPeriodicHandler (PeriodicTickHandler);
 
@@ -187,20 +190,20 @@ void CLVGL::Update (boolean bPlugAndPlayUpdated)
 			(CMouseDevice *) CDeviceNameService::Get ()->GetDevice ("mouse1", FALSE);
 		if (m_pMouseDevice != 0)
 		{
-			assert (m_pFrameBuffer != 0);
-			if (m_pMouseDevice->Setup (m_pFrameBuffer->GetWidth (),
-						   m_pFrameBuffer->GetHeight ()))
+			assert (m_pDisplay != 0);
+			if (m_pMouseDevice->Setup (m_pDisplay, FALSE))
 			{
+				m_PointerData.point.x = (m_pDisplay->GetWidth ()+1) / 2;
+				m_PointerData.point.y = (m_pDisplay->GetHeight ()+1) / 2;
+
 				m_pMouseDevice->ShowCursor (TRUE);
 
 				m_pMouseDevice->RegisterEventHandler (MouseEventHandler);
 
 				m_pMouseDevice->RegisterRemovedHandler (MouseRemovedHandler);
 
-#if RASPPI >= 5
 				assert (m_pIndev != 0);
 				SetupCursor (m_pIndev);
-#endif
 			}
 		}
 	}
@@ -233,35 +236,28 @@ void CLVGL::DisplayFlush (lv_display_t *pDisplay, const lv_area_t *pArea, u8 *pB
 	assert (s_pThis != 0);
 
 	assert (pArea != 0);
-	int32_t x1 = pArea->x1;
-	int32_t x2 = pArea->x2;
-	int32_t y1 = pArea->y1;
-	int32_t y2 = pArea->y2;
+	CDisplay::TArea Area;
+	Area.x1 = pArea->x1;
+	Area.x2 = pArea->x2;
+	Area.y1 = pArea->y1;
+	Area.y2 = pArea->y2;
 
-	assert (x1 <= x2);
-	assert (y1 <= y2);
+	assert (Area.x1 <= Area.x2);
+	assert (Area.y1 <= Area.y2);
 	assert (pBuffer != 0);
 
-	assert (s_pThis->m_pFrameBuffer != 0);
-	void *pDestination = (void *) (uintptr) (  s_pThis->m_pFrameBuffer->GetBuffer ()
-						 + y1*s_pThis->m_pFrameBuffer->GetPitch ()
-						 + x1*LV_COLOR_DEPTH/8);
-
-	size_t nBlockLength = (x2-x1+1) * LV_COLOR_DEPTH/8;
-
-	s_pThis->m_DMAChannel.SetupMemCopy2D (pDestination, pBuffer,
-					      nBlockLength, y2-y1+1,
-					      s_pThis->m_pFrameBuffer->GetPitch ()-nBlockLength);
+	assert (s_pThis->m_pDisplay != 0);
+	if (s_pThis->m_pDisplay->GetDepth () == 1)
+	{
+		pBuffer += 8;		// ignore palette
+	}
 
 	assert (pDisplay != 0);
-	s_pThis->m_DMAChannel.SetCompletionRoutine (DisplayFlushComplete, pDisplay);
-	s_pThis->m_DMAChannel.Start ();
+	s_pThis->m_pDisplay->SetArea (Area, pBuffer, DisplayFlushComplete, pDisplay);
 }
 
-void CLVGL::DisplayFlushComplete (unsigned nChannel, unsigned nBuffer, boolean bStatus, void *pParam)
+void CLVGL::DisplayFlushComplete (void *pParam)
 {
-	assert (bStatus);
-
 	lv_display_t *pDisplay = (lv_display_t *) pParam;
 	assert (pDisplay != 0);
 
@@ -308,15 +304,18 @@ void CLVGL::MouseEventHandler (TMouseEvent Event, unsigned nButtons,
 }
 
 void CLVGL::TouchScreenEventHandler (TTouchScreenEvent Event, unsigned nID,
-					  unsigned nPosX, unsigned nPosY)
+				     unsigned nPosX, unsigned nPosY)
 {
 	assert (s_pThis != 0);
+	assert (s_pThis->m_pDisplay != 0);
 
 	switch (Event)
 	{
 	case TouchScreenEventFingerDown:
 	case TouchScreenEventFingerMove:
-		if (nID == 0)
+		if (   nID == 0
+		    && nPosX < s_pThis->m_pDisplay->GetWidth ()
+		    && nPosY < s_pThis->m_pDisplay->GetHeight ())
 		{
 			s_pThis->m_PointerData.state = LV_INDEV_STATE_PRESSED;
 			s_pThis->m_PointerData.point.x = nPosX;
@@ -385,8 +384,6 @@ void CLVGL::PeriodicTickHandler (void)
 	lv_tick_inc (1000 / HZ);
 }
 
-#if RASPPI >= 5
-
 #define CURSOR_WIDTH	11
 #define CURSOR_HEIGHT	16
 
@@ -437,5 +434,3 @@ void CLVGL::SetupCursor (lv_indev_t *pIndev)
 		lv_indev_set_cursor (pIndev, pCursorImage);
 	}
 }
-
-#endif

@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -128,9 +128,9 @@ TShutdownMode CKernel::Run (void)
 	for (unsigned nPosX = 0; nPosX < WIDTH; nPosX++)
 	{
 		m_Display.SetPixel (nPosX, 0, MY_COLOR);
-		m_Display.SetPixel (nPosX, WIDTH-1, MY_COLOR);
+		m_Display.SetPixel (nPosX, HEIGHT-1, MY_COLOR);
 	}
-	for (unsigned nPosY = 0; nPosY < WIDTH; nPosY++)
+	for (unsigned nPosY = 0; nPosY < HEIGHT; nPosY++)
 	{
 		m_Display.SetPixel (0, nPosY, MY_COLOR);
 		m_Display.SetPixel (WIDTH-1, nPosY, MY_COLOR);
@@ -139,7 +139,7 @@ TShutdownMode CKernel::Run (void)
 	// draw cross
 	for (unsigned nPosX = 0; nPosX < WIDTH; nPosX++)
 	{
-		unsigned nPosY = nPosX * WIDTH / WIDTH;
+		unsigned nPosY = nPosX * HEIGHT / WIDTH;
 
 		m_Display.SetPixel (nPosX, nPosY, MY_COLOR);
 		m_Display.SetPixel (WIDTH-nPosX-1, nPosY, MY_COLOR);

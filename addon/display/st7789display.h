@@ -2,7 +2,7 @@
 /// \file st7789display.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,19 +20,20 @@
 #ifndef _display_st7789display_h
 #define _display_st7789display_h
 
+#include <circle/display.h>
 #include <circle/spimaster.h>
 #include <circle/gpiopin.h>
 #include <circle/chargenerator.h>
-#include <circle/timer.h>
 #include <circle/util.h>
 #include <circle/types.h>
 
-class CST7789Display	/// Driver for ST7789-based dot-matrix displays
+class CST7789Display : public CDisplay	/// Driver for ST7789-based dot-matrix displays
 {
 public:
 	static const unsigned None = GPIO_PINS;
 
 	typedef u16 TST7789Color;
+// These colors are valid with bSwapColorBytes only.
 // really ((green) & 0x3F) << 5, but to have a 0-31 range for all colors
 #define ST7789_COLOR(red, green, blue)	  bswap16 (((red) & 0x1F) << 11 \
 					| ((green) & 0x1F) << 6 \
@@ -54,18 +55,23 @@ public:
 	/// \param CPHA SPI clock phase (0 or 1, default 0)
 	/// \param nClockSpeed SPI clock frequency in Hz
 	/// \param nChipSelect SPI chip select (if connected, otherwise don't care)
+	/// \param bSwapColorBytes Use big endian colors instead of normal RGB565
 	/// \note GPIO pin numbers are SoC number, not header positions.
 	/// \note If SPI chip select is not connected, CPOL should probably be 1.
 	CST7789Display (CSPIMaster *pSPIMaster,
 			unsigned nDCPin, unsigned nResetPin = None, unsigned nBackLightPin = None,
 			unsigned nWidth = 240, unsigned nHeight = 240,
 			unsigned CPOL = 0, unsigned CPHA = 0, unsigned nClockSpeed = 15000000,
-			unsigned nChipSelect = 0);
+			unsigned nChipSelect = 0, boolean bSwapColorBytes = TRUE);
+
+	~CST7789Display (void);
 
 	/// \return Display width in number of pixels
 	unsigned GetWidth (void) const		{ return m_nWidth; }
 	/// \return Display height in number of pixels
 	unsigned GetHeight (void) const		{ return m_nHeight; }
+	/// \return Number of bits per pixels
+	unsigned GetDepth (void) const		{ return 16; }
 
 	/// \return Operation successful?
 	boolean Initialize (void);
@@ -99,9 +105,26 @@ public:
 	/// \param BgColor RGB565 background color with swapped bytes (see: ST7789_COLOR())
 	/// \param bDoubleWidth default TRUE for thicker characters on screen
 	/// \param bDoubleHeight default TRUE for higher characters on screen
+	/// \param rFont Font to be used
 	void DrawText (unsigned nPosX, unsigned nPosY, const char *pString,
 		       TST7789Color Color, TST7789Color BgColor = ST7789_BLACK_COLOR,
-			bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE);
+		       bool bDoubleWidth = TRUE, bool bDoubleHeight = TRUE,
+		       const TFont &rFont = Font8x16);
+
+	/// \brief Set a single pixel to color
+	/// \param nPosX X-position (0..width-1)
+	/// \param nPosY Y-postion (0..height-1)
+	/// \param nColor Raw color value (RGB565 or RGB565_BE)
+	void SetPixel (unsigned nPosX, unsigned nPosY, TRawColor nColor);
+
+	/// \brief Set area (rectangle) on the display to the raw colors in pPixels
+	/// \param rArea Coordinates of the area (zero-based)
+	/// \param pPixels Pointer to array with raw color values (RGB565 or RGB565_BE)
+	/// \param pRoutine Routine to be called on completion
+	/// \param pParam User parameter to be handed over to completion routine
+	void SetArea (const TArea &rArea, const void *pPixels,
+		      TAreaCompletionRoutine *pRoutine = nullptr,
+		      void *pParam = nullptr);
 
 private:
 	void SetWindow (unsigned x0, unsigned y0, unsigned x1, unsigned y1);
@@ -126,14 +149,14 @@ private:
 	unsigned m_CPHA;
 	unsigned m_nClockSpeed;
 	unsigned m_nChipSelect;
+	boolean m_bSwapColorBytes;
+
 	unsigned m_nRotation;
+	u16 *m_pBuffer;
 
 	CGPIOPin m_DCPin;
 	CGPIOPin m_ResetPin;
 	CGPIOPin m_BackLightPin;
-
-	CCharGenerator m_CharGen;
-	CTimer *m_pTimer;
 };
 
 #endif

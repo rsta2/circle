@@ -531,8 +531,11 @@ void CDMAChannel::InterruptHandler (void)
 	m_bStatus = nCS & CS_ERROR ? FALSE : TRUE;
 
 	assert (m_pCompletionRoutine != 0);
+	TDMACompletionRoutine *pCompletionRoutine = m_pCompletionRoutine;
+	m_pCompletionRoutine = 0;
+
 	assert (m_nCurrentBuffer < MaxCyclicBuffers);
-	(*m_pCompletionRoutine) (m_nChannel, m_nCurrentBuffer, m_bStatus, m_pCompletionParam);
+	(*pCompletionRoutine) (m_nChannel, m_nCurrentBuffer, m_bStatus, m_pCompletionParam);
 
 	if (   m_bStatus
 	    && m_nBuffers > 1)

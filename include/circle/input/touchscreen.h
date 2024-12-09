@@ -2,7 +2,7 @@
 /// \file touchscreen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_input_touchscreen_h
 
 #include <circle/device.h>
+#include <circle/display.h>
 #include <circle/numberpool.h>
 #include <circle/types.h>
 
@@ -45,16 +46,18 @@ public:
 	CTouchScreenDevice (TTouchScreenUpdateHandler *pUpdateHandler = 0, void *pParam = 0);
 	~CTouchScreenDevice (void);
 
+	/// \param pDisplay The display (or window), which receives the touch events
+	/// \note Must be called before any other method!
+	void Setup (CDisplay *pDisplay);
+
 	/// \note Call this about 60 times per second!
 	void Update (void);
 
 	void RegisterEventHandler (TTouchScreenEventHandler *pEventHandler);
 
 	/// \param Coords Usable Touch screen coordinates (min x, max x, min y, max y)
-	/// \param nWidth Physical screen width in number of pixels
-	/// \param nHeight Physical screen height in number of pixels
 	/// \return Calibration data valid?
-	boolean SetCalibration (const unsigned Coords[4], unsigned nWidth, unsigned nHeight);
+	boolean SetCalibration (const unsigned Coords[4]);
 
 public:
 	/// \warning Do not call this from application!
@@ -64,14 +67,16 @@ private:
 	TTouchScreenUpdateHandler *m_pUpdateHandler;
 	void *m_pUpdateParam;
 
+	CDisplay *m_pDisplay;
+	CDisplay *m_pParent;
+
 	TTouchScreenEventHandler *m_pEventHandler;
 
+	boolean m_bIsCalibrated;
 	unsigned m_nScaleX;	// scale * 1000
 	unsigned m_nScaleY;	// scale * 1000
 	unsigned m_nOffsetX;
 	unsigned m_nOffsetY;
-	unsigned m_nWidth;
-	unsigned m_nHeight;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

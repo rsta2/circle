@@ -91,7 +91,7 @@ namespace
 		using Column = u16;
 		using ColumnData = Column[6];
 
-		constexpr Font(const CharData(&CharData)[N], F Function) : mCharData{ 0 }
+		constexpr Font(const CharData(&CharData)[N], F Function) : mCharData{ {0} }
 		{
 			for (size_t i = 0; i < N; ++i)
 				for (u8 j = 0; j < 6; ++j)
@@ -106,7 +106,7 @@ namespace
 }
 
 // Single and double-height versions of the font
-constexpr auto FontSingle = Font<FONT_SIZE, decltype(SingleColumn)>(Font6x8, SingleColumn);
+// constexpr auto FontSingle = Font<FONT_SIZE, decltype(SingleColumn)>(Font6x8, SingleColumn);
 constexpr auto FontDouble = Font<FONT_SIZE, decltype(DoubleColumn)>(Font6x8, DoubleColumn);
 
 
