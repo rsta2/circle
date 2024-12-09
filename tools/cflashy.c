@@ -95,6 +95,7 @@ static speed_t Baud2Speed (unsigned nBaud)
 		{57600,		B57600},
 		{115200,	B115200},
 		{230400,	B230400},
+#ifndef __APPLE__
 		{460800,	B460800},
 		{500000,	B500000},
 		{576000,	B576000},
@@ -107,6 +108,7 @@ static speed_t Baud2Speed (unsigned nBaud)
 		{3000000,	B3000000},
 		{3500000,	B3500000},
 		{4000000,	B4000000},
+#endif
 		{0,		B0}
 	};
 
