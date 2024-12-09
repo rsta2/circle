@@ -97,9 +97,8 @@ _start:
 	msr CNTVOFF_EL2, xzr
 
 	/* Enable FP/SIMD */
-	/* All set bits below are res1; bit 10 (TFP) is set to 0 */
-	mov x0, #0x33ff
-	msr CPTR_EL3, x0
+	/* bit 10 (TFP) set to 0 */
+	msr CPTR_EL3, xzr
 
 	/* Set up SCR */
 	mov x0, #SCR_VAL
