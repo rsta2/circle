@@ -2,7 +2,7 @@
 // pcm512xsoundcontroller.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -185,6 +185,19 @@ boolean CPCM512xSoundController::SetVolume (TJack Jack, TChannel Channel, int nd
 //
 boolean CPCM512xSoundController::InitPCM512x (u8 uchI2CAddress)
 {
+	assert (m_pI2CMaster);
+	assert (uchI2CAddress);
+
+	// Check reset value of register 42 for detection of PCM512x
+	const u8 Reg2a = 0x2a;
+	u8 uchValue;
+	if (   m_pI2CMaster->Write (uchI2CAddress, &Reg2a, sizeof (Reg2a)) != sizeof (Reg2a)
+	    || m_pI2CMaster->Read (uchI2CAddress, &uchValue, sizeof (uchValue)) != sizeof (uchValue)
+	    || (uchValue & 0x33) != 0x11)
+	{
+		return FALSE;
+	}
+
 	static const u8 initBytes[][2] =
 	{
 		// Set PLL reference clock to BCK (set SREF to 001b)
@@ -197,8 +210,6 @@ boolean CPCM512xSoundController::InitPCM512x (u8 uchI2CAddress)
 		{ 0x41, 0x04 }
 	};
 
-	assert (m_pI2CMaster);
-	assert (uchI2CAddress);
 	for (auto &command : initBytes)
 	{
 		if (   m_pI2CMaster->Write (uchI2CAddress, &command, sizeof (command))
