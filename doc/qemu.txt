@@ -4,7 +4,7 @@ Circle applications can run inside the QEMU processor emulator in 32- and 64-bit
 mode. Not all Raspberry Pi hardware devices are supported by QEMU, so there may
 be restrictions, but a number of Circle samples will run. In the past there was
 no USB and networking support for the Raspberry Pi in the official QEMU, but the
-current v6.0.0 provides USB and TCP/IP networking support now. For running
+current v9.1.1 provides USB and TCP/IP networking support now. For running
 Circle applications with USB in QEMU, there is still a patch needed, which is
 provided in this repository:
 
@@ -14,12 +14,14 @@ To get and build the QEMU source code for Circle enter the following commands:
 
 	git clone https://github.com/smuehlst/qemu.git
 	cd qemu
-	git submodule update --init --recursive
 
 	mkdir build
 	cd build
-	../configure --target-list=arm-softmmu,aarch64-softmmu
+	../configure --target-list=arm-softmmu,aarch64-softmmu [ --enable-slirp ]
 	make
+
+The option --enable-slirp is necessary for networking support. This requires
+the libslirp[0] package installed on your machine.
 
 There is an option --qemu supported by the Circle configure tool, which should
 be applied, when building Circle programs to run in QEMU.
@@ -45,6 +47,7 @@ These options enable specific features of QEMU:
 -device usb-kbd		(enable USB keyboard support)
 -device usb-mouse	(enable USB mouse support, but mouse cursor not working)
 -semihosting		(enable semihosting support)
+-append option		(append option to the kernel options command line)
 
 With the last option the possibility to automatically exit QEMU, requested by a
 Circle program, is enabled. This requires the system option LEAVE_QEMU_ON_HALT to
@@ -75,7 +78,7 @@ with ARM support. You have to add the options -s (enable GDB support) and -S
 following commands:
 
 	file kernel8.elf
-	target remote :1234
+	target extended-remote :1234
 	cont
 
 
