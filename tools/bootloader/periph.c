@@ -20,8 +20,7 @@ extern void dummy ( unsigned int );
 
 #ifndef RPI5
 
-#define ARM_TIMER_CTL   (PBASE+0x0000B408)
-#define ARM_TIMER_CNT   (PBASE+0x0000B420)
+#define ARM_SYSTIMER_CLO (PBASE + 0x3004)
 
 #define GPFSEL1         (PBASE+0x00200004)
 #define GPSET0          (PBASE+0x0020001C)
@@ -29,25 +28,13 @@ extern void dummy ( unsigned int );
 #define GPPUD           (PBASE+0x00200094)
 #define GPPUDCLK0       (PBASE+0x00200098)
 
-#define AUX_ENABLES     (PBASE+0x00215004)
-#define AUX_MU_IO_REG   (PBASE+0x00215040)
-#define AUX_MU_IER_REG  (PBASE+0x00215044)
-#define AUX_MU_IIR_REG  (PBASE+0x00215048)
-#define AUX_MU_LCR_REG  (PBASE+0x0021504C)
-#define AUX_MU_MCR_REG  (PBASE+0x00215050)
-#define AUX_MU_LSR_REG  (PBASE+0x00215054)
-#define AUX_MU_MSR_REG  (PBASE+0x00215058)
-#define AUX_MU_SCRATCH  (PBASE+0x0021505C)
-#define AUX_MU_CNTL_REG (PBASE+0x00215060)
-#define AUX_MU_STAT_REG (PBASE+0x00215064)
-#define AUX_MU_BAUD_REG (PBASE+0x00215068)
-
-//GPIO14  TXD0 and TXD1
-//GPIO15  RXD0 and RXD1
+#define ARM_UART0_BASE  (PBASE + 0x201000)
 
 #else
 
 #define ARM_UART0_BASE	(PBASE + 0x1001000)
+
+#endif
 
 #define ARM_UART0_DR	(ARM_UART0_BASE + 0x00)
 #define ARM_UART0_FR    (ARM_UART0_BASE + 0x18)
@@ -61,6 +48,11 @@ extern void dummy ( unsigned int );
 #define ARM_UART0_MIS   (ARM_UART0_BASE + 0x40)
 #define ARM_UART0_ICR   (ARM_UART0_BASE + 0x44)
 
+//------------------------------------------------------------------------
+#ifdef RPI4
+#define ARM_GPIO_GPPUPPDN0  (PBASE+0x002000E4)
+
+#define ARM_LOCAL_PRESCALER (LBASE + 0x008)
 #endif
 
 //------------------------------------------------------------------------
@@ -88,71 +80,46 @@ extern void dummy ( unsigned int );
 #define PROPTAG_END		0x00000000
 
 #define CLOCK_ID_UART		2
-#define CLOCK_ID_CORE		4
 
 unsigned get_clock (unsigned nClockID);
 unsigned div (unsigned nDividend, unsigned nDivisor);
 //------------------------------------------------------------------------
-#ifndef RPI5
 unsigned int uart_lcr ( void )
 {
-    return(GET32(AUX_MU_LSR_REG));
+    return(GET32(ARM_UART0_LCRH));
 }
-#endif
 //------------------------------------------------------------------------
 unsigned int uart_recv ( void )
 {
-#ifndef RPI5
-    while(1)
-    {
-        if(GET32(AUX_MU_LSR_REG)&0x01) break;
-    }
-    return(GET32(AUX_MU_IO_REG)&0xFF);
-#else
     while(1)
     {
         if(!(GET32(ARM_UART0_FR)&0x10)) break;
     }
     return(GET32(ARM_UART0_DR)&0xFF);
-#endif
 }
 //------------------------------------------------------------------------
 unsigned int uart_check ( void )
 {
-#ifndef RPI5
-    if(GET32(AUX_MU_LSR_REG)&0x01) return(1);
-#else
     if(!(GET32(ARM_UART0_FR)&0x10)) return(1);
-#endif
     return(0);
 }
 //------------------------------------------------------------------------
 void uart_send ( unsigned int c )
 {
-#ifndef RPI5
-    while(1)
-    {
-        if(GET32(AUX_MU_LSR_REG)&0x20) break;
-    }
-    PUT32(AUX_MU_IO_REG,c);
-#else
     while(1)
     {
         if(!(GET32(ARM_UART0_FR)&0x20)) break;
     }
     PUT32(ARM_UART0_DR,c);
-#endif
 }
 //------------------------------------------------------------------------
-#ifndef RPI5
 void uart_flush ( void )
 {
     while(1)
     {
-        if((GET32(AUX_MU_LSR_REG)&0x100)==0) break;
+        if((GET32(ARM_UART0_FR)&0x08)==0) break;
     }
 }
-#endif
 //------------------------------------------------------------------------
 void hexstrings ( unsigned int d )
 {
@@ -184,27 +151,31 @@ void uart_init ( void )
 #ifndef RPI5
     unsigned int ra;
 
-    PUT32(AUX_ENABLES,1);
-    PUT32(AUX_MU_IER_REG,0);
-    PUT32(AUX_MU_CNTL_REG,0);
-    PUT32(AUX_MU_LCR_REG,3);
-    PUT32(AUX_MU_MCR_REG,0);
-    PUT32(AUX_MU_IER_REG,0);
-    PUT32(AUX_MU_IIR_REG,0xC6);
-    PUT32(AUX_MU_BAUD_REG,div(get_clock(CLOCK_ID_CORE)/8 + DEFAULTBAUD/2, DEFAULTBAUD) - 1);
     ra=GET32(GPFSEL1);
     ra&=~(7<<12); //gpio14
-    ra|=2<<12;    //alt5
+    ra|=4<<12;    //alt0
     ra&=~(7<<15); //gpio15
-    ra|=2<<15;    //alt5
+    ra|=4<<15;    //alt0
     PUT32(GPFSEL1,ra);
-    PUT32(GPPUD,0);
+#ifndef RPI4
+    PUT32(GPPUD,0);     // no pull
     for(ra=0;ra<150;ra++) dummy(ra);
-    PUT32(GPPUDCLK0,(1<<14)|(1<<15));
+    PUT32(GPPUDCLK0,1<<14);
     for(ra=0;ra<150;ra++) dummy(ra);
     PUT32(GPPUDCLK0,0);
-    PUT32(AUX_MU_CNTL_REG,3);
+    PUT32(GPPUD,2);     // pull up
+    for(ra=0;ra<150;ra++) dummy(ra);
+    PUT32(GPPUDCLK0,1<<15);
+    for(ra=0;ra<150;ra++) dummy(ra);
+    PUT32(GPPUDCLK0,0);
 #else
+    ra=GET32(ARM_GPIO_GPPUPPDN0);
+    ra &= ~(3 << (14 * 2)); // no pull
+    ra &= ~(3 << (15 * 2));
+    ra |= 1 << (15 * 2);    // pull up
+    PUT32(ARM_GPIO_GPPUPPDN0, ra);
+#endif
+#endif
     unsigned nBaudrate = DEFAULTBAUD;
     unsigned nClockRate = get_clock(CLOCK_ID_UART);
     unsigned nBaud16 = nBaudrate * 16;
@@ -218,23 +189,19 @@ void uart_init ( void )
     PUT32(ARM_UART0_FBRD, nFractDiv);
     PUT32(ARM_UART0_LCRH, (1 << 4) | (3 << 5));
     PUT32(ARM_UART0_CR, (1 << 0) | (1 << 8) | (1 << 9));
-#endif
 }
 //------------------------------------------------------------------------
 void  timer_init ( void )
 {
-#ifndef RPI5
-    //0xF9+1 = 250
-    //250MHz/250 = 1MHz
-    PUT32(ARM_TIMER_CTL,0x00F90000);
-    PUT32(ARM_TIMER_CTL,0x00F90200);
+#if defined(RPI4) && AARCH == 32
+    PUT32(ARM_LOCAL_PRESCALER, 39768216U);      // 1 MHz clock
 #endif
 }
 //-------------------------------------------------------------------------
 unsigned int timer_tick ( void )
 {
 #ifndef RPI5
-    return(GET32(ARM_TIMER_CNT));
+    return(GET32(ARM_SYSTIMER_CLO));
 #else
     asm volatile ("isb" ::: "memory");
 
@@ -249,8 +216,10 @@ unsigned int timer_tick ( void )
 //-------------------------------------------------------------------------
 unsigned mbox_writeread (unsigned nData)
 {
-#ifdef RPI5
+#if defined(RPI2) || defined(RPI4) || defined(RPI5) || AARCH == 64
 	nData |= 0xC0000000U;		// convert to bus address
+#else
+	nData |= 0x40000000U;
 #endif
 
 	while (GET32 (MAILBOX1_STATUS) & MAILBOX_STATUS_FULL)
@@ -278,7 +247,7 @@ unsigned mbox_writeread (unsigned nData)
 unsigned get_clock (unsigned nClockID)
 {
 	// does not work without a short delay with newer firmware on RPi 1
-	for (volatile unsigned i = 0; i < 10000; i++);
+	for (volatile unsigned i = 0; i < 100000; i++);
 
 	unsigned proptag[] __attribute__ ((aligned (16))) =
 	{
@@ -313,7 +282,12 @@ unsigned get_clock (unsigned nClockID)
 
 	mbox_writeread ((unsigned) (unsigned long) &proptag_measured);
 
-	return proptag_measured[6];
+	if (proptag[6] != 0)
+	{
+		return proptag[6];
+	}
+
+	return nClockID == CLOCK_ID_UART ? 48000000U : 0;      // default value
 }
 //-------------------------------------------------------------------------
 unsigned div (unsigned nDividend, unsigned nDivisor)
