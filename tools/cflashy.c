@@ -95,6 +95,7 @@ static speed_t Baud2Speed (unsigned nBaud)
 		{57600,		B57600},
 		{115200,	B115200},
 		{230400,	B230400},
+#ifndef __APPLE__
 		{460800,	B460800},
 		{500000,	B500000},
 		{576000,	B576000},
@@ -107,6 +108,7 @@ static speed_t Baud2Speed (unsigned nBaud)
 		{3000000,	B3000000},
 		{3500000,	B3500000},
 		{4000000,	B4000000},
+#endif
 		{0,		B0}
 	};
 
@@ -131,12 +133,36 @@ static TSerialPort SerialOpen (unsigned nBaud)
 	}
 
 	assert (ToolParam.pSerialPort);
+#ifndef __APPLE__
 	int nFile = open (ToolParam.pSerialPort, O_RDWR | O_NOCTTY | O_SYNC);
+#else
+	/* On macOS we also need to set O_NONBLOCK (and clear it after open() completes) */
+	int nFile = open (ToolParam.pSerialPort, O_RDWR | O_NOCTTY | O_SYNC | O_NONBLOCK);
+#endif
+
 	if (nFile < 0)
 	{
 		printf ("Cannot open: %s: %s\n", ToolParam.pSerialPort, strerror (errno));
 		return -1;
 	}
+
+#ifdef __APPLE__
+	/* Get the current file descriptor flags */
+	int flags = fcntl(nFile, F_GETFL, 0);
+	if (flags < 0) {
+		printf ("fcntl(F_GETFL) failed: %s", strerror (errno));
+		close (nFile);
+		return -1;
+	}
+
+	/* Clear the O_NONBLOCK flag */
+	flags &= ~O_NONBLOCK;
+	if (fcntl (nFile, F_SETFL, flags) < 0) {
+		printf ("fcntl(F_SETFL) failed: %s", strerror (errno));
+		close (nFile);
+		return -1;
+	}
+#endif
 
 	struct termios tty;
 	if (tcgetattr (nFile, &tty) < 0)
@@ -682,8 +708,16 @@ int main (int nArgC, char **ppArgV)
 		size_t ulPacketSize = ToolParam.nPacketSize;
 		if (!ulPacketSize)
 		{
+#ifndef __APPLE__
 			/* 1 packet takes 2 seconds by default, 10 bits per byte */
 			ulPacketSize = ToolParam.nFlashBaud * 2 / 10;
+#else
+			/*
+			 * MacOS doesn't seem to handle the default size, so set to
+			 * conservative value if no custom value is specified.
+			 */
+			ulPacketSize = 32;
+#endif
 		}
 
 		char *pBuffer = malloc (ulPacketSize);
@@ -758,7 +792,12 @@ int main (int nArgC, char **ppArgV)
 		printf ("\r                  \r");
 		fflush (stdout);
 
+#ifndef __APPLE__
 		msDelay (100);
+#else
+		/* In testing macOS required a longer delay */
+		msDelay (1000);
+#endif
 
 		if (!SerialReadAndMatch (Serial, "#EOF:ok"))
 		{
