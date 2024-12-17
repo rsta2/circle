@@ -143,8 +143,8 @@ Using the Flash Tool "cFlashy"
 -----------------------------
 
 Because of recent issues with npm packages, used by the original Flashy (v1), there is
-a similar tool as a native executable for Linux and Windows available now in the Circle
-project, which is called "cFlashy", and which supports the most important features of
+a similar tool as a native executable for Linux, Windows and macOS available now in the
+Circle project, which is called "cFlashy", and which supports the most important features of
 Flashy v1 in a compatible way.  To use it:
 
 In your Config.mk set the variable `USEFLASHY`, along with the other settings for Flashy v1:
