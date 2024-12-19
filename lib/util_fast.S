@@ -96,18 +96,16 @@ memset:
 	tst	x0, #7
 	b.ne	2f
 	cmp	x2, #16
-	b.lo	6f
+	b.lo	2f
 
 	orr	w8, w1, w1, lsl #8
 	orr	w9, w8, w8, lsl #16
 	mov	x10, x0
 
-1:	stp	w9, w9, [x10]
-	add	x8, x10, #16
+1:	stp	w9, w9, [x10], #8
 	sub	x2, x2, #16
 	cmp	x2, #15
-	stp	w9, w9, [x10, #8]
-	mov	x10, x8
+	stp	w9, w9, [x10], #8
 	b.hi	1b
 	b	3f
 
@@ -119,10 +117,6 @@ memset:
 	b.ne	4b
 
 5:	ret
-
-6:	mov	x8, x0
-	cbnz	x2, 4b
-	b	5b
 
 	.globl	memcpy
 	.type   memcpy, %function
