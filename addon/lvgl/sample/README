@@ -3,7 +3,7 @@ README
 	For SPI display support see below.
 
 This sample program demonstrates some features of the LVGL embedded GUI
-library v9.2.0 ((c) 2021 LVGL Kft):
+library v9.2.2 ((c) 2021 LVGL Kft):
 
 	https://github.com/lvgl/lvgl
 	https://lvgl.io
