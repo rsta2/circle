@@ -49,6 +49,9 @@ enum TMachineModel
 	MachineModelCM4,
 	MachineModelCM4S,
 	MachineModel5,
+	MachineModel500,
+	MachineModelCM5,
+	MachineModelCM5Lite,
 	MachineModelUnknown
 };
 

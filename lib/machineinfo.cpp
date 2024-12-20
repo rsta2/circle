@@ -80,7 +80,10 @@ s_NewInfo[]
 	{19, MachineModel400,		4},
 	{20, MachineModelCM4,		4},
 	{21, MachineModelCM4S,		4},
-	{23, MachineModel5,		5}
+	{23, MachineModel5,		5},
+	{24, MachineModelCM5,		5},
+	{25, MachineModel500,		5},
+	{26, MachineModelCM5Lite,	5}
 };
 
 static const char *s_MachineName[] =		// must match TMachineModel
@@ -106,6 +109,9 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Compute Module 4",
 	"Compute Module 4S",
 	"Raspberry Pi 5",
+	"Raspberry Pi 500",
+	"Compute Module 5",
+	"Compute Module 5 Lite",
 	"Unknown"
 };
 
@@ -142,6 +148,9 @@ static unsigned s_ActLEDInfo[] =		// must match TMachineModel
 	42,				// CM4
 	0 | ACTLED_VIRTUAL_PIN,		// CM4S
 	9 | ACTLED_ACTIVE_LOW,		// 5	 (at GPIO chip #2)
+	9 | ACTLED_ACTIVE_LOW,		// 500
+	9 | ACTLED_ACTIVE_LOW,		// CM5
+	9 | ACTLED_ACTIVE_LOW,		// CM5 Lite
 
 	ACTLED_UNKNOWN			// Unknown
 };
