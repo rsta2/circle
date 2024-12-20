@@ -93,36 +93,31 @@ memcpy:
 	.globl	memset
 	.type   memset, %function
 memset:
-	tst	x0, #7
-	b.ne	2f
-	cmp	x2, #16
-	b.lo	6f
-
-	orr	w8, w1, w1, lsl #8
-	orr	w9, w8, w8, lsl #16
+	cbz	x2, 3f
 	mov	x10, x0
 
-1:	stp	w9, w9, [x10]
-	add	x8, x10, #16
-	sub	x2, x2, #16
-	cmp	x2, #15
-	stp	w9, w9, [x10, #8]
-	mov	x10, x8
-	b.hi	1b
-	b	3f
+1:	tst	x10, #0x1f
+	b.eq	4f
 
-2:	mov	x8, x0
-3:	cbz	x2, 5f
+2:	strb	w1, [x10], #1
+	sub  	x2, x2, #1
+	cbnz	x2, 1b
 
-4:	subs	x2, x2, #1
-	strb	w1, [x8], #1
-	b.ne	4b
+3:	ret
 
-5:	ret
+4:	lsr	x9, x2, #5
+	and	x2, x2, #0x1f
+	cbz	x9, 6f
+	and	x1, x1, #0xff
+	mov	x8, #0x0101010101010101
+	mul	x8, x8, x1
 
-6:	mov	x8, x0
-	cbnz	x2, 4b
-	b	5b
+5:	sub	x9, x9, #1
+	stp	x8, x8, [x10], #0x10
+	stp	x8, x8, [x10], #0x10
+	cbnz	x9, 5b
+6:	cbz	x2, 3b
+	b	2b
 
 	.globl	memcpy
 	.type   memcpy, %function
