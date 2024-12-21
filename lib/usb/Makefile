@@ -24,7 +24,7 @@ all: libusb.a
 
 include $(CIRCLEHOME)/Rules.mk
 
-OBJS	= lan7800.o smsc951x.o usbbluetooth.o usbcdcethernet.o \
+OBJS	= lan7800.o smsc951x.o usbbluetooth.o usbcdcethernet.o usbfloppydevice.o \
 	  usbconfigparser.o usbdevice.o usbdevicefactory.o usbendpoint.o usbfunction.o \
 	  usbgamepad.o usbgamepadps3.o usbgamepadps4.o usbgamepadstandard.o usbgamepadswitchpro.o \
 	  usbgamepadxbox360.o usbgamepadxboxone.o usbhiddevice.o usbhostcontroller.o \

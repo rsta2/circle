@@ -2,7 +2,7 @@
 // xhciendpoint.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,6 +49,8 @@ public:
 	boolean TransferAsync (CUSBRequest *pURB, unsigned nTimeoutMs);
 
 	void TransferEvent (u8 uchCompletionCode, u32 nTransferLength);
+
+	boolean ResetFromHalted (void);
 
 #ifndef NDEBUG
 	void DumpStatus (void);

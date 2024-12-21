@@ -2,7 +2,7 @@
 // xhci.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -364,6 +364,13 @@ PACKED;
 
 #define XHCI_CMD_TRB_EVALUATE_CONTEXT_CONTROL_SLOTID__SHIFT	24
 #define XHCI_CMD_TRB_EVALUATE_CONTEXT_CONTROL_SLOTID__MASK	(0xFF << 24)
+
+#define XHCI_CMD_TRB_RESET_ENDPOINT_CONTROL_ENDPOINTID__SHIFT	16
+#define XHCI_CMD_TRB_RESET_ENDPOINT_CONTROL_SLOTID__SHIFT	24
+
+#define XHCI_CMD_TRB_SET_TR_DEQUEUE_PTR_CONTROL_DCS		(1 << 0)
+#define XHCI_CMD_TRB_SET_TR_DEQUEUE_PTR_CONTROL_ENDPOINTID__SHIFT 16
+#define XHCI_CMD_TRB_SET_TR_DEQUEUE_PTR_CONTROL_SLOTID__SHIFT	24
 
 // Transfer TRB
 #define XHCI_TRANSFER_TRB_STATUS_TD_SIZE__SHIFT			17

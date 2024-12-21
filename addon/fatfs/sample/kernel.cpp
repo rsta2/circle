@@ -22,6 +22,7 @@
 
 #define DRIVE		"SD:"
 //#define DRIVE		"USB:"
+//#define DRIVE		"FD:"
 
 #define FILENAME	"/circle.txt"
 
