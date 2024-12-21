@@ -2,7 +2,7 @@
 // xhcicommandmanager.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -122,6 +122,36 @@ int CXHCICommandManager::EvaluateContext (u8 uchSlotID, TXHCIInputContext *pInpu
 
 	assert (pInputContext != 0);
 	return DoCommand (nControl, XHCI_TO_DMA_LO (pInputContext), XHCI_TO_DMA_HI (pInputContext));
+}
+
+int CXHCICommandManager::ResetEndpoint (u8 uchSlotID, u8 uchEndpointID)
+{
+	assert (XHCI_IS_SLOTID (uchSlotID));
+	assert (XHCI_IS_ENDPOINTID (uchEndpointID));
+	u32 nControl =   XHCI_TRB_TYPE_CMD_RESET_ENDPOINT << XHCI_TRB_CONTROL_TRB_TYPE__SHIFT
+		       | (u32) uchSlotID << XHCI_CMD_TRB_RESET_ENDPOINT_CONTROL_SLOTID__SHIFT
+		       | (u32) uchEndpointID <<  XHCI_CMD_TRB_RESET_ENDPOINT_CONTROL_ENDPOINTID__SHIFT;
+
+	return DoCommand (nControl);
+}
+
+int CXHCICommandManager::SetTRDequeuePointer (u8 uchSlotID, u8 uchEndpointID, TXHCITRB *pTRB,
+					      boolean bDCS)
+{
+	assert (XHCI_IS_SLOTID (uchSlotID));
+	assert (XHCI_IS_ENDPOINTID (uchEndpointID));
+	u32 nControl =   XHCI_TRB_TYPE_CMD_SET_TR_DEQUEUE_PTR << XHCI_TRB_CONTROL_TRB_TYPE__SHIFT
+		       | (u32) uchSlotID << XHCI_CMD_TRB_SET_TR_DEQUEUE_PTR_CONTROL_SLOTID__SHIFT
+		       | (u32) uchEndpointID <<  XHCI_CMD_TRB_SET_TR_DEQUEUE_PTR_CONTROL_ENDPOINTID__SHIFT;
+
+	assert (pTRB != 0);
+	u32 nParameter1 = XHCI_TO_DMA_LO (pTRB);
+	if (bDCS)
+	{
+		nParameter1 |= XHCI_CMD_TRB_SET_TR_DEQUEUE_PTR_CONTROL_DCS;
+	}
+
+	return DoCommand (nControl, nParameter1, XHCI_TO_DMA_HI (pTRB));
 }
 
 int CXHCICommandManager::NoOp (void)
