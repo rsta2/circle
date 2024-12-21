@@ -221,7 +221,7 @@ boolean CXHCIEndpoint::Transfer (CUSBRequest *pURB, unsigned nTimeoutMs)
 	unsigned nStartTicks = CTimer::Get ()->GetTicks ();
 	while (!m_bTransferCompleted)
 	{
-		if (CTimer::Get ()->GetTicks () - nStartTicks >= HZ)
+		if (CTimer::Get ()->GetTicks () - nStartTicks >= 3*HZ)
 		{
 			CLogger::Get ()->Write (From, LogDebug, "Transfer timed out (ep %u)",
 						(unsigned) pURB->GetEndpoint ()->GetNumber ());

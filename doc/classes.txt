@@ -92,6 +92,7 @@ USB library
 * CUSBDevice: Encapsulates a general USB device (detects the functions of this device).
 * CUSBDeviceFactory: Creates the function objects of the different supported USB functions.
 * CUSBEndpoint: Encapsulates an endpoint of an USB device (supports control, bulk and interrupt EPs).
+* CUSBFloppyDiskDevice: Driver for USB floppy disk devices (CBI transport).
 * CUSBFunction: Encapsulates a function (represented by an interface descriptor) of an USB device.
 * CUSBGamePadDevice: Base class for USB gamepad drivers
 * CUSBGamePadPS3Device: Driver for PS3 gamepad
