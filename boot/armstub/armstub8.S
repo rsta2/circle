@@ -74,8 +74,8 @@
 _start:
 	/*
 	 * LOCAL_CONTROL:
-	 * Bit 9 clear: Increment by 1 (vs. 2).
-	 * Bit 8 clear: Timer source is 19.2MHz crystal (vs. APB).
+	 * Bit 8 clear: Increment by 1 (vs. 2).
+	 * Bit 7 clear: Timer source is 19.2MHz crystal (vs. APB).
 	 */
 	mov x0, LOCAL_CONTROL
 	str wzr, [x0]
