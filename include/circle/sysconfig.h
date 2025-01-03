@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -453,6 +453,14 @@
 // Circle images which will run on real Raspberry Pi boards.
 
 //#define USE_QEMU_USB_FIX
+
+// USE_NAK_USB_FIX enables a fix for SetCompleteOnNAK() in no-hub
+// configurations on Raspberry Pi 1-3. It must be defined, when an USB
+// device, which uses Bulk transfers to poll an endpoint has another USB
+// interface with more endpoints, and this USB device is directly
+// connected to the root port (without a hub in-between).
+
+//#define USE_NAK_USB_FIX
 
 ///////////////////////////////////////////////////////////////////////
 
