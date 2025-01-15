@@ -2,7 +2,7 @@
 // usbconfigparser.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,6 +60,12 @@ CUSBConfigurationParser::CUSBConfigurationParser (const void *pBuffer, unsigned 
 	{
 		u8 ucDescLen  = pCurrentPosition->Header.bLength;
 		u8 ucDescType = pCurrentPosition->Header.bDescriptorType;
+
+		if (ucDescLen == 0)
+		{
+			m_pEndPosition = pCurrentPosition;
+			break;
+		}
 
 		TUSBDescriptor *pDescEnd = SKIP_BYTES (pCurrentPosition, ucDescLen);
 		if (pDescEnd > m_pEndPosition)
