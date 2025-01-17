@@ -2,7 +2,7 @@
 // usbkeyboard.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,7 +32,8 @@ static const char FromUSBKbd[] = "usbkbd";
 static const char DevicePrefix[] = "ukbd";
 
 CUSBKeyboardDevice::CUSBKeyboardDevice (CUSBFunction *pFunction)
-:	CUSBHIDDevice (pFunction, USBKEYB_REPORT_SIZE),
+:	CUSBHIDDevice (pFunction),
+	m_nReportSize (USBKEYB_REPORT_SIZE),
 	m_pKeyStatusHandlerRaw (0),
 	m_pKeyStatusHandlerRawArg (0),
 	m_bMixedMode (FALSE),
@@ -56,7 +57,17 @@ CUSBKeyboardDevice::~CUSBKeyboardDevice (void)
 
 boolean CUSBKeyboardDevice::Configure (void)
 {
-	if (!CUSBHIDDevice::ConfigureHID ())
+	// The HideLink THEC64 keyboard sends the report ID in the first byte,
+	// which has to be ignored.
+	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
+	assert (pDeviceDesc != 0);
+	if (   pDeviceDesc->idVendor == 0x1C59
+	    && pDeviceDesc->idProduct == 0x99)
+	{
+		m_nReportSize++;
+	}
+
+	if (!CUSBHIDDevice::ConfigureHID (m_nReportSize))
 	{
 		CLogger::Get ()->Write (FromUSBKbd, LogError, "Cannot configure HID device");
 
@@ -172,6 +183,14 @@ boolean CUSBKeyboardDevice::SetLEDs (u8 ucStatus)
 
 void CUSBKeyboardDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
 {
+	// Ignore report ID, if it is included.
+	if (   pReport != 0
+	    && m_nReportSize > USBKEYB_REPORT_SIZE)
+	{
+		pReport++;
+		nReportSize--;
+	}
+
 	if (   pReport == 0
 	    || nReportSize != USBKEYB_REPORT_SIZE)
 	{
