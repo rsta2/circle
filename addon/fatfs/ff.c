@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------/
-/  FatFs - Generic FAT Filesystem Module  R0.15a                              /
+/  FatFs - Generic FAT Filesystem Module  R0.15a w/patch 1                    /
 /-----------------------------------------------------------------------------/
 /
 / Copyright (C) 2024, ChaN, all right reserved.
@@ -198,7 +198,7 @@
 #define FSI_StrucSig		484		/* FAT32 FSI: Structure signature (DWORD) */
 #define FSI_Free_Count		488		/* FAT32 FSI: Number of free clusters (DWORD) */
 #define FSI_Nxt_Free		492		/* FAT32 FSI: Last allocated cluster (DWORD) */
-#define FSI_TrailSig		498		/* FAT32 FSI: Trailing signature (DWORD) */
+#define FSI_TrailSig		508		/* FAT32 FSI: Trailing signature (DWORD) */
 
 #define MBR_Table			446		/* MBR: Offset of partition table in the MBR */
 #define SZ_PTE				16		/* MBR: Size of a partition table entry */
