@@ -2,7 +2,7 @@
 // screen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 #include <circle/screen.h>
 #include <circle/devicenameservice.h>
 
+static const char DevicePrefix[] = "tty";
+
 #ifndef SCREEN_HEADLESS
 
 CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, const TFont &rFont,
@@ -36,6 +38,8 @@ CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, const TFont &rF
 
 CScreenDevice::~CScreenDevice (void)
 {
+	CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDisplay+1, FALSE);
+
 	delete m_pTerminal;
 	m_pTerminal = nullptr;
 
@@ -81,13 +85,23 @@ boolean CScreenDevice::Initialize (void)
 		return FALSE;
 	}
 
-	m_pTerminal = new CTerminalDevice (m_pFrameBuffer, m_nDisplay, m_rFont, m_FontFlags);
+	m_pTerminal = new CTerminalDevice (m_pFrameBuffer, m_nDisplay + 100, m_rFont, m_FontFlags);
 	if (!m_pTerminal)
 	{
 		return FALSE;
 	}
 
-	return m_pTerminal->Initialize ();
+	if (!m_pTerminal->Initialize ())
+	{
+		return FALSE;
+	}
+
+	if (!CDeviceNameService::Get ()->GetDevice (DevicePrefix, m_nDisplay+1, FALSE))
+	{
+		CDeviceNameService::Get ()->AddDevice (DevicePrefix, m_nDisplay+1, this, FALSE);
+	}
+
+	return TRUE;
 }
 
 boolean CScreenDevice::Resize (unsigned nWidth, unsigned nHeight)
@@ -180,8 +194,6 @@ void CScreenDevice::Update (unsigned nMillis)
 }
 
 #else	// #ifndef SCREEN_HEADLESS
-
-static const char DevicePrefix[] = "tty";
 
 CScreenDevice::CScreenDevice (unsigned nWidth, unsigned nHeight, const TFont &rFont,
 			      CCharGenerator::TFontFlags FontFlags, unsigned nDisplay)
