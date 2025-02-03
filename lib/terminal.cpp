@@ -2,7 +2,7 @@
 // terminal.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -127,31 +127,6 @@ boolean CTerminalDevice::Initialize (void)
 	}
 
 	return TRUE;
-}
-
-boolean CTerminalDevice::Resize (void)
-{
-	delete [] m_pBuffer8;
-	m_pBuffer8 = nullptr;
-
-	delete [] m_pCursorPixels;
-	m_pCursorPixels = nullptr;
-
-	m_State = StateStart;
-	m_nScrollStart = 0;
-	m_nCursorX = 0;
-	m_nCursorY = 0;
-	m_bCursorOn = TRUE;
-	m_bCursorBlock = FALSE;
-	m_bCursorVisible = FALSE;
-	m_Color = 0;
-	m_BackgroundColor = 0;
-	m_bReverseAttribute = FALSE;
-	m_bInsertOn = FALSE;
-	m_bAutoPage = FALSE;
-	m_bDelayedUpdate = FALSE;
-
-	return Initialize ();
 }
 
 unsigned CTerminalDevice::GetWidth (void) const
