@@ -124,3 +124,8 @@ Adding block cursor support to CScreenDevice
 Adding backlight cmdline.txt option
 Adding RTL8153 NIC support
 Extending class CString
+
+Pete Moore
+Adding configure support for macOS
+Adding cFlashy support for macOS
+Optimizing memset() for AArch64
