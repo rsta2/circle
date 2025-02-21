@@ -2,7 +2,7 @@
 // xhci.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +39,8 @@
 #ifdef USE_XHCI_INTERNAL
 	#define XHCI_TO_DMA(ptr)	((u64) (uintptr) (ptr))
 #else
-	#define XHCI_TO_DMA(ptr)	((u64) (uintptr) (ptr) | CBcmPCIeHostBridge::GetDMAAddress ())
+	#define XHCI_TO_DMA(ptr)	((u64) (uintptr) (ptr) \
+					 | CBcmPCIeHostBridge::GetDMAAddress (PCIE_BUS_XHCI))
 #endif
 #define XHCI_TO_DMA_LO(ptr)		((u32) XHCI_TO_DMA (ptr))
 #define XHCI_TO_DMA_HI(ptr)		((u32) (XHCI_TO_DMA (ptr) >> 32))

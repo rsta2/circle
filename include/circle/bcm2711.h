@@ -2,7 +2,7 @@
 // bcm2711.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -67,6 +67,9 @@
 #define ARM_PCIE_HOST_BASE	0xFD500000
 #else
 #define ARM_PCIE_HOST_BASE	0x1000120000UL
+
+#define ARM_PCIE_EXT_HOST_BASE	0x1000110000UL
+#define ARM_PCIE_EXT_HOST_END	(ARM_PCIE_EXT_HOST_BASE + 0x930F)
 #endif
 #define ARM_PCIE_HOST_END	(ARM_PCIE_HOST_BASE + 0x930F)
 

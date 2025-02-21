@@ -2,7 +2,7 @@
 // southbridge.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ CSouthbridge::CSouthbridge (CInterruptSystem *pInterrupt)
 	}
 
 	assert (m_pInterrupt);
-	m_pPCIe = new CBcmPCIeHostBridge (m_pInterrupt);
+	m_pPCIe = new CBcmPCIeHostBridge (PCIE_BUS_ONBOARD, m_pInterrupt);
 }
 
 CSouthbridge::~CSouthbridge (void)

@@ -7,7 +7,7 @@
 //	Licensed under GPL-2.0+
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -290,13 +290,18 @@
 #define lower_32_bits(v)	((v) & 0xFFFFFFFFU)
 #define upper_32_bits(v)	((v) >> 32)
 
-u64 CBcmPCIeHostBridge::s_nDMAAddress = 0;
+u64 CBcmPCIeHostBridge::s_nDMAAddress[PCIE_BUS_NUM] = {0};
 
 static const char FromPCIeHost[] = "pcie";
 
-CBcmPCIeHostBridge::CBcmPCIeHostBridge (CInterruptSystem *pInterrupt)
-:	m_pInterrupt (pInterrupt),
+CBcmPCIeHostBridge::CBcmPCIeHostBridge (unsigned nBus, CInterruptSystem *pInterrupt)
+:	m_nBus (nBus),
+	m_pInterrupt (pInterrupt),
+#if RASPPI == 4
 	m_base (ARM_PCIE_HOST_BASE),
+#else
+	m_base (m_nBus == PCIE_BUS_ONBOARD ? ARM_PCIE_HOST_BASE : ARM_PCIE_EXT_HOST_BASE),
+#endif
 	m_num_out_wins (0),
 	m_num_dma_ranges (0),
 	m_num_scbs (0),
@@ -306,10 +311,12 @@ CBcmPCIeHostBridge::CBcmPCIeHostBridge (CInterruptSystem *pInterrupt)
 
 CBcmPCIeHostBridge::~CBcmPCIeHostBridge (void)
 {
+#if 0
 	if (m_msi != 0)
 	{
 		DisconnectMSI ();
 	}
+#endif
 
 	m_pInterrupt = 0;
 }
@@ -342,6 +349,8 @@ boolean CBcmPCIeHostBridge::EnableDevice (u32 nClassCode, unsigned nSlot, unsign
 	return !enable_device (nClassCode, nSlot, nFunc);
 }
 
+#if 0
+
 boolean CBcmPCIeHostBridge::ConnectMSI (TPCIeMSIHandler *pHandler, void *pParam)
 {
 	return !pcie_enable_msi (pHandler, pParam);
@@ -358,6 +367,8 @@ void CBcmPCIeHostBridge::DisconnectMSI (void)
 	delete m_msi;
 	m_msi = 0;
 }
+
+#endif
 
 #ifndef NDEBUG
 
@@ -399,9 +410,12 @@ int CBcmPCIeHostBridge::pcie_setup(void)
 	int i, j, limit;
 
 #if RASPPI >= 5
-	int ret = rescal_reset_deassert();
-	if (ret)
-		return ret;
+	if (m_nBus == PCIE_BUS_ONBOARD)	// only done once for bridge, which is init first
+	{
+		int ret = rescal_reset_deassert();
+		if (ret)
+			return ret;
+	}
 #endif
 
 	/* Reset the bridge */
@@ -703,8 +717,8 @@ int CBcmPCIeHostBridge::enable_bridge (void)
 	write8 (conf + PCI_SECONDARY_BUS, PCI_BUS (1));
 	write8 (conf + PCI_SUBORDINATE_BUS, PCI_BUS (1));
 
-	write16 (conf + PCI_MEMORY_BASE, MEM_PCIE_RANGE_PCIE_START >> 16);
-	write16 (conf + PCI_MEMORY_LIMIT, MEM_PCIE_RANGE_PCIE_START >> 16);
+	write16 (conf + PCI_MEMORY_BASE, m_out_wins[0].pcie_addr >> 16);
+	write16 (conf + PCI_MEMORY_LIMIT, m_out_wins[0].pcie_addr >> 16);
 
 	write8 (conf + PCI_BRIDGE_CONTROL, PCI_BRIDGE_CTL_PARITY);
 
@@ -731,13 +745,18 @@ int CBcmPCIeHostBridge::enable_device (u32 nClassCode, unsigned nSlot, unsigned 
 
 	if (   read32 (conf + PCI_CLASS_REVISION) >> 8 != nClassCode
 	    || read8 (conf + PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL)
+	{
+		CLogger::Get ()->Write (FromPCIeHost, LogError, "Invalid class code (0x%06X)",
+					read32 (conf + PCI_CLASS_REVISION) >> 8);
+
 		return -1;
+	}
 
 	write8 (conf + PCI_CACHE_LINE_SIZE, 64/4);	// TODO: get this from cache config
 
-	write32 (conf + PCI_BASE_ADDRESS_0,   lower_32_bits (MEM_PCIE_RANGE_PCIE_START)
+	write32 (conf + PCI_BASE_ADDRESS_0,   lower_32_bits (m_out_wins[0].pcie_addr)
 					    | PCI_BASE_ADDRESS_MEM_TYPE_64);
-	write32 (conf + PCI_BASE_ADDRESS_1, upper_32_bits (MEM_PCIE_RANGE_PCIE_START));
+	write32 (conf + PCI_BASE_ADDRESS_1, upper_32_bits (m_out_wins[0].pcie_addr));
 
 #if 0
 	uintptr msi_conf = find_pci_capability (conf, PCI_CAP_ID_MSI);
@@ -778,9 +797,11 @@ int CBcmPCIeHostBridge::pcie_set_pci_ranges(void)
 {
 	assert (m_num_out_wins == 0);
 
-	m_out_wins[0].cpu_addr = MEM_PCIE_RANGE_START;
-	m_out_wins[0].pcie_addr = MEM_PCIE_RANGE_PCIE_START;
-	m_out_wins[0].size = MEM_PCIE_RANGE_SIZE;
+	TMemoryWindow Memory = CMachineInfo::Get ()->GetPCIeMemory (m_nBus);
+
+	m_out_wins[0].cpu_addr = Memory.CPUAddress;
+	m_out_wins[0].pcie_addr = Memory.BusAddress;
+	m_out_wins[0].size = Memory.Size;
 
 	m_num_out_wins = 1;
 
@@ -791,7 +812,7 @@ int CBcmPCIeHostBridge::pcie_set_dma_ranges(void)
 {
 	assert (m_num_dma_ranges == 0);
 
-	TMemoryWindow DMAMemory = CMachineInfo::Get ()->GetPCIeDMAMemory ();
+	TMemoryWindow DMAMemory = CMachineInfo::Get ()->GetPCIeDMAMemory (m_nBus);
 
 	m_dma_ranges[0].pcie_addr = DMAMemory.BusAddress;
 	m_dma_ranges[0].cpu_addr = DMAMemory.CPUAddress;
@@ -799,7 +820,7 @@ int CBcmPCIeHostBridge::pcie_set_dma_ranges(void)
 
 	m_num_dma_ranges = 1;
 
-	s_nDMAAddress = DMAMemory.BusAddress;
+	s_nDMAAddress[m_nBus] = DMAMemory.BusAddress;
 
 	return 0;
 }
@@ -887,9 +908,9 @@ void CBcmPCIeHostBridge::pcie_bridge_sw_init_set(unsigned val)
 	wr_fld_rb(m_base + PCIE_RGR1_SW_INIT_1, mask, shift, val);
 #else
 	if (val)
-		reset_assert(44);
+		reset_assert(m_nBus == PCIE_BUS_ONBOARD ? 44 : 43);
 	else
-		reset_deassert(44);
+		reset_deassert(m_nBus == PCIE_BUS_ONBOARD ? 44 : 43);
 #endif
 }
 

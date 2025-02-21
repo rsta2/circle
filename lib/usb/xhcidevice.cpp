@@ -2,7 +2,7 @@
 // xhcidevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ CXHCIDevice::CXHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, bo
 	m_bInterruptConnected (FALSE),
 	m_nDevice (nDevice),
 #if RASPPI == 4 && !defined (USE_XHCI_INTERNAL)
-	m_PCIeHostBridge (pInterruptSystem),
+	m_PCIeHostBridge (PCIE_BUS_ONBOARD, pInterruptSystem),
 #endif
 	m_pSharedMemAllocator (pSharedMemAllocator),
 	m_bOwnSharedMemAllocator (FALSE),

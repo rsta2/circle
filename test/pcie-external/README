@@ -1,0 +1,11 @@
+README
+
+This test program is only working on the Raspberry Pi 5, which features an
+external PCIe connector. The program displays the first 16 32-bit words of the
+(outbound) PCIe memory of the attached PCIe device.
+
+Before build you have to set the slot and function number of PCIe device
+(normally 0/0) and its 24-bit class code in the file kernel.cpp.
+
+The program has been tested with the Raspberry Pi M.2 HAT+ and a 256 GB
+Raspberry Pi NVMe device.

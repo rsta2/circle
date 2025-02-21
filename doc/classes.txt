@@ -7,7 +7,7 @@ Base library
 * CBcm54213Device: Driver for BCM54213PE Gigabit Ethernet Transceiver of Raspberry Pi 4.
 * CBcmFrameBuffer: Frame buffer initialization, setting color palette for 8 bit depth.
 * CBcmMailBox: Simple GPU mailbox interface, currently used for the property interface.
-* CBcmPCIeHostBridge: Driver for PCIe Host Bridge of Raspberry Pi 4.
+* CBcmPCIeHostBridge: Driver for PCIe Host Bridge(s) of Raspberry Pi 4 and 5.
 * CBcmPropertyTags: Get several information from the GPU side or control something on this side.
 * CBcmRandomNumberGenerator: Driver for the built-in hardware random number generator.
 * CBcmWatchdog: Driver for the BCM2835 watchdog device.
