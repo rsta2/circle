@@ -172,6 +172,8 @@ public:
 #endif
 	TMemoryWindow GetPCIeMemory (unsigned nBus) const;	// outbound
 	TMemoryWindow GetPCIeDMAMemory (unsigned nBus) const;	// inbound
+#else
+#define PCIE_BUS_NUM		0
 #endif
 
 	static CMachineInfo *Get (void);
