@@ -38,3 +38,5 @@ otg_mode=1
 
 [pi5]
 kernel=kernel_2712.img
+#framebuffer_depth=32
+#framebuffer_ignore_alpha=1

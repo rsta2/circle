@@ -2,7 +2,7 @@
 // bcmframebuffer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -150,14 +150,6 @@ void CBcmFrameBuffer::SetPalette32 (u8 nIndex, u32 nRGBA)
 
 boolean CBcmFrameBuffer::Initialize (void)
 {
-#if RASPPI >= 5
-	// The Raspberry Pi 5 supports only depth 16 in the firmware.
-	if (m_nDepth != 16)
-	{
-		return FALSE;
-	}
-#endif
-
 	if (m_nDisplay >= GetNumDisplays ())
 	{
 		return FALSE;
