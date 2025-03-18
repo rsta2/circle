@@ -2,7 +2,7 @@
 // uguicpp.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,7 +62,7 @@ boolean CUGUI::Initialize (void)
 	m_pMouseDevice = (CMouseDevice *) CDeviceNameService::Get ()->GetDevice ("mouse1", FALSE);
 	if (m_pMouseDevice != 0)
 	{
-		if (m_pMouseDevice->Setup (m_pScreen->GetWidth (), m_pScreen->GetHeight ()))
+		if (m_pMouseDevice->Setup (m_pScreen->GetFrameBuffer ()))
 		{
 			m_pMouseDevice->ShowCursor (TRUE);
 
@@ -75,11 +75,12 @@ boolean CUGUI::Initialize (void)
 	m_pTouchScreen = (CTouchScreenDevice *) CDeviceNameService::Get ()->GetDevice ("touch1", FALSE);
 	if (m_pTouchScreen != 0)
 	{
+		m_pTouchScreen->Setup (m_pScreen->GetFrameBuffer ());
+
 		const unsigned *pCalibration = CKernelOptions::Get ()->GetTouchScreen ();
 		if (pCalibration != 0)
 		{
-			m_pTouchScreen->SetCalibration (pCalibration, m_pScreen->GetWidth (),
-							m_pScreen->GetHeight ());
+			m_pTouchScreen->SetCalibration (pCalibration);
 		}
 
 		m_pTouchScreen->RegisterEventHandler (TouchScreenEventStub);
@@ -100,7 +101,7 @@ void CUGUI::Update (boolean bPlugAndPlayUpdated)
 		if (m_pMouseDevice != 0)
 		{
 			assert (m_pScreen != 0);
-			if (m_pMouseDevice->Setup (m_pScreen->GetWidth (), m_pScreen->GetHeight ()))
+			if (m_pMouseDevice->Setup (m_pScreen->GetFrameBuffer ()))
 			{
 				m_pMouseDevice->ShowCursor (TRUE);
 

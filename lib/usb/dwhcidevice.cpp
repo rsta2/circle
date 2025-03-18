@@ -2,7 +2,7 @@
 // dwhcidevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -1088,7 +1088,9 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 	}
 
 	unsigned nStatus;
+#ifdef USE_NAK_USB_FIX
 	CDWHCIRegister Character (DWHCI_HOST_CHAN_CHARACTER (nChannel));
+#endif
 
 	switch (pStageData->GetState ())
 	{
@@ -1169,6 +1171,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		DisableChannelInterrupt (nChannel);
 
+#ifdef USE_NAK_USB_FIX
 		// if transaction was completed on NAK, channel is not disabled yet
 		Character.Read ();
 		if (Character.IsSet (DWHCI_HOST_CHAN_CHARACTER_ENABLE))
@@ -1177,6 +1180,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 			Character.Or (DWHCI_HOST_CHAN_CHARACTER_DISABLE);
 			Character.Write ();
 		}
+#endif
 
 		delete pStageData;
 		m_pStageData[nChannel] = 0;

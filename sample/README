@@ -7,7 +7,7 @@ SAMPLES
 05-usbsimple	[5]	Displaying USB device descriptor of root hub
 06-ethernet	[5]	Receiving broadcasts from Ethernet
 07-usbstorage	[5]	Displaying partition table from master boot record (MBR)
-08-usbkeyboard	[PnP,5]	Echoing typed characters to screen, or keyboard raw mode
+08-usbkeyboard	[PnP,5]	Echoing typed characters to screen or SPI/I2C display, or keyboard raw mode
 09-softserial	[5]	GPIO interrupt demonstration, serial interface via non-UART GPIO-pins
 10-usbmouse	[PnP]	Little painting program with USB mouse support
 11-gpioclock	[5]	Using GPIO clock 0 to generate a square wave signal and sampling this signal to display it
@@ -26,7 +26,7 @@ SAMPLES
 25-spidma	[5]	Transfers some data bytes to/from a SPI slave device using DMA.
 26-cpustress	[5]	Calculates fractal images to stress the CPU. Displays a SoC temperature chart.
 27-usbgamepad	[PnP,5]	Displaying information about an attached USB gamepad and its current state.
-28-touchscreen		Displaying touch events from the official Raspberry Pi touch screen.
+28-touchscreen	[5]	Displaying events from the official Raspberry Pi or USB touch screens.
 29-miniorgan	[PnP,5]	Mini organ instrument using PWM, HDMI, I2S or USB sound, (USB or serial) MIDI or USB keyboard.
 30-gpiofiq		Demonstrating FIQ-driven fast GPIO event capture and a tracing class.
 31-webclient		Fetching a RPi hardware revision list from a HTTP webserver and parsing it.
@@ -39,8 +39,9 @@ SAMPLES
 38-bootloader		HTTP- and TFTP-based bootloader with Web front-end
 39-umsdplugging	[PnP,5]	Plug in and remove USB flash drives, list directory
 40-irqlatency	[PnP]	Displays the maximum measured IRQ latency
-41-screenanimations	2D graphical shapes demo on screen without flickering or screen tearing
+41-screenanimations [5]	2D graphical shapes demo on screen without flickering or on SPI/I2C display
 42-soundinput	[5]	I2S or USB to PWM sound data converter and digital sound recorder
+43-multiwindow	[5]	Demonstrating multiple non-overlapping windows on a screen (Multi-core only)
 
 Samples marked with [PnP] are enabled for USB plug-and-play.
 Samples marked with [5] are working on the Raspberry Pi 5.

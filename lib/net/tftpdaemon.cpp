@@ -2,7 +2,7 @@
 // tftpdaemon.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -182,6 +182,14 @@ void CTFTPDaemon::Run (void)
 			continue;
 		}
 
+		if (!IsAccessAllowed (&ForeignIP, m_Filename, usOpCode == OP_CODE_WRQ))
+		{
+			SendError (ERROR_CODE_ACCESS, "Access violation",
+				   &ForeignIP, usForeignPort);
+
+			continue;
+		}
+
 		CString IPString;
 		ForeignIP.Format (&IPString);
 		CLogger::Get ()->Write (FromTFPTDaemon, LogDebug, "Incoming %s request from %s",
@@ -313,8 +321,8 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 				}
 
 				if (   nResult == sizeof AckPacket
-				    || AckPacket.OpCode == BE (OP_CODE_ACK)
-				    || AckPacket.BlockNumber == le2be16 (usBlockNumber))
+				    && AckPacket.OpCode == BE (OP_CODE_ACK)
+				    && AckPacket.BlockNumber == le2be16 (usBlockNumber))
 				{
 					break;
 				}

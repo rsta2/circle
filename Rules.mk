@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 480000
+CIRCLEVER = 490000
 
 CIRCLEHOME ?= ..
 
@@ -163,6 +163,7 @@ endif
 
 OPTIMIZE ?= -O2
 STANDARD ?= -std=c++14 -Wno-aligned-new
+C_STANDARD ?= -std=gnu99
 WARNINGS ?= -Wall
 
 ifeq ($(strip $(CLANG)),1)
@@ -202,7 +203,7 @@ endif
 
 %.o: %.c
 	@echo "  CC    $@"
-	@$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
+	@$(CC) $(CFLAGS) $(C_STANDARD) -c -o $@ $<
 
 %.o: %.cpp
 	@echo "  CPP   $@"

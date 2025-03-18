@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 //
 #include <display/st7789display.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 #define ST7789_NOP	0x00
@@ -51,6 +52,7 @@
 #define ST7789_MADCTL	0x36
 #define ST7789_COLMOD	0x3A
 
+#define RAMCTRL		0xB0
 #define ST7789_FRMCTR1	0xB1
 #define ST7789_FRMCTR2	0xB2
 #define ST7789_FRMCTR3	0xB3
@@ -86,8 +88,9 @@ CST7789Display::CST7789Display (CSPIMaster *pSPIMaster,
 				unsigned nDCPin, unsigned nResetPin, unsigned nBackLightPin,
 				unsigned nWidth, unsigned nHeight,
 				unsigned CPOL, unsigned CPHA, unsigned nClockSpeed,
-				unsigned nChipSelect)
-:	m_pSPIMaster (pSPIMaster),
+				unsigned nChipSelect, boolean bSwapColorBytes)
+:	CDisplay (bSwapColorBytes ? RGB565_BE : RGB565),
+	m_pSPIMaster (pSPIMaster),
 	m_nResetPin (nResetPin),
 	m_nBackLightPin (nBackLightPin),
 	m_nWidth (nWidth),
@@ -96,8 +99,8 @@ CST7789Display::CST7789Display (CSPIMaster *pSPIMaster,
 	m_CPHA (CPHA),
 	m_nClockSpeed (nClockSpeed),
 	m_nChipSelect (nChipSelect),
-	m_DCPin (nDCPin, GPIOModeOutput),
-	m_pTimer (CTimer::Get ())
+	m_bSwapColorBytes (bSwapColorBytes),
+	m_DCPin (nDCPin, GPIOModeOutput)
 {
 	assert (nDCPin != None);
 
@@ -114,32 +117,39 @@ CST7789Display::CST7789Display (CSPIMaster *pSPIMaster,
 	}
 		
 	m_nRotation = 0;
+
+	m_pBuffer = new u16[m_nWidth * m_nHeight];
+	assert (m_pBuffer != 0);
+}
+
+CST7789Display::~CST7789Display (void)
+{
+	delete [] m_pBuffer;
 }
 
 boolean CST7789Display::Initialize (void)
 {
 	assert (m_pSPIMaster != 0);
-	assert (m_pTimer != 0);
 
 	if (m_nBackLightPin != None)
 	{
 		m_BackLightPin.Write (LOW);
-		m_pTimer->MsDelay (100);
+		CTimer::SimpleMsDelay (100);
 		m_BackLightPin.Write (HIGH);
 	}
 
 	if (m_nResetPin != None)
 	{
 		m_ResetPin.Write (HIGH);
-		m_pTimer->MsDelay (50);
+		CTimer::SimpleMsDelay (50);
 		m_ResetPin.Write (LOW);
-		m_pTimer->MsDelay (50);
+		CTimer::SimpleMsDelay (50);
 		m_ResetPin.Write (HIGH);
-		m_pTimer->MsDelay (50);
+		CTimer::SimpleMsDelay (50);
 	}
 
 	Command (ST7789_SWRESET);	// Software reset
-	m_pTimer->MsDelay (150);
+	CTimer::SimpleMsDelay (150);
 
 	Command (ST7789_MADCTL);
 	Data (0x70);
@@ -153,6 +163,10 @@ boolean CST7789Display::Initialize (void)
 
 	Command (ST7789_COLMOD);
 	Data (0x05);
+
+	Command (RAMCTRL);		// Set Endian Mode
+	Data (0x00);
+	Data (m_bSwapColorBytes ? 0xF0 : 0xF8);
 
 	Command (ST7789_GCTRL);
 	Data (0x14);
@@ -232,10 +246,8 @@ void CST7789Display::SetRotation (unsigned nRot)
 
 void CST7789Display::On (void)
 {
-	assert (m_pTimer != 0);
-
 	Command (ST7789_DISPON);
-	m_pTimer->MsDelay (100);
+	CTimer::SimpleMsDelay (100);
 }
 
 void CST7789Display::Off (void)
@@ -320,14 +332,14 @@ void CST7789Display::SetPixel (unsigned nPosX, unsigned nPosY, TST7789Color Colo
 }
 
 void CST7789Display::DrawText (unsigned nPosX, unsigned nPosY, const char *pString,
-			       TST7789Color Color, TST7789Color BgColor, bool bDoubleWidth, bool bDoubleHeight)
+			       TST7789Color Color, TST7789Color BgColor,
+			       bool bDoubleWidth, bool bDoubleHeight, const TFont &rFont)
 {
 	assert (pString != 0);
 
-	unsigned nWidthScaler = (bDoubleWidth ? 2 : 1);
-	unsigned nHeightScaler = (bDoubleHeight ? 2 : 1);
-	unsigned nCharWidth = m_CharGen.GetCharWidth () * nWidthScaler;
-	unsigned nCharHeight = m_CharGen.GetCharHeight () * nHeightScaler;
+	CCharGenerator CharGen (rFont, CCharGenerator::MakeFlags (bDoubleWidth, bDoubleHeight));
+	unsigned nCharWidth = CharGen.GetCharWidth ();
+	unsigned nCharHeight = CharGen.GetCharHeight ();
 
 	TST7789Color Buffer[nCharHeight * nCharWidth];
 
@@ -336,10 +348,12 @@ void CST7789Display::DrawText (unsigned nPosX, unsigned nPosY, const char *pStri
 	{
 		for (unsigned y = 0; y < nCharHeight; y++)
 		{
+			CCharGenerator::TPixelLine Line = CharGen.GetPixelLine (chChar, y);
+
 			for (unsigned x = 0; x < nCharWidth; x++)
 			{
-				TST7789Color pix = m_CharGen.GetPixel (chChar, x/nWidthScaler, y/nHeightScaler)
-											? Color : BgColor;
+				TST7789Color pix = CharGen.GetPixel (x, Line) ? Color : BgColor;
+
 				// Rotation determines order of bytes in the buffer
 				switch (m_nRotation)
 				{
@@ -388,6 +402,94 @@ void CST7789Display::DrawText (unsigned nPosX, unsigned nPosY, const char *pStri
 		SendData (Buffer, sizeof Buffer);
 
 		nPosX += nCharWidth;
+	}
+}
+
+void CST7789Display::SetPixel (unsigned nPosX, unsigned nPosY, TRawColor nColor)
+{
+	SetPixel (nPosX, nPosY, (TST7789Color) nColor);
+}
+
+void CST7789Display::SetArea (const TArea &rArea, const void *pPixels,
+			      TAreaCompletionRoutine *pRoutine, void *pParam)
+{
+	int nWidth = rArea.x2 - rArea.x1 + 1;
+	int nHeight = rArea.y2 - rArea.y1 + 1;
+
+	if (m_nRotation == 0)
+	{
+		SetWindow (rArea.x1, rArea.y1, rArea.x2, rArea.y2);
+	}
+	else
+	{
+		const u16 *pFrom = (const u16 *) pPixels;
+		u16 *pTo = m_pBuffer;
+
+		switch (m_nRotation)
+		{
+		case 90:
+			SetWindow (m_nWidth-rArea.y2-1, rArea.x1,
+				   m_nWidth-rArea.y1-1, rArea.x2);
+			for (int x = 0; x < nWidth; x++)
+			{
+				for (int y = nHeight-1; y >= 0; y--)
+				{
+					*pTo++ = pFrom[x + y * nWidth];
+				}
+			}
+			break;
+
+		case 180:
+			SetWindow (m_nWidth-rArea.x2-1, m_nHeight-rArea.y2-1,
+				   m_nWidth-rArea.x1-1, m_nHeight-rArea.y1-1);
+			for (int y = nHeight-1; y >= 0; y--)
+			{
+				for (int x = nWidth-1; x >= 0; x--)
+				{
+					*pTo++ = pFrom[x + y * nWidth];
+				}
+			}
+			break;
+
+		case 270:
+			SetWindow (rArea.y1, m_nHeight-rArea.x2-1,
+				   rArea.y2, m_nHeight-rArea.x1-1);
+			for (int x = nWidth-1; x >= 0; x--)
+			{
+				for (int y = 0; y < nHeight; y++)
+				{
+					*pTo++ = pFrom[x + y * nWidth];
+				}
+			}
+			break;
+
+		default:
+			assert (0);
+			break;
+		}
+
+		pPixels = m_pBuffer;
+	}
+
+	size_t ulSize = nWidth * nHeight * sizeof (u16);
+	while (ulSize)
+	{
+		// The BCM2835 SPI master has a transfer size limit.
+		// TODO: Request this parameter from the SPI master driver.
+		const size_t MaxTransferSize = 0xFFFC;
+
+		size_t ulBlockSize = ulSize >= MaxTransferSize ? MaxTransferSize : ulSize;
+
+		SendData (pPixels, ulBlockSize);
+
+		pPixels = (const void *) ((uintptr) pPixels + ulBlockSize);
+
+		ulSize -= ulBlockSize;
+	}
+
+	if (pRoutine)
+	{
+		(*pRoutine) (pParam);
 	}
 }
 

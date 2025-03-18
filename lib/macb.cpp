@@ -914,7 +914,7 @@
  */
 #define lower_32_bits(n)	((u32)(n))
 
-#define PTR_TO_DMA(p)		((uintptr) (p) | CBcmPCIeHostBridge::GetDMAAddress ())
+#define PTR_TO_DMA(p)		((uintptr) (p) | CBcmPCIeHostBridge::GetDMAAddress (PCIE_BUS_MACB))
 
 LOGMODULE ("macb");
 

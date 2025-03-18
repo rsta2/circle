@@ -2,7 +2,7 @@
 // bcm2711int.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -82,6 +82,7 @@
 #define ARM_IRQ_DMA11		GIC_SPI (91)
 #define ARM_IRQ_UART_D0		GIC_SPI (120)	// BCM2712 D0 stepping
 #define ARM_IRQ_UART		GIC_SPI (121)
+#define ARM_IRQ_PCIE_EXT_HOST_INTA GIC_SPI (219)
 #define ARM_IRQ_PCIE_HOST_INTA	GIC_SPI (229)
 #define ARM_IRQ_PCIE_HOST_MSI	GIC_SPI (234)
 #define ARM_IRQ_SDIO2		GIC_SPI (274)

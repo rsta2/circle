@@ -2,7 +2,7 @@
 // xhciendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -221,7 +221,7 @@ boolean CXHCIEndpoint::Transfer (CUSBRequest *pURB, unsigned nTimeoutMs)
 	unsigned nStartTicks = CTimer::Get ()->GetTicks ();
 	while (!m_bTransferCompleted)
 	{
-		if (CTimer::Get ()->GetTicks () - nStartTicks >= HZ)
+		if (CTimer::Get ()->GetTicks () - nStartTicks >= 3*HZ)
 		{
 			CLogger::Get ()->Write (From, LogDebug, "Transfer timed out (ep %u)",
 						(unsigned) pURB->GetEndpoint ()->GetNumber ());
@@ -460,6 +460,26 @@ void CXHCIEndpoint::TransferEvent (u8 uchCompletionCode, u32 nTransferLength)
 	m_SpinLock.Release ();
 
 	pURB->CallCompletionRoutine ();
+}
+
+boolean CXHCIEndpoint::ResetFromHalted (void)
+{
+	assert (m_pXHCIDevice);
+	assert (m_pDevice);
+	assert (XHCI_IS_ENDPOINTID (m_uchEndpointID));
+
+	if (!m_pXHCIDevice->GetCommandManager ()->ResetEndpoint (m_pDevice->GetSlotID (),
+								 m_uchEndpointID))
+	{
+		return FALSE;
+	}
+
+	assert (m_pTransferRing);
+	return m_pXHCIDevice->GetCommandManager ()->SetTRDequeuePointer (
+								m_pDevice->GetSlotID (),
+								m_uchEndpointID,
+								m_pTransferRing->GetEnqueueTRB (),
+								!!m_pTransferRing->GetCycleState ());
 }
 
 #ifndef NDEBUG

@@ -61,6 +61,10 @@ static const u32 CursorSymbol[CURSOR_HEIGHT][CURSOR_WIDTH] =
 CMouseBehaviour::CMouseBehaviour (void)
 :	m_nScreenWidth (0),
 	m_nScreenHeight (0),
+	m_nWindowWidth (0),
+	m_nWindowHeight (0),
+	m_nWindowOffsetX (0),
+	m_nWindowOffsetY (0),
 	m_nPosX (0),
 	m_nPosY (0),
 	m_bHasMoved (FALSE),
@@ -80,20 +84,43 @@ CMouseBehaviour::~CMouseBehaviour (void)
 	}
 }
 
-boolean CMouseBehaviour::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
+boolean CMouseBehaviour::Setup (CDisplay *pDisplay, boolean bCursor)
 {
+	assert (pDisplay);
+	CDisplay *pParent = pDisplay->GetParent ();
+	assert (!pParent || !pParent->GetParent ());	// windows may not be nested
+	if (!pParent)
+	{
+		pParent = pDisplay;
+	}
+
 	assert (m_nScreenWidth == 0);
-	m_nScreenWidth = nScreenWidth;
+	m_nScreenWidth = pParent->GetWidth ();
 	assert (m_nScreenWidth > 0);
 
 	assert (m_nScreenHeight == 0);
-	m_nScreenHeight = nScreenHeight;
+	m_nScreenHeight = pParent->GetHeight ();
 	assert (m_nScreenHeight > 0);
 
-	m_nPosX = (m_nScreenWidth+1) / 2;
-	m_nPosY = (m_nScreenHeight+1) / 2;
+	m_nWindowWidth = pDisplay->GetWidth ();
+	m_nWindowOffsetX = pDisplay->GetOffsetX ();
+	assert (m_nWindowOffsetX + m_nWindowWidth <= m_nScreenWidth);
+
+	m_nWindowHeight = pDisplay->GetHeight ();
+	m_nWindowOffsetY = pDisplay->GetOffsetY ();
+	assert (m_nWindowOffsetY + m_nWindowHeight <= m_nScreenHeight);
+
+	m_bCursor = bCursor;
+
+	m_nPosX = (m_nWindowWidth+1) / 2;
+	m_nPosY = (m_nWindowHeight+1) / 2;
 
 #if RASPPI <= 4
+	if (!m_bCursor)
+	{
+		return TRUE;
+	}
+
 	CBcmPropertyTags Tags;
 	TPropertyTagSetCursorInfo TagSetCursorInfo;
 	TagSetCursorInfo.nWidth = CURSOR_WIDTH;
@@ -131,6 +158,10 @@ void CMouseBehaviour::Release (void)
 
 	m_nScreenWidth = 0;
 	m_nScreenHeight = 0;
+	m_nWindowWidth = 0;
+	m_nWindowHeight = 0;
+	m_nWindowOffsetX = 0;
+	m_nWindowOffsetY = 0;
 	m_nPosX = 0;
 	m_nPosY = 0;
 	m_bHasMoved = FALSE;
@@ -147,10 +178,10 @@ void CMouseBehaviour::RegisterEventHandler (TMouseEventHandler *pEventHandler)
 
 boolean CMouseBehaviour::SetCursor (unsigned nPosX, unsigned nPosY)
 {
-	assert (m_nScreenWidth > 0);
-	assert (m_nScreenHeight > 0);
-	if (   nPosX >= m_nScreenWidth
-	    || nPosY >= m_nScreenHeight)
+	assert (m_nWindowWidth > 0);
+	assert (m_nWindowHeight > 0);
+	if (   nPosX >= m_nWindowWidth
+	    || nPosY >= m_nWindowHeight)
 	{
 		return FALSE;
 	}
@@ -171,8 +202,8 @@ boolean CMouseBehaviour::ShowCursor (boolean bShow)
 	boolean bResult = m_bCursorOn;
 	m_bCursorOn = bShow;
 
-	assert (m_nPosX < m_nScreenWidth);
-	assert (m_nPosY < m_nScreenHeight);
+	assert (m_nPosX < m_nWindowWidth);
+	assert (m_nPosY < m_nWindowHeight);
 	SetCursorState (m_nPosX, m_nPosY, m_bCursorOn);
 
 	return bResult;
@@ -204,13 +235,13 @@ void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX,
 	unsigned nPrevY = m_nPosY;
 
 	m_nPosX = (int) m_nPosX + nDisplacementX;
-	if (m_nPosX >= m_nScreenWidth)
+	if (m_nPosX >= m_nWindowWidth)
 	{
 		m_nPosX = (int) m_nPosX - nDisplacementX;
 	}
 
 	m_nPosY = (int) m_nPosY + nDisplacementY;
-	if (m_nPosY >= m_nScreenHeight)
+	if (m_nPosY >= m_nWindowHeight)
 	{
 		m_nPosY = (int) m_nPosY - nDisplacementY;
 	}
@@ -259,11 +290,16 @@ void CMouseBehaviour::MouseStatusChanged (unsigned nButtons, int nDisplacementX,
 boolean CMouseBehaviour::SetCursorState (unsigned nPosX, unsigned nPosY, boolean bVisible)
 {
 #if RASPPI <= 4
+	if (!m_bCursor)
+	{
+		return TRUE;
+	}
+
 	CBcmPropertyTags Tags;
 	TPropertyTagSetCursorState TagSetCursorState;
 	TagSetCursorState.nEnable = bVisible ? CURSOR_ENABLE_VISIBLE : CURSOR_ENABLE_INVISIBLE;
-	TagSetCursorState.nPosX = nPosX;
-	TagSetCursorState.nPosY = nPosY;
+	TagSetCursorState.nPosX = m_nWindowOffsetX + nPosX;
+	TagSetCursorState.nPosY = m_nWindowOffsetY + nPosY;
 	TagSetCursorState.nFlags = CURSOR_FLAGS_FB_COORDS;
 	if (!Tags.GetTag (PROPTAG_SET_CURSOR_STATE, &TagSetCursorState, sizeof TagSetCursorState, 4*4))
 	{

@@ -4,7 +4,7 @@
 // Memory addresses and sizes (for AArch64)
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -81,6 +81,10 @@
 #define MEM_PCIE_RANGE_START		0x1F00000000UL
 #define MEM_PCIE_RANGE_SIZE		0xFFFFFFFCUL
 #define MEM_PCIE_RANGE_PCIE_START	0x0000000000UL		// mapping on PCIe side
+
+#define MEM_PCIE_EXT_RANGE_START	0x1B80000000UL		// external PCIe bus
+#define MEM_PCIE_EXT_RANGE_SIZE		0x80000000UL
+#define MEM_PCIE_EXT_RANGE_PCIE_START	0x80000000UL		// mapping on PCIe side
 #endif
 #define MEM_PCIE_RANGE_START_VIRTUAL	MEM_PCIE_RANGE_START
 #define MEM_PCIE_RANGE_END_VIRTUAL	(MEM_PCIE_RANGE_START_VIRTUAL + MEM_PCIE_RANGE_SIZE - 1UL)
@@ -107,7 +111,10 @@
 #define MEM_IOMEM_SOC_START		0x1060000000UL		// SoC peripherals
 #define MEM_IOMEM_SOC_END		0x107FFFFFFFUL
 
-#define MEM_IOMEM_PCIE_START		0x1F00000000UL		// PCI Bus 0000:01
+#define MEM_IOMEM_PCIE_EXT_START	0x1B80000000UL		// PCI Bus external
+#define MEM_IOMEM_PCIE_EXT_END		0x1B9FFFFFFFUL
+
+#define MEM_IOMEM_PCIE_START		0x1F00000000UL		// PCI Bus on-board
 #define MEM_IOMEM_PCIE_END		0x1F1FFFFFFFUL
 #endif
 

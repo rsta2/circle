@@ -3,8 +3,50 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+The 49th Step
+-------------
+
+This release comes with an improved dot-matrix display management. All driver classes for dot-matrix displays should be derived from the class `CDisplay` now. The old character display support for ST7789- and SSD1306-based displays is still available, but will be deprecated in a future version. Instead there is the new class `CTerminalDevice`, which implements a scrolling character terminal display for any display driver, which is derived from `CDisplay`. This class is also used to implement the class `CScreenDevice` now for the known terminal display on a firmware-driven frame buffer device. The following displays are currently supported by `CDisplay`-derived driver classes:
+
+* Firmware-driven frame buffer (`CBcmFrameBuffer`)
+* ST7789 SPI display (`CST7789Display`)
+* SSD1306 I2C display (`CSSD1306Display`)
+* ILI9341 SPI display (`CILI9341Display`)
+
+Beside the terminal support also the 2D graphics (`C2DGraphics`) and LVGL (`CLVGL`) support have been updated to work with all these displays. The 2D graphics support works with logical colors (`T2DColor`) now. There is a new class `C2DImage`, which manages the color conversion from logical to physical colors for 2D sprite images.
+
+Classes, which support the displaying of text on dot-matrix displays, allow the selection of the used font now. The default system font can by defined with system option `DEFAULT_FONT`.
+
+There is a new class `CWindowDisplay`, which allows to use multiple non-overlapping windows on a dot-matrix display. This is demonstrated in the multi-core program *sample/43-multiwindow*.
+
+*sample/08-usbkeyboard*, *sample/41-screenanimations* and *addon/lvgl/sample* have been updated for the new display management and support SPI and I2C displays too.
+
+There are a number of API breaking changes for the new display support, which are listed in [this article](https://github.com/rsta2/circle/discussions/380#discussioncomment-11417658).
+
+More news:
+
+* The external PCIe bus of the Raspberry Pi 5 can be accessed using the class `CBcmPCIeHostBridge` now. See the *test/pcie-external* for details. Interrupts from the external PCIe bus are available via the INTA pin at the IRQ number `ARM_IRQ_PCIE_EXT_HOST_INTA`.
+* A driver for XPT2046-based touchscreens has been added. See *test/xpt2046-touchscreen* for details.
+* The FatFs support has been updated to R0.15a + patch1.
+* The LVGL support has been updated to v9.2.2.
+* DMA channels are usable in different modes now. Before a DMA channel, which has been used for an asynchronous transfer, could not be used for synchronous transfers afterwards without re-initialization. The completion routine has to be set prior to each asynchronous transfer now.
+
+Fixes:
+
+* The detection of WM8960-based I2S codecs did not work, when the I2C address was explicitly specified.
+* Commit ae00d9d8 in Step48 was leading to lost MIDI events with USB MIDI devices on the Raspberry Pi 1-3 and has been reverted. In the rare case that you are using an USB device, which has a MIDI interface and an other (e.g. HID) interface, and the device is directly connected to the root port without USB hub in-between (e.g. on Raspberry Pi Zero), you have to define the system option `USE_NAK_USB_FIX` now.
+* The MQTT client might have crashed after receiving a disconnect from peer before.
+* The check for the length, opcode and block number of incoming ACK packets in the TFTP daemon used an invalid logical operator. This could have caused receiving invalid files on read requests.
+* The HideLink THEC64 USB keyboard did not work before.
+* The initial LVGL mouse cursor was not centered on the Raspberry Pi 5.
+* The `configure` script and cFlashy can be used on macOS now. cFlashy caused a build error before on macOS.
+
+The recommended firmware version has been updated. The option `initial_turbo=0` has been added to the file *config.txt*, because newer firmware versions enable `initial_turbo=60` by default now, which can disturb the Circle device initialization.
+
 The 48th Step
 -------------
+
+2024-11-08
 
 This release comes with **USB mass-storage device gadget** support. *test/usb-msd-gadget* shows, how this can be used to provide direct access to the SD card via USB. Furthermore this version supports **HDMI sound for the Raspberry Pi 5**. The sound samples and tests have been updated to use this. The **Raspberry Pi 5 with BCM2712 stepping D0** is supported. The **LVGL support** has been updated to **version 9.2.0**.
 

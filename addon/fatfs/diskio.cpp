@@ -31,6 +31,7 @@ static const char *s_pVolumeName[FF_VOLUMES] =
 	"umsd1",
 	"umsd2",
 	"umsd3",
+	"ufd1"
 };
 
 static CDevice *s_pVolume[FF_VOLUMES] = {0};

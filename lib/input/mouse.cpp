@@ -2,7 +2,7 @@
 // mouse.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,9 +46,9 @@ CMouseDevice::~CMouseDevice (void)
 	s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 }
 
-boolean CMouseDevice::Setup (unsigned nScreenWidth, unsigned nScreenHeight)
+boolean CMouseDevice::Setup (CDisplay *pDisplay, boolean bCursor)
 {
-	return m_Behaviour.Setup (nScreenWidth, nScreenHeight);
+	return m_Behaviour.Setup (pDisplay, bCursor);
 }
 
 void CMouseDevice::Release (void)

@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2025  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -80,7 +80,10 @@ s_NewInfo[]
 	{19, MachineModel400,		4},
 	{20, MachineModelCM4,		4},
 	{21, MachineModelCM4S,		4},
-	{23, MachineModel5,		5}
+	{23, MachineModel5,		5},
+	{24, MachineModelCM5,		5},
+	{25, MachineModel500,		5},
+	{26, MachineModelCM5Lite,	5}
 };
 
 static const char *s_MachineName[] =		// must match TMachineModel
@@ -106,6 +109,9 @@ static const char *s_MachineName[] =		// must match TMachineModel
 	"Compute Module 4",
 	"Compute Module 4S",
 	"Raspberry Pi 5",
+	"Raspberry Pi 500",
+	"Compute Module 5",
+	"Compute Module 5 Lite",
 	"Unknown"
 };
 
@@ -142,6 +148,9 @@ static unsigned s_ActLEDInfo[] =		// must match TMachineModel
 	42,				// CM4
 	0 | ACTLED_VIRTUAL_PIN,		// CM4S
 	9 | ACTLED_ACTIVE_LOW,		// 5	 (at GPIO chip #2)
+	9 | ACTLED_ACTIVE_LOW,		// 500
+	9 | ACTLED_ACTIVE_LOW,		// CM5
+	9 | ACTLED_ACTIVE_LOW,		// CM5 Lite
 
 	ACTLED_UNKNOWN			// Unknown
 };
@@ -679,30 +688,74 @@ const CDeviceTreeBlob *CMachineInfo::GetDTB (void) const
 	return m_pDTB;
 }
 
-TMemoryWindow CMachineInfo::GetPCIeDMAMemory (void) const
+TMemoryWindow CMachineInfo::GetPCIeMemory (unsigned nBus) const
 {
 	assert (s_pThis != 0);
 	if (s_pThis != this)
 	{
-		return s_pThis->GetPCIeDMAMemory ();
+		return s_pThis->GetPCIeMemory (nBus);
+	}
+
+	TMemoryWindow Result;
+
+	if (nBus == PCIE_BUS_ONBOARD)
+	{
+		Result.CPUAddress = MEM_PCIE_RANGE_START;
+		Result.BusAddress = MEM_PCIE_RANGE_PCIE_START;
+		Result.Size = MEM_PCIE_RANGE_SIZE;
+	}
+	else
+	{
+#if RASPPI >= 5
+		Result.CPUAddress = MEM_PCIE_EXT_RANGE_START;
+		Result.BusAddress = MEM_PCIE_EXT_RANGE_PCIE_START;
+		Result.Size = MEM_PCIE_EXT_RANGE_SIZE;
+#else
+		assert (0);
+#endif
+	}
+
+	return Result;
+}
+
+TMemoryWindow CMachineInfo::GetPCIeDMAMemory (unsigned nBus) const
+{
+	assert (s_pThis != 0);
+	if (s_pThis != this)
+	{
+		return s_pThis->GetPCIeDMAMemory (nBus);
 	}
 
 	TMemoryWindow Result;
 
 	if (m_pDTB != 0)
 	{
+		const char *pPCIePath;
+		unsigned n, i;
 #if RASPPI == 4
+		assert (nBus == PCIE_BUS_ONBOARD);
 		// there is one inbound window only
-		static const char PCIePath[] = "/scb/pcie@7d500000";
-		unsigned n = 1*7;
-		unsigned i = 0;
+		pPCIePath = "/scb/pcie@7d500000";
+		n = 1*7;
+		i = 0;
 #else
-		// TODO: for now we map only the second inbound window
-		static const char PCIePath[] = "/axi/pcie@120000";
-		unsigned n = 2*7;
-		unsigned i = 7;
+		if (nBus == PCIE_BUS_ONBOARD)
+		{
+			// TODO: for now we map only the second inbound window
+			pPCIePath = "/axi/pcie@120000";
+			n = 2*7;
+			i = 7;
+		}
+		else
+		{
+			assert (nBus == PCIE_BUS_EXTERNAL);
+			// there is one inbound window only
+			pPCIePath = "/axi/pcie@110000";
+			n = 1*7;
+			i = 0;
+		}
 #endif
-		const TDeviceTreeNode *pPCIe = m_pDTB->FindNode (PCIePath);
+		const TDeviceTreeNode *pPCIe = m_pDTB->FindNode (pPCIePath);
 		if (pPCIe != 0)
 		{
 			const TDeviceTreeProperty *pDMA = m_pDTB->FindProperty (pPCIe, "dma-ranges");

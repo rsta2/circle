@@ -381,9 +381,8 @@ void CMQTTClient::Run (void)
 
 void CMQTTClient::Receiver (void)
 {
-	while (1)
+	while (m_pSocket != 0)
 	{
-		assert (m_pSocket != 0);
 		TMQTTReceiveStatus Status = m_ReceivePacket.Receive (m_pSocket);
 		switch (Status)
 		{

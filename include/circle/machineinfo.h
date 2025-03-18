@@ -2,7 +2,7 @@
 // machineinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2025  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,6 +49,9 @@ enum TMachineModel
 	MachineModelCM4,
 	MachineModelCM4S,
 	MachineModel5,
+	MachineModel500,
+	MachineModelCM5,
+	MachineModelCM5Lite,
 	MachineModelUnknown
 };
 
@@ -156,7 +159,21 @@ public:
 
 	const CDeviceTreeBlob *GetDTB (void) const;
 
-	TMemoryWindow GetPCIeDMAMemory (void) const;
+#define PCIE_BUS_ONBOARD	0
+	#define PCIE_BUS_XHCI	PCIE_BUS_ONBOARD
+#if RASPPI == 4
+#define PCIE_BUS_NUM		1
+#else
+	#define PCIE_BUS_RP1	PCIE_BUS_ONBOARD
+	#define PCIE_BUS_MACB	PCIE_BUS_ONBOARD
+#define PCIE_BUS_EXTERNAL	1
+	#define PCIE_BUS_NVME	PCIE_BUS_EXTERNAL
+#define PCIE_BUS_NUM		2
+#endif
+	TMemoryWindow GetPCIeMemory (unsigned nBus) const;	// outbound
+	TMemoryWindow GetPCIeDMAMemory (unsigned nBus) const;	// inbound
+#else
+#define PCIE_BUS_NUM		0
 #endif
 
 	static CMachineInfo *Get (void);

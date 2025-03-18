@@ -752,6 +752,11 @@ boolean CDWUSBGadget::SetConfiguration (u8 uchConfiguration)
 		return FALSE;
 	}
 
+	if (m_State == StateConfigured)
+	{
+		return TRUE;
+	}
+
 	assert (m_State == StateEnumDone);
 	m_State = StateConfigured;
 

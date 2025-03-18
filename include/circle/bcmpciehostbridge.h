@@ -7,7 +7,7 @@
 //	Licensed under GPL-2.0
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #define _circle_bcmpciehostbridge_h
 
 #include <circle/interrupt.h>
+#include <circle/machineinfo.h>
 #include <circle/timer.h>
 #include <circle/types.h>
 
@@ -48,22 +49,34 @@ struct TPCIeMSIData
 	void		*param;
 };
 
-class CBcmPCIeHostBridge	/// Driver for PCIe Host Bridge of Raspberry Pi 4
+class CBcmPCIeHostBridge	/// Driver for PCIe Host Bridge(s) of Raspberry Pi 4 and 5
 {
 public:
-	CBcmPCIeHostBridge (CInterruptSystem *pInterrupt);
+	/// \param nBus PCIE_BUS_ONBOARD or PCIE_BUS_EXTERNAL
+	/// \param pInterrupt Pointer to the interrupt system object
+	CBcmPCIeHostBridge (unsigned nBus, CInterruptSystem *pInterrupt);
+
 	~CBcmPCIeHostBridge (void);
 
+	/// \return Operation successful?
 	boolean Initialize (void);
 
+	/// \param nClassCode 24-bit PCI class code of the device to be used
+	/// \param nSlot Slot number of the device to be used
+	/// \param nFunc Function number of the device to be used
+	/// \return Operation successful?
 	boolean EnableDevice (u32 nClassCode, unsigned nSlot, unsigned nFunc);
 
+#if 0
 	boolean ConnectMSI (TPCIeMSIHandler *pHandler, void *pParam);
 	void DisconnectMSI (void);
+#endif
 
-	static u64 GetDMAAddress (void)		// returns base address of the inbound memory window
+	/// \param nBus 0-based PCIe bus number
+	/// \return Base address of the inbound memory window
+	static u64 GetDMAAddress (unsigned nBus)
 	{
-		return s_nDMAAddress;
+		return s_nDMAAddress[nBus];
 	}
 
 #ifndef NDEBUG
@@ -126,6 +139,7 @@ private:
 #endif
 
 private:
+	unsigned		 m_nBus;
 	CInterruptSystem	*m_pInterrupt;
 
 	uintptr			 m_base;		// mmio base address
@@ -142,7 +156,7 @@ private:
 	u64			 m_msi_target_addr;
 	TPCIeMSIData		*m_msi;
 
-	static u64		 s_nDMAAddress;
+	static u64		 s_nDMAAddress[PCIE_BUS_NUM];
 };
 
 #endif

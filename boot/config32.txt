@@ -10,6 +10,7 @@
 #
 
 arm_64bit=0
+initial_turbo=0
 
 [pi4]
 kernel=kernel7l.img

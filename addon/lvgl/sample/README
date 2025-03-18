@@ -1,7 +1,9 @@
-README 
+README
+
+	For SPI display support see below.
 
 This sample program demonstrates some features of the LVGL embedded GUI
-library v8.3.3 ((c) 2021 LVGL Kft):
+library v9.2.2 ((c) 2021 LVGL Kft):
 
 	https://github.com/lvgl/lvgl
 	https://lvgl.io
@@ -25,3 +27,15 @@ prevent this, you should add the following option to the file cmdline.txt to
 direct the log output to the serial interface:
 
 	logdev=ttyS1
+
+
+This example can be used on a ST7789- or ILI9314-based SPI display or on
+a SSD1306-based I2C display too. For it you have to update the configuration for
+your display in the file addon/display/displayconfig.h and must enable one (!)
+of the following definitions in the Makefile before build:
+
+SPI_DISPLAY = DISPLAY_TYPE_ST7789
+SPI_DISPLAY = DISPLAY_TYPE_ILI9341
+I2C_DISPLAY = DISPLAY_TYPE_SSD1306
+
+You also have to build the library in addon/display/ before build.

@@ -9,7 +9,7 @@
 //	SPDX-License-Identifier: GPL-2.0
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2024-2025  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -255,7 +255,7 @@ enum {
 #define ARM_DMA_RP1_CHAN(chan)	(ARM_DMA_RP1_BASE + COMMON_REG_LEN + (chan) * CHAN_REG_LEN)
 
 #define PTR_TO_DMA(ptr)		(  reinterpret_cast<uintptr> (ptr)	\
-				 | CBcmPCIeHostBridge::GetDMAAddress ())
+				 | CBcmPCIeHostBridge::GetDMAAddress (PCIE_BUS_RP1))
 #define DMA_TO_VIRT(dma)	((dma) & 0x3FFFFFFFFUL)
 
 #define VIRT_TO_RP1_BUS(virt)	(0xC040000000UL | ((virt) & 0x3FFFFFFFUL))

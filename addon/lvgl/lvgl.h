@@ -24,7 +24,7 @@
 
 #include <lvgl/lvgl/lvgl.h>
 #include <circle/screen.h>
-#include <circle/bcmframebuffer.h>
+#include <circle/display.h>
 #include <circle/interrupt.h>
 #include <circle/input/mouse.h>
 #include <circle/input/touchscreen.h>
@@ -35,8 +35,8 @@
 class CLVGL
 {
 public:
-	CLVGL (CScreenDevice *pScreen, CInterruptSystem *pInterrupt);
-	CLVGL (CBcmFrameBuffer *pFrameBuffer, CInterruptSystem *pInterrupt);
+	CLVGL (CScreenDevice *pScreen);
+	CLVGL (CDisplay *pDisplay);
 	~CLVGL (void);
 
 	boolean Initialize (void);
@@ -45,8 +45,7 @@ public:
 
 private:
 	static void DisplayFlush (lv_display_t *pDisplay, const lv_area_t *pArea, u8 *pBuffer);
-	static void DisplayFlushComplete (unsigned nChannel, unsigned nBuffer,
-					  boolean bStatus, void *pParam);
+	static void DisplayFlushComplete (void *pParam);
 
 	static void PointerRead (lv_indev_t *pIndev, lv_indev_data_t *pData);
 	static void MouseEventHandler (TMouseEvent Event, unsigned nButtons,
@@ -60,17 +59,14 @@ private:
 
 	static void PeriodicTickHandler (void);
 
-#if RASPPI >= 5
 	void SetupCursor (lv_indev_t *pIndev);
-#endif
 
 private:
 	u16 *m_pBuffer1;
 	u16 *m_pBuffer2;
 
 	CScreenDevice *m_pScreen;
-	CBcmFrameBuffer *m_pFrameBuffer;
-	CDMAChannel m_DMAChannel;
+	CDisplay *m_pDisplay;
 	unsigned m_nLastUpdate;
 
 	CMouseDevice * volatile m_pMouseDevice;
@@ -78,10 +74,8 @@ private:
 	unsigned m_nLastTouchUpdate;
 	lv_indev_data_t m_PointerData;
 
-#if RASPPI >= 5
 	lv_indev_t *m_pIndev;
 	lv_img_dsc_t *m_pCursorDesc;
-#endif
 
 	static CLVGL *s_pThis;
 };

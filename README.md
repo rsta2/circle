@@ -4,41 +4,49 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on all existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4, 400, 5 and on Raspberry Pi Zero), except on the Raspberry Pi Pico, which is not supported. Circle provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on most existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4, 400, 5 and on Raspberry Pi Zero (2)), except on the Raspberry Pi Pico, which is not supported. It is not known, if it works on the Raspberry Pi 500 and on Compute Module 5. Circle provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-The 48th Step
+The 49th Step
 -------------
 
-This release comes with **USB mass-storage device gadget** support. *test/usb-msd-gadget* shows, how this can be used to provide direct access to the SD card via USB. Furthermore this version supports **HDMI sound for the Raspberry Pi 5**. The sound samples and tests have been updated to use this. The **Raspberry Pi 5 with BCM2712 stepping D0** is supported. The **LVGL support** has been updated to **version 9.2.0**.
+This release comes with an improved dot-matrix display management. All driver classes for dot-matrix displays should be derived from the class `CDisplay` now. The old character display support for ST7789- and SSD1306-based displays is still available, but will be deprecated in a future version. Instead there is the new class `CTerminalDevice`, which implements a scrolling character terminal display for any display driver, which is derived from `CDisplay`. This class is also used to implement the class `CScreenDevice` now for the known terminal display on a firmware-driven frame buffer device. The following displays are currently supported by `CDisplay`-derived driver classes:
 
-The network library has been updated to support the receiving of ICMP packets in applications. This is used in *test/ping-client* to implement a **ping client**. Raspberry Pi models without an on-board Ethernet NIC can be used with **RTL8152 and RTL8153 USB Ethernet adapters** to access a network.
+* Firmware-driven frame buffer (`CBcmFrameBuffer`)
+* ST7789 SPI display (`CST7789Display`)
+* SSD1306 I2C display (`CSSD1306Display`)
+* ILI9341 SPI display (`CILI9341Display`)
 
-The platform **DMA** controller drivers support **cyclic write transfers** now. To implement this, it was necessary to extend the type `TDMACompletionRoutine` by a buffer index. If you directly use DMA transfers in your application, you have to update your DMA completion routine.
+Beside the terminal support also the 2D graphics (`C2DGraphics`) and LVGL (`CLVGL`) support have been updated to work with all these displays. The 2D graphics support works with logical colors (`T2DColor`) now. There is a new class `C2DImage`, which manages the color conversion from logical to physical colors for 2D sprite images.
 
-There is a complete rewrite of the Flashy **serial bootloader tool in C**, which is called cFlashy and which does not need a Node-JS environment any more. You can define `USEFLASHY=0` in the file *Config.mk* to enable it. See [doc/bootloader.txt](doc/bootloader.txt) for details.
+Classes, which support the displaying of text on dot-matrix displays, allow the selection of the used font now. The default system font can by defined with system option `DEFAULT_FONT`.
+
+There is a new class `CWindowDisplay`, which allows to use multiple non-overlapping windows on a dot-matrix display. This is demonstrated in the multi-core program *sample/43-multiwindow*.
+
+*sample/08-usbkeyboard*, *sample/41-screenanimations* and *addon/lvgl/sample* have been updated for the new display management and support SPI and I2C displays too.
+
+There are a number of API breaking changes for the new display support, which are listed in [this article](https://github.com/rsta2/circle/discussions/380#discussioncomment-11417658).
 
 More news:
 
-* A class `CmDNSPublisher` was added, which can be used to publish services to mDNS (aka Bonjour) in a local network. See *test/mdns-publisher* for an example.
-* There is a new option `backlight=` for *cmdline.txt* for setting the backlight level for the Official 7" Raspberry Pi touchscreen. For some versions of this touchscreen this option is required.
-* The class `CSerialDevice` now supports modifying the parity setting (including a mark or space parity) and a per character receive for specific RS-485 applications.
-* A block cursor can be enabled on the screen using `CScreenDevice::SetCursorBlock()`. See *test/screen-ansi-colors* for an example.
-* The SD card driver implements the `GetSize()` method now.
-* Only serious USB transaction errors are logged on Raspberry Pi 1-3 any more.
-* The new doc file [doc/debug-swd.txt](doc/debug-swd.txt) explains SWD debugging on the Raspberry Pi 5 using the Raspberry Pi Debug Probe adapter.
+* The external PCIe bus of the Raspberry Pi 5 can be accessed using the class `CBcmPCIeHostBridge` now. See the *test/pcie-external* for details. Interrupts from the external PCIe bus are available via the INTA pin at the IRQ number `ARM_IRQ_PCIE_EXT_HOST_INTA`.
+* A driver for XPT2046-based touchscreens has been added. See *test/xpt2046-touchscreen* for details.
+* The FatFs support has been updated to R0.15a + patch1.
+* The LVGL support has been updated to v9.2.2.
+* DMA channels are usable in different modes now. Before a DMA channel, which has been used for an asynchronous transfer, could not be used for synchronous transfers afterwards without re-initialization. The completion routine has to be set prior to each asynchronous transfer now.
 
 Fixes:
 
-* Only 4 GB RAM were usable, even on Raspberry Pi 5 with 8 GB RAM.
-* The MAC address for WLAN access is read from the device tree on the Raspberry Pi 5 now, as it is required. Before always the same address was used.
-* The Official 7" Raspberry Pi touchscreen did not work with circle-stdlib.
-* The MQTT client delivered an invalid payload in `OnMessage()`, when there were multiple MQTT publish messages arriving in one network packet.
-* The access to USB bulk endpoints on the Raspberry Pi 1-3 in no-hub configurations was occupying the whole USB bandwidth, which was not allowing to access other endpoints on the same USB device.
-* The I2C master was not initialized on the Raspberry Pi 5 in *sample/34-sounddevices*.
+* The detection of WM8960-based I2S codecs did not work, when the I2C address was explicitly specified.
+* Commit ae00d9d8 in Step48 was leading to lost MIDI events with USB MIDI devices on the Raspberry Pi 1-3 and has been reverted. In the rare case that you are using an USB device, which has a MIDI interface and an other (e.g. HID) interface, and the device is directly connected to the root port without USB hub in-between (e.g. on Raspberry Pi Zero), you have to define the system option `USE_NAK_USB_FIX` now.
+* The MQTT client might have crashed after receiving a disconnect from peer before.
+* The check for the length, opcode and block number of incoming ACK packets in the TFTP daemon used an invalid logical operator. This could have caused receiving invalid files on read requests.
+* The HideLink THEC64 USB keyboard did not work before.
+* The initial LVGL mouse cursor was not centered on the Raspberry Pi 5.
+* The `configure` script and cFlashy can be used on macOS now. cFlashy caused a build error before on macOS.
 
-The recommended firmware version has been updated and is required to use the Raspberry Pi 5 with BCM2712 stepping D0. Please note that the file *bcm2712d0.dtbo* has to be copied into the directory *overlays/* on the SD card.
+The recommended firmware version has been updated. The option `initial_turbo=0` has been added to the file *config.txt*, because newer firmware versions enable `initial_turbo=60` by default now, which can disturb the Circle device initialization.
 
 Features
 --------
@@ -90,6 +98,7 @@ Circle supports the following features:
 |                       | BCM54213PE Gigabit Ethernet NIC of Raspberry Pi 4   |                |
 |                       | MACB / GEM Gigabit Ethernet NIC of Raspberry Pi 5   | x              |
 |                       | Wireless LAN access                                 | x              |
+|                       | Driver for XPT2046-based touch screens              | x              |
 |                       |                                                     |                |
 | USB                   | Host controller interface (HCI) drivers             | x              |
 |                       | Standard hub driver (USB 2.0 only)                  | x              |
@@ -98,6 +107,7 @@ Circle supports the following features:
 |                       | Driver for on-board Ethernet device (LAN7800)       |                |
 |                       | Driver for CDC Ethernet devices (RTL815x, QEMU)     |                |
 |                       | Driver for USB mass storage devices (bulk only)     | x              |
+|                       | Driver for USB floppy disk devices (experimental)   | x              |
 |                       | Driver for USB audio streaming devices (RPi 4 only) | x              |
 |                       | Drivers for different USB serial devices            | x              |
 |                       | Audio class MIDI input support                      | x              |
@@ -119,7 +129,7 @@ Circle supports the following features:
 |                       | (not on Raspberry Pi 4)                             |                |
 |                       | uGUI (by Achim Doebler)                             |                |
 |                       | LVGL (by LVGL Kft)                                  | x              |
-|                       | 2D graphics class in base library                   |                |
+|                       | 2D graphics class in base library                   | x              |
 |                       |                                                     |                |
 | Not supported         | Bluetooth                                           |                |
 
@@ -220,14 +230,19 @@ Classes
 
 The following C++ classes were added to Circle:
 
-USB gadget library
+Base library
 
-* CUSBMSDGadget: USB mass storage device gadget
-* CUSBMSDGadgetEndpoint: Endpoint of the USB mass storage gadget
+* CDisplay: Base class for dot-matrix display drivers
+* CTerminalDevice: Terminal support for dot-matrix displays
+* CWindowDisplay: Non-overlapping window on a display
 
-Net library
+USB library
 
-* CmDNSPublisher: mDNS / Bonjour client task
+* CUSBFloppyDiskDevice: Driver for USB floppy disk devices (CBI transport)
+
+Input library
+
+* CXPT2046TouchScreen: Driver for XPT2046-based touch screens
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 

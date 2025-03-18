@@ -1,0 +1,13 @@
+README
+
+This sample is a multi-core program, which displays different applications
+(LVGL demo, 2D graphics, fractal calculation, terminal) in 4 different windows
+on the screen. It does not run on Raspberry Pi 1 and Zero.
+
+Before building it, you must enable the multi-core support (system option
+ARM_ALLOW_MULTI_CORE) in the file Config.mk. After building the main Circle
+libraries also the library in addon/lvgl/ has to be built, before this sample
+can be built.
+
+You should attach a standard USB mouse to be able to control the LVGL demo in
+the top left window.

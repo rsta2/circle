@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,14 @@
 #include <circle/2dgraphics.h>
 #include <circle/types.h>
 #include "graphicshape.h"
+
+#ifdef SPI_DISPLAY
+	#include <circle/spimaster.h>
+	#include <display/sampleconfig.h>
+#elif defined (I2C_DISPLAY)
+	#include <circle/i2cmaster.h>
+	#include <display/sampleconfig.h>
+#endif
 
 enum TShutdownMode
 {
@@ -50,7 +58,13 @@ private:
 	// do not change this order
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
-
+#ifdef SPI_DISPLAY
+	CSPIMaster		m_SPIMaster;
+	DISPLAY_CLASS		m_SPIDisplay;
+#elif defined (I2C_DISPLAY)
+	CI2CMaster		m_I2CMaster;
+	DISPLAY_CLASS		m_I2CDisplay;
+#endif
 	C2DGraphics		m_2DGraphics;
 	CGraphicShape		*m_pShape[nShapes];
 };

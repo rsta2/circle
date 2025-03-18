@@ -2,7 +2,7 @@
 // mouse.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_input_mouse_h
 
 #include <circle/device.h>
+#include <circle/display.h>
 #include <circle/input/mousebehaviour.h>
 #include <circle/numberpool.h>
 #include <circle/types.h>
@@ -41,10 +42,10 @@ public:
 	~CMouseDevice (void);
 
 	/// \brief Setup mouse device in cooked mode
-	/// \param nScreenWidth  Width of the screen in pixels
-	/// \param nScreenHeight Height of the screen in pixels
+	/// \param pDisplay Show the mouse on this display
+	/// \param bCursor Support mouse cursor
 	/// \return FALSE on failure
-	boolean Setup (unsigned nScreenWidth, unsigned nScreenHeight);
+	boolean Setup (CDisplay *pDisplay, boolean bCursor = TRUE);
 
 	/// \brief Undo Setup()
 	/// \note Call this before resizing the screen!

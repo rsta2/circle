@@ -1,6 +1,6 @@
 /**
  * @file lv_conf.h
- * Configuration file for v9.2.0
+ * Configuration file for v9.2.2
  */
 
 /*
@@ -106,6 +106,14 @@
 
 #if LV_USE_OS == LV_OS_CUSTOM
     #define LV_OS_CUSTOM_INCLUDE <stdint.h>
+#endif
+#if LV_USE_OS == LV_OS_FREERTOS
+	/*
+	 * Unblocking an RTOS task with a direct notification is 45% faster and uses less RAM
+	 * than unblocking a task using an intermediary object such as a binary semaphore.
+	 * RTOS task notifications can only be used when there is only one task that can be the recipient of the event.
+	 */
+	#define LV_USE_FREERTOS_TASK_NOTIFY 1
 #endif
 
 /*========================
@@ -217,10 +225,16 @@
 #endif
 
 /* Use NXP's PXP on iMX RTxxx platforms. */
-#define LV_USE_DRAW_PXP 0
+#define LV_USE_PXP 0
 
-#if LV_USE_DRAW_PXP
-    #if LV_USE_OS
+#if LV_USE_PXP
+    /* Use PXP for drawing.*/
+    #define LV_USE_DRAW_PXP 1
+
+    /* Use PXP to rotate display.*/
+    #define LV_USE_ROTATE_PXP 0
+
+    #if LV_USE_DRAW_PXP && LV_USE_OS
         /* Use additional draw thread for PXP processing.*/
         #define LV_USE_PXP_DRAW_THREAD 1
     #endif
@@ -288,6 +302,20 @@
     /*1: Print the log with 'printf';
     *0: User need to register a callback with `lv_log_register_print_cb()`*/
     #define LV_LOG_PRINTF 0
+
+    /*Set callback to print the logs.
+     *E.g `my_print`. The prototype should be `void my_print(lv_log_level_t level, const char * buf)`
+     *Can be overwritten by `lv_log_register_print_cb`*/
+    //#define LV_LOG_PRINT_CB
+
+    /*1: Enable print timestamp;
+     *0: Disable print timestamp*/
+    #define LV_LOG_USE_TIMESTAMP 0
+
+    /*1: Print file and line number of the log;
+     *0: Do not print file and line number of the log*/
+    #define LV_LOG_USE_FILE_LINE 0
+
 
     /*Enable/disable LV_LOG_TRACE in modules that produces a huge number of logs*/
     #define LV_LOG_TRACE_MEM        1
@@ -467,12 +495,12 @@
  *https://fonts.google.com/specimen/Montserrat*/
 #define LV_FONT_MONTSERRAT_8  0
 #define LV_FONT_MONTSERRAT_10 0
-#define LV_FONT_MONTSERRAT_12 0
+#define LV_FONT_MONTSERRAT_12 1
 #define LV_FONT_MONTSERRAT_14 1
 #define LV_FONT_MONTSERRAT_16 1
-#define LV_FONT_MONTSERRAT_18 0
-#define LV_FONT_MONTSERRAT_20 0
-#define LV_FONT_MONTSERRAT_22 0
+#define LV_FONT_MONTSERRAT_18 1
+#define LV_FONT_MONTSERRAT_20 1
+#define LV_FONT_MONTSERRAT_22 1
 #define LV_FONT_MONTSERRAT_24 1
 #define LV_FONT_MONTSERRAT_26 0
 #define LV_FONT_MONTSERRAT_28 0

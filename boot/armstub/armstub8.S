@@ -74,8 +74,8 @@
 _start:
 	/*
 	 * LOCAL_CONTROL:
-	 * Bit 9 clear: Increment by 1 (vs. 2).
-	 * Bit 8 clear: Timer source is 19.2MHz crystal (vs. APB).
+	 * Bit 8 clear: Increment by 1 (vs. 2).
+	 * Bit 7 clear: Timer source is 19.2MHz crystal (vs. APB).
 	 */
 	mov x0, LOCAL_CONTROL
 	str wzr, [x0]
@@ -97,9 +97,8 @@ _start:
 	msr CNTVOFF_EL2, xzr
 
 	/* Enable FP/SIMD */
-	/* All set bits below are res1; bit 10 (TFP) is set to 0 */
-	mov x0, #0x33ff
-	msr CPTR_EL3, x0
+	/* bit 10 (TFP) set to 0 */
+	msr CPTR_EL3, xzr
 
 	/* Set up SCR */
 	mov x0, #SCR_VAL
