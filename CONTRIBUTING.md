@@ -20,7 +20,7 @@ Some notes on this:
 
 * Please have a look at the coding style, used in Circle, before applying modifications. It is very appreciated, if you adapt the same style (use tabs, tabs are 8 characters wide, maximum line length is 100 characters, braces "{}" should be on a separate code line). Because the source code is an important reference in Circle, a unique style is vital for a good readability.
 
-* If you plan greater modifications, please contact [me](mailto:rsta2@o2online.de) before proceeding. Not each update of this kind can be accepted. Circle is a light-weighted system of tightly coupled C++ classes. It's probably not that easy to consider all requirements, taken into account, when implementing new features of greater size.
+* If you plan greater modifications, please contact [me](https://github.com/rsta2) before proceeding. Not each update of this kind can be accepted. Circle is a light-weighted system of tightly coupled C++ classes. It's probably not that easy to consider all requirements, taken into account, when implementing new features of greater size.
 
 * Important references of Circle are the [class header files](include/circle). Please try to make them easy to read. Make it simple, if possible! Public new class interfaces should be documented for [Doxygen](https://www.doxygen.nl).
 
