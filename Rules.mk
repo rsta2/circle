@@ -186,7 +186,7 @@ endif
 
 ifneq ($(strip $(CLANG)),1)
 LDFLAGS	+= --section-start=.init=$(LOADADDR)
-ifneq ($(strip $(shell $(LD) --help | fgrep no-warn-rwx-segments | wc -l)),0)
+ifneq ($(strip $(shell $(LD) --help | grep -F no-warn-rwx-segments | wc -l)),0)
 LDFLAGS	+= --no-warn-rwx-segments
 endif
 else
