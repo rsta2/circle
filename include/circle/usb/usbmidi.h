@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,9 +68,11 @@ public:
 	/// \param nCable Cable number (0-15)
 	/// \param pData Pointer to the message buffer
 	/// \param nLength Length of message buffer in bytes
+	/// \param nChunkSize If not 0, send in chunks of this number of bytes (multiple of 4)
 	/// \return Operation successful?
 	/// \note Fails, if format is invalid or send is not supported
-	boolean SendPlainMIDI (unsigned nCable, const u8 *pData, unsigned nLength);
+	boolean SendPlainMIDI (unsigned nCable, const u8 *pData, unsigned nLength,
+			       unsigned nChunkSize = 0);
 
 	/// \brief Generate MIDI CC "All Sound Off" event (120), when an USB error occurs?
 	/// \param bEnable Set to TRUE to enable function
