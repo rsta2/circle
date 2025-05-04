@@ -14,7 +14,7 @@
 # Use firmware revision built/committed on: Nov 26 2024
 FIRMWARE ?= 4bb9d889a9d48c7335ebe53c0b8be83285ea54b1
 
-BASEURL = https://github.com/raspberrypi/firmware/blob/$(FIRMWARE)/boot
+BASEURL = https://github.com/raspberrypi/firmware/raw/$(FIRMWARE)/boot
 
 FILES = LICENCE.broadcom COPYING.linux \
 	bootcode.bin start.elf fixup.dat start4.elf fixup4.dat \
@@ -32,12 +32,12 @@ firmware: clean
 	@for file in $(FILES) ; \
 	do \
 		echo Downloading $$file ... ; \
-		wget -q -O $$file $(BASEURL)/$$file?raw=true ; \
+		wget -q -O $$file $(BASEURL)/$$file ; \
 	done
 	@for file in $(OVERLAYS) ; \
 	do \
 		echo Downloading $$file ... ; \
-		wget -q -O $$file $(BASEURL)/overlays/$$file?raw=true ; \
+		wget -q -O $$file $(BASEURL)/overlays/$$file ; \
 	done
 
 all: firmware armstub bootloader
