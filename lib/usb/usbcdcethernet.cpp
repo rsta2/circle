@@ -2,7 +2,7 @@
 // usbcdcethernet.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,11 @@
 #include <circle/macros.h>
 #include <assert.h>
 
+#define SET_ETHERNET_PACKET_FILTER		0x43
+	#define	PACKET_TYPE_ALL_MULTICAST	BIT (1)
+	#define	PACKET_TYPE_DIRECTED		BIT (2)
+	#define	PACKET_TYPE_BROADCAST		BIT (3)
+
 struct TEthernetNetworkingFunctionalDescriptor
 {
 	u8	bLength;
@@ -43,6 +48,7 @@ static const char FromCDCEthernet[] = "ucdceth";
 
 CUSBCDCEthernetDevice::CUSBCDCEthernetDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
+	m_uchControlInterface (GetInterfaceNumber ()),
 	m_iMACAddress (GetMACAddressStringIndex ()),
 	m_bInterfaceOK (SelectInterfaceByClass (10, 0, 0, 2)),
 	m_pEndpointBulkIn (0),
@@ -168,6 +174,23 @@ boolean CUSBCDCEthernetDevice::ReceiveFrame (void *pBuffer, unsigned *pResultLen
 	*pResultLength = nResultLength;
 
 	return TRUE;
+}
+
+boolean CUSBCDCEthernetDevice::SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE])
+{
+	u16 usFilter = PACKET_TYPE_DIRECTED | PACKET_TYPE_BROADCAST;
+
+	// Enable all multicasts, if at least one host group is requested.
+	if (Groups[0][0])
+	{
+		usFilter |= PACKET_TYPE_ALL_MULTICAST;
+	}
+
+	return GetHost ()->ControlMessage (GetEndpoint0 (),
+					   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+					   SET_ETHERNET_PACKET_FILTER,
+					   usFilter,
+					   m_uchControlInterface, 0, 0) >= 0;
 }
 
 u8 CUSBCDCEthernetDevice::GetMACAddressStringIndex (void)
