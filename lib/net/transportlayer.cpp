@@ -2,7 +2,7 @@
 // transportlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -388,6 +388,30 @@ int CTransportLayer::SetOptionBroadcast (boolean bAllowed, int hConnection)
 	}
 
 	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionBroadcast (bAllowed);
+}
+
+int CTransportLayer::SetOptionAddMembership (const CIPAddress &rGroupAddress, int hConnection)
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return -1;
+	}
+
+	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionAddMembership (rGroupAddress);
+}
+
+int CTransportLayer::SetOptionDropMembership (const CIPAddress &rGroupAddress, int hConnection)
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return -1;
+	}
+
+	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionDropMembership (rGroupAddress);
 }
 
 boolean CTransportLayer::IsConnected (int hConnection) const

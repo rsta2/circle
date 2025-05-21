@@ -13,7 +13,7 @@
 //	user timeout
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -510,6 +510,16 @@ int CTCPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 int CTCPConnection::SetOptionBroadcast (boolean bAllowed)
 {
 	return 0;
+}
+
+int CTCPConnection::SetOptionAddMembership (const CIPAddress &rGroupAddress)
+{
+	return -1;
+}
+
+int CTCPConnection::SetOptionDropMembership (const CIPAddress &rGroupAddress)
+{
+	return -1;
 }
 
 boolean CTCPConnection::IsConnected (void) const

@@ -2,7 +2,7 @@
 // udpconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -55,6 +55,9 @@ public:
 
 	int SetOptionBroadcast (boolean bAllowed);
 
+	int SetOptionAddMembership (const CIPAddress &rGroupAddress);
+	int SetOptionDropMembership (const CIPAddress &rGroupAddress);
+
 	boolean IsConnected (void) const;
 	boolean IsTerminated (void) const;
 	
@@ -76,6 +79,7 @@ private:
 	CNetQueue m_RxQueue;
 	CSynchronizationEvent m_Event;
 	boolean m_bBroadcastsAllowed;
+	CIPAddress *m_pHostGroup;
 
 	int m_nErrno;				// signalize error to the user
 };
