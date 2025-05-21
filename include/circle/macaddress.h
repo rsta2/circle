@@ -2,7 +2,7 @@
 // macaddress.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,10 +37,12 @@ public:
 	
 	void Set (const u8 *pAddress);
 	void SetBroadcast (void);
+	void SetMulticast (const u8 *pIPAddress);
 	const u8 *Get (void) const;
 	void CopyTo (u8 *pBuffer) const;
 
 	boolean IsBroadcast (void) const;
+	boolean IsMulticast (void) const;
 	unsigned GetSize (void) const;
 
 	void Format (CString *pString) const;
