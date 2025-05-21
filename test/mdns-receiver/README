@@ -1,0 +1,4 @@
+README
+
+This test receives mDNS UDP multicast packets on the connected network and
+hexdumps them to the logger.
