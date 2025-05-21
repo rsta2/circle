@@ -43,7 +43,12 @@ public:
 	// update device settings according to PHY status
 	boolean UpdatePHY (void);
 
+	boolean SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE]);
+
 private:
+	static int hash_get_index (const u8 addr[MAC_ADDRESS_SIZE]);
+	static int hash_bit_value (int bitnr, const u8 addr[MAC_ADDRESS_SIZE]);
+
 	struct TDMADescriptor
 	{
 		u32	addr;
