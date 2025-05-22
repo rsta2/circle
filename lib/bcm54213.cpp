@@ -16,7 +16,7 @@
 //	Licensed under GPLv2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -922,6 +922,13 @@ boolean CBcm54213Device::UpdatePHY (void)
 	return TRUE;
 }
 
+boolean CBcm54213Device::SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE])
+{
+	set_rx_mode (Groups);
+
+	return TRUE;
+}
+
 void CBcm54213Device::reset_umac(void)
 {
 	// 7358a0/7552a0: bad default in RBUF_FLUSH_CTRL.umac_sw_rst
@@ -1064,7 +1071,7 @@ int CBcm54213Device::set_hw_addr(void)
 
 #define MAX_MC_COUNT	16
 
-void CBcm54213Device::set_mdf_addr(unsigned char *addr, int *i, int *mc)
+void CBcm54213Device::set_mdf_addr(const u8 addr[MAC_ADDRESS_SIZE], int *i, int *mc)
 {
 	umac_writel(  addr[0] << 8
 		    | addr[1], UMAC_MDF_ADDR + (*i * 4));
@@ -1074,6 +1081,7 @@ void CBcm54213Device::set_mdf_addr(unsigned char *addr, int *i, int *mc)
 		    | addr[5], UMAC_MDF_ADDR + ((*i + 1) * 4));
 
 	u32 reg = umac_readl(UMAC_MDF_CTRL);
+	assert (*mc <= MAX_MC_COUNT);
 	reg |= (1 << (MAX_MC_COUNT - *mc));
 	umac_writel(reg, UMAC_MDF_CTRL);
 
@@ -1081,7 +1089,7 @@ void CBcm54213Device::set_mdf_addr(unsigned char *addr, int *i, int *mc)
 	(*mc)++;
 }
 
-void CBcm54213Device::set_rx_mode(void)
+void CBcm54213Device::set_rx_mode(const u8 mc_groups[][MAC_ADDRESS_SIZE])
 {
 	// Promiscuous mode off
 	u32 reg = umac_readl(UMAC_CMD);
@@ -1091,6 +1099,8 @@ void CBcm54213Device::set_rx_mode(void)
 	// update MDF filter
 	int i = 0;
 	int mc = 0;
+
+	umac_writel(0, UMAC_MDF_CTRL);
 
 	u8 Buffer[MAC_ADDRESS_SIZE];
 
@@ -1103,6 +1113,15 @@ void CBcm54213Device::set_rx_mode(void)
 	// my own address
 	m_MACAddress.CopyTo(Buffer);
 	set_mdf_addr(Buffer, &i, &mc);
+
+	// Multicast
+	if (mc_groups)
+	{
+		for (unsigned j = 0; mc_groups[j][0]; j++)
+		{
+			set_mdf_addr(mc_groups[j], &i, &mc);
+		}
+	}
 }
 
 // clear Hardware Filter Block and disable all filtering

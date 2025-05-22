@@ -2,7 +2,7 @@
 // networklayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -94,7 +94,8 @@ void CNetworkLayer::Process (void)
 		{
 			if (   *pOwnIPAddress != IPAddressDestination
 			    && !IPAddressDestination.IsBroadcast ()
-			    && *m_pNetConfig->GetBroadcastAddress () != IPAddressDestination)
+			    && *m_pNetConfig->GetBroadcastAddress () != IPAddressDestination
+			    && !IPAddressDestination.IsMulticast ())
 			{
 				continue;
 			}
@@ -349,6 +350,18 @@ boolean CNetworkLayer::ReceiveICMP (void *pBuffer, unsigned *pResultLength,
 	pData = 0;
 
 	return TRUE;
+}
+
+boolean CNetworkLayer::JoinHostGroup (const CIPAddress &rGroupAddress)
+{
+	assert (m_pLinkLayer != 0);
+	return m_pLinkLayer->JoinLocalGroup (rGroupAddress);
+}
+
+boolean CNetworkLayer::LeaveHostGroup (const CIPAddress &rGroupAddress)
+{
+	assert (m_pLinkLayer != 0);
+	return m_pLinkLayer->LeaveLocalGroup (rGroupAddress);
 }
 
 void CNetworkLayer::AddRoute (const u8 *pDestIP, const u8 *pGatewayIP)

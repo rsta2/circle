@@ -1,0 +1,18 @@
+README
+
+This test receives mDNS UDP multicast packets on the connected network and
+hexdumps them to the logger.
+
+To use this test with a WLAN, you have to define this in the Makefile:
+
+	USE_WLAN = 1
+
+Furthermore the libraries in the following subdirectories must be build
+manually, before building this program for WLAN usage:
+
+* addon/SDCard/
+* addon/fatfs/
+* addon/wlan/
+* addon/wlan/hostap/wpa_supplicant/
+
+See addon/wlan/sample/hello_wlan/README for more info on WLAN access.

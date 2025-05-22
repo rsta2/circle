@@ -7,7 +7,7 @@
 //	Licensed under GPLv2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2018-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2018-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -529,6 +529,60 @@ TNetDeviceSpeed CLAN7800Device::GetLinkSpeed (void)
 	case 0b110:	return NetDeviceSpeed1000Full;
 	default:	return NetDeviceSpeedUnknown;
 	}
+}
+
+boolean CLAN7800Device::SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE])
+{
+	u32 rfe_ctl;
+	if (!ReadReg (RFE_CTL, &rfe_ctl))
+	{
+		return FALSE;
+	}
+
+	rfe_ctl &= ~(RFE_CTL_UCAST_EN | RFE_CTL_MCAST_EN | RFE_CTL_DA_PERFECT | RFE_CTL_MCAST_HASH);
+	rfe_ctl |= RFE_CTL_BCAST_EN;
+
+	memset (m_FilterTable, 0, sizeof m_FilterTable);
+
+	for (int i = 0; Groups[i][0]; i++)
+	{
+		if (i == 32)
+		{
+			return FALSE;
+		}
+
+		SetAddressFilter (i + 1, Groups[i]);
+
+		rfe_ctl |= RFE_CTL_DA_PERFECT;
+	}
+
+	for (int i = 1; i < NUM_OF_MAF; i++)
+	{
+		if (   !WriteReg (MAF_HI (i), 0)
+		    || !WriteReg (MAF_LO (i), m_FilterTable[i][1])
+		    || !WriteReg (MAF_HI (i), m_FilterTable[i][0]))
+		{
+			return FALSE;
+		}
+	}
+
+	return WriteReg (RFE_CTL, rfe_ctl);
+}
+
+void CLAN7800Device::SetAddressFilter (int index, const u8 addr[MAC_ADDRESS_SIZE])
+{
+	assert (0 < index && index < NUM_OF_MAF);
+
+	u32 temp = addr[3];
+	temp = addr[2] | (temp << 8);
+	temp = addr[1] | (temp << 8);
+	temp = addr[0] | (temp << 8);
+	m_FilterTable[index][1] = temp;
+
+	temp = addr[5];
+	temp = addr[4] | (temp << 8);
+	temp |= MAF_HI_VALID | MAF_HI_TYPE_DST;
+	m_FilterTable[index][0] = temp;
 }
 
 boolean CLAN7800Device::InitMACAddress (void)

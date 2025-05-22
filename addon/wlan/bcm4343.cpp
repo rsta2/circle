@@ -2,7 +2,7 @@
 // bcm4343.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -152,6 +152,36 @@ boolean CBcm4343Device::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 	*pResultLength = nLength;
 
 	//hexdump (pBuffer, nLength, "wlanrx");
+
+	return TRUE;
+}
+
+boolean CBcm4343Device::SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE])
+{
+	u32 nGroups = 0;
+	while (Groups[nGroups][0])
+	{
+		nGroups++;
+	}
+
+	size_t ulSize = sizeof nGroups + nGroups * MAC_ADDRESS_SIZE;
+
+	u8 Buffer[ulSize];
+	memcpy (Buffer, &nGroups, sizeof nGroups);
+	if (nGroups)
+	{
+		memcpy (Buffer + sizeof nGroups, Groups, nGroups * MAC_ADDRESS_SIZE);
+	}
+
+	if (waserror ())
+	{
+		return FALSE;
+	}
+
+	assert (s_EtherDevice.setmulticast != 0);
+	(*s_EtherDevice.setmulticast) (&s_EtherDevice, Buffer, ulSize);
+
+	poperror ();
 
 	return TRUE;
 }

@@ -2,7 +2,7 @@
 // bcm4343.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,6 +45,8 @@ public:
 
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength);
+
+	boolean SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE]);
 
 public:
 	/// \param pHandler Pointer to event handler (0 for unregister)

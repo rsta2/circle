@@ -2,7 +2,7 @@
 // util.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -725,3 +725,28 @@ int parity32 (unsigned nValue)
 }
 
 #endif
+
+u32 ether_crc (size_t ulLength, const u8 *pData)
+{
+	u32 nCRC = ~0;
+	while (ulLength--)
+	{
+		nCRC ^= *pData++;
+
+		for (unsigned i = 0; i < 8; i++)
+		{
+			nCRC = (nCRC >> 1) ^ ((nCRC & 1) ? 0xEDB88320 : 0);
+		}
+	}
+
+	// reverse bits
+	u32 nCRC_BE = 0;
+	unsigned i;
+	for (i = 0; nCRC; i++, nCRC >>= 1)
+	{
+		nCRC_BE <<= 1;
+		nCRC_BE |= nCRC & 1;
+	}
+
+	return nCRC_BE << (32 - i);
+}

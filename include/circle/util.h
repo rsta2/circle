@@ -2,7 +2,7 @@
 // util.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -85,6 +85,8 @@ u32 bswap32 (u32 ulValue);
 #else
 	#define parity32	__builtin_parity
 #endif
+
+u32 ether_crc (size_t nLength, const unsigned char *pData);
 
 #ifdef __cplusplus
 }

@@ -2,7 +2,7 @@
 // macaddress.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,6 +60,22 @@ void CMACAddress::SetBroadcast (void)
 	m_bValid = TRUE;
 }
 
+void CMACAddress::SetMulticast (const u8 *pIPAddress)
+{
+	assert (pIPAddress != 0);
+	assert (224 <= pIPAddress[0] && pIPAddress[0] <= 239);
+
+	m_Address[0] = 0x01;
+	m_Address[1] = 0x00;
+	m_Address[2] = 0x5E;
+
+	m_Address[3] = pIPAddress[1] & 0x7F;
+	m_Address[4] = pIPAddress[2];
+	m_Address[5] = pIPAddress[3];
+
+	m_bValid = TRUE;
+}
+
 const u8 *CMACAddress::Get (void) const
 {
 	assert (m_bValid);
@@ -86,6 +102,16 @@ boolean CMACAddress::IsBroadcast (void) const
 	}
 
 	return TRUE;
+}
+
+boolean CMACAddress::IsMulticast (void) const
+{
+	assert (m_bValid);
+
+	return    m_Address[0] == 0x01
+	       && m_Address[1] == 0x00
+	       && m_Address[2] == 0x5E
+	       && !(m_Address[3] & 0x80);
 }
 
 unsigned CMACAddress::GetSize (void) const

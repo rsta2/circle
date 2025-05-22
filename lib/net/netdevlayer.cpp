@@ -2,7 +2,7 @@
 // netdevlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -158,4 +158,10 @@ boolean CNetDeviceLayer::Receive (void *pBuffer, unsigned *pResultLength)
 boolean CNetDeviceLayer::IsRunning (void) const
 {
 	return m_pDevice != 0;
+}
+
+boolean CNetDeviceLayer::SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE])
+{
+	assert (m_pDevice != 0);
+	return m_pDevice->SetMulticastFilter (Groups);
 }

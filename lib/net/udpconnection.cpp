@@ -2,7 +2,7 @@
 // udpconnection.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 	m_bOpen (TRUE),
 	m_bActiveOpen (TRUE),
 	m_bBroadcastsAllowed (FALSE),
+	m_pHostGroup (0),
 	m_nErrno (0)
 {
 }
@@ -59,6 +60,7 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 	m_bOpen (TRUE),
 	m_bActiveOpen (FALSE),
 	m_bBroadcastsAllowed (FALSE),
+	m_pHostGroup (0),
 	m_nErrno (0)
 {
 }
@@ -314,6 +316,47 @@ int CUDPConnection::SetOptionBroadcast (boolean bAllowed)
 	return 0;
 }
 
+int CUDPConnection::SetOptionAddMembership (const CIPAddress &rGroupAddress)
+{
+	if (   m_pHostGroup != 0
+	    || !rGroupAddress.IsMulticast ())
+	{
+		return -1;
+	}
+
+	assert (m_pNetworkLayer != 0);
+	if (!m_pNetworkLayer->JoinHostGroup (rGroupAddress))
+	{
+		return -1;
+	}
+
+	m_pHostGroup = new CIPAddress (rGroupAddress);
+	assert (m_pHostGroup != 0);
+
+	return 0;
+}
+
+int CUDPConnection::SetOptionDropMembership (const CIPAddress &rGroupAddress)
+{
+	if (   m_pHostGroup == 0
+	    || *m_pHostGroup != rGroupAddress)
+	{
+		return -1;
+	}
+
+	delete m_pHostGroup;
+	m_pHostGroup = 0;
+
+	assert (m_pNetworkLayer != 0);
+#ifndef NDEBUG
+	boolean bOK =
+#endif
+		m_pNetworkLayer->LeaveHostGroup (rGroupAddress);
+	assert (bOK);
+
+	return 0;
+}
+
 boolean CUDPConnection::IsConnected (void) const
 {
 	return FALSE;
@@ -347,6 +390,11 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength,
 		return 0;
 	}
 
+	if (rSenderIP.IsMulticast ())
+	{
+		return -1;
+	}
+
 	assert (m_pNetConfig != 0);
 
 	u16 nSourcePort = be2le16 (pHeader->nSourcePort);
@@ -358,6 +406,7 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength,
 		}
 
 		if (   m_ForeignIP != rSenderIP
+		    && !m_ForeignIP.IsMulticast ()
 		    && !m_ForeignIP.IsBroadcast ()
 		    && m_ForeignIP != *m_pNetConfig->GetBroadcastAddress ())
 		{
@@ -386,6 +435,13 @@ int CUDPConnection::PacketReceived (const void *pPacket, unsigned nLength,
 	        || rReceiverIP == *m_pNetConfig->GetBroadcastAddress ()))
 	{
 		return 1;
+	}
+
+	if (   rReceiverIP.IsMulticast ()
+	    && (   m_pHostGroup == 0
+	        || *m_pHostGroup != rReceiverIP))
+	{
+		return 0;
 	}
 
 	nLength -= sizeof (TUDPHeader);

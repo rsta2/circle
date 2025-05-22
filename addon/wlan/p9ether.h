@@ -55,6 +55,7 @@ typedef struct Ether
 	void (*getbssid) (struct Ether *edev, void *bssid);
 	void (*scanbs) (void *arg, uint secs);
 	void (*setevhndlr) (struct Ether *edev, ether_event_handler_t *hndlr, void *context);
+	void (*setmulticast) (struct Ether *edev, void *buf, long n);
 	void (*shutdown) (struct Ether *edev);
 }
 Ether;
