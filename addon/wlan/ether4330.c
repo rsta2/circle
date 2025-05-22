@@ -2578,6 +2578,17 @@ etherbcmattach(Ether* edev)
 }
 
 static void
+ethersetmulticast(Ether *edev, void *buf, long n)
+{
+	Ctlr *ctlr;
+
+	ctlr = edev->ctlr;
+	wlsetvar(ctlr, "mcast_list", buf, n);
+	wlsetint(ctlr, "allmulti", 0);
+}
+
+
+static void
 etherbcmshutdown(Ether*edev)
 {
 	Ctlr *ctlr;
@@ -2607,6 +2618,7 @@ etherbcmpnp(Ether* edev)
 	edev->getbssid = etherbcmgetbssid;
 	edev->scanbs = etherbcmscan;
 	edev->setevhndlr = etherbcmsetevhndlr;
+	edev->setmulticast = ethersetmulticast;
 	edev->shutdown = etherbcmshutdown;
 	edev->arg = edev;
 

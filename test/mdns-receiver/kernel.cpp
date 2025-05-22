@@ -36,6 +36,12 @@ static const u8 DNSServer[]      = {192, 168, 0, 1};
 #define MDNS_HOST_GROUP		{224, 0, 0, 251}
 #define MDNS_PORT		5353
 
+#ifdef USE_WLAN
+#define DRIVE		"SD:"
+#define FIRMWARE_PATH	DRIVE "/firmware/"		// firmware files must be provided here
+#define CONFIG_FILE	DRIVE "/wpa_supplicant.conf"
+#endif
+
 LOGMODULE ("kernel");
 
 CKernel::CKernel (void)
@@ -43,8 +49,15 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer)
+#ifdef USE_WLAN
+	, m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
+	m_WLAN (FIRMWARE_PATH),
+	m_Net (0, 0, 0, 0, DEFAULT_HOSTNAME, NetDeviceTypeWLAN),
+	m_WPASupplicant (CONFIG_FILE)
+#else
 #ifndef USE_DHCP
 	, m_Net (IPAddress, NetMask, DefaultGateway, DNSServer)
+#endif
 #endif
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -94,10 +107,39 @@ boolean CKernel::Initialize (void)
 		bOK = m_USBHCI.Initialize ();
 	}
 
+#ifdef USE_WLAN
 	if (bOK)
 	{
-		bOK = m_Net.Initialize ();
+		bOK = m_EMMC.Initialize ();
 	}
+
+	if (bOK)
+	{
+		if (f_mount (&m_FileSystem, DRIVE, 1) != FR_OK)
+		{
+			LOGERR ("Cannot mount drive: %s", DRIVE);
+
+			bOK = FALSE;
+		}
+	}
+
+	if (bOK)
+	{
+		bOK = m_WLAN.Initialize ();
+	}
+#endif
+
+	if (bOK)
+	{
+		bOK = m_Net.Initialize (FALSE);
+	}
+
+#ifdef USE_WLAN
+	if (bOK)
+	{
+		bOK = m_WPASupplicant.Initialize ();
+	}
+#endif
 
 	return bOK;
 }
@@ -105,6 +147,11 @@ boolean CKernel::Initialize (void)
 TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE ("Compile time: " __DATE__ " " __TIME__);
+
+	while (!m_Net.IsRunning ())
+	{
+		m_Scheduler.MsSleep (100);
+	}
 
 	CSocket Socket (&m_Net, IPPROTO_UDP);
 	if (Socket.Bind (MDNS_PORT) < 0)

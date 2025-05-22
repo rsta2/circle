@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,12 @@
 #include <circle/logger.h>
 #include <circle/usb/usbhcidevice.h>
 #include <circle/sched/scheduler.h>
+#ifdef USE_WLAN
+	#include <SDCard/emmc.h>
+	#include <fatfs/ff.h>
+	#include <wlan/bcm4343.h>
+	#include <wlan/hostap/wpa_supplicant/wpasupplicant.h>
+#endif
 #include <circle/net/netsubsystem.h>
 #include <circle/types.h>
 
@@ -64,7 +70,15 @@ private:
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
 	CScheduler		m_Scheduler;
+#ifdef USE_WLAN
+	CEMMCDevice		m_EMMC;
+	FATFS			m_FileSystem;
+	CBcm4343Device		m_WLAN;
+#endif
 	CNetSubSystem		m_Net;
+#ifdef USE_WLAN
+	CWPASupplicant		m_WPASupplicant;
+#endif
 };
 
 #endif
