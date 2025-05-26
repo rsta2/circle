@@ -29,6 +29,8 @@
 #include <circle/macros.h>
 #include <circle/types.h>
 
+#define MAX_MULTICAST_GROUPS	8
+
 struct TEthernetHeader
 {
 	u8	MACReceiver[MAC_ADDRESS_SIZE];
@@ -68,6 +70,8 @@ public:
 	// nProtocolType is in host byte order
 	boolean EnableReceiveRaw (u16 nProtocolType);
 
+	boolean IsRunning (void) const;
+
 	boolean JoinLocalGroup (const CIPAddress &rGroupAddress);
 	boolean LeaveLocalGroup (const CIPAddress &rGroupAddress);
 
@@ -90,7 +94,7 @@ private:
 	CNetQueue m_RawRxQueue;
 	u16 m_nRawProtocolType;
 
-	static const unsigned MaxGroups = 4;
+	static const unsigned MaxGroups = MAX_MULTICAST_GROUPS;
 	CMACAddress m_MulticastGroup[MaxGroups];
 	unsigned m_nMulticastUseCounter[MaxGroups];
 };

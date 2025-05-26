@@ -258,6 +258,12 @@ boolean CLinkLayer::EnableReceiveRaw (u16 nProtocolType)
 	return TRUE;
 }
 
+boolean CLinkLayer::IsRunning (void) const
+{
+	assert (m_pNetDevLayer != 0);
+	return m_pNetDevLayer->IsRunning ();
+}
+
 boolean CLinkLayer::JoinLocalGroup (const CIPAddress &rGroupAddress)
 {
 	CMACAddress Group;
