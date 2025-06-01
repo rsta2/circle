@@ -68,6 +68,7 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 CUDPConnection::~CUDPConnection (void)
 {
 	assert (!m_bOpen);
+	assert (!m_pHostGroup);
 }
 
 int CUDPConnection::Connect (void)
@@ -88,12 +89,21 @@ int CUDPConnection::Close (void)
 	{
 		return -1;
 	}
-	
+
+	if (m_pHostGroup != 0)
+	{
+		assert (m_pNetworkLayer != 0);
+		m_pNetworkLayer->LeaveHostGroup (*m_pHostGroup);
+
+		delete m_pHostGroup;
+		m_pHostGroup = 0;
+	}
+
 	m_bOpen = FALSE;
 
 	return 0;
 }
-	
+
 int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 {
 	if (m_nErrno < 0)
