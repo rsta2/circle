@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,9 +18,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include <circle/net/mdnsdaemon.h>
 #include <circle/net/mdnspublisher.h>
+#include <circle/string.h>
 
 // Network configuration
+#define HOSTNAME	"raspberrypi"
+
 #define USE_DHCP
 
 #ifndef USE_DHCP
@@ -38,7 +42,9 @@ CKernel::CKernel (void)
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer)
 #ifndef USE_DHCP
-	, m_Net (IPAddress, NetMask, DefaultGateway, DNSServer)
+	, m_Net (IPAddress, NetMask, DefaultGateway, DNSServer, HOSTNAME)
+#else
+	, m_Net (0, 0, 0, 0, HOSTNAME)
 #endif
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -104,7 +110,9 @@ TShutdownMode CKernel::Run (void)
 	CmDNSPublisher *pmDNSPublisher = new CmDNSPublisher (&m_Net);
 	assert (pmDNSPublisher);
 
-	static const char ServiceName[] = "MIDI-Test";
+	CString ServiceName;
+	ServiceName.Format ("MIDI-Test-%u", CmDNSDaemon::Get ()->GetSuffix ());
+
 	static const char *ppText[] = {"Sample service", nullptr};	// TXT record strings
 
 	if (!pmDNSPublisher->PublishService (ServiceName, CmDNSPublisher::ServiceTypeAppleMIDI,
