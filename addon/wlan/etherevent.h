@@ -3,6 +3,7 @@
 
 typedef enum
 {
+	ether_event_link,
 	ether_event_disassoc,
 	ether_event_deauth,
 	ether_event_mic_error,

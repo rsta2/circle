@@ -43,7 +43,7 @@ public:
 	void Send (const void *pBuffer, unsigned nLength);
 	boolean Receive (void *pBuffer, unsigned *pResultLength);
 
-	boolean IsRunning (void) const;			// is net device available?
+	boolean IsRunning (void) const;		// is net device available and link up?
 
 	// terminated with 00:00:00:00:00:00
 	boolean SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE]);

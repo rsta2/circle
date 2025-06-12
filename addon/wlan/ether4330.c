@@ -1619,8 +1619,10 @@ bcmevent(Ctlr *ctl, uchar *p, int len)
 		callevhndlr(ctl, ether_event_deauth, 0);
 		break;
 	case 16:	/* E_LINK */
-		if(flags&1)	/* link up */
+		if(flags&1){	/* link up */
+			callevhndlr(ctl, ether_event_link, 0);
 			break;
+		}
 	/* fall through */
 	case 12:	/* E_DISASSOC_IND */
 		linkdown(ctl);

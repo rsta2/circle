@@ -157,7 +157,7 @@ boolean CNetDeviceLayer::Receive (void *pBuffer, unsigned *pResultLength)
 
 boolean CNetDeviceLayer::IsRunning (void) const
 {
-	return m_pDevice != 0;
+	return m_pDevice != 0 && m_pDevice->IsLinkUp ();
 }
 
 boolean CNetDeviceLayer::SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE])
