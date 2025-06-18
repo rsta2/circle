@@ -3,8 +3,19 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 49.0.1
+--------------
+
+This hotfix release solves the following issues:
+
+* Download of firmware files in boot/ did not work any more.
+* LVGL library in addon/lvgl/ did not build on Windows.
+* "fgrep is obsolescent" warnings appeared on newer build host systems.
+
 The 49th Step
 -------------
+
+2025-03-18
 
 This release comes with an improved dot-matrix display management. All driver classes for dot-matrix displays should be derived from the class `CDisplay` now. The old character display support for ST7789- and SSD1306-based displays is still available, but will be deprecated in a future version. Instead there is the new class `CTerminalDevice`, which implements a scrolling character terminal display for any display driver, which is derived from `CDisplay`. This class is also used to implement the class `CScreenDevice` now for the known terminal display on a firmware-driven frame buffer device. The following displays are currently supported by `CDisplay`-derived driver classes:
 

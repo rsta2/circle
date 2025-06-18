@@ -2,7 +2,7 @@
 # Rules.mk
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 490000
+CIRCLEVER = 490001
 
 CIRCLEHOME ?= ..
 
@@ -186,7 +186,7 @@ endif
 
 ifneq ($(strip $(CLANG)),1)
 LDFLAGS	+= --section-start=.init=$(LOADADDR)
-ifneq ($(strip $(shell $(LD) --help | fgrep no-warn-rwx-segments | wc -l)),0)
+ifneq ($(strip $(shell $(LD) --help | grep -F no-warn-rwx-segments | wc -l)),0)
 LDFLAGS	+= --no-warn-rwx-segments
 endif
 else

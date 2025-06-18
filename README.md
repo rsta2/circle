@@ -8,6 +8,15 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
+Release 49.0.1
+--------------
+
+This hotfix release solves the following issues:
+
+* Download of firmware files in boot/ did not work any more.
+* LVGL library in addon/lvgl/ did not build on Windows.
+* "fgrep is obsolescent" warnings appeared on newer build host systems.
+
 The 49th Step
 -------------
 
