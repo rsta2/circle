@@ -12,11 +12,11 @@ ESCAPE SEQUENCES
 \E[K		Clear to end of line
 \E[%dX		Erase %1 characters starting at cursor
 ^J		Carriage return/linefeed
-\E[0m		End of bold, half bright and reverse mode
+\E[0m		End of bold, half bright and reverse mode, reset colors
 \E[1m		Start bold mode
 \E[2m		Start half bright mode
 \E[7m		Start reverse video mode
-\E[27m		Same as \E[0m
+\E[27m		End reverse video mode
 \E[%dm		Set foreground color (%d = 30-37 or 90-97)
 \E[%dm		Set background color (%d = 40-47 or 100-107)
 ^I		Move to next hardware tab
