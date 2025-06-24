@@ -813,9 +813,9 @@ void CTerminalDevice::SetStandoutMode (unsigned nMode)
 	switch (nMode)
 	{
 	case 0:
-	case 27:
 		m_bReverseAttribute = FALSE;
 		m_Color = m_pDisplay->GetColor (CDisplay::NormalColor);
+		m_BackgroundColor = m_pDisplay->GetColor (CDisplay::Black);
 		break;
 
 	case 1:
@@ -828,6 +828,10 @@ void CTerminalDevice::SetStandoutMode (unsigned nMode)
 
 	case 7:
 		m_bReverseAttribute = TRUE;
+		break;
+
+	case 27:
+		m_bReverseAttribute = FALSE;
 		break;
 
 	case 30:
