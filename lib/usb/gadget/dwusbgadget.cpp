@@ -5,7 +5,7 @@
 //	Does only support Control EP0 and Bulk EPs.
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -594,21 +594,26 @@ void CDWUSBGadget::HandleEnumerationDone (void)
 	LOGDBG ("Enumeration done");
 #endif
 
-	if (m_State != StateResetDone)
+	if (m_State == StateSuspended)
 	{
-		return;
+		HandleUSBReset ();
 	}
 
-	CDWHCIRegister USBConfig (DWHCI_CORE_USB_CFG);
-	USBConfig.Read ();
-	USBConfig.And (~DWHCI_CORE_USB_CFG_TURNAROUND_TIME__MASK);
-	USBConfig.Or (9 << DWHCI_CORE_USB_CFG_TURNAROUND_TIME__SHIFT);
-	USBConfig.Write ();
+	if (m_State == StateResetDone)
+	{
+		CDWHCIRegister USBConfig (DWHCI_CORE_USB_CFG);
+		USBConfig.Read ();
+		USBConfig.And (~DWHCI_CORE_USB_CFG_TURNAROUND_TIME__MASK);
+		USBConfig.Or (9 << DWHCI_CORE_USB_CFG_TURNAROUND_TIME__SHIFT);
+		USBConfig.Write ();
 
-	assert (m_pEP[0]);
-	m_pEP[0]->OnActivate ();
+		assert (m_pEP[0]);
+		m_pEP[0]->OnActivate ();
 
-	m_State = StateEnumDone;
+		m_State = StateEnumDone;
+	}
+
+	assert (m_State == StateEnumDone);
 
 	CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT, DWHCI_CORE_INT_MASK_ENUM_DONE);
 	IntStatus.Write ();
