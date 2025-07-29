@@ -943,7 +943,7 @@ boolean CMACBDevice::Initialize (void)
 	const TDeviceTreeProperty *pLocalMACAddress;
 
 	if (   !pDTB
-	    || !(pEthernet0Node = pDTB->FindNode ("/axi/pcie@120000/rp1/ethernet@100000"))
+	    || !(pEthernet0Node = pDTB->FindNode ("/axi/pcie@1000120000/rp1/ethernet@100000"))
 	    || !(pLocalMACAddress = pDTB->FindProperty (pEthernet0Node, "local-mac-address"))
 	    || pDTB->GetPropertyValueLength (pLocalMACAddress) != 6)
 	{
