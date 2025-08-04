@@ -2,7 +2,7 @@
 /// \file timer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -75,6 +75,11 @@ public:
 	unsigned GetTicks (void) const;
 	/// \return Seconds since system boot (continous)
 	unsigned GetUptime (void) const;
+	/// \brief Get time, past since system boot (continous) with microseconds part
+	/// \param pSeconds Seconds will be stored here
+	/// \param pMicroSeconds Microseconds will be stored here
+	/// \return TRUE if time is valid
+	boolean GetUptime (unsigned *pSeconds, unsigned *pMicroSeconds);
 
 	/// \return Seconds since system boot\n
 	/// or since 1970-01-01 00:00:00 (if time was set)\n
