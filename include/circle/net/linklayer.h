@@ -2,7 +2,7 @@
 // linklayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@
 #include <circle/net/netqueue.h>
 #include <circle/macros.h>
 #include <circle/types.h>
+
+#define MAX_MULTICAST_GROUPS	8
 
 struct TEthernetHeader
 {
@@ -68,7 +70,14 @@ public:
 	// nProtocolType is in host byte order
 	boolean EnableReceiveRaw (u16 nProtocolType);
 
+	boolean IsRunning (void) const;
+
+	boolean JoinLocalGroup (const CIPAddress &rGroupAddress);
+	boolean LeaveLocalGroup (const CIPAddress &rGroupAddress);
+
 private:
+	boolean UpdateMulticastFilter (void);
+
 	// return IP packet to the network layer for notification
 	void ResolveFailed (const void *pReturnedFrame, unsigned nLength);
 	friend class CARPHandler;
@@ -84,6 +93,10 @@ private:
 
 	CNetQueue m_RawRxQueue;
 	u16 m_nRawProtocolType;
+
+	static const unsigned MaxGroups = MAX_MULTICAST_GROUPS;
+	CMACAddress m_MulticastGroup[MaxGroups];
+	unsigned m_nMulticastUseCounter[MaxGroups];
 };
 
 #endif

@@ -2,7 +2,7 @@
 // chargenerator.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ CCharGenerator::CCharGenerator (const TFont &rFont, TFontFlags Flags)
 	m_nHeightMult (Flags & FontFlagsDoubleHeight ? 2 : 1),
 	m_nCharWidth (rFont.width * m_nWidthMult),
 	m_nCharWidthOrig (rFont.width),
+	m_nCharStride ((rFont.width + 7) / 8),
 	m_nCharHeight ((rFont.height + rFont.extra_height) * m_nHeightMult),
 	m_nUnderline (rFont.height * m_nHeightMult)
 {
@@ -45,5 +46,29 @@ CCharGenerator::TPixelLine CCharGenerator::GetPixelLine (char chAscii, unsigned 
 		nPosY >>= 1;
 	}
 
-	return m_rFont.data[(nAscii - m_rFont.first_char) * m_rFont.height + nPosY];
+	switch (m_nCharStride)
+	{
+	case 1: {
+		const u8 *pFontData = static_cast<const u8 *> (m_rFont.data);
+		return pFontData[(nAscii - m_rFont.first_char) * m_rFont.height + nPosY];
+		}
+
+	case 2: {
+		const u16 *pFontData = static_cast<const u16 *> (m_rFont.data);
+		return pFontData[(nAscii - m_rFont.first_char) * m_rFont.height + nPosY];
+		}
+
+	case 3: {
+		const u8 *pFontData = static_cast<const u8 *> (m_rFont.data);
+		pFontData += 3 * ((nAscii - m_rFont.first_char) * m_rFont.height + nPosY);
+		return *reinterpret_cast<const u32 *> (pFontData) & 0xFFFFFF;
+		}
+
+	case 4: {
+		const u32 *pFontData = static_cast<const u32 *> (m_rFont.data);
+		return pFontData[(nAscii - m_rFont.first_char) * m_rFont.height + nPosY];
+		}
+	}
+
+	return 0;
 }

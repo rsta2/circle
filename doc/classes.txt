@@ -193,8 +193,10 @@ Net library
 * CHTTPClient: Requests documents from HTTP webservers.
 * CHTTPDaemon: Simple HTTP server class.
 * CICMPHandler: ICMP error message handler and echo (ping) responder.
+* CIGMPHandler: IGMP version 2 protocol handler.
 * CIPAddress: Encapsulates an IP address.
 * CLinkLayer: Encapsulates the Ethernet MAC layer.
+* CmDNSDaemon: mDNS responder task.
 * CmDNSPublisher: mDNS / Bonjour client task.
 * CMQTTClient: Client for the MQTT IoT protocol.
 * CMQTTReceivePacket: MQTT helper class.

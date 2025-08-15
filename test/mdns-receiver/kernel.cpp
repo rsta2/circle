@@ -18,13 +18,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include <circle/net/mdnsdaemon.h>
-#include <circle/net/mdnspublisher.h>
+#include <circle/net/socket.h>
+#include <circle/net/in.h>
 #include <circle/string.h>
+#include <circle/debug.h>
 
 // Network configuration
-#define HOSTNAME	"raspberrypi"
-
 #define USE_DHCP
 
 #ifndef USE_DHCP
@@ -34,6 +33,15 @@ static const u8 DefaultGateway[] = {192, 168, 0, 1};
 static const u8 DNSServer[]      = {192, 168, 0, 1};
 #endif
 
+#define MDNS_HOST_GROUP		{224, 0, 0, 251}
+#define MDNS_PORT		5353
+
+#ifdef USE_WLAN
+#define DRIVE		"SD:"
+#define FIRMWARE_PATH	DRIVE "/firmware/"		// firmware files must be provided here
+#define CONFIG_FILE	DRIVE "/wpa_supplicant.conf"
+#endif
+
 LOGMODULE ("kernel");
 
 CKernel::CKernel (void)
@@ -41,10 +49,15 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer)
-#ifndef USE_DHCP
-	, m_Net (IPAddress, NetMask, DefaultGateway, DNSServer, HOSTNAME)
+#ifdef USE_WLAN
+	, m_EMMC (&m_Interrupt, &m_Timer, &m_ActLED),
+	m_WLAN (FIRMWARE_PATH),
+	m_Net (0, 0, 0, 0, DEFAULT_HOSTNAME, NetDeviceTypeWLAN),
+	m_WPASupplicant (CONFIG_FILE)
 #else
-	, m_Net (0, 0, 0, 0, HOSTNAME)
+#ifndef USE_DHCP
+	, m_Net (IPAddress, NetMask, DefaultGateway, DNSServer)
+#endif
 #endif
 {
 	m_ActLED.Blink (5);	// show we are alive
@@ -94,10 +107,39 @@ boolean CKernel::Initialize (void)
 		bOK = m_USBHCI.Initialize ();
 	}
 
+#ifdef USE_WLAN
 	if (bOK)
 	{
-		bOK = m_Net.Initialize ();
+		bOK = m_EMMC.Initialize ();
 	}
+
+	if (bOK)
+	{
+		if (f_mount (&m_FileSystem, DRIVE, 1) != FR_OK)
+		{
+			LOGERR ("Cannot mount drive: %s", DRIVE);
+
+			bOK = FALSE;
+		}
+	}
+
+	if (bOK)
+	{
+		bOK = m_WLAN.Initialize ();
+	}
+#endif
+
+	if (bOK)
+	{
+		bOK = m_Net.Initialize (FALSE);
+	}
+
+#ifdef USE_WLAN
+	if (bOK)
+	{
+		bOK = m_WPASupplicant.Initialize ();
+	}
+#endif
 
 	return bOK;
 }
@@ -106,26 +148,59 @@ TShutdownMode CKernel::Run (void)
 {
 	LOGNOTE ("Compile time: " __DATE__ " " __TIME__);
 
-	// create mDNS publisher task
-	CmDNSPublisher *pmDNSPublisher = new CmDNSPublisher (&m_Net);
-	assert (pmDNSPublisher);
-
-	CString ServiceName;
-	ServiceName.Format ("MIDI-Test-%u", CmDNSDaemon::Get ()->GetSuffix ());
-
-	static const char *ppText[] = {"Sample service", nullptr};	// TXT record strings
-
-	if (!pmDNSPublisher->PublishService (ServiceName, CmDNSPublisher::ServiceTypeAppleMIDI,
-					     5004, ppText))
+	while (!m_Net.IsRunning ())
 	{
-		LOGPANIC ("Cannot publish service");
+		m_Scheduler.MsSleep (100);
 	}
 
-	m_Scheduler.Sleep (60);
+	CSocket Socket (&m_Net, IPPROTO_UDP);
+	if (Socket.Bind (MDNS_PORT) < 0)
+	{
+		LOGPANIC ("Cannot bind to port %u", MDNS_PORT);
+	}
 
-	pmDNSPublisher->UnpublishService (ServiceName);
+	static const u8 mDNSIPAddress[] = MDNS_HOST_GROUP;
+	CIPAddress mDNSIP (mDNSIPAddress);
 
-	m_Scheduler.Sleep (10);
+#if 0
+	// necessary for multicast send only
+	if (Socket.Connect (mDNSIP, MDNS_PORT) < 0)
+	{
+		LOGPANIC ("Cannot connect to mDNS host group");
+	}
+#endif
+
+	if (Socket.SetOptionAddMembership (mDNSIP) < 0)
+	{
+		LOGPANIC ("Cannot join mDNS host group");
+	}
+
+	while (1)
+	{
+		u8 Buffer[FRAME_BUFFER_SIZE];
+		CIPAddress ForeignIP;
+		u16 usForeignPort;
+		int nResult = Socket.ReceiveFrom (Buffer, sizeof Buffer, 0,
+						  &ForeignIP, &usForeignPort);
+		if (nResult > 0)
+		{
+			CString IPString;
+			ForeignIP.Format (&IPString);
+
+			LOGNOTE ("%d bytes received from %s:%u",
+				 nResult, IPString.c_str (), (unsigned) usForeignPort);
+
+#ifndef NDEBUG
+			debug_hexdump (Buffer, nResult, From);
+#endif
+		}
+		else if (nResult < 0)
+		{
+			LOGWARN ("Receive failed");
+		}
+
+		m_Scheduler.Yield ();
+	}
 
 	return ShutdownHalt;
 }

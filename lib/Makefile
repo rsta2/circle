@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ OBJS	= actled.o alloc.o assert.o display.o windowdisplay.o bcmframebuffer.o bcmm
 	  util_fast.o virtualgpiopin.o chainboot.o macaddress.o netdevice.o \
 	  new.o heapallocator.o pageallocator.o setjmp.o numberpool.o \
 	  writebuffer.o 2dgraphics.o ptrlistfiq.o \
-	  font6x7.o font8x8.o font8x10.o font8x12.o font8x14.o font8x16.o
+	  font6x7.o font8x8.o font8x10.o font8x12.o font8x14.o font8x16.o font12x22.o
 
 OBJS32	= cache-v7.o exceptionhandler.o exceptionstub.o memory.o pagetable.o \
 	  startup.o synchronize.o

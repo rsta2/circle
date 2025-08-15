@@ -943,7 +943,7 @@ boolean CMACBDevice::Initialize (void)
 	const TDeviceTreeProperty *pLocalMACAddress;
 
 	if (   !pDTB
-	    || !(pEthernet0Node = pDTB->FindNode ("/axi/pcie@120000/rp1/ethernet@100000"))
+	    || !(pEthernet0Node = pDTB->FindNode ("/axi/pcie@1000120000/rp1/ethernet@100000"))
 	    || !(pLocalMACAddress = pDTB->FindProperty (pEthernet0Node, "local-mac-address"))
 	    || pDTB->GetPropertyValueLength (pLocalMACAddress) != 6)
 	{
@@ -1178,6 +1178,52 @@ boolean CMACBDevice::UpdatePHY (void)
 	}
 
 	return TRUE;
+}
+
+boolean CMACBDevice::SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE])
+{
+	u32 cfg = macb_readl (NCFGR);
+	cfg &= ~MACB_BIT (CAF);		/* Disable promiscuous mode */
+	cfg &= ~MACB_BIT (NCFGR_MTI);	/* Disable specific multicasts */
+
+	/* Enable specific multicasts */
+	u32 mc_filter[2] = {0, 0};
+	for (unsigned i = 0; Groups[i][0]; i++)
+	{
+		int bitnr = hash_get_index(Groups[i]);
+		mc_filter[bitnr >> 5] |= 1 << (bitnr & 31);
+
+		cfg |= MACB_BIT (NCFGR_MTI);
+	}
+
+	gem_writel (HRB, mc_filter[0]);
+	gem_writel (HRT, mc_filter[1]);
+
+	macb_writel (NCFGR, cfg);
+
+	return TRUE;
+}
+
+int CMACBDevice::hash_get_index (const u8 addr[MAC_ADDRESS_SIZE])
+{
+	int hash_index = 0;
+	for (int j = 0; j < MAC_ADDRESS_SIZE; j++)
+	{
+		int bitval = 0;
+		for (int i = 0; i < 8; i++)
+		{
+			bitval ^= hash_bit_value (i * MAC_ADDRESS_SIZE + j, addr);
+		}
+
+		hash_index |= (bitval << j);
+	}
+
+	return hash_index;
+}
+
+int CMACBDevice::hash_bit_value (int bitnr, const u8 addr[MAC_ADDRESS_SIZE])
+{
+	return addr[bitnr / 8] & (1 << (bitnr % 8)) ? 1 : 0;
 }
 
 int CMACBDevice::eth_alloc (void)

@@ -2,7 +2,7 @@
 // netdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -83,6 +83,11 @@ public:
 	/// \return FALSE if not supported
 	/// \note This is called continuously every 2 seconds by the net PHY task
 	virtual boolean UpdatePHY (void)		{ return FALSE; }
+
+	/// \brief Set multicast address filter
+	/// \param Groups Array of multicast group addresses (terminated with 00:00:00:00:00:00)
+	/// \return FALSE if not supported
+	virtual boolean SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE]) { return FALSE; }
 
 	/// \param Speed A value returned by GetLinkSpeed()
 	/// \return Description for this speed value

@@ -1,9 +1,9 @@
 //
-// font.h
+// main.c
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2025  R. Stange <rsta2@gmx.net>
-//
+// Copyright (C) 2014  R. Stange <rsta2@o2online.de>
+// 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,31 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_font_h
-#define _circle_font_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-struct TFont
+int main (void)
 {
-	unsigned width;
-	unsigned height;
-	unsigned extra_height;
+	// cannot return here because some destructors used in CKernel are not implemented
 
-	unsigned first_char;
-	unsigned last_char;
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
+	
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-	const void *data;
-};
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
 
-extern const TFont Font6x7;
-extern const TFont Font8x8;
-extern const TFont Font8x10;
-extern const TFont Font8x12;
-extern const TFont Font8x14;
-extern const TFont Font8x16;
-extern const TFont Font12x22;
-
-#ifndef DEFAULT_FONT
-#define DEFAULT_FONT	Font8x16
-#endif
-
-#endif
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

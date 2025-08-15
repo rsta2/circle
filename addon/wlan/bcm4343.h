@@ -2,7 +2,7 @@
 // bcm4343.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include "etherevent.h"
 
 typedef ether_event_handler_t TBcm4343EventHandler;
+typedef boolean TBcm4343ConnectedProvider (void);
 
 class CBcm4343Device : public CNetDevice	/// Driver for BCM4343x WLAN device
 {
@@ -46,10 +47,17 @@ public:
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	boolean ReceiveFrame (void *pBuffer, unsigned *pResultLength);
 
+	boolean IsLinkUp (void);
+
+	boolean SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE]);
+
 public:
 	/// \param pHandler Pointer to event handler (0 for unregister)
 	/// \param pContext Pointer to be handed over to the handler
 	void RegisterEventHandler (TBcm4343EventHandler *pHandler, void *pContext);
+
+	/// \param pHandler Pointer to event handler (0 for unregister)
+	void RegisterConnectedProvider (TBcm4343ConnectedProvider *pHandler);
 
 	/// \param pFormat Device specific control command (0-terminated)
 	/// \return Operation successful?
@@ -82,6 +90,11 @@ public:
 	static void ScanResultReceived (const void *pBuffer, unsigned nLength);
 
 private:
+	static void OpenNetEventHandler (ether_event_type_t Type,
+					 const ether_event_params_t *pParams,
+					 void *pContext);
+
+private:
 	CString m_FirmwarePath;
 
 	CMACAddress m_MACAddress;
@@ -89,6 +102,10 @@ private:
 
 	CNetQueue m_RxQueue;
 	CNetQueue m_ScanResultQueue;
+
+	boolean m_bOpenNet;
+	boolean m_bLinkUp;
+	TBcm4343ConnectedProvider *m_pIsConnected;
 
 	static CBcm4343Device *s_pThis;
 };

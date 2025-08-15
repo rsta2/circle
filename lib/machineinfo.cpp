@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -742,7 +742,7 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (unsigned nBus) const
 		if (nBus == PCIE_BUS_ONBOARD)
 		{
 			// TODO: for now we map only the second inbound window
-			pPCIePath = "/axi/pcie@120000";
+			pPCIePath = "/axi/pcie@1000120000";
 			n = 2*7;
 			i = 7;
 		}
@@ -750,7 +750,7 @@ TMemoryWindow CMachineInfo::GetPCIeDMAMemory (unsigned nBus) const
 		{
 			assert (nBus == PCIE_BUS_EXTERNAL);
 			// there is one inbound window only
-			pPCIePath = "/axi/pcie@110000";
+			pPCIePath = "/axi/pcie@1000110000";
 			n = 1*7;
 			i = 0;
 		}

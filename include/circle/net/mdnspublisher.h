@@ -2,7 +2,7 @@
 // mdnspublisher.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2024-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <circle/sched/synchronizationevent.h>
 #include <circle/net/netsubsystem.h>
 #include <circle/net/socket.h>
+#include <circle/net/mdnsdaemon.h>
 #include <circle/net/ipaddress.h>
 #include <circle/ptrlist.h>
 #include <circle/string.h>
@@ -104,6 +105,8 @@ private:
 	u8 m_Buffer[MaxMessageSize];
 	u8 *m_pWritePtr;
 	u8 *m_pDataLen;
+
+	CmDNSDaemon *m_pmDNSDaemon;
 };
 
 #endif

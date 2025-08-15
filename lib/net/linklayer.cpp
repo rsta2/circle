@@ -2,7 +2,7 @@
 // linklayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,6 +36,11 @@ CLinkLayer::CLinkLayer (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pNetDevLayer != 0);
+
+	for (unsigned i = 0; i < MaxGroups; i++)
+	{
+		m_nMulticastUseCounter[i] = 0;
+	}
 }
 
 CLinkLayer::~CLinkLayer (void)
@@ -89,7 +94,25 @@ void CLinkLayer::Process (void)
 		if (    MACAddressReceiver != *pOwnMACAddress
 		    && !MACAddressReceiver.IsBroadcast ())
 		{
-			continue;
+			if (!MACAddressReceiver.IsMulticast ())
+			{
+				continue;
+			}
+
+			unsigned i;
+			for (i = 0; i < MaxGroups; i++)
+			{
+				if (   m_nMulticastUseCounter[i] > 0
+				    && m_MulticastGroup[i] == MACAddressReceiver)
+				{
+					break;
+				}
+			}
+
+			if (i == MaxGroups)
+			{
+				continue;
+			}
 		}
 
 		nLength -= sizeof (TEthernetHeader);
@@ -164,14 +187,7 @@ boolean CLinkLayer::Send (const CIPAddress &rReceiver, const void *pIPPacket, un
 	}
 	else if (rReceiver.IsMulticast ())
 	{
-		u8 TempMACAddress[MAC_ADDRESS_SIZE];
-		rReceiver.CopyTo (TempMACAddress + 2);
-
-		TempMACAddress[0] = 0x01;
-		TempMACAddress[1] = 0x00;
-		TempMACAddress[2] = 0x5E;
-
-		MACAddressReceiver.Set (TempMACAddress);
+		MACAddressReceiver.SetMulticast (rReceiver.Get ());
 	}
 	else if (!m_pARPHandler->Resolve (rReceiver, &MACAddressReceiver,
 					  FrameBuffer, nFrameLength))
@@ -240,6 +256,88 @@ boolean CLinkLayer::EnableReceiveRaw (u16 nProtocolType)
 	m_nRawProtocolType = le2be16 (nProtocolType);
 
 	return TRUE;
+}
+
+boolean CLinkLayer::IsRunning (void) const
+{
+	assert (m_pNetDevLayer != 0);
+	return m_pNetDevLayer->IsRunning ();
+}
+
+boolean CLinkLayer::JoinLocalGroup (const CIPAddress &rGroupAddress)
+{
+	CMACAddress Group;
+	Group.SetMulticast (rGroupAddress.Get ());
+
+	unsigned j = MaxGroups;
+	for (unsigned i = 0; i < MaxGroups; i++)
+	{
+		if (m_nMulticastUseCounter[i] == 0)
+		{
+			if (j == MaxGroups)
+			{
+				j = i;
+			}
+
+			continue;
+		}
+
+		if (m_MulticastGroup[i] == Group)
+		{
+			m_nMulticastUseCounter[i]++;
+
+			return TRUE;
+		}
+	}
+
+	if (j == MaxGroups)
+	{
+		return FALSE;
+	}
+
+	m_MulticastGroup[j].Set (Group.Get ());
+	m_nMulticastUseCounter[j]++;
+
+	return UpdateMulticastFilter ();
+}
+
+boolean CLinkLayer::LeaveLocalGroup (const CIPAddress &rGroupAddress)
+{
+	CMACAddress Group;
+	Group.SetMulticast (rGroupAddress.Get ());
+
+	for (unsigned i = 0; i < MaxGroups; i++)
+	{
+		if (   m_nMulticastUseCounter[i] > 0
+		    && m_MulticastGroup[i] == Group)
+		{
+			if (--m_nMulticastUseCounter[i] > 0)
+			{
+				return TRUE;
+			}
+
+			return UpdateMulticastFilter ();
+		}
+	}
+
+	return FALSE;
+}
+
+boolean CLinkLayer::UpdateMulticastFilter (void)
+{
+	u8 Groups[MaxGroups+1][MAC_ADDRESS_SIZE];
+	memset (Groups, 0, sizeof Groups);
+
+	for (unsigned i = 0; i < MaxGroups; i++)
+	{
+		if (m_nMulticastUseCounter[i] > 0)
+		{
+			m_MulticastGroup[i].CopyTo (Groups[i]);
+		}
+	}
+
+	assert (m_pNetDevLayer != 0);
+	return m_pNetDevLayer->SetMulticastFilter (Groups);
 }
 
 void CLinkLayer::ResolveFailed (const void *pReturnedFrame, unsigned nLength)

@@ -2,7 +2,7 @@
 // netconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,6 +62,9 @@ public:
 	virtual int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
 
 	virtual int SetOptionBroadcast (boolean bAllowed) = 0;
+
+	virtual int SetOptionAddMembership (const CIPAddress &rGroupAddress) = 0;
+	virtual int SetOptionDropMembership (const CIPAddress &rGroupAddress) = 0;
 
 	virtual boolean IsConnected (void) const = 0;
 	virtual boolean IsTerminated (void) const = 0;

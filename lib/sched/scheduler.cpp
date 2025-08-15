@@ -2,7 +2,7 @@
 // scheduler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -191,6 +191,38 @@ void CScheduler::ResumeNewTasks (void)
 		}
 
 	}
+}
+
+boolean CScheduler::EnumerateTasks (boolean (*pCallback) (CTask *pTask, const char *pName,
+							  TTaskState State, TTaskFlags Flags,
+							  void *pParam),
+				    void *pParam)
+{
+	for (unsigned i = 0; i < m_nTasks; i++)
+	{
+		CTask *pTask = m_pTask[i];
+		if (pTask == 0)
+		{
+			continue;
+		}
+
+		TTaskFlags Flags = TaskFlagNone;
+		if (pTask == m_pCurrent)
+		{
+			Flags = TaskFlagRunning;
+		}
+		else if (pTask->IsSuspended ())
+		{
+			Flags = TaskFlagSuspended;
+		}
+
+		if (!(*pCallback) (pTask, pTask->GetName (), pTask->GetState (), Flags, pParam))
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }
 
 void CScheduler::ListTasks (CDevice *pTarget)

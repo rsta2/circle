@@ -3,8 +3,36 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+The 50th Step
+-------------
+
+This release comes with full (send and receive) network multicast support, including IGMPv2 support. A class `CmDNSDaemon` has been added, which determines and maintains our mDNS hostname on the local network. Name collisions with other hosts will be resolved by appending a numeric suffix to the hostname. The daemon is automatically started, when someone requests a pointer to it. This has been added to the `CmDNSPublisher` class, which works in conjunction with `CmDNSDaemon` now. The *test/mdns-publisher* uses the numeric suffix to generate an unique service name.
+
+More news:
+
+* The function of the `CTerminalDevice` sequences ESC "[0m" and ESC "[27m" have been modified. The first one resets the color settings too, while the second one resets the reversed mode only.
+* The method `CLogger::Read()` returns 0 now, when the log buffer is empty. Before it returned -1.
+* The DHCP process has been improved and is quicker now under some circumstances.
+* A method `GetUptime(sec, usec)` has been added to the class `CTimer`.
+* The FatFs library in *addon/fatfs/* has been updated to R0.16 with Unicode patch.
+* A display font `Font12x22` has been added. The class `CCharGenerator` can handle fonts, with a width of up to 32 pixels.
+
+Fixes:
+
+* The HDMI sound support with the class `CHDMISoundBaseDevice` did not work since Step 49.
+* The WLAN support in earlier versions was based on a port of wpa_supplicant v0.7.0, for which open security advisories exist. This has been fixed by porting wpa_supplicant v2.11 to Circle.
+* The Handling of "Enumeration done" in the USB gadget driver had issues, that made booting from the USB mass-storage device (MSD) gadget impossible.
+
+The recommended toolchain for building Circle is based on GCC 14.3.1 now (see the Building section).
+
+The recommended firmware, downloadable in *boot/*, has been updated. For the Raspberry Pi 5 it is required to use the new DTB file(s), because otherwise some functions will not work with this Circle version.
+
+The WLAN firmware, downloadable in *addon/wlan/firmware/*, has been updated. It is absolutely recommended to use the new firmware, because older versions may have security vulnerabilities.
+
 Release 49.0.1
 --------------
+
+2025-06-18
 
 This hotfix release solves the following issues:
 

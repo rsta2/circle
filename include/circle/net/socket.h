@@ -2,7 +2,7 @@
 // socket.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -103,6 +103,17 @@ public:
 	/// \param bAllowed Sending and receiving broadcast messages allowed on this socket? (default FALSE)
 	/// \return Status (0 success, < 0 on error)
 	int SetOptionBroadcast (boolean bAllowed);
+
+	/// \brief Add to IP multicast host group (on UDP socket only)
+	/// \param rGroupAddress Group address to be added
+	/// \return Status (0 success, < 0 on error)
+	/// \note Only one host group is allowed per socket.
+	int SetOptionAddMembership (const CIPAddress &rGroupAddress);
+
+	/// \brief Drop from IP multicast host group (on UDP socket only)
+	/// \param rGroupAddress Group address to be dropped
+	/// \return Status (0 success, < 0 on error)
+	int SetOptionDropMembership (const CIPAddress &rGroupAddress);
 
 	/// \brief Get IP address of connected remote host
 	/// \return Pointer to IP address (four bytes, 0-pointer if not connected)

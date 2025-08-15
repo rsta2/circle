@@ -2,7 +2,7 @@
 // bcm4343.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2020-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2020-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,10 @@ static Ether s_EtherDevice;
 CBcm4343Device *CBcm4343Device::s_pThis = 0;
 
 CBcm4343Device::CBcm4343Device (const char *pFirmwarePath)
-:	m_FirmwarePath (pFirmwarePath)
+:	m_FirmwarePath (pFirmwarePath),
+	m_bOpenNet (FALSE),
+	m_bLinkUp (FALSE),
+	m_pIsConnected (0)
 {
 	s_pThis = this;
 }
@@ -156,10 +159,60 @@ boolean CBcm4343Device::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 	return TRUE;
 }
 
+boolean CBcm4343Device::IsLinkUp (void)
+{
+	if (m_bOpenNet)
+	{
+		return m_bLinkUp;
+	}
+
+	if (m_pIsConnected != 0)
+	{
+		return (*m_pIsConnected) ();
+	}
+
+	return FALSE;
+}
+
+boolean CBcm4343Device::SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE])
+{
+	u32 nGroups = 0;
+	while (Groups[nGroups][0])
+	{
+		nGroups++;
+	}
+
+	size_t ulSize = sizeof nGroups + nGroups * MAC_ADDRESS_SIZE;
+
+	u8 Buffer[ulSize];
+	memcpy (Buffer, &nGroups, sizeof nGroups);
+	if (nGroups)
+	{
+		memcpy (Buffer + sizeof nGroups, Groups, nGroups * MAC_ADDRESS_SIZE);
+	}
+
+	if (waserror ())
+	{
+		return FALSE;
+	}
+
+	assert (s_EtherDevice.setmulticast != 0);
+	(*s_EtherDevice.setmulticast) (&s_EtherDevice, Buffer, ulSize);
+
+	poperror ();
+
+	return TRUE;
+}
+
 void CBcm4343Device::RegisterEventHandler (TBcm4343EventHandler *pHandler, void *pContext)
 {
 	assert (s_EtherDevice.setevhndlr != 0);
 	(*s_EtherDevice.setevhndlr) (&s_EtherDevice, pHandler, pContext);
+}
+
+void CBcm4343Device::RegisterConnectedProvider (TBcm4343ConnectedProvider *pHandler)
+{
+	m_pIsConnected = pHandler;
 }
 
 boolean CBcm4343Device::Control (const char *pFormat, ...)
@@ -217,19 +270,35 @@ const CMACAddress *CBcm4343Device::GetBSSID (void)
 
 boolean CBcm4343Device::JoinOpenNet (const char *pSSID)
 {
+	m_bOpenNet = m_bLinkUp = FALSE;
+
+	RegisterEventHandler (OpenNetEventHandler, this);
+
 	assert (pSSID != 0);
-	return Control ("join %s %s 0 off", pSSID, "FFFFFFFFFFFF");
+	boolean bOK = Control ("join %s %s 0 off", pSSID, "FFFFFFFFFFFF");
+
+	m_bOpenNet = bOK;
+
+	return bOK;
 }
 
 // by @sebastienNEC
 boolean CBcm4343Device::CreateOpenNet (const char *pSSID, int nChannel, bool bHidden)
 {
+	m_bOpenNet = m_bLinkUp = FALSE;
+
 	assert (pSSID != 0);
-	return Control ("create %s %d %d", pSSID, nChannel, bHidden);
+	boolean bOK = Control ("create %s %d %d", pSSID, nChannel, bHidden);
+
+	m_bOpenNet = m_bLinkUp = bOK;
+
+	return bOK;
 }
 
 boolean CBcm4343Device::DestroyOpenNet (void)
 {
+	m_bOpenNet = m_bLinkUp = FALSE;
+
 	return Control ("down");
 }
 
@@ -254,6 +323,27 @@ void CBcm4343Device::ScanResultReceived (const void *pBuffer, unsigned nLength)
 {
 	assert (s_pThis != 0);
 	s_pThis->m_ScanResultQueue.Enqueue (pBuffer, nLength);
+}
+
+void CBcm4343Device::OpenNetEventHandler (ether_event_type_t Type,
+					  const ether_event_params_t *pParams,
+					  void *pContext)
+{
+	assert (s_pThis != 0);
+
+	switch (Type)
+	{
+	case ether_event_link:
+		s_pThis->m_bLinkUp = TRUE;
+		break;
+
+	case ether_event_disassoc:
+		s_pThis->m_bLinkUp = FALSE;
+		break;
+
+	default:
+		break;
+	}
 }
 
 void etheriq (Ether *pEther, Block *pBlock, unsigned nFlag)

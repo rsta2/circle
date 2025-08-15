@@ -2,7 +2,7 @@
 // networklayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <circle/net/netqueue.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/icmphandler.h>
+#include <circle/net/igmphandler.h>
 #include <circle/net/routecache.h>
 #include <circle/macros.h>
 #include <circle/types.h>
@@ -74,7 +75,8 @@ public:
 
 	void Process (void);
 
-	boolean Send (const CIPAddress &rReceiver, const void *pPacket, unsigned nLength, int nProtocol);
+	boolean Send (const CIPAddress &rReceiver, const void *pPacket, unsigned nLength,
+		      int nProtocol, boolean bRouterAlert = FALSE);
 
 	// pBuffer must have size FRAME_BUFFER_SIZE
 	boolean Receive (void *pBuffer, unsigned *pResultLength,
@@ -90,6 +92,9 @@ public:
 	boolean ReceiveICMP (void *pBuffer, unsigned *pResultLength,
 			     CIPAddress *pSender, CIPAddress *pReceiver);
 
+	boolean JoinHostGroup (const CIPAddress &rGroupAddress);
+	boolean LeaveHostGroup (const CIPAddress &rGroupAddress);
+
 private:
 	void AddRoute (const u8 *pDestIP, const u8 *pGatewayIP);
 	const u8 *GetGateway (const u8 *pDestIP) const;
@@ -103,10 +108,12 @@ private:
 	CNetConfig   *m_pNetConfig;
 	CLinkLayer   *m_pLinkLayer;
 	CICMPHandler *m_pICMPHandler;
+	CIGMPHandler *m_pIGMPHandler;
 
 	CNetQueue m_RxQueue;
 	CNetQueue m_ICMPRxQueue;
 	CNetQueue m_ICMPNotificationQueue;
+	CNetQueue m_IGMPRxQueue;
 
 	CNetQueue *m_pICMPRxQueue2;
 

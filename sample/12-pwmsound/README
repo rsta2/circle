@@ -1,8 +1,14 @@
 README 
 
-This sample program uses the PWM device and the platform DMA controller to playback a short sound sample. You can listen to it via the 3.5mm headphone jack.
+This sample program uses the PWM device and the platform DMA controller to
+playback a short sound sample. You can listen to it via the 3.5mm headphone
+jack.
 
-The provided (compressed) sound sample in sound.h.gz is recorded with 44100 Hz sample rate and 8 bit Mono (to keep it small). You can provide 16 bit Stereo sound on your own (e.g. by exporting it as 16 bit signed raw data without header from Audacity and converting it into ASCII with a little program). The sound.h file has to look like that in this case:
+The provided (compressed) sound sample in sound.h.gz is recorded with 44100 Hz
+sample rate and 8 bit Mono (to keep it small). You can provide 16 bit Stereo
+sound on your own (e.g. by exporting it as 16 bit signed raw data without header
+from Audacity and converting it into ASCII with a little program (see below)).
+The sound.h file has to look like that in this case:
 
 #define SOUND_CHANNELS		2
 #define SOUND_BITS		16
@@ -13,4 +19,59 @@ signed short Sound[] =
 ...
 };
 
-The PWM device always plays 44100 Hz 12 bit Stereo sound in Circle but other 8/16 bit Mono/Stereo formats will be converted while playing back.
+The PWM device always plays 44100 Hz 12 bit Stereo sound in Circle but other
+8/16 bit Mono/Stereo formats will be converted while playing back.
+
+
+USING FFMPEG TO CONVERT TO RAW AUDIO
+
+You can use the following command:
+
+ffmpeg -i input_file.ogg -f u8 -ac 2 -ar 44100 sound.raw
+
+-f can be u8 for unsigned 8 bits or s16le for signed 16 bits. See
+   https://trac.ffmpeg.org/wiki/audio%20types for available formats.
+
+-ac can be 1 for Mono or 2 for Stereo
+
+
+CONVERTING RAW AUDIO TO ASCII
+
+You can use the following code:
+
+#include <stdio.h> 
+
+int main (void)
+{
+	FILE *fin = fopen ("sound.raw", "rb");
+	if (fin == NULL)
+	{
+		return 1;
+	}
+
+	unsigned offset = 0;
+
+	// If converting 8bit PCM, use unsigned char instead of short for 'value'
+	// (make sure to have SOUND_CHANNELS and  SOUND_BITS match your file
+	// settings).
+	//unsigned char value;
+	short value;
+
+	while (fread (&value, sizeof value, 1, fin) == 1)
+	{
+		printf ("%d", (int) value);
+
+		if (offset++ % 24 == 23)
+		{
+			printf (",\n");
+		}
+		else
+		{
+			printf (",");
+		}
+	}
+
+	fclose (fin);
+
+	return 0;
+}

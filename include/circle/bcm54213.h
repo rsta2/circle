@@ -8,7 +8,7 @@
 //	Licensed under GPLv2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -95,6 +95,8 @@ public:
 	// update device settings according to PHY status
 	boolean UpdatePHY (void);
 
+	boolean SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE]);
+
 private:
 	// UMAC
 	void reset_umac(void);
@@ -114,8 +116,8 @@ private:
 
 	// address and mode setting
 	int set_hw_addr(void);
-	void set_mdf_addr(unsigned char *addr, int *i, int *mc);
-	void set_rx_mode(void);
+	void set_mdf_addr(const u8 addr[MAC_ADDRESS_SIZE], int *i, int *mc);
+	void set_rx_mode(const u8 mc_groups[][MAC_ADDRESS_SIZE] = 0);
 
 	// HW filter block
 	void hfb_init(void);
