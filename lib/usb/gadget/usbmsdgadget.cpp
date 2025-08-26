@@ -4,7 +4,7 @@
 // USB Mass Storage Gadget by Mike Messinides
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -369,6 +369,14 @@ void CUSBMSDGadget::OnActivate()
 	m_MSDReady=true;
 	m_nState=TMSDState::ReceiveCBW;
 	m_pEP[EPOut]->BeginTransfer(CUSBMSDGadgetEndpoint::TransferCBWOut,m_OutBuffer,SIZE_CBW);
+}
+
+void CUSBMSDGadget::OnDeactivate()
+{
+	MLOGNOTE("MSD OnDeactivate", "state = %i",m_nState);
+	m_MSDReady=false;
+	m_nState=TMSDState::Init;
+	m_pEP[EPOut]->CancelTransfer();
 }
 
 void CUSBMSDGadget::SendCSW()

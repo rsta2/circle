@@ -2,7 +2,7 @@
 // dwusbgadgetendpoint0.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,6 +38,13 @@ void CDWUSBGadgetEndpoint0::OnActivate (void)
 	m_State = StateIdle;
 
 	BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+}
+
+void CDWUSBGadgetEndpoint0::OnDeactivate (void)
+{
+	m_State = StateDisconnect;
+
+	CancelTransfer ();
 }
 
 void CDWUSBGadgetEndpoint0::OnControlMessage (void)

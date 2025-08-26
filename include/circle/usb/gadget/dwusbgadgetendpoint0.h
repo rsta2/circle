@@ -2,7 +2,7 @@
 // dwusbgadgetendpoint0.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ public:
 	~CDWUSBGadgetEndpoint0 (void);
 
 	void OnActivate (void) override;
+	void OnDeactivate (void) override;
 
 	void OnControlMessage (void) override;
 

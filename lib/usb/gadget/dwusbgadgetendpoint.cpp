@@ -2,7 +2,7 @@
 // dwusbgadgetendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -253,6 +253,30 @@ void CDWUSBGadgetEndpoint::BeginTransfer (TTransferMode Mode, void *pBuffer, siz
 		OutEPCtrl.Or (DWHCI_DEV_EP_CTRL_CLEAR_NAK);
 		OutEPCtrl.Write ();
 	}
+}
+
+void CDWUSBGadgetEndpoint::CancelTransfer (void)
+{
+	if (m_TransferMode == TransferDataIn)
+	{
+		CDWHCIRegister InEPCtrl (DWHCI_DEV_IN_EP_CTRL (m_nEP), 0);
+		InEPCtrl.Read ();
+		InEPCtrl.And (~DWHCI_DEV_EP_CTRL_EP_ENABLE);
+		InEPCtrl.And (~DWHCI_DEV_EP_CTRL_CLEAR_NAK);
+		InEPCtrl.Or (DWHCI_DEV_EP_CTRL_EP_DISABLE);
+		InEPCtrl.Write ();
+	}
+	else if (m_TransferMode != TransferUnknown)
+	{
+		CDWHCIRegister OutEPCtrl (DWHCI_DEV_OUT_EP_CTRL (m_nEP));
+		OutEPCtrl.Read ();
+		OutEPCtrl.And (~DWHCI_DEV_EP_CTRL_EP_ENABLE);
+		OutEPCtrl.And (~DWHCI_DEV_EP_CTRL_CLEAR_NAK);
+		OutEPCtrl.Or (DWHCI_DEV_EP_CTRL_EP_DISABLE);
+		OutEPCtrl.Write ();
+	}
+
+	InitTransfer ();
 }
 
 size_t CDWUSBGadgetEndpoint::FinishTransfer (void)

@@ -2,7 +2,7 @@
 // usbmidigadgetendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,6 +66,14 @@ void CUSBMIDIGadgetEndpoint::OnActivate (void)
 	if (GetDirection () == DirectionOut)
 	{
 		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
+	}
+}
+
+void CUSBMIDIGadgetEndpoint::OnDeactivate (void)
+{
+	if (GetDirection () == DirectionOut)
+	{
+		CancelTransfer ();
 	}
 }
 
