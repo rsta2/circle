@@ -698,11 +698,6 @@ void CDWUSBGadget::InterruptHandler (void)
 	LOGDBG ("IRQ (status 0x%08X, state %u)", nIntStatus, (unsigned) m_State);
 #endif
 
-	if (nIntStatus & DWHCI_CORE_INT_MASK_USB_SUSPEND)
-	{
-		HandleUSBSuspend ();
-	}
-
 	if (nIntStatus & DWHCI_CORE_INT_MASK_USB_RESET_INTR)
 	{
 		HandleUSBReset ();
@@ -721,6 +716,11 @@ void CDWUSBGadget::InterruptHandler (void)
 	if (nIntStatus & DWHCI_CORE_INT_MASK_IN_EP_INTR)
 	{
 		HandleInEPInterrupt ();
+	}
+
+	if (nIntStatus & DWHCI_CORE_INT_MASK_USB_SUSPEND)
+	{
+		HandleUSBSuspend ();
 	}
 
 	assert (!(nIntStatus & DWHCI_CORE_INT_MASK_IN_EP_MISMATCH));
