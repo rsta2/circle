@@ -400,9 +400,11 @@ int CmDNSDaemon::ParseQuery (const u8 *pBuffer, size_t nBufLen)
 	CString Name;
 	u8 uchLen;
 	boolean bFirst = TRUE;
-	while (   nBufLen--
+	while (   nBufLen
 	       && (uchLen = *pMsg++) != 0)
 	{
+		nBufLen--;
+
 		if ((uchLen & 0xC0) == 0xC0)	// compression not allowed here
 		{
 			return -1;
@@ -480,9 +482,11 @@ int CmDNSDaemon::ParseResponse (const u8 *pBuffer, size_t nBufLen, CIPAddress *p
 		CString Name;
 		u8 uchLen;
 		boolean bFirst = TRUE;
-		while (   nBufLen--
+		while (   nBufLen
 		       && (uchLen = *pMsg++) != 0)
 		{
+			nBufLen--;
+
 			if ((uchLen & 0xC0) == 0xC0)	// compression not allowed here
 			{
 				return -1;
@@ -520,7 +524,8 @@ int CmDNSDaemon::ParseResponse (const u8 *pBuffer, size_t nBufLen, CIPAddress *p
 		if (   RRTrailer.nType			== BE (DNS_QTYPE_A)
 		    && (  RRTrailer.nClass
 		        & ~BE (DNS_QCLASS_CACHE_FLUSH))	== BE (DNS_QCLASS_IN)
-		    && RRTrailer.nRDLength		== BE (DNS_RDLENGTH_AIN))
+		    && RRTrailer.nRDLength		== BE (DNS_RDLENGTH_AIN)
+		    && Name.Compare (m_HostnameWithDomain) == 0)
 		{
 			break;
 		}
