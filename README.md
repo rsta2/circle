@@ -8,6 +8,11 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
+Release 50.0.1
+--------------
+
+This is a hotfix release, which fixes a serious bug in the class `CmDNSDaemon`, which also affected the class `CmDNSPublisher`. If you are using one of these classes, you should upgrade.
+
 The 50th Step
 -------------
 
