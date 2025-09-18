@@ -3,8 +3,15 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 50.0.1
+--------------
+
+This is a hotfix release, which fixes a serious bug in the class `CmDNSDaemon`, which also affected the class `CmDNSPublisher`. If you are using one of these classes, you should upgrade.
+
 The 50th Step
 -------------
+
+2025-08-15
 
 This release comes with full (send and receive) network multicast support, including IGMPv2 support. A class `CmDNSDaemon` has been added, which determines and maintains our mDNS hostname on the local network. Name collisions with other hosts will be resolved by appending a numeric suffix to the hostname. The daemon is automatically started, when someone requests a pointer to it. This has been added to the `CmDNSPublisher` class, which works in conjunction with `CmDNSDaemon` now. The *test/mdns-publisher* uses the numeric suffix to generate an unique service name.
 
