@@ -53,6 +53,9 @@ GC_SECTIONS ?= 0
 # set this to 1 to gzip-compress the kernel (AArch64 only)
 GZIP_KERNEL ?= 0
 
+# set this 1 to build with Address Sanitizer support (KASan)
+KASAN_ENABLED ?= 0
+
 ifneq ($(strip $(CLANG)),1)
 CC	= $(PREFIX)gcc
 CPP	= $(PREFIX)g++
@@ -122,6 +125,50 @@ PREFIX	= $(PREFIX64)
 LOADADDR = 0x80000
 else
 $(error AARCH must be set to 32 or 64)
+endif
+
+ifeq ($(strip $(KASAN_ENABLED)),1)
+
+# KASan shadow memory mapping offset.
+# Must be equal to KERNEL_MAX_SIZE+0x700000.
+KASAN_SHADOW_MAPPING_OFFSET ?= 0x900000
+
+# KASan-specific compiler options
+KASAN_SANITIZE_STACK ?= 1
+KASAN_SANITIZE_GLOBALS ?= 1
+
+ifneq ($(strip $(NO_SANITIZE)),1)
+# KASan options for external code, must not be used for
+# the Circle core library itself.
+CFLAGS += -fsanitize=kernel-address 
+CFLAGS += -fno-builtin
+
+ifeq ($(strip $(CLANG)),1)
+CFLAGS += -mllvm -asan-mapping-offset=$(KASAN_SHADOW_MAPPING_OFFSET)
+CFLAGS += -mllvm -asan-instrumentation-with-call-threshold=0
+CFLAGS += -mllvm -asan-stack=$(KASAN_SANITIZE_STACK)
+CFLAGS += -mllvm -asan-globals=$(KASAN_SANITIZE_GLOBALS)
+else
+CFLAGS += -fasan-shadow-offset=$(KASAN_SHADOW_MAPPING_OFFSET)
+CFLAGS += --param asan-globals=$(KASAN_SANITIZE_GLOBALS)
+CFLAGS += --param asan-stack=$(KASAN_SANITIZE_STACK)
+CFLAGS += --param asan-instrumentation-with-call-threshold=0
+CFLAGS += -fno-omit-frame-pointer
+endif
+
+# This define enables the Address Sanitizer features for code
+# outside of the Circle core library that runs under
+# supervision by the Address Sanitizer.
+DEFINE += -DKASAN_ENABLED
+
+else
+
+# This define enables the support for Address Sanitizer inside
+# the Circle core library itself.
+DEFINE += -DKASAN_SUPPORTED
+
+endif
+
 endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),3)

@@ -39,6 +39,10 @@
 #include <circle/util.h>
 #include <circle/types.h>
 
+#ifdef KASAN_SUPPORTED
+#include <circle/kasan.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -291,6 +295,10 @@ void sysinit (void)
 
 #if RASPPI >= 4
 	Memory.SetupHighMem ();
+#endif
+
+#ifdef KASAN_SUPPORTED
+	KasanInitialize ();
 #endif
 
 	// set circle_version_string[]

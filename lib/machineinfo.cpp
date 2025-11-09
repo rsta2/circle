@@ -401,6 +401,37 @@ unsigned CMachineInfo::GetRAMSize (void) const
 	return m_nRAMSize;
 }
 
+unsigned CMachineInfo::GetRAMSizeEarly (void)
+{
+#if RASPPI >= 5
+	return 2048;	// cannot determine size early, this is the possible minimum
+#else
+	CBcmPropertyTags Tags;
+	TPropertyTagSimple BoardRevision;
+	if (!Tags.GetTag (PROPTAG_GET_BOARD_REVISION, &BoardRevision, sizeof BoardRevision))
+	{
+		return 256;
+	}
+
+	if (BoardRevision.nValue & (1 << 23))		// new revision scheme
+	{
+		return 256 << ((BoardRevision.nValue >> 20) & 7);
+	}
+	else
+	{
+		for (unsigned i = 0; i < sizeof s_OldInfo / sizeof s_OldInfo[0]; i++)
+		{
+			if (s_OldInfo[i].nRevisionRaw == BoardRevision.nValue)
+			{
+				return s_OldInfo[i].nRAMSize;
+			}
+		}
+
+		return 256;
+	}
+#endif
+}
+
 const char *CMachineInfo::GetSoCName (void) const
 {
 	return s_SoCName[m_SoCType];

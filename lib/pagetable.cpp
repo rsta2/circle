@@ -174,7 +174,11 @@ u64 *CPageTable::CreateLevel2Table (u64 nBaseAddress)
 				pDesc->SH	= ATTRIB_SH_OUTER_SHAREABLE;
 			}
 			else if (   nBaseAddress >= MEM_COHERENT_REGION
+#ifndef KASAN_SUPPORTED
 				 && nBaseAddress <  MEM_HEAP_START)
+#else
+				 && nBaseAddress <  MEM_SHADOW_START)
+#endif
 			{
 				pDesc->AttrIndx = ATTRINDX_COHERENT;
 				pDesc->SH	= ATTRIB_SH_OUTER_SHAREABLE;

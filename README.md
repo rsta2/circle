@@ -253,6 +253,7 @@ Additional Topics
 * [Clang support](doc/clang-support.txt)
 * [Memory layout](doc/memorymap.txt)
 * [Naming conventions](doc/naming-conventions.txt)
+* [Address sanitizer](doc/kasan.txt)
 * [Known issues](doc/issues.txt)
 
 Trademarks

@@ -1,0 +1,94 @@
+ADDRESS SANITIZER (KASAN)
+
+This document describes the Kernel Address Sanitizer support (KASan) in Circle.
+
+Currently this feature is experimental. It may happen that errors are reported
+in third-party libraries that are distributed with Circle. These errors are very
+likely harmless as they appear in code that has been used for a long time. It is
+not necessary to report these errors.
+
+KASan instruments memory accesses to detect out-of-bounds accesses (heap, stack, global),
+use-after-free, and other memory-safety bugs. It uses the gcc and clang features
+that are also used for the "Kernel Address Sanitizer" in Linux:
+
+https://docs.kernel.org/dev-tools/kasan.html
+
+Circle's Address Sanitizer reports illegal memory accesses with a dump
+of the shadow memory for the problematic memory region. Shadow memory is a compact
+shadow copy of the real address space used by KASan. Each byte in the shadow describes
+the accessibility state of an 8-byte region of the real memory. The sanitizer uses the
+shadow to determine whether a specific address is addressable or poisoned
+(for example in a redzone or after free).
+
+SHADOW MEMORY
+
+The KASan mapping is 1 shadow byte per 8 real bytes. The mapping formula is:
+
+#define MEM_SHADOW_START	(0x700000 + KERNEL_MAX_SIZE) // in memorymap.h or memorymap64.h
+#define KASAN_SHADOW_SHIFT 3
+#define KASAN_MEM_TO_SHADOW(addr) \
+    (((addr) >> KASAN_SHADOW_SHIFT) + MEM_SHADOW_START)
+
+Circle defines the shadow offset via the KASAN_SHADOW_MAPPING_OFFSET make variable
+(see Rules.mk). KASAN_SHADOW_MAPPING_OFFSET is set by default to the result of the
+expression "KERNEL_MAX_SIZE + 0x700000". If KERNEL_MAX_SIZE is changed, the value
+of KASAN_SHADOW_MAPPING_OFFSET must be adjusted accordingly.
+
+Circle's Address Sanitizer implementation is special compared to other
+implementations as the shadow memory is located within the monitored memory
+region. The function that checks the memory accesses exempts the shadow
+memory itself from checks.
+
+INTERPRETING SHADOW MEMORY BYTES
+
+A shadow byte value of 0 normally means the corresponding 8-byte block is fully addressable.
+Values 1..7 indicate that only the first N bytes of that 8-byte block are addressable. This
+happens at the tail of a buffer that is not 8-byte aligned.
+
+Other values denote poisoned bytes (redzones, freed memory, quarantined memory):
+
+#define ASAN_SHADOW_RESERVED_MAGIC 0xff
+#define ASAN_SHADOW_GLOBAL_REDZONE_MAGIC 0xf9
+#define ASAN_SHADOW_HEAP_HEAD_REDZONE_MAGIC 0xfa
+#define ASAN_SHADOW_HEAP_TAIL_REDZONE_MAGIC 0xfb
+#define ASAN_SHADOW_HEAP_FREE_MAGIC 0xfd
+
+KASAN BUG REPORT EXAMPLE
+
+kasan: ===================================================
+kasan: Invalid memory access: address 0x89B1C8B, size 0x1, is_write 1, ip 0x80CC8
+kasan: Shadow bytes around the buggy address 0x89B1C88 (shadow 0x1A36391):
+kasan: 0x1A36360: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+kasan: 0x1A36370: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+kasan: 0x1A36380: 00 00 00 00 00 00 00 00 FA FA FA FA FA FA FA FA
+kasan: 0x1A36390: 00[02]FB FB FB FB FD FD FB FB FB FB FD FD FD FD
+kasan: 0x1A363A0: FD FB FB FB FB 00 00 00 00 00 00 00 00 00 00 00
+kasan: 0x1A363B0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+kasan: 0x1A363C0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+address 0x89B1C8B: memory address that is being accessed invalidly
+size 0x1: memory access involves one byte
+is_write 1: write access
+ip 0x80CC8: program counter from where the invalid access is triggered
+
+The byte [02] shows the shadow memory value for the real memory.
+
+If the program can be run under the debugger, set a breakpoint
+on the function kasan_bug_report() in lib/kasan.cpp. Then the
+program will be stopped in the debugger exactly when the invalid
+memory access is performed.
+
+ENABLE AND TUNE KASAN IN CIRCLE
+
+- Build-time: set KASAN_ENABLED=1 in Config.mk
+- Shadow offset: adjust `KASAN_SHADOW_MAPPING_OFFSET` if KERNEL_MAX_SIZE is modified from the default.
+
+KASan increases code size and runtime overhead and consumes memory for the shadow region.
+It is intended for debugging builds only.
+
+DISABLING KASAN FOR SELECTED MAKEFILES
+
+It is possible that KASan reports errors that are harmless, and that it is not
+possible or justified to fix these errors, e.g. in third-party code. For these situations
+it is possible to disable KASan instrumentation at the Makefile level, by setting
+NO_SANITIZE := 1 before including Rules.mk.

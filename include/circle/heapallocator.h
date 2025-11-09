@@ -27,6 +27,10 @@
 #include <circle/types.h>
 #include <assert.h>
 
+#ifdef KASAN_SUPPORTED
+#include <circle/kasan.h>
+#endif
+
 //#define HEAP_DEBUG
 
 ASSERT_STATIC (DATA_CACHE_LINE_LENGTH_MAX >= 16);
@@ -100,6 +104,14 @@ public:
 #endif
 
 private:
+	void *DoAllocate (size_t nSize);
+	void *DoReAllocate (void *pBlock, size_t nSize);
+	void DoFree (void *pBlock);
+
+	friend void *KasanAllocateHook (CHeapAllocator& rHeapAllocator, size_t nSize);
+	friend void *KasanReAllocateHook (CHeapAllocator& rHeapAllocator, void *pBlock, ssize_t nSize);
+	friend void KasanFreeHook (CHeapAllocator& rHeapAllocator, void *pBlock);
+
 	const char	*m_pHeapName;
 	u8		*m_pNext;
 	u8		*m_pLimit;

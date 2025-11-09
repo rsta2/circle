@@ -1,0 +1,14 @@
+README
+
+This sample contains various intentional programming errors for
+demonstrating the Address Sanitizer capabilities.
+
+BUILD
+
+Set KASAN_ENABLED=1 in Config.mk, then rebuild at least the Circle
+core library under and rebuild the sample itself.
+
+RUN
+
+When the program is executed, it will print various reports about
+the illegal memory accesses.

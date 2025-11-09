@@ -62,6 +62,15 @@ size_t CHeapAllocator::GetFreeSpace (void) const
 
 void *CHeapAllocator::Allocate (size_t nSize)
 {
+#ifdef KASAN_SUPPORTED
+	return KasanAllocateHook (*this, nSize);
+#else
+	return DoAllocate (nSize);
+#endif
+}
+
+void *CHeapAllocator::DoAllocate (size_t nSize)
+{
 	if (m_pNext == 0)
 	{
 		return 0;
@@ -146,6 +155,15 @@ void *CHeapAllocator::Allocate (size_t nSize)
 
 void *CHeapAllocator::ReAllocate (void *pBlock, size_t nSize)
 {
+#ifdef KASAN_SUPPORTED
+	return KasanReAllocateHook (*this, pBlock, nSize);
+#else
+	return DoReAllocate (pBlock, nSize);
+#endif
+}
+
+void *CHeapAllocator::DoReAllocate (void *pBlock, size_t nSize)
+{
 	if (pBlock == 0)
 	{
 		return Allocate (nSize);
@@ -180,6 +198,15 @@ void *CHeapAllocator::ReAllocate (void *pBlock, size_t nSize)
 }
 
 void CHeapAllocator::Free (void *pBlock)
+{
+#ifdef KASAN_SUPPORTED
+	KasanFreeHook (*this, pBlock);
+#else
+	DoFree (pBlock);
+#endif
+}
+
+void CHeapAllocator::DoFree (void *pBlock)
 {
 	if (pBlock == 0)
 	{

@@ -42,6 +42,7 @@ SAMPLES
 41-screenanimations [5]	2D graphical shapes demo on screen without flickering or on SPI/I2C display
 42-soundinput	[5]	I2S or USB to PWM sound data converter and digital sound recorder
 43-multiwindow	[5]	Demonstrating multiple non-overlapping windows on a screen (Multi-core only)
+44-kasan    [5] Address Sanitizer (KASan) demonstration
 
 Samples marked with [PnP] are enabled for USB plug-and-play.
 Samples marked with [5] are working on the Raspberry Pi 5.

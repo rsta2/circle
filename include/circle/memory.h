@@ -169,6 +169,13 @@ public:
 #endif
 	}
 
+	static size_t GetLowMemSize (void)	{ return s_pThis->m_nMemSize; }
+	static size_t GetHighMemSize (void)	{ return s_pThis->m_nMemSizeHigh; }
+
+#ifdef KASAN_SUPPORTED
+	static size_t GetShadowMemSize (void)	{ return s_pThis->m_nShadowMemSize; }
+#endif
+
 private:
 	void EnableMMU (void);
 
@@ -176,6 +183,9 @@ private:
 	boolean m_bEnableMMU;
 	size_t m_nMemSize;
 	size_t m_nMemSizeHigh;
+#ifdef KASAN_SUPPORTED
+	size_t m_nShadowMemSize;
+#endif
 
 	CHeapAllocator m_HeapLow;
 #if RASPPI >= 4

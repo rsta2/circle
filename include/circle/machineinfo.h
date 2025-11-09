@@ -102,6 +102,8 @@ public:
 	TSoCStepping GetSoCStepping (void) const;
 	unsigned GetRAMSize (void) const;		// MByte, 0 on error
 
+	static unsigned GetRAMSizeEarly (void);
+
 	const char *GetSoCName (void) const;
 
 	// Raw info
