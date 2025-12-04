@@ -1,7 +1,9 @@
 README
 
-The libraries and samples in this directory (and its subdirectories) have to be
-build manually. To build a sample the library has to be build first.
+The libraries and samples in this directory (and its subdirectories) must be
+manually built. 
+
+Before building a sample, build the library first.
 
 Go to the directory of your choice and do:
 
