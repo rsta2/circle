@@ -201,6 +201,8 @@ Net library
 * CMQTTClient: Client for the MQTT IoT protocol.
 * CMQTTReceivePacket: MQTT helper class.
 * CMQTTSendPacket: MQTT helper class.
+* CNetBuffer: Generic frame/packet buffer for network protocol handling.
+* CNetBufferQueue: FIFO queue for CNetBuffer objects.
 * CNetConfig: Encapsulates the network configuration.
 * CNetConnection: Virtual transport layer connection (UDP or TCP (not yet available)).
 * CNetDeviceLayer: Encapsulates the network device support layer. Queues TX/RX frames before/after transmission.
