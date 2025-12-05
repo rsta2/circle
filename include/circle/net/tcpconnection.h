@@ -24,6 +24,8 @@
 #include <circle/net/networklayer.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/icmphandler.h>
+#include <circle/net/netbuffer.h>
+#include <circle/net/netbufferqueue.h>
 #include <circle/net/netqueue.h>
 #include <circle/net/retransmissionqueue.h>
 #include <circle/net/retranstimeoutcalc.h>
@@ -97,7 +99,7 @@ public:
 	void Process (void);
 	
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	int PacketReceived (const void *pPacket, unsigned nLength,
+	int PacketReceived (CNetBuffer *pPacket,
 			    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol);
 
 	// returns: 0: not to me, 1: notification consumed
@@ -134,7 +136,7 @@ private:
 	volatile int m_nErrno;			// signalize error to the user
 
 	CNetQueue m_TxQueue;
-	CNetQueue m_RxQueue;
+	CNetBufferQueue m_RxQueue;
 
 	CRetransmissionQueue m_RetransmissionQueue;
 	volatile boolean m_bRetransmit;		// reset m_RetransmissionQueue and send

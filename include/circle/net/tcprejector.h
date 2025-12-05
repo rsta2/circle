@@ -23,6 +23,7 @@
 #include <circle/net/netconnection.h>
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
+#include <circle/net/netbuffer.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/icmphandler.h>
 #include <circle/types.h>
@@ -34,7 +35,7 @@ public:
 	~CTCPRejector (void);
 
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	int PacketReceived (const void *pPacket, unsigned nLength,
+	int PacketReceived (CNetBuffer *pPacket,
 			    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol);
 
 	// unused

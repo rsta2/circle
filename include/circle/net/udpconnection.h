@@ -25,7 +25,8 @@
 #include <circle/net/networklayer.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/icmphandler.h>
-#include <circle/net/netqueue.h>
+#include <circle/net/netbuffer.h>
+#include <circle/net/netbufferqueue.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/types.h>
 
@@ -67,7 +68,7 @@ public:
 	void Process (void);
 
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	int PacketReceived (const void *pPacket, unsigned nLength,
+	int PacketReceived (CNetBuffer *pPacket,
 			    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol);
 
 	// returns: 0: not to me, 1: notification consumed
@@ -81,7 +82,7 @@ public:
 private:
 	boolean m_bOpen;
 	boolean m_bActiveOpen;
-	CNetQueue m_RxQueue;
+	CNetBufferQueue m_RxQueue;
 	CSynchronizationEvent m_Event;
 	unsigned m_nReceiveTimeout;		// us
 	boolean m_bBroadcastsAllowed;

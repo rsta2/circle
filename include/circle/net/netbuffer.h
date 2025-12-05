@@ -33,6 +33,7 @@ public:
 		TCPSend,	// sending TCP segments (without TCP header option)
 		TCPSendMSS,	// sending TCP segments (with MSS TCP header option)
 		UDPSend,	// sending UDP packets
+		ICMPSend,	// sending ICMP packets
 		IGMPSend,	// sending IGMP packets
 		ARPSend,	// sending ARP frames (with Ethernet header)
 		LLRawSend	// sending raw (IEEE 802.1X EAP) frames from link layer

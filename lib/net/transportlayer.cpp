@@ -53,13 +53,12 @@ boolean CTransportLayer::Initialize (void)
 
 void CTransportLayer::Process (void)
 {
-	unsigned nResultLength;
+	CNetBuffer *pNetBuffer;
 	CIPAddress Sender;
 	CIPAddress Receiver;
 	int nProtocol;
 	assert (m_pNetworkLayer != 0);
-	u8 Buffer[FRAME_BUFFER_SIZE];
-	while (m_pNetworkLayer->Receive (Buffer, &nResultLength, &Sender, &Receiver, &nProtocol))
+	while ((pNetBuffer = m_pNetworkLayer->Receive (&Sender, &Receiver, &nProtocol)) != 0)
 	{
 		unsigned i;
 		for (i = 0; i < m_pConnection.GetCount (); i++)
@@ -70,8 +69,9 @@ void CTransportLayer::Process (void)
 			}
 
 			if (((CNetConnection *) m_pConnection[i])->PacketReceived (
-				Buffer, nResultLength, Sender, Receiver, nProtocol) != 0)
+				pNetBuffer, Sender, Receiver, nProtocol) != 0)
 			{
+				pNetBuffer = 0;
 				break;
 			}
 		}
@@ -79,9 +79,14 @@ void CTransportLayer::Process (void)
 		if (i >= m_pConnection.GetCount ())
 		{
 			// send RESET on not consumed TCP segment
-			m_TCPRejector.PacketReceived (Buffer, nResultLength,
-						      Sender, Receiver, nProtocol);
+			if (m_TCPRejector.PacketReceived (pNetBuffer,
+							  Sender, Receiver, nProtocol) != 0)
+			{
+				pNetBuffer = 0;
+			}
 		}
+
+		delete pNetBuffer;
 	}
 
 	TICMPNotificationType Type;

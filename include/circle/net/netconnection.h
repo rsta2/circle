@@ -22,6 +22,7 @@
 
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
+#include <circle/net/netbuffer.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/icmphandler.h>
 #include <circle/net/checksumcalculator.h>
@@ -75,7 +76,7 @@ public:
 	virtual void Process (void) = 0;
 
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	virtual int PacketReceived (const void *pPacket, unsigned nLength,
+	virtual int PacketReceived (CNetBuffer *pPacket,
 				    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol) = 0;
 
 	// returns: 0: not to me, 1: notification consumed

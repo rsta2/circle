@@ -25,7 +25,7 @@
 #include <circle/net/arphandler.h>
 #include <circle/net/ipaddress.h>
 #include <circle/macaddress.h>
-#include <circle/net/netqueue.h>
+#include <circle/net/netbufferqueue.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -56,10 +56,9 @@ public:
 
 	void Process (void);
 
-	boolean Send (const CIPAddress &rReceiver, const void *pIPPacket, unsigned nLength);
+	boolean Send (const CIPAddress &rReceiver, CNetBuffer *pIPPacket);
 
-	// pBuffer must have size FRAME_BUFFER_SIZE
-	boolean Receive (void *pBuffer, unsigned *pResultLength);
+	CNetBuffer *Receive (void);
 
 public:
 	boolean SendRaw (const void *pFrame, unsigned nLength);
@@ -79,7 +78,7 @@ private:
 	boolean UpdateMulticastFilter (void);
 
 	// return IP packet to the network layer for notification
-	void ResolveFailed (const void *pReturnedFrame, unsigned nLength);
+	void ResolveFailed (CNetBuffer *pReturnedFrame);
 	friend class CARPHandler;
 
 private:
@@ -88,10 +87,10 @@ private:
 	CNetworkLayer *m_pNetworkLayer;
 	CARPHandler *m_pARPHandler;
 
-	CNetQueue m_ARPRxQueue;
-	CNetQueue m_IPRxQueue;
+	CNetBufferQueue m_ARPRxQueue;
+	CNetBufferQueue m_IPRxQueue;
 
-	CNetQueue m_RawRxQueue;
+	CNetBufferQueue m_RawRxQueue;
 	u16 m_nRawProtocolType;
 
 	static const unsigned MaxGroups = MAX_MULTICAST_GROUPS;

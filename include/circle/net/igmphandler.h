@@ -22,7 +22,7 @@
 
 #include <circle/net/netconfig.h>
 #include <circle/net/linklayer.h>
-#include <circle/net/netqueue.h>
+#include <circle/net/netbufferqueue.h>
 #include <circle/net/ipaddress.h>
 #include <circle/timer.h>
 #include <circle/types.h>
@@ -37,7 +37,7 @@ public:
 
 public:
 	CIGMPHandler (CNetConfig *pNetConfig, CNetworkLayer *pNetworkLayer, CLinkLayer *pLinkLayer,
-		      CNetQueue *pRxQueue);
+		      CNetBufferQueue *pRxQueue);
 	~CIGMPHandler (void);
 
 	void Process (void);
@@ -55,7 +55,7 @@ private:
 	CNetConfig	*m_pNetConfig;
 	CNetworkLayer	*m_pNetworkLayer;
 	CLinkLayer	*m_pLinkLayer;
-	CNetQueue	*m_pRxQueue;
+	CNetBufferQueue	*m_pRxQueue;
 
 	boolean m_bAllSystemsJoined;
 	unsigned m_nLastTicks;

@@ -61,6 +61,10 @@ CNetBuffer::CNetBuffer (TPurpose Purpose, size_t ulLength, const void *pBuffer)
 		m_pHead += ETHERNET_HEADER_LEN + IP_HEADER_LEN + UDP_HEADER_LEN;
 		break;
 
+	case ICMPSend:
+		m_pHead += ETHERNET_HEADER_LEN + IP_HEADER_LEN;
+		break;
+
 	case IGMPSend:
 		m_pHead += ETHERNET_HEADER_LEN + IP_RA_HEADER_LEN;
 		break;

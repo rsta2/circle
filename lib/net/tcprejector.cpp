@@ -4,7 +4,7 @@
 // Generates RESET response on any received TCP segment
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ CTCPRejector::~CTCPRejector (void)
 {
 }
 
-int CTCPRejector::PacketReceived (const void *pPacket, unsigned nLength,
+int CTCPRejector::PacketReceived (CNetBuffer *pPacket,
 				  CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol)
 {
 	if (nProtocol != IPPROTO_TCP)
@@ -74,17 +74,23 @@ int CTCPRejector::PacketReceived (const void *pPacket, unsigned nLength,
 		return 0;
 	}
 
+	assert (pPacket != 0);
+	size_t nLength = pPacket->GetLength ();
 	if (nLength < sizeof (TTCPHeader))
 	{
+		delete pPacket;
+
 		return -1;
 	}
 
-	assert (pPacket != 0);
-	TTCPHeader *pHeader = (TTCPHeader *) pPacket;
+	TTCPHeader *pHeader = (TTCPHeader *) pPacket->GetPtr ();
+	assert (pHeader != 0);
 
 	m_nOwnPort = be2le16 (pHeader->nDestPort);
 	if (m_nOwnPort == 0)
 	{
+		delete pPacket;
+
 		return -1;
 	}
 
@@ -97,7 +103,7 @@ int CTCPRejector::PacketReceived (const void *pPacket, unsigned nLength,
 	m_Checksum.SetSourceAddress (*m_pNetConfig->GetIPAddress ());
 	m_Checksum.SetDestinationAddress (rSenderIP);
 
-	if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
+	if (m_Checksum.Calculate (pHeader, nLength) != CHECKSUM_OK)
 	{
 		return 0;
 	}
@@ -153,6 +159,8 @@ int CTCPRejector::PacketReceived (const void *pPacket, unsigned nLength,
 		SendSegment (TCP_FLAG_RESET, nSEG_ACK);
 	}
 
+	delete pPacket;
+
 	return 1;
 }
 
@@ -164,11 +172,12 @@ boolean CTCPRejector::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAc
 	assert (nDataOffset * 4 == sizeof (TTCPHeader));
 
 	unsigned nHeaderLength = nDataOffset * 4;
-	unsigned nPacketLength = nHeaderLength;
-	assert (nHeaderLength <= FRAME_BUFFER_SIZE);
 
-	u8 TxBuffer[FRAME_BUFFER_SIZE];
-	TTCPHeader *pHeader = (TTCPHeader *) TxBuffer;
+	CNetBuffer *pNetBuffer = new CNetBuffer (CNetBuffer::TCPSend);
+	assert (pNetBuffer != 0);
+
+	TTCPHeader *pHeader = (TTCPHeader *) pNetBuffer->AddHeader (nHeaderLength);
+	assert (pHeader != 0);
 
 	pHeader->nSourcePort	 	= le2be16 (m_nOwnPort);
 	pHeader->nDestPort	 	= le2be16 (m_nForeignPort);
@@ -179,7 +188,7 @@ boolean CTCPRejector::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAc
 	pHeader->nUrgentPointer		= 0;
 
 	pHeader->nChecksum = 0;		// must be 0 for calculation
-	pHeader->nChecksum = m_Checksum.Calculate (TxBuffer, nPacketLength);
+	pHeader->nChecksum = m_Checksum.Calculate (pHeader, nHeaderLength);
 
 #ifdef TCP_DEBUG
 	CLogger::Get ()->Write (FromTCP, LogDebug,
@@ -197,5 +206,5 @@ boolean CTCPRejector::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAc
 #endif
 
 	assert (m_pNetworkLayer != 0);
-	return m_pNetworkLayer->Send (m_ForeignIP, TxBuffer, nPacketLength, IPPROTO_TCP);
+	return m_pNetworkLayer->Send (m_ForeignIP, pNetBuffer, IPPROTO_TCP);
 }

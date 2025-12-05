@@ -455,9 +455,9 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 	{
 		return m_nErrno;
 	}
-	
-	unsigned nLength;
-	while ((nLength = m_RxQueue.Dequeue (pBuffer)) == 0)
+
+	CNetBuffer *pNetBuffer;
+	while ((pNetBuffer = m_RxQueue.Dequeue ()) == 0)
 	{
 		switch (m_State)
 		{
@@ -501,6 +501,12 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 			return m_nErrno;
 		}
 	}
+
+	size_t nLength = pNetBuffer->GetLength ();
+	assert (nLength <= FRAME_BUFFER_SIZE);
+	memcpy (pBuffer, pNetBuffer->GetPtr (), nLength);
+
+	delete pNetBuffer;
 
 	return nLength;
 }
@@ -683,8 +689,7 @@ void CTCPConnection::Process (void)
 	}
 }
 
-int CTCPConnection::PacketReceived (const void	*pPacket,
-				    unsigned	 nLength,
+int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 				    CIPAddress	&rSenderIP,
 				    CIPAddress	&rReceiverIP,
 				    int		 nProtocol)
@@ -694,13 +699,17 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		return 0;
 	}
 
+	assert (pPacket != 0);
+	size_t nLength = pPacket->GetLength ();
 	if (nLength < sizeof (TTCPHeader))
 	{
+		delete pPacket;
+
 		return -1;
 	}
 
-	assert (pPacket != 0);
-	TTCPHeader *pHeader = (TTCPHeader *) pPacket;
+	TTCPHeader *pHeader = (TTCPHeader *) pPacket->GetPtr ();
+	assert (pHeader != 0);
 
 	if (m_nOwnPort != be2le16 (pHeader->nDestPort))
 	{
@@ -725,7 +734,7 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		m_Checksum.SetDestinationAddress (rSenderIP);
 	}
 
-	if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
+	if (m_Checksum.Calculate (pHeader, nLength) != CHECKSUM_OK)
 	{
 		return 0;
 	}
@@ -836,7 +845,10 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 
 			if (nDataLength > 0)
 			{
-				m_RxQueue.Enqueue ((u8 *) pPacket+nDataOffset, nDataLength);
+				assert (pPacket != 0);
+				pPacket->RemoveHeader (nDataOffset);
+				m_RxQueue.Enqueue (pPacket);
+				pPacket = 0;
 			}
 
 			m_nISS = CalculateISN ();
@@ -867,6 +879,8 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 				{
 					SendSegment (TCP_FLAG_RESET, nSEG_ACK);
 				}
+
+				delete pPacket;
 
 				return 1;
 			}
@@ -962,7 +976,10 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 
 					if (nDataLength > 0)
 					{
-						m_RxQueue.Enqueue ((u8 *) pPacket+nDataOffset, nDataLength);
+						assert (pPacket != 0);
+						pPacket->RemoveHeader (nDataOffset);
+						m_RxQueue.Enqueue (pPacket);
+						pPacket = 0;
 					}
 
 					break;
@@ -1026,6 +1043,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 				if (!m_bActiveOpen)
 				{
 					NEW_STATE (TCPStateListen);
+
+					delete pPacket;
+
 					return 1;
 				}
 				else
@@ -1033,6 +1053,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 					m_nErrno = -NET_ERROR_CONNECTION_RESET;
 					NEW_STATE (TCPStateClosed);
 					m_Event.Set ();
+
+					delete pPacket;
+
 					return 1;
 					
 				}
@@ -1048,6 +1071,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 				m_RxQueue.Flush ();
 				NEW_STATE (TCPStateClosed);
 				m_Event.Set ();
+
+				delete pPacket;
+
 				return 1;
 
 			case TCPStateClosing:
@@ -1055,10 +1081,16 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			case TCPStateTimeWait:
 				NEW_STATE (TCPStateClosed);
 				m_Event.Set ();
+
+				delete pPacket;
+
 				return 1;
 
 			default:
 				UNEXPECTED_STATE ();
+
+				delete pPacket;
+
 				return 1;
 			}
 		}
@@ -1073,6 +1105,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			    && !m_bActiveOpen)
 			{
 				NEW_STATE (TCPStateListen);
+
+				delete pPacket;
+
 				return 1;
 			}
 			
@@ -1083,12 +1118,17 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			m_RxQueue.Flush ();
 			NEW_STATE (TCPStateClosed);
 			m_Event.Set ();
+
+			delete pPacket;
+
 			return 1;
 		}
 
 		// step 5 (check ACK field)
 		if (!(nFlags & TCP_FLAG_ACK))
 		{
+			delete pPacket;
+
 			return 1;
 		}
 
@@ -1186,6 +1226,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			else if (gt (nSEG_ACK, m_nSND_NXT))
 			{
 				SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
+
+				delete pPacket;
+
 				return 1;
 			}
 			
@@ -1242,6 +1285,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 				m_bFINQueued = FALSE;
 				NEW_STATE (TCPStateClosed);
 				m_Event.Set ();
+
+				delete pPacket;
+
 				return 1;
 			}
 			break;
@@ -1266,6 +1312,8 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		// step 7 (process text segment)
 		if (nSEG_LEN == 0)
 		{
+			delete pPacket;
+
 			return 1;
 		}
 		
@@ -1278,7 +1326,10 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			{
 				if (nDataLength > 0)
 				{
-					m_RxQueue.Enqueue ((u8 *) pPacket+nDataOffset, nDataLength);
+					assert (pPacket != 0);
+					pPacket->RemoveHeader (nDataOffset);
+					m_RxQueue.Enqueue (pPacket);
+					pPacket = 0;
 
 					m_nRCV_NXT += nDataLength;
 
@@ -1296,6 +1347,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			else
 			{
 				SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
+
+				delete pPacket;
+
 				return 1;
 			}
 			break;
@@ -1317,11 +1371,15 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		    || m_State == TCPStateListen
 		    || m_State == TCPStateSynSent)
 		{
+			delete pPacket;
+
 			return 1;
 		}
 			
 		if (!(nFlags & TCP_FLAG_FIN))
 		{
+			delete pPacket;
+
 			return 1;
 		}
 
@@ -1374,6 +1432,8 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		}
 		break;
 	}
+
+	delete pPacket;
 
 	return 1;
 }
@@ -1466,10 +1526,14 @@ CNetConnection::TStatus CTCPConnection::GetStatus (void) const
 boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber,
 				     const void *pData, unsigned nDataLength)
 {
+	CNetBuffer::TPurpose Purpose = CNetBuffer::TCPSend;
+
 	unsigned nDataOffset = 5;
 	assert (nDataOffset * 4 == sizeof (TTCPHeader));
 	if (nFlags & TCP_FLAG_SYN)
 	{
+		Purpose = CNetBuffer::TCPSendMSS;
+
 		nDataOffset++;
 	}
 	unsigned nHeaderLength = nDataOffset * 4;
@@ -1478,8 +1542,19 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 	assert (nPacketLength >= nHeaderLength);
 	assert (nHeaderLength <= FRAME_BUFFER_SIZE);
 
-	u8 TxBuffer[FRAME_BUFFER_SIZE];
-	TTCPHeader *pHeader = (TTCPHeader *) TxBuffer;
+	CNetBuffer *pNetBuffer;
+	if (nDataLength > 0)
+	{
+		assert (pData != 0);
+		pNetBuffer = new CNetBuffer (Purpose, nDataLength, pData);
+	}
+	else
+	{
+		pNetBuffer = new CNetBuffer (Purpose);
+	}
+	assert (pNetBuffer != 0);
+
+	TTCPHeader *pHeader = (TTCPHeader *) pNetBuffer->AddHeader (nHeaderLength);
 
 	pHeader->nSourcePort	 	= le2be16 (m_nOwnPort);
 	pHeader->nDestPort	 	= le2be16 (m_nForeignPort);
@@ -1499,14 +1574,8 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 		pOption->Data[1] = TCP_CONFIG_MSS & 0xFF;
 	}
 
-	if (nDataLength > 0)
-	{
-		assert (pData != 0);
-		memcpy (TxBuffer+nHeaderLength, pData, nDataLength);
-	}
-
 	pHeader->nChecksum = 0;		// must be 0 for calculation
-	pHeader->nChecksum = m_Checksum.Calculate (TxBuffer, nPacketLength);
+	pHeader->nChecksum = m_Checksum.Calculate (pHeader, nPacketLength);
 
 #ifdef TCP_DEBUG
 	CLogger::Get ()->Write (FromTCP, LogDebug,
@@ -1524,7 +1593,7 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 #endif
 
 	assert (m_pNetworkLayer != 0);
-	return m_pNetworkLayer->Send (m_ForeignIP, TxBuffer, nPacketLength, IPPROTO_TCP);
+	return m_pNetworkLayer->Send (m_ForeignIP, pNetBuffer, IPPROTO_TCP);
 }
 
 void CTCPConnection::ScanOptions (TTCPHeader *pHeader)
