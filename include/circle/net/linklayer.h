@@ -41,6 +41,8 @@ struct TEthernetHeader
 }
 PACKED;
 
+#define ETH_MIN_LEN		60		// without CRC
+
 class CNetworkLayer;
 
 class CLinkLayer

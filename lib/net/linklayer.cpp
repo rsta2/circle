@@ -179,6 +179,11 @@ boolean CLinkLayer::Send (const CIPAddress &rReceiver, CNetBuffer *pNetBuffer)
 
 	pHeader->nProtocolType = BE (ETH_PROT_IP);
 
+	if (nFrameLength < ETH_MIN_LEN)
+	{
+		pNetBuffer->AddPadding (ETH_MIN_LEN - nFrameLength);
+	}
+
 	assert (m_pARPHandler != 0);
 	CMACAddress MACAddressReceiver;
 	if (   rReceiver.IsBroadcast ()

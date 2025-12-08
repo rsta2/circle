@@ -52,6 +52,7 @@ public:
 	// Net buffer manipulation
 	void *AddHeader (size_t ulLength);	// Add header in front of buffer, return new front
 	void *RemoveHeader (size_t ulLength);	// Remove header from front, return new front
+	void AddPadding (size_t ulLength);	// Fill with zeros
 	void RemoveTrailer (size_t ulLength);	// Remove trailer from back of net buffer
 
 	// Set and get private data of net buffer

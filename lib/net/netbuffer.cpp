@@ -156,6 +156,18 @@ void *CNetBuffer::RemoveHeader (size_t ulLength)
 	return m_pHead;
 }
 
+void CNetBuffer::AddPadding (size_t ulLength)
+{
+	assert (m_bValid);
+	assert (ulLength);
+	assert (m_pHead);
+	assert (m_pHead + m_ulLength + ulLength <= m_Buffer + BufferSize);
+
+	memset (m_pHead + m_ulLength, 0, ulLength);
+
+	m_ulLength += ulLength;
+}
+
 void CNetBuffer::RemoveTrailer (size_t ulLength)
 {
 	assert (m_bValid);
