@@ -25,7 +25,7 @@
 #include <circle/net/netconnection.h>
 #include <circle/net/tcprejector.h>
 #include <circle/net/ipaddress.h>
-#include <circle/net/netqueue.h>
+#include <circle/net/netbuffer.h>
 #include <circle/device.h>
 #include <circle/ptrarray.h>
 #include <circle/spinlock.h>
@@ -52,16 +52,14 @@ public:
 
 	int Disconnect (int hConnection);
 
-	int Send (const void *pData, unsigned nLength, int nFlags, int hConnection);
+	int Send (CNetBuffer *pData, int nFlags, int hConnection);
 
-	// pBuffer must have size FRAME_BUFFER_SIZE
-	int Receive (void *pBuffer, int nFlags, int hConnection);
+	int Receive (CNetBuffer **ppBuffer, int nFlags, int hConnection);
 
-	int SendTo (const void *pData, unsigned nLength, int nFlags,
+	int SendTo (CNetBuffer *pData, int nFlags,
 		    const CIPAddress &rForeignIP, u16 nForeignPort, int hConnection);
 
-	// pBuffer must have size FRAME_BUFFER_SIZE
-	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,
+	int ReceiveFrom (CNetBuffer **ppBuffer, int nFlags, CIPAddress *pForeignIP,
 			 u16 *pForeignPort, int hConnection);
 
 	int SetOptionReceiveTimeout (unsigned nMicroSeconds, int hConnection);

@@ -30,8 +30,6 @@
 #define OWN_PORT_MIN	60000
 #define OWN_PORT_MAX	60999
 
-#define PAYLOAD_MAX	1460	// worst case is TCP (1500 - 20 - 20)
-
 CTransportLayer::CTransportLayer (CNetConfig *pNetConfig, CNetworkLayer *pNetworkLayer)
 :	m_pNetConfig (pNetConfig),
 	m_pNetworkLayer (pNetworkLayer),
@@ -322,7 +320,7 @@ int CTransportLayer::Disconnect (int hConnection)
 	return ((CNetConnection *) m_pConnection[hConnection])->Close ();
 }
 
-int CTransportLayer::Send (const void *pData, unsigned nLength, int nFlags, int hConnection)
+int CTransportLayer::Send (CNetBuffer *pNetBuffer, int nFlags, int hConnection)
 {
 	assert (hConnection >= 0);
 	if (   hConnection >= (int) m_pConnection.GetCount ()
@@ -331,41 +329,11 @@ int CTransportLayer::Send (const void *pData, unsigned nLength, int nFlags, int 
 		return -NET_ERROR_NOT_CONNECTED;
 	}
 
-	int nProtocol = ((CNetConnection *) m_pConnection[hConnection])->GetProtocol ();
-
-	if (   nLength > PAYLOAD_MAX
-	    && nProtocol == IPPROTO_UDP)
-	{
-		return -NET_ERROR_INVALID_VALUE;
-	}
-
-	assert (pData != 0);
-	const u8 *p = (const u8 *) pData;
-	assert (nLength > 0);
-	unsigned nRemaining = nLength;
-	while (nRemaining > 0)
-	{
-		unsigned nPayload = nRemaining <= PAYLOAD_MAX ? nRemaining : PAYLOAD_MAX;
-		CNetBuffer *pNetBuffer = new CNetBuffer (  nProtocol == IPPROTO_TCP
-							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
-							 nPayload, p);
-		assert (pNetBuffer != 0);
-
-		int nResult =
-			((CNetConnection *) m_pConnection[hConnection])->Send (pNetBuffer, nFlags);
-		if (nResult < 0)
-		{
-			return nResult;
-		}
-
-		p += nPayload;
-		nRemaining -= nPayload;
-	}
-
-	return nLength;
+	assert (pNetBuffer != 0);
+	return ((CNetConnection *) m_pConnection[hConnection])->Send (pNetBuffer, nFlags);
 }
 
-int CTransportLayer::Receive (void *pBuffer, int nFlags, int hConnection)
+int CTransportLayer::Receive (CNetBuffer **ppNetBuffer, int nFlags, int hConnection)
 {
 	assert (hConnection >= 0);
 	if (   hConnection >= (int) m_pConnection.GetCount ()
@@ -374,22 +342,11 @@ int CTransportLayer::Receive (void *pBuffer, int nFlags, int hConnection)
 		return -NET_ERROR_NOT_CONNECTED;
 	}
 
-	assert (pBuffer != 0);
-	CNetBuffer *pNetBuffer = 0;
-	int nResult = ((CNetConnection *) m_pConnection[hConnection])->Receive (&pNetBuffer, nFlags);
-	if (nResult > 0)
-	{
-		assert (pNetBuffer != 0);
-		assert (nResult == (int) pNetBuffer->GetLength ());
-		memcpy (pBuffer, pNetBuffer->GetPtr (), nResult);
-	}
-
-	delete pNetBuffer;
-
-	return nResult;
+	assert (ppNetBuffer != 0);
+	return ((CNetConnection *) m_pConnection[hConnection])->Receive (ppNetBuffer, nFlags);
 }
 
-int CTransportLayer::SendTo (const void *pData, unsigned nLength, int nFlags,
+int CTransportLayer::SendTo (CNetBuffer *pNetBuffer, int nFlags,
 			     const CIPAddress &rForeignIP, u16 nForeignPort, int hConnection)
 {
 	assert (hConnection >= 0);
@@ -399,43 +356,12 @@ int CTransportLayer::SendTo (const void *pData, unsigned nLength, int nFlags,
 		return -NET_ERROR_NOT_CONNECTED;
 	}
 
-	int nProtocol = ((CNetConnection *) m_pConnection[hConnection])->GetProtocol ();
-
-	if (   nLength > PAYLOAD_MAX
-	    && nProtocol == IPPROTO_UDP)
-	{
-		return -NET_ERROR_INVALID_VALUE;
-	}
-
-	assert (pData != 0);
-	const u8 *p = (const u8 *) pData;
-	assert (nLength > 0);
-	unsigned nRemaining = nLength;
-	while (nRemaining > 0)
-	{
-		unsigned nPayload = nRemaining <= PAYLOAD_MAX ? nRemaining : PAYLOAD_MAX;
-		CNetBuffer *pNetBuffer = new CNetBuffer (  nProtocol == IPPROTO_TCP
-							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
-							 nPayload, p);
-		assert (pNetBuffer != 0);
-
-		int nResult =
-			((CNetConnection *) m_pConnection[hConnection])->SendTo (pNetBuffer, nFlags,
-										 rForeignIP,
-										 nForeignPort);
-		if (nResult < 0)
-		{
-			return nResult;
-		}
-
-		p += nPayload;
-		nRemaining -= nPayload;
-	}
-
-	return nLength;
+	assert (pNetBuffer != 0);
+	return ((CNetConnection *) m_pConnection[hConnection])->SendTo (pNetBuffer, nFlags,
+									rForeignIP, nForeignPort);
 }
 
-int CTransportLayer::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,
+int CTransportLayer::ReceiveFrom (CNetBuffer **ppNetBuffer, int nFlags, CIPAddress *pForeignIP,
 				  u16 *pForeignPort, int hConnection)
 {
 	assert (hConnection >= 0);
@@ -445,22 +371,10 @@ int CTransportLayer::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeig
 		return -NET_ERROR_NOT_CONNECTED;
 	}
 
-	assert (pBuffer != 0);
-	CNetBuffer *pNetBuffer = 0;
-	int nResult = ((CNetConnection *) m_pConnection[hConnection])->ReceiveFrom (&pNetBuffer, nFlags,
-										    pForeignIP,
-										    pForeignPort);
-	if (nResult >= 0)
-	{
-		assert (pNetBuffer != 0);
-		assert (nResult == (int) pNetBuffer->GetLength ());
-		memcpy (pBuffer, pNetBuffer->GetPtr (), nResult);
-	}
-
-	delete pNetBuffer;
-
-	return nResult;
-
+	assert (ppNetBuffer != 0);
+	return ((CNetConnection *) m_pConnection[hConnection])->ReceiveFrom (ppNetBuffer, nFlags,
+									     pForeignIP,
+									     pForeignPort);
 }
 
 int CTransportLayer::SetOptionReceiveTimeout (unsigned nMicroSeconds, int hConnection)

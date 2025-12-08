@@ -19,9 +19,12 @@
 //
 #include <circle/net/socket.h>
 #include <circle/net/netsubsystem.h>
+#include <circle/net/netbuffer.h>
 #include <circle/net/in.h>
 #include <circle/util.h>
 #include <assert.h>
+
+#define PAYLOAD_MAX	1460	// worst case is TCP (1500 - 20 - 20)
 
 CSocket::CSocket (CNetSubSystem *pNetSubSystem, int nProtocol)
 :	CNetSocket (pNetSubSystem),
@@ -243,9 +246,35 @@ int CSocket::Send (const void *pBuffer, unsigned nLength, int nFlags)
 		return -NET_ERROR_INVALID_VALUE;
 	}
 	
+	if (   nLength > PAYLOAD_MAX
+	    && m_nProtocol == IPPROTO_UDP)
+	{
+		return -NET_ERROR_INVALID_VALUE;
+	}
+
 	assert (m_pTransportLayer != 0);
 	assert (pBuffer != 0);
-	return m_pTransportLayer->Send (pBuffer, nLength, nFlags, m_hConnection);
+	const u8 *p = (const u8 *) pBuffer;
+	unsigned nRemaining = nLength;
+	while (nRemaining > 0)
+	{
+		unsigned nPayload = nRemaining <= PAYLOAD_MAX ? nRemaining : PAYLOAD_MAX;
+		CNetBuffer *pNetBuffer = new CNetBuffer (  m_nProtocol == IPPROTO_TCP
+							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
+							 nPayload, p);
+		assert (pNetBuffer != 0);
+
+		int nResult = m_pTransportLayer->Send (pNetBuffer, nFlags, m_hConnection);
+		if (nResult < 0)
+		{
+			return nResult;
+		}
+
+		p += nPayload;
+		nRemaining -= nPayload;
+	}
+
+	return nLength;
 }
 
 int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
@@ -261,20 +290,22 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 	}
 	
 	assert (m_pTransportLayer != 0);
-	u8 TempBuffer[FRAME_BUFFER_SIZE];
-	int nResult = m_pTransportLayer->Receive (TempBuffer, nFlags, m_hConnection);
-	if (nResult < 0)
+	CNetBuffer *pNetBuffer = 0;
+	int nResult = m_pTransportLayer->Receive (&pNetBuffer, nFlags, m_hConnection);
+	if (nResult > 0)
 	{
-		return nResult;
+		assert (pNetBuffer != 0);
+		assert (pNetBuffer->GetLength () == (unsigned) nResult);
+		if (nLength < (unsigned) nResult)
+		{
+			nResult = nLength;
+		}
+
+		assert (pBuffer != 0);
+		memcpy (pBuffer, pNetBuffer->GetPtr (), nResult);
 	}
 
-	if (nLength < (unsigned) nResult)
-	{
-		nResult = nLength;
-	}
-
-	assert (pBuffer != 0);
-	memcpy (pBuffer, TempBuffer, nResult);
+	delete pNetBuffer;
 
 	return nResult;
 }
@@ -292,6 +323,12 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 		return -NET_ERROR_INVALID_VALUE;
 	}
 	
+	if (   nLength > PAYLOAD_MAX
+	    && m_nProtocol == IPPROTO_UDP)
+	{
+		return -NET_ERROR_INVALID_VALUE;
+	}
+
 	assert (m_pNetConfig != 0);
 	if (m_pNetConfig->GetIPAddress ()->IsNull ())		// from null source address
 	{
@@ -306,7 +343,28 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 
 	assert (m_pTransportLayer != 0);
 	assert (pBuffer != 0);
-	return m_pTransportLayer->SendTo (pBuffer, nLength, nFlags, rForeignIP, nForeignPort, m_hConnection);
+	const u8 *p = (const u8 *) pBuffer;
+	unsigned nRemaining = nLength;
+	while (nRemaining > 0)
+	{
+		unsigned nPayload = nRemaining <= PAYLOAD_MAX ? nRemaining : PAYLOAD_MAX;
+		CNetBuffer *pNetBuffer = new CNetBuffer (  m_nProtocol == IPPROTO_TCP
+							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
+							 nPayload, p);
+		assert (pNetBuffer != 0);
+
+		int nResult = m_pTransportLayer->SendTo (pNetBuffer, nFlags,
+							 rForeignIP, nForeignPort, m_hConnection);
+		if (nResult < 0)
+		{
+			return nResult;
+		}
+
+		p += nPayload;
+		nRemaining -= nPayload;
+	}
+
+	return nLength;
 }
 
 int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
@@ -323,21 +381,23 @@ int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
 	}
 	
 	assert (m_pTransportLayer != 0);
-	u8 TempBuffer[FRAME_BUFFER_SIZE];
-	int nResult = m_pTransportLayer->ReceiveFrom (TempBuffer, nFlags,
+	CNetBuffer *pNetBuffer = 0;
+	int nResult = m_pTransportLayer->ReceiveFrom (&pNetBuffer, nFlags,
 						      pForeignIP, pForeignPort, m_hConnection);
-	if (nResult < 0)
+	if (nResult > 0)
 	{
-		return nResult;
+		assert (pNetBuffer != 0);
+		assert (pNetBuffer->GetLength () == (unsigned) nResult);
+		if (nLength < (unsigned) nResult)
+		{
+			nResult = nLength;
+		}
+
+		assert (pBuffer != 0);
+		memcpy (pBuffer, pNetBuffer->GetPtr (), nResult);
 	}
 
-	if (nLength < (unsigned) nResult)
-	{
-		nResult = nLength;
-	}
-
-	assert (pBuffer != 0);
-	memcpy (pBuffer, TempBuffer, nResult);
+	delete pNetBuffer;
 
 	return nResult;
 }
