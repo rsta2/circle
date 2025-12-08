@@ -42,11 +42,11 @@ public:
 	int Connect (void)						{ return -1; }
 	int Accept (CIPAddress *pForeignIP, u16 *pForeignPort)		{ return -1; }
 	int Close (void)						{ return -1; }
-	int Send (const void *pData, unsigned nLength, int nFlags)	{ return -1; }
-	int Receive (void *pBuffer, int nFlags)				{ return -1; }
-	int SendTo (const void *pData, unsigned nLength, int nFlags,
+	int Send (CNetBuffer *pData, int nFlags)			{ return -1; }
+	int Receive (CNetBuffer **ppBuffer, int nFlags)			{ return -1; }
+	int SendTo (CNetBuffer *pData, int nFlags,
 		    const CIPAddress &rForeignIP, u16 nForeignPort)	{ return -1; }
-	int ReceiveFrom (void *pBuffer, int nFlags,
+	int ReceiveFrom (CNetBuffer **ppBuffer, int nFlags,
 			 CIPAddress *pForeignIP, u16 *pForeignPort)	{ return -1; }
 	int SetOptionReceiveTimeout (unsigned nMicroSeconds)		{ return -1; }
 	int SetOptionSendTimeout (unsigned nMicroSeconds)		{ return -1; }

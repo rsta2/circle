@@ -55,12 +55,12 @@ public:
 	virtual int Accept (CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
 	virtual int Close (void) = 0;
 	
-	virtual int Send (const void *pData, unsigned nLength, int nFlags) = 0;
-	virtual int Receive (void *pBuffer, int nFlags) = 0;
+	virtual int Send (CNetBuffer *pData, int nFlags) = 0;
+	virtual int Receive (CNetBuffer **ppBuffer, int nFlags) = 0;
 
-	virtual int SendTo (const void *pData, unsigned nLength, int nFlags,
+	virtual int SendTo (CNetBuffer *pData, int nFlags,
 			    const CIPAddress &rForeignIP, u16 nForeignPort) = 0;
-	virtual int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
+	virtual int ReceiveFrom (CNetBuffer **ppBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
 
 	virtual int SetOptionReceiveTimeout (unsigned nMicroSeconds) = 0;
 	virtual int SetOptionSendTimeout (unsigned nMicroSeconds) = 0;

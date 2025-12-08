@@ -368,7 +368,7 @@ int CTCPConnection::Close (void)
 	return 0;
 }
 
-int CTCPConnection::Send (const void *pData, unsigned nLength, int nFlags)
+int CTCPConnection::Send (CNetBuffer *pNetBuffer, int nFlags)
 {
 	if (   nFlags != 0
 	    && nFlags != MSG_DONTWAIT)
@@ -422,28 +422,15 @@ int CTCPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 		}
 	}
 
-	unsigned nResult = nLength;
+	int nResult = pNetBuffer->GetLength ();
 
-	assert (pData != 0);
-	u8 *pBuffer = (u8 *) pData;
-
-	while (nLength > FRAME_BUFFER_SIZE)
-	{
-		m_TxQueue.Enqueue (pBuffer, FRAME_BUFFER_SIZE);
-
-		pBuffer += FRAME_BUFFER_SIZE;
-		nLength -= FRAME_BUFFER_SIZE;
-	}
-
-	if (nLength > 0)
-	{
-		m_TxQueue.Enqueue (pBuffer, nLength);
-	}
+	assert (pNetBuffer != 0);
+	m_TxQueue.Enqueue (pNetBuffer);
 
 	return nResult;
 }
 
-int CTCPConnection::Receive (void *pBuffer, int nFlags)
+int CTCPConnection::Receive (CNetBuffer **ppNetBuffer, int nFlags)
 {
 	if (   nFlags != 0
 	    && nFlags != MSG_DONTWAIT)
@@ -456,8 +443,8 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 		return m_nErrno;
 	}
 
-	CNetBuffer *pNetBuffer;
-	while ((pNetBuffer = m_RxQueue.Dequeue ()) == 0)
+	assert (ppNetBuffer != 0);
+	while ((*ppNetBuffer = m_RxQueue.Dequeue ()) == 0)
 	{
 		switch (m_State)
 		{
@@ -502,25 +489,22 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 		}
 	}
 
-	size_t nLength = pNetBuffer->GetLength ();
+	size_t nLength = (*ppNetBuffer)->GetLength ();
 	assert (nLength <= FRAME_BUFFER_SIZE);
-	memcpy (pBuffer, pNetBuffer->GetPtr (), nLength);
-
-	delete pNetBuffer;
 
 	return nLength;
 }
 
-int CTCPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
+int CTCPConnection::SendTo (CNetBuffer *pNetBuffer, int nFlags,
 			    const CIPAddress &rForeignIP, u16 nForeignPort)
 {
 	// ignore rForeignIP and nForeignPort
-	return Send (pData, nLength, nFlags);
+	return Send (pNetBuffer, nFlags);
 }
 
-int CTCPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort)
+int CTCPConnection::ReceiveFrom (CNetBuffer **ppNetBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort)
 {
-	int nResult = Receive (pBuffer, nFlags);
+	int nResult = Receive (ppNetBuffer, nFlags);
 	if (nResult <= 0)
 	{
 		return nResult;
@@ -631,16 +615,21 @@ void CTCPConnection::Process (void)
 		break;
 	}
 
-	u8 TempBuffer[FRAME_BUFFER_SIZE];
+	CNetBuffer *pNetBuffer;
 	unsigned nLength;
-	while (    m_RetransmissionQueue.GetFreeSpace () >= FRAME_BUFFER_SIZE
-		&& (nLength = m_TxQueue.Dequeue (TempBuffer)) > 0)
+	while (   (pNetBuffer = m_TxQueue.Peek ()) != 0
+	       && (nLength = pNetBuffer->GetLength ()) <= m_RetransmissionQueue.GetFreeSpace ())
 	{
+		pNetBuffer = m_TxQueue.Dequeue ();
+		assert (pNetBuffer != 0);
+
 #ifdef TCP_DEBUG
 		CLogger::Get ()->Write (FromTCP, LogDebug, "Transfering %u bytes into RT buffer", nLength);
 #endif
 
-		m_RetransmissionQueue.Write (TempBuffer, nLength);
+		m_RetransmissionQueue.Write (pNetBuffer->GetPtr (), nLength);
+
+		delete pNetBuffer;
 	}
 
 	// pacing transmit
@@ -673,6 +662,7 @@ void CTCPConnection::Process (void)
 		CLogger::Get ()->Write (FromTCP, LogDebug, "Transfering %u bytes into TX buffer", nLength);
 #endif
 
+		u8 TempBuffer[FRAME_BUFFER_SIZE];
 		assert (nLength <= FRAME_BUFFER_SIZE);
 		m_RetransmissionQueue.Read (TempBuffer, nLength);
 
@@ -1532,6 +1522,8 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 	assert (nDataOffset * 4 == sizeof (TTCPHeader));
 	if (nFlags & TCP_FLAG_SYN)
 	{
+		assert (nDataLength == 0);
+
 		Purpose = CNetBuffer::TCPSendMSS;
 
 		nDataOffset++;

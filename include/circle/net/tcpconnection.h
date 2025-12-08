@@ -78,12 +78,13 @@ public:
 	int Accept (CIPAddress *pForeignIP, u16 *pForeignPort);
 	int Close (void);
 	
-	int Send (const void *pData, unsigned nLength, int nFlags);
-	int Receive (void *pBuffer, int nFlags);
+	int Send (CNetBuffer *pData, int nFlags);
+	int Receive (CNetBuffer **ppBuffer, int nFlags);
 
-	int SendTo (const void *pData, unsigned nLength, int nFlags,
+	int SendTo (CNetBuffer *pData, int nFlags,
 		    const CIPAddress &rForeignIP, u16 nForeignPort);
-	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort);
+	int ReceiveFrom (CNetBuffer **ppBuffer, int nFlags,
+			 CIPAddress *pForeignIP, u16 *pForeignPort);
 
 	int SetOptionReceiveTimeout (unsigned nMicroSeconds);
 	int SetOptionSendTimeout (unsigned nMicroSeconds);
@@ -135,7 +136,7 @@ private:
 
 	volatile int m_nErrno;			// signalize error to the user
 
-	CNetQueue m_TxQueue;
+	CNetBufferQueue m_TxQueue;
 	CNetBufferQueue m_RxQueue;
 
 	CRetransmissionQueue m_RetransmissionQueue;

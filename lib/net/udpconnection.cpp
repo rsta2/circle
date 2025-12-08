@@ -107,7 +107,7 @@ int CUDPConnection::Close (void)
 	return 0;
 }
 
-int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
+int CUDPConnection::Send (CNetBuffer *pNetBuffer, int nFlags)
 {
 	if (m_nErrno < 0)
 	{
@@ -128,6 +128,8 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 		return -NET_ERROR_INVALID_VALUE;
 	}
 
+	assert (pNetBuffer != 0);
+	int nLength = pNetBuffer->GetLength ();
 	unsigned nPacketLength = sizeof (TUDPHeader) + nLength;		// may wrap
 	if (   nPacketLength <= sizeof (TUDPHeader)
 	    || nPacketLength > FRAME_BUFFER_SIZE)
@@ -142,11 +144,6 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 	{
 		return -NET_ERROR_PERMISSION_DENIED;
 	}
-
-	assert (pData != 0);
-	assert (nLength > 0);
-	CNetBuffer *pNetBuffer = new CNetBuffer (CNetBuffer::UDPSend, nLength, pData);
-	assert (pNetBuffer != 0);
 
 	TUDPHeader *pHeader = (TUDPHeader *) pNetBuffer->AddHeader (sizeof (TUDPHeader));
 	assert (pHeader != 0);
@@ -166,9 +163,9 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 	return bOK ? nLength : -NET_ERROR_IO;
 }
 
-int CUDPConnection::Receive (void *pBuffer, int nFlags)
+int CUDPConnection::Receive (CNetBuffer **ppNetBuffer, int nFlags)
 {
-	CNetBuffer *pNetBuffer;
+	assert (ppNetBuffer != 0);
 	do
 	{
 		if (m_nErrno < 0)
@@ -179,8 +176,8 @@ int CUDPConnection::Receive (void *pBuffer, int nFlags)
 			return nErrno;
 		}
 
-		pNetBuffer = m_RxQueue.Dequeue ();
-		if (pNetBuffer == 0)
+		*ppNetBuffer = m_RxQueue.Dequeue ();
+		if (*ppNetBuffer == 0)
 		{
 			if (nFlags == MSG_DONTWAIT)
 			{
@@ -210,20 +207,15 @@ int CUDPConnection::Receive (void *pBuffer, int nFlags)
 			}
 		}
 	}
-	while (pNetBuffer == 0);
+	while (*ppNetBuffer == 0);
 
-	size_t nLength = pNetBuffer->GetLength ();
+	size_t nLength = (*ppNetBuffer)->GetLength ();
 	assert (nLength <= FRAME_BUFFER_SIZE);
-
-	assert (pBuffer != 0);
-	memcpy (pBuffer, pNetBuffer->GetPtr (), nLength);
-
-	delete pNetBuffer;
 
 	return nLength;
 }
 
-int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
+int CUDPConnection::SendTo (CNetBuffer *pNetBuffer, int nFlags,
 			    const CIPAddress &rForeignIP, u16 nForeignPort)
 {
 	if (m_nErrno < 0)
@@ -237,7 +229,7 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 	if (m_bActiveOpen)
 	{
 		// ignore rForeignIP and nForeignPort
-		return Send (pData, nLength, nFlags);
+		return Send (pNetBuffer, nFlags);
 	}
 
 	if (   nFlags != 0
@@ -246,6 +238,8 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 		return -NET_ERROR_INVALID_VALUE;
 	}
 
+	assert (pNetBuffer != 0);
+	int nLength = pNetBuffer->GetLength ();
 	unsigned nPacketLength = sizeof (TUDPHeader) + nLength;		// may wrap
 	if (   nPacketLength <= sizeof (TUDPHeader)
 	    || nPacketLength > FRAME_BUFFER_SIZE)
@@ -260,11 +254,6 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 	{
 		return -NET_ERROR_PERMISSION_DENIED;
 	}
-
-	assert (pData != 0);
-	assert (nLength > 0);
-	CNetBuffer *pNetBuffer = new CNetBuffer (CNetBuffer::UDPSend, nLength, pData);
-	assert (pNetBuffer != 0);
 
 	TUDPHeader *pHeader = (TUDPHeader *) pNetBuffer->AddHeader (sizeof (TUDPHeader));
 	assert (pHeader != 0);
@@ -284,9 +273,10 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 	return bOK ? nLength : -NET_ERROR_IO;
 }
 
-int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort)
+int CUDPConnection::ReceiveFrom (CNetBuffer **ppNetBuffer, int nFlags,
+				 CIPAddress *pForeignIP, u16 *pForeignPort)
 {
-	CNetBuffer *pNetBuffer;
+	assert (ppNetBuffer != 0);
 	do
 	{
 		if (m_nErrno < 0)
@@ -297,8 +287,8 @@ int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 			return nErrno;
 		}
 
-		pNetBuffer = m_RxQueue.Dequeue ();
-		if (pNetBuffer == 0)
+		*ppNetBuffer = m_RxQueue.Dequeue ();
+		if (*ppNetBuffer == 0)
 		{
 			if (nFlags == MSG_DONTWAIT)
 			{
@@ -328,15 +318,12 @@ int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 			}
 		}
 	}
-	while (pNetBuffer == 0);
+	while (*ppNetBuffer == 0);
 
-	size_t nLength = pNetBuffer->GetLength ();
+	size_t nLength = (*ppNetBuffer)->GetLength ();
 	assert (nLength <= FRAME_BUFFER_SIZE);
 
-	assert (pBuffer != 0);
-	memcpy (pBuffer, pNetBuffer->GetPtr (), nLength);
-
-	TUDPPrivateData *pData = (TUDPPrivateData *) pNetBuffer->GetPrivateData ();
+	TUDPPrivateData *pData = (TUDPPrivateData *) (*ppNetBuffer)->GetPrivateData ();
 	assert (pData != 0);
 	if (   pForeignIP != 0
 	    && pForeignPort != 0)
@@ -344,8 +331,6 @@ int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 		pForeignIP->Set (pData->SourceAddress);
 		*pForeignPort = pData->nSourcePort;
 	}
-
-	delete pNetBuffer;
 
 	return nLength;
 }

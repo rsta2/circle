@@ -24,10 +24,13 @@
 #include <circle/net/in.h>
 #include <circle/string.h>
 #include <circle/macros.h>
+#include <circle/util.h>
 #include <assert.h>
 
 #define OWN_PORT_MIN	60000
 #define OWN_PORT_MAX	60999
+
+#define PAYLOAD_MAX	1460	// worst case is TCP (1500 - 20 - 20)
 
 CTransportLayer::CTransportLayer (CNetConfig *pNetConfig, CNetworkLayer *pNetworkLayer)
 :	m_pNetConfig (pNetConfig),
@@ -328,9 +331,38 @@ int CTransportLayer::Send (const void *pData, unsigned nLength, int nFlags, int 
 		return -NET_ERROR_NOT_CONNECTED;
 	}
 
+	int nProtocol = ((CNetConnection *) m_pConnection[hConnection])->GetProtocol ();
+
+	if (   nLength > PAYLOAD_MAX
+	    && nProtocol == IPPROTO_UDP)
+	{
+		return -NET_ERROR_INVALID_VALUE;
+	}
+
 	assert (pData != 0);
+	const u8 *p = (const u8 *) pData;
 	assert (nLength > 0);
-	return ((CNetConnection *) m_pConnection[hConnection])->Send (pData, nLength, nFlags);
+	unsigned nRemaining = nLength;
+	while (nRemaining > 0)
+	{
+		unsigned nPayload = nRemaining <= PAYLOAD_MAX ? nRemaining : PAYLOAD_MAX;
+		CNetBuffer *pNetBuffer = new CNetBuffer (  nProtocol == IPPROTO_TCP
+							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
+							 nPayload, p);
+		assert (pNetBuffer != 0);
+
+		int nResult =
+			((CNetConnection *) m_pConnection[hConnection])->Send (pNetBuffer, nFlags);
+		if (nResult < 0)
+		{
+			return nResult;
+		}
+
+		p += nPayload;
+		nRemaining -= nPayload;
+	}
+
+	return nLength;
 }
 
 int CTransportLayer::Receive (void *pBuffer, int nFlags, int hConnection)
@@ -343,7 +375,18 @@ int CTransportLayer::Receive (void *pBuffer, int nFlags, int hConnection)
 	}
 
 	assert (pBuffer != 0);
-	return ((CNetConnection *) m_pConnection[hConnection])->Receive (pBuffer, nFlags);
+	CNetBuffer *pNetBuffer = 0;
+	int nResult = ((CNetConnection *) m_pConnection[hConnection])->Receive (&pNetBuffer, nFlags);
+	if (nResult > 0)
+	{
+		assert (pNetBuffer != 0);
+		assert (nResult == (int) pNetBuffer->GetLength ());
+		memcpy (pBuffer, pNetBuffer->GetPtr (), nResult);
+	}
+
+	delete pNetBuffer;
+
+	return nResult;
 }
 
 int CTransportLayer::SendTo (const void *pData, unsigned nLength, int nFlags,
@@ -356,10 +399,40 @@ int CTransportLayer::SendTo (const void *pData, unsigned nLength, int nFlags,
 		return -NET_ERROR_NOT_CONNECTED;
 	}
 
+	int nProtocol = ((CNetConnection *) m_pConnection[hConnection])->GetProtocol ();
+
+	if (   nLength > PAYLOAD_MAX
+	    && nProtocol == IPPROTO_UDP)
+	{
+		return -NET_ERROR_INVALID_VALUE;
+	}
+
 	assert (pData != 0);
+	const u8 *p = (const u8 *) pData;
 	assert (nLength > 0);
-	return ((CNetConnection *) m_pConnection[hConnection])->SendTo (pData, nLength, nFlags,
-									rForeignIP, nForeignPort);
+	unsigned nRemaining = nLength;
+	while (nRemaining > 0)
+	{
+		unsigned nPayload = nRemaining <= PAYLOAD_MAX ? nRemaining : PAYLOAD_MAX;
+		CNetBuffer *pNetBuffer = new CNetBuffer (  nProtocol == IPPROTO_TCP
+							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
+							 nPayload, p);
+		assert (pNetBuffer != 0);
+
+		int nResult =
+			((CNetConnection *) m_pConnection[hConnection])->SendTo (pNetBuffer, nFlags,
+										 rForeignIP,
+										 nForeignPort);
+		if (nResult < 0)
+		{
+			return nResult;
+		}
+
+		p += nPayload;
+		nRemaining -= nPayload;
+	}
+
+	return nLength;
 }
 
 int CTransportLayer::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,
@@ -373,8 +446,21 @@ int CTransportLayer::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeig
 	}
 
 	assert (pBuffer != 0);
-	return ((CNetConnection *) m_pConnection[hConnection])->ReceiveFrom (pBuffer, nFlags,
-									     pForeignIP, pForeignPort);
+	CNetBuffer *pNetBuffer = 0;
+	int nResult = ((CNetConnection *) m_pConnection[hConnection])->ReceiveFrom (&pNetBuffer, nFlags,
+										    pForeignIP,
+										    pForeignPort);
+	if (nResult >= 0)
+	{
+		assert (pNetBuffer != 0);
+		assert (nResult == (int) pNetBuffer->GetLength ());
+		memcpy (pBuffer, pNetBuffer->GetPtr (), nResult);
+	}
+
+	delete pNetBuffer;
+
+	return nResult;
+
 }
 
 int CTransportLayer::SetOptionReceiveTimeout (unsigned nMicroSeconds, int hConnection)
