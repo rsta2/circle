@@ -26,6 +26,7 @@
 #include <circle/net/ipaddress.h>
 #include <circle/macaddress.h>
 #include <circle/net/netbufferqueue.h>
+#include <circle/net/sizes.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -41,7 +42,7 @@ struct TEthernetHeader
 }
 PACKED;
 
-#define ETH_MIN_LEN		60		// without CRC
+ASSERT_STATIC (sizeof (TEthernetHeader) == ETH_HEADER_LEN);
 
 class CNetworkLayer;
 

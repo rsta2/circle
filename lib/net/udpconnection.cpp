@@ -19,6 +19,7 @@
 //
 #include <circle/net/udpconnection.h>
 #include <circle/net/error.h>
+#include <circle/net/sizes.h>
 #include <circle/net/in.h>
 #include <circle/macros.h>
 #include <circle/util.h>
@@ -34,13 +35,15 @@ struct TUDPHeader
 }
 PACKED;
 
-#define UDP_CONFIG_MSS		(1500 - 20 - sizeof (TUDPHeader))
+ASSERT_STATIC (sizeof (TUDPHeader) == UDP_HEADER_LEN);
 
 struct TUDPPrivateData
 {
 	u8	SourceAddress[IP_ADDRESS_SIZE];
 	u16	nSourcePort;
 };
+
+#define UDP_CONFIG_MSS	(ETH_MAX_LEN - ETH_HEADER_LEN - IP_HEADER_LEN - UDP_HEADER_LEN)
 
 CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 				CNetworkLayer	*pNetworkLayer,

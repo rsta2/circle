@@ -29,6 +29,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/tcpconnection.h>
+#include <circle/net/sizes.h>
 #include <circle/net/error.h>
 #include <circle/macros.h>
 #include <circle/util.h>
@@ -40,10 +41,12 @@
 
 #define TCP_MAX_CONNECTIONS		1000	// maximum number of active TCP connections
 
-#define MSS_R				1480	// maximum segment size to be received from network layer
-#define MSS_S				1480	// maximum segment size to be send to network layer
+					// maximum segment size to be received from network layer
+#define TCP_MSS_R			(ETH_MAX_LEN - ETH_HEADER_LEN - IP_HEADER_LEN)
+					// maximum segment size to be send to network layer
+#define TCP_MSS_S			(ETH_MAX_LEN - ETH_HEADER_LEN - IP_HEADER_LEN)
 
-#define TCP_CONFIG_MSS			(MSS_R - 20)
+#define TCP_CONFIG_MSS			(TCP_MSS_R - TCP_HEADER_LEN)
 #define TCP_CONFIG_WINDOW		(TCP_CONFIG_MSS * 10)
 
 #define TCP_CONFIG_TX_THRESHOLD		0x10000	// TX stops, if this number of bytes is queued
@@ -81,7 +84,7 @@ struct TTCPHeader
 }
 PACKED;
 
-#define TCP_HEADER_SIZE		20		// valid for normal data segments without TCP options
+ASSERT_STATIC (sizeof (TTCPHeader) == TCP_HEADER_LEN);
 
 struct TTCPOption
 {
@@ -1582,6 +1585,7 @@ void CTCPConnection::ScanOptions (TTCPHeader *pHeader)
 	assert (pHeader != 0);
 	unsigned nDataOffset = TCP_DATA_OFFSET (pHeader->nDataOffsetFlags)*4;
 	u8 *pHeaderEnd = (u8 *) pHeader+nDataOffset;
+	u16 nFlags = pHeader->nDataOffsetFlags;
 
 	TTCPOption *pOption = (TTCPOption *) pHeader->Options;
 	while ((u8 *) pOption+2 <= pHeaderEnd)
@@ -1602,9 +1606,10 @@ void CTCPConnection::ScanOptions (TTCPHeader *pHeader)
 				u32 nMSS = (u16) pOption->Data[0] << 8 | pOption->Data[1];
 
 				// RFC 1122 section 4.2.2.6
-				nMSS = min (nMSS+20, MSS_S) - TCP_HEADER_SIZE - IP_OPTION_SIZE;
+				nMSS = min (nMSS+20, TCP_MSS_S) - TCP_HEADER_LEN - IP_OPTION_SIZE;
 
-				if (nMSS >= 10)		// self provided sanity check
+				if (   (nFlags & TCP_FLAG_SYN)	// accept in SYN segment only
+				    && nMSS >= 10)		// self provided sanity check
 				{
 					m_nSND_MSS = (u16) nMSS;
 

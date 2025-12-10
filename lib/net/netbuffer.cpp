@@ -18,19 +18,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/netbuffer.h>
+#include <circle/net/sizes.h>
 #include <circle/logger.h>
 #include <circle/string.h>
 #include <circle/debug.h>
 #include <circle/util.h>
 #include <assert.h>
-
-// Various header lengths
-#define ETHERNET_HEADER_LEN	(6+6+2)
-#define IP_HEADER_LEN		(5*4)		// no option
-#define IP_RA_HEADER_LEN	(5*4+4)		// with Router Alert option
-#define TCP_HEADER_LEN		(5*4)		// no option
-#define TCP_MSS_HEADER_LEN	(5*4+4)		// with MSS option
-#define UDP_HEADER_LEN		(2*4)		// no option
 
 LOGMODULE ("netbuf");
 
@@ -50,23 +43,23 @@ CNetBuffer::CNetBuffer (TPurpose Purpose, size_t ulLength, const void *pBuffer)
 		break;
 
 	case TCPSend:
-		m_pHead += ETHERNET_HEADER_LEN + IP_HEADER_LEN + TCP_HEADER_LEN;
+		m_pHead += ETH_HEADER_LEN + IP_HEADER_LEN + TCP_HEADER_LEN;
 		break;
 
 	case TCPSendMSS:
-		m_pHead += ETHERNET_HEADER_LEN + IP_HEADER_LEN + TCP_MSS_HEADER_LEN;
+		m_pHead += ETH_HEADER_LEN + IP_HEADER_LEN + TCP_MSS_HEADER_LEN;
 		break;
 
 	case UDPSend:
-		m_pHead += ETHERNET_HEADER_LEN + IP_HEADER_LEN + UDP_HEADER_LEN;
+		m_pHead += ETH_HEADER_LEN + IP_HEADER_LEN + UDP_HEADER_LEN;
 		break;
 
 	case ICMPSend:
-		m_pHead += ETHERNET_HEADER_LEN + IP_HEADER_LEN;
+		m_pHead += ETH_HEADER_LEN + IP_HEADER_LEN;
 		break;
 
 	case IGMPSend:
-		m_pHead += ETHERNET_HEADER_LEN + IP_RA_HEADER_LEN;
+		m_pHead += ETH_HEADER_LEN + IP_RA_HEADER_LEN;
 		break;
 	}
 

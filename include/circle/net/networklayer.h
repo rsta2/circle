@@ -29,6 +29,7 @@
 #include <circle/net/icmphandler.h>
 #include <circle/net/igmphandler.h>
 #include <circle/net/routecache.h>
+#include <circle/net/sizes.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -59,6 +60,8 @@ struct TIPHeader
 #define IP_OPTION_SIZE		0	// not used so far
 }
 PACKED;
+
+ASSERT_STATIC (sizeof (TIPHeader) == IP_HEADER_LEN);
 
 struct TNetworkPrivateData
 {
