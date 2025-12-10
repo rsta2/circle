@@ -34,6 +34,8 @@ struct TUDPHeader
 }
 PACKED;
 
+#define UDP_CONFIG_MSS		(1500 - 20 - sizeof (TUDPHeader))
+
 struct TUDPPrivateData
 {
 	u8	SourceAddress[IP_ADDRESS_SIZE];
@@ -53,6 +55,7 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 	m_pHostGroup (0),
 	m_nErrno (0)
 {
+	m_nMSS = UDP_CONFIG_MSS;
 }
 
 CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
@@ -66,6 +69,7 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 	m_pHostGroup (0),
 	m_nErrno (0)
 {
+	m_nMSS = UDP_CONFIG_MSS;
 }
 
 CUDPConnection::~CUDPConnection (void)

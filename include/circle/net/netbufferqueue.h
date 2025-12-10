@@ -31,20 +31,29 @@ public:
 	~CNetBufferQueue (void);
 
 	boolean IsEmpty (void) const;
+	unsigned GetNumEntries (void) const;
+	size_t GetBytesQueued (void) const;
 
-	void Flush (void);
+	void Flush (size_t ulBytes = -1);	// -1 to flush complete queue
 
 	void Enqueue (CNetBuffer *pNetBuffer);
 
 	// returns nullptr if queue is empty
 	CNetBuffer *Dequeue (void);
 
-	// returns first entry without dequeuing
-	CNetBuffer *Peek (void) const;
+	// returns entry without dequeuing
+	const CNetBuffer *Peek (void) const;
+	// modify peek position
+	void Rewind (void);
+	void MoveOn (void);
 
 private:
 	CNetBuffer *volatile m_pFirst;
 	CNetBuffer *volatile m_pLast;
+	unsigned m_nEntries;
+	size_t m_ulBytes;
+
+	CNetBuffer *volatile m_pPeekHead;
 
 	boolean m_bProtected;
 	CSpinLock m_SpinLock;

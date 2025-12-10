@@ -43,7 +43,7 @@ public:
 	// ulLength bytes at pBuffer will be copied into the net buffer (if specified)
 	// or ulLength bytes will be reserved for Receive net buffer
 	CNetBuffer (TPurpose Purpose, size_t ulLength = 0, const void *pBuffer = nullptr);
-	CNetBuffer (CNetBuffer &rNetBuffer);	// Clone net buffer
+	CNetBuffer (const CNetBuffer &rNetBuffer);	// Clone net buffer
 	~CNetBuffer (void);
 
 	void *GetPtr (void) const;		// Pointer to current net buffer head

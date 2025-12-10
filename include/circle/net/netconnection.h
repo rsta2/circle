@@ -47,6 +47,7 @@ public:
 	u16 GetForeignPort (void) const;
 	u16 GetOwnPort (void) const;
 	int GetProtocol (void) const;
+	u16 GetMSS (void) const;
 
 	// returns: string representation for current connection state
 	virtual const char *GetStateName (void) const;
@@ -102,6 +103,7 @@ protected:
 	u16 m_nForeignPort;
 	u16 m_nOwnPort;
 	int m_nProtocol;
+	u16 m_nMSS;
 
 	CChecksumCalculator m_Checksum;
 };

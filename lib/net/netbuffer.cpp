@@ -79,7 +79,7 @@ CNetBuffer::CNetBuffer (TPurpose Purpose, size_t ulLength, const void *pBuffer)
 	}
 }
 
-CNetBuffer::CNetBuffer (CNetBuffer &rNetBuffer)
+CNetBuffer::CNetBuffer (const CNetBuffer &rNetBuffer)
 :	m_pNext (nullptr),
 	m_Purpose (rNetBuffer.m_Purpose),
 	m_bValid (rNetBuffer.m_bValid),
@@ -88,7 +88,6 @@ CNetBuffer::CNetBuffer (CNetBuffer &rNetBuffer)
 	m_ulPrivateDataLength (rNetBuffer.m_ulPrivateDataLength)
 {
 	assert (m_bValid);
-	assert (!rNetBuffer.m_pNext);	// not enqueued
 
 	assert (m_pHead >= m_Buffer);
 	assert (m_pHead + m_ulLength <= m_Buffer + BufferSize);

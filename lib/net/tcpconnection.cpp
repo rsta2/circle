@@ -46,7 +46,7 @@
 #define TCP_CONFIG_MSS			(MSS_R - 20)
 #define TCP_CONFIG_WINDOW		(TCP_CONFIG_MSS * 10)
 
-#define TCP_CONFIG_RETRANS_BUFFER_SIZE	0x10000	// should be greater than maximum send window size
+#define TCP_CONFIG_TX_THRESHOLD		0x10000	// TX stops, if this number of bytes is queued
 
 #define TCP_MAX_WINDOW			((u16) -1)	// without Window extension option
 #define TCP_QUIET_TIME			30	// seconds after crash before another connection starts
@@ -151,7 +151,6 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_bActiveOpen (TRUE),
 	m_State (TCPStateClosed),
 	m_nErrno (0),
-	m_RetransmissionQueue (TCP_CONFIG_RETRANS_BUFFER_SIZE),
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
@@ -167,6 +166,8 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nReceiveTimeout (0),
 	m_nSendTimeout (0)
 {
+	m_nMSS = m_nSND_MSS;
+
 	s_nConnections++;
 
 	for (unsigned nTimer = TCPTimerUser; nTimer < TCPTimerUnknown; nTimer++)
@@ -196,7 +197,6 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_bActiveOpen (FALSE),
 	m_State (TCPStateListen),
 	m_nErrno (0),
-	m_RetransmissionQueue (TCP_CONFIG_RETRANS_BUFFER_SIZE),
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
@@ -212,6 +212,8 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nReceiveTimeout (0),
 	m_nSendTimeout (0)
 {
+	m_nMSS = m_nSND_MSS;
+
 	s_nConnections++;
 
 	for (unsigned nTimer = TCPTimerUser; nTimer < TCPTimerUnknown; nTimer++)
@@ -400,7 +402,7 @@ int CTCPConnection::Send (CNetBuffer *pNetBuffer, int nFlags)
 	}
 	
 	if (   !(nFlags & MSG_DONTWAIT)
-	    && !m_TxQueue.IsEmpty ())
+	    && m_TxQueue.GetBytesQueued () >= TCP_CONFIG_TX_THRESHOLD)
 	{
 		m_TxEvent.Clear ();
 
@@ -601,8 +603,7 @@ void CTCPConnection::Process (void)
 	case TCPStateCloseWait:
 	case TCPStateClosing:
 	case TCPStateLastAck:
-		if (   m_RetransmissionQueue.IsEmpty ()
-		    && m_TxQueue.IsEmpty ()
+		if (   m_TxQueue.IsEmpty ()
 		    && m_bFINQueued)
 		{
 			SendSegment (TCP_FLAG_FIN | TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
@@ -615,27 +616,10 @@ void CTCPConnection::Process (void)
 		break;
 	}
 
-	CNetBuffer *pNetBuffer;
-	unsigned nLength;
-	while (   (pNetBuffer = m_TxQueue.Peek ()) != 0
-	       && (nLength = pNetBuffer->GetLength ()) <= m_RetransmissionQueue.GetFreeSpace ())
-	{
-		pNetBuffer = m_TxQueue.Dequeue ();
-		assert (pNetBuffer != 0);
-
-#ifdef TCP_DEBUG
-		CLogger::Get ()->Write (FromTCP, LogDebug, "Transfering %u bytes into RT buffer", nLength);
-#endif
-
-		m_RetransmissionQueue.Write (pNetBuffer->GetPtr (), nLength);
-
-		delete pNetBuffer;
-	}
-
 	// pacing transmit
 	if (   (   m_State == TCPStateEstablished
 		|| m_State == TCPStateCloseWait)
-	    && m_TxQueue.IsEmpty ())
+	    && m_TxQueue.GetBytesQueued () < TCP_CONFIG_TX_THRESHOLD)
 	{
 		m_TxEvent.Set ();
 	}
@@ -646,36 +630,40 @@ void CTCPConnection::Process (void)
 		CLogger::Get ()->Write (FromTCP, LogDebug, "Retransmission (nxt %u, una %u)", m_nSND_NXT-m_nISS, m_nSND_UNA-m_nISS);
 #endif
 		m_bRetransmit = FALSE;
-		m_RetransmissionQueue.Reset ();
+		m_TxQueue.Rewind ();
 		m_nSND_NXT = m_nSND_UNA;
 	}
 
-	u32 nBytesAvail;
-	u32 nWindowLeft;
-	while (   (nBytesAvail = m_RetransmissionQueue.GetBytesAvailable ()) > 0
-	       && (nWindowLeft = m_nSND_UNA+m_nSND_WND-m_nSND_NXT) > 0)
+	const CNetBuffer *pNetBuffer;
+	while ((pNetBuffer = m_TxQueue.Peek ()) != 0)
 	{
-		nLength = min (nBytesAvail, nWindowLeft);
-		nLength = min (nLength, m_nSND_MSS);
+		u32 nWindowLeft = m_nSND_UNA+m_nSND_WND-m_nSND_NXT;
+		u32 nLength = pNetBuffer->GetLength ();
+		assert (nLength <= m_nSND_MSS);
+		if (nWindowLeft < nLength)
+		{
+			break;
+		}
 
 #ifdef TCP_DEBUG
 		CLogger::Get ()->Write (FromTCP, LogDebug, "Transfering %u bytes into TX buffer", nLength);
 #endif
 
-		u8 TempBuffer[FRAME_BUFFER_SIZE];
-		assert (nLength <= FRAME_BUFFER_SIZE);
-		m_RetransmissionQueue.Read (TempBuffer, nLength);
-
 		unsigned nFlags = TCP_FLAG_ACK;
-		if (m_TxQueue.IsEmpty ())
+		if (m_TxQueue.GetBytesQueued () < TCP_CONFIG_TX_THRESHOLD)
 		{
 			nFlags |= TCP_FLAG_PUSH;
 		}
 
-		SendSegment (nFlags, m_nSND_NXT, m_nRCV_NXT, TempBuffer, nLength);
+		CNetBuffer *pNetBuffer2 = new CNetBuffer (*pNetBuffer);
+		assert (pNetBuffer2 != 0);
+
+		SendSegment (nFlags, m_nSND_NXT, m_nRCV_NXT, pNetBuffer2);
 		m_RTOCalculator.SegmentSent (m_nSND_NXT, nLength);
 		m_nSND_NXT += nLength;
 		StartTimer (TCPTimerRetransmission, m_RTOCalculator.GetRTO ());
+
+		m_TxQueue.MoveOn ();
 	}
 }
 
@@ -911,7 +899,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 
 				if (nSEG_ACK-m_nSND_UNA > 1)
 				{
-					m_RetransmissionQueue.Advance (nSEG_ACK-m_nSND_UNA-1);
+					m_TxQueue.Flush (nSEG_ACK-m_nSND_UNA-1);
 				}
 
 				m_nSND_UNA = nSEG_ACK;
@@ -1029,7 +1017,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			switch (m_State)
 			{
 			case TCPStateSynReceived:
-				m_RetransmissionQueue.Flush ();
+				m_TxQueue.Flush ();
 				if (!m_bActiveOpen)
 				{
 					NEW_STATE (TCPStateListen);
@@ -1056,7 +1044,6 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			case TCPStateFinWait2:
 			case TCPStateCloseWait:
 				m_nErrno = -NET_ERROR_CONNECTION_RESET;
-				m_RetransmissionQueue.Flush ();
 				m_TxQueue.Flush ();
 				m_RxQueue.Flush ();
 				NEW_STATE (TCPStateClosed);
@@ -1103,7 +1090,6 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			
 			SendSegment (TCP_FLAG_RESET, m_nSND_NXT);
 			m_nErrno = -NET_ERROR_PROTOCOL_ERROR;
-			m_RetransmissionQueue.Flush ();
 			m_TxQueue.Flush ();
 			m_RxQueue.Flush ();
 			NEW_STATE (TCPStateClosed);
@@ -1182,7 +1168,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 				
 				if (nBytesAck > 0)
 				{
-					m_RetransmissionQueue.Advance (nBytesAck);
+					m_TxQueue.Flush (nBytesAck);
 				}
 
 				// update send window
@@ -1245,7 +1231,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 				// fall through
 
 			case TCPStateFinWait2:
-				if (m_RetransmissionQueue.IsEmpty ())
+				if (m_TxQueue.IsEmpty ())
 				{
 					m_Event.Set ();
 				}
@@ -1505,7 +1491,7 @@ CNetConnection::TStatus CTCPConnection::GetStatus (void) const
 	}
 
 	if (   m_nErrno < 0
-	    || m_TxQueue.IsEmpty ())
+	    || m_TxQueue.GetBytesQueued () < TCP_CONFIG_TX_THRESHOLD)
 	{
 		Status.bTxReady = TRUE;
 	}
@@ -1514,7 +1500,7 @@ CNetConnection::TStatus CTCPConnection::GetStatus (void) const
 }
 
 boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber,
-				     const void *pData, unsigned nDataLength)
+				     CNetBuffer *pNetBuffer)
 {
 	CNetBuffer::TPurpose Purpose = CNetBuffer::TCPSend;
 
@@ -1522,29 +1508,28 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 	assert (nDataOffset * 4 == sizeof (TTCPHeader));
 	if (nFlags & TCP_FLAG_SYN)
 	{
-		assert (nDataLength == 0);
+		assert (pNetBuffer == 0);
 
 		Purpose = CNetBuffer::TCPSendMSS;
 
 		nDataOffset++;
 	}
 	unsigned nHeaderLength = nDataOffset * 4;
-	
-	unsigned nPacketLength = nHeaderLength + nDataLength;		// may wrap
-	assert (nPacketLength >= nHeaderLength);
-	assert (nHeaderLength <= FRAME_BUFFER_SIZE);
 
-	CNetBuffer *pNetBuffer;
-	if (nDataLength > 0)
+	unsigned nDataLength = 0;
+	if (pNetBuffer != 0)
 	{
-		assert (pData != 0);
-		pNetBuffer = new CNetBuffer (Purpose, nDataLength, pData);
+		nDataLength = pNetBuffer->GetLength ();
+		assert (nDataLength <= m_nSND_MSS);
 	}
 	else
 	{
 		pNetBuffer = new CNetBuffer (Purpose);
 	}
 	assert (pNetBuffer != 0);
+
+	unsigned nPacketLength = nHeaderLength + nDataLength;
+	assert (nPacketLength >= nHeaderLength);
 
 	TTCPHeader *pHeader = (TTCPHeader *) pNetBuffer->AddHeader (nHeaderLength);
 
@@ -1618,6 +1603,8 @@ void CTCPConnection::ScanOptions (TTCPHeader *pHeader)
 				if (nMSS >= 10)		// self provided sanity check
 				{
 					m_nSND_MSS = (u16) nMSS;
+
+					m_nMSS = m_nSND_MSS;
 				}
 			}
 			// fall through

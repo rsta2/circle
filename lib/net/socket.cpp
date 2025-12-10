@@ -24,8 +24,6 @@
 #include <circle/util.h>
 #include <assert.h>
 
-#define PAYLOAD_MAX	1460	// worst case is TCP (1500 - 20 - 20)
-
 CSocket::CSocket (CNetSubSystem *pNetSubSystem, int nProtocol)
 :	CNetSocket (pNetSubSystem),
 	m_pNetConfig (pNetSubSystem->GetConfig ()),
@@ -245,20 +243,21 @@ int CSocket::Send (const void *pBuffer, unsigned nLength, int nFlags)
 	{
 		return -NET_ERROR_INVALID_VALUE;
 	}
-	
-	if (   nLength > PAYLOAD_MAX
+
+	assert (m_pTransportLayer != 0);
+	u16 nMSS = m_pTransportLayer->GetMSS (m_hConnection);
+	if (   nLength > nMSS
 	    && m_nProtocol == IPPROTO_UDP)
 	{
 		return -NET_ERROR_INVALID_VALUE;
 	}
 
-	assert (m_pTransportLayer != 0);
 	assert (pBuffer != 0);
 	const u8 *p = (const u8 *) pBuffer;
 	unsigned nRemaining = nLength;
 	while (nRemaining > 0)
 	{
-		unsigned nPayload = nRemaining <= PAYLOAD_MAX ? nRemaining : PAYLOAD_MAX;
+		unsigned nPayload = nRemaining <= nMSS ? nRemaining : nMSS;
 		CNetBuffer *pNetBuffer = new CNetBuffer (  m_nProtocol == IPPROTO_TCP
 							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
 							 nPayload, p);
@@ -323,7 +322,9 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 		return -NET_ERROR_INVALID_VALUE;
 	}
 	
-	if (   nLength > PAYLOAD_MAX
+	assert (m_pTransportLayer != 0);
+	u16 nMSS = m_pTransportLayer->GetMSS (m_hConnection);
+	if (   nLength > nMSS
 	    && m_nProtocol == IPPROTO_UDP)
 	{
 		return -NET_ERROR_INVALID_VALUE;
@@ -341,13 +342,12 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 		return -NET_ERROR_INVALID_VALUE;
 	}
 
-	assert (m_pTransportLayer != 0);
 	assert (pBuffer != 0);
 	const u8 *p = (const u8 *) pBuffer;
 	unsigned nRemaining = nLength;
 	while (nRemaining > 0)
 	{
-		unsigned nPayload = nRemaining <= PAYLOAD_MAX ? nRemaining : PAYLOAD_MAX;
+		unsigned nPayload = nRemaining <= nMSS ? nRemaining : nMSS;
 		CNetBuffer *pNetBuffer = new CNetBuffer (  m_nProtocol == IPPROTO_TCP
 							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
 							 nPayload, p);

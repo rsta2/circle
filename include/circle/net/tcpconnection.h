@@ -27,7 +27,6 @@
 #include <circle/net/netbuffer.h>
 #include <circle/net/netbufferqueue.h>
 #include <circle/net/netqueue.h>
-#include <circle/net/retransmissionqueue.h>
 #include <circle/net/retranstimeoutcalc.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/timer.h>
@@ -113,7 +112,7 @@ public:
 
 private:
 	boolean SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber = 0,
-			     const void *pData = 0, unsigned nDataLength = 0);
+			     CNetBuffer *pData = 0);
 
 	void ScanOptions (TTCPHeader *pHeader);
 	
@@ -139,7 +138,6 @@ private:
 	CNetBufferQueue m_TxQueue;
 	CNetBufferQueue m_RxQueue;
 
-	CRetransmissionQueue m_RetransmissionQueue;
 	volatile boolean m_bRetransmit;		// reset m_RetransmissionQueue and send
 	volatile boolean m_bSendSYN;		// send SYN when in TCPStateSynSent or TCPStateSynReceived
 	volatile boolean m_bFINQueued;		// send FIN when TX and retransmission queues are empty

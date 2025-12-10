@@ -23,6 +23,9 @@
 CNetBufferQueue::CNetBufferQueue (boolean bProtected)
 :	m_pFirst (nullptr),
 	m_pLast (nullptr),
+	m_nEntries (0),
+	m_ulBytes (0),
+	m_pPeekHead (nullptr),
 	m_bProtected (bProtected),
 	m_SpinLock (TASK_LEVEL)
 {
@@ -38,9 +41,19 @@ boolean CNetBufferQueue::IsEmpty (void) const
 	return !m_pFirst;
 }
 
-void CNetBufferQueue::Flush (void)
+unsigned CNetBufferQueue::GetNumEntries (void) const
 {
-	while (m_pFirst)
+	return m_nEntries;
+}
+
+size_t CNetBufferQueue::GetBytesQueued (void) const
+{
+	return m_ulBytes;
+}
+
+void CNetBufferQueue::Flush (size_t ulBytes)
+{
+	while (m_pFirst && ulBytes)
 	{
 		if (m_bProtected)
 		{
@@ -48,6 +61,19 @@ void CNetBufferQueue::Flush (void)
 		}
 
 		CNetBuffer *pEntry = m_pFirst;
+
+		size_t ulLength = pEntry->GetLength ();
+		if (ulLength > ulBytes)
+		{
+			if (m_bProtected)
+			{
+				m_SpinLock.Release ();
+			}
+
+			break;
+		}
+
+		ulBytes -= ulLength;
 
 		m_pFirst = pEntry->m_pNext;
 		if (!m_pFirst)
@@ -57,6 +83,17 @@ void CNetBufferQueue::Flush (void)
 		}
 
 		pEntry->m_pNext = nullptr;
+
+		assert (m_nEntries);
+		m_nEntries--;
+
+		assert (m_ulBytes >= ulLength);
+		m_ulBytes -= ulLength;
+
+		if (m_pPeekHead == pEntry)
+		{
+			m_pPeekHead = m_pFirst;
+		}
 
 		if (m_bProtected)
 		{
@@ -71,6 +108,8 @@ void CNetBufferQueue::Enqueue (CNetBuffer *pNetBuffer)
 {
 	assert (pNetBuffer);
 	assert (!pNetBuffer->m_pNext);
+
+	size_t ulLength = pNetBuffer->GetLength ();
 
 	if (m_bProtected)
 	{
@@ -89,6 +128,14 @@ void CNetBufferQueue::Enqueue (CNetBuffer *pNetBuffer)
 	}
 
 	m_pLast = pNetBuffer;
+
+	m_nEntries++;
+	m_ulBytes += ulLength;
+
+	if (!m_pPeekHead)
+	{
+		m_pPeekHead = pNetBuffer;
+	}
 
 	if (m_bProtected)
 	{
@@ -115,6 +162,18 @@ CNetBuffer *CNetBufferQueue::Dequeue (void)
 
 		pEntry->m_pNext = nullptr;
 
+		assert (m_nEntries);
+		m_nEntries--;
+
+		size_t ulLength = pEntry->GetLength ();
+		assert (m_ulBytes >= ulLength);
+		m_ulBytes -= ulLength;
+
+		if (m_pPeekHead == pEntry)
+		{
+			m_pPeekHead = m_pFirst;
+		}
+
 		if (m_bProtected)
 		{
 			m_SpinLock.Release ();
@@ -124,7 +183,30 @@ CNetBuffer *CNetBufferQueue::Dequeue (void)
 	return pEntry;
 }
 
-CNetBuffer *CNetBufferQueue::Peek (void) const
+const CNetBuffer *CNetBufferQueue::Peek (void) const
 {
-	return m_pFirst;
+	return m_pPeekHead;
+}
+
+void CNetBufferQueue::Rewind (void)
+{
+	m_pPeekHead = m_pFirst;
+}
+
+void CNetBufferQueue::MoveOn (void)
+{
+	if (m_bProtected)
+	{
+		m_SpinLock.Acquire ();
+	}
+
+	if (m_pPeekHead)
+	{
+		m_pPeekHead = m_pPeekHead->m_pNext;
+	}
+
+	if (m_bProtected)
+	{
+		m_SpinLock.Release ();
+	}
 }

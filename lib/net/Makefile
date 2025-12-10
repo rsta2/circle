@@ -24,7 +24,7 @@ OBJS	= netsubsystem.o nettask.o netsocket.o socket.o \
 	  transportlayer.o networklayer.o linklayer.o netdevlayer.o phytask.o arphandler.o \
 	  icmphandler.o igmphandler.o routecache.o \
 	  netconnection.o udpconnection.o \
-	  tcpconnection.o retransmissionqueue.o retranstimeoutcalc.o tcprejector.o \
+	  tcpconnection.o retranstimeoutcalc.o tcprejector.o \
 	  netconfig.o ipaddress.o netbuffer.o netbufferqueue.o netqueue.o checksumcalculator.o \
 	  dnsclient.o ntpclient.o mqttclient.o mqttsendpacket.o mqttreceivepacket.o \
 	  dhcpclient.o ntpdaemon.o httpdaemon.o httpclient.o tftpdaemon.o syslogdaemon.o \
