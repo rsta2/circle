@@ -28,6 +28,7 @@ CLinkLayer::CLinkLayer (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer)
 	m_pNetDevLayer (pNetDevLayer),
 	m_pNetworkLayer (0),
 	m_pARPHandler (0),
+	m_IPRxQueue (TRUE),
 	m_nRawProtocolType (0)
 {
 	assert (m_pNetConfig != 0);

@@ -32,6 +32,7 @@ CNetDeviceLayer::CNetDeviceLayer (CNetConfig *pNetConfig, TNetDeviceType DeviceT
 :	m_DeviceType (DeviceType),
 	m_pNetConfig (pNetConfig),
 	m_pDevice (0),
+	m_TxQueue (TRUE),
 	m_pRxBuffer (new CNetBuffer (CNetBuffer::Receive, FRAME_BUFFER_SIZE))
 {
 }

@@ -344,7 +344,7 @@ void CNetworkLayer::EnableReceiveICMP (boolean bEnable)
 	{
 		if (m_pICMPRxQueue2 == 0)
 		{
-			m_pICMPRxQueue2 = new CNetBufferQueue;
+			m_pICMPRxQueue2 = new CNetBufferQueue (TRUE);
 			assert (m_pICMPRxQueue2 != 0);
 		}
 	}
@@ -352,12 +352,6 @@ void CNetworkLayer::EnableReceiveICMP (boolean bEnable)
 	{
 		if (m_pICMPRxQueue2 != 0)
 		{
-			CNetBuffer *pNetBuffer;
-			while ((pNetBuffer = m_pICMPRxQueue2->Dequeue ()) != 0)
-			{
-				delete pNetBuffer;
-			}
-
 			delete m_pICMPRxQueue2;
 			m_pICMPRxQueue2 = 0;
 		}
