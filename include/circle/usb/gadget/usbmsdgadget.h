@@ -28,6 +28,7 @@
 #include <circle/interrupt.h>
 #include <circle/device.h>
 #include <circle/synchronize.h>
+#include <circle/sysconfig.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -141,9 +142,13 @@ class CUSBMSDGadget : public CDWUSBGadget	/// USB mass storage device gadget
 public:
 	/// \param pInterruptSystem Pointer to the interrupt system object
 	/// \param pDevice Pointer to the block device, to be controlled by this gadget
+	/// \param usVendorID USB vendor ID of the gadget
+	/// \param usProductID USB product ID of the gadget
 	/// \note pDevice must be initialized yet, when it is specified here.
 	/// \note SetDevice() has to be called later, when pDevice is not specified here.
-	CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice = nullptr);
+	CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice = nullptr,
+		       u16 usVendorID = USB_GADGET_VENDOR_ID,
+		       u16 usProductID = USB_GADGET_DEVICE_ID_MSD);
 
 	~CUSBMSDGadget (void);
 
@@ -213,7 +218,7 @@ private:
 	u8 m_StringDescriptorBuffer[80];
 
 private:
-	static const TUSBDeviceDescriptor s_DeviceDescriptor;
+	static TUSBDeviceDescriptor s_DeviceDescriptor;
 
 	struct TUSBMSTGadgetConfigurationDescriptor
 	{

@@ -31,7 +31,7 @@
 #define MLOGERR(From,...)		CLogger::Get ()->Write (From, LogError,__VA_ARGS__)
 #define DEFAULT_BLOCKS 16000
 
-const TUSBDeviceDescriptor CUSBMSDGadget::s_DeviceDescriptor =
+TUSBDeviceDescriptor CUSBMSDGadget::s_DeviceDescriptor =
 {
 	sizeof (TUSBDeviceDescriptor),
 	DESCRIPTOR_DEVICE,
@@ -93,11 +93,14 @@ const char *const CUSBMSDGadget::s_StringDescriptor[] =
 	"Mass Storage Gadget"
 };
 
-CUSBMSDGadget::CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice)
+CUSBMSDGadget::CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice,
+			      u16 usVendorID, u16 usProductID)
 :	CDWUSBGadget (pInterruptSystem, HighSpeed),
 	m_pDevice (pDevice),
 	m_pEP {nullptr, nullptr, nullptr}
 {
+	s_DeviceDescriptor.idVendor = usVendorID;
+	s_DeviceDescriptor.idProduct = usProductID;
 	if(pDevice)SetDevice(pDevice);
 }
 

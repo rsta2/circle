@@ -19,10 +19,9 @@
 //
 #include <circle/usb/gadget/usbmidigadget.h>
 #include <circle/usb/gadget/usbmidigadgetendpoint.h>
-#include <circle/sysconfig.h>
 #include <assert.h>
 
-const TUSBDeviceDescriptor CUSBMIDIGadget::s_DeviceDescriptor =
+TUSBDeviceDescriptor CUSBMIDIGadget::s_DeviceDescriptor =
 {
 	sizeof (TUSBDeviceDescriptor),
 	DESCRIPTOR_DEVICE,
@@ -166,11 +165,13 @@ const char *const CUSBMIDIGadget::s_StringDescriptor[] =
 	"MIDI Gadget"
 };
 
-CUSBMIDIGadget::CUSBMIDIGadget (CInterruptSystem *pInterruptSystem)
+CUSBMIDIGadget::CUSBMIDIGadget (CInterruptSystem *pInterruptSystem, u16 usVendorID, u16 usProductID)
 :	CDWUSBGadget (pInterruptSystem, HighSpeed),
 	m_pInterface (nullptr),
 	m_pEP {nullptr, nullptr, nullptr}
 {
+	s_DeviceDescriptor.idVendor = usVendorID;
+	s_DeviceDescriptor.idProduct = usProductID;
 }
 
 CUSBMIDIGadget::~CUSBMIDIGadget (void)

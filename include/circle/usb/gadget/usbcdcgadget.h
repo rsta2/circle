@@ -27,6 +27,7 @@
 #include <circle/usb/usbserial.h>
 #include <circle/usb/usb.h>
 #include <circle/interrupt.h>
+#include <circle/sysconfig.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -61,7 +62,11 @@ class CUSBCDCGadget : public CDWUSBGadget	/// USB serial CDC gadget
 {
 public:
 	/// \param pInterruptSystem Pointer to the interrupt system object
-	CUSBCDCGadget (CInterruptSystem *pInterruptSystem);
+	/// \param usVendorID USB vendor ID of the gadget
+	/// \param usProductID USB product ID of the gadget
+	CUSBCDCGadget (CInterruptSystem *pInterruptSystem,
+		       u16 usVendorID = USB_GADGET_VENDOR_ID,
+		       u16 usProductID = USB_GADGET_DEVICE_ID_SERIAL_CDC);
 
 	~CUSBCDCGadget (void);
 
@@ -103,7 +108,7 @@ private:
 	u8 m_StringDescriptorBuffer[80];
 
 private:
-	static const TUSBDeviceDescriptor s_DeviceDescriptor;
+	static TUSBDeviceDescriptor s_DeviceDescriptor;
 
 	struct TUSBCDCGadgetConfigurationDescriptor
 	{

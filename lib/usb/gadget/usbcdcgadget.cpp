@@ -21,10 +21,9 @@
 //
 #include <circle/usb/gadget/usbcdcgadget.h>
 #include <circle/usb/gadget/usbcdcgadgetendpoint.h>
-#include <circle/sysconfig.h>
 #include <assert.h>
 
-const TUSBDeviceDescriptor CUSBCDCGadget::s_DeviceDescriptor =
+TUSBDeviceDescriptor CUSBCDCGadget::s_DeviceDescriptor =
 {
 	sizeof (TUSBDeviceDescriptor),
 	DESCRIPTOR_DEVICE,
@@ -131,11 +130,13 @@ const char *const CUSBCDCGadget::s_StringDescriptor[] =
 	"CDC Gadget"
 };
 
-CUSBCDCGadget::CUSBCDCGadget (CInterruptSystem *pInterruptSystem)
+CUSBCDCGadget::CUSBCDCGadget (CInterruptSystem *pInterruptSystem, u16 usVendorID, u16 usProductID)
 :	CDWUSBGadget (pInterruptSystem, HighSpeed),
 	m_pInterface (nullptr),
 	m_pEP {nullptr, nullptr, nullptr, nullptr}
 {
+	s_DeviceDescriptor.idVendor = usVendorID;
+	s_DeviceDescriptor.idProduct = usProductID;
 }
 
 CUSBCDCGadget::~CUSBCDCGadget (void)
