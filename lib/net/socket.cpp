@@ -21,6 +21,7 @@
 #include <circle/net/netsubsystem.h>
 #include <circle/net/netbuffer.h>
 #include <circle/net/in.h>
+#include <circle/sched/scheduler.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -271,6 +272,8 @@ int CSocket::Send (const void *pBuffer, unsigned nLength, int nFlags)
 
 		p += nPayload;
 		nRemaining -= nPayload;
+
+		CScheduler::Get ()->Yield ();
 	}
 
 	return nLength;
@@ -362,6 +365,8 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 
 		p += nPayload;
 		nRemaining -= nPayload;
+
+		CScheduler::Get ()->Yield ();
 	}
 
 	return nLength;
