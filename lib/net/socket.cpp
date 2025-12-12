@@ -258,15 +258,24 @@ int CSocket::Send (const void *pBuffer, unsigned nLength, int nFlags)
 	unsigned nRemaining = nLength;
 	while (nRemaining > 0)
 	{
-		unsigned nPayload = nRemaining <= nMSS ? nRemaining : nMSS;
+		unsigned nPayload = nRemaining;
+		int nTempFlags = nFlags;
+		if (nRemaining > nMSS)
+		{
+			nTempFlags |= MSG_MORE;
+			nPayload = nMSS;
+		}
+
 		CNetBuffer *pNetBuffer = new CNetBuffer (  m_nProtocol == IPPROTO_TCP
 							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
 							 nPayload, p);
 		assert (pNetBuffer != 0);
 
-		int nResult = m_pTransportLayer->Send (pNetBuffer, nFlags, m_hConnection);
+		int nResult = m_pTransportLayer->Send (pNetBuffer, nTempFlags, m_hConnection);
 		if (nResult < 0)
 		{
+			delete pNetBuffer;
+
 			return nResult;
 		}
 
@@ -350,16 +359,25 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 	unsigned nRemaining = nLength;
 	while (nRemaining > 0)
 	{
-		unsigned nPayload = nRemaining <= nMSS ? nRemaining : nMSS;
+		unsigned nPayload = nRemaining;
+		int nTempFlags = nFlags;
+		if (nRemaining > nMSS)
+		{
+			nTempFlags |= MSG_MORE;
+			nPayload = nMSS;
+		}
+
 		CNetBuffer *pNetBuffer = new CNetBuffer (  m_nProtocol == IPPROTO_TCP
 							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
 							 nPayload, p);
 		assert (pNetBuffer != 0);
 
-		int nResult = m_pTransportLayer->SendTo (pNetBuffer, nFlags,
+		int nResult = m_pTransportLayer->SendTo (pNetBuffer, nTempFlags,
 							 rForeignIP, nForeignPort, m_hConnection);
 		if (nResult < 0)
 		{
+			delete pNetBuffer;
+
 			return nResult;
 		}
 

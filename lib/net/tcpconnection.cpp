@@ -50,6 +50,7 @@
 #define TCP_CONFIG_WINDOW		(TCP_CONFIG_MSS * 10)
 
 #define TCP_CONFIG_TX_THRESHOLD		0x10000	// TX stops, if this number of bytes is queued
+#define TCP_CONFIG_RX_THRESHOLD		0x10000	// kicks RX, if this number of bytes is queued
 
 #define TCP_MAX_WINDOW			((u16) -1)	// without Window extension option
 #define TCP_QUIET_TIME			30	// seconds after crash before another connection starts
@@ -381,8 +382,7 @@ int CTCPConnection::Close (void)
 
 int CTCPConnection::Send (CNetBuffer *pNetBuffer, int nFlags)
 {
-	if (   nFlags != 0
-	    && nFlags != MSG_DONTWAIT)
+	if (nFlags & ~(MSG_DONTWAIT | MSG_MORE))
 	{
 		return -NET_ERROR_INVALID_VALUE;
 	}
@@ -433,9 +433,11 @@ int CTCPConnection::Send (CNetBuffer *pNetBuffer, int nFlags)
 		}
 	}
 
+	assert (pNetBuffer != 0);
+	pNetBuffer->SetPrivateData (&nFlags, sizeof nFlags);
+
 	int nResult = pNetBuffer->GetLength ();
 
-	assert (pNetBuffer != 0);
 	m_TxQueue.Enqueue (pNetBuffer);
 
 	return nResult;
@@ -443,8 +445,7 @@ int CTCPConnection::Send (CNetBuffer *pNetBuffer, int nFlags)
 
 int CTCPConnection::Receive (CNetBuffer **ppNetBuffer, int nFlags)
 {
-	if (   nFlags != 0
-	    && nFlags != MSG_DONTWAIT)
+	if (nFlags & ~(MSG_DONTWAIT | MSG_MORE))
 	{
 		return -NET_ERROR_INVALID_VALUE;
 	}
@@ -663,7 +664,9 @@ void CTCPConnection::Process (void)
 #endif
 
 		unsigned nFlags = TCP_FLAG_ACK;
-		if (m_TxQueue.GetBytesQueued () < TCP_CONFIG_TX_THRESHOLD)
+		const int *pFlags = (const int *) pNetBuffer->GetPrivateData ();
+		assert (pFlags != 0);
+		if (!(*pFlags & MSG_MORE))
 		{
 			nFlags |= TCP_FLAG_PUSH;
 		}
@@ -1327,7 +1330,8 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 					// following ACK could be piggybacked with data
 					SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
 
-					if (nFlags & TCP_FLAG_PUSH)
+					if (   (nFlags & TCP_FLAG_PUSH)
+					    || m_RxQueue.GetBytesQueued () >= TCP_CONFIG_RX_THRESHOLD)
 					{
 						m_Event.Set ();
 					}

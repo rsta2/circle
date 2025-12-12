@@ -131,6 +131,7 @@ int CUDPConnection::Send (CNetBuffer *pNetBuffer, int nFlags)
 		return -NET_ERROR_OPERATION_NOT_SUPPORTED;
 	}
 
+	nFlags &= ~MSG_MORE;
 	if (   nFlags != 0
 	    && nFlags != MSG_DONTWAIT)
 	{
@@ -174,6 +175,8 @@ int CUDPConnection::Send (CNetBuffer *pNetBuffer, int nFlags)
 
 int CUDPConnection::Receive (CNetBuffer **ppNetBuffer, int nFlags)
 {
+	nFlags &= ~MSG_MORE;
+
 	assert (ppNetBuffer != 0);
 	do
 	{
@@ -241,6 +244,7 @@ int CUDPConnection::SendTo (CNetBuffer *pNetBuffer, int nFlags,
 		return Send (pNetBuffer, nFlags);
 	}
 
+	nFlags &= ~MSG_MORE;
 	if (   nFlags != 0
 	    && nFlags != MSG_DONTWAIT)
 	{
@@ -285,6 +289,8 @@ int CUDPConnection::SendTo (CNetBuffer *pNetBuffer, int nFlags,
 int CUDPConnection::ReceiveFrom (CNetBuffer **ppNetBuffer, int nFlags,
 				 CIPAddress *pForeignIP, u16 *pForeignPort)
 {
+	nFlags &= ~MSG_MORE;
+
 	assert (ppNetBuffer != 0);
 	do
 	{
