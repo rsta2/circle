@@ -142,6 +142,7 @@ private:
 	volatile boolean m_bSendSYN;		// send SYN when in TCPStateSynSent or TCPStateSynReceived
 	volatile boolean m_bFINQueued;		// send FIN when TX and retransmission queues are empty
 	TTCPState m_StateAfterFIN;		//	and go to this state
+	volatile boolean m_bFINSent;		// FIN was sent, do not increase m_nSND_NXT any more
 
 	volatile unsigned m_nRetransmissionCount;
 	volatile boolean m_bTimedOut;		// abort connection and close

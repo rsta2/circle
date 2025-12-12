@@ -159,6 +159,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
+	m_bFINSent (FALSE),
 	m_nRetransmissionCount (0),
 	m_bTimedOut (FALSE),
 	m_pTimer (CTimer::Get ()),
@@ -207,6 +208,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
+	m_bFINSent (FALSE),
 	m_nRetransmissionCount (0),
 	m_bTimedOut (FALSE),
 	m_pTimer (CTimer::Get ()),
@@ -615,7 +617,11 @@ void CTCPConnection::Process (void)
 		{
 			SendSegment (TCP_FLAG_FIN | TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
 			m_RTOCalculator.SegmentSent (m_nSND_NXT);
-			m_nSND_NXT++;
+			if (!m_bFINSent)
+			{
+				m_nSND_NXT++;
+				m_bFINSent = TRUE;
+			}
 			NEW_STATE (m_StateAfterFIN);
 			m_bFINQueued = FALSE;
 			StartTimer (TCPTimerRetransmission, m_RTOCalculator.GetRTO ());
@@ -1367,8 +1373,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 		}
 
 		// connection is closing
-		m_nRCV_NXT++;
-		SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
+		SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT+1);
 		
 		switch (m_State)
 		{
