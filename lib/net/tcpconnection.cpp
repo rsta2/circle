@@ -161,6 +161,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
 	m_bFINSent (FALSE),
+	m_bFINReceived (FALSE),
 	m_nRetransmissionCount (0),
 	m_bTimedOut (FALSE),
 	m_pTimer (CTimer::Get ()),
@@ -210,6 +211,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
 	m_bFINSent (FALSE),
+	m_bFINReceived (FALSE),
 	m_nRetransmissionCount (0),
 	m_bTimedOut (FALSE),
 	m_pTimer (CTimer::Get ()),
@@ -1377,7 +1379,12 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 		}
 
 		// connection is closing
-		SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT+1);
+		if (!m_bFINReceived)
+		{
+			m_nRCV_NXT++;
+			m_bFINReceived = TRUE;
+		}
+		SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
 		
 		switch (m_State)
 		{
