@@ -26,6 +26,7 @@
 #include <circle/net/icmphandler.h>
 #include <circle/net/netbuffer.h>
 #include <circle/net/netbufferqueue.h>
+#include <circle/net/reassemblyqueue.h>
 #include <circle/net/netqueue.h>
 #include <circle/net/retranstimeoutcalc.h>
 #include <circle/sched/synchronizationevent.h>
@@ -137,6 +138,7 @@ private:
 
 	CNetBufferQueue m_TxQueue;
 	CNetBufferQueue m_RxQueue;
+	CReassemblyQueue m_ReassemblyQueue;
 
 	volatile boolean m_bRetransmit;		// reset m_RetransmissionQueue and send
 	volatile boolean m_bSendSYN;		// send SYN when in TCPStateSynSent or TCPStateSynReceived

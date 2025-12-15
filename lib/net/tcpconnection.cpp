@@ -157,6 +157,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nErrno (0),
 	m_TxQueue (TRUE),
 	m_RxQueue (TRUE),
+	m_ReassemblyQueue (&m_RxQueue, TCP_CONFIG_WINDOW),
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
@@ -207,6 +208,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nErrno (0),
 	m_TxQueue (TRUE),
 	m_RxQueue (TRUE),
+	m_ReassemblyQueue (&m_RxQueue, TCP_CONFIG_WINDOW),
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
@@ -776,6 +778,8 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 	DumpStatus ();
 #endif
 
+	pPacket->RemoveHeader (nDataOffset);
+
 	boolean bAcceptable = FALSE;
 
 	// RFC 793 section 3.9 "SEGMENT ARRIVES"
@@ -841,8 +845,6 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 
 			if (nDataLength > 0)
 			{
-				assert (pPacket != 0);
-				pPacket->RemoveHeader (nDataOffset);
 				m_RxQueue.Enqueue (pPacket);
 				pPacket = 0;
 			}
@@ -972,8 +974,6 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 
 					if (nDataLength > 0)
 					{
-						assert (pPacket != 0);
-						pPacket->RemoveHeader (nDataOffset);
 						m_RxQueue.Enqueue (pPacket);
 						pPacket = 0;
 					}
@@ -1320,12 +1320,12 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			{
 				if (nDataLength > 0)
 				{
-					assert (pPacket != 0);
-					pPacket->RemoveHeader (nDataOffset);
 					m_RxQueue.Enqueue (pPacket);
 					pPacket = 0;
 
 					m_nRCV_NXT += nDataLength;
+
+					m_nRCV_NXT = m_ReassemblyQueue.Dequeue (m_nRCV_NXT);
 
 					// m_nRCV_WND should be adjusted here (section 3.7)
 
@@ -1342,6 +1342,12 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			else
 			{
 				SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
+
+				if (   nDataLength > 0
+				    && m_ReassemblyQueue.Enqueue (nSEG_SEQ, pPacket))
+				{
+					pPacket = 0;
+				}
 
 				delete pPacket;
 

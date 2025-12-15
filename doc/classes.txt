@@ -214,7 +214,7 @@ Net library
 * CNTPClient: A NTP client which gets the current time from an Internet time server.
 * CNTPDaemon: Background task which uses CNTPClient to update the system time every 15 minutes.
 * CPHYTask: Background task which continuously updates the PHY of the used net device.
-* CRetransmissionQueue: The TCP retransmission queue.
+* CReassemblyQueue: Reassembly queue for the TCP receiver.
 * CRetransmissionTimeoutCalculator: Calculates the TCP retransmission timeout according to RFC 6298.
 * CRouteCache: Caches special routes, received via ICMP redirect requests.
 * CSocket: Network application interface (socket) class.
