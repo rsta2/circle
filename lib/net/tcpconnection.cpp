@@ -1,19 +1,19 @@
 //
 // tcpconnection.cpp
 //
-// This implements RFC 793 with some changes in RFC 1122 and RFC 6298.
+// This implements RFC 793 with some changes in RFC 1122 and RFC 6298
+// and with congestion control in RFC 5681.
 //
 // Non-implemented features:
 //	dynamic receive window
 //	URG flag and urgent pointer
-//	delayed ACK
-//	queueing out-of-order TCP segments
+//	delayed ACK (not recommended any more)
 //	security/compartment
 //	precedence
 //	user timeout
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -127,6 +127,8 @@ PACKED;
 	#define UNEXPECTED_STATE()	((void) 0)
 #endif
 
+#define FLIGHT_SIZE 			(m_nSND_NXT - m_nSND_UNA)	// for congestion control
+
 unsigned CTCPConnection::s_nConnections = 0;
 
 const char *CTCPConnection::s_pStateName[] =	// must match TTCPState
@@ -172,6 +174,12 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nRCV_WND (TCP_CONFIG_WINDOW),
 	m_nIRS (0),
 	m_nSND_MSS (536),	// RFC 1122 section 4.2.2.6
+	m_nIW (4 * m_nSND_MSS),
+	m_nCWND (m_nIW),
+	m_nSSThresh (TCP_MAX_WINDOW),
+	m_nDupAckCount (0),
+	m_bFastRecovery (FALSE),
+	m_nLastSendTicks (0),
 	m_nReceiveTimeout (0),
 	m_nSendTimeout (0)
 {
@@ -223,6 +231,12 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nRCV_WND (TCP_CONFIG_WINDOW),
 	m_nIRS (0),
 	m_nSND_MSS (536),	// RFC 1122 section 4.2.2.6
+	m_nIW (4 * m_nSND_MSS),
+	m_nCWND (m_nIW),
+	m_nSSThresh (TCP_MAX_WINDOW),
+	m_nDupAckCount (0),
+	m_bFastRecovery (FALSE),
+	m_nLastSendTicks (0),
 	m_nReceiveTimeout (0),
 	m_nSendTimeout (0)
 {
@@ -583,6 +597,7 @@ void CTCPConnection::Process (void)
 		m_nErrno = -NET_ERROR_CONNECTION_TIMED_OUT;
 		NEW_STATE (TCPStateClosed);
 		m_Event.Set ();
+		m_TxEvent.Set ();
 		return;
 	}
 
@@ -648,19 +663,41 @@ void CTCPConnection::Process (void)
 		CLogger::Get ()->Write (FromTCP, LogDebug, "Retransmission (nxt %u, una %u)", m_nSND_NXT-m_nISS, m_nSND_UNA-m_nISS);
 #endif
 		m_bRetransmit = FALSE;
-		m_TxQueue.Rewind ();
-		m_nSND_NXT = m_nSND_UNA;
+
+		// congestion control (RFC 5681 section 3.1. equation (4))
+		m_nSSThresh = max (FLIGHT_SIZE / 2, 2 * m_nSND_MSS);
+		m_nCWND = m_nSND_MSS;
+		m_bFastRecovery = FALSE;
+		m_nDupAckCount = 0;
+
+		ResendSegment ();
 	}
 
-	const CNetBuffer *pNetBuffer;
-	while ((pNetBuffer = m_TxQueue.Peek ()) != 0)
+	// Restart after idle (RFC 5681 section 4.1)
+	// If connection has been idle for longer than RTO (no outstanding data and no ACKs),
+	// reduce cwnd to IW to avoid bursts.
+	if (   (m_pTimer->GetTicks () - m_nLastSendTicks) > m_RTOCalculator.GetRTO ()
+	    && FLIGHT_SIZE == 0)
 	{
-		u32 nWindowLeft = m_nSND_UNA+m_nSND_WND-m_nSND_NXT;
+		m_nCWND = min (m_nIW, m_nCWND);
+	}
+
+	while (SendNewSegment ())
+	{
+		// just loop
+	}
+}
+
+boolean CTCPConnection::SendNewSegment (u32 nAdditionalCWND)
+{
+	const CNetBuffer *pNetBuffer;
+	if ((pNetBuffer = m_TxQueue.Peek ()) != 0)
+	{
+		int nWindowLeft = min (m_nCWND + nAdditionalCWND, m_nSND_WND) - FLIGHT_SIZE;
 		u32 nLength = pNetBuffer->GetLength ();
-		assert (nLength <= m_nSND_MSS);
-		if (nWindowLeft < nLength)
+		if (nWindowLeft < (int) nLength)
 		{
-			break;
+			return FALSE;
 		}
 
 #ifdef TCP_DEBUG
@@ -683,8 +720,16 @@ void CTCPConnection::Process (void)
 		m_nSND_NXT += nLength;
 		StartTimer (TCPTimerRetransmission, m_RTOCalculator.GetRTO ());
 
+		m_nLastSendTicks = m_pTimer->GetTicks ();
+
 		m_TxQueue.MoveOn ();
 	}
+	else
+	{
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
@@ -861,7 +906,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 
 			m_nSND_NXT = m_nISS+1;
 			m_nSND_UNA = m_nISS;
-			
+
 			NEW_STATE (TCPStateSynReceived);
 
 			m_Event.Set ();
@@ -1156,6 +1201,13 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 		case TCPStateFinWait2:
 		case TCPStateCloseWait:
 		case TCPStateClosing:
+#ifdef TCP_DEBUG
+			CLogger::Get ()->Write (FromTCP, LogDebug,
+						"Dups %u, FastRecover %c, Recover %u",
+						m_nDupAckCount,
+						m_bFastRecovery ? 'y' : 'n',
+						m_bFastRecovery ? m_nRecover-m_nISS : 0);
+#endif
 			if (bwh (m_nSND_UNA, nSEG_ACK, m_nSND_NXT))
 			{
 				m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
@@ -1187,6 +1239,52 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 				if (nBytesAck > 0)
 				{
 					m_TxQueue.Flush (nBytesAck);
+
+					if (FLIGHT_SIZE)
+					{
+						m_nRetransmissionCount = MAX_RETRANSMISSIONS;
+
+						StartTimer (TCPTimerRetransmission,
+							    m_RTOCalculator.GetRTO ());
+					}
+				}
+
+				// congestion control
+				m_nDupAckCount = 0;
+				if (m_bFastRecovery)
+				{
+					// RFC 5681 recommends NewReno (RFC 6582)
+					if (ge (nSEG_ACK, m_nRecover))
+					{
+						// ACK'ed all data outstanding,
+						// when fast recovery began
+						m_bFastRecovery = FALSE;
+						m_nCWND = max (m_nSSThresh, m_nSND_MSS);
+					}
+					else
+					{
+						// Partial ACK: still recovering
+						ResendSegment ();
+
+						m_nCWND = max (m_nSSThresh + 3*m_nSND_MSS - nBytesAck,
+							       m_nSND_MSS);
+					}
+				}
+				else
+				{
+					// Not in fast recovery: normal cwnd growth
+					if (m_nCWND < m_nSSThresh)
+					{
+						// Slow Start (Section 3.1):
+						// increase by at most SMSS per ACK
+						m_nCWND += min (nBytesAck, m_nSND_MSS);
+					}
+					else
+					{
+						// Congestion Avoidance (Section 3.1):
+						// increase by ~1 SMSS per RTT
+						m_nCWND += max ((m_nSND_MSS * m_nSND_MSS) / m_nCWND, 1);
+					}
 				}
 
 				// update send window
@@ -1201,7 +1299,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			}
 			else if (le (nSEG_ACK, m_nSND_UNA))	// RFC 1122 section 4.2.2.20 (g)
 			{
-				// ignore duplicate ACK ...
+				OnDuplicateAck ();
 				
 				// RFC 1122 section 4.2.2.20 (g)
 				if (bwlh (m_nSND_UNA, nSEG_ACK, m_nSND_NXT))
@@ -1528,6 +1626,62 @@ CNetConnection::TStatus CTCPConnection::GetStatus (void) const
 	return Status;
 }
 
+void CTCPConnection::OnDuplicateAck (void)
+{
+	m_nDupAckCount++;
+
+	if (m_bFastRecovery)
+	{
+		// self-provided for the case, that a resent segment is lost
+		if (m_nDupAckCount % 3 == 0)
+		{
+			ResendSegment ();
+		}
+
+		// each additional dupACK during recovery inflates cwnd by SMSS and may send new data
+		m_nCWND += m_nSND_MSS;
+	}
+	else if (m_nDupAckCount <= 2)
+	{
+		SendNewSegment (2 * m_nSND_MSS);	// send new data with inflated cwnd
+	}
+	else if (m_nDupAckCount == 3)
+	{
+		// Fast Retransmit and enter Fast Recovery (Section 3.2)
+		m_nSSThresh = max (FLIGHT_SIZE / 2, 2 * m_nSND_MSS);
+		m_nRecover = m_nSND_NXT;
+		ResendSegment ();
+		m_nCWND = m_nSSThresh + 3 * m_nSND_MSS;	// Inflate to account for 3 dupACKs
+		m_bFastRecovery = TRUE;
+	}
+}
+
+void CTCPConnection::ResendSegment (void)
+{
+	const CNetBuffer *pNetBuffer = m_TxQueue.PeekFirst ();
+	if (pNetBuffer == 0)
+	{
+		return;
+	}
+
+	unsigned nFlags = TCP_FLAG_ACK;
+	const int *pFlags = (const int *) pNetBuffer->GetPrivateData ();
+	assert (pFlags != 0);
+	if (!(*pFlags & MSG_MORE))
+	{
+		nFlags |= TCP_FLAG_PUSH;
+	}
+
+	CNetBuffer *pNetBuffer2 = new CNetBuffer (*pNetBuffer);
+	assert (pNetBuffer2 != 0);
+
+	SendSegment (nFlags, m_nSND_UNA, m_nRCV_NXT, pNetBuffer2);
+
+	StartTimer (TCPTimerRetransmission, m_RTOCalculator.GetRTO ());
+
+	m_nLastSendTicks = m_pTimer->GetTicks ();
+}
+
 boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber,
 				     CNetBuffer *pNetBuffer)
 {
@@ -1596,6 +1750,9 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 				nFlags & TCP_FLAG_ACK ? nAcknowledgmentNumber-m_nIRS : 0,
 				m_nRCV_WND,
 				nDataLength);
+
+	CLogger::Get ()->Write (FromTCP, LogDebug, "cwd %u, ssthresh %u, dups %u",
+				m_nCWND, m_nSSThresh, m_nDupAckCount);
 #endif
 
 	assert (m_pNetworkLayer != 0);
@@ -1636,6 +1793,22 @@ void CTCPConnection::ScanOptions (TTCPHeader *pHeader)
 					m_nSND_MSS = (u16) nMSS;
 
 					m_nMSS = m_nSND_MSS;
+
+					// set initial congestion window (RFC 5681 section 3.1)
+					if (m_nSND_MSS > 2190)
+					{
+						m_nIW = 2 * m_nSND_MSS;
+					}
+					else if (m_nSND_MSS > 1095)
+					{
+						m_nIW = 3 * m_nSND_MSS;
+					}
+					else
+					{
+						m_nIW = 4 * m_nSND_MSS;
+					}
+
+					m_nCWND = m_nIW;
 				}
 			}
 			// fall through

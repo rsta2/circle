@@ -2,7 +2,7 @@
 // tcpconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -112,6 +112,11 @@ public:
 	TStatus GetStatus (void) const;
 
 private:
+	boolean SendNewSegment (u32 nAdditionalCWND = 0);	// returns if segment has been sent
+
+	void OnDuplicateAck (void);
+	void ResendSegment (void);
+
 	boolean SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber = 0,
 			     CNetBuffer *pData = 0);
 
@@ -176,6 +181,15 @@ private:
 	u16 m_nSND_MSS;		// send maximum segment size
 
 	CRetransmissionTimeoutCalculator m_RTOCalculator;
+
+	// Congestion Control Variables
+	u32 m_nIW;			// initial congestion window (bytes)
+	u32 m_nCWND;			// congestion window (bytes)
+	u32 m_nSSThresh;		// slow-start threshold (bytes)
+	unsigned m_nDupAckCount;	// count of consecutive duplicate ACKs
+	boolean m_bFastRecovery;	// fast recovery state flag
+	u32 m_nRecover;			// highest SEQ sent when entering fast recovery
+	unsigned m_nLastSendTicks; 	// time of last data transmission
 
 	unsigned m_nReceiveTimeout;	// us
 	unsigned m_nSendTimeout;	// us

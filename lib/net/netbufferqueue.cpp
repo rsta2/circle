@@ -2,7 +2,7 @@
 // netbufferqueue.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2025-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -181,6 +181,11 @@ CNetBuffer *CNetBufferQueue::Dequeue (void)
 	}
 
 	return pEntry;
+}
+
+const CNetBuffer *CNetBufferQueue::PeekFirst (void) const
+{
+	return m_pFirst;
 }
 
 const CNetBuffer *CNetBufferQueue::Peek (void) const

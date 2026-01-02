@@ -2,7 +2,7 @@
 // netbufferqueue.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2025-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,6 +40,9 @@ public:
 
 	// returns nullptr if queue is empty
 	CNetBuffer *Dequeue (void);
+
+	// returns first entry without dequeuing
+	const CNetBuffer *PeekFirst (void) const;
 
 	// returns entry without dequeuing
 	const CNetBuffer *Peek (void) const;
