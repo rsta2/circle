@@ -52,7 +52,10 @@ public:
 	/// \param nDTPin GPIO pin number of data pin (encoder pin B)
 	/// \param nSWPin GPIO pin number of switch pin
 	/// \param pGPIOManager Pointer to GPIO manager object (0 enables polling mode)
-	CKY040 (unsigned nCLKPin, unsigned nDTPin, unsigned nSWPin, CGPIOManager *pGPIOManager = 0);
+	/// \param nEncoderDetents Detents per rotation: 1=Quarter, 2=Half, 4=Full step (default)
+	CKY040 (unsigned nCLKPin, unsigned nDTPin, unsigned nSWPin, 
+	        CGPIOManager *pGPIOManager = 0, 
+	        unsigned nEncoderDetents = 4);
 
 	~CKY040 (void);
 
@@ -72,19 +75,6 @@ public:
 	void Update (void);
 
 private:
-	enum TState
-	{
-		StateStart,
-		StateCWStart,
-		StateCWBothLow,
-		StateCWFirstHigh,
-		StateCCWStart,
-		StateCCWBothLow,
-		StateCCWFirstHigh,
-		StateInvalid,
-		StateUnknown
-	};
-
 	enum TSwitchState
 	{
 		SwitchStateStart,
@@ -128,10 +118,10 @@ private:
 	void *m_pEventParam;
 
 	// encoder
-	TState m_State;
-
-	static TState s_NextState[StateUnknown][2][2];
-	static TEvent s_Output[StateUnknown][2][2];
+	u8 m_nEncoderDetents;
+	s8 m_nStepCounter;
+	u8 m_nLastCLK;
+	u8 m_nLastDT;
 
 	// switch low level
 	TKernelTimerHandle m_hDebounceTimer;

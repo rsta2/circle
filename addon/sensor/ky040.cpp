@@ -23,38 +23,27 @@
 static const unsigned SwitchDebounceDelayMillis	= 50;
 static const unsigned SwitchTickDelayMillis = 500;
 
-CKY040::TState CKY040::s_NextState[StateUnknown][2][2] =
+// Encoder direction lookup table
+// Indexed by 4-bit pattern: (oldCLK << 3) | (oldDT << 2) | (newCLK << 1) | (newDT << 0)
+// Returns: -1 for counter-clockwise, 0 for invalid/no-change, +1 for clockwise
+static const s8 s_EncoderDirection[16] = 
 {
-	// {{CLK=0/DT=0, CLK=0/DT=1}, {CLK=1/DT=0, CLK=1/DT=1}}
-
-	{{StateInvalid,    StateCWStart},      {StateCCWStart,    StateStart}},   // StateStart
-
-	{{StateCWBothLow,  StateCWStart},      {StateInvalid,     StateStart}},   // StateCWStart
-	{{StateCWBothLow,  StateInvalid},      {StateCWFirstHigh, StateInvalid}}, // StateCWBothLow
-	{{StateInvalid,    StateInvalid},      {StateCWFirstHigh, StateStart}},   // StateCWFirstHigh
-
-	{{StateCCWBothLow, StateInvalid},      {StateCCWStart,    StateStart}},   // StateCCWStart
-	{{StateCCWBothLow, StateCCWFirstHigh}, {StateInvalid,     StateInvalid}}, // StateCCWBothLow
-	{{StateInvalid,    StateCCWFirstHigh}, {StateInvalid,     StateStart}},   // StateCCWFirstHigh
-
-	{{StateInvalid,    StateInvalid},      {StateInvalid,     StateStart}}    // StateInvalid
-};
-
-CKY040::TEvent CKY040::s_Output[StateUnknown][2][2] =
-{
-	// {{CLK=0/DT=0, CLK=0/DT=1}, {CLK=1/DT=0, CLK=1/DT=1}}
-
-	{{EventUnknown, EventUnknown}, {EventUnknown, EventUnknown}},          // StateStart
-
-	{{EventUnknown, EventUnknown}, {EventUnknown, EventUnknown}},          // StateCWStart
-	{{EventUnknown, EventUnknown}, {EventUnknown, EventUnknown}},          // StateCWBothLow
-	{{EventUnknown, EventUnknown}, {EventUnknown, EventClockwise}},        // StateCWFirstHigh
-
-	{{EventUnknown, EventUnknown}, {EventUnknown, EventUnknown}},          // StateCCWStart
-	{{EventUnknown, EventUnknown}, {EventUnknown, EventUnknown}},          // StateCCWBothLow
-	{{EventUnknown, EventUnknown}, {EventUnknown, EventCounterclockwise}}, // StateCCWFirstHigh
-
-	{{EventUnknown, EventUnknown}, {EventUnknown, EventUnknown}}           // StateInvalid
+	 0,	// 0000: 00→00 no change
+	-1,	// 0001: 00→01 counter-clockwise
+	 1,	// 0010: 00→10 clockwise
+	 0,	// 0011: 00→11 invalid (both pins changed)
+	 1,	// 0100: 01→00 clockwise
+	 0,	// 0101: 01→01 no change
+	 0,	// 0110: 01→10 invalid (both pins changed)
+	-1,	// 0111: 01→11 counter-clockwise
+	-1,	// 1000: 10→00 counter-clockwise
+	 0,	// 1001: 10→01 invalid (both pins changed)
+	 0,	// 1010: 10→10 no change
+	 1,	// 1011: 10→11 clockwise
+	 0,	// 1100: 11→00 invalid (both pins changed)
+	 1,	// 1101: 11→01 clockwise
+	-1,	// 1110: 11→10 counter-clockwise
+	 0	// 1111: 11→11 no change
 };
 
 CKY040::TSwitchState CKY040::s_NextSwitchState[SwitchStateUnknown][SwitchEventUnknown] =
@@ -87,14 +76,18 @@ CKY040::TEvent CKY040::s_SwitchOutput[SwitchStateUnknown][SwitchEventUnknown] =
 	{EventUnknown, EventUnknown, EventUnknown}		// SwitchStateInvalid
 };
 
-CKY040::CKY040 (unsigned nCLKPin, unsigned nDTPin, unsigned nSWPin, CGPIOManager *pGPIOManager)
+CKY040::CKY040 (unsigned nCLKPin, unsigned nDTPin, unsigned nSWPin, 
+                CGPIOManager *pGPIOManager, unsigned nEncoderDetents)
 :	m_CLKPin (nCLKPin, GPIOModeInputPullUp, pGPIOManager),
 	m_DTPin (nDTPin, GPIOModeInputPullUp, pGPIOManager),
 	m_SWPin (nSWPin, GPIOModeInputPullUp, pGPIOManager),
 	m_bPollingMode (!pGPIOManager),
 	m_bInterruptConnected (FALSE),
 	m_pEventHandler (nullptr),
-	m_State (StateStart),
+	m_nEncoderDetents (nEncoderDetents),
+	m_nStepCounter (0),
+	m_nLastCLK (0),
+	m_nLastDT (0),
 	m_hDebounceTimer (0),
 	m_hTickTimer (0),
 	m_nLastSWLevel (HIGH),
@@ -102,6 +95,9 @@ CKY040::CKY040 (unsigned nCLKPin, unsigned nDTPin, unsigned nSWPin, CGPIOManager
 	m_SwitchState (SwitchStateStart),
 	m_nSwitchLastTicks (0)
 {
+	// Read initial encoder pin states to prevent spurious step detection on first interrupt
+	m_nLastCLK = m_CLKPin.Read ();
+	m_nLastDT = m_DTPin.Read ();
 }
 
 CKY040::~CKY040 (void)
@@ -251,13 +247,30 @@ void CKY040::EncoderInterruptHandler (void *pParam)
 	assert (nCLK <= 1);
 	assert (nDT <= 1);
 
-	assert (pThis->m_State < StateUnknown);
-	TEvent Event = s_Output[pThis->m_State][nCLK][nDT];
-	pThis->m_State = s_NextState[pThis->m_State][nCLK][nDT];
+	// Use lookup table to determine direction
+	// Build 4-bit index from old and new pin states
+	unsigned nIndex = (pThis->m_nLastCLK << 3) | (pThis->m_nLastDT << 2) | (nCLK << 1) | nDT;
+	s8 nDirection = s_EncoderDirection[nIndex];
+	
+	// Update step counter if we have a valid transition
+	if (nDirection != 0) {
+		pThis->m_nStepCounter += nDirection;
+	}
 
-	if (   Event != EventUnknown
-	    && pThis->m_pEventHandler)
-	{
+	pThis->m_nLastCLK = nCLK;	// Remember current CLK state for next interrupt
+	pThis->m_nLastDT = nDT;		// Remember current DT state for next interrupt
+
+	// Fire event when step count reaches threshold
+	TEvent Event = EventUnknown;
+	if (pThis->m_nStepCounter >= (s8)pThis->m_nEncoderDetents) {
+		Event = EventClockwise;
+		pThis->m_nStepCounter = 0;
+	} else if (pThis->m_nStepCounter <= -(s8)pThis->m_nEncoderDetents) {
+		Event = EventCounterclockwise;
+		pThis->m_nStepCounter = 0;
+	}
+
+	if (Event != EventUnknown && pThis->m_pEventHandler) {
 		(*pThis->m_pEventHandler) (Event, pThis->m_pEventParam);
 	}
 }
