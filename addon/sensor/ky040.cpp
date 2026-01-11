@@ -253,7 +253,8 @@ void CKY040::EncoderInterruptHandler (void *pParam)
 	s8 nDirection = s_EncoderDirection[nIndex];
 	
 	// Update step counter if we have a valid transition
-	if (nDirection != 0) {
+	if (nDirection != 0)
+	{
 		pThis->m_nStepCounter += nDirection;
 	}
 
@@ -262,15 +263,19 @@ void CKY040::EncoderInterruptHandler (void *pParam)
 
 	// Fire event when step count reaches threshold
 	TEvent Event = EventUnknown;
-	if (pThis->m_nStepCounter >= (s8)pThis->m_nEncoderDetents) {
+	if (pThis->m_nStepCounter >= (s8)pThis->m_nEncoderDetents)
+	{
 		Event = EventClockwise;
 		pThis->m_nStepCounter = 0;
-	} else if (pThis->m_nStepCounter <= -(s8)pThis->m_nEncoderDetents) {
+	}
+	else if (pThis->m_nStepCounter <= -(s8)pThis->m_nEncoderDetents)
+	{
 		Event = EventCounterclockwise;
 		pThis->m_nStepCounter = 0;
 	}
 
-	if (Event != EventUnknown && pThis->m_pEventHandler) {
+	if (Event != EventUnknown && pThis->m_pEventHandler)
+	{
 		(*pThis->m_pEventHandler) (Event, pThis->m_pEventParam);
 	}
 }
