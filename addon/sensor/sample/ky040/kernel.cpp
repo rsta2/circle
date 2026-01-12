@@ -27,6 +27,8 @@
 #define KY040_DT_PIN	19
 #define KY040_SW_PIN	26
 
+#define KY040_DETENTS 	4	// Detents per rotation: 1=Quarter, 2=Half, 4=Full step
+
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
@@ -34,11 +36,13 @@ CKernel::CKernel (void)
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_GPIOManager (&m_Interrupt),
-	m_RotaryEncoder (KY040_CLK_PIN, KY040_DT_PIN, KY040_SW_PIN
+	m_RotaryEncoder (KY040_CLK_PIN, KY040_DT_PIN, KY040_SW_PIN,
 #ifndef USE_POLLING_MODE
-			 , &m_GPIOManager
+			 &m_GPIOManager,
+#else
+			 nullptr,
 #endif
-			 ),
+	KY040_DETENTS),
 	m_nCount (0)
 {
 	m_ActLED.Blink (5);	// show we are alive
