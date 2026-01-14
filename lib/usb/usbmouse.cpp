@@ -181,7 +181,9 @@ u32 CUSBMouseDevice::ExtractUnsigned(const void *buffer, u32 offset, u32 length)
 	unsigned shift = offset % 8;
 	offset = offset / 8;
 	bits = bits + offset;
-	unsigned number = *(unsigned *)bits;
+	unsigned number = bits[0];
+	if (length > 8) number |= (u16) bits[1] << 8;
+	if (length > 16) number |= (u32) bits[2] << 16;
 	offset = shift;
 
 	unsigned result = 0;
@@ -189,8 +191,10 @@ u32 CUSBMouseDevice::ExtractUnsigned(const void *buffer, u32 offset, u32 length)
 	{
 		result = (((1 << 24) - 1) & (number >> offset));
 		bits = bits + 3;
-		number = *(unsigned *)bits;
 		length = length - 24;
+		number = bits[0];
+		if (length > 8) number |= (u16) bits[1] << 8;
+		if (length > 16) number |= (u32) bits[2] << 16;
 		unsigned result2 = (((1 << length) - 1) & (number >> offset));
 		result = (result2 << 24) | result;
 	}
