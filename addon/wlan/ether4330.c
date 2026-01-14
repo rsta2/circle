@@ -692,11 +692,13 @@ sbmem(int write, uchar *buf, int len, ulong off)
 static void
 packetrw(int write, uchar *buf, int len)
 {
-	int n;
+	uchar b[2048];
+	int n, m;
 	int retry;
 
 	n = 2048;
 	while(len > 0){
+		m = n;
 		if(n > len)
 			n = ROUND(len, 4);
 		retry = 0;
@@ -705,7 +707,15 @@ packetrw(int write, uchar *buf, int len)
 			if(++retry == 3)
 				nexterror();
 		}
-		sdiorwext(Fn2, write, buf, n, Enumbase, 0);
+		if (m != n){
+			if (write)
+				memcpy(b, buf, len);
+			sdiorwext(Fn2, write, b, n, Enumbase, 0);
+			if (!write)
+				memcpy(buf, b, len);
+		}
+		else
+			sdiorwext(Fn2, write, buf, n, Enumbase, 0);
 		poperror();
 		buf += n;
 		len -= n;
