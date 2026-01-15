@@ -8,11 +8,11 @@ it provides USB and TCP/IP networking support. For running Circle applications
 with TCP/IP networking in QEMU is still a patch needed, which is provided in
 this repository (commit 62b39b2):
 
-	https://github.com/smuehlst/qemu
+	https://codeberg.org/larchcone/qemu
 
 To get and build the QEMU source code for Circle enter the following commands:
 
-	git clone https://github.com/smuehlst/qemu.git		# with patch
+	git clone https://codeberg.org/larchcone/qemu.git	# with patch
 	git clone https://gitlab.com/qemu-project/qemu.git	# or latest version
 
 	cd qemu
