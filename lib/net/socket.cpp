@@ -71,6 +71,11 @@ CSocket::~CSocket (void)
 	m_pNetConfig = 0;
 }
 
+int CSocket::GetProtocol (void) const
+{
+	return m_nProtocol;
+}
+
 int CSocket::Bind (u16 nOwnPort)
 {
 	if (nOwnPort == 0)

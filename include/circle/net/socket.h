@@ -2,7 +2,7 @@
 // socket.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,6 +40,9 @@ public:
 
 	/// \brief Destructor (terminates an active connection)
 	~CSocket (void);
+
+	/// \return IPPROTO_TCP or IPPROTO_UDP
+	int GetProtocol (void) const;
 
 	/// \brief Bind own port number to this socket
 	/// \param nOwnPort Port number
