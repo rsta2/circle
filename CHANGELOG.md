@@ -3,8 +3,42 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 50.1
+------------
+
+New features:
+
+* An **NVMe v1.4 SSD driver** for the Raspberry Pi 5 has been added (see [addon/nvme](addon/nvme)). v1.3 NVMe SSDs should work too. This support is currently experimental. Be sure that your SSD does not contain important data, if you want to test it. You should define the system option `NO_BUSY_WAIT` and your application should contain the scheduler for maximum performance.
+
+* The **Kernel Address Sanitizer (Kasan)** has been implemented for Circle. It can help to find invalid memory accesses while debugging. See [doc/kasan.txt](doc/kasan.txt) for details!
+
+* The **KY-040 rotary encoder driver** has been improved to support quarter-step and half-step rotary encoders. Full-step rotary encoders still are the default.
+
+* The class **CI2SSoundBaseDevice** can be used in **DeviceModeTXRX mode on the Raspberry Pi 5** now with 2 channels.
+
+* The class **CConsole** provides a **more comfortable line editor** and a command history now.
+
+* **Multi-core Circle programs can run in QEMU** (AArch64) now. `configure --qemu` disables DMA usage for the frame buffer, because it does not work with QEMU.
+
+* A **receive and/or send timeout on a socket** can be set using `CSocket::SetOption[Receive|Send]Timeout()` now . The constructor of the class `CHTTPDaemon` got a new timeout parameter to close the HTTP connection, when the request does not complete in the given amount of time. The *sample/21-webserver* has been updated to use this feature.
+
+* The DNS resolver class **CDNSClient** resolves the host name "localhost" as the own IP address now.
+
+Fixes:
+
+* There might have been a failed assertion in WLAN Mesh environments before, which has been fixed.
+* `memcpy()` did not check the destination alignment right in AArch64.
+* When an error occurred on a TCP connection, close was not executed properly and the connection was not shutdown.
+
+More changes:
+
+* The LVGL support has been updated to v9.4.0.
+* The FatFs support has been updated to R0.16 w/patch1.
+
 Release 50.0.1
 --------------
+
+2025-09-18
 
 This is a hotfix release, which fixes a serious bug in the class `CmDNSDaemon`, which also affected the class `CmDNSPublisher`. If you are using one of these classes, you should upgrade.
 

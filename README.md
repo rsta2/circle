@@ -8,10 +8,37 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-Release 50.0.1
---------------
+Release 50.1
+------------
 
-This is a hotfix release, which fixes a serious bug in the class `CmDNSDaemon`, which also affected the class `CmDNSPublisher`. If you are using one of these classes, you should upgrade.
+New features:
+
+* An **NVMe v1.4 SSD driver** for the Raspberry Pi 5 has been added (see [addon/nvme](addon/nvme)). v1.3 NVMe SSDs should work too. This support is currently experimental. Be sure that your SSD does not contain important data, if you want to test it. You should define the system option `NO_BUSY_WAIT` and your application should contain the scheduler for maximum performance.
+
+* The **Kernel Address Sanitizer (Kasan)** has been implemented for Circle. It can help to find invalid memory accesses while debugging. See [doc/kasan.txt](doc/kasan.txt) for details!
+
+* The **KY-040 rotary encoder driver** has been improved to support quarter-step and half-step rotary encoders. Full-step rotary encoders still are the default.
+
+* The class **CI2SSoundBaseDevice** can be used in **DeviceModeTXRX mode on the Raspberry Pi 5** now with 2 channels.
+
+* The class **CConsole** provides a **more comfortable line editor** and a command history now.
+
+* **Multi-core Circle programs can run in QEMU** (AArch64) now. `configure --qemu` disables DMA usage for the frame buffer, because it does not work with QEMU.
+
+* A **receive and/or send timeout on a socket** can be set using `CSocket::SetOption[Receive|Send]Timeout()` now . The constructor of the class `CHTTPDaemon` got a new timeout parameter to close the HTTP connection, when the request does not complete in the given amount of time. The *sample/21-webserver* has been updated to use this feature.
+
+* The DNS resolver class **CDNSClient** resolves the host name "localhost" as the own IP address now.
+
+Fixes:
+
+* There might have been a failed assertion in WLAN Mesh environments before, which has been fixed.
+* `memcpy()` did not check the destination alignment right in AArch64.
+* When an error occurred on a TCP connection, close was not executed properly and the connection was not shutdown.
+
+More changes:
+
+* The LVGL support has been updated to v9.4.0.
+* The FatFs support has been updated to R0.16 w/patch1.
 
 The 50th Step
 -------------
@@ -64,6 +91,7 @@ Circle supports the following features:
 |                       | Serial bootloader (by David Welch) included         | x              |
 |                       | Software profiling support (single-core)            | x              |
 |                       | QEMU support                                        |                |
+|                       | Kernel Address Sanitizer support                    | x              |
 |                       |                                                     |                |
 | SoC devices           | GPIO pins (with interrupt, Act LED) and clocks      | x              |
 |                       | Frame buffer (screen driver with escape sequences)  | limited        |
@@ -90,6 +118,7 @@ Circle supports the following features:
 |                       | MACB / GEM Gigabit Ethernet NIC of Raspberry Pi 5   | x              |
 |                       | Wireless LAN access                                 | x              |
 |                       | Driver for XPT2046-based touch screens              | x              |
+|                       | NVMe SSD driver for Raspberry Pi 5 (experimental)   | x              |
 |                       |                                                     |                |
 | USB                   | Host controller interface (HCI) drivers             | x              |
 |                       | Standard hub driver (USB 2.0 only)                  | x              |
