@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,6 +38,10 @@
 #include <circle/macros.h>
 #include <circle/util.h>
 #include <circle/types.h>
+
+#ifdef KASAN_SUPPORTED
+#include <circle/kasan.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -135,6 +139,15 @@ void halt (void)
 	DisableIRQs ();
 #ifndef USE_RPI_STUB_AT
 	DisableFIQs ();
+#endif
+
+#if RASPPI >= 5 && defined (POWER_OFF_ON_HALT)
+#ifdef ARM_ALLOW_MULTI_CORE
+	if (nCore == 0)
+#endif
+	{
+		poweroff ();
+	}
 #endif
 
 #ifdef LEAVE_QEMU_ON_HALT
@@ -282,6 +295,10 @@ void sysinit (void)
 
 #if RASPPI >= 4
 	Memory.SetupHighMem ();
+#endif
+
+#ifdef KASAN_SUPPORTED
+	KasanInitialize ();
 #endif
 
 	// set circle_version_string[]

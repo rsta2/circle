@@ -47,6 +47,8 @@ public:
 		    const CIPAddress &rForeignIP, u16 nForeignPort)	{ return -1; }
 	int ReceiveFrom (void *pBuffer, int nFlags,
 			 CIPAddress *pForeignIP, u16 *pForeignPort)	{ return -1; }
+	int SetOptionReceiveTimeout (unsigned nMicroSeconds)		{ return -1; }
+	int SetOptionSendTimeout (unsigned nMicroSeconds)		{ return -1; }
 	int SetOptionBroadcast (boolean bAllowed)			{ return -1; }
 	int SetOptionAddMembership (const CIPAddress &rGroupAddress)	{ return -1; }
 	int SetOptionDropMembership (const CIPAddress &rGroupAddress)	{ return -1; }
@@ -57,6 +59,7 @@ public:
 				  CIPAddress &rSenderIP, CIPAddress &rReceiverIP,
 				  u16 nSendPort, u16 nReceivePort,
 				  int nProtocol)			{ return 0; }
+	TStatus GetStatus (void) const		{ return {FALSE, FALSE, FALSE, FALSE}; }
 
 private:
 	boolean SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber = 0);

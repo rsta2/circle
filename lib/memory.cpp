@@ -54,6 +54,9 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 	m_nMemSize (USE_RPI_STUB_AT),
 #endif
 	m_nMemSizeHigh (0),
+#ifdef KASAN_SUPPORTED
+	m_nShadowMemSize (0),
+#endif
 	m_HeapLow ("heaplow"),
 #if RASPPI >= 4
 	m_HeapHigh ("heaphigh"),
@@ -79,10 +82,24 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 	m_nMemSize = TagMemory.nSize;
 #endif
 
-	size_t nBlockReserve = m_nMemSize - MEM_HEAP_START - PAGE_RESERVE;
-	m_HeapLow.Setup (MEM_HEAP_START, nBlockReserve, 0x40000);
+#ifndef KASAN_SUPPORTED
+	uintptr ulHeapMemStart = MEM_HEAP_START;
+#else
+	unsigned nRAMSize = CMachineInfo::GetRAMSizeEarly ();
+	if (nRAMSize > 4096)		// do not occupy more than 512 MB for shadow memory
+	{
+		nRAMSize = 4096;
+	}
+	m_nShadowMemSize = nRAMSize * MEGABYTE / 8;
 
-	m_Pager.Setup (MEM_HEAP_START + nBlockReserve, PAGE_RESERVE);
+	assert (MEM_SHADOW_START >= MEM_COHERENT_REGION + COHERENT_REGION_SIZE);
+	uintptr ulHeapMemStart = MEM_SHADOW_START + m_nShadowMemSize;
+#endif
+
+	size_t nBlockReserve = m_nMemSize - ulHeapMemStart - PAGE_RESERVE;
+	m_HeapLow.Setup (ulHeapMemStart, nBlockReserve, 0x40000);
+
+	m_Pager.Setup (ulHeapMemStart + nBlockReserve, PAGE_RESERVE);
 
 	if (m_bEnableMMU)
 	{

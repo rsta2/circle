@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -173,7 +173,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 #endif
 #ifndef EXCLUDE_USB_MIDI
 	else if (   pName->Compare ("int1-3-0") == 0
-		 || pName->Compare ("ven582-12a") == 0)		// Roland UM-ONE MIDI interface
+		 || pName->Compare ("ven582-12a") == 0		// Roland UM-ONE MIDI interface
+		 || pName->Compare ("ven582-28c") == 0)		// Roland JD-08
 	{
 		pResult = new CUSBMIDIHostDevice (pParent);
 	}

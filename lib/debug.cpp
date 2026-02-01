@@ -2,8 +2,8 @@
 // debug.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2016-2025  R. Stange <rsta2@gmx.net>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -23,8 +23,6 @@
 #include <circle/sysconfig.h>
 #include <circle/gpiopin.h>
 
-#ifndef NDEBUG
-
 static const char FromDebug[] = "debug";
 
 #ifdef DEBUG_CLICK
@@ -34,7 +32,7 @@ static CGPIOPin AudioRight (GPIOPinAudioRight, GPIOModeOutput);
 
 #endif
 
-void debug_hexdump (const void *pStart, unsigned nBytes, const char *pSource)
+void DebugHexDump (const void *pStart, unsigned nBytes, const char *pSource, unsigned nFlags)
 {
 	u8 *pOffset = (u8 *) pStart;
 
@@ -43,18 +41,57 @@ void debug_hexdump (const void *pStart, unsigned nBytes, const char *pSource)
 		pSource = FromDebug;
 	}
 
-	CLogger::Get ()->Write (pSource, LogDebug, "Dumping 0x%X bytes starting at 0x%lX", nBytes,
-				(unsigned long) (uintptr) pOffset);
+	if (nFlags & DEBUG_HEXDUMP_HEADER)
+	{
+		CLogger::Get ()->Write (pSource, LogDebug,
+				"Dumping 0x%X bytes starting at 0x%lX", nBytes,
+				(uintptr) pOffset);
+	}
 	
 	while (nBytes > 0)
 	{
-		CLogger::Get ()->Write (pSource, LogDebug,
-				"%04X: %02X %02X %02X %02X %02X %02X %02X %02X-%02X %02X %02X %02X %02X %02X %02X %02X",
-				(unsigned) (uintptr) pOffset & 0xFFFF,
-				(unsigned) pOffset[0],  (unsigned) pOffset[1],  (unsigned) pOffset[2],  (unsigned) pOffset[3],
-				(unsigned) pOffset[4],  (unsigned) pOffset[5],  (unsigned) pOffset[6],  (unsigned) pOffset[7],
-				(unsigned) pOffset[8],  (unsigned) pOffset[9],  (unsigned) pOffset[10], (unsigned) pOffset[11],
-				(unsigned) pOffset[12], (unsigned) pOffset[13], (unsigned) pOffset[14], (unsigned) pOffset[15]);
+		CString Hex;
+		CString Ascii;
+		for (unsigned i = 0; i < 16;)
+		{
+			CString Data;
+			Data.Format ("%c%02X", i == 8 ? '-' : ' ', pOffset[i]);
+			Hex.Append (Data);
+
+			if (nFlags & DEBUG_HEXDUMP_ASCII)
+			{
+				char chChar = (char) pOffset[i];
+				if (!(' ' <= chChar && chChar <= '~'))
+				{
+					chChar = '.';
+				}
+
+				Ascii.Append (chChar);
+			}
+
+			if (++i >= nBytes)
+			{
+				break;
+			}
+		}
+
+		if (   (nFlags & DEBUG_HEXDUMP_ASCII)
+		    && nBytes < 16)
+		{
+			for (int i = 16 - nBytes ; i > 0; i--)
+			{
+				Hex.Append ("   ");
+			}
+		}
+
+		unsigned long ulPrefix = (uintptr) pOffset;
+		if (!(nFlags & DEBUG_HEXDUMP_ADDRESS))
+		{
+			 ulPrefix -= (uintptr) pStart;
+		}
+
+		CLogger::Get ()->Write (pSource, LogDebug, "%04lX:%s %s",
+					ulPrefix & 0xFFFFUL, Hex.c_str (), Ascii.c_str ());
 
 		pOffset += 16;
 
@@ -69,7 +106,7 @@ void debug_hexdump (const void *pStart, unsigned nBytes, const char *pSource)
 	}
 }
 
-void debug_stacktrace (const uintptr *pStackPtr, const char *pSource)
+void DebugStackTrace (const uintptr *pStackPtr, const char *pSource)
 {
 	if (pSource == 0)
 	{
@@ -91,7 +128,7 @@ void debug_stacktrace (const uintptr *pStackPtr, const char *pSource)
 
 #ifdef DEBUG_CLICK
 
-void debug_click (unsigned nMask)
+void DebugClick (unsigned nMask)
 {
 	if (nMask & DEBUG_CLICK_LEFT)
 	{
@@ -103,7 +140,5 @@ void debug_click (unsigned nMask)
 		AudioRight.Invert ();
 	}
 }
-
-#endif
 
 #endif

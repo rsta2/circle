@@ -4,7 +4,7 @@
 // USB Mass Storage Gadget by Mike Messinides
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 #define MLOGERR(From,...)		CLogger::Get ()->Write (From, LogError,__VA_ARGS__)
 #define DEFAULT_BLOCKS 16000
 
-const TUSBDeviceDescriptor CUSBMSDGadget::s_DeviceDescriptor =
+TUSBDeviceDescriptor CUSBMSDGadget::s_DeviceDescriptor =
 {
 	sizeof (TUSBDeviceDescriptor),
 	DESCRIPTOR_DEVICE,
@@ -93,11 +93,14 @@ const char *const CUSBMSDGadget::s_StringDescriptor[] =
 	"Mass Storage Gadget"
 };
 
-CUSBMSDGadget::CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice)
+CUSBMSDGadget::CUSBMSDGadget (CInterruptSystem *pInterruptSystem, CDevice *pDevice,
+			      u16 usVendorID, u16 usProductID)
 :	CDWUSBGadget (pInterruptSystem, HighSpeed),
 	m_pDevice (pDevice),
 	m_pEP {nullptr, nullptr, nullptr}
 {
+	s_DeviceDescriptor.idVendor = usVendorID;
+	s_DeviceDescriptor.idProduct = usProductID;
 	if(pDevice)SetDevice(pDevice);
 }
 
@@ -369,6 +372,14 @@ void CUSBMSDGadget::OnActivate()
 	m_MSDReady=true;
 	m_nState=TMSDState::ReceiveCBW;
 	m_pEP[EPOut]->BeginTransfer(CUSBMSDGadgetEndpoint::TransferCBWOut,m_OutBuffer,SIZE_CBW);
+}
+
+void CUSBMSDGadget::OnDeactivate()
+{
+	MLOGNOTE("MSD OnDeactivate", "state = %i",m_nState);
+	m_MSDReady=false;
+	m_nState=TMSDState::Init;
+	m_pEP[EPOut]->CancelTransfer();
 }
 
 void CUSBMSDGadget::SendCSW()

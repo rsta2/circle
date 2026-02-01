@@ -41,6 +41,7 @@ USB Audio Class MIDI device support
 Stephan Muehlstrasser
 Correcting problems for building with clang
 Idea for sample/30-gpiofiq
+Kernel Address Sanitizer implementation
 
 Marco Maccaferri
 USB HID class gamepad driver
@@ -129,3 +130,10 @@ Pete Moore
 Adding configure support for macOS
 Adding cFlashy support for macOS
 Optimizing memset() for AArch64
+
+Dani Sarfati
+Heavily testing USB Mass Storage gadget driver
+Implementing flushing audio device buffers
+
+@speendo
+Supporting configurable encoder types in KY-040 driver

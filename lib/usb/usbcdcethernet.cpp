@@ -23,6 +23,7 @@
 #include <circle/usb/usb.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
+#include <circle/util.h>
 #include <assert.h>
 
 #define SET_ETHERNET_PACKET_FILTER		0x43
@@ -52,7 +53,9 @@ CUSBCDCEthernetDevice::CUSBCDCEthernetDevice (CUSBFunction *pFunction)
 	m_iMACAddress (GetMACAddressStringIndex ()),
 	m_bInterfaceOK (SelectInterfaceByClass (10, 0, 0, 2)),
 	m_pEndpointBulkIn (0),
-	m_pEndpointBulkOut (0)
+	m_pEndpointBulkOut (0),
+	m_pURB (0),
+	m_nRxLength (0)
 {
 }
 
@@ -153,27 +156,55 @@ boolean CUSBCDCEthernetDevice::SendFrame (const void *pBuffer, unsigned nLength)
 
 boolean CUSBCDCEthernetDevice::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 {
-	assert (m_pEndpointBulkIn != 0);
-	assert (pBuffer != 0);
-	CUSBRequest URB (m_pEndpointBulkIn, pBuffer, FRAME_BUFFER_SIZE);
+	boolean bResult = FALSE;
 
-	URB.SetCompleteOnNAK ();
-
-	if (!GetHost ()->SubmitBlockingRequest (&URB))
+	if (m_nRxLength != 0)
 	{
-		return FALSE;
+		assert (pBuffer != 0);
+		assert (m_nRxLength <= FRAME_BUFFER_SIZE);
+		memcpy (pBuffer, m_RxBuffer, m_nRxLength);
+
+		assert (pResultLength != 0);
+		*pResultLength = m_nRxLength;
+
+		m_nRxLength = 0;
+
+		bResult = TRUE;
 	}
 
-	u32 nResultLength = URB.GetResultLength ();
-	if (nResultLength == 0)
+	if (m_pURB == 0)
 	{
-		return FALSE;
+		assert (m_pEndpointBulkIn != 0);
+		m_pURB = new CUSBRequest (m_pEndpointBulkIn, m_RxBuffer, FRAME_BUFFER_SIZE);
+		assert (m_pURB != 0);
+
+		m_pURB->SetCompletionRoutine (CompletionRoutine, 0, this);
+
+		m_pURB->SetCompleteOnNAK ();
+
+		GetHost ()->SubmitAsyncRequest (m_pURB);
 	}
 
-	assert (pResultLength != 0);
-	*pResultLength = nResultLength;
+	return bResult;
+}
 
-	return TRUE;
+void CUSBCDCEthernetDevice::CompletionRoutine (CUSBRequest *pURB, void *pParam, void *pContext)
+{
+	CUSBCDCEthernetDevice *pThis = (CUSBCDCEthernetDevice *) pContext;
+	assert (pThis != 0);
+
+	assert (pThis->m_pURB == pURB);
+
+	if (pURB->GetStatus () != 0)
+	{
+		assert (pThis->m_nRxLength == 0);
+		pThis->m_nRxLength = pURB->GetResultLength ();
+		assert (pThis->m_nRxLength <= FRAME_BUFFER_SIZE);
+	}
+
+	delete pURB;
+
+	pThis->m_pURB = 0;
 }
 
 boolean CUSBCDCEthernetDevice::SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE])

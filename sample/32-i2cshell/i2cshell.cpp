@@ -4,7 +4,7 @@
 // I2C slave detection method by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -562,7 +562,7 @@ unsigned CI2CShell::GetNumber (const char *pName, unsigned nMinimum, unsigned nM
 		return INVALID_NUMBER;
 	}
 
-	assert (nMinimum < nMaximum);
+	assert (nMinimum <= nMaximum);
 	if (   nValue < nMinimum
 	    || nValue > nMaximum)
 	{

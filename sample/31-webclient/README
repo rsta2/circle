@@ -5,7 +5,7 @@ now, which is not supported by Circle itself. But there is SSL/TLS support in
 the circle-stdlib project of Stephan Muehlstrasser soon. If you are interested
 in this, have a look at:
 
-	https://github.com/smuehlst/circle-stdlib
+	https://codeberg.org/larchcone/circle-stdlib
 
 This sample has been ported to SSL/TLS support in the referenced project, but is
 retained here, because it shows how to communicate with HTTP servers.

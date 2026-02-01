@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/udpconnection.h>
+#include <circle/net/error.h>
 #include <circle/net/in.h>
 #include <circle/macros.h>
 #include <circle/util.h>
@@ -47,6 +48,7 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 :	CNetConnection (pNetConfig, pNetworkLayer, rForeignIP, nForeignPort, nOwnPort, IPPROTO_UDP),
 	m_bOpen (TRUE),
 	m_bActiveOpen (TRUE),
+	m_nReceiveTimeout (0),
 	m_bBroadcastsAllowed (FALSE),
 	m_pHostGroup (0),
 	m_nErrno (0)
@@ -59,6 +61,7 @@ CUDPConnection::CUDPConnection (CNetConfig	*pNetConfig,
 :	CNetConnection (pNetConfig, pNetworkLayer, nOwnPort, IPPROTO_UDP),
 	m_bOpen (TRUE),
 	m_bActiveOpen (FALSE),
+	m_nReceiveTimeout (0),
 	m_bBroadcastsAllowed (FALSE),
 	m_pHostGroup (0),
 	m_nErrno (0)
@@ -80,14 +83,14 @@ int CUDPConnection::Connect (void)
 
 int CUDPConnection::Accept (CIPAddress *pForeignIP, u16 *pForeignPort)
 {
-	return -1;
+	return -NET_ERROR_OPERATION_NOT_SUPPORTED;
 }
 
 int CUDPConnection::Close (void)
 {
 	if (!m_bOpen)
 	{
-		return -1;
+		return -NET_ERROR_NOT_CONNECTED;
 	}
 
 	if (m_pHostGroup != 0)
@@ -116,20 +119,20 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 
 	if (!m_bActiveOpen)
 	{
-		return -1;
+		return -NET_ERROR_OPERATION_NOT_SUPPORTED;
 	}
 
 	if (   nFlags != 0
 	    && nFlags != MSG_DONTWAIT)
 	{
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	unsigned nPacketLength = sizeof (TUDPHeader) + nLength;		// may wrap
 	if (   nPacketLength <= sizeof (TUDPHeader)
 	    || nPacketLength > FRAME_BUFFER_SIZE)
 	{
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	assert (m_pNetConfig != 0);
@@ -137,7 +140,7 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 	    && (   m_ForeignIP.IsBroadcast ()
 	        || m_ForeignIP == *m_pNetConfig->GetBroadcastAddress ()))
 	{
-		return -1;
+		return -NET_ERROR_PERMISSION_DENIED;
 	}
 
 	u8 PacketBuffer[nPacketLength];
@@ -159,7 +162,7 @@ int CUDPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 	assert (m_pNetworkLayer != 0);
 	boolean bOK = m_pNetworkLayer->Send (m_ForeignIP, PacketBuffer, nPacketLength, IPPROTO_UDP);
 	
-	return bOK ? nLength : -1;
+	return bOK ? nLength : -NET_ERROR_IO;
 }
 
 int CUDPConnection::Receive (void *pBuffer, int nFlags)
@@ -186,7 +189,18 @@ int CUDPConnection::Receive (void *pBuffer, int nFlags)
 			}
 
 			m_Event.Clear ();
-			m_Event.Wait ();
+
+			if (m_nReceiveTimeout == 0)
+			{
+				m_Event.Wait ();
+			}
+			else
+			{
+				if (m_Event.WaitWithTimeout (m_nReceiveTimeout))
+				{
+					m_nErrno = -1;
+				}
+			}
 
 			if (m_nErrno < 0)
 			{
@@ -227,14 +241,14 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 	if (   nFlags != 0
 	    && nFlags != MSG_DONTWAIT)
 	{
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	unsigned nPacketLength = sizeof (TUDPHeader) + nLength;		// may wrap
 	if (   nPacketLength <= sizeof (TUDPHeader)
 	    || nPacketLength > FRAME_BUFFER_SIZE)
 	{
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	assert (m_pNetConfig != 0);
@@ -242,7 +256,7 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 	    && (   rForeignIP.IsBroadcast ()
 	        || rForeignIP == *m_pNetConfig->GetBroadcastAddress ()))
 	{
-		return -1;
+		return -NET_ERROR_PERMISSION_DENIED;
 	}
 
 	u8 PacketBuffer[nPacketLength];
@@ -264,7 +278,7 @@ int CUDPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
 	assert (m_pNetworkLayer != 0);
 	boolean bOK = m_pNetworkLayer->Send (rForeignIP, PacketBuffer, nPacketLength, IPPROTO_UDP);
 	
-	return bOK ? nLength : -1;
+	return bOK ? nLength : -NET_ERROR_IO;
 }
 
 int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort)
@@ -291,7 +305,18 @@ int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 			}
 
 			m_Event.Clear ();
-			m_Event.Wait ();
+
+			if (m_nReceiveTimeout == 0)
+			{
+				m_Event.Wait ();
+			}
+			else
+			{
+				if (m_Event.WaitWithTimeout (m_nReceiveTimeout))
+				{
+					m_nErrno = -1;
+				}
+			}
 
 			if (m_nErrno < 0)
 			{
@@ -319,6 +344,18 @@ int CUDPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeign
 	return nLength;
 }
 
+int CUDPConnection::SetOptionReceiveTimeout (unsigned nMicroSeconds)
+{
+	m_nReceiveTimeout = nMicroSeconds;
+
+	return 0;
+}
+
+int CUDPConnection::SetOptionSendTimeout (unsigned nMicroSeconds)
+{
+	return 0;
+}
+
 int CUDPConnection::SetOptionBroadcast (boolean bAllowed)
 {
 	m_bBroadcastsAllowed = bAllowed;
@@ -328,16 +365,20 @@ int CUDPConnection::SetOptionBroadcast (boolean bAllowed)
 
 int CUDPConnection::SetOptionAddMembership (const CIPAddress &rGroupAddress)
 {
-	if (   m_pHostGroup != 0
-	    || !rGroupAddress.IsMulticast ())
+	if (m_pHostGroup != 0)
 	{
-		return -1;
+		return -NET_ERROR_IS_CONNECTED;
+	}
+
+	if (!rGroupAddress.IsMulticast ())
+	{
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	assert (m_pNetworkLayer != 0);
 	if (!m_pNetworkLayer->JoinHostGroup (rGroupAddress))
 	{
-		return -1;
+		return -NET_ERROR_IO;
 	}
 
 	m_pHostGroup = new CIPAddress (rGroupAddress);
@@ -348,10 +389,14 @@ int CUDPConnection::SetOptionAddMembership (const CIPAddress &rGroupAddress)
 
 int CUDPConnection::SetOptionDropMembership (const CIPAddress &rGroupAddress)
 {
-	if (   m_pHostGroup == 0
-	    || *m_pHostGroup != rGroupAddress)
+	if (m_pHostGroup == 0)
 	{
-		return -1;
+		return -NET_ERROR_NOT_CONNECTED;
+	}
+
+	if (*m_pHostGroup != rGroupAddress)
+	{
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	delete m_pHostGroup;
@@ -505,9 +550,33 @@ int CUDPConnection::NotificationReceived (TICMPNotificationType  Type,
 		}
 	}
 
-	m_nErrno = -1;
+	m_nErrno =   Type == ICMPNotificationDestUnreach
+		   ? -NET_ERROR_DESTINATION_UNREACHABLE
+		   : -NET_ERROR_PROTOCOL_ERROR;
 
 	m_Event.Set ();
 
 	return 1;
+}
+
+CNetConnection::TStatus CUDPConnection::GetStatus (void) const
+{
+	TStatus Status = {FALSE, FALSE, FALSE, FALSE};
+
+	if (!m_bOpen)
+	{
+		return Status;
+	}
+
+	Status.bConnected = TRUE;
+
+	if (   m_nErrno < 0
+	    || !m_RxQueue.IsEmpty ())
+	{
+		Status.bRxReady = TRUE;
+	}
+
+	Status.bTxReady = TRUE;
+
+	return Status;
 }

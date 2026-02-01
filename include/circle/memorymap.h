@@ -64,12 +64,19 @@
 // coherent memory region (one 1 MB section)
 #define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 2*MEGABYTE) & ~(MEGABYTE-1))
 
-#define MEM_HEAP_START		(MEM_COHERENT_REGION + MEGABYTE)
+#define COHERENT_REGION_SIZE	MEGABYTE
 #else
 // coherent memory region (two 2 MB blocks)
 #define MEM_COHERENT_REGION	((MEM_PAGE_TABLE1_END + 3*MEGABYTE) & ~(2*MEGABYTE-1))
 
-#define MEM_HEAP_START		(MEM_COHERENT_REGION + 2*2*MEGABYTE)
+#define COHERENT_REGION_SIZE	(2*2*MEGABYTE)
+#endif
+
+#ifndef KASAN_SUPPORTED
+#define MEM_HEAP_START		(MEM_COHERENT_REGION + COHERENT_REGION_SIZE)
+#else
+// shadow memory for Kernel Address Sanitizer
+#define MEM_SHADOW_START	(0x700000 + KERNEL_MAX_SIZE)
 #endif
 
 #if RASPPI >= 4

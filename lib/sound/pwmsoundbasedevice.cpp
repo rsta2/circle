@@ -2,7 +2,7 @@
 // pwmsoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2025  R. Stange <rsta2@gmx.net>
 //
 // Information to implement PWM sound is from:
 //	"Bare metal sound" by Joeboy (RPi forum)
@@ -24,13 +24,9 @@
 #include <circle/sound/pwmsoundbasedevice.h>
 #include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
-#include <circle/bcm2835int.h>
 #include <circle/memio.h>
 #include <circle/timer.h>
 #include <circle/synchronize.h>
-#include <circle/machineinfo.h>
-#include <circle/util.h>
-#include <circle/new.h>
 #include <assert.h>
 
 //
@@ -107,7 +103,6 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 :	CSoundBaseDevice (SoundFormatUnsigned32,
 			  (CLOCK_RATE + nSampleRate/2) / nSampleRate, nSampleRate,
 			  CMachineInfo::Get ()->ArePWMChannelsSwapped ()),
-	m_pInterruptSystem (pInterrupt),
 	m_nChunkSize (nChunkSize),
 	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
 #ifdef USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
@@ -121,89 +116,24 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 	m_Audio2 (GPIOPinAudioRight, GPIOModeAlternateFunction0),
 #endif // USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
 	m_Clock (GPIOClockPWM),
-	m_bIRQConnected (FALSE),
-	m_State (PWMSoundIdle),
-	m_nDMAChannel (CMachineInfo::Get ()->AllocateDMAChannel (DMA_CHANNEL_LITE))
+	m_bError (FALSE),
+	m_DMABuffers (TRUE, PWM_FIF1, DREQ_SOURCE, nChunkSize, pInterrupt)
 {
-	assert (m_pInterruptSystem != 0);
 	assert (m_nChunkSize > 0);
 	assert ((m_nChunkSize & 1) == 0);
 
-	// setup and concatenate DMA buffers and control blocks
-	SetupDMAControlBlock (0);
-	SetupDMAControlBlock (1);
-	m_pControlBlock[0]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[1]);
-	m_pControlBlock[1]->nNextControlBlockAddress = BUS_ADDRESS ((uintptr) m_pControlBlock[0]);
-
 	// start clock and PWM device
 	RunPWM ();
-
-	// enable and reset DMA channel
-	PeripheralEntry ();
-
-	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
-	CTimer::SimpleusDelay (1000);
-
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
-	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
-	{
-		// do nothing
-	}
-
-	PeripheralExit ();
 
 	CDeviceNameService::Get ()->AddDevice ("sndpwm", this, FALSE);
 }
 
 CPWMSoundBaseDevice::~CPWMSoundBaseDevice (void)
 {
-	assert (m_State == PWMSoundIdle);
-
 	CDeviceNameService::Get ()->RemoveDevice ("sndpwm", FALSE);
 
 	// stop PWM device and clock
 	StopPWM ();
-
-	// reset and disable DMA channel
-	PeripheralEntry ();
-
-	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
-	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
-	{
-		// do nothing
-	}
-
-	write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) & ~(1 << m_nDMAChannel));
-
-	PeripheralExit ();
-
-	// disconnect IRQ
-	assert (m_pInterruptSystem != 0);
-	if (m_bIRQConnected)
-	{
-		m_pInterruptSystem->DisconnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel);
-	}
-
-	m_pInterruptSystem = 0;
-
-	// free DMA channel
-	CMachineInfo::Get ()->FreeDMAChannel (m_nDMAChannel);
-
-	// free buffers
-	m_pControlBlock[0] = 0;
-	m_pControlBlock[1] = 0;
-	delete [] m_pControlBlockBuffer[0];
-	m_pControlBlockBuffer[0] = 0;
-	delete [] m_pControlBlockBuffer[1];
-	m_pControlBlockBuffer[1] = 0;
-
-	delete [] m_pDMABuffer[0];
-	m_pDMABuffer[0] = 0;
-	delete [] m_pDMABuffer[1];
-	m_pDMABuffer[1] = 0;
 }
 
 int CPWMSoundBaseDevice::GetRangeMin (void) const
@@ -218,27 +148,9 @@ int CPWMSoundBaseDevice::GetRangeMax (void) const
 
 boolean CPWMSoundBaseDevice::Start (void)
 {
-	assert (m_State == PWMSoundIdle);
-
-	// fill buffer 0
-	m_nNextBuffer = 0;
-
-	if (!GetNextChunk ())
+	if (m_bError)
 	{
 		return FALSE;
-	}
-
-	m_State = PWMSoundRunning;
-
-	// connect IRQ
-	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-
-	if (!m_bIRQConnected)
-	{
-		assert (m_pInterruptSystem != 0);
-		m_pInterruptSystem->ConnectIRQ (ARM_IRQ_DMA0+m_nDMAChannel, InterruptStub, this);
-
-		m_bIRQConnected = TRUE;
 	}
 
 	// enable PWM DMA operation
@@ -254,37 +166,11 @@ boolean CPWMSoundBaseDevice::Start (void)
 	PeripheralExit ();
 
 	// start DMA
-	PeripheralEntry ();
-
-	assert (!(read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_INT));
-	assert (!(read32 (ARM_DMA_INT_STATUS) & (1 << m_nDMAChannel)));
-
-	assert (m_pControlBlock[0] != 0);
-	write32 (ARM_DMACHAN_CONBLK_AD (m_nDMAChannel), BUS_ADDRESS ((uintptr) m_pControlBlock[0]));
-
-
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel),   CS_WAIT_FOR_OUTSTANDING_WRITES
-					         | (DEFAULT_PANIC_PRIORITY << CS_PANIC_PRIORITY_SHIFT)
-					         | (DEFAULT_PRIORITY << CS_PRIORITY_SHIFT)
-					         | CS_ACTIVE);
-
-	PeripheralExit ();
-
-	// fill buffer 1
-	if (!GetNextChunk ())
+	if (!m_DMABuffers.Start (ChunkCompletedHandler, this))
 	{
-		m_SpinLock.Acquire ();
+		m_bError = TRUE;
 
-		if (m_State == PWMSoundRunning)
-		{
-			PeripheralEntry ();
-			write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
-			PeripheralExit ();
-
-			m_State = PWMSoundTerminating;
-		}
-
-		m_SpinLock.Release ();
+		return FALSE;
 	}
 
 	return TRUE;
@@ -292,42 +178,26 @@ boolean CPWMSoundBaseDevice::Start (void)
 
 void CPWMSoundBaseDevice::Cancel (void)
 {
-	m_SpinLock.Acquire ();
-
-	if (m_State == PWMSoundRunning)
-	{
-		m_State = PWMSoundCancelled;
-	}
-
-	m_SpinLock.Release ();
+	m_DMABuffers.Cancel ();
 }
 
 boolean CPWMSoundBaseDevice::IsActive (void) const
 {
-	return m_State != PWMSoundIdle ? TRUE : FALSE;
+	return m_DMABuffers.IsActive ();
 }
 
-boolean CPWMSoundBaseDevice::GetNextChunk (void)
+void CPWMSoundBaseDevice::Flush(void)
 {
-	assert (m_pDMABuffer[m_nNextBuffer] != 0);
-	unsigned nChunkSize = GetChunk (m_pDMABuffer[m_nNextBuffer], m_nChunkSize);
-	if (nChunkSize == 0)
-	{
-		return FALSE;
-	}
+	CSoundBaseDevice::Flush ();
 
-	unsigned nTransferLength = nChunkSize * sizeof (u32);
-	assert (nTransferLength <= TXFR_LEN_MAX_LITE);
+	// Clear PWM FIFO
+	PeripheralEntry();
+	write32(PWM_CTL, read32(PWM_CTL) | ARM_PWM_CTL_CLRF1);
+	CTimer::Get()->usDelay(10);
+	PeripheralExit();
 
-	assert (m_pControlBlock[m_nNextBuffer] != 0);
-	m_pControlBlock[m_nNextBuffer]->nTransferLength = nTransferLength;
-
-	CleanAndInvalidateDataCacheRange ((uintptr) m_pDMABuffer[m_nNextBuffer], nTransferLength);
-	CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock[m_nNextBuffer], sizeof (TDMAControlBlock));
-
-	m_nNextBuffer ^= 1;
-
-	return TRUE;
+	// Zero both DMA buffers directly
+	m_DMABuffers.ZeroBuffers ();
 }
 
 void CPWMSoundBaseDevice::RunPWM (void)
@@ -367,98 +237,18 @@ void CPWMSoundBaseDevice::StopPWM (void)
 	PeripheralExit ();
 }
 
-void CPWMSoundBaseDevice::InterruptHandler (void)
-{
-	assert (m_State != PWMSoundIdle);
-	assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-
-	PeripheralEntry ();
-
-#ifndef NDEBUG
-	u32 nIntStatus = read32 (ARM_DMA_INT_STATUS);
-#endif
-	u32 nIntMask = 1 << m_nDMAChannel;
-	assert (nIntStatus & nIntMask);
-	write32 (ARM_DMA_INT_STATUS, nIntMask);
-
-	u32 nCS = read32 (ARM_DMACHAN_CS (m_nDMAChannel));
-	assert (nCS & CS_INT);
-	write32 (ARM_DMACHAN_CS (m_nDMAChannel), nCS);	// reset CS_INT
-
-	PeripheralExit ();
-
-	if (nCS & CS_ERROR)
-	{
-		m_State = PWMSoundError;
-
-		return;
-	}
-
-	m_SpinLock.Acquire ();
-
-	switch (m_State)
-	{
-	case PWMSoundRunning:
-		if (GetNextChunk ())
-		{
-			break;
-		}
-		// fall through
-
-	case PWMSoundCancelled:
-		PeripheralEntry ();
-		write32 (ARM_DMACHAN_NEXTCONBK (m_nDMAChannel), 0);
-		PeripheralExit ();
-
-		// avoid clicks
-		PeripheralEntry ();
-		write32 (PWM_CTL, read32 (PWM_CTL) | ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2);
-		PeripheralExit ();
-
-		m_State = PWMSoundTerminating;
-		break;
-
-	case PWMSoundTerminating:
-		m_State = PWMSoundIdle;
-		break;
-
-	default:
-		assert (0);
-		break;
-	}
-
-	m_SpinLock.Release ();
-}
-
-void CPWMSoundBaseDevice::InterruptStub (void *pParam)
+unsigned CPWMSoundBaseDevice::ChunkCompletedHandler (boolean bStatus, u32 *pBuffer,
+						     unsigned nChunkSize, void *pParam)
 {
 	CPWMSoundBaseDevice *pThis = (CPWMSoundBaseDevice *) pParam;
 	assert (pThis != 0);
 
-	pThis->InterruptHandler ();
-}
+	if (!bStatus)
+	{
+		pThis->m_bError = TRUE;
 
-void CPWMSoundBaseDevice::SetupDMAControlBlock (unsigned nID)
-{
-	assert (nID <= 1);
+		return 0;
+	}
 
-	m_pDMABuffer[nID] = new (HEAP_DMA30) u32[m_nChunkSize];
-	assert (m_pDMABuffer[nID] != 0);
-
-	m_pControlBlockBuffer[nID] = new (HEAP_DMA30) u8[sizeof (TDMAControlBlock) + 31];
-	assert (m_pControlBlockBuffer[nID] != 0);
-	m_pControlBlock[nID] = (TDMAControlBlock *) (((uintptr) m_pControlBlockBuffer[nID] + 31) & ~31);
-
-	m_pControlBlock[nID]->nTransferInformation     =   (DREQ_SOURCE << TI_PERMAP_SHIFT)
-						         | (DEFAULT_BURST_LENGTH << TI_BURST_LENGTH_SHIFT)
-						         | TI_SRC_WIDTH
-						         | TI_SRC_INC
-						         | TI_DEST_DREQ
-						         | TI_WAIT_RESP
-						         | TI_INTEN;
-	m_pControlBlock[nID]->nSourceAddress           = BUS_ADDRESS ((uintptr) m_pDMABuffer[nID]);
-	m_pControlBlock[nID]->nDestinationAddress      = (PWM_FIF1 & 0xFFFFFF) + GPU_IO_BASE;
-	m_pControlBlock[nID]->n2DModeStride            = 0;
-	m_pControlBlock[nID]->nReserved[0]	       = 0;
-	m_pControlBlock[nID]->nReserved[1]	       = 0;
+	return pThis->GetChunk (pBuffer, nChunkSize);
 }

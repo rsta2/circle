@@ -6,7 +6,7 @@ This document gives some information for Circle users, who want to help developi
 
 If you encounter a problem or want a new feature in Circle, you can create a new issue [here](https://github.com/rsta2/circle/issues). Before you do so, please check, if the same issue has been created by another user yet. You can use the search function to accomplish this. Some basic known issues have been reported [here](doc/issues.txt). Please check them too.
 
-Please take a moment to think about, if your request is not related more to the [circle-stdlib project](https://github.com/smuehlst/circle-stdlib), if you are using it together with Circle. If so, please create your issue there.
+Please take a moment to think about, if your request is not related more to the [circle-stdlib project](https://codeberg.org/larchcone/circle-stdlib), if you are using it together with Circle. If so, please create your issue there.
 
 ## Pull Requests
 

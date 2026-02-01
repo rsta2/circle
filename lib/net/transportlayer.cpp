@@ -20,6 +20,7 @@
 #include <circle/net/transportlayer.h>
 #include <circle/net/tcpconnection.h>
 #include <circle/net/udpconnection.h>
+#include <circle/net/error.h>
 #include <circle/net/in.h>
 #include <circle/string.h>
 #include <circle/macros.h>
@@ -138,7 +139,7 @@ int CTransportLayer::Bind (u16 nOwnPort, int nProtocol)
 {
 	if (nProtocol != IPPROTO_UDP)
 	{
-		return -1;
+		return -NET_ERROR_PROTOCOL_NOT_SUPPORTED;
 	}
 
 	m_SpinLock.Acquire ();
@@ -161,14 +162,7 @@ int CTransportLayer::Bind (u16 nOwnPort, int nProtocol)
 	{
 		m_SpinLock.Release ();
 
-		return -1;
-	}
-
-	if (nProtocol != IPPROTO_UDP)
-	{
-		m_SpinLock.Release ();
-
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	assert (m_pNetConfig != 0);
@@ -237,7 +231,7 @@ int CTransportLayer::Connect (const CIPAddress &rIPAddress, u16 nPort, u16 nOwnP
 
 	default:
 		m_SpinLock.Release ();
-		return -1;
+		return -NET_ERROR_PROTOCOL_NOT_SUPPORTED;
 	}
 
 	m_SpinLock.Release ();
@@ -246,7 +240,7 @@ int CTransportLayer::Connect (const CIPAddress &rIPAddress, u16 nPort, u16 nOwnP
 	int nResult = ((CNetConnection *) m_pConnection[i])->Connect ();
 	if (nResult < 0)
 	{
-		return -1;
+		return nResult;
 	}
 	
 	return i;
@@ -274,14 +268,14 @@ int CTransportLayer::Listen (u16 nOwnPort, int nProtocol)
 	{
 		m_SpinLock.Release ();
 
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	if (nProtocol != IPPROTO_TCP)
 	{
 		m_SpinLock.Release ();
 
-		return -1;
+		return -NET_ERROR_PROTOCOL_NOT_SUPPORTED;
 	}
 
 	assert (m_pNetConfig != 0);
@@ -300,7 +294,7 @@ int CTransportLayer::Accept (CIPAddress *pForeignIP, u16 *pForeignPort, int hCon
 	if (   hConnection >= (int) m_pConnection.GetCount ()
 	    || m_pConnection[hConnection] == 0)
 	{
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	assert (pForeignIP != 0);
@@ -314,7 +308,7 @@ int CTransportLayer::Disconnect (int hConnection)
 	if (   hConnection >= (int) m_pConnection.GetCount ()
 	    || m_pConnection[hConnection] == 0)
 	{
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	return ((CNetConnection *) m_pConnection[hConnection])->Close ();
@@ -326,7 +320,7 @@ int CTransportLayer::Send (const void *pData, unsigned nLength, int nFlags, int 
 	if (   hConnection >= (int) m_pConnection.GetCount ()
 	    || m_pConnection[hConnection] == 0)
 	{
-		return -1;
+		return -NET_ERROR_NOT_CONNECTED;
 	}
 
 	assert (pData != 0);
@@ -340,7 +334,7 @@ int CTransportLayer::Receive (void *pBuffer, int nFlags, int hConnection)
 	if (   hConnection >= (int) m_pConnection.GetCount ()
 	    || m_pConnection[hConnection] == 0)
 	{
-		return -1;
+		return -NET_ERROR_NOT_CONNECTED;
 	}
 
 	assert (pBuffer != 0);
@@ -354,7 +348,7 @@ int CTransportLayer::SendTo (const void *pData, unsigned nLength, int nFlags,
 	if (   hConnection >= (int) m_pConnection.GetCount ()
 	    || m_pConnection[hConnection] == 0)
 	{
-		return -1;
+		return -NET_ERROR_NOT_CONNECTED;
 	}
 
 	assert (pData != 0);
@@ -370,12 +364,36 @@ int CTransportLayer::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeig
 	if (   hConnection >= (int) m_pConnection.GetCount ()
 	    || m_pConnection[hConnection] == 0)
 	{
-		return -1;
+		return -NET_ERROR_NOT_CONNECTED;
 	}
 
 	assert (pBuffer != 0);
 	return ((CNetConnection *) m_pConnection[hConnection])->ReceiveFrom (pBuffer, nFlags,
 									     pForeignIP, pForeignPort);
+}
+
+int CTransportLayer::SetOptionReceiveTimeout (unsigned nMicroSeconds, int hConnection)
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return -NET_ERROR_NOT_CONNECTED;
+	}
+
+	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionReceiveTimeout (nMicroSeconds);
+}
+
+int CTransportLayer::SetOptionSendTimeout (unsigned nMicroSeconds, int hConnection)
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return -NET_ERROR_NOT_CONNECTED;
+	}
+
+	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionSendTimeout (nMicroSeconds);
 }
 
 int CTransportLayer::SetOptionBroadcast (boolean bAllowed, int hConnection)
@@ -384,7 +402,7 @@ int CTransportLayer::SetOptionBroadcast (boolean bAllowed, int hConnection)
 	if (   hConnection >= (int) m_pConnection.GetCount ()
 	    || m_pConnection[hConnection] == 0)
 	{
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionBroadcast (bAllowed);
@@ -396,7 +414,7 @@ int CTransportLayer::SetOptionAddMembership (const CIPAddress &rGroupAddress, in
 	if (   hConnection >= (int) m_pConnection.GetCount ()
 	    || m_pConnection[hConnection] == 0)
 	{
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionAddMembership (rGroupAddress);
@@ -408,7 +426,7 @@ int CTransportLayer::SetOptionDropMembership (const CIPAddress &rGroupAddress, i
 	if (   hConnection >= (int) m_pConnection.GetCount ()
 	    || m_pConnection[hConnection] == 0)
 	{
-		return -1;
+		return -NET_ERROR_INVALID_VALUE;
 	}
 
 	return ((CNetConnection *) m_pConnection[hConnection])->SetOptionDropMembership (rGroupAddress);
@@ -436,6 +454,18 @@ const u8 *CTransportLayer::GetForeignIP (int hConnection) const
 	}
 
 	return ((CNetConnection *) m_pConnection[hConnection])->GetForeignIP ();
+}
+
+CNetConnection::TStatus CTransportLayer::GetStatus (int hConnection) const
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return {FALSE, FALSE, FALSE, FALSE};
+	}
+
+	return ((CNetConnection *) m_pConnection[hConnection])->GetStatus ();
 }
 
 void CTransportLayer::ListConnections (CDevice *pTarget)

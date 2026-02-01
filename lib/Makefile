@@ -40,6 +40,10 @@ OBJS64	= exceptionhandler64.o exceptionstub64.o memory64.o startup64.o \
 
 all: libcircle.a
 
+# For the core library we disable the Address Sanitizer to avoid
+# problems in case of errors inside the library code itself.
+NO_SANITIZE	:= 1
+
 include ../Rules.mk
 
 ifeq ($(strip $(AARCH)),32)
@@ -79,6 +83,10 @@ ifeq ($(strip $(AARCH)),32)
 CFLAGS += -mno-unaligned-access
 else
 CFLAGS += -mstrict-align
+endif
+
+ifeq ($(strip $(KASAN_ENABLED)),1)
+OBJS	+= kasan.o
 endif
 
 libcircle.a: $(OBJS)

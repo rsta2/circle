@@ -37,6 +37,7 @@ void *memmove (void *pDest, const void *pSrc, size_t nLength);
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength);
 
 size_t strlen (const char *pString);
+size_t strnlen (const char *pString, size_t nMaxLen);
 
 int strcmp (const char *pString1, const char *pString2);
 int strcasecmp (const char *pString1, const char *pString2);

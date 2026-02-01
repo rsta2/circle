@@ -2,7 +2,7 @@
 // dmasoundbuffers.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -214,6 +214,29 @@ boolean CDMASoundBuffers::IsActive (void) const
 	return    State == StateRunning
 	       || State == StateCancelled
 	       || State == StateTerminating;
+}
+
+void CDMASoundBuffers::ZeroBuffers(void)
+{
+	assert (m_nChunkSize != 0);
+
+	m_SpinLock.Acquire();
+
+	if (m_pDMABuffer[0] != nullptr)
+	{
+		memset(m_pDMABuffer[0], 0, m_nChunkSize * sizeof(u32));
+		CleanAndInvalidateDataCacheRange((uintptr) m_pDMABuffer[0],
+						 m_nChunkSize * sizeof(u32));
+	}
+
+	if (m_pDMABuffer[1] != nullptr)
+	{
+		memset(m_pDMABuffer[1], 0, m_nChunkSize * sizeof(u32));
+		CleanAndInvalidateDataCacheRange((uintptr) m_pDMABuffer[1],
+						 m_nChunkSize * sizeof(u32));
+	}
+
+	m_SpinLock.Release();
 }
 
 boolean CDMASoundBuffers::GetNextChunk (boolean bFirstCall)

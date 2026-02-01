@@ -2,7 +2,7 @@
 // soundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -184,6 +184,17 @@ int CSoundBaseDevice::GetRangeMin (void) const
 int CSoundBaseDevice::GetRangeMax (void) const
 {
 	return m_nRangeMax;
+}
+
+void CSoundBaseDevice::Flush (void)
+{
+	m_SpinLock.Acquire ();
+	m_nOutPtr = m_nInPtr;
+	m_SpinLock.Release ();
+
+	m_ReadSpinLock.Acquire ();
+	m_nReadOutPtr = m_nReadInPtr;
+	m_ReadSpinLock.Release ();
 }
 
 // Output /////////////////////////////////////////////////////////////

@@ -146,7 +146,11 @@ TARMV8MMU_LEVEL3_DESCRIPTOR *CTranslationTable::CreateLevel3Table (uintptr nBase
 				pDesc->SH	= ATTRIB_SH_OUTER_SHAREABLE;
 			}
 			else if (   nBaseAddress >= MEM_COHERENT_REGION
+#ifndef KASAN_SUPPORTED
 				 && nBaseAddress <  MEM_HEAP_START)
+#else
+				 && nBaseAddress <  MEM_SHADOW_START)
+#endif
 			{
 				pDesc->AttrIndx = ATTRINDX_COHERENT;
 				pDesc->SH	= ATTRIB_SH_OUTER_SHAREABLE;

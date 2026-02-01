@@ -2,7 +2,7 @@
 /// \file logger.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,6 +62,9 @@ public:
 
 	/// \param pTarget Pointer to new target device
 	void SetNewTarget (CDevice *pTarget);
+
+	/// \return Pointer to target device (may be nullptr, if not assigned)
+	CDevice *GetTarget (void) const;
 
 	/// \param pSource  Module name of the originator of the log message
 	/// \param Severity Severity of the log message

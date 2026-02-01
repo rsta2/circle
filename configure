@@ -133,6 +133,7 @@ fi
 	if [ $QEMU -eq 1 ]
 	then
 		echo "DEFINE += -DNO_SDHOST"
+		echo "DEFINE += -DNO_SCREEN_DMA_BURST_LENGTH"
 		if [ $AARCH -eq 32 ]
 		then
 			echo "DEFINE += -DNO_PHYSICAL_COUNTER"

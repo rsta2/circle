@@ -83,6 +83,9 @@ public:
 		    const CIPAddress &rForeignIP, u16 nForeignPort);
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort);
 
+	int SetOptionReceiveTimeout (unsigned nMicroSeconds);
+	int SetOptionSendTimeout (unsigned nMicroSeconds);
+
 	int SetOptionBroadcast (boolean bAllowed);
 
 	int SetOptionAddMembership (const CIPAddress &rGroupAddress);
@@ -102,6 +105,8 @@ public:
 				  CIPAddress &rSenderIP, CIPAddress &rReceiverIP,
 				  u16 nSendPort, u16 nReceivePort,
 				  int nProtocol);
+
+	TStatus GetStatus (void) const;
 
 private:
 	boolean SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber = 0,
@@ -166,6 +171,9 @@ private:
 	u16 m_nSND_MSS;		// send maximum segment size
 
 	CRetransmissionTimeoutCalculator m_RTOCalculator;
+
+	unsigned m_nReceiveTimeout;	// us
+	unsigned m_nSendTimeout;	// us
 
 	static unsigned s_nConnections;
 

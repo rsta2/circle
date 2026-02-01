@@ -2,7 +2,7 @@
 // pwmsoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,19 +28,8 @@
 #include <circle/interrupt.h>
 #include <circle/gpiopin.h>
 #include <circle/gpioclock.h>
-#include <circle/dmachannel.h>
-#include <circle/spinlock.h>
+#include <circle/sound/dmasoundbuffers.h>
 #include <circle/types.h>
-
-enum TPWMSoundState
-{
-	PWMSoundIdle,
-	PWMSoundRunning,
-	PWMSoundCancelled,
-	PWMSoundTerminating,
-	PWMSoundError,
-	PWMSoundUnknown
-};
 
 class CPWMSoundBaseDevice : public CSoundBaseDevice	/// Low level access to the PWM sound device
 {
@@ -72,6 +61,9 @@ public:
 	/// \return Is PWM and DMA operation running?
 	boolean IsActive (void) const;
 
+	/// \brief Flush sound queue(s)
+	void Flush (void);
+
 protected:
 	/// \brief May overload this to provide the sound samples!
 	/// \param pBuffer	buffer where the samples have to be placed
@@ -88,13 +80,10 @@ private:
 	void RunPWM (void);
 	void StopPWM (void);
 
-	void InterruptHandler (void);
-	static void InterruptStub (void *pParam);
-
-	void SetupDMAControlBlock (unsigned nID);
+	static unsigned ChunkCompletedHandler (boolean bStatus, u32 *pBuffer,
+					       unsigned nChunkSize, void *pParam);
 
 private:
-	CInterruptSystem *m_pInterruptSystem;
 	unsigned m_nChunkSize;
 	unsigned m_nRange;
 
@@ -102,17 +91,9 @@ private:
 	CGPIOPin   m_Audio2;
 	CGPIOClock m_Clock;
 
-	boolean m_bIRQConnected;
-	volatile TPWMSoundState m_State;
+	volatile boolean m_bError;
 
-	unsigned m_nDMAChannel;
-	u32 *m_pDMABuffer[2];
-	u8 *m_pControlBlockBuffer[2];
-	TDMAControlBlock *m_pControlBlock[2];
-
-	unsigned m_nNextBuffer;			// 0 or 1
-
-	CSpinLock m_SpinLock;
+	CDMASoundBuffers m_DMABuffers;
 };
 
 #endif

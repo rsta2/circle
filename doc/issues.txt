@@ -26,7 +26,7 @@ Known issues of Circle are:
 * sample/31-webclient does not work any more, because of the missing SSL/TLS
   support. SSL/TLS support for Circle is developed here:
 
-	https://github.com/smuehlst/circle-stdlib
+	https://codeberg.org/larchcone/circle-stdlib
 
 * Some modules in the addon/ subdirectory will not build with STDLIB_SUPPORT = 0.
 

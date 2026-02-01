@@ -61,6 +61,9 @@ public:
 			    const CIPAddress &rForeignIP, u16 nForeignPort) = 0;
 	virtual int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
 
+	virtual int SetOptionReceiveTimeout (unsigned nMicroSeconds) = 0;
+	virtual int SetOptionSendTimeout (unsigned nMicroSeconds) = 0;
+
 	virtual int SetOptionBroadcast (boolean bAllowed) = 0;
 
 	virtual int SetOptionAddMembership (const CIPAddress &rGroupAddress) = 0;
@@ -80,6 +83,15 @@ public:
 					  CIPAddress &rSenderIP, CIPAddress &rReceiverIP,
 					  u16 nSendPort, u16 nReceivePort,
 					  int nProtocol) = 0;
+
+	struct TStatus
+	{
+		boolean bConnected;	///< Is connected
+		boolean bRxReady;	///< Ready to receive without blocking, or shutdown from peer
+		boolean bTxReady;	///< Ready to transmit without blocking
+		boolean bException;	///< Exception arrived (always FALSE)
+	};
+	virtual TStatus GetStatus (void) const = 0;
 
 protected:
 	CNetConfig    *m_pNetConfig;

@@ -2,7 +2,7 @@
 // dmasoundbuffers.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -73,6 +73,9 @@ public:
 
 	/// \return Is DMA operation running?
 	boolean IsActive (void) const;
+
+	/// \brief Fill DMA buffers with zeros
+	void ZeroBuffers (void);
 
 private:
 	boolean GetNextChunk (boolean bFirstCall);

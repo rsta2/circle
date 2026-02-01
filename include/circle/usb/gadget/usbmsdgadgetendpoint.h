@@ -4,7 +4,7 @@
 // USB Mass Storage Gadget by Mike Messinides
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ public:
 	~CUSBMSDGadgetEndpoint (void);
 
 	void OnActivate (void) override;
+	void OnDeactivate (void) override;
 
 	void OnTransferComplete (boolean bIn, size_t nLength) override;
 
@@ -51,6 +52,7 @@ private:
 	};
 
 	void BeginTransfer (TMSDTransferMode Mode, void *pBuffer, size_t nLength);
+	void CancelTransfer (void);
 
 	void StallRequest(boolean bIn);
 

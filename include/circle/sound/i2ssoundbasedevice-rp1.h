@@ -2,7 +2,7 @@
 // i2ssoundbasedevice-rp1.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ public:
 	{
 		DeviceModeTXOnly,
 		DeviceModeRXOnly,
-		DeviceModeTXRX,		// not supported
+		DeviceModeTXRX,		// 2 channels only
 		DeviceModeUnknown
 	};
 
@@ -128,8 +128,10 @@ private:
 	unsigned m_nFIFOThreshold;
 
 #ifndef USE_I2S_SOUND_IRQ
-	CDMAChannelRP1 m_DMAChannel;
-	u32 *m_pDMABuffer[2];
+	CDMAChannelRP1 m_DMAChannelTX;
+	CDMAChannelRP1 m_DMAChannelRX;
+	u32 *m_pDMABufferTX[2];
+	u32 *m_pDMABufferRX[2];
 #endif
 
 	boolean m_bControllerInited;

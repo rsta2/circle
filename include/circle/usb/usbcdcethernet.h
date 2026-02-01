@@ -25,6 +25,7 @@
 #include <circle/usb/usbendpoint.h>
 #include <circle/usb/usbrequest.h>
 #include <circle/macaddress.h>
+#include <circle/synchronize.h>
 #include <circle/types.h>
 
 class CUSBCDCEthernetDevice : public CUSBFunction, CNetDevice
@@ -45,6 +46,8 @@ public:
 	boolean SetMulticastFilter (const u8 Groups[][MAC_ADDRESS_SIZE]);
 
 private:
+	static void CompletionRoutine (CUSBRequest *pURB, void *pParam, void *pContext);
+
 	u8 GetMACAddressStringIndex (void);	// returns 0 on error
 
 	boolean InitMACAddress (u8 iMACAddress);
@@ -58,6 +61,10 @@ private:
 	CUSBEndpoint *m_pEndpointBulkOut;
 
 	CMACAddress m_MACAddress;
+
+	CUSBRequest *volatile m_pURB;
+	DMA_BUFFER (u8, m_RxBuffer, FRAME_BUFFER_SIZE);
+	volatile unsigned m_nRxLength;
 };
 
 #endif

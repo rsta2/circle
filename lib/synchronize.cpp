@@ -143,6 +143,9 @@ void LeaveCritical (void)
 
 void CleanAndInvalidateDataCacheRange (u32 nAddress, u32 nLength)
 {
+	u32 startCacheLine = nAddress & (~(DATA_CACHE_LINE_LENGTH_MIN - 1));
+	nLength += nAddress - startCacheLine;
+	nAddress = startCacheLine;
 	while (1)
 	{
 		asm volatile ("mcr p15, 0, %0, c7, c14,  1" : : "r" (nAddress) : "memory");

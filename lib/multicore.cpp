@@ -6,7 +6,7 @@
 //	Licensed under GPL2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -83,14 +83,14 @@ boolean CMultiCoreSupport::Initialize (void)
 
 		DataSyncBarrier ();
 #else
-		TSpinTable * volatile pSpinTable = (TSpinTable * volatile) ARM_SPIN_TABLE_BASE;
+		uintptr ulSpinAddress = ARM_SPIN_TABLE_BASE + nCore * sizeof (uintptr);
 #endif
 
 		unsigned nTimeout = 100;
 #if AARCH == 32
 		while (read32 (nMailBoxClear) != 0)
 #else
-		while (pSpinTable->SpinCore[nCore] != 0)
+		while (read64 (ulSpinAddress) != 0)
 #endif
 		{
 			if (--nTimeout == 0)
@@ -106,8 +106,7 @@ boolean CMultiCoreSupport::Initialize (void)
 #if AARCH == 32
 		write32 (ARM_LOCAL_MAILBOX3_SET0 + 0x10 * nCore, (u32) &_start_secondary);
 #else
-		pSpinTable->SpinCore[nCore] = (uintptr) &_start_secondary;
-		// TODO: CleanDataCacheRange ((u64) pSpinTable, sizeof *pSpinTable);
+		write64 (ulSpinAddress, (uintptr) &_start_secondary);
 		CleanDataCache ();
 #endif
 
@@ -130,7 +129,7 @@ boolean CMultiCoreSupport::Initialize (void)
 #if AARCH == 32
 		while (read32 (nMailBoxClear) != 0);
 #else
-		while (pSpinTable->SpinCore[nCore] != 0);
+		while (read64 (ulSpinAddress) != 0);
 #endif
 	}
 
@@ -301,8 +300,7 @@ void CMultiCoreSupport::EntrySecondary (void)
 #if AARCH == 32
 	write32 (ARM_LOCAL_MAILBOX3_CLR0 + 0x10 * nCore, 0);
 #elif RASPPI <= 4
-	TSpinTable * volatile pSpinTable = (TSpinTable * volatile) ARM_SPIN_TABLE_BASE;
-	pSpinTable->SpinCore[nCore] = 0;
+	write64 (ARM_SPIN_TABLE_BASE + nCore * sizeof (uintptr), 0);
 	DataSyncBarrier ();
 #else
 	CTimer::SimpleMsDelay (20);

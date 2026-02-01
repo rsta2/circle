@@ -11,7 +11,7 @@
 //	https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=8496
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -265,6 +265,27 @@ boolean CI2SSoundBaseDevice::IsActive (void) const
 	}
 
 	return FALSE;
+}
+
+void CI2SSoundBaseDevice::Flush (void)
+{
+	CSoundBaseDevice::Flush ();
+
+	// Clear I2S-specific FIFOs
+	PeripheralEntry();
+	write32(ARM_PCM_CS_A, read32(ARM_PCM_CS_A) | CS_A_TXCLR | CS_A_RXCLR);
+	CTimer::Get()->usDelay(10);
+	PeripheralExit();
+
+	// Zero DMA buffers
+	if (m_DeviceMode != DeviceModeRXOnly)
+	{
+		m_TXBuffers.ZeroBuffers();
+	}
+	if (m_DeviceMode != DeviceModeTXOnly)
+	{
+		m_RXBuffers.ZeroBuffers();
+	}
 }
 
 CSoundController *CI2SSoundBaseDevice::GetController (void)

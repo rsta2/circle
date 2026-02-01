@@ -2,7 +2,7 @@
 // dnsclient.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -94,6 +94,9 @@ CDNSClient::~CDNSClient (void)
 boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 {
 	assert (pHostname != 0);
+	assert (pIPAddress != 0);
+
+	assert (m_pNetSubSystem != 0);
 
 	if ('1' <= *pHostname && *pHostname <= '9')
 	{
@@ -102,8 +105,21 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 			return TRUE;
 		}
 	}
+	else if (strcmp (pHostname, "localhost") == 0)
+	{
+		const CIPAddress *pIP = m_pNetSubSystem->GetConfig ()->GetIPAddress ();
+		assert (pIP != 0);
 
-	assert (m_pNetSubSystem != 0);
+		if (pIP->IsNull ())
+		{
+			return FALSE;
+		}
+
+		pIPAddress->Set (*pIP);
+
+		return TRUE;
+	}
+
 	CIPAddress DNSServer (m_pNetSubSystem->GetConfig ()->GetDNSServer ()->Get ());
 	if (DNSServer.IsNull ())
 	{
@@ -266,7 +282,6 @@ boolean CDNSClient::Resolve (const char *pHostname, CIPAddress *pIPAddress)
 		}
 	}
 
-	assert (pIPAddress != 0);
 	pIPAddress->Set (RRTrailer.RData);
 
 	return TRUE;

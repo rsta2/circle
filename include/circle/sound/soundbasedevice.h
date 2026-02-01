@@ -2,7 +2,7 @@
 // soundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -117,6 +117,9 @@ public:
 	/// \return Is sound data transmission running?
 	/// \note Can be called on any core.
 	virtual boolean IsActive (void) const = 0;
+
+	/// \brief Flush sound queue(s)
+	virtual void Flush (void);
 
 	/// \return Pointer to sound controller object or nullptr, if not supported.
 	virtual CSoundController *GetController (void)		{ return nullptr; }

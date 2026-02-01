@@ -2,7 +2,7 @@
 // synchronizationevent.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ CSynchronizationEvent::~CSynchronizationEvent (void)
 	assert (m_pWaitListHead == 0);
 }
 
-boolean CSynchronizationEvent::GetState (void)
+boolean CSynchronizationEvent::GetState (void) const
 {
 	return m_bState;
 }

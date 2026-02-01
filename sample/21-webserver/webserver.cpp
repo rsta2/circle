@@ -2,7 +2,7 @@
 // webserver.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #include <circle/string.h>
 #include <circle/util.h>
 #include <assert.h>
+
+#define TIMEOUT_SECONDS		10	// receive timeout
 
 #define MAX_CONTENT_SIZE	4000
 
@@ -52,7 +54,7 @@ static const u8 s_Favicon[] =
 static const char FromWebServer[] = "webserver";
 
 CWebServer::CWebServer (CNetSubSystem *pNetSubSystem, CActLED *pActLED, CSocket *pSocket)
-:	CHTTPDaemon (pNetSubSystem, pSocket, MAX_CONTENT_SIZE),
+:	CHTTPDaemon (pNetSubSystem, pSocket, MAX_CONTENT_SIZE, HTTP_PORT, 0, TIMEOUT_SECONDS),
 	m_pActLED (pActLED)
 {
 }

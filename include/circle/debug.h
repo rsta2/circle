@@ -1,9 +1,9 @@
 //
-// debug.h
+/// \file debug.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -22,25 +22,35 @@
 
 #include <circle/types.h>
 
+#if AARCH == 32
 #define Breakpoint(id)		asm volatile ("bkpt %0" :: "i" (id))
-
-#ifndef NDEBUG
+#else
+#define Breakpoint(id)		asm volatile ("brk %0" :: "i" (id))
+#endif
 
 //#define DEBUG_CLICK
 
-void debug_hexdump (const void *pStart, unsigned nBytes, const char *pSource = 0);
+#define DEBUG_HEXDUMP_HEADER	1	///< Show address and size header
+#define DEBUG_HEXDUMP_ADDRESS	2	///< Show address instead of offset
+#define DEBUG_HEXDUMP_ASCII	4	///< Include ASCII dump
+void DebugHexDump (const void *pStart, unsigned nBytes, const char *pSource = 0,
+		   unsigned nFlags = DEBUG_HEXDUMP_HEADER);
 
-void debug_stacktrace (const uintptr *pStackPtr, const char *pSource = 0);
+#define debug_hexdump		DebugHexDump	///< Deprecated
+
+void DebugStackTrace (const uintptr *pStackPtr, const char *pSource = 0);
+
+#define debug_stacktrace	DebugStackTrace	///< Deprecated
 
 #ifdef DEBUG_CLICK
 
-// left and right may be swapped
+/// Left and right may be swapped
 #define DEBUG_CLICK_LEFT	1
 #define DEBUG_CLICK_RIGHT	2
 #define DEBUG_CLICK_ALL		(DEBUG_CLICK_LEFT | DEBUG_CLICK_RIGHT)
-void debug_click (unsigned nMask = DEBUG_CLICK_ALL);
+void DebugClick (unsigned nMask = DEBUG_CLICK_ALL);
 
-#endif
+#define debug_click		DebugClick	///< Deprecated
 
 #endif
 

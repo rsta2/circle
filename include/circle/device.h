@@ -2,7 +2,7 @@
 // device.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ public:
 	/// \param pData Depends on command, used to return command specific data
 	/// \return Zero on success, or error code on failure
 	virtual int IOCtl (unsigned long ulCmd, void *pData);
+#define DEVICE_IOCTL_SYNC 0x10001U		// Complete pending write process (flush buffers)
 
 	/// \return TRUE on successful device removal
 	virtual boolean RemoveDevice (void);

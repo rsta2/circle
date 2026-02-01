@@ -5,7 +5,7 @@
  * which is licensed under the GNU Lesser General Public License version 2.1
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2016-2021  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2016-2025  R. Stange <rsta2@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,13 +21,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+/*
+ * With Address Sanitizer the memset and memcpy functions are
+ * implemented as wrappers in the kasan library. The wrappers
+ * call the renamed functions in this module.
+ */
+#ifdef KASAN_SUPPORTED
+#define MEMSET_SYMBOL __kasan_memset
+#define MEMCPY_SYMBOL __kasan_memcpy
+#else
+#define MEMSET_SYMBOL memset
+#define MEMCPY_SYMBOL memcpy
+#endif
+
 	.text
 
 #if AARCH == 32
 
-	.globl	memset
-	.type   memset, %function
-memset:
+	.globl	MEMSET_SYMBOL
+	.type   MEMSET_SYMBOL, %function
+MEMSET_SYMBOL:
 	tst	r0, #3
 	bne	2f
 	cmp	r2, #16
@@ -56,9 +70,9 @@ memset:
 	bne	4b
 	bx	lr
 
-	.globl	memcpy
-	.type   memcpy, %function
-memcpy:
+	.globl	MEMCPY_SYMBOL
+	.type   MEMCPY_SYMBOL, %function
+MEMCPY_SYMBOL:
 	push	{r0}
 
 	cmp	r2, #127
@@ -90,9 +104,9 @@ memcpy:
 
 #else
 
-	.globl	memset
-	.type   memset, %function
-memset:
+	.globl	MEMSET_SYMBOL
+	.type   MEMSET_SYMBOL, %function
+MEMSET_SYMBOL:
 	cbz	x2, 3f
 	mov	x10, x0
 
@@ -119,14 +133,14 @@ memset:
 6:	cbz	x2, 3b
 	b	2b
 
-	.globl	memcpy
-	.type   memcpy, %function
-memcpy:
+	.globl	MEMCPY_SYMBOL
+	.type   MEMCPY_SYMBOL, %function
+MEMCPY_SYMBOL:
 	mov	x8, x0
 
 	cmp	x2, #127
 	b.ls	2f
-	tst	x1, #7
+	tst	x0, #7
 	b.ne	2f
 	tst	x1, #7
 	b.ne	2f

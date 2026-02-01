@@ -2,7 +2,7 @@
 // httpdaemon.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,8 @@ public:
 		     CSocket	   *pSocket	    = 0,	// is 0 for 1st created instance (listener)
 		     unsigned	    nMaxContentSize = 0,	// buffer size for worker
 		     u16	    nPort	    = HTTP_PORT,
-		     unsigned	    nMaxMultipartSize = 0);	// buffer size for multipart form data
+		     unsigned	    nMaxMultipartSize = 0,	// buffer size for multipart form data
+		     unsigned	    nTimeoutSeconds = 0);	// receive timeout (or 0 to wait forever)
 	~CHTTPDaemon (void);
 
 	void Run (void);
@@ -81,6 +82,7 @@ private:
 	unsigned       m_nMaxContentSize;
 	u16	       m_nPort;
 	unsigned       m_nMaxMultipartSize;
+	unsigned       m_nTimeoutSeconds;
 	
 	u8 *m_pContentBuffer;
 

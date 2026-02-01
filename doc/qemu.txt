@@ -3,16 +3,18 @@ QEMU
 Circle applications can run inside the QEMU processor emulator in 32- and 64-bit
 mode. Not all Raspberry Pi hardware devices are supported by QEMU, so there may
 be restrictions, but a number of Circle samples will run. In the past there was
-no USB and networking support for the Raspberry Pi in the official QEMU, but the
-current v9.1.1 provides USB and TCP/IP networking support now. For running
-Circle applications with USB in QEMU, there is still a patch needed, which is
-provided in this repository:
+no USB and networking support for the Raspberry Pi in the official QEMU, but now
+it provides USB and TCP/IP networking support. For running Circle applications
+with TCP/IP networking in QEMU is still a patch needed, which is provided in
+this repository (commit 62b39b2):
 
-	https://github.com/smuehlst/qemu
+	https://codeberg.org/larchcone/qemu
 
 To get and build the QEMU source code for Circle enter the following commands:
 
-	git clone https://github.com/smuehlst/qemu.git
+	git clone https://codeberg.org/larchcone/qemu.git	# with patch
+	git clone https://gitlab.com/qemu-project/qemu.git	# or latest version
+
 	cd qemu
 
 	mkdir build
@@ -58,8 +60,9 @@ security issues, so be careful!
 
 NETWORKING
 
-Setting up QEMU for networking may be not that easy. The following configuration
-has been tested:
+For running Circle applications with TCP/IP networking in QEMU is still a patch
+needed (see above). Setting up QEMU for networking may be not that easy. The
+following configuration has been tested:
 
 With sample/21-webserver:
 
@@ -78,7 +81,7 @@ with ARM support. You have to add the options -s (enable GDB support) and -S
 following commands:
 
 	file kernel8.elf
-	target extended-remote :1234
+	target remote :1234
 	cont
 
 

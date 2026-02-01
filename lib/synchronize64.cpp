@@ -316,6 +316,9 @@ void CleanDataCache (void)
 
 void InvalidateDataCacheRange (u64 nAddress, u64 nLength)
 {
+	u64 startCacheLine = nAddress & (~(DATA_CACHE_LINE_LENGTH_MIN - 1));
+	nLength += nAddress - startCacheLine;
+	nAddress = startCacheLine;
 	while (1)
 	{
 		asm volatile ("dc ivac, %0" : : "r" (nAddress) : "memory");
@@ -334,6 +337,9 @@ void InvalidateDataCacheRange (u64 nAddress, u64 nLength)
 
 void CleanDataCacheRange (u64 nAddress, u64 nLength)
 {
+	u64 startCacheLine = nAddress & (~(DATA_CACHE_LINE_LENGTH_MIN - 1));
+	nLength += nAddress - startCacheLine;
+	nAddress = startCacheLine;
 	while (1)
 	{
 		asm volatile ("dc cvac, %0" : : "r" (nAddress) : "memory");
@@ -352,6 +358,9 @@ void CleanDataCacheRange (u64 nAddress, u64 nLength)
 
 void CleanAndInvalidateDataCacheRange (u64 nAddress, u64 nLength)
 {
+	u64 startCacheLine = nAddress & (~(DATA_CACHE_LINE_LENGTH_MIN - 1));
+	nLength += nAddress - startCacheLine;
+	nAddress = startCacheLine;
 	while (1)
 	{
 		asm volatile ("dc civac, %0" : : "r" (nAddress) : "memory");

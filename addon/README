@@ -1,7 +1,9 @@
 README
 
-The libraries and samples in this directory (and its subdirectories) have to be
-build manually. To build a sample the library has to be build first.
+The libraries and samples in this directory (and its subdirectories) must be
+manually built. 
+
+Before building a sample, build the library first.
 
 Go to the directory of your choice and do:
 
@@ -20,6 +22,7 @@ qemu		Support library and demos for using Circle with QEMU
 linux	[5]	Linux kernel device driver emulation (used by HDMI sound and accelerated graphics)
 lvgl	[5]	LVGL embedded GUI library (by LVGL Kft)
 microbit [5]	Library providing access to features of the micro:bit computer
+nvme	[5]	Driver for NVMe SSD access using the external PCIe interface (Raspberry Pi 5)
 pico	[5]	Library providing access to features of the Raspberry Pi Pico (e.g. RAM loader)
 profile	[5]	Software profiling library for performance analysis
 rtc	[5]	Library providing drivers for real-time clocks (RTC)

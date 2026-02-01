@@ -53,6 +53,9 @@ public:
 		    const CIPAddress &rForeignIP, u16 nForeignPort);
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort);
 
+	int SetOptionReceiveTimeout (unsigned nMicroSeconds);
+	int SetOptionSendTimeout (unsigned nMicroSeconds);
+
 	int SetOptionBroadcast (boolean bAllowed);
 
 	int SetOptionAddMembership (const CIPAddress &rGroupAddress);
@@ -73,11 +76,14 @@ public:
 				  u16 nSendPort, u16 nReceivePort,
 				  int nProtocol);
 
+	TStatus GetStatus (void) const;
+
 private:
 	boolean m_bOpen;
 	boolean m_bActiveOpen;
 	CNetQueue m_RxQueue;
 	CSynchronizationEvent m_Event;
+	unsigned m_nReceiveTimeout;		// us
 	boolean m_bBroadcastsAllowed;
 	CIPAddress *m_pHostGroup;
 

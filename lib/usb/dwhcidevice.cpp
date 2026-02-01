@@ -2,7 +2,7 @@
 // dwhcidevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -151,7 +151,8 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 	assert (m_pTimer != 0);
 
 	CDWHCIRegister VendorId (DWHCI_CORE_VENDOR_ID);
-	if (VendorId.Read () != 0x4F54280A)
+	if (   VendorId.Read () != 0x4F54280A
+	    && VendorId.Get ()  != 0x4F54294A)		// QEMU
 	{
 		LOGERR ("Unknown vendor 0x%0X", VendorId.Get ());
 		return FALSE;

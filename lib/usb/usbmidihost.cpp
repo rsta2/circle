@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,18 @@ CUSBMIDIHostDevice::CUSBMIDIHostDevice (CUSBFunction *pFunction)
 	m_pPacketBuffer (0),
 	m_hTimer (0)
 {
+	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
+	assert (pDeviceDesc != 0);
+
+	// special handling for Roland JD-08
+	if (   pDeviceDesc->idVendor  == 0x0582
+	    && pDeviceDesc->idProduct == 0x028C)
+	{
+		if (!SelectInterfaceByClass (255, 3, 0))
+		{
+			CLogger::Get ()->Write (FromMIDI, LogError, "Cannot select interface");
+		}
+	}
 }
 
 CUSBMIDIHostDevice::~CUSBMIDIHostDevice (void)
@@ -75,11 +87,12 @@ boolean CUSBMIDIHostDevice::Configure (void)
 		return FALSE;
 	}
 
-	// special handling for Roland UM-ONE MIDI interface
+	// special handling for Roland UM-ONE and JD-08
 	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
 	assert (pDeviceDesc != 0);
-	boolean bIsRolandUMOne =    pDeviceDesc->idVendor  == 0x0582
-				 && pDeviceDesc->idProduct == 0x012A;
+	boolean bIsRoland =    pDeviceDesc->idVendor == 0x0582
+			    && (   pDeviceDesc->idProduct == 0x012A
+			        || pDeviceDesc->idProduct == 0x028C);
 
 	// Our strategy for now is simple: we'll take the first MIDI streaming
 	// bulk-in endpoint on this interface we can find.  To distinguish
@@ -96,7 +109,7 @@ boolean CUSBMIDIHostDevice::Configure (void)
 			continue;
 		}
 
-		if (!bIsRolandUMOne)
+		if (!bIsRoland)
 		{
 			TUSBMIDIStreamingEndpointDescriptor *pMIDIDesc =
 				(TUSBMIDIStreamingEndpointDescriptor *) GetDescriptor (DESCRIPTOR_CS_ENDPOINT);

@@ -2,7 +2,7 @@
 // heapallocator.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,6 +62,15 @@ size_t CHeapAllocator::GetFreeSpace (void) const
 
 void *CHeapAllocator::Allocate (size_t nSize)
 {
+#ifdef KASAN_SUPPORTED
+	return KasanAllocateHook (*this, nSize);
+#else
+	return DoAllocate (nSize);
+#endif
+}
+
+void *CHeapAllocator::DoAllocate (size_t nSize)
+{
 	if (m_pNext == 0)
 	{
 		return 0;
@@ -91,7 +100,7 @@ void *CHeapAllocator::Allocate (size_t nSize)
 	if (   pBucket->nSize > 0
 	    && (pBlockHeader = pBucket->pFreeList) != 0)
 	{
-		assert (pBlockHeader->nMagic == HEAP_BLOCK_MAGIC);
+		assert (pBlockHeader->nMagic == HEAP_BLOCK_FREE_MAGIC);
 		pBucket->pFreeList = pBlockHeader->pNext;
 	}
 	else
@@ -130,12 +139,12 @@ void *CHeapAllocator::Allocate (size_t nSize)
 
 		m_pNext = pNextBlock;
 
-		pBlockHeader->nMagic = HEAP_BLOCK_MAGIC;
 		pBlockHeader->nSize = (u32) nSize;
 	}
 
 	m_SpinLock.Release ();
 
+	pBlockHeader->nMagic = HEAP_BLOCK_ALLOC_MAGIC;
 	pBlockHeader->pNext = 0;
 
 	void *pResult = pBlockHeader->Data;
@@ -145,6 +154,15 @@ void *CHeapAllocator::Allocate (size_t nSize)
 }
 
 void *CHeapAllocator::ReAllocate (void *pBlock, size_t nSize)
+{
+#ifdef KASAN_SUPPORTED
+	return KasanReAllocateHook (*this, pBlock, nSize);
+#else
+	return DoReAllocate (pBlock, nSize);
+#endif
+}
+
+void *CHeapAllocator::DoReAllocate (void *pBlock, size_t nSize)
 {
 	if (pBlock == 0)
 	{
@@ -160,7 +178,7 @@ void *CHeapAllocator::ReAllocate (void *pBlock, size_t nSize)
 
 	THeapBlockHeader *pBlockHeader =
 		(THeapBlockHeader *) ((uintptr) pBlock - sizeof (THeapBlockHeader));
-	assert (pBlockHeader->nMagic == HEAP_BLOCK_MAGIC);
+	assert (pBlockHeader->nMagic == HEAP_BLOCK_ALLOC_MAGIC);
 	if (pBlockHeader->nSize >= nSize)
 	{
 		return pBlock;
@@ -181,6 +199,15 @@ void *CHeapAllocator::ReAllocate (void *pBlock, size_t nSize)
 
 void CHeapAllocator::Free (void *pBlock)
 {
+#ifdef KASAN_SUPPORTED
+	KasanFreeHook (*this, pBlock);
+#else
+	DoFree (pBlock);
+#endif
+}
+
+void CHeapAllocator::DoFree (void *pBlock)
+{
 	if (pBlock == 0)
 	{
 		return;
@@ -188,7 +215,8 @@ void CHeapAllocator::Free (void *pBlock)
 
 	THeapBlockHeader *pBlockHeader =
 		(THeapBlockHeader *) ((uintptr) pBlock - sizeof (THeapBlockHeader));
-	assert (pBlockHeader->nMagic == HEAP_BLOCK_MAGIC);
+	assert (pBlockHeader->nMagic == HEAP_BLOCK_ALLOC_MAGIC);
+	pBlockHeader->nMagic = HEAP_BLOCK_FREE_MAGIC;
 
 	for (THeapBlockBucket *pBucket = m_Bucket; pBucket->nSize > 0; pBucket++)
 	{
@@ -212,6 +240,8 @@ void CHeapAllocator::Free (void *pBlock)
 #ifdef HEAP_DEBUG
 	CLogger::Get ()->Write (m_pHeapName, LogDebug, "Trying to free large block (size %u)",
 				pBlockHeader->nSize);
+
+	pBlockHeader->nMagic = 0;
 #endif
 }
 

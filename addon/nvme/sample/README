@@ -1,0 +1,50 @@
+README
+
+This sample program provides several different tests for an attached NVMe SSD.
+It only runs on the Raspberry Pi 5 and has been tested with the Raspberry Pi SSD
+Kit (256 GB version), which bundles a Raspberry Pi M.2 HAT+ with a Raspberry Pi
+NVMe SSD. Be sure that your SSD DOES NOT CONTAIN ANY IMPORTANT DATA, when you
+run this test.
+
+You have to build the following libraries to be able to build this sample
+afterwards:
+
+* Circle base libraries
+* FatFs library in addon/fatfs/
+* NVMe library in addon/nvme/
+
+Before building the sample, you have to configure it to select the wanted test
+in the file kernel.h. The following tests are available:
+
+1. TEST_DUMP_MBR (default)
+
+This test dumps the Master Boot Block of the NVMe SSD to the logger, which is
+normally displayed on the screen. It only read one data block (with LBA 0) from
+the SSD.
+
+2. TEST_RAW_READ
+
+This test read raw reads data blocks from the SSD and displays the reached data
+transfer rate afterwards. By default it reads 100000 4KB blocks (about 400 MB
+total). This can be changed in the test's source code in the file kernel.cpp.
+
+To demonstrate the pseudo-parallel operation with the scheduler, which is
+supported by the NVMe SSD driver, you can define the system option NO_BUSY_WAIT
+in Config.mk and rebuild everything. In this case a blink pattern is shown on
+the Act LED, while reading the data blocks.
+
+3. TEST_CIRCLE_FS
+
+This test uses the native (limited) FAT file system driver of Circle to display
+the root directory of the 1st partition on the SSD, writes a file (optional) and
+reads a file on it. The partition must be formatted as a FAT file system. The
+file written has the name "circle.txt". The file written has the same name, when
+writing was enabled or the name "issue.txt" otherwise. Writing can be enabled
+by setting TEST_RO to 0 in the file kernel.h.
+
+4. TEST_FATFS
+
+This test uses Chan's FatFs file system library, which has been ported to
+Circle, to do the same tests like in test 3. FatFs supports more features of the
+FAT file system. The test is read-only by default. Writing can be enabled by
+setting TEST_RO to 0 in the file kernel.h.

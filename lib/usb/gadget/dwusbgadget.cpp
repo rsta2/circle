@@ -506,14 +506,24 @@ void CDWUSBGadget::HandleUSBSuspend (void)
 	LOGDBG ("USB suspend");
 #endif
 
-	m_bPnPEvent[PnPEventSuspend] = TRUE;
-
-	for (unsigned i = 0; i <= NumberOfEPs; i++)
+	if (   m_State != StatePowered
+	    && m_State != StateSuspended)
 	{
-		if (m_pEP[i])
+		m_bPnPEvent[PnPEventSuspend] = TRUE;
+
+		for (unsigned i = 0; i <= NumberOfEPs; i++)
 		{
-			m_pEP[i]->OnSuspend ();
+			if (m_pEP[i])
+			{
+				m_pEP[i]->OnSuspend ();
+			}
 		}
+
+		// Disable all interrupts
+		CDWHCIRegister AHBConfig (DWHCI_CORE_AHB_CFG);
+		AHBConfig.Read ();
+		AHBConfig.And (~DWHCI_CORE_AHB_CFG_GLOBALINT_MASK);
+		AHBConfig.Write ();
 	}
 
 	CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT, DWHCI_CORE_INT_MASK_USB_SUSPEND);
@@ -525,6 +535,21 @@ void CDWUSBGadget::HandleUSBReset (void)
 #ifdef USB_GADGET_DEBUG
 	LOGDBG ("USB reset");
 #endif
+
+	switch (m_State)
+	{
+	case StateConfigured:
+		SetConfiguration (0);
+		// fall through
+
+	case StateEnumDone:
+		assert (m_pEP[0]);
+		m_pEP[0]->OnDeactivate ();
+		break;
+
+	default:
+		break;
+	}
 
 	// Set NAK for all OUT EPs
 	for (unsigned i = 0; i <= NumberOfOutEPs; i++)
@@ -649,7 +674,8 @@ void CDWUSBGadget::HandleOutEPInterrupt (void)
 	LOGDBG ("Out EP interrupt");
 #endif
 
-	assert (   m_State == StateEnumDone
+	assert (   m_State == StateSuspended
+		|| m_State == StateEnumDone
 		|| m_State == StateConfigured);
 
 	CDWHCIRegister AllEPsIntStat (DWHCI_DEV_ALL_EPS_INT_STAT);
@@ -660,9 +686,19 @@ void CDWUSBGadget::HandleOutEPInterrupt (void)
 	{
 		if (nOutEPStat & 1)
 		{
-			assert (nEP <= NumberOfEPs);
-			assert (m_pEP[nEP]);
-			m_pEP[nEP]->HandleOutInterrupt ();
+			if (m_State != StateSuspended)
+			{
+				assert (nEP <= NumberOfEPs);
+				assert (m_pEP[nEP]);
+				m_pEP[nEP]->HandleOutInterrupt ();
+			}
+			else
+			{
+				CDWHCIRegister OutEPIntAck (DWHCI_DEV_OUT_EP_INT (nEP));
+				OutEPIntAck.Set (  DWHCI_DEV_OUT_EP_INT_SETUP_DONE
+						 | DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE);
+				OutEPIntAck.Write ();
+			}
 		}
 	}
 }
@@ -676,12 +712,14 @@ void CDWUSBGadget::InterruptHandler (void)
 	u32 nIntStatus = IntStatus.Read () & IntMask.Read ();
 
 #ifdef USB_GADGET_DEBUG
-	LOGDBG ("IRQ (status 0x%08X)", nIntStatus);
+	LOGDBG ("IRQ (status 0x%08X, state %u)", nIntStatus, (unsigned) m_State);
 #endif
 
 	if (nIntStatus & DWHCI_CORE_INT_MASK_USB_SUSPEND)
 	{
 		HandleUSBSuspend ();
+
+		nIntStatus = 0;
 	}
 
 	if (nIntStatus & DWHCI_CORE_INT_MASK_USB_RESET_INTR)
@@ -752,6 +790,26 @@ void CDWUSBGadget::SetDeviceAddress (u8 uchAddress)
 
 boolean CDWUSBGadget::SetConfiguration (u8 uchConfiguration)
 {
+	if (uchConfiguration == 0)
+	{
+		if (m_State == StateEnumDone)
+		{
+			return TRUE;
+		}
+
+		m_State = StateEnumDone;
+
+		for (unsigned i = 1; i <= NumberOfEPs; i++)
+		{
+			if (m_pEP[i])
+			{
+				m_pEP[i]->OnDeactivate ();
+			}
+		}
+
+		return TRUE;
+	}
+
 	if (uchConfiguration != 1)
 	{
 		return FALSE;

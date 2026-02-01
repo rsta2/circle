@@ -78,6 +78,19 @@ size_t strlen (const char *pString)
 	return nResult;
 }
 
+size_t strnlen (const char *pString, size_t nMaxLen)
+{
+	size_t nResult = 0;
+
+	while (    nMaxLen--
+	       &&  *pString++)
+	{
+		nResult++;
+	}
+
+	return nResult;
+}
+
 int strcmp (const char *pString1, const char *pString2)
 {
 	while (   *pString1 != '\0'

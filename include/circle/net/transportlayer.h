@@ -64,6 +64,9 @@ public:
 	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,
 			 u16 *pForeignPort, int hConnection);
 
+	int SetOptionReceiveTimeout (unsigned nMicroSeconds, int hConnection);
+	int SetOptionSendTimeout (unsigned nMicroSeconds, int hConnection);
+
 	int SetOptionBroadcast (boolean bAllowed, int hConnection);
 
 	int SetOptionAddMembership (const CIPAddress &rGroupAddress, int hConnection);
@@ -71,6 +74,8 @@ public:
 
 	boolean IsConnected (int hConnection) const;
 	const u8 *GetForeignIP (int hConnection) const;		// returns 0 if not connected
+
+	CNetConnection::TStatus GetStatus (int hConnection) const;
 
 	void ListConnections (CDevice *pTarget);
 

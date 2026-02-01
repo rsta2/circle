@@ -26,6 +26,7 @@
 #include <circle/usb/usb.h>
 #include <circle/usb/usbaudio.h>
 #include <circle/interrupt.h>
+#include <circle/sysconfig.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -33,7 +34,11 @@ class CUSBMIDIGadget : public CDWUSBGadget	/// USB MIDI (v1.0) gadget
 {
 public:
 	/// \param pInterruptSystem Pointer to the interrupt system object
-	CUSBMIDIGadget (CInterruptSystem *pInterruptSystem);
+	/// \param usVendorID USB vendor ID of the gadget
+	/// \param usProductID USB product ID of the gadget
+	CUSBMIDIGadget (CInterruptSystem *pInterruptSystem,
+			u16 usVendorID = USB_GADGET_VENDOR_ID,
+			u16 usProductID = USB_GADGET_DEVICE_ID_MIDI);
 
 	~CUSBMIDIGadget (void);
 
@@ -74,7 +79,7 @@ private:
 	u8 m_StringDescriptorBuffer[80];
 
 private:
-	static const TUSBDeviceDescriptor s_DeviceDescriptor;
+	static TUSBDeviceDescriptor s_DeviceDescriptor;
 
 	struct TUSBMIDIGadgetConfigurationDescriptor
 	{

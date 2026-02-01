@@ -2,7 +2,7 @@
 // memory.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,9 +53,12 @@ public:
 #define COHERENT_SLOT_PROP_MAILBOX	0
 #define COHERENT_SLOT_GPIO_VIRTBUF	1
 #define COHERENT_SLOT_TOUCHBUF		2
+#if RASPPI >= 5
+#define COHERENT_SLOT_NVME		3
+#endif
 
-#define COHERENT_SLOT_MACB_START	3
-#define COHERENT_SLOT_MACB_END		(3 + 256*1024 / PAGE_SIZE - 1)
+#define COHERENT_SLOT_MACB_START	4
+#define COHERENT_SLOT_MACB_END		(4 + 256*1024 / PAGE_SIZE - 1)
 
 #define COHERENT_SLOT_VCHIQ_START	(MEGABYTE / PAGE_SIZE / 2)
 #define COHERENT_SLOT_VCHIQ_END		(MEGABYTE / PAGE_SIZE - 1)
@@ -166,6 +169,13 @@ public:
 #endif
 	}
 
+	static size_t GetLowMemSize (void)	{ return s_pThis->m_nMemSize; }
+	static size_t GetHighMemSize (void)	{ return s_pThis->m_nMemSizeHigh; }
+
+#ifdef KASAN_SUPPORTED
+	static size_t GetShadowMemSize (void)	{ return s_pThis->m_nShadowMemSize; }
+#endif
+
 private:
 	void EnableMMU (void);
 
@@ -173,6 +183,9 @@ private:
 	boolean m_bEnableMMU;
 	size_t m_nMemSize;
 	size_t m_nMemSizeHigh;
+#ifdef KASAN_SUPPORTED
+	size_t m_nShadowMemSize;
+#endif
 
 	CHeapAllocator m_HeapLow;
 #if RASPPI >= 4
