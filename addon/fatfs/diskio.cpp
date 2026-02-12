@@ -28,6 +28,7 @@
 static const char *s_pVolumeName[FF_VOLUMES] =
 {
 	"emmc1",
+	"emmc2",
 	"umsd1",
 	"umsd2",
 	"umsd3",
