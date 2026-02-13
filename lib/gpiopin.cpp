@@ -2,7 +2,7 @@
 // gpiopin.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,11 @@
 #include <circle/timer.h>
 #include <assert.h>
 
-CSpinLock CGPIOPin::s_SpinLock;
+#ifdef USE_GPIO_MANAGER_FIQ
+CSpinLock CGPIOPin::s_SpinLock (FIQ_LEVEL);
+#else
+CSpinLock CGPIOPin::s_SpinLock (IRQ_LEVEL);
+#endif
 
 CGPIOPin::CGPIOPin (void)
 :	m_nPin (GPIO_PINS),
