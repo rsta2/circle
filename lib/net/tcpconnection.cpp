@@ -635,13 +635,13 @@ void CTCPConnection::Process (void)
 		if (   m_TxQueue.IsEmpty ()
 		    && m_bFINQueued)
 		{
-			SendSegment (TCP_FLAG_FIN | TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
-			m_RTOCalculator.SegmentSent (m_nSND_NXT);
 			if (!m_bFINSent)
 			{
 				m_nSND_NXT++;
 				m_bFINSent = TRUE;
 			}
+			SendSegment (TCP_FLAG_FIN | TCP_FLAG_ACK, m_nSND_NXT-1, m_nRCV_NXT);
+			m_RTOCalculator.SegmentSent (m_nSND_NXT-1);
 			NEW_STATE (m_StateAfterFIN);
 			m_bFINQueued = FALSE;
 			StartTimer (TCPTimerRetransmission, m_RTOCalculator.GetRTO ());
@@ -1955,8 +1955,11 @@ TTCPState CTCPConnection::NewState (TTCPState State, unsigned nLine)
 	assert (m_State < sizeof s_pStateName / sizeof s_pStateName[0]);
 	assert (State < sizeof s_pStateName / sizeof s_pStateName[0]);
 
-	CLogger::Get ()->Write (FromTCP, LogDebug, "State %s -> %s at line %u",
-				s_pStateName[m_State], s_pStateName[State], nLine);
+	if (m_State != State)
+	{
+		CLogger::Get ()->Write (FromTCP, LogDebug, "State %s -> %s at line %u",
+					s_pStateName[m_State], s_pStateName[State], nLine);
+	}
 
 	return m_State = State;
 }
