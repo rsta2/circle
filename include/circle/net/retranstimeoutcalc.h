@@ -32,7 +32,7 @@ public:
 
 	unsigned GetRTO (void) const;
 
-	void Initialize (u32 nISN, unsigned nMaxWindow, unsigned nMSS);
+	void Initialize (u32 nISN, unsigned nMaxWindow, unsigned nMinMSS);
 
 	void SegmentSent (u32 nSequenceNumber, u32 nLength = 1);
 	void SegmentAcknowledged (u32 nAcknowledgmentNumber);
@@ -51,13 +51,9 @@ private:
 		unsigned nRetransmissions;
 	};
 
-	static const unsigned MaxWindow = 65535;
-	static const unsigned MinMSS = 512;
-	static const unsigned SegmentMapSize = MaxWindow / (MinMSS / 2) + 1;
-
 	unsigned CalculateHash (u32 nSequenceNumber)
 	{
-		return (nSequenceNumber % m_nMaxWindow) / (m_nMSS / 2);
+		return (nSequenceNumber % m_nMaxWindow) / (m_nMinMSS / 2);
 	}
 
 private:
@@ -65,14 +61,15 @@ private:
 
 	u32 m_nISN;
 	unsigned m_nMaxWindow;
-	unsigned m_nMSS;
+	unsigned m_nMinMSS;
 	unsigned m_nRTO;
 
 	boolean m_bFirstMeasurement;
 	unsigned m_nSRTT;
 	unsigned m_nRTTVAR;
 
-	TSegmentInfo m_SegmentMap[SegmentMapSize];
+	unsigned m_nSegmentMapSize;
+	TSegmentInfo *m_SegmentMap;
 
 	CSpinLock m_SpinLock;
 };

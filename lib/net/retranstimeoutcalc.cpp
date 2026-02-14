@@ -44,15 +44,20 @@ CRetransmissionTimeoutCalculator::CRetransmissionTimeoutCalculator (void)
 :	m_pTimer (CTimer::Get ()),
 	m_nISN (0),
 	m_nMaxWindow (0),
-	m_nMSS (0),
+	m_nMinMSS (0),
 	m_nRTO (INITIAL_RTO),
-	m_bFirstMeasurement (TRUE)
+	m_bFirstMeasurement (TRUE),
+	m_nSegmentMapSize (0),
+	m_SegmentMap (0)
 {
 	assert (m_pTimer != 0);
 }
 
 CRetransmissionTimeoutCalculator::~CRetransmissionTimeoutCalculator (void)
 {
+	delete m_SegmentMap;
+	m_SegmentMap = 0;
+
 	m_pTimer = 0;
 }
 
@@ -61,8 +66,14 @@ unsigned CRetransmissionTimeoutCalculator::GetRTO (void) const
 	return m_nRTO;
 }
 
-void CRetransmissionTimeoutCalculator::Initialize (u32 nISN, unsigned nMaxWindow, unsigned nMSS)
+void CRetransmissionTimeoutCalculator::Initialize (u32 nISN, unsigned nMaxWindow, unsigned nMinMSS)
 {
+	assert (nMinMSS >= 2);
+	assert (nMinMSS <= nMaxWindow);
+	m_nSegmentMapSize = nMaxWindow / (nMinMSS / 2) + 1;
+	m_SegmentMap = new TSegmentInfo[m_nSegmentMapSize];
+	assert (m_SegmentMap != 0);
+
 	m_SpinLock.Acquire ();
 
 #ifdef RTO_DEBUG
@@ -71,11 +82,11 @@ void CRetransmissionTimeoutCalculator::Initialize (u32 nISN, unsigned nMaxWindow
 
 	m_nISN = nISN;
 	m_nMaxWindow = nMaxWindow;
-	m_nMSS = nMSS;
+	m_nMinMSS = nMinMSS;
 	m_nRTO = INITIAL_RTO;
 	m_bFirstMeasurement = TRUE;
 
-	for (unsigned i = 0; i < SegmentMapSize; i++)
+	for (unsigned i = 0; i < m_nSegmentMapSize; i++)
 	{
 		m_SegmentMap[i].bUsed = FALSE;
 	}
@@ -86,7 +97,7 @@ void CRetransmissionTimeoutCalculator::Initialize (u32 nISN, unsigned nMaxWindow
 void CRetransmissionTimeoutCalculator::SegmentSent (u32 nSequenceNumber, u32 nLength)
 {
 	unsigned nHash = CalculateHash (nSequenceNumber);
-	assert (nHash < SegmentMapSize);
+	assert (nHash < m_nSegmentMapSize);
 	TSegmentInfo &Info = m_SegmentMap[nHash];
 
 	m_SpinLock.Acquire ();
@@ -117,7 +128,7 @@ void CRetransmissionTimeoutCalculator::SegmentSent (u32 nSequenceNumber, u32 nLe
 void CRetransmissionTimeoutCalculator::SegmentAcknowledged (u32 nAcknowledgmentNumber)
 {
 	unsigned nHash = CalculateHash (nAcknowledgmentNumber);
-	assert (nHash < SegmentMapSize);
+	assert (nHash < m_nSegmentMapSize);
 	TSegmentInfo &Info = m_SegmentMap[nHash];
 
 	m_SpinLock.Acquire ();
@@ -146,7 +157,7 @@ void CRetransmissionTimeoutCalculator::SegmentAcknowledged (u32 nAcknowledgmentN
 void CRetransmissionTimeoutCalculator::RetransmissionTimerExpired (u32 nSegmentNumberExpected)
 {
 	unsigned nHash = CalculateHash (nSegmentNumberExpected);
-	assert (nHash < SegmentMapSize);
+	assert (nHash < m_nSegmentMapSize);
 	TSegmentInfo &Info = m_SegmentMap[nHash];
 
 	m_SpinLock.Acquire ();
