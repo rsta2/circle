@@ -4,7 +4,7 @@
 // Calculating TCP retransmission timeout according to RFC 6298
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,10 +43,10 @@ static const char FromRTO[] = "tcprto";
 CRetransmissionTimeoutCalculator::CRetransmissionTimeoutCalculator (void)
 :	m_pTimer (CTimer::Get ()),
 	m_nISN (0),
+	m_nMaxWindow (0),
+	m_nMSS (0),
 	m_nRTO (INITIAL_RTO),
-	m_bFirstMeasurement (TRUE),
-	m_bMeasurementRuns (FALSE),
-	m_nRetransmissions (0)
+	m_bFirstMeasurement (TRUE)
 {
 	assert (m_pTimer != 0);
 }
@@ -61,7 +61,7 @@ unsigned CRetransmissionTimeoutCalculator::GetRTO (void) const
 	return m_nRTO;
 }
 
-void CRetransmissionTimeoutCalculator::Initialize (u32 nISN)
+void CRetransmissionTimeoutCalculator::Initialize (u32 nISN, unsigned nMaxWindow, unsigned nMSS)
 {
 	m_SpinLock.Acquire ();
 
@@ -70,37 +70,56 @@ void CRetransmissionTimeoutCalculator::Initialize (u32 nISN)
 #endif
 
 	m_nISN = nISN;
+	m_nMaxWindow = nMaxWindow;
+	m_nMSS = nMSS;
 	m_nRTO = INITIAL_RTO;
 	m_bFirstMeasurement = TRUE;
-	m_bMeasurementRuns = FALSE;
-	m_nRetransmissions = 0;
+
+	for (unsigned i = 0; i < SegmentMapSize; i++)
+	{
+		m_SegmentMap[i].bUsed = FALSE;
+	}
 
 	m_SpinLock.Release ();
 }
 
 void CRetransmissionTimeoutCalculator::SegmentSent (u32 nSequenceNumber, u32 nLength)
 {
+	unsigned nHash = CalculateHash (nSequenceNumber);
+	assert (nHash < SegmentMapSize);
+	TSegmentInfo &Info = m_SegmentMap[nHash];
+
 	m_SpinLock.Acquire ();
+
+	if (   Info.bUsed
+	    && Info.nSequenceNumber == nSequenceNumber)
+	{
+		Info.nRetransmissions++;
+	}
+	else
+	{
+		assert (m_pTimer != 0);
+
+		Info.bUsed = TRUE;
+		Info.nSequenceNumber = nSequenceNumber;
+		Info.nStartTicks = m_pTimer->GetTicks ();
+		Info.nRetransmissions = 0;
+	}
 
 #ifdef RTO_DEBUG
 	CLogger::Get ()->Write (FromRTO, LogDebug, "Segment sent (seq %u, len %u, retrans %u)",
-				nSequenceNumber-m_nISN, nLength, m_nRetransmissions);
+				nSequenceNumber-m_nISN, nLength, Info.nRetransmissions);
 #endif
-
-	if (   !m_bMeasurementRuns
-	    && m_nRetransmissions == 0)
-	{
-		m_bMeasurementRuns = TRUE;
-
-		assert (m_pTimer != 0);
-		m_nStartTicks = m_pTimer->GetTicks ();
-	}
 
 	m_SpinLock.Release ();
 }
 
 void CRetransmissionTimeoutCalculator::SegmentAcknowledged (u32 nAcknowledgmentNumber)
 {
+	unsigned nHash = CalculateHash (nAcknowledgmentNumber);
+	assert (nHash < SegmentMapSize);
+	TSegmentInfo &Info = m_SegmentMap[nHash];
+
 	m_SpinLock.Acquire ();
 
 #ifdef RTO_DEBUG
@@ -108,28 +127,29 @@ void CRetransmissionTimeoutCalculator::SegmentAcknowledged (u32 nAcknowledgmentN
 				nAcknowledgmentNumber-m_nISN);
 #endif
 
-	// do not need to check nAcknowledgmentNumber because this is called only for valid ACKs
-
-	if (   m_bMeasurementRuns
-	    && m_nRetransmissions == 0)
+	if (   Info.bUsed
+	    && Info.nSequenceNumber == nAcknowledgmentNumber
+	    && Info.nRetransmissions == 0)
 	{
 		assert (m_pTimer != 0);
-		Calculate (m_pTimer->GetTicks () - m_nStartTicks);
-	}
+		unsigned nRTT = m_pTimer->GetTicks () - Info.nStartTicks;
+#ifdef RTO_DEBUG
+		CLogger::Get ()->Write (FromRTO, LogDebug, "RTT was %u", nRTT);
+#endif
 
-	m_bMeasurementRuns = FALSE;
-	m_nRetransmissions = 0;
+		Calculate (nRTT);
+	}
 
 	m_SpinLock.Release ();
 }
 
-void CRetransmissionTimeoutCalculator::RetransmissionTimerExpired (void)
+void CRetransmissionTimeoutCalculator::RetransmissionTimerExpired (u32 nSegmentNumberExpected)
 {
-	m_SpinLock.Acquire ();
+	unsigned nHash = CalculateHash (nSegmentNumberExpected);
+	assert (nHash < SegmentMapSize);
+	TSegmentInfo &Info = m_SegmentMap[nHash];
 
-#ifdef RTO_DEBUG
-	CLogger::Get ()->Write (FromRTO, LogDebug, "Retransmission #%u", m_nRetransmissions);
-#endif
+	m_SpinLock.Acquire ();
 
 	m_nRTO *= 2;					// back off
 	if (m_nRTO > MAX_RTO)
@@ -141,12 +161,19 @@ void CRetransmissionTimeoutCalculator::RetransmissionTimerExpired (void)
 	CLogger::Get ()->Write (FromRTO, LogDebug, "New RTO is %u", m_nRTO);
 #endif
 
-	if (++m_nRetransmissions >= CLEAR_SRTT_AFTER)	// RFC 6298 note 5.7
+	if (   Info.bUsed
+	    && Info.nSequenceNumber == nSegmentNumberExpected)
 	{
-		m_bFirstMeasurement = TRUE;
+		if (++Info.nRetransmissions >= CLEAR_SRTT_AFTER)	// RFC 6298 note 5.7
+		{
+			m_bFirstMeasurement = TRUE;
+		}
 	}
 
-	m_bMeasurementRuns = FALSE;
+#ifdef RTO_DEBUG
+	CLogger::Get ()->Write (FromRTO, LogDebug, "Retransmission #%u (seq %u)",
+				Info.nRetransmissions, nSegmentNumberExpected-m_nISN);
+#endif
 
 	m_SpinLock.Release ();
 }

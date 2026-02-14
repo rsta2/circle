@@ -193,7 +193,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	}
 
 	m_nISS = CalculateISN ();
-	m_RTOCalculator.Initialize (m_nISS);
+	m_RTOCalculator.Initialize (m_nISS, TCP_MAX_WINDOW, m_nSND_MSS);
 
 	m_nSND_UNA = m_nISS;
 	m_nSND_NXT = m_nISS+1;
@@ -895,7 +895,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			}
 
 			m_nISS = CalculateISN ();
-			m_RTOCalculator.Initialize (m_nISS);
+			m_RTOCalculator.Initialize (m_nISS, TCP_MAX_WINDOW, m_nSND_MSS);
 
 			m_ForeignIP.Set (rSenderIP);
 			m_nForeignPort = be2le16 (pHeader->nSourcePort);
@@ -960,7 +960,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 
 			if (nFlags & TCP_FLAG_ACK)
 			{
-				m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+				m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
 				if (nSEG_ACK-m_nSND_UNA > 1)
 				{
@@ -1181,9 +1181,9 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 				m_nSND_WL1 = nSEG_SEQ;
 				m_nSND_WL2 = nSEG_ACK;
 
-				m_nSND_UNA = nSEG_ACK;		// got ACK for SYN
+				m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
-				m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+				m_nSND_UNA = nSEG_ACK;		// got ACK for SYN
 
 				NEW_STATE (TCPStateEstablished);
 
@@ -1210,7 +1210,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 #endif
 			if (bwh (m_nSND_UNA, nSEG_ACK, m_nSND_NXT))
 			{
-				m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+				m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
 				unsigned nBytesAck = nSEG_ACK-m_nSND_UNA;
 				m_nSND_UNA = nSEG_ACK;
@@ -1333,7 +1333,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			case TCPStateFinWait1:
 				if (nSEG_ACK == m_nSND_NXT)	// if our FIN is now acknowledged
 				{
-					m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+					m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
 					m_bFINQueued = FALSE;
 					StopTimer (TCPTimerRetransmission);
@@ -1356,7 +1356,7 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			case TCPStateClosing:
 				if (nSEG_ACK == m_nSND_NXT)	// if our FIN is now acknowledged
 				{
-					m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+					m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
 					m_bFINQueued = FALSE;
 					StopTimer (TCPTimerRetransmission);
@@ -1875,7 +1875,7 @@ void CTCPConnection::TimerHandler (unsigned nTimer)
 	switch (nTimer)
 	{
 	case TCPTimerRetransmission:
-		m_RTOCalculator.RetransmissionTimerExpired ();
+		m_RTOCalculator.RetransmissionTimerExpired (m_nSND_UNA);
 
 		if (m_nRetransmissionCount-- == 0)
 		{
