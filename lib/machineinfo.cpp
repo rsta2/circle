@@ -2,7 +2,7 @@
 // machineinfo.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -452,14 +452,14 @@ unsigned CMachineInfo::GetClockRate (u32 nClockId) const
 	CBcmPropertyTags Tags;
 	TPropertyTagClockRate TagClockRate;
 	TagClockRate.nClockId = nClockId;
-	if (   Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4)
+	if (   Tags.GetTag (PROPTAG_GET_CLOCK_RATE_MEASURED, &TagClockRate, sizeof TagClockRate, 4)
 	    && TagClockRate.nRate != 0)
 	{
 		return TagClockRate.nRate;
 	}
 
 	TagClockRate.nClockId = nClockId;
-	if (   Tags.GetTag (PROPTAG_GET_CLOCK_RATE_MEASURED, &TagClockRate, sizeof TagClockRate, 4)
+	if (   Tags.GetTag (PROPTAG_GET_CLOCK_RATE, &TagClockRate, sizeof TagClockRate, 4)
 	    && TagClockRate.nRate != 0)
 	{
 		return TagClockRate.nRate;
