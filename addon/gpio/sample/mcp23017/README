@@ -1,0 +1,25 @@
+README
+
+This sample demonstrates the CMCP23017 driver for the MCP23017 I2C 16-bit GPIO
+expander. The MCP23017 provides two 8-bit ports (A and B) with configurable
+direction, internal pull-ups, and interrupt-on-change capability.
+
+Before building you have to configure the program in kernel.h according to your
+hardware. You have to set the I2C address (0x20-0x27, depending on the A0-A2 pin
+strapping) and the GPIO numbers of the interrupt lines. The default configuration
+is:
+
+MCP23017	Raspberry Pi	Comment
+		GPIO
+
+SDA	<--	SDA	2	I2C data
+SCL	<--	SCL	3	I2C clock
+INTA	-->		16	Interrupt output port A (active low)
+INTB	-->		26	Interrupt output port B (active low)
+VCC	<--	3.3V		Power supply
+GND	<-->	GND
+
+The sample program reads the initial state of both ports, writes output patterns
+to port A, and then enters a 30-second polling loop. During polling it monitors
+the INTA/INTB lines and logs any pin state changes or interrupt events to the
+screen and serial port (115200 baud).
