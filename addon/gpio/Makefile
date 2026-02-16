@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../..
 
-OBJS	= rtkgpio.o
+OBJS	= rtkgpio.o mcp23017.o
 
 libgpio.a: $(OBJS)
 	@echo "  AR    $@"
