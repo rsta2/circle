@@ -39,6 +39,8 @@
 #define CLK_DIV_DIVI(x)		((x) << 12)
 #define CLK_DIV_DIVF(x)		((x) << 0)
 
+#define ABS_DIFF(n, m)		((n) > (m) ? (n) - (m) : (m) - (n))
+
 CGPIOClock::CGPIOClock (TGPIOClock Clock, TGPIOClockSource Source)
 :	m_Clock (Clock),
 	m_Source (Source)
@@ -88,22 +90,66 @@ boolean CGPIOClock::StartRate (unsigned nRateHZ)
 {
 	assert (nRateHZ > 0);
 
-	for (unsigned nSourceId = 0; nSourceId <= GPIO_CLOCK_SOURCE_ID_MAX; nSourceId++)
+	if (m_Source == GPIOClockSourceUnknown)
 	{
-		unsigned nSourceRate = CMachineInfo::Get ()->GetGPIOClockSourceRate (nSourceId);
-		if (nSourceRate == GPIO_CLOCK_SOURCE_UNUSED)
+		// find clock source, which fits best for requested clock rate
+		double fFreqDiffMin = nRateHZ;
+		for (unsigned nSourceId = 0; nSourceId <= GPIO_CLOCK_SOURCE_ID_MAX; nSourceId++)
 		{
-			continue;
+			unsigned nSourceRate =
+				CMachineInfo::Get ()->GetGPIOClockSourceRate (nSourceId);
+			if (   nSourceRate == GPIO_CLOCK_SOURCE_UNUSED
+			    || nSourceRate < nRateHZ)
+			{
+				continue;
+			}
+
+			double fDivider = (double) nSourceRate / nRateHZ;
+			u32 nDivI = fDivider;
+			u32 nDivF = (fDivider - nDivI) * 4096.0;
+			assert (nDivF < 4096);
+			if (!(1 < nDivI && nDivI < 4096))
+			{
+				continue;
+			}
+
+			double fFreq = (double) nSourceRate / (nDivI + nDivF / 4096.0);
+			double fDiff = ABS_DIFF (fFreq, nRateHZ);
+			if (fDiff < fFreqDiffMin)
+			{
+				fFreqDiffMin = fDiff;
+				m_Source = static_cast<TGPIOClockSource> (nSourceId);
+			}
 		}
 
-		unsigned nDivI = nSourceRate / nRateHZ;
-		if (   1 <= nDivI && nDivI <= 4095
-		    && nRateHZ * nDivI == nSourceRate)
+		if (m_Source == GPIOClockSourceUnknown)
 		{
-			m_Source = (TGPIOClockSource) nSourceId;
-
-			return Start (nDivI, 0, 0);
+			return FALSE;
 		}
+	}
+
+	unsigned nSourceRate = CMachineInfo::Get ()->GetGPIOClockSourceRate (m_Source);
+	assert (nSourceRate != GPIO_CLOCK_SOURCE_UNUSED);
+
+	double fDivider = (double) nSourceRate / nRateHZ;
+	u32 nDivI = fDivider;
+	u32 nDivF = (fDivider - nDivI) * 4096.0;
+	assert (nDivF < 4096);
+
+	unsigned nMASH = 0;
+	if (nDivF > 0)
+	{
+		if (nRateHZ > 25000000)
+		{
+			return FALSE;
+		}
+
+		nMASH = 1;
+	}
+
+	if (1 < nDivI && nDivI < 4096)
+	{
+		return Start (nDivI, nDivF, nMASH);
 	}
 
 	return FALSE;
