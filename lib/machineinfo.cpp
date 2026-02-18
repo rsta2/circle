@@ -189,9 +189,9 @@ s_DTBInfo[] =
 	{0, 0, 0}
 };
 
-#endif
-
 LOGMODULE ("machinfo");
+
+#endif
 
 CMachineInfo *CMachineInfo::s_pThis = 0;
 
