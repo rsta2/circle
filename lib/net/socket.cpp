@@ -19,7 +19,9 @@
 //
 #include <circle/net/socket.h>
 #include <circle/net/netsubsystem.h>
+#include <circle/net/netbuffer.h>
 #include <circle/net/in.h>
+#include <circle/sched/scheduler.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -242,10 +244,48 @@ int CSocket::Send (const void *pBuffer, unsigned nLength, int nFlags)
 	{
 		return -NET_ERROR_INVALID_VALUE;
 	}
-	
+
 	assert (m_pTransportLayer != 0);
+	u16 nMSS = m_pTransportLayer->GetMSS (m_hConnection);
+	if (   nLength > nMSS
+	    && m_nProtocol == IPPROTO_UDP)
+	{
+		return -NET_ERROR_INVALID_VALUE;
+	}
+
 	assert (pBuffer != 0);
-	return m_pTransportLayer->Send (pBuffer, nLength, nFlags, m_hConnection);
+	const u8 *p = (const u8 *) pBuffer;
+	unsigned nRemaining = nLength;
+	while (nRemaining > 0)
+	{
+		unsigned nPayload = nRemaining;
+		int nTempFlags = nFlags;
+		if (nRemaining > nMSS)
+		{
+			nTempFlags |= MSG_MORE;
+			nPayload = nMSS;
+		}
+
+		CNetBuffer *pNetBuffer = new CNetBuffer (  m_nProtocol == IPPROTO_TCP
+							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
+							 nPayload, p);
+		assert (pNetBuffer != 0);
+
+		int nResult = m_pTransportLayer->Send (pNetBuffer, nTempFlags, m_hConnection);
+		if (nResult < 0)
+		{
+			delete pNetBuffer;
+
+			return nResult;
+		}
+
+		p += nPayload;
+		nRemaining -= nPayload;
+
+		CScheduler::Get ()->Yield ();
+	}
+
+	return nLength;
 }
 
 int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
@@ -261,20 +301,22 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 	}
 	
 	assert (m_pTransportLayer != 0);
-	u8 TempBuffer[FRAME_BUFFER_SIZE];
-	int nResult = m_pTransportLayer->Receive (TempBuffer, nFlags, m_hConnection);
-	if (nResult < 0)
+	CNetBuffer *pNetBuffer = 0;
+	int nResult = m_pTransportLayer->Receive (&pNetBuffer, nFlags, m_hConnection);
+	if (nResult > 0)
 	{
-		return nResult;
+		assert (pNetBuffer != 0);
+		assert (pNetBuffer->GetLength () == (unsigned) nResult);
+		if (nLength < (unsigned) nResult)
+		{
+			nResult = nLength;
+		}
+
+		assert (pBuffer != 0);
+		memcpy (pBuffer, pNetBuffer->GetPtr (), nResult);
 	}
 
-	if (nLength < (unsigned) nResult)
-	{
-		nResult = nLength;
-	}
-
-	assert (pBuffer != 0);
-	memcpy (pBuffer, TempBuffer, nResult);
+	delete pNetBuffer;
 
 	return nResult;
 }
@@ -292,6 +334,14 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 		return -NET_ERROR_INVALID_VALUE;
 	}
 	
+	assert (m_pTransportLayer != 0);
+	u16 nMSS = m_pTransportLayer->GetMSS (m_hConnection);
+	if (   nLength > nMSS
+	    && m_nProtocol == IPPROTO_UDP)
+	{
+		return -NET_ERROR_INVALID_VALUE;
+	}
+
 	assert (m_pNetConfig != 0);
 	if (m_pNetConfig->GetIPAddress ()->IsNull ())		// from null source address
 	{
@@ -304,9 +354,40 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 		return -NET_ERROR_INVALID_VALUE;
 	}
 
-	assert (m_pTransportLayer != 0);
 	assert (pBuffer != 0);
-	return m_pTransportLayer->SendTo (pBuffer, nLength, nFlags, rForeignIP, nForeignPort, m_hConnection);
+	const u8 *p = (const u8 *) pBuffer;
+	unsigned nRemaining = nLength;
+	while (nRemaining > 0)
+	{
+		unsigned nPayload = nRemaining;
+		int nTempFlags = nFlags;
+		if (nRemaining > nMSS)
+		{
+			nTempFlags |= MSG_MORE;
+			nPayload = nMSS;
+		}
+
+		CNetBuffer *pNetBuffer = new CNetBuffer (  m_nProtocol == IPPROTO_TCP
+							 ? CNetBuffer::TCPSend : CNetBuffer::UDPSend,
+							 nPayload, p);
+		assert (pNetBuffer != 0);
+
+		int nResult = m_pTransportLayer->SendTo (pNetBuffer, nTempFlags,
+							 rForeignIP, nForeignPort, m_hConnection);
+		if (nResult < 0)
+		{
+			delete pNetBuffer;
+
+			return nResult;
+		}
+
+		p += nPayload;
+		nRemaining -= nPayload;
+
+		CScheduler::Get ()->Yield ();
+	}
+
+	return nLength;
 }
 
 int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
@@ -323,21 +404,23 @@ int CSocket::ReceiveFrom (void *pBuffer, unsigned nLength, int nFlags,
 	}
 	
 	assert (m_pTransportLayer != 0);
-	u8 TempBuffer[FRAME_BUFFER_SIZE];
-	int nResult = m_pTransportLayer->ReceiveFrom (TempBuffer, nFlags,
+	CNetBuffer *pNetBuffer = 0;
+	int nResult = m_pTransportLayer->ReceiveFrom (&pNetBuffer, nFlags,
 						      pForeignIP, pForeignPort, m_hConnection);
-	if (nResult < 0)
+	if (nResult > 0)
 	{
-		return nResult;
+		assert (pNetBuffer != 0);
+		assert (pNetBuffer->GetLength () == (unsigned) nResult);
+		if (nLength < (unsigned) nResult)
+		{
+			nResult = nLength;
+		}
+
+		assert (pBuffer != 0);
+		memcpy (pBuffer, pNetBuffer->GetPtr (), nResult);
 	}
 
-	if (nLength < (unsigned) nResult)
-	{
-		nResult = nLength;
-	}
-
-	assert (pBuffer != 0);
-	memcpy (pBuffer, TempBuffer, nResult);
+	delete pNetBuffer;
 
 	return nResult;
 }

@@ -23,6 +23,7 @@
 #include <circle/net/netconnection.h>
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
+#include <circle/net/netbuffer.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/icmphandler.h>
 #include <circle/types.h>
@@ -34,18 +35,18 @@ public:
 	~CTCPRejector (void);
 
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	int PacketReceived (const void *pPacket, unsigned nLength,
+	int PacketReceived (CNetBuffer *pPacket,
 			    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol);
 
 	// unused
 	int Connect (void)						{ return -1; }
 	int Accept (CIPAddress *pForeignIP, u16 *pForeignPort)		{ return -1; }
 	int Close (void)						{ return -1; }
-	int Send (const void *pData, unsigned nLength, int nFlags)	{ return -1; }
-	int Receive (void *pBuffer, int nFlags)				{ return -1; }
-	int SendTo (const void *pData, unsigned nLength, int nFlags,
+	int Send (CNetBuffer *pData, int nFlags)			{ return -1; }
+	int Receive (CNetBuffer **ppBuffer, int nFlags)			{ return -1; }
+	int SendTo (CNetBuffer *pData, int nFlags,
 		    const CIPAddress &rForeignIP, u16 nForeignPort)	{ return -1; }
-	int ReceiveFrom (void *pBuffer, int nFlags,
+	int ReceiveFrom (CNetBuffer **ppBuffer, int nFlags,
 			 CIPAddress *pForeignIP, u16 *pForeignPort)	{ return -1; }
 	int SetOptionReceiveTimeout (unsigned nMicroSeconds)		{ return -1; }
 	int SetOptionSendTimeout (unsigned nMicroSeconds)		{ return -1; }

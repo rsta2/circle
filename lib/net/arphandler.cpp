@@ -2,7 +2,7 @@
 // arphandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ struct TARPFrame
 PACKED;
 
 CARPHandler::CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer,
-			  CLinkLayer *pLinkLayer, CNetQueue *pRxQueue)
+			  CLinkLayer *pLinkLayer, CNetBufferQueue *pRxQueue)
 :	m_pNetConfig (pNetConfig),
 	m_pNetDevLayer (pNetDevLayer),
 	m_pLinkLayer (pLinkLayer),
@@ -88,29 +88,34 @@ void CARPHandler::Process (void)
 	const CIPAddress *pOwnIPAddress = m_pNetConfig->GetIPAddress ();
 	assert (pOwnIPAddress != 0);
 
-	u8 Buffer[FRAME_BUFFER_SIZE];
-	TARPPacket *pPacket = (TARPPacket *) Buffer;
-
-	u32 nResultLength;
 	assert (m_pRxQueue != 0);
-	while ((nResultLength = m_pRxQueue->Dequeue (pPacket)) != 0)
+	CNetBuffer *pNetBuffer;
+	while ((pNetBuffer = m_pRxQueue->Dequeue ()) != 0)
 	{
-		if (nResultLength <  sizeof (TARPPacket))
+		if (pNetBuffer->GetLength () <  sizeof (TARPPacket))
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
+
+		TARPPacket *pPacket = (TARPPacket *) pNetBuffer->GetPtr ();
 
 		if (   pPacket->nHWAddressSpace        != BE (HW_ADDR_ETHER)
 		    || pPacket->nProtocolAddressSpace  != BE (PROT_ADDR_IP)
 		    || pPacket->nHWAddressLength       != MAC_ADDRESS_SIZE
 		    || pPacket->nProtocolAddressLength != IP_ADDRESS_SIZE)
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
 
 		if (   pOwnIPAddress->IsNull ()
 		    || *pOwnIPAddress != pPacket->ProtocolAddressTarget)
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
 
@@ -129,8 +134,10 @@ void CARPHandler::Process (void)
 			break;
 
 		default:
-			continue;
+			break;
 		}
+
+		delete pNetBuffer;
 	}
 
 	assert (m_pLinkLayer != 0);
@@ -156,10 +163,11 @@ void CARPHandler::Process (void)
 			}
 			else
 			{
+				CNetBuffer *pNetBuffer;
 				assert (pEntry->pTxQueue != 0);
-				while ((nResultLength = pEntry->pTxQueue->Dequeue (Buffer)) != 0)
+				while ((pNetBuffer = pEntry->pTxQueue->Dequeue ()) != 0)
 				{
-					m_pLinkLayer->ResolveFailed (Buffer, nResultLength);
+					m_pLinkLayer->ResolveFailed (pNetBuffer);
 				}
 
 				pEntry->State = ARPStateFreeSlot;
@@ -167,14 +175,15 @@ void CARPHandler::Process (void)
 			break;
 
 		case  ARPStateSendTxQueue:
+			CNetBuffer *pNetBuffer;
 			assert (pEntry->pTxQueue != 0);
-			while ((nResultLength = pEntry->pTxQueue->Dequeue (Buffer)) != 0)
+			while ((pNetBuffer = pEntry->pTxQueue->Dequeue ()) != 0)
 			{
-				TEthernetHeader *pHeader = (TEthernetHeader *) Buffer;
+				TEthernetHeader *pHeader = (TEthernetHeader *) pNetBuffer->GetPtr ();
 				memcpy (pHeader->MACReceiver, pEntry->MACAddress,
 					MAC_ADDRESS_SIZE);
 
-				m_pNetDevLayer->Send (Buffer, nResultLength);
+				m_pNetDevLayer->Send (pNetBuffer);
 			}
 
 			pEntry->State = ARPStateValid;
@@ -206,7 +215,7 @@ void CARPHandler::Process (void)
 }
 
 boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAddress,
-			      const void *pFrame, unsigned nFrameLength)
+			      CNetBuffer *pFrame)
 {
 	unsigned nFreeSlot = ARP_MAX_ENTRIES;
 
@@ -233,7 +242,7 @@ boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAdd
 			if (rIPAddress == m_Entry[nEntry].IPAddress)
 			{
 				assert (m_Entry[nEntry].pTxQueue != 0);
-				m_Entry[nEntry].pTxQueue->Enqueue (pFrame, nFrameLength);
+				m_Entry[nEntry].pTxQueue->Enqueue (pFrame);
 
 				m_Entry[nEntry].nTicksLastUsed = CTimer::Get ()->GetTicks ();
 
@@ -275,7 +284,7 @@ boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAdd
 			nFreeSlot = m_nEntries;
 			m_Entry[nFreeSlot].State = ARPStateFreeSlot;
 
-			m_Entry[nFreeSlot].pTxQueue = new CNetQueue;
+			m_Entry[nFreeSlot].pTxQueue = new CNetBufferQueue;
 			assert (m_Entry[nFreeSlot].pTxQueue != 0);
 
 			m_nEntries++;
@@ -295,7 +304,7 @@ boolean CARPHandler::Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAdd
 	rIPAddress.CopyTo (pEntry->IPAddress);
 
 	assert (pEntry->pTxQueue != 0);
-	pEntry->pTxQueue->Enqueue (pFrame, nFrameLength);
+	pEntry->pTxQueue->Enqueue (pFrame);
 
 	pEntry->nTicksLastUsed = CTimer::Get ()->GetTicks ();
 
@@ -368,7 +377,7 @@ void CARPHandler::RequestReceived (const CIPAddress &rForeignIP, const CMACAddre
 		nFreeSlot = m_nEntries;
 		m_Entry[nFreeSlot].State = ARPStateFreeSlot;
 
-		m_Entry[nFreeSlot].pTxQueue = new CNetQueue;
+		m_Entry[nFreeSlot].pTxQueue = new CNetBufferQueue;
 		assert (m_Entry[nFreeSlot].pTxQueue != 0);
 
 		m_nEntries++;
@@ -416,7 +425,10 @@ void CARPHandler::SendPacket (boolean		 bRequest,
 	rForeignMAC.CopyTo (ARPFrame.ARP.HWAddressTarget);
 	rForeignIP.CopyTo (ARPFrame.ARP.ProtocolAddressTarget);
 
-	m_pNetDevLayer->Send (&ARPFrame, sizeof ARPFrame);
+	CNetBuffer *pNetBuffer = new CNetBuffer (CNetBuffer::ARPSend, sizeof ARPFrame, &ARPFrame);
+	assert (pNetBuffer != 0);
+
+	m_pNetDevLayer->Send (pNetBuffer);
 }
 
 void CARPHandler::TimerHandler (TKernelTimerHandle hTimer, void *pParam, void *pContext)

@@ -2,7 +2,7 @@
 // netconnection.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ CNetConnection::CNetConnection (CNetConfig	*pNetConfig,
 	m_nForeignPort (nForeignPort),
 	m_nOwnPort (nOwnPort),
 	m_nProtocol (nProtocol),
+	m_nMSS (0),
 	m_Checksum (*pNetConfig->GetIPAddress (), rForeignIP, nProtocol)
 {
 	assert (m_pNetConfig != 0);
@@ -47,6 +48,7 @@ CNetConnection::CNetConnection (CNetConfig	*pNetConfig,
 	m_nForeignPort (0),
 	m_nOwnPort (nOwnPort),
 	m_nProtocol (nProtocol),
+	m_nMSS (0),
 	m_Checksum (*pNetConfig->GetIPAddress (), nProtocol)
 {
 	assert (m_pNetConfig != 0);
@@ -84,6 +86,12 @@ u16 CNetConnection::GetOwnPort (void) const
 int CNetConnection::GetProtocol (void) const
 {
 	return m_nProtocol;
+}
+
+u16 CNetConnection::GetMSS (void) const
+{
+	assert (m_nMSS != 0);
+	return m_nMSS;
 }
 
 const char *CNetConnection::GetStateName (void) const

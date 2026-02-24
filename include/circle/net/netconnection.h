@@ -22,6 +22,7 @@
 
 #include <circle/net/netconfig.h>
 #include <circle/net/networklayer.h>
+#include <circle/net/netbuffer.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/icmphandler.h>
 #include <circle/net/checksumcalculator.h>
@@ -46,6 +47,7 @@ public:
 	u16 GetForeignPort (void) const;
 	u16 GetOwnPort (void) const;
 	int GetProtocol (void) const;
+	u16 GetMSS (void) const;
 
 	// returns: string representation for current connection state
 	virtual const char *GetStateName (void) const;
@@ -54,12 +56,12 @@ public:
 	virtual int Accept (CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
 	virtual int Close (void) = 0;
 	
-	virtual int Send (const void *pData, unsigned nLength, int nFlags) = 0;
-	virtual int Receive (void *pBuffer, int nFlags) = 0;
+	virtual int Send (CNetBuffer *pData, int nFlags) = 0;
+	virtual int Receive (CNetBuffer **ppBuffer, int nFlags) = 0;
 
-	virtual int SendTo (const void *pData, unsigned nLength, int nFlags,
+	virtual int SendTo (CNetBuffer *pData, int nFlags,
 			    const CIPAddress &rForeignIP, u16 nForeignPort) = 0;
-	virtual int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
+	virtual int ReceiveFrom (CNetBuffer **ppBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort) = 0;
 
 	virtual int SetOptionReceiveTimeout (unsigned nMicroSeconds) = 0;
 	virtual int SetOptionSendTimeout (unsigned nMicroSeconds) = 0;
@@ -75,7 +77,7 @@ public:
 	virtual void Process (void) = 0;
 
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	virtual int PacketReceived (const void *pPacket, unsigned nLength,
+	virtual int PacketReceived (CNetBuffer *pPacket,
 				    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol) = 0;
 
 	// returns: 0: not to me, 1: notification consumed
@@ -101,6 +103,7 @@ protected:
 	u16 m_nForeignPort;
 	u16 m_nOwnPort;
 	int m_nProtocol;
+	u16 m_nMSS;
 
 	CChecksumCalculator m_Checksum;
 };

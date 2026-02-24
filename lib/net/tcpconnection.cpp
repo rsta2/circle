@@ -1,19 +1,19 @@
 //
 // tcpconnection.cpp
 //
-// This implements RFC 793 with some changes in RFC 1122 and RFC 6298.
+// This implements RFC 793 with some changes in RFC 1122 and RFC 6298
+// and with congestion control in RFC 5681.
 //
 // Non-implemented features:
 //	dynamic receive window
 //	URG flag and urgent pointer
-//	delayed ACK
-//	queueing out-of-order TCP segments
+//	delayed ACK (not recommended any more)
 //	security/compartment
 //	precedence
 //	user timeout
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/net/tcpconnection.h>
+#include <circle/net/sizes.h>
 #include <circle/net/error.h>
 #include <circle/macros.h>
 #include <circle/util.h>
@@ -40,13 +41,16 @@
 
 #define TCP_MAX_CONNECTIONS		1000	// maximum number of active TCP connections
 
-#define MSS_R				1480	// maximum segment size to be received from network layer
-#define MSS_S				1480	// maximum segment size to be send to network layer
+					// maximum segment size to be received from network layer
+#define TCP_MSS_R			(ETH_MAX_LEN - ETH_HEADER_LEN - IP_HEADER_LEN)
+					// maximum segment size to be send to network layer
+#define TCP_MSS_S			(ETH_MAX_LEN - ETH_HEADER_LEN - IP_HEADER_LEN)
 
-#define TCP_CONFIG_MSS			(MSS_R - 20)
+#define TCP_CONFIG_MSS			(TCP_MSS_R - TCP_HEADER_LEN)
 #define TCP_CONFIG_WINDOW		(TCP_CONFIG_MSS * 10)
 
-#define TCP_CONFIG_RETRANS_BUFFER_SIZE	0x10000	// should be greater than maximum send window size
+#define TCP_CONFIG_TX_THRESHOLD		0x10000	// TX stops, if this number of bytes is queued
+#define TCP_CONFIG_RX_THRESHOLD		0x10000	// kicks RX, if this number of bytes is queued
 
 #define TCP_MAX_WINDOW			((u16) -1)	// without Window extension option
 #define TCP_QUIET_TIME			30	// seconds after crash before another connection starts
@@ -81,7 +85,7 @@ struct TTCPHeader
 }
 PACKED;
 
-#define TCP_HEADER_SIZE		20		// valid for normal data segments without TCP options
+ASSERT_STATIC (sizeof (TTCPHeader) == TCP_HEADER_LEN);
 
 struct TTCPOption
 {
@@ -123,6 +127,8 @@ PACKED;
 	#define UNEXPECTED_STATE()	((void) 0)
 #endif
 
+#define FLIGHT_SIZE 			(m_nSND_NXT - m_nSND_UNA)	// for congestion control
+
 unsigned CTCPConnection::s_nConnections = 0;
 
 const char *CTCPConnection::s_pStateName[] =	// must match TTCPState
@@ -151,10 +157,14 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_bActiveOpen (TRUE),
 	m_State (TCPStateClosed),
 	m_nErrno (0),
-	m_RetransmissionQueue (TCP_CONFIG_RETRANS_BUFFER_SIZE),
+	m_TxQueue (TRUE),
+	m_RxQueue (TRUE),
+	m_ReassemblyQueue (&m_RxQueue, TCP_CONFIG_WINDOW),
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
+	m_bFINSent (FALSE),
+	m_bFINReceived (FALSE),
 	m_nRetransmissionCount (0),
 	m_bTimedOut (FALSE),
 	m_pTimer (CTimer::Get ()),
@@ -164,9 +174,17 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nRCV_WND (TCP_CONFIG_WINDOW),
 	m_nIRS (0),
 	m_nSND_MSS (536),	// RFC 1122 section 4.2.2.6
+	m_nIW (4 * m_nSND_MSS),
+	m_nCWND (m_nIW),
+	m_nSSThresh (TCP_MAX_WINDOW),
+	m_nDupAckCount (0),
+	m_bFastRecovery (FALSE),
+	m_nLastSendTicks (0),
 	m_nReceiveTimeout (0),
 	m_nSendTimeout (0)
 {
+	m_nMSS = m_nSND_MSS;
+
 	s_nConnections++;
 
 	for (unsigned nTimer = TCPTimerUser; nTimer < TCPTimerUnknown; nTimer++)
@@ -175,7 +193,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	}
 
 	m_nISS = CalculateISN ();
-	m_RTOCalculator.Initialize (m_nISS);
+	m_RTOCalculator.Initialize (m_nISS, TCP_MAX_WINDOW, m_nSND_MSS);
 
 	m_nSND_UNA = m_nISS;
 	m_nSND_NXT = m_nISS+1;
@@ -196,10 +214,14 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_bActiveOpen (FALSE),
 	m_State (TCPStateListen),
 	m_nErrno (0),
-	m_RetransmissionQueue (TCP_CONFIG_RETRANS_BUFFER_SIZE),
+	m_TxQueue (TRUE),
+	m_RxQueue (TRUE),
+	m_ReassemblyQueue (&m_RxQueue, TCP_CONFIG_WINDOW),
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
+	m_bFINSent (FALSE),
+	m_bFINReceived (FALSE),
 	m_nRetransmissionCount (0),
 	m_bTimedOut (FALSE),
 	m_pTimer (CTimer::Get ()),
@@ -209,9 +231,17 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nRCV_WND (TCP_CONFIG_WINDOW),
 	m_nIRS (0),
 	m_nSND_MSS (536),	// RFC 1122 section 4.2.2.6
+	m_nIW (4 * m_nSND_MSS),
+	m_nCWND (m_nIW),
+	m_nSSThresh (TCP_MAX_WINDOW),
+	m_nDupAckCount (0),
+	m_bFastRecovery (FALSE),
+	m_nLastSendTicks (0),
 	m_nReceiveTimeout (0),
 	m_nSendTimeout (0)
 {
+	m_nMSS = m_nSND_MSS;
+
 	s_nConnections++;
 
 	for (unsigned nTimer = TCPTimerUser; nTimer < TCPTimerUnknown; nTimer++)
@@ -368,10 +398,9 @@ int CTCPConnection::Close (void)
 	return 0;
 }
 
-int CTCPConnection::Send (const void *pData, unsigned nLength, int nFlags)
+int CTCPConnection::Send (CNetBuffer *pNetBuffer, int nFlags)
 {
-	if (   nFlags != 0
-	    && nFlags != MSG_DONTWAIT)
+	if (nFlags & ~(MSG_DONTWAIT | MSG_MORE))
 	{
 		return -NET_ERROR_INVALID_VALUE;
 	}
@@ -400,7 +429,7 @@ int CTCPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 	}
 	
 	if (   !(nFlags & MSG_DONTWAIT)
-	    && !m_TxQueue.IsEmpty ())
+	    && m_TxQueue.GetBytesQueued () >= TCP_CONFIG_TX_THRESHOLD)
 	{
 		m_TxEvent.Clear ();
 
@@ -422,31 +451,19 @@ int CTCPConnection::Send (const void *pData, unsigned nLength, int nFlags)
 		}
 	}
 
-	unsigned nResult = nLength;
+	assert (pNetBuffer != 0);
+	pNetBuffer->SetPrivateData (&nFlags, sizeof nFlags);
 
-	assert (pData != 0);
-	u8 *pBuffer = (u8 *) pData;
+	int nResult = pNetBuffer->GetLength ();
 
-	while (nLength > FRAME_BUFFER_SIZE)
-	{
-		m_TxQueue.Enqueue (pBuffer, FRAME_BUFFER_SIZE);
-
-		pBuffer += FRAME_BUFFER_SIZE;
-		nLength -= FRAME_BUFFER_SIZE;
-	}
-
-	if (nLength > 0)
-	{
-		m_TxQueue.Enqueue (pBuffer, nLength);
-	}
+	m_TxQueue.Enqueue (pNetBuffer);
 
 	return nResult;
 }
 
-int CTCPConnection::Receive (void *pBuffer, int nFlags)
+int CTCPConnection::Receive (CNetBuffer **ppNetBuffer, int nFlags)
 {
-	if (   nFlags != 0
-	    && nFlags != MSG_DONTWAIT)
+	if (nFlags & ~(MSG_DONTWAIT | MSG_MORE))
 	{
 		return -NET_ERROR_INVALID_VALUE;
 	}
@@ -455,9 +472,9 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 	{
 		return m_nErrno;
 	}
-	
-	unsigned nLength;
-	while ((nLength = m_RxQueue.Dequeue (pBuffer)) == 0)
+
+	assert (ppNetBuffer != 0);
+	while ((*ppNetBuffer = m_RxQueue.Dequeue ()) == 0)
 	{
 		switch (m_State)
 		{
@@ -502,19 +519,22 @@ int CTCPConnection::Receive (void *pBuffer, int nFlags)
 		}
 	}
 
+	size_t nLength = (*ppNetBuffer)->GetLength ();
+	assert (nLength <= FRAME_BUFFER_SIZE);
+
 	return nLength;
 }
 
-int CTCPConnection::SendTo (const void *pData, unsigned nLength, int nFlags,
+int CTCPConnection::SendTo (CNetBuffer *pNetBuffer, int nFlags,
 			    const CIPAddress &rForeignIP, u16 nForeignPort)
 {
 	// ignore rForeignIP and nForeignPort
-	return Send (pData, nLength, nFlags);
+	return Send (pNetBuffer, nFlags);
 }
 
-int CTCPConnection::ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort)
+int CTCPConnection::ReceiveFrom (CNetBuffer **ppNetBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort)
 {
-	int nResult = Receive (pBuffer, nFlags);
+	int nResult = Receive (ppNetBuffer, nFlags);
 	if (nResult <= 0)
 	{
 		return nResult;
@@ -577,6 +597,7 @@ void CTCPConnection::Process (void)
 		m_nErrno = -NET_ERROR_CONNECTION_TIMED_OUT;
 		NEW_STATE (TCPStateClosed);
 		m_Event.Set ();
+		m_TxEvent.Set ();
 		return;
 	}
 
@@ -611,13 +632,16 @@ void CTCPConnection::Process (void)
 	case TCPStateCloseWait:
 	case TCPStateClosing:
 	case TCPStateLastAck:
-		if (   m_RetransmissionQueue.IsEmpty ()
-		    && m_TxQueue.IsEmpty ()
+		if (   m_TxQueue.IsEmpty ()
 		    && m_bFINQueued)
 		{
-			SendSegment (TCP_FLAG_FIN | TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
-			m_RTOCalculator.SegmentSent (m_nSND_NXT);
-			m_nSND_NXT++;
+			if (!m_bFINSent)
+			{
+				m_nSND_NXT++;
+				m_bFINSent = TRUE;
+			}
+			SendSegment (TCP_FLAG_FIN | TCP_FLAG_ACK, m_nSND_NXT-1, m_nRCV_NXT);
+			m_RTOCalculator.SegmentSent (m_nSND_NXT-1);
 			NEW_STATE (m_StateAfterFIN);
 			m_bFINQueued = FALSE;
 			StartTimer (TCPTimerRetransmission, m_RTOCalculator.GetRTO ());
@@ -625,22 +649,10 @@ void CTCPConnection::Process (void)
 		break;
 	}
 
-	u8 TempBuffer[FRAME_BUFFER_SIZE];
-	unsigned nLength;
-	while (    m_RetransmissionQueue.GetFreeSpace () >= FRAME_BUFFER_SIZE
-		&& (nLength = m_TxQueue.Dequeue (TempBuffer)) > 0)
-	{
-#ifdef TCP_DEBUG
-		CLogger::Get ()->Write (FromTCP, LogDebug, "Transfering %u bytes into RT buffer", nLength);
-#endif
-
-		m_RetransmissionQueue.Write (TempBuffer, nLength);
-	}
-
 	// pacing transmit
 	if (   (   m_State == TCPStateEstablished
 		|| m_State == TCPStateCloseWait)
-	    && m_TxQueue.IsEmpty ())
+	    && m_TxQueue.GetBytesQueued () < TCP_CONFIG_TX_THRESHOLD)
 	{
 		m_TxEvent.Set ();
 	}
@@ -651,40 +663,76 @@ void CTCPConnection::Process (void)
 		CLogger::Get ()->Write (FromTCP, LogDebug, "Retransmission (nxt %u, una %u)", m_nSND_NXT-m_nISS, m_nSND_UNA-m_nISS);
 #endif
 		m_bRetransmit = FALSE;
-		m_RetransmissionQueue.Reset ();
-		m_nSND_NXT = m_nSND_UNA;
+
+		// congestion control (RFC 5681 section 3.1. equation (4))
+		m_nSSThresh = max (FLIGHT_SIZE / 2, 2 * m_nSND_MSS);
+		m_nCWND = m_nSND_MSS;
+		m_bFastRecovery = FALSE;
+		m_nDupAckCount = 0;
+
+		ResendSegment ();
 	}
 
-	u32 nBytesAvail;
-	u32 nWindowLeft;
-	while (   (nBytesAvail = m_RetransmissionQueue.GetBytesAvailable ()) > 0
-	       && (nWindowLeft = m_nSND_UNA+m_nSND_WND-m_nSND_NXT) > 0)
+	// Restart after idle (RFC 5681 section 4.1)
+	// If connection has been idle for longer than RTO (no outstanding data and no ACKs),
+	// reduce cwnd to IW to avoid bursts.
+	if (   (m_pTimer->GetTicks () - m_nLastSendTicks) > m_RTOCalculator.GetRTO ()
+	    && FLIGHT_SIZE == 0)
 	{
-		nLength = min (nBytesAvail, nWindowLeft);
-		nLength = min (nLength, m_nSND_MSS);
+		m_nCWND = min (m_nIW, m_nCWND);
+	}
+
+	while (SendNewSegment ())
+	{
+		// just loop
+	}
+}
+
+boolean CTCPConnection::SendNewSegment (u32 nAdditionalCWND)
+{
+	const CNetBuffer *pNetBuffer;
+	if ((pNetBuffer = m_TxQueue.Peek ()) != 0)
+	{
+		int nWindowLeft = min (m_nCWND + nAdditionalCWND, m_nSND_WND) - FLIGHT_SIZE;
+		u32 nLength = pNetBuffer->GetLength ();
+		if (nWindowLeft < (int) nLength)
+		{
+			return FALSE;
+		}
 
 #ifdef TCP_DEBUG
 		CLogger::Get ()->Write (FromTCP, LogDebug, "Transfering %u bytes into TX buffer", nLength);
 #endif
 
-		assert (nLength <= FRAME_BUFFER_SIZE);
-		m_RetransmissionQueue.Read (TempBuffer, nLength);
-
 		unsigned nFlags = TCP_FLAG_ACK;
-		if (m_TxQueue.IsEmpty ())
+		const int *pFlags = (const int *) pNetBuffer->GetPrivateData ();
+		assert (pFlags != 0);
+		if (!(*pFlags & MSG_MORE))
 		{
 			nFlags |= TCP_FLAG_PUSH;
 		}
 
-		SendSegment (nFlags, m_nSND_NXT, m_nRCV_NXT, TempBuffer, nLength);
+		CNetBuffer *pNetBuffer2 = new CNetBuffer (*pNetBuffer);
+		assert (pNetBuffer2 != 0);
+
+		SendSegment (nFlags, m_nSND_NXT, m_nRCV_NXT, pNetBuffer2);
 		m_RTOCalculator.SegmentSent (m_nSND_NXT, nLength);
 		m_nSND_NXT += nLength;
 		StartTimer (TCPTimerRetransmission, m_RTOCalculator.GetRTO ());
+
+		m_nLastSendTicks = m_pTimer->GetTicks ();
+
+		m_TxQueue.MoveOn ();
 	}
+	else
+	{
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
-int CTCPConnection::PacketReceived (const void	*pPacket,
-				    unsigned	 nLength,
+int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 				    CIPAddress	&rSenderIP,
 				    CIPAddress	&rReceiverIP,
 				    int		 nProtocol)
@@ -694,13 +742,17 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		return 0;
 	}
 
+	assert (pPacket != 0);
+	size_t nLength = pPacket->GetLength ();
 	if (nLength < sizeof (TTCPHeader))
 	{
+		delete pPacket;
+
 		return -1;
 	}
 
-	assert (pPacket != 0);
-	TTCPHeader *pHeader = (TTCPHeader *) pPacket;
+	TTCPHeader *pHeader = (TTCPHeader *) pPacket->GetPtr ();
+	assert (pHeader != 0);
 
 	if (m_nOwnPort != be2le16 (pHeader->nDestPort))
 	{
@@ -725,7 +777,7 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		m_Checksum.SetDestinationAddress (rSenderIP);
 	}
 
-	if (m_Checksum.Calculate (pPacket, nLength) != CHECKSUM_OK)
+	if (m_Checksum.Calculate (pHeader, nLength) != CHECKSUM_OK)
 	{
 		return 0;
 	}
@@ -770,6 +822,8 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 
 	DumpStatus ();
 #endif
+
+	pPacket->RemoveHeader (nDataOffset);
 
 	boolean bAcceptable = FALSE;
 
@@ -836,11 +890,12 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 
 			if (nDataLength > 0)
 			{
-				m_RxQueue.Enqueue ((u8 *) pPacket+nDataOffset, nDataLength);
+				m_RxQueue.Enqueue (pPacket);
+				pPacket = 0;
 			}
 
 			m_nISS = CalculateISN ();
-			m_RTOCalculator.Initialize (m_nISS);
+			m_RTOCalculator.Initialize (m_nISS, TCP_MAX_WINDOW, m_nSND_MSS);
 
 			m_ForeignIP.Set (rSenderIP);
 			m_nForeignPort = be2le16 (pHeader->nSourcePort);
@@ -851,7 +906,7 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 
 			m_nSND_NXT = m_nISS+1;
 			m_nSND_UNA = m_nISS;
-			
+
 			NEW_STATE (TCPStateSynReceived);
 
 			m_Event.Set ();
@@ -867,6 +922,8 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 				{
 					SendSegment (TCP_FLAG_RESET, nSEG_ACK);
 				}
+
+				delete pPacket;
 
 				return 1;
 			}
@@ -903,11 +960,11 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 
 			if (nFlags & TCP_FLAG_ACK)
 			{
-				m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+				m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
 				if (nSEG_ACK-m_nSND_UNA > 1)
 				{
-					m_RetransmissionQueue.Advance (nSEG_ACK-m_nSND_UNA-1);
+					m_TxQueue.Flush (nSEG_ACK-m_nSND_UNA-1);
 				}
 
 				m_nSND_UNA = nSEG_ACK;
@@ -962,7 +1019,8 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 
 					if (nDataLength > 0)
 					{
-						m_RxQueue.Enqueue ((u8 *) pPacket+nDataOffset, nDataLength);
+						m_RxQueue.Enqueue (pPacket);
+						pPacket = 0;
 					}
 
 					break;
@@ -1022,10 +1080,13 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			switch (m_State)
 			{
 			case TCPStateSynReceived:
-				m_RetransmissionQueue.Flush ();
+				m_TxQueue.Flush ();
 				if (!m_bActiveOpen)
 				{
 					NEW_STATE (TCPStateListen);
+
+					delete pPacket;
+
 					return 1;
 				}
 				else
@@ -1033,6 +1094,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 					m_nErrno = -NET_ERROR_CONNECTION_RESET;
 					NEW_STATE (TCPStateClosed);
 					m_Event.Set ();
+
+					delete pPacket;
+
 					return 1;
 					
 				}
@@ -1043,11 +1107,13 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			case TCPStateFinWait2:
 			case TCPStateCloseWait:
 				m_nErrno = -NET_ERROR_CONNECTION_RESET;
-				m_RetransmissionQueue.Flush ();
 				m_TxQueue.Flush ();
 				m_RxQueue.Flush ();
 				NEW_STATE (TCPStateClosed);
 				m_Event.Set ();
+
+				delete pPacket;
+
 				return 1;
 
 			case TCPStateClosing:
@@ -1055,10 +1121,16 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			case TCPStateTimeWait:
 				NEW_STATE (TCPStateClosed);
 				m_Event.Set ();
+
+				delete pPacket;
+
 				return 1;
 
 			default:
 				UNEXPECTED_STATE ();
+
+				delete pPacket;
+
 				return 1;
 			}
 		}
@@ -1073,22 +1145,29 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			    && !m_bActiveOpen)
 			{
 				NEW_STATE (TCPStateListen);
+
+				delete pPacket;
+
 				return 1;
 			}
 			
 			SendSegment (TCP_FLAG_RESET, m_nSND_NXT);
 			m_nErrno = -NET_ERROR_PROTOCOL_ERROR;
-			m_RetransmissionQueue.Flush ();
 			m_TxQueue.Flush ();
 			m_RxQueue.Flush ();
 			NEW_STATE (TCPStateClosed);
 			m_Event.Set ();
+
+			delete pPacket;
+
 			return 1;
 		}
 
 		// step 5 (check ACK field)
 		if (!(nFlags & TCP_FLAG_ACK))
 		{
+			delete pPacket;
+
 			return 1;
 		}
 
@@ -1102,9 +1181,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 				m_nSND_WL1 = nSEG_SEQ;
 				m_nSND_WL2 = nSEG_ACK;
 
-				m_nSND_UNA = nSEG_ACK;		// got ACK for SYN
+				m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
-				m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+				m_nSND_UNA = nSEG_ACK;		// got ACK for SYN
 
 				NEW_STATE (TCPStateEstablished);
 
@@ -1122,9 +1201,16 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		case TCPStateFinWait2:
 		case TCPStateCloseWait:
 		case TCPStateClosing:
+#ifdef TCP_DEBUG
+			CLogger::Get ()->Write (FromTCP, LogDebug,
+						"Dups %u, FastRecover %c, Recover %u",
+						m_nDupAckCount,
+						m_bFastRecovery ? 'y' : 'n',
+						m_bFastRecovery ? m_nRecover-m_nISS : 0);
+#endif
 			if (bwh (m_nSND_UNA, nSEG_ACK, m_nSND_NXT))
 			{
-				m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+				m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
 				unsigned nBytesAck = nSEG_ACK-m_nSND_UNA;
 				m_nSND_UNA = nSEG_ACK;
@@ -1152,7 +1238,53 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 				
 				if (nBytesAck > 0)
 				{
-					m_RetransmissionQueue.Advance (nBytesAck);
+					m_TxQueue.Flush (nBytesAck);
+
+					if (FLIGHT_SIZE)
+					{
+						m_nRetransmissionCount = MAX_RETRANSMISSIONS;
+
+						StartTimer (TCPTimerRetransmission,
+							    m_RTOCalculator.GetRTO ());
+					}
+				}
+
+				// congestion control
+				m_nDupAckCount = 0;
+				if (m_bFastRecovery)
+				{
+					// RFC 5681 recommends NewReno (RFC 6582)
+					if (ge (nSEG_ACK, m_nRecover))
+					{
+						// ACK'ed all data outstanding,
+						// when fast recovery began
+						m_bFastRecovery = FALSE;
+						m_nCWND = max (m_nSSThresh, m_nSND_MSS);
+					}
+					else
+					{
+						// Partial ACK: still recovering
+						ResendSegment ();
+
+						m_nCWND = max (m_nSSThresh + 3*m_nSND_MSS - nBytesAck,
+							       m_nSND_MSS);
+					}
+				}
+				else
+				{
+					// Not in fast recovery: normal cwnd growth
+					if (m_nCWND < m_nSSThresh)
+					{
+						// Slow Start (Section 3.1):
+						// increase by at most SMSS per ACK
+						m_nCWND += min (nBytesAck, m_nSND_MSS);
+					}
+					else
+					{
+						// Congestion Avoidance (Section 3.1):
+						// increase by ~1 SMSS per RTT
+						m_nCWND += max ((m_nSND_MSS * m_nSND_MSS) / m_nCWND, 1);
+					}
 				}
 
 				// update send window
@@ -1167,7 +1299,7 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			}
 			else if (le (nSEG_ACK, m_nSND_UNA))	// RFC 1122 section 4.2.2.20 (g)
 			{
-				// ignore duplicate ACK ...
+				OnDuplicateAck ();
 				
 				// RFC 1122 section 4.2.2.20 (g)
 				if (bwlh (m_nSND_UNA, nSEG_ACK, m_nSND_NXT))
@@ -1186,6 +1318,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			else if (gt (nSEG_ACK, m_nSND_NXT))
 			{
 				SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
+
+				delete pPacket;
+
 				return 1;
 			}
 			
@@ -1198,7 +1333,7 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			case TCPStateFinWait1:
 				if (nSEG_ACK == m_nSND_NXT)	// if our FIN is now acknowledged
 				{
-					m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+					m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
 					m_bFINQueued = FALSE;
 					StopTimer (TCPTimerRetransmission);
@@ -1212,7 +1347,7 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 				// fall through
 
 			case TCPStateFinWait2:
-				if (m_RetransmissionQueue.IsEmpty ())
+				if (m_TxQueue.IsEmpty ())
 				{
 					m_Event.Set ();
 				}
@@ -1221,7 +1356,7 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			case TCPStateClosing:
 				if (nSEG_ACK == m_nSND_NXT)	// if our FIN is now acknowledged
 				{
-					m_RTOCalculator.SegmentAcknowledged (nSEG_ACK);
+					m_RTOCalculator.SegmentAcknowledged (m_nSND_UNA);
 
 					m_bFINQueued = FALSE;
 					StopTimer (TCPTimerRetransmission);
@@ -1242,6 +1377,9 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 				m_bFINQueued = FALSE;
 				NEW_STATE (TCPStateClosed);
 				m_Event.Set ();
+
+				delete pPacket;
+
 				return 1;
 			}
 			break;
@@ -1266,6 +1404,8 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		// step 7 (process text segment)
 		if (nSEG_LEN == 0)
 		{
+			delete pPacket;
+
 			return 1;
 		}
 		
@@ -1278,16 +1418,20 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			{
 				if (nDataLength > 0)
 				{
-					m_RxQueue.Enqueue ((u8 *) pPacket+nDataOffset, nDataLength);
+					m_RxQueue.Enqueue (pPacket);
+					pPacket = 0;
 
 					m_nRCV_NXT += nDataLength;
+
+					m_nRCV_NXT = m_ReassemblyQueue.Dequeue (m_nRCV_NXT);
 
 					// m_nRCV_WND should be adjusted here (section 3.7)
 
 					// following ACK could be piggybacked with data
 					SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
 
-					if (nFlags & TCP_FLAG_PUSH)
+					if (   (nFlags & TCP_FLAG_PUSH)
+					    || m_RxQueue.GetBytesQueued () >= TCP_CONFIG_RX_THRESHOLD)
 					{
 						m_Event.Set ();
 					}
@@ -1296,6 +1440,15 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 			else
 			{
 				SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
+
+				if (   nDataLength > 0
+				    && m_ReassemblyQueue.Enqueue (nSEG_SEQ, pPacket))
+				{
+					pPacket = 0;
+				}
+
+				delete pPacket;
+
 				return 1;
 			}
 			break;
@@ -1317,16 +1470,24 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		    || m_State == TCPStateListen
 		    || m_State == TCPStateSynSent)
 		{
+			delete pPacket;
+
 			return 1;
 		}
 			
 		if (!(nFlags & TCP_FLAG_FIN))
 		{
+			delete pPacket;
+
 			return 1;
 		}
 
 		// connection is closing
-		m_nRCV_NXT++;
+		if (!m_bFINReceived)
+		{
+			m_nRCV_NXT++;
+			m_bFINReceived = TRUE;
+		}
 		SendSegment (TCP_FLAG_ACK, m_nSND_NXT, m_nRCV_NXT);
 		
 		switch (m_State)
@@ -1374,6 +1535,8 @@ int CTCPConnection::PacketReceived (const void	*pPacket,
 		}
 		break;
 	}
+
+	delete pPacket;
 
 	return 1;
 }
@@ -1455,7 +1618,7 @@ CNetConnection::TStatus CTCPConnection::GetStatus (void) const
 	}
 
 	if (   m_nErrno < 0
-	    || m_TxQueue.IsEmpty ())
+	    || m_TxQueue.GetBytesQueued () < TCP_CONFIG_TX_THRESHOLD)
 	{
 		Status.bTxReady = TRUE;
 	}
@@ -1463,23 +1626,95 @@ CNetConnection::TStatus CTCPConnection::GetStatus (void) const
 	return Status;
 }
 
-boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber,
-				     const void *pData, unsigned nDataLength)
+void CTCPConnection::OnDuplicateAck (void)
 {
+	m_nDupAckCount++;
+
+	if (m_bFastRecovery)
+	{
+		// self-provided for the case, that a resent segment is lost
+		if (m_nDupAckCount % 3 == 0)
+		{
+			ResendSegment ();
+		}
+
+		// each additional dupACK during recovery inflates cwnd by SMSS and may send new data
+		m_nCWND += m_nSND_MSS;
+	}
+	else if (m_nDupAckCount <= 2)
+	{
+		SendNewSegment (2 * m_nSND_MSS);	// send new data with inflated cwnd
+	}
+	else if (m_nDupAckCount == 3)
+	{
+		// Fast Retransmit and enter Fast Recovery (Section 3.2)
+		m_nSSThresh = max (FLIGHT_SIZE / 2, 2 * m_nSND_MSS);
+		m_nRecover = m_nSND_NXT;
+		ResendSegment ();
+		m_nCWND = m_nSSThresh + 3 * m_nSND_MSS;	// Inflate to account for 3 dupACKs
+		m_bFastRecovery = TRUE;
+	}
+}
+
+void CTCPConnection::ResendSegment (void)
+{
+	const CNetBuffer *pNetBuffer = m_TxQueue.PeekFirst ();
+	if (pNetBuffer == 0)
+	{
+		return;
+	}
+
+	unsigned nFlags = TCP_FLAG_ACK;
+	const int *pFlags = (const int *) pNetBuffer->GetPrivateData ();
+	assert (pFlags != 0);
+	if (!(*pFlags & MSG_MORE))
+	{
+		nFlags |= TCP_FLAG_PUSH;
+	}
+
+	CNetBuffer *pNetBuffer2 = new CNetBuffer (*pNetBuffer);
+	assert (pNetBuffer2 != 0);
+
+	SendSegment (nFlags, m_nSND_UNA, m_nRCV_NXT, pNetBuffer2);
+
+	StartTimer (TCPTimerRetransmission, m_RTOCalculator.GetRTO ());
+
+	m_nLastSendTicks = m_pTimer->GetTicks ();
+}
+
+boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber,
+				     CNetBuffer *pNetBuffer)
+{
+	CNetBuffer::TPurpose Purpose = CNetBuffer::TCPSend;
+
 	unsigned nDataOffset = 5;
 	assert (nDataOffset * 4 == sizeof (TTCPHeader));
 	if (nFlags & TCP_FLAG_SYN)
 	{
+		assert (pNetBuffer == 0);
+
+		Purpose = CNetBuffer::TCPSendMSS;
+
 		nDataOffset++;
 	}
 	unsigned nHeaderLength = nDataOffset * 4;
-	
-	unsigned nPacketLength = nHeaderLength + nDataLength;		// may wrap
-	assert (nPacketLength >= nHeaderLength);
-	assert (nHeaderLength <= FRAME_BUFFER_SIZE);
 
-	u8 TxBuffer[FRAME_BUFFER_SIZE];
-	TTCPHeader *pHeader = (TTCPHeader *) TxBuffer;
+	unsigned nDataLength = 0;
+	if (pNetBuffer != 0)
+	{
+		nDataLength = pNetBuffer->GetLength ();
+		assert (nDataLength <= m_nSND_MSS);
+	}
+	else
+	{
+		pNetBuffer = new CNetBuffer (Purpose);
+	}
+	assert (pNetBuffer != 0);
+
+	unsigned nPacketLength = nHeaderLength + nDataLength;
+	assert (nPacketLength >= nHeaderLength);
+
+	TTCPHeader *pHeader = (TTCPHeader *) pNetBuffer->AddHeader (nHeaderLength);
 
 	pHeader->nSourcePort	 	= le2be16 (m_nOwnPort);
 	pHeader->nDestPort	 	= le2be16 (m_nForeignPort);
@@ -1499,14 +1734,8 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 		pOption->Data[1] = TCP_CONFIG_MSS & 0xFF;
 	}
 
-	if (nDataLength > 0)
-	{
-		assert (pData != 0);
-		memcpy (TxBuffer+nHeaderLength, pData, nDataLength);
-	}
-
 	pHeader->nChecksum = 0;		// must be 0 for calculation
-	pHeader->nChecksum = m_Checksum.Calculate (TxBuffer, nPacketLength);
+	pHeader->nChecksum = m_Checksum.Calculate (pHeader, nPacketLength);
 
 #ifdef TCP_DEBUG
 	CLogger::Get ()->Write (FromTCP, LogDebug,
@@ -1521,10 +1750,13 @@ boolean CTCPConnection::SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 n
 				nFlags & TCP_FLAG_ACK ? nAcknowledgmentNumber-m_nIRS : 0,
 				m_nRCV_WND,
 				nDataLength);
+
+	CLogger::Get ()->Write (FromTCP, LogDebug, "cwd %u, ssthresh %u, dups %u",
+				m_nCWND, m_nSSThresh, m_nDupAckCount);
 #endif
 
 	assert (m_pNetworkLayer != 0);
-	return m_pNetworkLayer->Send (m_ForeignIP, TxBuffer, nPacketLength, IPPROTO_TCP);
+	return m_pNetworkLayer->Send (m_ForeignIP, pNetBuffer, IPPROTO_TCP);
 }
 
 void CTCPConnection::ScanOptions (TTCPHeader *pHeader)
@@ -1532,6 +1764,7 @@ void CTCPConnection::ScanOptions (TTCPHeader *pHeader)
 	assert (pHeader != 0);
 	unsigned nDataOffset = TCP_DATA_OFFSET (pHeader->nDataOffsetFlags)*4;
 	u8 *pHeaderEnd = (u8 *) pHeader+nDataOffset;
+	u16 nFlags = pHeader->nDataOffsetFlags;
 
 	TTCPOption *pOption = (TTCPOption *) pHeader->Options;
 	while ((u8 *) pOption+2 <= pHeaderEnd)
@@ -1552,11 +1785,30 @@ void CTCPConnection::ScanOptions (TTCPHeader *pHeader)
 				u32 nMSS = (u16) pOption->Data[0] << 8 | pOption->Data[1];
 
 				// RFC 1122 section 4.2.2.6
-				nMSS = min (nMSS+20, MSS_S) - TCP_HEADER_SIZE - IP_OPTION_SIZE;
+				nMSS = min (nMSS+20, TCP_MSS_S) - TCP_HEADER_LEN - IP_OPTION_SIZE;
 
-				if (nMSS >= 10)		// self provided sanity check
+				if (   (nFlags & TCP_FLAG_SYN)	// accept in SYN segment only
+				    && nMSS >= 10)		// self provided sanity check
 				{
 					m_nSND_MSS = (u16) nMSS;
+
+					m_nMSS = m_nSND_MSS;
+
+					// set initial congestion window (RFC 5681 section 3.1)
+					if (m_nSND_MSS > 2190)
+					{
+						m_nIW = 2 * m_nSND_MSS;
+					}
+					else if (m_nSND_MSS > 1095)
+					{
+						m_nIW = 3 * m_nSND_MSS;
+					}
+					else
+					{
+						m_nIW = 4 * m_nSND_MSS;
+					}
+
+					m_nCWND = m_nIW;
 				}
 			}
 			// fall through
@@ -1623,7 +1875,7 @@ void CTCPConnection::TimerHandler (unsigned nTimer)
 	switch (nTimer)
 	{
 	case TCPTimerRetransmission:
-		m_RTOCalculator.RetransmissionTimerExpired ();
+		m_RTOCalculator.RetransmissionTimerExpired (m_nSND_UNA);
 
 		if (m_nRetransmissionCount-- == 0)
 		{
@@ -1703,8 +1955,11 @@ TTCPState CTCPConnection::NewState (TTCPState State, unsigned nLine)
 	assert (m_State < sizeof s_pStateName / sizeof s_pStateName[0]);
 	assert (State < sizeof s_pStateName / sizeof s_pStateName[0]);
 
-	CLogger::Get ()->Write (FromTCP, LogDebug, "State %s -> %s at line %u",
-				s_pStateName[m_State], s_pStateName[State], nLine);
+	if (m_State != State)
+	{
+		CLogger::Get ()->Write (FromTCP, LogDebug, "State %s -> %s at line %u",
+					s_pStateName[m_State], s_pStateName[State], nLine);
+	}
 
 	return m_State = State;
 }

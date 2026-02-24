@@ -2,7 +2,7 @@
 // arphandler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@
 
 #include <circle/net/netconfig.h>
 #include <circle/net/netdevlayer.h>
-#include <circle/net/netqueue.h>
+#include <circle/net/netbufferqueue.h>
+#include <circle/net/netbuffer.h>
 #include <circle/net/ipaddress.h>
 #include <circle/macaddress.h>
 #include <circle/timer.h>
@@ -49,7 +50,7 @@ struct TARPEntry
 	TKernelTimerHandle	hTimer;
 	unsigned		nAttempts;
 	unsigned		nTicksLastUsed;
-	CNetQueue		*pTxQueue;		// deferred frames
+	CNetBufferQueue		*pTxQueue;		// deferred frames
 };
 
 class CLinkLayer;
@@ -58,14 +59,14 @@ class CARPHandler
 {
 public:
 	CARPHandler (CNetConfig *pNetConfig, CNetDeviceLayer *pNetDevLayer,
-		     CLinkLayer *pLinkLayer, CNetQueue *pRxQueue);
+		     CLinkLayer *pLinkLayer, CNetBufferQueue *pRxQueue);
 	~CARPHandler (void);
 
 	void Process (void);
 
 	// frame is queued, if resolve fails
 	boolean Resolve (const CIPAddress &rIPAddress, CMACAddress *pMACAddress,
-			 const void *pFrame, unsigned nFrameLength);
+			 CNetBuffer *pFrame);
 	
 private:
 	void ReplyReceived (const CIPAddress &rForeignIP, const CMACAddress &rForeignMAC);
@@ -79,7 +80,7 @@ private:
 	CNetConfig	*m_pNetConfig;
 	CNetDeviceLayer	*m_pNetDevLayer;
 	CLinkLayer	*m_pLinkLayer;
-	CNetQueue	*m_pRxQueue;
+	CNetBufferQueue	*m_pRxQueue;
 
 	unsigned  m_nEntries;
 	TARPEntry m_Entry[ARP_MAX_ENTRIES];

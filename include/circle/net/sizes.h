@@ -1,9 +1,9 @@
 //
-// retransmissionqueue.h
+// sizes.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2025  R. Stange <rsta2@gmx.net>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,37 +17,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_retransmissionqueue_h
-#define _circle_net_retransmissionqueue_h
+#ifndef _circle_net_sizes_h
+#define _circle_net_sizes_h
 
-#include <circle/types.h>
+// Ethernet (without CRC)
+#define ETH_MIN_LEN		60		// minimum length on wire
+#define ETH_MAX_LEN		1514		// maximum length on wire
+#define ETH_HEADER_LEN		(6+6+2)
 
-class CRetransmissionQueue
-{
-public:
-	CRetransmissionQueue (unsigned nSize);
-	~CRetransmissionQueue (void);
+// IP
+#define IP_HEADER_LEN		(5*4)		// no option
+#define IP_RA_HEADER_LEN	(5*4+4)		// with Router Alert option
 
-	boolean IsEmpty (void) const;
-	
-	unsigned GetFreeSpace (void) const;
-	void Write (const void *pBuffer, unsigned nLength);
+// UDP
+#define UDP_HEADER_LEN		(2*4)		// no option
 
-	unsigned GetBytesAvailable (void) const;
-	void Read (void *pBuffer, unsigned nLength);
-	void Advance (unsigned nBytes);
-	void Reset (void);
-
-	void Flush (void);
-
-private:
-	unsigned m_nSize;
-
-	u8 *m_pBuffer;
-
-	unsigned m_nInPtr;
-	unsigned m_nOutPtr;
-	unsigned m_nPreOutPtr;
-};
+// TCP
+#define TCP_HEADER_LEN		(5*4)		// no option
+#define TCP_MSS_HEADER_LEN	(5*4+4)		// with MSS option
 
 #endif

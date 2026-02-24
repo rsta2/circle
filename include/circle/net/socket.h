@@ -69,7 +69,7 @@ public:
 	/// \brief Send a message to a remote host
 	/// \param pBuffer Pointer to the message
 	/// \param nLength Length of the message
-	/// \param nFlags  MSG_DONTWAIT (non-blocking operation) or 0 (blocking operation)
+	/// \param nFlags  MSG_DONTWAIT (non-blocking operation), MSG_MORE (Sender will send more)
 	/// \return Length of the sent message (< 0 on error)
 	int Send (const void *pBuffer, unsigned nLength, int nFlags);
 
@@ -84,7 +84,7 @@ public:
 	/// \brief Send a message to a specific remote host
 	/// \param pBuffer	Pointer to the message
 	/// \param nLength	Length of the message
-	/// \param nFlags	MSG_DONTWAIT (non-blocking operation) or 0 (blocking operation)
+	/// \param nFlags	MSG_DONTWAIT (non-blocking operation), MSG_MORE (Sender will send more)
 	/// \param rForeignIP	IP address of host to be sent to (ignored on TCP socket)
 	/// \param nForeignPort	Number of port to be sent to (ignored on TCP socket)
 	/// \return Length of the sent message (< 0 on error)
