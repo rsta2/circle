@@ -2,7 +2,7 @@
 // pwmsoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 //
 // Information to implement PWM sound is from:
 //	"Bare metal sound" by Joeboy (RPi forum)
@@ -99,11 +99,13 @@
 
 CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
-					  unsigned	    nChunkSize)
+					  unsigned	    nChunkSize,
+					  boolean	    bMSMode)
 :	CSoundBaseDevice (SoundFormatUnsigned32,
 			  (CLOCK_RATE + nSampleRate/2) / nSampleRate, nSampleRate,
 			  CMachineInfo::Get ()->ArePWMChannelsSwapped ()),
 	m_nChunkSize (nChunkSize),
+	m_bMSMode (bMSMode),
 	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
 #ifdef USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
 	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction5),
@@ -217,6 +219,7 @@ void CPWMSoundBaseDevice::RunPWM (void)
 
 	write32 (PWM_CTL,   ARM_PWM_CTL_PWEN1 | ARM_PWM_CTL_USEF1
 			  | ARM_PWM_CTL_PWEN2 | ARM_PWM_CTL_USEF2
+			  | (m_bMSMode ? ARM_PWM_CTL_MSEN1 | ARM_PWM_CTL_MSEN2 : 0)
 			  | ARM_PWM_CTL_CLRF1);
 	CTimer::SimpleusDelay (2000);
 

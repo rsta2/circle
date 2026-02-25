@@ -2,7 +2,7 @@
 // pwmsoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,9 +38,11 @@ public:
 	/// \param nSampleRate	sample rate in Hz
 	/// \param nChunkSize	twice the number of samples (words) to be handled\n
 	///			with one call to GetChunk() (one word per stereo channel)
+	/// \param bMSMode	Enable M/S mode? (see "BCM2835 ARM Peripherals")
 	CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 			     unsigned	       nSampleRate = 44100,
-			     unsigned	       nChunkSize  = 2048);
+			     unsigned	       nChunkSize  = 2048,
+			     boolean	       bMSMode     = FALSE);
 
 	virtual ~CPWMSoundBaseDevice (void);
 
@@ -85,6 +87,7 @@ private:
 
 private:
 	unsigned m_nChunkSize;
+	boolean	 m_bMSMode;
 	unsigned m_nRange;
 
 	CGPIOPin   m_Audio1;

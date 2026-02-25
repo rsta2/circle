@@ -2,7 +2,7 @@
 // pwmsoundbasedevice-rp1.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -85,11 +85,13 @@
 
 CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nSampleRate,
-					  unsigned	    nChunkSize)
+					  unsigned	    nChunkSize,
+					  boolean	    bMSMode)
 :	CSoundBaseDevice (SoundFormatUnsigned32,
 			  (CLOCK_RATE + nSampleRate/2) / nSampleRate, nSampleRate,
 			  CMachineInfo::Get ()->ArePWMChannelsSwapped ()),
 	m_nChunkSize (nChunkSize),
+	m_bMSMode (bMSMode),
 	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
 #ifndef USE_GPIO18_FOR_LEFT_PWM
 	m_nChannel1 (0),
@@ -217,7 +219,8 @@ boolean CPWMSoundBaseDevice::RunPWM (void)
 	}
 
 	assert (!(read32 (PWM_GLOBAL_CTRL) & PWM_GLOBAL_CTRL_CHAN_EN (m_nChannel1)));
-	write32 (PWM_CHAN_CTRL (m_nChannel1),	   PWM_CHAN_CTRL_MODE_TRAILING_EDGE
+	write32 (PWM_CHAN_CTRL (m_nChannel1),      (m_bMSMode ? PWM_CHAN_CTRL_MODE_PDM
+							      : PWM_CHAN_CTRL_MODE_TRAILING_EDGE)
 						<< PWM_CHAN_CTRL_MODE__SHIFT
 					      | PWM_CHAN_CTRL_BIND
 				              | PWM_CHAN_CTRL_USEFIFO
@@ -225,7 +228,8 @@ boolean CPWMSoundBaseDevice::RunPWM (void)
 	write32 (PWM_CHAN_PHASE (m_nChannel1), 0);
 
 	assert (!(read32 (PWM_GLOBAL_CTRL) & PWM_GLOBAL_CTRL_CHAN_EN (m_nChannel2)));
-	write32 (PWM_CHAN_CTRL (m_nChannel2),	   PWM_CHAN_CTRL_MODE_TRAILING_EDGE
+	write32 (PWM_CHAN_CTRL (m_nChannel2),	   (m_bMSMode ? PWM_CHAN_CTRL_MODE_PDM
+							      : PWM_CHAN_CTRL_MODE_TRAILING_EDGE)
 						<< PWM_CHAN_CTRL_MODE__SHIFT
 					      | PWM_CHAN_CTRL_BIND
 					      | PWM_CHAN_CTRL_USEFIFO
