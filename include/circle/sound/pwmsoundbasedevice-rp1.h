@@ -38,7 +38,7 @@ public:
 	CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 			     unsigned	       nSampleRate = 44100,
 			     unsigned	       nChunkSize  = 2048,
-			     boolean	       bMSMode     = FALSE);
+			     boolean	       bMSMode     = TRUE);
 
 	virtual ~CPWMSoundBaseDevice (void);
 
