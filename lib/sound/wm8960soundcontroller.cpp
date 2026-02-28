@@ -2,7 +2,7 @@
 // wm8960soundcontroller.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/sound/wm8960soundcontroller.h>
+#include <circle/koptions.h>
 #include <assert.h>
 
 CWM8960SoundController::CWM8960SoundController (CI2CMaster *pI2CMaster, u8 uchI2CAddress,
@@ -54,29 +55,38 @@ boolean CWM8960SoundController::Probe (void)
 	}
 
 	// Clocking / PLL
+	u8 uchPLLN;
+	u32 nPLLK;
 	if (m_nSampleRate == 44100)
 	{
-		if (   !WriteReg (4, 0x005)
-		    || !WriteReg (52, 0x037)
-		    || !WriteReg (53, 0x086)
-		    || !WriteReg (54, 0x0C2)
-		    || !WriteReg (55, 0x026))
-		{
-			return FALSE;
-		}
+		uchPLLN = 7;
+		nPLLK  = 0x86C226;
 	}
 	else if (m_nSampleRate == 48000)
 	{
-		if (   !WriteReg (4, 0x005)
-		    || !WriteReg (52, 0x038)
-		    || !WriteReg (53, 0x031)
-		    || !WriteReg (54, 0x026)
-		    || !WriteReg (55, 0x0E8))
-		{
-			return FALSE;
-		}
+		uchPLLN = 8;
+		nPLLK  = 0x3126E8;
 	}
 	else
+	{
+		return FALSE;
+	}
+
+	CKernelOptions *pOptions = CKernelOptions::Get ();
+	if (pOptions)
+	{
+		int nTune = pOptions->GetAppOptionSignedDecimal ("wm8960tune", 0);
+		if (-10000 <= nTune && nTune <= 10000)
+		{
+			nPLLK += nTune;
+		}
+	}
+
+	if (   !WriteReg (4, 0x005)
+	    || !WriteReg (52, 0x030 | uchPLLN)
+	    || !WriteReg (53, (nPLLK >> 16) & 0xFF)
+	    || !WriteReg (54, (nPLLK >> 8) & 0xFF)
+	    || !WriteReg (55, nPLLK & 0xFF))
 	{
 		return FALSE;
 	}

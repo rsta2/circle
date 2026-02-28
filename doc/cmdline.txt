@@ -73,3 +73,7 @@ touchscreen=140,3960,340,3920	Set calibration coordinates for USB touchscreens
 
 backlight=150			Set an initial backlight value for the Raspberry Pi Touchscreen.
 				This should only be necessary for the older control board (v1.0).
+
+wm8960tune=+1100		Add the given value to the fractional (K) part of PLL1 input/output
+				frequency ratio (treated as 24-digit binary number) of the WM8960
+				Codec to suppress clicks/pops (range -10000 to 10000, default 0)
