@@ -52,9 +52,24 @@ struct TSCR			// SD configuration register
 class CEMMCDevice : public CDevice
 {
 public:
+	enum TDeviceSelector
+	{
+		SDCardOnBoard,
+		SDCardExternal,		// at GPIO22..27
+		EmbeddedMMC
+	};
+
+#ifndef USE_EMBEDDED_MMC_CM
+	static const TDeviceSelector DefaultDevice = SDCardOnBoard;
+#else
+	static const TDeviceSelector DefaultDevice = EmbeddedMMC;
+#endif
+
+public:
 	CEMMCDevice (CInterruptSystem	*pInterruptSystem,
 		     CTimer		*pTimer,
-		     CActLED		*pActLED = 0);	// set to 0 if you want no disk access LED
+		     CActLED		*pActLED = 0,	// set to 0 if you want no disk access LED
+		     TDeviceSelector	 Device = DefaultDevice);
 	~CEMMCDevice (void);
 
 	boolean Initialize (void);
@@ -88,9 +103,7 @@ private:
 #endif
 	boolean IssueCommand (u32 command, u32 argument, int timeout = 500000);
 
-#ifndef USE_EMBEDDED_MMC_CM
 	u32 GetCSDField (unsigned start, unsigned width) const;
-#endif
 
 	int CardReset (void);
 	int CardInit (void);
@@ -106,18 +119,23 @@ private:
 
 	void usDelay (unsigned usec);
 
-	static void LogWrite (TLogSeverity Severity, const char *pMessage, ...);
+	void LogWrite (TLogSeverity Severity, const char *pMessage, ...);
 
 private:
 	CInterruptSystem *m_pInterruptSystem;
 	CTimer		 *m_pTimer;
 	CActLED		 *m_pActLED;
 
+	TDeviceSelector	  m_Device;
 #ifndef USE_SDHOST
-#if RASPPI >= 2
+	uintptr		  m_EmmcBase;
+#endif
+	const u32	 *m_sd_commands;
+
+#ifndef USE_SDHOST
+	CGPIOPin	  m_GPIO22_27[6];	// SD card external
 	CGPIOPin	  m_GPIO34_39[6];	// WiFi
 	CGPIOPin	  m_GPIO48_53[6];	// SD card
-#endif
 #endif
 
 	u64 m_ullOffset;
@@ -172,6 +190,7 @@ private:
 	static const char *err_irpts[];
 #endif
 	static const u32 sd_commands[];
+	static const u32 emmc_commands[];
 	static const u32 sd_acommands[];
 };
 

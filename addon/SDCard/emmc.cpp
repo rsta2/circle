@@ -95,40 +95,34 @@
 // Required for QEMU
 #define EMMC_ALLOW_OLD_SDHCI
 
-#if RASPPI != 4
-	#define EMMC_BASE	ARM_EMMC_BASE
-#else
-	#define EMMC_BASE	ARM_EMMC2_BASE
-#endif
-
-#define EMMC_ARG2		(EMMC_BASE + 0x00)
-#define EMMC_BLKSIZECNT		(EMMC_BASE + 0x04)
-#define EMMC_ARG1		(EMMC_BASE + 0x08)
-#define EMMC_CMDTM		(EMMC_BASE + 0x0C)
-#define EMMC_RESP0		(EMMC_BASE + 0x10)
-#define EMMC_RESP1		(EMMC_BASE + 0x14)
-#define EMMC_RESP2		(EMMC_BASE + 0x18)
-#define EMMC_RESP3		(EMMC_BASE + 0x1C)
-#define EMMC_DATA		(EMMC_BASE + 0x20)
-#define EMMC_STATUS		(EMMC_BASE + 0x24)
-#define EMMC_CONTROL0		(EMMC_BASE + 0x28)
-#define EMMC_CONTROL1		(EMMC_BASE + 0x2C)
-#define EMMC_INTERRUPT		(EMMC_BASE + 0x30)
-#define EMMC_IRPT_MASK		(EMMC_BASE + 0x34)
-#define EMMC_IRPT_EN		(EMMC_BASE + 0x38)
-#define EMMC_CONTROL2		(EMMC_BASE + 0x3C)
-#define EMMC_CAPABILITIES_0	(EMMC_BASE + 0x40)
-#define EMMC_CAPABILITIES_1	(EMMC_BASE + 0x44)
-#define EMMC_FORCE_IRPT		(EMMC_BASE + 0x50)
-#define EMMC_BOOT_TIMEOUT	(EMMC_BASE + 0x70)
-#define EMMC_DBG_SEL		(EMMC_BASE + 0x74)
-#define EMMC_EXRDFIFO_CFG	(EMMC_BASE + 0x80)
-#define EMMC_EXRDFIFO_EN	(EMMC_BASE + 0x84)
-#define EMMC_TUNE_STEP		(EMMC_BASE + 0x88)
-#define EMMC_TUNE_STEPS_STD	(EMMC_BASE + 0x8C)
-#define EMMC_TUNE_STEPS_DDR	(EMMC_BASE + 0x90)
-#define EMMC_SPI_INT_SPT	(EMMC_BASE + 0xF0)
-#define EMMC_SLOTISR_VER	(EMMC_BASE + 0xFC)
+#define EMMC_ARG2		(m_EmmcBase + 0x00)
+#define EMMC_BLKSIZECNT		(m_EmmcBase + 0x04)
+#define EMMC_ARG1		(m_EmmcBase + 0x08)
+#define EMMC_CMDTM		(m_EmmcBase + 0x0C)
+#define EMMC_RESP0		(m_EmmcBase + 0x10)
+#define EMMC_RESP1		(m_EmmcBase + 0x14)
+#define EMMC_RESP2		(m_EmmcBase + 0x18)
+#define EMMC_RESP3		(m_EmmcBase + 0x1C)
+#define EMMC_DATA		(m_EmmcBase + 0x20)
+#define EMMC_STATUS		(m_EmmcBase + 0x24)
+#define EMMC_CONTROL0		(m_EmmcBase + 0x28)
+#define EMMC_CONTROL1		(m_EmmcBase + 0x2C)
+#define EMMC_INTERRUPT		(m_EmmcBase + 0x30)
+#define EMMC_IRPT_MASK		(m_EmmcBase + 0x34)
+#define EMMC_IRPT_EN		(m_EmmcBase + 0x38)
+#define EMMC_CONTROL2		(m_EmmcBase + 0x3C)
+#define EMMC_CAPABILITIES_0	(m_EmmcBase + 0x40)
+#define EMMC_CAPABILITIES_1	(m_EmmcBase + 0x44)
+#define EMMC_FORCE_IRPT		(m_EmmcBase + 0x50)
+#define EMMC_BOOT_TIMEOUT	(m_EmmcBase + 0x70)
+#define EMMC_DBG_SEL		(m_EmmcBase + 0x74)
+#define EMMC_EXRDFIFO_CFG	(m_EmmcBase + 0x80)
+#define EMMC_EXRDFIFO_EN	(m_EmmcBase + 0x84)
+#define EMMC_TUNE_STEP		(m_EmmcBase + 0x88)
+#define EMMC_TUNE_STEPS_STD	(m_EmmcBase + 0x8C)
+#define EMMC_TUNE_STEPS_DDR	(m_EmmcBase + 0x90)
+#define EMMC_SPI_INT_SPT	(m_EmmcBase + 0xF0)
+#define EMMC_SLOTISR_VER	(m_EmmcBase + 0xFC)
 
 #endif
 
@@ -276,20 +270,80 @@ const char *CEMMCDevice::err_irpts[] =
 const u32 CEMMCDevice::sd_commands[] =
 {
 	SD_CMD_INDEX(0),
-#ifdef USE_EMBEDDED_MMC_CM
-	SD_CMD_INDEX(1) | SD_RESP_R3,
-#else
 	SD_CMD_RESERVED(1),
-#endif
 	SD_CMD_INDEX(2) | SD_RESP_R2,
 	SD_CMD_INDEX(3) | SD_RESP_R6,
 	SD_CMD_INDEX(4),
 	SD_CMD_INDEX(5) | SD_RESP_R4,
-#ifdef USE_EMBEDDED_MMC_CM
-	SD_CMD_INDEX(6) | SD_RESP_R1,
-#else
 	SD_CMD_INDEX(6) | SD_RESP_R1 | SD_DATA_READ,
-#endif
+	SD_CMD_INDEX(7) | SD_RESP_R1b,
+	SD_CMD_INDEX(8) | SD_RESP_R7,
+	SD_CMD_INDEX(9) | SD_RESP_R2,
+	SD_CMD_INDEX(10) | SD_RESP_R2,
+	SD_CMD_INDEX(11) | SD_RESP_R1,
+	SD_CMD_INDEX(12) | SD_RESP_R1b | SD_CMD_TYPE_ABORT,
+	SD_CMD_INDEX(13) | SD_RESP_R1,
+	SD_CMD_RESERVED(14),
+	SD_CMD_INDEX(15),
+	SD_CMD_INDEX(16) | SD_RESP_R1,
+	SD_CMD_INDEX(17) | SD_RESP_R1 | SD_DATA_READ,
+	SD_CMD_INDEX(18) | SD_RESP_R1 | SD_DATA_READ | SD_CMD_MULTI_BLOCK | SD_CMD_BLKCNT_EN | SD_CMD_AUTO_CMD_EN_CMD12,		// SD_CMD_AUTO_CMD_EN_CMD12 not in original driver
+	SD_CMD_INDEX(19) | SD_RESP_R1 | SD_DATA_READ,
+	SD_CMD_INDEX(20) | SD_RESP_R1b,
+	SD_CMD_RESERVED(21),
+	SD_CMD_RESERVED(22),
+	SD_CMD_INDEX(23) | SD_RESP_R1,
+	SD_CMD_INDEX(24) | SD_RESP_R1 | SD_DATA_WRITE,
+	SD_CMD_INDEX(25) | SD_RESP_R1 | SD_DATA_WRITE | SD_CMD_MULTI_BLOCK | SD_CMD_BLKCNT_EN | SD_CMD_AUTO_CMD_EN_CMD12,		// SD_CMD_AUTO_CMD_EN_CMD12 not in original driver
+	SD_CMD_RESERVED(26),
+	SD_CMD_INDEX(27) | SD_RESP_R1 | SD_DATA_WRITE,
+	SD_CMD_INDEX(28) | SD_RESP_R1b,
+	SD_CMD_INDEX(29) | SD_RESP_R1b,
+	SD_CMD_INDEX(30) | SD_RESP_R1 | SD_DATA_READ,
+	SD_CMD_RESERVED(31),
+	SD_CMD_INDEX(32) | SD_RESP_R1,
+	SD_CMD_INDEX(33) | SD_RESP_R1,
+	SD_CMD_RESERVED(34),
+	SD_CMD_RESERVED(35),
+	SD_CMD_RESERVED(36),
+	SD_CMD_RESERVED(37),
+	SD_CMD_INDEX(38) | SD_RESP_R1b,
+	SD_CMD_RESERVED(39),
+	SD_CMD_RESERVED(40),
+	SD_CMD_RESERVED(41),
+	SD_CMD_RESERVED(42) | SD_RESP_R1,
+	SD_CMD_RESERVED(43),
+	SD_CMD_RESERVED(44),
+	SD_CMD_RESERVED(45),
+	SD_CMD_RESERVED(46),
+	SD_CMD_RESERVED(47),
+	SD_CMD_RESERVED(48),
+	SD_CMD_RESERVED(49),
+	SD_CMD_RESERVED(50),
+	SD_CMD_RESERVED(51),
+	SD_CMD_RESERVED(52),
+	SD_CMD_RESERVED(53),
+	SD_CMD_RESERVED(54),
+	SD_CMD_INDEX(55) | SD_RESP_R1,
+	SD_CMD_INDEX(56) | SD_RESP_R1 | SD_CMD_ISDATA,
+	SD_CMD_RESERVED(57),
+	SD_CMD_RESERVED(58),
+	SD_CMD_RESERVED(59),
+	SD_CMD_RESERVED(60),
+	SD_CMD_RESERVED(61),
+	SD_CMD_RESERVED(62),
+	SD_CMD_RESERVED(63)
+};
+
+const u32 CEMMCDevice::emmc_commands[] =
+{
+	SD_CMD_INDEX(0),
+	SD_CMD_INDEX(1) | SD_RESP_R3,
+	SD_CMD_INDEX(2) | SD_RESP_R2,
+	SD_CMD_INDEX(3) | SD_RESP_R6,
+	SD_CMD_INDEX(4),
+	SD_CMD_INDEX(5) | SD_RESP_R4,
+	SD_CMD_INDEX(6) | SD_RESP_R1,
 	SD_CMD_INDEX(7) | SD_RESP_R1b,
 	SD_CMD_INDEX(8) | SD_RESP_R7,
 	SD_CMD_INDEX(9) | SD_RESP_R2,
@@ -476,10 +530,20 @@ const u32 CEMMCDevice::sd_acommands[] =
 
 #define SD_BLOCK_SIZE		512
 
-CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CActLED *pActLED)
+CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CActLED *pActLED,
+			  TDeviceSelector Device)
 :	m_pInterruptSystem (pInterruptSystem),
 	m_pTimer (pTimer),
 	m_pActLED (pActLED),
+	m_Device (Device),
+#ifndef USE_SDHOST
+#if RASPPI != 4
+	m_EmmcBase (ARM_EMMC_BASE),
+#else
+	m_EmmcBase (Device == SDCardExternal ? ARM_EMMC_BASE : ARM_EMMC2_BASE),
+#endif
+#endif
+	m_sd_commands (Device == EmbeddedMMC ? emmc_commands : sd_commands),
 	m_ullOffset (0),
 	m_pPartitionManager (0),
 #ifdef USE_SDHOST
@@ -497,24 +561,42 @@ CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CA
 	assert (m_pSCR != 0);
 
 #ifndef USE_SDHOST
-
+	if (m_Device != SDCardExternal)
+	{
 #if RASPPI >= 2 && RASPPI <= 4
-	// workaround if bootloader does not restore GPIO modes
-	if (   CMachineInfo::Get ()->GetMachineModel () == MachineModel3B
-	    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3APlus
-	    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3BPlus)
+		// workaround if bootloader does not restore GPIO modes
+		if (   CMachineInfo::Get ()->GetMachineModel () == MachineModel3B
+		    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3APlus
+		    || CMachineInfo::Get ()->GetMachineModel () == MachineModel3BPlus)
+		{
+			for (unsigned i = 0; i <= 5; i++)
+			{
+				m_GPIO34_39[i].AssignPin (34+i);
+				m_GPIO34_39[i].SetMode (GPIOModeInput, FALSE);
+
+				m_GPIO48_53[i].AssignPin (48+i);
+				m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
+			}
+		}
+#endif
+	}
+	else
 	{
 		for (unsigned i = 0; i <= 5; i++)
 		{
+#if RASPPI <= 3
+			m_GPIO48_53[i].AssignPin (48+i);
+			m_GPIO48_53[i].SetMode (GPIOModeInput, FALSE);
+#else
 			m_GPIO34_39[i].AssignPin (34+i);
 			m_GPIO34_39[i].SetMode (GPIOModeInput, FALSE);
-
-			m_GPIO48_53[i].AssignPin (48+i);
-			m_GPIO48_53[i].SetMode (GPIOModeAlternateFunction3, FALSE);
-		}
-	}
 #endif
 
+			m_GPIO22_27[i].AssignPin (22+i);
+			m_GPIO22_27[i].SetMode (GPIOModeAlternateFunction3, FALSE);
+			m_GPIO22_27[i].SetPullMode (i == 0 ? GPIOPullModeOff : GPIOPullModeUp);
+		}
+	}
 #endif
 }
 
@@ -568,7 +650,11 @@ boolean CEMMCDevice::Initialize (void)
 
 	PeripheralExit ();
 
-	const char DeviceName[] = "emmc1";
+	const char *DeviceName = "emmc1";
+	if (m_Device == SDCardExternal)
+	{
+		DeviceName = "emmc2";
+	}
 
 	assert (m_pPartitionManager == 0);
 	m_pPartitionManager = new CPartitionManager (this, DeviceName);
@@ -708,7 +794,8 @@ u32 CEMMCDevice::GetBaseClock (void)
 #if RASPPI != 4
 	nClockRate = CMachineInfo::Get ()->GetClockRate (CLOCK_ID_EMMC);
 #else
-	nClockRate = CMachineInfo::Get ()->GetClockRate (CLOCK_ID_EMMC2);
+	nClockRate = CMachineInfo::Get ()->GetClockRate (  m_Device == SDCardExternal
+							 ? CLOCK_ID_EMMC : CLOCK_ID_EMMC2);
 #endif
 
 #ifdef EMMC_DEBUG2
@@ -1089,7 +1176,7 @@ void CEMMCDevice::HandleCardInterrupt (void)
 	// Get the card status
 	if(m_card_rca != CARD_RCA_INVALID)
 	{
-		IssueCommandInt (sd_commands[SEND_STATUS], m_card_rca << 16, 500000);
+		IssueCommandInt (m_sd_commands[SEND_STATUS], m_card_rca << 16, 500000);
 		if (FAIL)
 		{
 #ifdef EMMC_DEBUG
@@ -1323,7 +1410,7 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 		{
 			rca = m_card_rca << 16;
 		}
-		IssueCommandInt (sd_commands[APP_CMD], rca, timeout);
+		IssueCommandInt (m_sd_commands[APP_CMD], rca, timeout);
 		if (m_last_cmd_success)
 		{
 			m_last_cmd = command | IS_APP_CMD;
@@ -1336,7 +1423,7 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 		LogWrite (LogDebug, "Issuing command CMD%d", command);
 #endif
 
-		if (sd_commands[command] == SD_CMD_RESERVED(0))
+		if (m_sd_commands[command] == SD_CMD_RESERVED(0))
 		{
 			LogWrite (LogError, "Invalid command CMD%d", command);
 			m_last_cmd_success = 0;
@@ -1345,7 +1432,7 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 		}
 
 		m_last_cmd = command;
-		IssueCommandInt (sd_commands[command], argument, timeout);
+		IssueCommandInt (m_sd_commands[command], argument, timeout);
 	}
 
 #ifdef EMMC_DEBUG2
@@ -1393,8 +1480,6 @@ boolean CEMMCDevice::IssueCommand (u32 command, u32 argument, int timeout)
 	return m_last_cmd_success;
 }
 
-#ifndef USE_EMBEDDED_MMC_CM
-
 u32 CEMMCDevice::GetCSDField (unsigned start, unsigned width) const
 {
 #ifndef USE_SDHOST
@@ -1417,8 +1502,6 @@ u32 CEMMCDevice::GetCSDField (unsigned start, unsigned width) const
 
 	return result;
 }
-
-#endif
 
 int CEMMCDevice::CardReset (void)
 {
@@ -1604,97 +1687,95 @@ int CEMMCDevice::CardReset (void)
 		return -1;
 	}
 
-#ifndef USE_EMBEDDED_MMC_CM
-
-	// Send CMD8 to the card
-	// Voltage supplied = 0x1 = 2.7-3.6V (standard)
-	// Check pattern = 10101010b (as per PLSS 4.3.13) = 0xAA
+	int v2_later = -1;
+	if (m_Device != EmbeddedMMC)
+	{
+		// Send CMD8 to the card
+		// Voltage supplied = 0x1 = 2.7-3.6V (standard)
+		// Check pattern = 10101010b (as per PLSS 4.3.13) = 0xAA
 #ifdef EMMC_DEBUG2
-	LogWrite (LogDebug, "Note a timeout error on the following command (CMD8) is normal and expected if the SD card version is less than 2.0");
+		LogWrite (LogDebug, "Note a timeout error on the following command (CMD8) is normal and expected if the SD card version is less than 2.0");
 #endif
-	IssueCommand (SEND_IF_COND, 0x1aa);
-	int v2_later = 0;
-	if (TIMEOUT)
-	{
-		v2_later = 0;
-	}
+		IssueCommand (SEND_IF_COND, 0x1aa);
+		if (TIMEOUT)
+		{
+			v2_later = 0;
+		}
 #ifndef USE_SDHOST
-	else if (CMD_TIMEOUT)
-	{
-		if(ResetCmd() == -1)
+		else if (CMD_TIMEOUT)
 		{
-			return -1;
-		}
-		write32 (EMMC_INTERRUPT, SD_ERR_MASK_CMD_TIMEOUT);
-		v2_later = 0;
-	}
-#endif
-	else if (FAIL)
-	{
-		LogWrite (LogError, "failure sending CMD8");
-
-		return -1;
-	}
-	else
-	{
-		if ((m_last_r0 & 0xfff) != 0x1aa)
-		{
-			LogWrite (LogError, "unusable card");
-#ifdef EMMC_DEBUG
-			LogWrite (LogDebug, "CMD8 response %08x", m_last_r0);
-#endif
-
-			return -1;
-		}
-		else
-		{
-			v2_later = 1;
-		}
-	}
-
-	// Here we are supposed to check the response to CMD5 (HCSS 3.6)
-	// It only returns if the card is a SDIO card
-#ifdef EMMC_DEBUG2
-	LogWrite (LogDebug, "Note that a timeout error on the following command (CMD5) is normal and expected if the card is not a SDIO card.");
-#endif
-	IssueCommand (IO_SET_OP_COND, 0, 10000);
-	if (!TIMEOUT)
-	{
-#ifndef USE_SDHOST
-		if (CMD_TIMEOUT)
-		{
-			if (ResetCmd () == -1)
+			if(ResetCmd() == -1)
 			{
 				return -1;
 			}
-
 			write32 (EMMC_INTERRUPT, SD_ERR_MASK_CMD_TIMEOUT);
+			v2_later = 0;
 		}
-		else
 #endif
+		else if (FAIL)
 		{
-			LogWrite (LogError, "SDIO card detected - not currently supported");
-#ifdef EMMC_DEBUG2
-			LogWrite (LogDebug, "CMD5 returned %08x", m_last_r0);
-#endif
+			LogWrite (LogError, "failure sending CMD8");
 
 			return -1;
 		}
-	}
+		else
+		{
+			if ((m_last_r0 & 0xfff) != 0x1aa)
+			{
+				LogWrite (LogError, "unusable card");
+	#ifdef EMMC_DEBUG
+				LogWrite (LogDebug, "CMD8 response %08x", m_last_r0);
+	#endif
 
-#else
-	int v2_later = 1;
-#endif	// #ifndef USE_EMBEDDED_MMC_CM
+				return -1;
+			}
+			else
+			{
+				v2_later = 1;
+			}
+		}
+
+		// Here we are supposed to check the response to CMD5 (HCSS 3.6)
+		// It only returns if the card is a SDIO card
+	#ifdef EMMC_DEBUG2
+		LogWrite (LogDebug, "Note that a timeout error on the following command (CMD5) is normal and expected if the card is not a SDIO card.");
+	#endif
+		IssueCommand (IO_SET_OP_COND, 0, 10000);
+		if (!TIMEOUT)
+		{
+	#ifndef USE_SDHOST
+			if (CMD_TIMEOUT)
+			{
+				if (ResetCmd () == -1)
+				{
+					return -1;
+				}
+
+				write32 (EMMC_INTERRUPT, SD_ERR_MASK_CMD_TIMEOUT);
+			}
+			else
+	#endif
+			{
+				LogWrite (LogError, "SDIO card detected - not currently supported");
+	#ifdef EMMC_DEBUG2
+				LogWrite (LogDebug, "CMD5 returned %08x", m_last_r0);
+	#endif
+
+				return -1;
+			}
+		}
+	}
+	else
+	{
+		v2_later = 1;
+	}
 
 	// Call an inquiry ACMD41 (voltage window = 0) to get the OCR
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "sending inquiry ACMD41");
 #endif
-#ifdef USE_EMBEDDED_MMC_CM
-	if (!IssueCommand (SEND_OP_COND, 0))
-#else
-	if (!IssueCommand (ACMD(41), 0))
-#endif
+
+	if (!IssueCommand (m_Device == EmbeddedMMC ? SEND_OP_COND : ACMD(41), 0))
 	{
 		LogWrite (LogError, "Inquiry ACMD41 failed");
 		return -1;
@@ -1708,6 +1789,7 @@ int CEMMCDevice::CardReset (void)
 	while (card_is_busy)
 	{
 		u32 v2_flags = 0;
+		assert (v2_later >= 0);
 		if (v2_later)
 		{
 			// Set SDHC support
@@ -1726,11 +1808,8 @@ int CEMMCDevice::CardReset (void)
 #endif
 		}
 
-#ifdef USE_EMBEDDED_MMC_CM
-		if (!IssueCommand (SEND_OP_COND, 0x00ff8000 | v2_flags))
-#else
-		if (!IssueCommand (ACMD(41), 0x00ff8000 | v2_flags))
-#endif
+		if (!IssueCommand (m_Device == EmbeddedMMC ? SEND_OP_COND : ACMD(41),
+				   0x00ff8000 | v2_flags))
 		{
 			LogWrite (LogError, "Error issuing ACMD41");
 
@@ -1765,108 +1844,112 @@ int CEMMCDevice::CardReset (void)
 	LogWrite (LogDebug, "card identified: OCR: %04x, 1.8v support: %d, SDHC support: %d", m_card_ocr, m_card_supports_18v, m_card_supports_sdhc);
 #endif
 
-#ifndef USE_EMBEDDED_MMC_CM
-	// At this point, we know the card is definitely an SD card, so will definitely
-	//  support SDR12 mode which runs at 25 MHz
-#ifndef USE_SDHOST
-	SwitchClockRate (base_clock, SD_CLOCK_NORMAL);
-#else
-	m_Host.SetClock (SD_CLOCK_NORMAL);
-#endif
-
-	// A small wait before the voltage switch
-	usDelay (5000);
-#endif
-
-#if !defined (USE_SDHOST) && !defined (USE_EMBEDDED_MMC_CM)
-
-	// Switch to 1.8V mode if possible
-	if (m_card_supports_18v)
+	if (m_Device != EmbeddedMMC)
 	{
-#ifdef EMMC_DEBUG2
-		LogWrite (LogDebug, "switching to 1.8V mode");
+		// At this point, we know the card is definitely an SD card, so will definitely
+		//  support SDR12 mode which runs at 25 MHz
+#ifndef USE_SDHOST
+		SwitchClockRate (base_clock, SD_CLOCK_NORMAL);
+#else
+		m_Host.SetClock (SD_CLOCK_NORMAL);
 #endif
-		// As per HCSS 3.6.1
 
-		// Send VOLTAGE_SWITCH
-		if (!IssueCommand(VOLTAGE_SWITCH, 0))
-		{
-#ifdef EMMC_DEBUG
-			LogWrite (LogDebug, "error issuing VOLTAGE_SWITCH");
-#endif
-			m_failed_voltage_switch = 1;
-			PowerOff();
-
-			return CardReset ();
-		}
-
-		// Disable SD clock
-		control1 = read32(EMMC_CONTROL1);
-		control1 &= ~(1 << 2);
-		write32(EMMC_CONTROL1, control1);
-
-		// Check DAT[3:0]
-		status_reg = read32 (EMMC_STATUS);
-		u32 dat30 = (status_reg >> 20) & 0xf;
-		if (dat30 != 0)
-		{
-#ifdef EMMC_DEBUG
-			LogWrite (LogDebug, "DAT[3:0] did not settle to 0");
-#endif
-			m_failed_voltage_switch = 1;
-			PowerOff();
-
-			return CardReset ();
-		}
-
-		// Set 1.8V signal enable to 1
-		u32 control0 = read32(EMMC_CONTROL0);
-		control0 |= (1 << 8);
-		write32(EMMC_CONTROL0, control0);
-
-		// Wait 5 ms
+		// A small wait before the voltage switch
 		usDelay (5000);
-
-		// Check the 1.8V signal enable is set
-		control0 = read32(EMMC_CONTROL0);
-		if(((control0 >> 8) & 1) == 0)
-		{
-#ifdef EMMC_DEBUG
-			LogWrite (LogDebug, "controller did not keep 1.8V signal enable high");
-#endif
-			m_failed_voltage_switch = 1;
-			PowerOff();
-
-			return CardReset ();
-		}
-
-		// Re-enable the SD clock
-		control1 = read32(EMMC_CONTROL1);
-		control1 |= (1 << 2);
-		write32(EMMC_CONTROL1, control1);
-
-		usDelay (10000);
-
-		// Check DAT[3:0]
-		status_reg = read32 (EMMC_STATUS);
-		dat30 = (status_reg >> 20) & 0xf;
-		if (dat30 != 0xf)
-		{
-#ifdef EMMC_DEBUG
-			LogWrite (LogDebug, "DAT[3:0] did not settle to 1111b (%01x)", dat30);
-#endif
-			m_failed_voltage_switch = 1;
-			PowerOff();
-
-			return CardReset ();
-		}
-
-#ifdef EMMC_DEBUG2
-		LogWrite (LogDebug, "voltage switch complete");
-#endif
 	}
 
-#endif	// #if !defined (USE_SDHOST) && !defined (USE_EMBEDDED_MMC_CM)
+#if !defined (USE_SDHOST)
+
+	if (m_Device != EmbeddedMMC)
+	{
+		// Switch to 1.8V mode if possible
+		if (m_card_supports_18v)
+		{
+#ifdef EMMC_DEBUG2
+			LogWrite (LogDebug, "switching to 1.8V mode");
+#endif
+			// As per HCSS 3.6.1
+
+			// Send VOLTAGE_SWITCH
+			if (!IssueCommand(VOLTAGE_SWITCH, 0))
+			{
+#ifdef EMMC_DEBUG
+				LogWrite (LogDebug, "error issuing VOLTAGE_SWITCH");
+#endif
+				m_failed_voltage_switch = 1;
+				PowerOff();
+
+				return CardReset ();
+			}
+
+			// Disable SD clock
+			control1 = read32(EMMC_CONTROL1);
+			control1 &= ~(1 << 2);
+			write32(EMMC_CONTROL1, control1);
+
+			// Check DAT[3:0]
+			status_reg = read32 (EMMC_STATUS);
+			u32 dat30 = (status_reg >> 20) & 0xf;
+			if (dat30 != 0)
+			{
+#ifdef EMMC_DEBUG
+				LogWrite (LogDebug, "DAT[3:0] did not settle to 0");
+#endif
+				m_failed_voltage_switch = 1;
+				PowerOff();
+
+				return CardReset ();
+			}
+
+			// Set 1.8V signal enable to 1
+			u32 control0 = read32(EMMC_CONTROL0);
+			control0 |= (1 << 8);
+			write32(EMMC_CONTROL0, control0);
+
+			// Wait 5 ms
+			usDelay (5000);
+
+			// Check the 1.8V signal enable is set
+			control0 = read32(EMMC_CONTROL0);
+			if(((control0 >> 8) & 1) == 0)
+			{
+#ifdef EMMC_DEBUG
+				LogWrite (LogDebug, "controller did not keep 1.8V signal enable high");
+#endif
+				m_failed_voltage_switch = 1;
+				PowerOff();
+
+				return CardReset ();
+			}
+
+			// Re-enable the SD clock
+			control1 = read32(EMMC_CONTROL1);
+			control1 |= (1 << 2);
+			write32(EMMC_CONTROL1, control1);
+
+			usDelay (10000);
+
+			// Check DAT[3:0]
+			status_reg = read32 (EMMC_STATUS);
+			dat30 = (status_reg >> 20) & 0xf;
+			if (dat30 != 0xf)
+			{
+#ifdef EMMC_DEBUG
+				LogWrite (LogDebug, "DAT[3:0] did not settle to 1111b (%01x)", dat30);
+#endif
+				m_failed_voltage_switch = 1;
+				PowerOff();
+
+				return CardReset ();
+			}
+
+#ifdef EMMC_DEBUG2
+			LogWrite (LogDebug, "voltage switch complete");
+#endif
+		}
+	}
+
+#endif	// #if !defined (USE_SDHOST)
 
 	// Send CMD2 to get the cards CID
 	if (!IssueCommand (ALL_SEND_CID, 0))
@@ -1936,45 +2019,50 @@ int CEMMCDevice::CardReset (void)
 	LogWrite (LogDebug, "RCA: %04x", m_card_rca);
 #endif
 
-#ifndef USE_EMBEDDED_MMC_CM
-	// Send CMD9 to get the cards CSD
-	if (!IssueCommand (SEND_CSD, m_card_rca << 16))
+	if (m_Device != EmbeddedMMC)
 	{
-		LogWrite (LogError, "error sending CMD9");
+		// Send CMD9 to get the cards CSD
+		if (!IssueCommand (SEND_CSD, m_card_rca << 16))
+		{
+			LogWrite (LogError, "error sending CMD9");
 
-		return -1;
-	}
-	m_csd[0] = m_last_r0;
-	m_csd[1] = m_last_r1;
-	m_csd[2] = m_last_r2;
-	m_csd[3] = m_last_r3;
+			return -1;
+		}
+		m_csd[0] = m_last_r0;
+		m_csd[1] = m_last_r1;
+		m_csd[2] = m_last_r2;
+		m_csd[3] = m_last_r3;
 #ifdef EMMC_DEBUG2
-	LogWrite (LogDebug, "Card CSD: %08x%08x%08x%08x", m_csd[3], m_csd[2], m_csd[1], m_csd[0]);
+		LogWrite (LogDebug, "Card CSD: %08x%08x%08x%08x", m_csd[3], m_csd[2], m_csd[1], m_csd[0]);
 #endif
 
-	// Calculate device capacity
-	unsigned nSize, nShift;
-	unsigned nCSDVersion = GetCSDField (126, 2);
-	if (nCSDVersion == 0)
-	{
-		nSize = GetCSDField (62, 12) + 1;
-		nShift = GetCSDField (47, 3) + 2;
-	}
-	else if (nCSDVersion == 1)
-	{
-		nSize = GetCSDField (48, 22) + 1;
-		nShift = 10;
-	}
-	else
-	{
-		LogWrite (LogError, "Unknown CSD version %u", nCSDVersion);
+		// Calculate device capacity
+		unsigned nSize, nShift;
+		unsigned nCSDVersion = GetCSDField (126, 2);
+		if (nCSDVersion == 0)
+		{
+			nSize = GetCSDField (62, 12) + 1;
+			nShift = GetCSDField (47, 3) + 2;
+		}
+		else if (nCSDVersion == 1)
+		{
+			nSize = GetCSDField (48, 22) + 1;
+			nShift = 10;
+		}
+		else
+		{
+			LogWrite (LogError, "Unknown CSD version %u", nCSDVersion);
 
-		return -1;
-	}
+			return -1;
+		}
 
-	m_capacity = (u64) (nSize << nShift) * SD_BLOCK_SIZE;
-	LogWrite (LogDebug, "Capacity is %lu MBytes", m_capacity / 0x100000);
-#endif	// #ifndef USE_EMBEDDED_MMC_CM
+		m_capacity = (u64) (nSize << nShift) * SD_BLOCK_SIZE;
+#if RASPPI == 1
+		LogWrite (LogDebug, "Capacity is %llu MBytes", m_capacity / 0x100000);
+#else
+		LogWrite (LogDebug, "Capacity is %lu MBytes", m_capacity / 0x100000);
+#endif
+	}
 
 	// Now select the card (toggles it to transfer state)
 	if (!IssueCommand (SELECT_CARD, m_card_rca << 16))
@@ -2012,213 +2100,217 @@ int CEMMCDevice::CardReset (void)
 	write32 (EMMC_BLKSIZECNT, controller_block_size);
 #endif
 
-#ifndef USE_EMBEDDED_MMC_CM
-
-	// Get the cards SCR register
-	m_buf = &m_pSCR->scr[0];
-	m_block_size = 8;
-	m_blocks_to_transfer = 1;
-	IssueCommand (SEND_SCR, 0, 1000000);
-	m_block_size = SD_BLOCK_SIZE;
-	if (FAIL)
+	if (m_Device != EmbeddedMMC)
 	{
+		// Get the cards SCR register
+		m_buf = &m_pSCR->scr[0];
+		m_block_size = 8;
+		m_blocks_to_transfer = 1;
+		IssueCommand (SEND_SCR, 0, 1000000);
+		m_block_size = SD_BLOCK_SIZE;
+		if (FAIL)
+		{
 #ifdef EMMC_DEBUG2
-		LogWrite (LogError, "Error sending SEND_SCR");
+			LogWrite (LogError, "Error sending SEND_SCR");
 #endif
 
-		return -2;
-	}
+			return -2;
+		}
 
-	// Determine card version
-	// Note that the SCR is big-endian
-	u32 scr0 = be2le32 (m_pSCR->scr[0]);
-	m_pSCR->sd_version = SD_VER_UNKNOWN;
-	u32 sd_spec = (scr0 >> (56 - 32)) & 0xf;
-	u32 sd_spec3 = (scr0 >> (47 - 32)) & 0x1;
-	u32 sd_spec4 = (scr0 >> (42 - 32)) & 0x1;
-	m_pSCR->sd_bus_widths = (scr0 >> (48 - 32)) & 0xf;
-	if (sd_spec == 0)
-	{
-		m_pSCR->sd_version = SD_VER_1;
-	}
-	else if (sd_spec == 1)
-	{
-		m_pSCR->sd_version = SD_VER_1_1;
-	}
-	else if (sd_spec == 2)
-	{
-		if (sd_spec3 == 0)
+		// Determine card version
+		// Note that the SCR is big-endian
+		u32 scr0 = be2le32 (m_pSCR->scr[0]);
+		m_pSCR->sd_version = SD_VER_UNKNOWN;
+		u32 sd_spec = (scr0 >> (56 - 32)) & 0xf;
+		u32 sd_spec3 = (scr0 >> (47 - 32)) & 0x1;
+		u32 sd_spec4 = (scr0 >> (42 - 32)) & 0x1;
+		m_pSCR->sd_bus_widths = (scr0 >> (48 - 32)) & 0xf;
+		if (sd_spec == 0)
 		{
-			m_pSCR->sd_version = SD_VER_2;
+			m_pSCR->sd_version = SD_VER_1;
 		}
-		else if (sd_spec3 == 1)
+		else if (sd_spec == 1)
 		{
-			if (sd_spec4 == 0)
+			m_pSCR->sd_version = SD_VER_1_1;
+		}
+		else if (sd_spec == 2)
+		{
+			if (sd_spec3 == 0)
 			{
-				m_pSCR->sd_version = SD_VER_3;
+				m_pSCR->sd_version = SD_VER_2;
 			}
-			else if (sd_spec4 == 1)
+			else if (sd_spec3 == 1)
 			{
-				m_pSCR->sd_version = SD_VER_4;
+				if (sd_spec4 == 0)
+				{
+					m_pSCR->sd_version = SD_VER_3;
+				}
+				else if (sd_spec4 == 1)
+				{
+					m_pSCR->sd_version = SD_VER_4;
+				}
 			}
 		}
-	}
 #ifdef EMMC_DEBUG2
-	LogWrite (LogDebug, "SCR[0]: %08x, SCR[1]: %08x", m_pSCR->scr[0], m_pSCR->scr[1]);;
-	LogWrite (LogDebug, "SCR: %08x%08x", be2le32(m_pSCR->scr[0]), be2le32(m_pSCR->scr[1]));
-	LogWrite (LogDebug, "SCR: version %s, bus_widths %01x", sd_versions[m_pSCR->sd_version], m_pSCR->sd_bus_widths);
+		LogWrite (LogDebug, "SCR[0]: %08x, SCR[1]: %08x", m_pSCR->scr[0], m_pSCR->scr[1]);;
+		LogWrite (LogDebug, "SCR: %08x%08x", be2le32(m_pSCR->scr[0]), be2le32(m_pSCR->scr[1]));
+		LogWrite (LogDebug, "SCR: version %s, bus_widths %01x", sd_versions[m_pSCR->sd_version], m_pSCR->sd_bus_widths);
 #endif
 
 #ifdef SD_HIGH_SPEED
-	// If card supports CMD6, read switch information from card
-	if (m_pSCR->sd_version >= SD_VER_1_1)
-	{
-		// 512 bit response
-		u8 cmd6_resp[64];
-		m_buf = &cmd6_resp[0];
-		m_block_size = 64;
-
-		// CMD6 Mode 0: Check Function (Group 1, Access Mode)
-		if (!IssueCommand (SWITCH_FUNC, 0x00fffff0, 100000))
+		// If card supports CMD6, read switch information from card
+		if (m_pSCR->sd_version >= SD_VER_1_1)
 		{
-			LogWrite (LogError, "Error sending SWITCH_FUNC (Mode 0)");
-		}
-		else
-		{
-			// Check Group 1, Function 1 (High Speed/SDR25)
-			m_card_supports_hs = (cmd6_resp[13] >> 1) & 0x1;
+			// 512 bit response
+			u8 cmd6_resp[64];
+			m_buf = &cmd6_resp[0];
+			m_block_size = 64;
 
-			// Attempt switch if supported
-			if (m_card_supports_hs)
+			// CMD6 Mode 0: Check Function (Group 1, Access Mode)
+			if (!IssueCommand (SWITCH_FUNC, 0x00fffff0, 100000))
 			{
+				LogWrite (LogError, "Error sending SWITCH_FUNC (Mode 0)");
+			}
+			else
+			{
+				// Check Group 1, Function 1 (High Speed/SDR25)
+				m_card_supports_hs = (cmd6_resp[13] >> 1) & 0x1;
+
+				// Attempt switch if supported
+				if (m_card_supports_hs)
+				{
 #ifdef EMMC_DEBUG2
-				LogWrite (LogDebug, "Switching to %s mode", m_card_supports_18v ? "SDR25" : "High Speed");
+					LogWrite (LogDebug, "Switching to %s mode", m_card_supports_18v ? "SDR25" : "High Speed");
 #endif
 
-				// CMD6 Mode 1: Set Function (Group 1, Access Mode = High Speed/SDR25)
-				if (!IssueCommand (SWITCH_FUNC, 0x80fffff1, 100000))
-				{
-					LogWrite (LogError, "Switch to %s mode failed", m_card_supports_18v ? "SDR25" : "High Speed");
-				}
-				else
-				{
-					// Success; switch clock to 50MHz
+					// CMD6 Mode 1: Set Function (Group 1, Access Mode = High Speed/SDR25)
+					if (!IssueCommand (SWITCH_FUNC, 0x80fffff1, 100000))
+					{
+						LogWrite (LogError, "Switch to %s mode failed", m_card_supports_18v ? "SDR25" : "High Speed");
+					}
+					else
+					{
+						// Success; switch clock to 50MHz
 #ifndef USE_SDHOST
-					SwitchClockRate (base_clock, SD_CLOCK_HIGH);
+						SwitchClockRate (base_clock, SD_CLOCK_HIGH);
 #else
-					m_Host.SetClock (SD_CLOCK_HIGH);
+						m_Host.SetClock (SD_CLOCK_HIGH);
 #endif
 #ifdef EMMC_DEBUG2
-					LogWrite (LogDebug, "Switch to 50MHz clock complete");
+						LogWrite (LogDebug, "Switch to 50MHz clock complete");
 #endif
+					}
 				}
+			}
+
+			// Restore block size
+			m_block_size = SD_BLOCK_SIZE;
+		}
+#endif
+	}
+	else
+	{
+		m_pSCR->sd_version = SD_VER_4;
+#if RASPPI >= 4
+		m_pSCR->sd_bus_widths = 8;
+#else
+		m_pSCR->sd_bus_widths = 4;
+#endif
+		m_block_size = SD_BLOCK_SIZE;
+	}
+
+	if (m_Device != EmbeddedMMC)
+	{
+		if (m_pSCR->sd_bus_widths & 4)
+		{
+			// Set 4-bit transfer mode (ACMD6)
+			// See HCSS 3.4 for the algorithm
+#ifdef SD_4BIT_DATA
+#ifdef EMMC_DEBUG2
+			LogWrite (LogDebug, "Switching to 4-bit data mode");
+#endif
+
+#ifndef USE_SDHOST
+			// Disable card interrupt in host
+			u32 old_irpt_mask = read32(EMMC_IRPT_MASK);
+			u32 new_iprt_mask = old_irpt_mask & ~(1 << 8);
+			write32(EMMC_IRPT_MASK, new_iprt_mask);
+#endif
+
+			// Send ACMD6 to change the card's bit mode
+			if (!IssueCommand (SET_BUS_WIDTH, 2))
+			{
+				LogWrite (LogError, "Switch to 4-bit data mode failed");
+			}
+			else
+			{
+#ifndef USE_SDHOST
+				// Change bit mode for Host
+				u32 control0 = read32(EMMC_CONTROL0);
+				control0 |= 0x2;
+				write32(EMMC_CONTROL0, control0);
+
+				// Re-enable card interrupt in host
+				write32(EMMC_IRPT_MASK, old_irpt_mask);
+#else
+				// Change bit mode for Host
+				m_Host.SetBusWidth (4);
+#endif
+
+#ifdef EMMC_DEBUG2
+				LogWrite (LogDebug, "switch to 4-bit complete");
+#endif
+			}
+#endif
+		}
+
+		LogWrite (LogNotice, "Found a valid version %s SD card", sd_versions[m_pSCR->sd_version]);
+	}
+	else
+	{
+#ifdef USE_SDHOST
+		assert (0);
+#else
+		if (m_pSCR->sd_bus_widths & (4 | 8))
+		{
+			// Set 4/8-bit transfer mode (CMD6)
+#ifdef EMMC_DEBUG2
+			LogWrite (LogDebug, "Switching to %u-bit data mode", m_pSCR->sd_bus_widths);
+#endif
+
+			// Disable card interrupt in host
+			u32 old_irpt_mask = read32(EMMC_IRPT_MASK);
+			u32 new_iprt_mask = old_irpt_mask & ~(1 << 8);
+			write32(EMMC_IRPT_MASK, new_iprt_mask);
+
+			// Send CMD6 to change the card's bit mode
+			if (!IssueCommand (SWITCH_FUNC, (m_pSCR->sd_bus_widths & 8) ? 0x3B70200 : 0x3B70100))
+			{
+				LogWrite (LogError, "Switch to %u-bit data mode failed",
+					m_pSCR->sd_bus_widths);
+			}
+			else
+			{
+				// Change bit mode for Host
+				u32 control0 = read32(EMMC_CONTROL0);
+				control0 |= (m_pSCR->sd_bus_widths & 8) ? 1 << 5 : 0x2;
+				write32(EMMC_CONTROL0, control0);
+
+				// Re-enable card interrupt in host
+				write32(EMMC_IRPT_MASK, old_irpt_mask);
+
+#ifdef EMMC_DEBUG2
+				LogWrite (LogDebug, "switch to %u-bit complete", m_pSCR->sd_bus_widths);
+#endif
 			}
 		}
 
-		// Restore block size
-		m_block_size = SD_BLOCK_SIZE;
+		SwitchClockRate (base_clock, SD_CLOCK_NORMAL);
+		usDelay (5000);
+
+		LogWrite (LogNotice, "Found a valid eMMC chip");
+#endif	// #ifdef USE_SDHOST
 	}
-#endif
-
-#else
-	m_pSCR->sd_version = SD_VER_4;
-#if RASPPI >= 4
-	m_pSCR->sd_bus_widths = 8;
-#else
-	m_pSCR->sd_bus_widths = 4;
-#endif
-	m_block_size = SD_BLOCK_SIZE;
-#endif	// #ifndef USE_EMBEDDED_MMC_CM
-
-#ifndef USE_EMBEDDED_MMC_CM
-
-	if (m_pSCR->sd_bus_widths & 4)
-	{
-		// Set 4-bit transfer mode (ACMD6)
-		// See HCSS 3.4 for the algorithm
-#ifdef SD_4BIT_DATA
-#ifdef EMMC_DEBUG2
-		LogWrite (LogDebug, "Switching to 4-bit data mode");
-#endif
-
-#ifndef USE_SDHOST
-		// Disable card interrupt in host
-		u32 old_irpt_mask = read32(EMMC_IRPT_MASK);
-		u32 new_iprt_mask = old_irpt_mask & ~(1 << 8);
-		write32(EMMC_IRPT_MASK, new_iprt_mask);
-#endif
-
-		// Send ACMD6 to change the card's bit mode
-		if (!IssueCommand (SET_BUS_WIDTH, 2))
-		{
-			LogWrite (LogError, "Switch to 4-bit data mode failed");
-		}
-		else
-		{
-#ifndef USE_SDHOST
-			// Change bit mode for Host
-			u32 control0 = read32(EMMC_CONTROL0);
-			control0 |= 0x2;
-			write32(EMMC_CONTROL0, control0);
-
-			// Re-enable card interrupt in host
-			write32(EMMC_IRPT_MASK, old_irpt_mask);
-#else
-			// Change bit mode for Host
-			m_Host.SetBusWidth (4);
-#endif
-
-#ifdef EMMC_DEBUG2
-			LogWrite (LogDebug, "switch to 4-bit complete");
-#endif
-		}
-#endif
-	}
-
-	LogWrite (LogNotice, "Found a valid version %s SD card", sd_versions[m_pSCR->sd_version]);
-
-#else	// #ifndef USE_EMBEDDED_MMC_CM
-
-	if (m_pSCR->sd_bus_widths & (4 | 8))
-	{
-		// Set 4/8-bit transfer mode (CMD6)
-#ifdef EMMC_DEBUG2
-		LogWrite (LogDebug, "Switching to %u-bit data mode", m_pSCR->sd_bus_widths);
-#endif
-
-		// Disable card interrupt in host
-		u32 old_irpt_mask = read32(EMMC_IRPT_MASK);
-		u32 new_iprt_mask = old_irpt_mask & ~(1 << 8);
-		write32(EMMC_IRPT_MASK, new_iprt_mask);
-
-		// Send CMD6 to change the card's bit mode
-		if (!IssueCommand (SWITCH_FUNC, (m_pSCR->sd_bus_widths & 8) ? 0x3B70200 : 0x3B70100))
-		{
-			LogWrite (LogError, "Switch to %u-bit data mode failed",
-				  m_pSCR->sd_bus_widths);
-		}
-		else
-		{
-			// Change bit mode for Host
-			u32 control0 = read32(EMMC_CONTROL0);
-			control0 |= (m_pSCR->sd_bus_widths & 8) ? 1 << 5 : 0x2;
-			write32(EMMC_CONTROL0, control0);
-
-			// Re-enable card interrupt in host
-			write32(EMMC_IRPT_MASK, old_irpt_mask);
-
-#ifdef EMMC_DEBUG2
-			LogWrite (LogDebug, "switch to %u-bit complete", m_pSCR->sd_bus_widths);
-#endif
-		}
-	}
-
-	SwitchClockRate (base_clock, SD_CLOCK_NORMAL);
-	usDelay (5000);
-
-	LogWrite (LogNotice, "Found a valid eMMC chip");
-
-#endif	// #ifndef USE_EMBEDDED_MMC_CM
 
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "setup successful (status %d)", status);
@@ -2245,6 +2337,7 @@ int CEMMCDevice::CardInit (void)
 
 	// Check the sanity of the sd_commands and sd_acommands structures
 	assert (sizeof (sd_commands) == (64 * sizeof(u32)));
+	assert (sizeof (emmc_commands) == (64 * sizeof(u32)));
 	assert (sizeof (sd_acommands) == (64 * sizeof(u32)));
 
 #ifndef USE_SDHOST
@@ -2555,7 +2648,7 @@ void CEMMCDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 	va_list var;
 	va_start (var, pMessage);
 
-	CLogger::Get ()->WriteV ("emmc", Severity, pMessage, var);
+	CLogger::Get ()->WriteV (m_Device == SDCardExternal ? "emmc2" : "emmc", Severity, pMessage, var);
 
 	va_end (var);
 }
