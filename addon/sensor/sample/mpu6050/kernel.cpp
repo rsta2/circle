@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,10 @@
 
 #define MPU6050_I2C_ADDRESS	0x68
 #define MPU6050_I2C_CLOCKHZ	400000
+
+#define ACCELERATION_RANGE	CMPU6050::AccelerationRange4g
+#define GYROSCOPE_RANGE		CMPU6050::GyroscopeRange1000		// degrees per second
+#define FILTER_BANDWIDTH 	CMPU6050::FilterBandwidth5Hz
 
 static const char FromKernel[] = "kernel";
 
@@ -95,17 +99,21 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
+	m_MPU6050.WriteAccelerationRange (ACCELERATION_RANGE);
+	m_MPU6050.WriteGyroscopeRange (GYROSCOPE_RANGE);
+	m_MPU6050.WriteFilterBandwidth (FILTER_BANDWIDTH);
+
 	while (1)
 	{
 		if (m_MPU6050.DoMeasurement ())
 		{
-			m_Logger.Write (FromKernel, LogNotice, "Acceleration %d/%d/%d, Gyroscope %d/%d/%d",
-					(int) m_MPU6050.GetAccelerationX (),
-					(int) m_MPU6050.GetAccelerationY (),
-					(int) m_MPU6050.GetAccelerationZ (),
-					(int) m_MPU6050.GetGyroscopeOutputX (),
-					(int) m_MPU6050.GetGyroscopeOutputY (),
-					(int) m_MPU6050.GetGyroscopeOutputZ ());
+			CMPU6050::TResult Accel = m_MPU6050.GetAcceleration ();
+			CMPU6050::TResult Gyro = m_MPU6050.GetGyroscopeOutput ();
+			float fTemp = m_MPU6050.GetTemperature ();
+
+			m_Logger.Write (FromKernel, LogNotice,
+					"Accel %.1f/%.1f/%.1f Gyro %.1f/%.1f/%.1f Temp %.1f",
+					Accel.x, Accel.y, Accel.z, Gyro.x, Gyro.y, Gyro.z, fTemp);
 		}
 		else
 		{
