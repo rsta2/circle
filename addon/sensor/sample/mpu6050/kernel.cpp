@@ -20,6 +20,10 @@
 #include "kernel.h"
 #include <circle/machineinfo.h>
 
+#ifdef USE_GRAPHICS
+	#include "3dblock.h"
+#endif
+
 // may change this on Raspberry Pi 4 to select a specific master device and configuration
 #define I2C_MASTER_DEVICE	(CMachineInfo::Get ()->GetDevice (DeviceI2CMaster))
 #define I2C_MASTER_CONFIG	0
@@ -29,7 +33,9 @@
 
 #define ACCELERATION_RANGE	CMPU6050::AccelerationRange4g
 #define GYROSCOPE_RANGE		CMPU6050::GyroscopeRange1000		// degrees per second
-#define FILTER_BANDWIDTH 	CMPU6050::FilterBandwidth5Hz
+#define FILTER_BANDWIDTH 	CMPU6050::FilterBandwidth21Hz
+
+#define PI			3.1415926
 
 static const char FromKernel[] = "kernel";
 
@@ -66,7 +72,11 @@ boolean CKernel::Initialize (void)
 		CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
 		if (pTarget == 0)
 		{
+#ifdef USE_GRAPHICS
+			pTarget = &m_Serial;
+#else
 			pTarget = &m_Screen;
+#endif
 		}
 
 		bOK = m_Logger.Initialize (pTarget);
@@ -103,8 +113,16 @@ TShutdownMode CKernel::Run (void)
 	m_MPU6050.WriteGyroscopeRange (GYROSCOPE_RANGE);
 	m_MPU6050.WriteFilterBandwidth (FILTER_BANDWIDTH);
 
+#ifdef USE_GRAPHICS
+	C3DBlock Block (1.5, 2.0, 0.15);
+#endif
+
 	while (1)
 	{
+#ifdef USE_GRAPHICS
+		m_Screen.ClearScreen (CDisplay::Black);
+#endif
+
 		if (m_MPU6050.DoMeasurement ())
 		{
 			CMPU6050::TResult Accel = m_MPU6050.GetAcceleration ();
@@ -114,13 +132,26 @@ TShutdownMode CKernel::Run (void)
 			m_Logger.Write (FromKernel, LogNotice,
 					"Accel %.1f/%.1f/%.1f Gyro %.1f/%.1f/%.1f Temp %.1f",
 					Accel.x, Accel.y, Accel.z, Gyro.x, Gyro.y, Gyro.z, fTemp);
+
+#ifdef USE_GRAPHICS
+			double x = -Accel.z * PI/2.0;
+			double z = (Accel.y-1.0) * PI/2.0;
+
+			Block.SetRotation (x, 0.0, z);
+
+			Block.Draw (&m_Screen, CDisplay::BrightGreen);
+#endif
 		}
 		else
 		{
 			m_Logger.Write (FromKernel, LogWarning, "Measurement failed");
 		}
 
+#ifdef USE_GRAPHICS
+		m_Screen.UpdateDisplay ();
+#else
 		m_Timer.MsDelay (500);
+#endif
 	}
 
 	return ShutdownHalt;

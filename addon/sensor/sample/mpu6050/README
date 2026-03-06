@@ -8,3 +8,9 @@ The MPU-6050 device/module has to be attached properly to the I2C interface of
 your Raspberry Pi. Don't forget to connect GND and power (3.3V) to the
 respective pins of your Raspberry Pi. The AD0 pin should be connected to GND to
 set I2C slave address 0x68.
+
+When you define USE_GRAPHICS in the file kernel.h before build, a simplified
+3D image of the MPU-6050 breakout board is displayed on the screen, which
+rotates in the same way, in which the board is moved. Please note that not
+all moves can be mapped. The log messages are sent to the serial interface
+in this case.

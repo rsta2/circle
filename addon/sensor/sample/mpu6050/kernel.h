@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2017  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,9 +20,12 @@
 #ifndef _kernel_h
 #define _kernel_h
 
+//#define USE_GRAPHICS
+
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
+#include <circle/2dgraphics.h>
 #include <circle/screen.h>
 #include <circle/serial.h>
 #include <circle/exceptionhandler.h>
@@ -55,7 +58,11 @@ private:
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
+#ifdef USE_GRAPHICS
+	C2DGraphics		m_Screen;
+#else
 	CScreenDevice		m_Screen;
+#endif
 	CSerialDevice		m_Serial;
 	CExceptionHandler	m_ExceptionHandler;
 	CInterruptSystem	m_Interrupt;
