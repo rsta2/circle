@@ -2,7 +2,7 @@
 // machineinfo.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ enum TMachineModel
 	MachineModel500,
 	MachineModelCM5,
 	MachineModelCM5Lite,
+	MachineModelCM0,
 	MachineModelUnknown
 };
 
