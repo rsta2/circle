@@ -66,6 +66,32 @@ int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength)
 	return 0;
 }
 
+void *memmem (const void *pHaystack, size_t haystackLength, const void *pNeedle, size_t needleLength)
+{
+	if (haystackLength == 0)
+	{
+		if (needleLength > 0)
+		{
+			return 0;
+		}
+
+		return (void *) pHaystack;
+	}
+
+	while (haystackLength >= needleLength)
+	{
+		if (memcmp(pHaystack, pNeedle, needleLength) == 0)
+		{
+			return (void *) pHaystack;
+		}
+		// pHaystack++; however ISO c++ doesn't allow void* pointer arithmetic, so we need to do some casts
+		pHaystack = static_cast<const void *>( static_cast<const char*>(pHaystack) + 1);
+		haystackLength--;
+	}
+
+	return 0;
+}
+
 size_t strlen (const char *pString)
 {
 	size_t nResult = 0;
