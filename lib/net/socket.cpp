@@ -324,9 +324,21 @@ int CSocket::Receive (void *pBuffer, unsigned nLength, int nFlags)
 int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 		     const CIPAddress &rForeignIP, u16 nForeignPort)
 {
+	assert (m_pTransportLayer != 0);
+
 	if (m_hConnection < 0)
 	{
-		return -NET_ERROR_NOT_CONNECTED;
+		if (m_nProtocol != IPPROTO_UDP)
+		{
+			return -NET_ERROR_NOT_CONNECTED;
+		}
+
+		// assign ephemeral port
+		m_hConnection = m_pTransportLayer->Bind (0, m_nProtocol);
+		if (m_hConnection < 0)
+		{
+			return m_hConnection;		// return error code
+		}
 	}
 
 	if (nLength == 0)
@@ -334,7 +346,6 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 		return -NET_ERROR_INVALID_VALUE;
 	}
 	
-	assert (m_pTransportLayer != 0);
 	u16 nMSS = m_pTransportLayer->GetMSS (m_hConnection);
 	if (   nLength > nMSS
 	    && m_nProtocol == IPPROTO_UDP)

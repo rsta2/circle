@@ -2,7 +2,7 @@
 // transportlayer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -164,11 +164,30 @@ int CTransportLayer::Bind (u16 nOwnPort, int nProtocol)
 		i = m_pConnection.Append (0);
 	}
 
-	if (nOwnPort == 0)
+	if (nOwnPort == 0)		// assign ephemeral port
 	{
-		m_SpinLock.Release ();
+		unsigned j;
+		do
+		{
+			nOwnPort = m_nOwnPort;
+			if (++m_nOwnPort > OWN_PORT_MAX)
+			{
+				m_nOwnPort = OWN_PORT_MIN;
+			}
 
-		return -NET_ERROR_INVALID_VALUE;
+			for (j = 0; j < m_pConnection.GetCount (); j++)
+			{
+				if (   m_pConnection[j] != 0
+				    && ((CNetConnection *) m_pConnection[j])->GetOwnPort () == nOwnPort
+				    && ((CNetConnection *) m_pConnection[j])->GetProtocol () == nProtocol)
+				{
+					break;
+				}
+			}
+		}
+		while (j < m_pConnection.GetCount ());
+
+		m_SpinLock.Release ();
 	}
 
 	assert (m_pNetConfig != 0);
