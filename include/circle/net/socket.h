@@ -45,7 +45,7 @@ public:
 	int GetProtocol (void) const;
 
 	/// \brief Bind own port number to this socket
-	/// \param nOwnPort Port number
+	/// \param nOwnPort Port number (0 to assign ephemeral port)
 	/// \return Status (0 success, < 0 on error)
 	int Bind (u16 nOwnPort);
 
@@ -130,6 +130,9 @@ public:
 	/// \param rGroupAddress Group address to be dropped
 	/// \return Status (0 success, < 0 on error)
 	int SetOptionDropMembership (const CIPAddress &rGroupAddress);
+
+	/// \return Own port number (or 0 if not assigned yet)
+	u16 GetOwnPort (void) const;
 
 	/// \brief Get IP address of connected remote host
 	/// \return Pointer to IP address (four bytes, 0-pointer if not connected)

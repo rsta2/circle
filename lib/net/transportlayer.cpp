@@ -480,6 +480,18 @@ const u8 *CTransportLayer::GetForeignIP (int hConnection) const
 	return ((CNetConnection *) m_pConnection[hConnection])->GetForeignIP ();
 }
 
+u16 CTransportLayer::GetOwnPort (int hConnection) const
+{
+	assert (hConnection >= 0);
+	if (   hConnection >= (int) m_pConnection.GetCount ()
+	    || m_pConnection[hConnection] == 0)
+	{
+		return 0;
+	}
+
+	return ((CNetConnection *) m_pConnection[hConnection])->GetOwnPort ();
+}
+
 u16 CTransportLayer::GetMSS (int hConnection) const
 {
 	assert (hConnection >= 0);

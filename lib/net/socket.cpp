@@ -80,11 +80,6 @@ int CSocket::GetProtocol (void) const
 
 int CSocket::Bind (u16 nOwnPort)
 {
-	if (nOwnPort == 0)
-	{
-		return -NET_ERROR_INVALID_VALUE;
-	}
-	
 	if (m_nOwnPort != 0)
 	{
 		return -NET_ERROR_INVALID_VALUE;
@@ -504,6 +499,17 @@ int CSocket::SetOptionDropMembership (const CIPAddress &rGroupAddress)
 
 	assert (m_pTransportLayer != 0);
 	return m_pTransportLayer->SetOptionDropMembership (rGroupAddress, m_hConnection);
+}
+
+u16 CSocket::GetOwnPort (void) const
+{
+	if (m_hConnection < 0)
+	{
+		return m_nOwnPort;
+	}
+
+	assert (m_pTransportLayer != 0);
+	return m_pTransportLayer->GetOwnPort (m_hConnection);
 }
 
 const u8 *CSocket::GetForeignIP (void) const
