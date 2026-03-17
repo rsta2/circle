@@ -36,6 +36,8 @@ void *memmove (void *pDest, const void *pSrc, size_t nLength);
 
 int memcmp (const void *pBuffer1, const void *pBuffer2, size_t nLength);
 
+void *memmem (const void *pHaystack, size_t haystackLength, const void *pNeedle, size_t needleLength);
+
 size_t strlen (const char *pString);
 size_t strnlen (const char *pString, size_t nMaxLen);
 
