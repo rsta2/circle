@@ -2,7 +2,7 @@
 // device.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/device.h>
+#include <assert.h>
 
 struct TRemovedHandlerEntry
 {
@@ -110,4 +111,17 @@ void CDevice::UnregisterRemovedHandler (TRegistrationHandle hRegistration)
 	m_RemovedHandlerList.Remove (pElement);
 
 	delete pEntry;
+}
+
+void CDevice::SetProperty (TProperty Property, const char *pString)
+{
+	assert (Property < PropertyUnknown);
+	assert (pString != 0);
+	m_Property[Property] = pString;
+}
+
+const char *CDevice::GetProperty (TProperty Property) const
+{
+	assert (Property < PropertyUnknown);
+	return m_Property[Property];
 }

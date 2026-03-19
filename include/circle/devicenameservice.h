@@ -2,7 +2,7 @@
 // devicenameservice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -77,7 +77,8 @@ public:
 
 	/// \brief Generate device listing
 	/// \param pTarget Device to be used for output
-	void ListDevices (CDevice *pTarget);
+	/// \param bShowProperties Show device properties?
+	void ListDevices (CDevice *pTarget, boolean bShowProperties = FALSE);
 
 	/// \return The single CDeviceNameService instance of the system
 	static CDeviceNameService *Get (void);

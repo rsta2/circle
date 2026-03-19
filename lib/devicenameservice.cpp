@@ -2,7 +2,7 @@
 // devicenameservice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -195,10 +195,15 @@ boolean CDeviceNameService::EnumerateDevices (
 	return result;
 }
 
-
-void CDeviceNameService::ListDevices (CDevice *pTarget)
+void CDeviceNameService::ListDevices (CDevice *pTarget, boolean bShowProperties)
 {
 	assert (pTarget != 0);
+
+	if (bShowProperties)
+	{
+		static char Header[] = "  NAME         VENDOR PRODUCT                 SERIAL\n";
+		pTarget->Write (Header, sizeof Header-1);
+	}
 
 	unsigned i = 0;
 
@@ -208,17 +213,38 @@ void CDeviceNameService::ListDevices (CDevice *pTarget)
 		CString String;
 
 		assert (pInfo->pName != 0);
-		String.Format ("%c %-12s%c",
-			       pInfo->bBlockDevice ? 'b' : 'c',
-			       (const char *) pInfo->pName,
-			       ++i % 4 == 0 ? '\n' : ' ');
+		if (!bShowProperties)
+		{
+			String.Format ("%c %-12s%c",
+				pInfo->bBlockDevice ? 'b' : 'c',
+				pInfo->pName,
+				++i % 4 == 0 ? '\n' : ' ');
+		}
+		else
+		{
+			assert (pInfo->pDevice != 0);
+			CString Product (pInfo->pDevice->GetProperty (CDevice::PropertyVendor));
+			if (Product.GetLength () > 0)
+			{
+				Product.Append (" ");
+			}
+
+			Product.Append (pInfo->pDevice->GetProperty (CDevice::PropertyProduct));
+
+			String.Format ("%c %-12s %-30s %s\n",
+				       pInfo->bBlockDevice ? 'b' : 'c',
+				       pInfo->pName,
+				       Product.c_str (),
+				       pInfo->pDevice->GetProperty (CDevice::PropertySerialNumber));
+		}
 
 		pTarget->Write ((const char *) String, String.GetLength ());
 
 		pInfo = pInfo->pNext;
 	}
 
-	if (i % 4 != 0)
+	if (   !bShowProperties
+	    && i % 4 != 0)
 	{
 		pTarget->Write ("\n", 1);
 	}
