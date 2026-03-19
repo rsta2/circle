@@ -2,7 +2,7 @@
 // usbgamepadps4.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This driver was developed by:
 //	Jose Luis Sanchez, http://jspeccy.speccy.org/
@@ -159,7 +159,7 @@ boolean CUSBGamePadPS4Device::Configure (void)
 
 	if (s_bTouchpadEnabled)
 	{
-		m_pMouseDevice = new CMouseDevice(1);
+		m_pMouseDevice = new CMouseDevice(1, FALSE, this);
 		assert (m_pMouseDevice != 0);
 	}
 
