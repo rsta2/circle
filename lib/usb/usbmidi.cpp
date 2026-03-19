@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2017-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,8 +40,9 @@ static const unsigned cin_to_length[] = {
 	0, 0, 2, 3, 3, 1, 2, 3, 3, 3, 3, 3, 2, 2, 3, 1
 };
 
-CUSBMIDIDevice::CUSBMIDIDevice (void)
-:	m_pPacketHandler (0),
+CUSBMIDIDevice::CUSBMIDIDevice (CDevice *pParent)
+:	CDevice (pParent),
+	m_pPacketHandler (0),
 	m_pSendEventsHandler (0),
 	m_bAllSoundOff (FALSE),
 	m_nDeviceNumber (s_DeviceNumberPool.AllocateNumber (TRUE, FromMIDI))

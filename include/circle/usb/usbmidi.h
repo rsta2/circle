@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2017-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,7 +45,9 @@ public:
 	static const size_t EventPacketSize = 4;
 
 public:
-	CUSBMIDIDevice (void);
+	/// \param pParent Parent device object (if any) to copy device properties from
+	CUSBMIDIDevice (CDevice *pParent = nullptr);
+
 	~CUSBMIDIDevice (void);
 
 	/// \brief Register a handler, which is called, when a MIDI packet arrives

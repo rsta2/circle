@@ -26,8 +26,15 @@ struct TRemovedHandlerEntry
 	void		      *pContext;
 };
 
-CDevice::CDevice (void)
+CDevice::CDevice (CDevice *pParent)
 {
+	if (pParent)
+	{
+		for (unsigned i = 0; i < PropertyUnknown; i++)
+		{
+			m_Property[i] = pParent->m_Property[i];
+		}
+	}
 }
 
 CDevice::~CDevice (void)

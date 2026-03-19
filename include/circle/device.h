@@ -42,7 +42,9 @@ public:
 	};
 
 public:
-	CDevice (void);
+	/// \param pParent Parent device object (if any) to copy device properties from
+	CDevice (CDevice *pParent = nullptr);
+
 	virtual ~CDevice (void);
 
 	/// \param pBuffer Buffer, where read data will be placed

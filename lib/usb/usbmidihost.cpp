@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2017-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -171,7 +171,7 @@ boolean CUSBMIDIHostDevice::Configure (void)
 
 	// attach interface device
 	assert (m_pInterface == 0);
-	m_pInterface = new CUSBMIDIDevice;
+	m_pInterface = new CUSBMIDIDevice (this);
 	assert (m_pInterface != 0);
 	m_pInterface->RegisterSendEventsHandler (SendEventsHandler, this);
 
