@@ -114,7 +114,7 @@ boolean CUSBSerialHostDevice::Configure (void)
 
 	// attach interface device
 	assert (m_pInterface == 0);
-	m_pInterface = new CUSBSerialDevice;
+	m_pInterface = new CUSBSerialDevice (this);
 	assert (m_pInterface != 0);
 
 	m_pInterface->RegisterWriteHandler (WriteHandler, this);

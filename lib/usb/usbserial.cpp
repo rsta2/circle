@@ -26,8 +26,9 @@ CNumberPool CUSBSerialDevice::s_DeviceNumberPool (1);
 static const char From[] = "userial";
 static const char DevicePrefix[] = "utty";
 
-CUSBSerialDevice::CUSBSerialDevice (void)
-:	m_pWriteHandler (nullptr),
+CUSBSerialDevice::CUSBSerialDevice (CDevice *pParent)
+:	CDevice (pParent),
+	m_pWriteHandler (nullptr),
 	m_pReadHandler (nullptr),
 	m_pSetBaudRateHandler (nullptr),
 	m_pSetLinePropertiesHandler (nullptr),
