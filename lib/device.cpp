@@ -125,6 +125,7 @@ void CDevice::SetProperty (TProperty Property, const char *pString)
 	assert (Property < PropertyUnknown);
 	assert (pString != 0);
 	m_Property[Property] = pString;
+	m_Property[Property].TrimRight ();
 }
 
 const char *CDevice::GetProperty (TProperty Property) const
