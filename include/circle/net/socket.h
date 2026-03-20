@@ -155,6 +155,8 @@ private:
 
 	unsigned m_nBackLog;
 	int m_hListenConnection[SOCKET_MAX_LISTEN_BACKLOG];
+
+	boolean m_bEnableBroadcast;
 };
 
 #endif

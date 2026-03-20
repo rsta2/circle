@@ -32,7 +32,8 @@ CSocket::CSocket (CNetSubSystem *pNetSubSystem, int nProtocol)
 	m_nProtocol (nProtocol),
 	m_nOwnPort (0),
 	m_hConnection (-1),
-	m_nBackLog (0)
+	m_nBackLog (0),
+	m_bEnableBroadcast (FALSE)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pTransportLayer != 0);
@@ -45,7 +46,8 @@ CSocket::CSocket (CSocket &rSocket, int hConnection)
 	m_nProtocol (rSocket.m_nProtocol),
 	m_nOwnPort (rSocket.m_nOwnPort),
 	m_hConnection (hConnection),
-	m_nBackLog (0)
+	m_nBackLog (0),
+	m_bEnableBroadcast (rSocket.m_bEnableBroadcast)
 {
 	assert (m_pNetConfig != 0);
 	assert (m_pTransportLayer != 0);
@@ -99,6 +101,12 @@ int CSocket::Bind (u16 nOwnPort)
 		{
 			return m_hConnection;		// return error code
 		}
+
+		if (m_bEnableBroadcast)
+		{
+			m_bEnableBroadcast = FALSE;
+			m_pTransportLayer->SetOptionBroadcast (TRUE, m_hConnection);
+		}
 	}
 
 	return 0;
@@ -133,6 +141,13 @@ int CSocket::Connect (const CIPAddress &rForeignIP, u16 nForeignPort)
 	}
 
 	m_hConnection = m_pTransportLayer->Connect (rForeignIP, nForeignPort, m_nOwnPort, m_nProtocol);
+
+	if (   m_hConnection >= 0
+	    && m_bEnableBroadcast)
+	{
+		m_bEnableBroadcast = FALSE;
+		m_pTransportLayer->SetOptionBroadcast (TRUE, m_hConnection);
+	}
 
 	return m_hConnection >= 0 ? 0 : m_hConnection;
 }
@@ -334,6 +349,12 @@ int CSocket::SendTo (const void *pBuffer, unsigned nLength, int nFlags,
 		{
 			return m_hConnection;		// return error code
 		}
+
+		if (m_bEnableBroadcast)
+		{
+			m_bEnableBroadcast = FALSE;
+			m_pTransportLayer->SetOptionBroadcast (TRUE, m_hConnection);
+		}
 	}
 
 	if (nLength == 0)
@@ -455,14 +476,17 @@ int CSocket::SetOptionSendTimeout (unsigned nMicroSeconds)
 
 int CSocket::SetOptionBroadcast (boolean bAllowed)
 {
-	if (m_hConnection < 0)
+	if (m_nProtocol != IPPROTO_UDP)		// ignore, when called for TCP
 	{
-		return -NET_ERROR_NOT_CONNECTED;
+		return 0;
 	}
 
-	if (m_nProtocol != IPPROTO_UDP)
+	if (m_hConnection < 0)
 	{
-		return -NET_ERROR_PROTOCOL_NOT_SUPPORTED;
+		// delayed operation after Bind(), Connect() or SendTo()
+		m_bEnableBroadcast = bAllowed;
+
+		return 0;
 	}
 
 	assert (m_pTransportLayer != 0);
