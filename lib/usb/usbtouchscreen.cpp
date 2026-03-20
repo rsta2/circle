@@ -2,7 +2,7 @@
 // usbtouchscreen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -120,7 +120,7 @@ boolean CUSBTouchScreenDevice::Configure (void)
 	}
 
 	assert (m_pDevice == 0);
-	m_pDevice = new CTouchScreenDevice;
+	m_pDevice = new CTouchScreenDevice (0, 0, this);
 	assert (m_pDevice != 0);
 
 	return TRUE;
