@@ -458,7 +458,9 @@ unsigned CMachineInfo::GetClockRate (u32 nClockId) const
 	if (   Tags.GetTag (PROPTAG_GET_CLOCK_RATE_MEASURED, &TagClockRate, sizeof TagClockRate, 4)
 	    && TagClockRate.nRate != 0)
 	{
-		return TagClockRate.nRate;
+		// Round to closest MHz value
+		const unsigned Precision = 1000000;
+		return (TagClockRate.nRate + Precision/2) / Precision * Precision;
 	}
 
 	TagClockRate.nClockId = nClockId;
