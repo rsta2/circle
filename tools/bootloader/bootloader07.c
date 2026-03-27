@@ -325,6 +325,23 @@ restart:
     }
     return(0);
 }
+
+//-------------------------------------------------------------------------
+// Copies the kernel image from srcbegin..srcend to dest and jumps to start
+void copy_and_jump (unsigned long srcbegin, unsigned long srcend, unsigned long dest,
+		    void (*start)())
+{
+	const unsigned *p = (unsigned *) srcbegin;
+	unsigned *q = (unsigned *) dest;
+	while (p < (unsigned *) srcend)
+	{
+		*q++ = *p++;
+	}
+
+	void (*entry)() = (void (*)()) ((unsigned long) start - srcbegin + dest);
+	entry();
+}
+
 //-------------------------------------------------------------------------
 //-------------------------------------------------------------------------
 

@@ -4,14 +4,18 @@
 
 .globl _start
 _start:
-    b skip
-
-.space 0x200000-0x8004,0
-
-skip:
     mov sp,#0x08000000
-    bl notmain
+    adr r0,_start
+    adr r1,1f
+    ldr r1,[r1]
+    mov r2,#0x800000
+    adr r3,2f
+    ldr r3,[r3]
+    bl copy_and_jump
 hang: b hang
+
+1:  .long _end
+2:  .long notmain
 
 .globl PUT32
 PUT32:
