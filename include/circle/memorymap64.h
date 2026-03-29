@@ -4,7 +4,7 @@
 // Memory addresses and sizes (for AArch64)
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -88,6 +88,7 @@
 #define MEM_PCIE_RANGE_START		0x1F00000000UL
 #define MEM_PCIE_RANGE_SIZE		0xFFFFFFFCUL
 #define MEM_PCIE_RANGE_PCIE_START	0x0000000000UL		// mapping on PCIe side
+#define MEM_PCIE_RANGE_PCIE_START2	0x0000400000UL		// for RP1 SRAM
 
 #define MEM_PCIE_EXT_RANGE_START	0x1B80000000UL		// external PCIe bus
 #define MEM_PCIE_EXT_RANGE_SIZE		0x80000000UL
