@@ -2,7 +2,7 @@
 // soundshell.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,6 +46,12 @@
 	#define TYPE_SIZE	(sizeof (u8)*3)
 	#define FACTOR		((1 << 23)-1)
 	#define NULL_LEVEL	0
+#elif WRITE_FORMAT == 3
+	#define FORMAT		SoundFormatFloat32
+	#define TYPE		float
+	#define TYPE_SIZE	sizeof (float)
+	#define FACTOR		1.0f
+	#define NULL_LEVEL	0.0f
 #endif
 
 const char CSoundShell::HelpMsg[] =

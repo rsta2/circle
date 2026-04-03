@@ -2,7 +2,7 @@
 // soundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2017-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ enum TSoundFormat			/// All supported formats are interleaved little endian
 	SoundFormatSigned24_32,		/// Write/Read, HWFormat output/input (occupies 4 bytes)
 	SoundFormatUnsigned32,		/// HWFormat output only
 	SoundFormatIEC958,		/// HWFormat output only
+	SoundFormatFloat32,		/// Write/Read, HWFormat none (range [-1.0 .. 1.0])
 	SoundFormatUnknown
 };
 
