@@ -171,9 +171,11 @@ endif
 
 endif
 
+ifneq ($(filter 3 4,$(strip $(STDLIB_SUPPORT))),)
 ifeq ($(strip $(STDLIB_SUPPORT)),3)
 LIBSTDCPP = "$(shell $(CPP) $(ARCH) -print-file-name=libstdc++.a)"
 EXTRALIBS += $(LIBSTDCPP)
+endif
 LIBGCC_EH = "$(shell $(CPP) $(ARCH) -print-file-name=libgcc_eh.a)"
 ifneq ($(strip $(LIBGCC_EH)),"libgcc_eh.a")
 EXTRALIBS += $(LIBGCC_EH)

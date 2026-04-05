@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+# Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -74,7 +74,7 @@ OBJS	+= southbridge.o dmachannel-rp1.o gpiomanager2712.o gpiopin2712.o gpioclock
 	   pwmoutput-rp1.o i2cmaster-rp1.o spimaster-rp1.o spimasterdma-rp1.o macb.o
 endif
 
-ifneq ($(strip $(STDLIB_SUPPORT)),3)
+ifeq ($(filter 3 4,$(strip $(STDLIB_SUPPORT))),)
 OBJS	+= purecall.o cxa_guard.o
 endif
 

@@ -9,10 +9,12 @@ Rules.mk as follows:
 * STDLIB_SUPPORT=1 to build with libgcc.a only (default now)
 * STDLIB_SUPPORT=2 to build with C standard library too
 * STDLIB_SUPPORT=3 to build with C++ standard library too
+* STDLIB_SUPPORT=4 to build with external C++ standard library
 
 Please note that Circle needs support from external projects to implement the
-options STDLIB_SUPPORT=2 and STDLIB_SUPPORT=3. This is mainly realized by the
-following project (a newlib port for Circle) by Stephan Muehlstrasser:
+options STDLIB_SUPPORT=2, STDLIB_SUPPORT=3 and STDLIB_SUPPORT=4. This is mainly
+realized by the following project (newlib and libc++ ports for Circle) by
+Stephan Muehlstrasser:
 
 	https://codeberg.org/larchcone/circle-stdlib
 
