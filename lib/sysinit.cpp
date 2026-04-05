@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -279,11 +279,17 @@ void sysinit (void)
 
 	// clear BSS
 	extern unsigned char __bss_start;
-	extern unsigned char _end;
-	memset (&__bss_start, 0, &_end - &__bss_start);
+	extern unsigned char __bss_end;
+	memset (&__bss_start, 0, &__bss_end - &__bss_start);
+
+	// clear TBSS
+	extern unsigned char __tbss_start;
+	extern unsigned char __tbss_end;
+	memset (&__tbss_start, 0, &__tbss_end - &__tbss_start);
 
 	// halt, if KERNEL_MAX_SIZE is not properly set
 	// cannot inform the user here
+	extern unsigned char _end;
 	if (MEM_KERNEL_END < reinterpret_cast<uintptr> (&_end))
 	{
 		halt ();
