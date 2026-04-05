@@ -2,7 +2,7 @@
 /// task.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -77,8 +77,9 @@ public:
 
 #define TASK_USER_DATA_KTHREAD		0	// Linux driver emulation
 #define TASK_USER_DATA_ERROR_STACK	1	// Plan 9 driver emulation
-#define TASK_USER_DATA_USER		2	// Free for application usage
-#define TASK_USER_DATA_SLOTS		3	// Number of available slots
+#define TASK_USER_DATA_LIBCXX		2       // LLVM libc++ TLS pointer
+#define TASK_USER_DATA_USER		3	// Free for application usage
+#define TASK_USER_DATA_SLOTS		4	// Number of available slots
 	/// \brief Set a user pointer for this task
 	/// \param pData Any user pointer
 	/// \param nSlot The slot to be set
