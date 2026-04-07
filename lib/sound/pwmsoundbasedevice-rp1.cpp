@@ -34,8 +34,6 @@
 #define PWM_BASE	ARM_PWM0_BASE
 #define DREQ_SOURCE	CDMAChannelRP1::DREQSourcePWM0
 
-#define DMA_CHANNEL	1			// TODO: allocate dynamically
-
 //
 // PWM register offsets
 //
@@ -109,7 +107,7 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 #endif
 	m_Clock (GPIOClockPWM0, GPIOClockSourceXOscillator),
 	m_State (StateIdle),
-	m_DMAChannel (DMA_CHANNEL, pInterrupt),
+	m_DMAChannel (DMA_CHANNEL_RP1_NORMAL, pInterrupt),
 	m_pDMABuffer {new u32[m_nChunkSize], new u32[m_nChunkSize]}
 {
 	CDeviceNameService::Get ()->AddDevice ("sndpwm", this, FALSE);

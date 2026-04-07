@@ -9,7 +9,7 @@
 //	SPDX-License-Identifier: GPL-2.0
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2024-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2024-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -278,7 +278,7 @@ CSpinLock CDMAChannelRP1::s_SpinLock;
 CDMAChannelRP1 *CDMAChannelRP1::s_pThis[Channels] = {nullptr};
 
 CDMAChannelRP1::CDMAChannelRP1 (unsigned nChannel, CInterruptSystem *pInterruptSystem)
-:	m_nChannel {nChannel},
+:	m_nChannel {CMachineInfo::Get ()->AllocateDMAChannelRP1 (nChannel)},
 	m_nBuffers {0},
 	m_Direction {DirectionUnknown},
 	m_DREQ {DREQSourceNone},
@@ -377,6 +377,8 @@ CDMAChannelRP1::~CDMAChannelRP1 (void)
 	{
 		delete m_pLLI[i];
 	}
+
+	CMachineInfo::Get ()->FreeDMAChannelRP1 (m_nChannel);
 
 	s_pThis[m_nChannel] = nullptr;
 	m_nChannel = Channels;

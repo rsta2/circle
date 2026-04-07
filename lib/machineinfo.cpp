@@ -213,6 +213,7 @@ CMachineInfo::CMachineInfo (void)
 	m_pDTB (0)
 #else
 	m_usDMAChannelMap (0x0FF5),	// default mapping
+	m_uchDMAChannelMapRP1 (0xFF),
 	m_pDTB (0)
 #endif
 {
@@ -739,6 +740,63 @@ void CMachineInfo::FreeDMAChannel (unsigned nChannel)
 	assert (!(m_usDMAChannelMap & (1 << nChannel)));
 	m_usDMAChannelMap |= 1 << nChannel;
 }
+
+#if RASPPI >= 5
+
+unsigned CMachineInfo::AllocateDMAChannelRP1 (unsigned nChannel)
+{
+	assert (s_pThis != 0);
+	if (s_pThis != this)
+	{
+		return s_pThis->AllocateDMAChannelRP1 (nChannel);
+	}
+
+	if (!(nChannel & ~DMA_CHANNEL__MASK))
+	{
+		// explicit channel allocation
+		assert (nChannel <= DMA_CHANNEL_RP1_MAX);
+		if (m_uchDMAChannelMapRP1 & (1 << nChannel))
+		{
+			m_uchDMAChannelMapRP1 &= ~(1 << nChannel);
+
+			return nChannel;
+		}
+	}
+	else
+	{
+		// arbitrary channel allocation
+		int i = nChannel == DMA_CHANNEL_RP1_FAST ? 1 : DMA_CHANNEL_RP1_MAX;
+		int nMin = 0;
+		for (; i >= nMin; i--)
+		{
+			if (m_uchDMAChannelMapRP1 & (1 << i))
+			{
+				m_uchDMAChannelMapRP1 &= ~(1 << i);
+
+				return (unsigned) i;
+			}
+		}
+	}
+
+	return DMA_CHANNEL_NONE;
+}
+
+void CMachineInfo::FreeDMAChannelRP1 (unsigned nChannel)
+{
+	assert (s_pThis != 0);
+	if (s_pThis != this)
+	{
+		s_pThis->FreeDMAChannelRP1 (nChannel);
+
+		return;
+	}
+
+	assert (nChannel <= DMA_CHANNEL_RP1_MAX);
+	assert (!(m_uchDMAChannelMapRP1 & (1 << nChannel)));
+	m_uchDMAChannelMapRP1 |= 1 << nChannel;
+}
+
+#endif
 
 #if RASPPI >= 4
 

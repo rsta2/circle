@@ -156,6 +156,17 @@ public:
 	unsigned AllocateDMAChannel (unsigned nChannel);
 	void FreeDMAChannel (unsigned nChannel);
 
+#if RASPPI >= 5
+#define DMA_CHANNEL_RP1_MAX	7		// channels 0-7 are supported
+#define DMA_CHANNEL_RP1_NORMAL	0x84		// normal (or fast) DMA engine requested on RP1
+#define DMA_CHANNEL_RP1_FAST	0x85		// fast DMA engine requested on RP1
+
+	// nChannel must be DMA_CHANNEL_PR1_NORMAL, _FAST or an explicit channel number (0-7)
+	// returns the allocated channel number or DMA_CHANNEL_NONE on failure
+	unsigned AllocateDMAChannelRP1 (unsigned nChannel);
+	void FreeDMAChannelRP1 (unsigned nChannel);
+#endif
+
 #if RASPPI >= 4
 	// Devicetree blob handling
 	void FetchDTB (void);
@@ -193,6 +204,9 @@ private:
 	unsigned	m_nRAMSize	  MAXALIGN;
 
 	u16		m_usDMAChannelMap MAXALIGN;	// channel bit set if channel is free
+#if RASPPI >= 5
+	u8		m_uchDMAChannelMapRP1 MAXALIGN;	// channel bit set if channel is free
+#endif
 
 #if RASPPI >= 4
 	CDeviceTreeBlob	*m_pDTB		  MAXALIGN;

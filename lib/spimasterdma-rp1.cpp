@@ -2,7 +2,7 @@
 // spimasterdma-rp1.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2024-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,10 +26,6 @@
 #include <assert.h>
 
 #define CLOCK_RATE_HZ	200000000U		// clk_sys
-
-// RX channel must have higher priority
-#define DMA_CHANNEL_RX	2			// TODO: allocate dynamically
-#define DMA_CHANNEL_TX	3
 
 // device registers (PSSI)
 #define SPI_CTRLR0		(m_ulBaseAddress + 0x00)
@@ -134,8 +130,9 @@ CSPIMasterDMA::CSPIMasterDMA (CInterruptSystem *pInterruptSystem,
 :	m_nDevice (nDevice),
 	m_ulBaseAddress (0),
 	m_bValid (FALSE),
-	m_TxDMA (DMA_CHANNEL_TX, pInterruptSystem),
-	m_RxDMA (DMA_CHANNEL_RX, pInterruptSystem),
+	// RX channel must have higher priority (lower priority channels are allocated first)
+	m_TxDMA (DMA_CHANNEL_RP1_FAST, pInterruptSystem),
+	m_RxDMA (DMA_CHANNEL_RP1_FAST, pInterruptSystem),
 	m_pCompletionRoutine (nullptr)
 {
 	if (   nDevice >= DEVICES
@@ -306,14 +303,14 @@ void CSPIMasterDMA::StartWriteRead (unsigned nChipSelect, const void *pWriteBuff
 
 void CSPIMasterDMA::DMACompletionRoutine (unsigned nChannel, boolean bStatus)
 {
-	if (nChannel == DMA_CHANNEL_TX)
+	if (nChannel == m_TxDMA.GetChannelNumber ())
 	{
 		assert (!m_bTxStatus);
 		m_bTxStatus = bStatus;
 	}
 	else
 	{
-		assert (nChannel == DMA_CHANNEL_RX);
+		assert (nChannel == m_RxDMA.GetChannelNumber ());
 
 		write32 (SPI_DMACR, 0);
 

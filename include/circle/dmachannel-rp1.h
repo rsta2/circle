@@ -21,6 +21,7 @@
 #define _circle_dmachannel_rp1_h
 
 #include <circle/interrupt.h>
+#include <circle/machineinfo.h>
 #include <circle/spinlock.h>
 #include <circle/macros.h>
 #include <circle/types.h>
@@ -69,7 +70,7 @@ public:
 					 boolean bStatus, void *pParam);
 
 public:
-	/// \param nChannel Explicit channel number (0-7)
+	/// \param nChannel DMA_CHANNEL_RP1_NORMAL, _FAST or an explicit channel number
 	/// \param pInterruptSystem Pointer to the interrupt system object
 	CDMAChannelRP1 (unsigned nChannel, CInterruptSystem *pInterruptSystem);
 
@@ -133,6 +134,9 @@ public:
 
 	/// \brief Cancel running DMA transfer and wait for termination
 	void Cancel (void);
+
+	/// \return The assigned DMA channel number (0-7)
+	unsigned GetChannelNumber (void) const			{ return m_nChannel; }
 
 #ifndef NDEBUG
 	void DumpStatus (void);
