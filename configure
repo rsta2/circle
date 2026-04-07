@@ -21,7 +21,8 @@ function usage()
 	echo "  --qemu             Build for running under QEMU"
 	echo "  -d <option>, --define <option> "
 	echo "                     Define additional system option"
-	echo "  --c++17            Use C++17 standard for compiling (default C++14)"
+	echo "  --c++14            Use C++14 standard for compiling (default C++17)"
+	echo "  --c++20            Use C++20 standard for compiling (default C++17)"
 	echo "  -f, --force        Overwrite existing Config.mk file"
 	echo "  -h, --help         Show this usage message"
 	echo
@@ -38,7 +39,7 @@ MULTICORE=0
 REALTIME=0
 KEYMAP=
 QEMU=0
-CPP17=0
+CPP=17
 DEFINE=
 FORCE=0
 SHIFT=0
@@ -51,7 +52,9 @@ while [ ${#} -gt 0 ]; do
 		--realtime) REALTIME=1 ; SHIFT=1;;
 		--keymap) KEYMAP="$2" ; SHIFT=2;;
 		--qemu) QEMU=1 ; SHIFT=1;;
-		--c++17) CPP17=1 ; SHIFT=1;;
+		--c++14) CPP=14 ; SHIFT=1;;
+		--c++17) CPP=17 ; SHIFT=1;;
+		--c++20) CPP=20 ; SHIFT=1;;
 		-d|--define) DEFINE="$DEFINE -D$2" ; SHIFT=2;;
 		-f|--force) FORCE=1 ; SHIFT=1;;
 		-h|--help) usage ; exit 0;;
@@ -143,9 +146,12 @@ fi
 	then
 		echo "DEFINE +=$DEFINE"
 	fi
-	if [ $CPP17 -eq 1 ]
+	if [ $CPP -eq 14 ]
 	then
-		echo "STANDARD = -std=c++17"
+		echo "STANDARD = -std=c++14 -Wno-aligned-new"
+	elif [ $CPP -eq 20 ]
+	then
+		echo "STANDARD = -std=c++20 -Wno-volatile"
 	fi
 ) > "$CONFIG_FILE"
 

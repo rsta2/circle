@@ -211,7 +211,7 @@ LDFLAGS	+= --gc-sections
 endif
 
 OPTIMIZE ?= -O2
-STANDARD ?= -std=c++14 -Wno-aligned-new
+STANDARD ?= -std=c++17
 C_STANDARD ?= -std=gnu99
 WARNINGS ?= -Wall
 
