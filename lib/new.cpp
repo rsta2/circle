@@ -76,6 +76,15 @@ void operator delete[] (void *pBlock, size_t nSize) noexcept
 
 #if __cplusplus >= 201703L
 
+#ifdef __clang__
+
+namespace std
+{
+	enum class align_val_t : size_t {};
+}
+
+#endif
+
 void *operator new (size_t nSize, std::align_val_t Align)
 {
 	assert ((size_t) Align <= HEAP_BLOCK_ALIGN);

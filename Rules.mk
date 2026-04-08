@@ -74,8 +74,6 @@ AR	= llvm-ar$(SUFFIX)
 OBJCOPY	= llvm-objcopy$(SUFFIX)
 OBJDUMP	= llvm-objdump$(SUFFIX)
 CPPFILT	= llvm-cxxfilt$(SUFFIX)
-
-STANDARD ?= -std=c++14
 endif
 
 ifeq ($(strip $(AARCH)),32)
