@@ -136,8 +136,10 @@ C2DGraphics::C2DGraphics (CDisplay *pDisplay)
 	m_pDisplay(pDisplay),
 	m_pFrameBuffer(0),
 	m_bIsFrameBuffer(FALSE),
-	m_pBuffer8(0),
-	m_bVSync(FALSE)
+	m_pBuffer8(0)
+#if RASPPI <= 4
+	, m_bVSync(FALSE)
+#endif
 {
 }
 
@@ -150,7 +152,9 @@ C2DGraphics::C2DGraphics (unsigned nWidth, unsigned nHeight, boolean bVSync, uns
 	m_pFrameBuffer(0),
 	m_bIsFrameBuffer(TRUE),
 	m_pBuffer8(0),
+#if RASPPI <= 4
 	m_bVSync(bVSync),
+#endif
 	m_bBufferSwapped(TRUE)
 {
 

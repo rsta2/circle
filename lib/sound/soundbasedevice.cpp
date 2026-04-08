@@ -722,7 +722,7 @@ void CSoundBaseDevice::ConvertSoundFormat (void *pTo, const void *pFrom)
 
 	case SoundFormatFloat32: {
 		const float *pValue = reinterpret_cast<const float *> (pFrom);
-		nValue = static_cast<s32> (*pValue * 0x7FFFFFFF);
+		nValue = static_cast<s32> (*pValue * 2147483647.0f);
 		} break;
 
 	case SoundFormatUnknown:

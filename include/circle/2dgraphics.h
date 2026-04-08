@@ -292,7 +292,9 @@ private:
 		u32 *m_pBuffer32;
 	};
 
+#if RASPPI <= 4
 	boolean m_bVSync;
+#endif
 	boolean m_bBufferSwapped;
 };
 
