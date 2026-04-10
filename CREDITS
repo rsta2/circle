@@ -137,3 +137,10 @@ Implementing flushing audio device buffers
 
 @speendo
 Supporting configurable encoder types in KY-040 driver
+
+@ToonNelissen
+Adding SSD1309 OLED display driver (I2C + SPI)
+Adding MCP23017 I2C GPIO expander driver
+
+Alex Couture-Beil
+Adding memem() to utils
