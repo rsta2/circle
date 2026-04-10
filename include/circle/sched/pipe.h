@@ -52,7 +52,7 @@ public:
 	/// \param pBuffer Buffer, from which data will be fetched for write
 	/// \param nCount Number of bytes to be written
 	/// \return Number of written bytes or -WouldBlock when FIFO is full and non-blocking off,\n
-	///	    -NoReader when all writers have been closed
+	///	    -NoReader when all readers have been closed
 	int Write (const void *pBuffer, size_t nCount);
 
 	struct TStatus

@@ -161,7 +161,7 @@ public:
 #define DMA_CHANNEL_RP1_NORMAL	0x84		// normal (or fast) DMA engine requested on RP1
 #define DMA_CHANNEL_RP1_FAST	0x85		// fast DMA engine requested on RP1
 
-	// nChannel must be DMA_CHANNEL_PR1_NORMAL, _FAST or an explicit channel number (0-7)
+	// nChannel must be DMA_CHANNEL_RP1_NORMAL, _FAST or an explicit channel number (0-7)
 	// returns the allocated channel number or DMA_CHANNEL_NONE on failure
 	unsigned AllocateDMAChannelRP1 (unsigned nChannel);
 	void FreeDMAChannelRP1 (unsigned nChannel);
