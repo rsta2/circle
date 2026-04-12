@@ -114,7 +114,7 @@ Circle supports the following features:
 |                       | Enables all CPU caches using the MMU                | x              |
 |                       | Interrupt support (IRQ and FIQ)                     | IRQ only       |
 |                       | Multi-core support (Raspberry Pi 2, 3 and 4)        | x              |
-|                       | Cooperative non-preemtive scheduler                 | x              |
+|                       | Cooperative non-preemptive scheduler                | x              |
 |                       | CPU clock rate management                           | x              |
 |                       | Clang/LLVM support (experimental)                   | x              |
 |                       |                                                     |                |
