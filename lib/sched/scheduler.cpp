@@ -342,19 +342,23 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 	// Remove this task from the wait list in case was woken by timeout and
 	// not by the event signalling (in which case the list will already be 
 	// cleared and the following is a no-op)
-	CTask* pPrev = 0;
-	CTask* p = *ppWaitListHead;
-	while (p)
+	// We only dereference ppWaitListHead if we were actually woken by a timeout.
+	if (nMicroSeconds > 0 && m_pCurrent->GetWakeTicks() == 0)
 	{
-		if (p == m_pCurrent)
+		CTask* pPrev = 0;
+		CTask* p = *ppWaitListHead;
+		while (p)
 		{
-			if (pPrev)
-				pPrev->m_pWaitListNext = p->m_pWaitListNext;
-			else
-				*ppWaitListHead = p->m_pWaitListNext;
+			if (p == m_pCurrent)
+			{
+				if (pPrev)
+					pPrev->m_pWaitListNext = p->m_pWaitListNext;
+				else
+					*ppWaitListHead = p->m_pWaitListNext;
+			}
+			pPrev = p;
+			p = p->m_pWaitListNext;
 		}
-		pPrev = p;
-		p = p->m_pWaitListNext;
 	}
 	m_pCurrent->m_pWaitListNext = nullptr;
 
@@ -450,6 +454,13 @@ unsigned CScheduler::GetNextTask (void)
 			return nTask;
 
 		case TaskStateTerminated:
+			if (pTask == m_pCurrent)
+			{
+				// Cannot delete the currently executing task (we are running on its stack!)
+				// Wait for another task to yield and sweep it.
+				continue;
+			}
+
 			if (m_pTaskTerminationHandler != 0)
 			{
 				(*m_pTaskTerminationHandler) (pTask);
