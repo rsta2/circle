@@ -24,6 +24,7 @@
 #include <circle/heapallocator.h>
 #include <circle/logger.h>
 #include <circle/string.h>
+#include <circle/startup.h>
 
 typedef u8 uint8_t;
 typedef char int8_t;
@@ -246,8 +247,25 @@ extern "C"
 
     void __asan_unregister_globals(void *globals, size_t size) {}
 
-    // Empty placeholder implementation to supress linker error for undefined symbol
-    void __asan_handle_no_return(void) {}
+    // Clear red zones from the current stack frame up to the top of the stack.
+    void __asan_handle_no_return(void)
+    {
+        if (!g_kasan_initialized)
+        {
+            return;
+        }
+
+        char stack_probe;
+        uintptr const sp = reinterpret_cast<uintptr>(&stack_probe);
+        uintptr const top = GetCurrentStack().Top;
+
+        if (top > sp)
+        {
+            uintptr const start_aligned = sp & ~static_cast<uintptr>(KASAN_SHADOW_MASK);
+            uintptr const top_aligned = (top + KASAN_SHADOW_MASK) & ~static_cast<uintptr>(KASAN_SHADOW_MASK);
+            unpoison_shadow(start_aligned, top_aligned - start_aligned);
+        }
+    }
 
     // KASan memcpy/memset hooks.
 
