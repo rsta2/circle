@@ -23,6 +23,7 @@
 #include <circle/sched/taskswitch.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/sysconfig.h>
+#include <circle/startup.h>
 #include <circle/string.h>
 #include <circle/types.h>
 
@@ -89,6 +90,19 @@ public:
 	/// \param nSlot The slot to be read
 	/// \return Any user pointer, previously set with SetUserData()
 	void *GetUserData (unsigned nSlot);
+
+	/// \return The top address and size of the task stack memory
+	TStackInfo GetStack (void) const
+	{
+		if (m_nStackSize == 0)		// Main task?
+		{
+			return {MEM_KERNEL_STACK, KERNEL_STACK_SIZE};
+		}
+		else
+		{
+			return {reinterpret_cast<uintptr> (m_pStack) + m_nStackSize, m_nStackSize};
+		}
+	}
 
 private:
 	TTaskState GetState (void) const	{ return m_State; }

@@ -2,7 +2,7 @@
 // scheduler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/logger.h>
 #include <circle/string.h>
 #include <circle/util.h>
+#include <circle/startup.h>
 #include <assert.h>
 
 static const char FromScheduler[] = "sched";
@@ -482,4 +483,17 @@ CScheduler *CScheduler::Get (void)
 {
 	assert (s_pThis != 0);
 	return s_pThis;
+}
+
+TStackInfo GetCurrentStack (void)
+{
+	TStackInfo StackInfo = __GetCurrentStackNoWeak ();
+
+	if (   !CScheduler::IsActive ()
+	    || StackInfo.Size == EXCEPTION_STACK_SIZE)
+	{
+		return StackInfo;
+	}
+
+	return CScheduler::Get ()->GetCurrentTask ()->GetStack ();
 }
