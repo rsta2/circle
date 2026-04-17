@@ -31,6 +31,7 @@
 #include <circle/chainboot.h>
 #include <circle/qemu.h>
 #include <circle/synchronize.h>
+#include <circle/multicore.h>
 #include <circle/sysconfig.h>
 #include <circle/memorymap.h>
 #include <circle/version.h>
@@ -92,6 +93,48 @@ static int s_nExitStatus = EXIT_STATUS_SUCCESS;
 void set_qemu_exit_status (int nStatus)
 {
 	s_nExitStatus = nStatus;
+}
+
+TStackInfo __GetCurrentStackNoWeak (void)
+{
+#ifdef ARM_ALLOW_MULTI_CORE
+	unsigned nCore = CMultiCoreSupport::ThisCore ();
+#else
+	unsigned nCore = 0;
+#endif
+
+#if AARCH == 32
+	u32 nCPSR;
+	asm volatile ("mrs %0, cpsr" : "=r" (nCPSR));
+	switch (nCPSR & 0x1F)
+	{
+	case 0x11:
+		return {MEM_FIQ_STACK + nCore*EXCEPTION_STACK_SIZE, EXCEPTION_STACK_SIZE};
+
+	case 0x12:
+		return {MEM_IRQ_STACK + nCore*EXCEPTION_STACK_SIZE, EXCEPTION_STACK_SIZE};
+
+	case 0x17:
+	case 0x1B:
+		return {MEM_ABORT_STACK + nCore*EXCEPTION_STACK_SIZE, EXCEPTION_STACK_SIZE};
+	}
+#else
+	u64 ulSPSR_EL1;
+	asm volatile ("mrs %0, spsr_el1" : "=r" (ulSPSR_EL1));
+	if ((ulSPSR_EL1 & 0x0F) == 0x05)	// in EL1h ?
+	{
+		return {MEM_EXCEPTION_STACK + nCore*EXCEPTION_STACK_SIZE, EXCEPTION_STACK_SIZE};
+	}
+#endif
+
+	return {MEM_KERNEL_STACK + nCore*KERNEL_STACK_SIZE, KERNEL_STACK_SIZE};
+}
+
+TStackInfo GetCurrentStack (void) WEAK;
+
+TStackInfo GetCurrentStack (void)
+{
+	return __GetCurrentStackNoWeak ();
 }
 
 void halt (void)
