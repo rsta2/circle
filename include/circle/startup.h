@@ -57,8 +57,8 @@ struct TStackInfo
 	size_t	Size;	// in bytes
 };
 
-TStackInfo __GetCurrentStackNoWeak (void);
-TStackInfo GetCurrentStack (void);
+struct TStackInfo __GetCurrentStackNoWeak (void);
+struct TStackInfo GetCurrentStack (void);
 
 #if RASPPI != 1
 
