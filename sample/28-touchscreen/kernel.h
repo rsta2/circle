@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,14 +23,22 @@
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
+#ifndef DSI_DISPLAY
 #include <circle/screen.h>
+#else
+#include <circle/terminal.h>
+#endif
 #include <circle/serial.h>
 #include <circle/exceptionhandler.h>
 #include <circle/interrupt.h>
 #include <circle/timer.h>
 #include <circle/logger.h>
 #include <circle/usb/usbhcidevice.h>
+#ifndef DSI_DISPLAY
 #include <circle/input/rpitouchscreen.h>
+#else
+#include <rp1dsi/rpitouchscreen.h>
+#endif
 #include <circle/types.h>
 
 enum TShutdownMode
@@ -59,10 +67,15 @@ private:
 	CActLED			m_ActLED;
 	CKernelOptions		m_Options;
 	CDeviceNameService	m_DeviceNameService;
+	CInterruptSystem	m_Interrupt;
+#ifndef DSI_DISPLAY
 	CScreenDevice		m_Screen;
+#else
+	CRPiTouchScreen		m_RPiTouchScreen;
+	CTerminalDevice		m_Screen;
+#endif
 	CSerialDevice		m_Serial;
 	CExceptionHandler	m_ExceptionHandler;
-	CInterruptSystem	m_Interrupt;
 	CTimer			m_Timer;
 	CLogger			m_Logger;
 	CUSBHCIDevice		m_USBHCI;
