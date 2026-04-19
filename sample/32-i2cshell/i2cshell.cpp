@@ -4,7 +4,7 @@
 // I2C slave detection method by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2017-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@
 	#define MASTER_CONFIG_MAX	1
 #else
 	#define MASTER_DEVICE_MIN	0
-	#define MASTER_DEVICE_MAX	3
+	#define MASTER_DEVICE_MAX	6
 	#define MASTER_CONFIG_MIN	0
 	#define MASTER_CONFIG_MAX	2
 #endif
@@ -103,6 +103,9 @@ const char CI2CShell::GPIOHelpMsg[] =
 	"1\t\tGPIO2\tGPIO3\tGPIO10\tGPIO11\n"
 	"2\t\tGPIO4\tGPIO5\tGPIO12\tGPIO13\n"
 	"3\t\tGPIO6\tGPIO7\tGPIO14\tGPIO15\tGPIO22\tGPIO23\n"
+	"4\t\tGPIO40\tGPIO41\n"
+	"5\n"
+	"6\t\tGPIO38\tGPIO39\n"
 #endif
 	"\n"
 	"GPIO# are chip numbers, not the position on the header!\n"
