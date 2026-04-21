@@ -490,7 +490,7 @@ TStackInfo GetCurrentStack (void)
 	TStackInfo StackInfo = __GetCurrentStackNoWeak ();
 
 	if (   !CScheduler::IsActive ()
-	    || StackInfo.Size == EXCEPTION_STACK_SIZE)
+	    || StackInfo.Top != MEM_KERNEL_STACK)
 	{
 		return StackInfo;
 	}
