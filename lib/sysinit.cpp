@@ -68,8 +68,12 @@ void __cxa_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 
 #endif
 
-#if STDLIB_SUPPORT >= 2
+#if STDLIB_SUPPORT >= 2 && !defined (__clang__)
 
+// Clang provides __sync_synchronize as a builtin and rejects a user-space
+// definition. The builtin emits "dmb sy" whereas DataSyncBarrier() emits the
+// stronger "dsb sy", but clang's barrier is sufficient for the cooperative
+// scheduler and avoids the build error.
 void __sync_synchronize (void)
 {
 	DataSyncBarrier ();
