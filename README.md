@@ -8,40 +8,6 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-Support Status
---------------
-
-This table lists the support status for the different Raspberry Pi models. Not listed models are not supported.
-
-| Model                   | Status           | Remarks                          |
-|-------------------------|------------------|----------------------------------|
-| Raspberry Pi Model A    | Should work      |                                  |
-| Raspberry Pi Model B R1 | Should work      |                                  |
-| Raspberry Pi Model B R2 | Tested           |                                  |
-| Raspberry Pi Model A+   | Tested           |                                  |
-| Raspberry Pi Model B+   | Tested           |                                  |
-|                         |                  |                                  |
-| Raspberry Pi Zero       | Tested           |                                  |
-| Raspberry Pi Zero W     | Tested           |                                  |
-| Raspberry Pi Zero 2 W   | Tested           | WLAN unknown for new revision    |
-|                         |                  |                                  |
-| Raspberry Pi 2 Model B  | Tested           |                                  |
-| Raspberry Pi 3 Model B  | Tested           |                                  |
-| Raspberry Pi 3 Model A+ | Tested           |                                  |
-| Raspberry Pi 3 Model B+ | Tested           |                                  |
-| Raspberry Pi 4 Model B  | Tested           |                                  |
-| Raspberry Pi 400        | Tested           |                                  |
-| Raspberry Pi 5          | Tested           | With BCM2712 C1 and D0 steppings |
-| Raspberry Pi 500        | Unknown          |                                  |
-|                         |                  |                                  |
-| Compute Module          | Reported to work | Unknown which devices work       |
-| Compute Module 3        | Should work      |                                  |
-| Compute Module 3+       | Reported to work | WLAN unknown                     |
-| Compute Module 4        | Tested           | WLAN unknown                     |
-| Compute Module 4S       | Unknown          |                                  |
-| Compute Module 5        | Reported to work | Unknown which devices work       |
-| Compute Module Zero     | Unknown          |                                  |
-
 The 51st Step
 -------------
 
@@ -164,6 +130,40 @@ Circle supports the following features:
 |                       | 2D graphics class in base library                   | x              |
 |                       |                                                     |                |
 | Not supported         | Bluetooth                                           |                |
+
+Support Status
+--------------
+
+This table lists the support status for the different Raspberry Pi models. Not listed models are not supported.
+
+| Model                   | Status           | Remarks                          |
+|-------------------------|------------------|----------------------------------|
+| Raspberry Pi Model A    | Should work      |                                  |
+| Raspberry Pi Model B R1 | Should work      |                                  |
+| Raspberry Pi Model B R2 | Tested           |                                  |
+| Raspberry Pi Model A+   | Tested           |                                  |
+| Raspberry Pi Model B+   | Tested           |                                  |
+|                         |                  |                                  |
+| Raspberry Pi Zero       | Tested           |                                  |
+| Raspberry Pi Zero W     | Tested           |                                  |
+| Raspberry Pi Zero 2 W   | Tested           | WLAN unknown for new revision    |
+|                         |                  |                                  |
+| Raspberry Pi 2 Model B  | Tested           |                                  |
+| Raspberry Pi 3 Model B  | Tested           |                                  |
+| Raspberry Pi 3 Model A+ | Tested           |                                  |
+| Raspberry Pi 3 Model B+ | Tested           |                                  |
+| Raspberry Pi 4 Model B  | Tested           |                                  |
+| Raspberry Pi 400        | Tested           |                                  |
+| Raspberry Pi 5          | Tested           | With BCM2712 C1 and D0 steppings |
+| Raspberry Pi 500        | Unknown          |                                  |
+|                         |                  |                                  |
+| Compute Module          | Reported to work | Unknown which devices work       |
+| Compute Module 3        | Should work      |                                  |
+| Compute Module 3+       | Reported to work | WLAN unknown                     |
+| Compute Module 4        | Tested           | WLAN unknown                     |
+| Compute Module 4S       | Unknown          |                                  |
+| Compute Module 5        | Reported to work | Unknown which devices work       |
+| Compute Module Zero     | Unknown          |                                  |
 
 Build
 -----
