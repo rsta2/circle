@@ -186,7 +186,7 @@ TShutdownMode CKernel::Run (void)
 	new CCounterTask(3, 30, &counter, &m_Mutex);
 	new CCounterTask(4, 40, &counter, &m_Mutex);
 	new CCounterTask(5, 50, &counter, &m_Mutex);
-	CScheduler::Get()->MsSleep(3000);		// Approx how long above tasks will take
+	CScheduler::Get()->MsSleep(5000);		// Approx how long above tasks will take
 	m_Logger.Write (FromKernel, LogNotice, "Final counter: %i (should be 50)", counter);
 	assert(counter == 50);
 
