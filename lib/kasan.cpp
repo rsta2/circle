@@ -40,6 +40,8 @@ typedef char int8_t;
 #define ASAN_SHADOW_HEAP_TAIL_REDZONE_MAGIC 0xfb
 #define ASAN_SHADOW_HEAP_FREE_MAGIC 0xfd
 #define ASAN_SHADOW_CONTAINER_OVERFLOW_MAGIC 0xfc
+#define ASAN_SHADOW_ALLOCA_LEFT_MAGIC 0xca
+#define ASAN_SHADOW_ALLOCA_RIGHT_MAGIC 0xcb
 
 #define CALLER_PC ((uintptr)__builtin_return_address(0))
 
@@ -521,6 +523,52 @@ extern "C"
     /* Additions in Circle's kasan library because of unresolved externals */
     DEFINE_KASAN_SET_SHADOW_ROUTINE(f5) // guessed from current LLVM code in asan_poisoning.cc
     DEFINE_KASAN_SET_SHADOW_ROUTINE(f8) // guessed from current LLVM code in asan_poisoning.cc
+
+    void __asan_alloca_poison(uintptr addr, size_t size)
+    {
+        uintptr const left_redzone_size = 32;
+        uintptr const left_redzone_addr = addr - left_redzone_size;
+        uintptr const partial_rz_addr = addr + size;
+        uintptr const right_rz_addr = (partial_rz_addr + 31) & ~static_cast<uintptr>(31);
+        uintptr const partial_rz_aligned = partial_rz_addr & ~static_cast<uintptr>(7);
+
+        poison_shadow(left_redzone_addr, left_redzone_size, ASAN_SHADOW_ALLOCA_LEFT_MAGIC);
+
+        size_t const partial = partial_rz_addr & KASAN_SHADOW_MASK;
+        if (partial != 0)
+        {
+            *reinterpret_cast<uint8_t *>(KASAN_MEM_TO_SHADOW(partial_rz_aligned)) = static_cast<uint8_t>(partial);
+            size_t const right_size = right_rz_addr - partial_rz_aligned - KASAN_SHADOW_GRANULE_SIZE;
+            if (right_size > 0)
+            {
+                poison_shadow(partial_rz_aligned + KASAN_SHADOW_GRANULE_SIZE,
+                              right_size,
+                              ASAN_SHADOW_ALLOCA_RIGHT_MAGIC);
+            }
+        }
+        else
+        {
+            size_t const right_size = right_rz_addr - partial_rz_aligned;
+            if (right_size > 0)
+            {
+                poison_shadow(partial_rz_aligned, right_size, ASAN_SHADOW_ALLOCA_RIGHT_MAGIC);
+            }
+        }
+
+        poison_shadow(right_rz_addr, left_redzone_size, ASAN_SHADOW_ALLOCA_RIGHT_MAGIC);
+    }
+
+    void __asan_allocas_unpoison(uintptr top, uintptr bottom)
+    {
+        if (!g_kasan_initialized || top == 0 || top >= bottom)
+        {
+            return;
+        }
+
+        __kasan_memset(reinterpret_cast<void *>(KASAN_MEM_TO_SHADOW(top)),
+                       ASAN_SHADOW_UNPOISONED_MAGIC,
+                       (bottom - top) >> KASAN_SHADOW_SHIFT);
+    }
 
     /* Further functions that appear with non-optimized code */
     void __asan_before_dynamic_init(const char *module_name)
