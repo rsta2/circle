@@ -66,14 +66,14 @@ OBJCOPY	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 CPPFILT	= $(PREFIX)c++filt
 else
-CC	= clang$(SUFFIX)
-CPP	= clang++$(SUFFIX)
+CC	?= clang$(SUFFIX)
+CPP	?= clang++$(SUFFIX)
 AS	= $(CC)
 LD	= $(CC)
-AR	= llvm-ar$(SUFFIX)
-OBJCOPY	= llvm-objcopy$(SUFFIX)
-OBJDUMP	= llvm-objdump$(SUFFIX)
-CPPFILT	= llvm-cxxfilt$(SUFFIX)
+AR	?= llvm-ar$(SUFFIX)
+OBJCOPY	?= llvm-objcopy$(SUFFIX)
+OBJDUMP	?= llvm-objdump$(SUFFIX)
+CPPFILT	?= llvm-cxxfilt$(SUFFIX)
 endif
 
 ifeq ($(strip $(AARCH)),32)
@@ -179,8 +179,10 @@ ifneq ($(strip $(LIBGCC_EH)),"libgcc_eh.a")
 EXTRALIBS += $(LIBGCC_EH)
 endif
 ifeq ($(strip $(AARCH)),64)
+ifneq ($(strip $(CLANG)),1)
 CRTBEGIN = "$(shell $(CPP) $(ARCH) -print-file-name=crtbegin.o)"
 CRTEND   = "$(shell $(CPP) $(ARCH) -print-file-name=crtend.o)"
+endif
 endif
 else
 CPPFLAGS  += -fno-exceptions -fno-rtti
@@ -192,8 +194,20 @@ endif
 ifeq ($(strip $(STDLIB_SUPPORT)),0)
 CFLAGS	  += -nostdinc
 else
+# Clang provides compiler-rt builtins instead of libgcc. $(ARCH) is required so
+# clang resolves the correct target-specific path. The wildcard guard skips the
+# library when it is absent (e.g. no bare-metal compiler-rt installed) or when
+# it is already present in CIRCLE_STDLIB_LIBS via the libc++ CMake build.
+ifeq ($(strip $(CLANG)),1)
+LIBGCC_PATH := $(shell $(CC) $(ARCH) -print-libgcc-file-name)
+ifneq ($(wildcard $(LIBGCC_PATH)),)
+LIBGCC	  = "$(LIBGCC_PATH)"
+EXTRALIBS += $(LIBGCC)
+endif
+else
 LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
 EXTRALIBS += $(LIBGCC)
+endif
 endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),1)
