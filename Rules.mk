@@ -66,14 +66,14 @@ OBJCOPY	= $(PREFIX)objcopy
 OBJDUMP	= $(PREFIX)objdump
 CPPFILT	= $(PREFIX)c++filt
 else
-CC	?= clang$(SUFFIX)
-CPP	?= clang++$(SUFFIX)
+CC	= clang$(SUFFIX)
+CPP	= clang++$(SUFFIX)
 AS	= $(CC)
 LD	= $(CC)
-AR	?= llvm-ar$(SUFFIX)
-OBJCOPY	?= llvm-objcopy$(SUFFIX)
-OBJDUMP	?= llvm-objdump$(SUFFIX)
-CPPFILT	?= llvm-cxxfilt$(SUFFIX)
+AR	= llvm-ar$(SUFFIX)
+OBJCOPY	= llvm-objcopy$(SUFFIX)
+OBJDUMP	= llvm-objdump$(SUFFIX)
+CPPFILT	= llvm-cxxfilt$(SUFFIX)
 endif
 
 ifeq ($(strip $(AARCH)),32)
