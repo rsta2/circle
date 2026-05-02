@@ -201,17 +201,22 @@ else
 # on disk. clang -print-libgcc-file-name reports the *expected* path even
 # when the file is missing, so a wildcard probe is required.
 #
-# Otherwise fall back to libgcc from the GNU toolchain (see
-# doc/clang-support.txt). The GNU toolchain already supplies libm via
-# STDLIB_SUPPORT=1 just below.
+# When compiler-rt is absent, only the standalone Circle build (STDLIB_SUPPORT=1
+# per doc/clang-support.txt) falls back to libgcc from the GNU toolchain, which
+# also supplies libm via the STDLIB_SUPPORT=1 block just below. Higher levels
+# are used by the circle-stdlib top-level build, which provides its own
+# compiler-rt builtins via CIRCLE_STDLIB_LIBS - no toolchain libgcc is needed
+# (and PREFIX may point at a 32-bit GNU toolchain on aarch64 builds, which
+# would link in an incompatible archive).
 ifeq ($(strip $(CLANG)),1)
 LIBGCC_PATH := $(shell $(CC) $(ARCH) -print-libgcc-file-name)
 ifneq ($(wildcard $(LIBGCC_PATH)),)
 LIBGCC	  = "$(LIBGCC_PATH)"
-else
-LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
-endif
 EXTRALIBS += $(LIBGCC)
+else ifeq ($(strip $(STDLIB_SUPPORT)),1)
+LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
+EXTRALIBS += $(LIBGCC)
+endif
 else
 LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
 EXTRALIBS += $(LIBGCC)
