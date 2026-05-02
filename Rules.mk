@@ -194,16 +194,24 @@ endif
 ifeq ($(strip $(STDLIB_SUPPORT)),0)
 CFLAGS	  += -nostdinc
 else
-# Clang provides compiler-rt builtins instead of libgcc. $(ARCH) is required so
-# clang resolves the correct target-specific path. The wildcard guard skips the
-# library when it is absent (e.g. no bare-metal compiler-rt installed) or when
-# it is already present in CIRCLE_STDLIB_LIBS via the libc++ CMake build.
+# For Clang builds with STDLIB_SUPPORT>=1 we need a compiler runtime that
+# provides ARM EABI helpers (__aeabi_uidiv, __aeabi_uldivmod, ...).
+#
+# Prefer compiler-rt builtins if the bare-metal archive is actually present
+# on disk. clang -print-libgcc-file-name reports the *expected* path even
+# when the file is missing, so a wildcard probe is required.
+#
+# Otherwise fall back to libgcc from the GNU toolchain (see
+# doc/clang-support.txt). The GNU toolchain already supplies libm via
+# STDLIB_SUPPORT=1 just below.
 ifeq ($(strip $(CLANG)),1)
 LIBGCC_PATH := $(shell $(CC) $(ARCH) -print-libgcc-file-name)
 ifneq ($(wildcard $(LIBGCC_PATH)),)
 LIBGCC	  = "$(LIBGCC_PATH)"
-EXTRALIBS += $(LIBGCC)
+else
+LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
 endif
+EXTRALIBS += $(LIBGCC)
 else
 LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
 EXTRALIBS += $(LIBGCC)
