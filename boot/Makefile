@@ -21,7 +21,8 @@ FILES = LICENCE.broadcom COPYING.linux \
 	start_cd.elf fixup_cd.dat start4cd.elf fixup4cd.dat \
 	bcm2710-rpi-zero-2-w.dtb bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb bcm2711-rpi-cm4.dtb \
 	bcm2712-rpi-5-b.dtb bcm2712d0-rpi-5-b.dtb bcm2712-rpi-500.dtb \
-	bcm2712-rpi-cm5-cm5io.dtb bcm2712-rpi-cm5l-cm5io.dtb
+	bcm2712-rpi-cm5-cm5io.dtb bcm2712-rpi-cm5l-cm5io.dtb \
+	bcm2710-rpi-cm0.dtb
 
 OVERLAYS = bcm2712d0.dtbo
 

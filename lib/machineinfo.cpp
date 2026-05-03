@@ -527,6 +527,7 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 		if (   m_MachineModel == MachineModelZero
 		    || m_MachineModel == MachineModelZeroW
 		    || m_MachineModel == MachineModelZero2W
+		    || m_MachineModel == MachineModelCM0
 		    || m_MachineModel == MachineModel5)
 		{
 #if defined (USE_GPIO18_FOR_LEFT_PWM_ON_ZERO) || defined (USE_GPIO18_FOR_LEFT_PWM)
@@ -558,6 +559,7 @@ unsigned CMachineInfo::GetGPIOPin (TGPIOVirtualPin Pin) const
 		if (   m_MachineModel == MachineModelZero
 		    || m_MachineModel == MachineModelZeroW
 		    || m_MachineModel == MachineModelZero2W
+		    || m_MachineModel == MachineModelCM0
 		    || m_MachineModel == MachineModel5)
 		{
 #if defined (USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO) || defined (USE_GPIO19_FOR_RIGHT_PWM)
@@ -666,6 +668,7 @@ boolean CMachineInfo::ArePWMChannelsSwapped (void) const
 	       && m_MachineModel != MachineModelZero
 	       && m_MachineModel != MachineModelZeroW
 	       && m_MachineModel != MachineModelZero2W
+	       && m_MachineModel != MachineModelCM0
 	       && m_MachineModel != MachineModel5;
 }
 

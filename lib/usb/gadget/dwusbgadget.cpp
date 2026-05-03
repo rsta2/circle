@@ -5,7 +5,7 @@
 //	Does only support Control EP0 and Bulk EPs.
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2023-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -77,6 +77,7 @@ boolean CDWUSBGadget::Initialize (boolean bScanDevices)
 	    && Model != MachineModelZero
 	    && Model != MachineModelZeroW
 	    && Model != MachineModelZero2W
+	    && Model != MachineModelCM0
 	    && Model != MachineModel3APlus
 	    && Model != MachineModel4B
 	    && Model != MachineModel400)
