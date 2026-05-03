@@ -163,7 +163,7 @@ This table lists the support status for the different Raspberry Pi models. Not l
 | Compute Module 4        | Tested           | WLAN unknown                     |
 | Compute Module 4S       | Unknown          |                                  |
 | Compute Module 5        | Reported to work | Unknown which devices work       |
-| Compute Module Zero     | Unknown          |                                  |
+| Compute Module Zero     | Reported to work |                                  |
 
 Build
 -----
