@@ -2,7 +2,7 @@
 /// task.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <circle/sched/taskswitch.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/sysconfig.h>
+#include <circle/startup.h>
 #include <circle/string.h>
 #include <circle/types.h>
 
@@ -77,8 +78,9 @@ public:
 
 #define TASK_USER_DATA_KTHREAD		0	// Linux driver emulation
 #define TASK_USER_DATA_ERROR_STACK	1	// Plan 9 driver emulation
-#define TASK_USER_DATA_USER		2	// Free for application usage
-#define TASK_USER_DATA_SLOTS		3	// Number of available slots
+#define TASK_USER_DATA_LIBCXX		2       // LLVM libc++ TLS pointer
+#define TASK_USER_DATA_USER		3	// Free for application usage
+#define TASK_USER_DATA_SLOTS		4	// Number of available slots
 	/// \brief Set a user pointer for this task
 	/// \param pData Any user pointer
 	/// \param nSlot The slot to be set
@@ -88,6 +90,19 @@ public:
 	/// \param nSlot The slot to be read
 	/// \return Any user pointer, previously set with SetUserData()
 	void *GetUserData (unsigned nSlot);
+
+	/// \return The top address and size of the task stack memory
+	TStackInfo GetStack (void) const
+	{
+		if (m_nStackSize == 0)		// Main task?
+		{
+			return {MEM_KERNEL_STACK, KERNEL_STACK_SIZE};
+		}
+		else
+		{
+			return {reinterpret_cast<uintptr> (m_pStack) + m_nStackSize, m_nStackSize};
+		}
+	}
 
 private:
 	TTaskState GetState (void) const	{ return m_State; }

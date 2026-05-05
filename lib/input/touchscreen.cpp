@@ -2,7 +2,7 @@
 // touchscreen.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,8 +25,10 @@ CNumberPool CTouchScreenDevice::s_DeviceNumberPool (1);
 
 static const char DevicePrefix[] = "touch";
 
-CTouchScreenDevice::CTouchScreenDevice (TTouchScreenUpdateHandler *pUpdateHandler, void *pParam)
-:	m_pUpdateHandler (pUpdateHandler),
+CTouchScreenDevice::CTouchScreenDevice (TTouchScreenUpdateHandler *pUpdateHandler, void *pParam,
+					CDevice *pParent)
+:	CDevice (pParent),
+	m_pUpdateHandler (pUpdateHandler),
 	m_pUpdateParam (pParam),
 	m_pDisplay (0),
 	m_pParent (0),

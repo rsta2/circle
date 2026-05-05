@@ -2,7 +2,7 @@
 // mutex.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2026  R. Stange <rsta2@gmx.net>
 //
 // This class was developed by:
 //	Brad Robinson <contact@toptensoftware.com>
@@ -37,6 +37,11 @@ public:
 	/// \brief Acquire the mutex; task blocks, if another task already acquired the mutex
 	/// \note This mutex can be acquired multiple times by the same task.
 	void Acquire (void);
+
+	/// \brief Try to acquire the mutex; task does not block
+	/// \return TRUE if the mutex was successfully aquired
+	/// \note This mutex can be acquired multiple times by the same task.
+	boolean TryAcquire (void);
 
 	/// \brief Release the mutex; wake another task, which was waiting for the mutex
 	void Release (void);

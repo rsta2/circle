@@ -2,7 +2,7 @@
 // string.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,6 +49,8 @@ public:
 	void Append (const char chChar);
 	int Compare (const char *pString) const;
 	int Find (char chChar) const;			// returns index or -1 if not found
+
+	void TrimRight (const char *pTargets = " \t\r\n");
 
 	int Replace (const char *pOld, const char *pNew); // returns number of occurrences
 

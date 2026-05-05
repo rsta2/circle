@@ -2,7 +2,7 @@
 // mutex.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This class was developed by:
 //	Brad Robinson <contact@toptensoftware.com>
@@ -57,6 +57,24 @@ void CMutex::Acquire (void)
         }
         m_event.Wait();
     }
+}
+
+boolean CMutex::TryAcquire (void)
+{
+    CTask* pTask = CScheduler::Get()->GetCurrentTask();
+
+    if (m_pOwningTask == nullptr)
+    {
+        m_pOwningTask = pTask;
+        m_iReentrancyCount = 1;
+        return true;
+    }
+    else if (m_pOwningTask == pTask)
+    {
+        m_iReentrancyCount++;
+        return true;
+    }
+    return false;
 }
 
 void CMutex::Release (void)

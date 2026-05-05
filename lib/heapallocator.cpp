@@ -2,7 +2,7 @@
 // heapallocator.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@ void *CHeapAllocator::DoAllocate (size_t nSize)
 #ifdef HEAP_DEBUG
 			DumpStatus ();
 #endif
-#if STDLIB_SUPPORT == 3
+#if STDLIB_SUPPORT >= 3
 			// C++ exception should be thrown after returning 0
 			CLogger::Get ()->WriteNoAlloc (m_pHeapName, LogWarning, "Out of memory");
 #else

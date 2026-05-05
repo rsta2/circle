@@ -25,6 +25,7 @@
 #define DISPLAY_TYPE_ST7789	1
 #define DISPLAY_TYPE_ILI9341	2
 #define DISPLAY_TYPE_SSD1306	3
+#define DISPLAY_TYPE_SSD1309	4
 
 //// Configuration for ST7789-based SPI displays ///////////////////////////////
 
@@ -78,6 +79,28 @@
 
 #include <display/ili9341display.h>
 
+//// Configuration for SSD1309-based SPI displays //////////////////////////////
+
+#elif SPI_DISPLAY == DISPLAY_TYPE_SSD1309
+
+#define DISPLAY_ROTATION	0		// degrees; 0 or 180
+
+#define SPI_MASTER_DEVICE	0		// 0, 4, 5, 6 on Raspberry Pi 4;
+						// 0, 1, 3, 5 on Raspberry Pi 5; 0 otherwise
+#define SPI_CLOCK_SPEED		8000000		// Hz
+#define SPI_CPOL		0
+#define SPI_CPHA		0
+#define SPI_CHIP_SELECT		0		// 0 or 1
+
+#define DC_PIN			22		// GPIO SoC numbers (not header positions!)
+#define RESET_PIN		25		// mandatory for SSD1309
+
+#define DISPLAY_CLASS		CSSD1309Display
+#define DISPLAY_PARAMETERS	DC_PIN, RESET_PIN, SPI_CHIP_SELECT, \
+				SPI_CLOCK_SPEED, SPI_CPOL, SPI_CPHA
+
+#include <display/ssd1309display.h>
+
 //// Configuration for SSD1306-based I2C displays //////////////////////////////
 
 #elif I2C_DISPLAY == DISPLAY_TYPE_SSD1306
@@ -95,6 +118,22 @@
 #define DISPLAY_PARAMETERS	WIDTH, HEIGHT, I2C_SLAVE_ADDRESS, I2C_CLOCK_SPEED
 
 #include <display/ssd1306display.h>
+
+//// Configuration for SSD1309-based I2C displays //////////////////////////////
+
+#elif I2C_DISPLAY == DISPLAY_TYPE_SSD1309
+
+#define DISPLAY_ROTATION	0		// degrees; 0 or 180
+
+#define I2C_MASTER_DEVICE	(CMachineInfo::Get ()->GetDevice (DeviceI2CMaster))
+#define I2C_CLOCK_SPEED		0		// Hz; 0 for system default
+#define I2C_SLAVE_ADDRESS	0x3C		// or 0x3D
+#define RESET_PIN		25		// mandatory for SSD1309
+
+#define DISPLAY_CLASS		CSSD1309Display
+#define DISPLAY_PARAMETERS	RESET_PIN, I2C_SLAVE_ADDRESS, I2C_CLOCK_SPEED
+
+#include <display/ssd1309display.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 

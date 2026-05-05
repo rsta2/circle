@@ -5,7 +5,7 @@
 // with the Raspberry Pi 5
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -108,6 +108,28 @@
 
 #define ARM_I2S1_BASE		0x1F000A4000UL
 #define ARM_I2S1_END		(ARM_I2S0_BASE + 0xFFF)
+
+//
+// SYSCFG / Mailbox (RP1)
+//
+#define ARM_SYSCFG_BASE		0x1F00008000UL
+#define ARM_SYSCFG_END		(ARM_SYSCFG_BASE + 0x3FFF)
+
+//
+// SRAM (RP1)
+//
+#define ARM_SRAM_BASE		0x1F00400000UL
+#define ARM_SRAM_END		(ARM_SRAM_BASE + 0xFFFF)
+
+// Firmware mailbox buffer
+#define ARM_RP1_FW_MBOX_BASE	(ARM_SRAM_BASE + 0xFF00)
+#define ARM_RP1_FW_MBOX_END	(ARM_RP1_FW_MBOX_BASE + 0xFF)
+
+//
+// PIO device (RP1)
+//
+#define ARM_PIO0_BASE		0x1F00178000UL
+#define ARM_PIO0_END		(ARM_PIO0_BASE + 0x1F)
 
 #endif
 

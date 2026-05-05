@@ -4,67 +4,45 @@ Circle
 Overview
 --------
 
-Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on most existing models (tested on model A+, B, B+, on Raspberry Pi 2, 3, 4, 400, 5 and on Raspberry Pi Zero (2)), except on the Raspberry Pi Pico, which is not supported. It is not known, if it works on the Raspberry Pi 500 and on Compute Module 5. Circle provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
+Circle is a C++ bare metal programming environment for the Raspberry Pi. It should be usable on most existing models (see "Support Status" below). Circle provides several ready-tested [C++ classes](doc/classes.txt) and [add-on libraries](addon/README), which can be used to control different hardware features of the Raspberry Pi. Together with Circle there are delivered several [sample programs](sample/README), which demonstrate the use of its classes. Circle can be used to create 32-bit or 64-bit bare metal applications.
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
-Release 50.1
-------------
-
-New features:
-
-* An **NVMe v1.4 SSD driver** for the Raspberry Pi 5 has been added (see [addon/nvme](addon/nvme)). v1.3 NVMe SSDs should work too. This support is currently experimental. Be sure that your SSD does not contain important data, if you want to test it. You should define the system option `NO_BUSY_WAIT` and your application should contain the scheduler for maximum performance.
-
-* The **Kernel Address Sanitizer (Kasan)** has been implemented for Circle. It can help to find invalid memory accesses while debugging. See [doc/kasan.txt](doc/kasan.txt) for details!
-
-* The **KY-040 rotary encoder driver** has been improved to support quarter-step and half-step rotary encoders. Full-step rotary encoders still are the default.
-
-* The class **CI2SSoundBaseDevice** can be used in **DeviceModeTXRX mode on the Raspberry Pi 5** now with 2 channels.
-
-* The class **CConsole** provides a **more comfortable line editor** and a command history now.
-
-* **Multi-core Circle programs can run in QEMU** (AArch64) now. `configure --qemu` disables DMA usage for the frame buffer, because it does not work with QEMU.
-
-* A **receive and/or send timeout on a socket** can be set using `CSocket::SetOption[Receive|Send]Timeout()` now . The constructor of the class `CHTTPDaemon` got a new timeout parameter to close the HTTP connection, when the request does not complete in the given amount of time. The *sample/21-webserver* has been updated to use this feature.
-
-* The DNS resolver class **CDNSClient** resolves the host name "localhost" as the own IP address now.
-
-Fixes:
-
-* There might have been a failed assertion in WLAN Mesh environments before, which has been fixed.
-* `memcpy()` did not check the destination alignment right in AArch64.
-* When an error occurred on a TCP connection, close was not executed properly and the connection was not shutdown.
-
-More changes:
-
-* The LVGL support has been updated to v9.4.0.
-* The FatFs support has been updated to R0.16 w/patch1.
-
-The 50th Step
+The 51st Step
 -------------
 
-This release comes with full (send and receive) network multicast support, including IGMPv2 support. A class `CmDNSDaemon` has been added, which determines and maintains our mDNS hostname on the local network. Name collisions with other hosts will be resolved by appending a numeric suffix to the hostname. The daemon is automatically started, when someone requests a pointer to it. This has been added to the `CmDNSPublisher` class, which works in conjunction with `CmDNSDaemon` now. The *test/mdns-publisher* uses the numeric suffix to generate an unique service name.
+This release offers a significantly improved implementation of the TCP/IP network stack. It supports TCP congestion control according to RFC 5681 with Fast Retransmit and Fast Recovery. Also the unnecessary copying of frames and data in the stack is largely prevented. This improves throughput very much, especially when a Raspberry Pi with 100 MBps Ethernet is connected to a Gigabit network.
 
-More news:
+The socket API is nearly unchanged, but the new `MSG_MORE` flag can be specified, when calling `CSocket::Send()` on TCP sockets, which prevents the immediate delivery of received data on the receiver side, when more data follows. `CSocket::Bind()` can be called with port 0 to bind to an ephemeral port, which can be requested using `CSocket::GetOwnPort()`. `CSocket::SendTo()` without preceding `Bind()` or `Connect()` is allowed too, which automatically assigns an ephemeral port.
 
-* The function of the `CTerminalDevice` sequences ESC "[0m" and ESC "[27m" have been modified. The first one resets the color settings too, while the second one resets the reversed mode only.
-* The method `CLogger::Read()` returns 0 now, when the log buffer is empty. Before it returned -1.
-* The DHCP process has been improved and is quicker now under some circumstances.
-* A method `GetUptime(sec, usec)` has been added to the class `CTimer`.
-* The FatFs library in *addon/fatfs/* has been updated to R0.16 with Unicode patch.
-* A display font `Font12x22` has been added. The class `CCharGenerator` can handle fonts, with a width of up to 32 pixels.
+Circle supports the extended C++ standard library support (LLVM libc++ port) in the [circle-stdlib](https://codeberg.org/larchcone/circle-stdlib) project in several ways (e.g. with the new `STDLIB_SUPPORT=4` level).
 
-Fixes:
+The recommended toolchain to build Circle applications is now based on GCC 15.2.Rel1. See the link in the Build section! Circle is built with `-std=c++17` by default now. There are options for selecting C++14 (previous default) and C++20 for the `configure` tool, beside the new `--kernel-max-size`, `--clang` and `--kasan` options. Enter `./configure --help` for more info!
 
-* The HDMI sound support with the class `CHDMISoundBaseDevice` did not work since Step 49.
-* The WLAN support in earlier versions was based on a port of wpa_supplicant v0.7.0, for which open security advisories exist. This has been fixed by porting wpa_supplicant v2.11 to Circle.
-* The Handling of "Enumeration done" in the USB gadget driver had issues, that made booting from the USB mass-storage device (MSD) gadget impossible.
+The recommended firmware has been updated in *boot/*.
 
-The recommended toolchain for building Circle is based on GCC 14.3.1 now (see the Building section).
+More new features:
 
-The recommended firmware, downloadable in *boot/*, has been updated. For the Raspberry Pi 5 it is required to use the new DTB file(s), because otherwise some functions will not work with this Circle version.
+* A `CDevice` instance can have property strings for vendor, product, serial number and function (e.g. the USB interface) now. These strings are assigned for all USB- and for NVMe devices, and can be used to distinguish devices of the same class. `CDeviceNameService::ListDevices()` can show these properties.
+* The system option `USE_GPIO_MANAGER_FIQ` has been added. When an application needs multiple FIQ-triggered GPIO interrupt pins, the class `CGPIOPinFIQ` cannot be used. It is also not possible to use `CGPIOPinFIQ` together with the class `CGPIOManager` to handle more GPIO pins with IRQ. Now one can define this option to enable `CGPIOManager` and all GPIO pins, which use an interrupt, to use the FIQ to reduce GPIO interrupt latency. The GPIO interrupt handler will run at `FIQ_LEVEL` then.
+* `CGPIOClock::StartRate()` can use fractional dividers on Raspberry 1-4. Before only integer dividers were supported. Now automatically a fractional divider will be used with MASH 1, if necessary.
+* The class `CPipe` (an unidirectional inter-process communication channel using
+a FIFO) and the methods `CMutex::TryAcquire()` and `CSemaphore::DownWithTimeout()` have been added to the scheduler library. `CSemaphore` objects can have the initial count of zero now. *test/pipe* demonstrates `CPipe`.
+* Sound devices allow writing and reading samples in the `SoundFormatFloat32` now. Samples must be of the data type `float` in the range \[-1.0 .. 1.0\] in this case. *sample/34-sounddevices* and *test/sound-controller* can be configured to use this.
+* The class `CPWMSoundBaseDevice` supports the M/S PWM mode, which is also the default now. This should lead to a better audio quality and suppresses hum, when the PWM signal is delivered via the GPIO header.
+* The class `CEMMCDevice` in [addon/SDCard](addon/SDCard) supports external SDIO breakout boards at GPIO22-27 now as device "emmc2" and "SD2:" in FatFs. This does work with the EMMC host only (not with `USE_SDHOST`). On the Raspberry Pi 4 and CM4 the class can be instantiated twice with different device selector parameter specified to the constructor.
+* A `CSSD1309Display` graphics-mode driver for the SSD1309 128x64 OLED display controller (I2C and SPI) has been added to [addon/display](addon/display).
+* A `CMCP23017` driver for the MCP23017 16-bit I2C GPIO expander has been added to the [addon/gpio](addon/gpio).
+* The MPU-6050 driver in [addon/sensor](addon/sensor) has been extended and returns a scaled acceleration and gyroscope output now. The acceleration and gyroscope range and digital low-pass filter bandwidth can be configured. The sample adds a graphics mode.
+* The serial bootloader images are much smaller now and are able to load kernel images of up to about 8 MB.
 
-The WLAN firmware, downloadable in *addon/wlan/firmware/*, has been updated. It is absolutely recommended to use the new firmware, because older versions may have security vulnerabilities.
+A number of fixes have been applied:
+
+* `CGPIOClock::Stop()` was operating on the wrong clock. This caused a stop of the UART clock, when GPIOClock2 was started.
+* `CMachineInfo::GetClockRate()` now favors the firmware function `GET_CLOCK_RATE_MEASURED` over `GET_CLOCK_RATE`, which reported a wrong Core clock rate, when `CCPUThrottle` was used. The reported value is rounded to the closest MHz value.
+* The *cmdline.txt* option `wm8960tune=` has been added as a workaround. Add the given value to the fractional (K) part of PLL1 input/output frequency ratio (treated as 24-digit binary number) of the WM8960 Codec to suppress clicks/pops (range -10000 to 10000, default 0).
+* There have been multiple issues with the handling of TCP FIN packets, which were leading to a delayed termination of connections.
+* There was a problem found in the scheduler using KASan, which was accessing a task object after deleting it.
 
 Features
 --------
@@ -80,7 +58,7 @@ Circle supports the following features:
 |                       | Enables all CPU caches using the MMU                | x              |
 |                       | Interrupt support (IRQ and FIQ)                     | IRQ only       |
 |                       | Multi-core support (Raspberry Pi 2, 3 and 4)        | x              |
-|                       | Cooperative non-preemtive scheduler                 | x              |
+|                       | Cooperative non-preemptive scheduler                | x              |
 |                       | CPU clock rate management                           | x              |
 |                       | Clang/LLVM support (experimental)                   | x              |
 |                       |                                                     |                |
@@ -153,14 +131,48 @@ Circle supports the following features:
 |                       |                                                     |                |
 | Not supported         | Bluetooth                                           |                |
 
-Building
---------
+Support Status
+--------------
+
+This table lists the support status for the different Raspberry Pi models. Not listed models are not supported.
+
+| Model                   | Status           | Remarks                          |
+|-------------------------|------------------|----------------------------------|
+| Raspberry Pi Model A    | Should work      |                                  |
+| Raspberry Pi Model B R1 | Should work      |                                  |
+| Raspberry Pi Model B R2 | Tested           |                                  |
+| Raspberry Pi Model A+   | Tested           |                                  |
+| Raspberry Pi Model B+   | Tested           |                                  |
+|                         |                  |                                  |
+| Raspberry Pi Zero       | Tested           |                                  |
+| Raspberry Pi Zero W     | Tested           |                                  |
+| Raspberry Pi Zero 2 W   | Tested           | WLAN unknown for new revision    |
+|                         |                  |                                  |
+| Raspberry Pi 2 Model B  | Tested           |                                  |
+| Raspberry Pi 3 Model B  | Tested           |                                  |
+| Raspberry Pi 3 Model A+ | Tested           |                                  |
+| Raspberry Pi 3 Model B+ | Tested           |                                  |
+| Raspberry Pi 4 Model B  | Tested           |                                  |
+| Raspberry Pi 400        | Tested           |                                  |
+| Raspberry Pi 5          | Tested           | With BCM2712 C1 and D0 steppings |
+| Raspberry Pi 500        | Unknown          |                                  |
+|                         |                  |                                  |
+| Compute Module          | Reported to work | Unknown which devices work       |
+| Compute Module 3        | Should work      |                                  |
+| Compute Module 3+       | Reported to work | WLAN unknown                     |
+| Compute Module 4        | Tested           | WLAN unknown                     |
+| Compute Module 4S       | Unknown          |                                  |
+| Compute Module 5        | Reported to work | Unknown which devices work       |
+| Compute Module Zero     | Reported to work |                                  |
+
+Build
+-----
 
 > For building 64-bit applications (AArch64) see the next section.
 
 > Circle does not support 32-bit applications on the Raspberry Pi 5.
 
-This describes building on PC Linux. See the file [doc/windows-build.txt](doc/windows-build.txt) for information about building on Windows. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads). Circle has been tested with the version *14.3.Rel1* (arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz) from this website. This is the recommended toolchain for AArch32 builds.
+This describes building on PC Linux. See the file [doc/windows-build.txt](doc/windows-build.txt) for information about building on Windows. If building for the Raspberry Pi 1 you need a [toolchain](http://elinux.org/Rpi_Software#ARM) for the ARM1176JZF core (with EABI support). For Raspberry Pi 2/3/4 you need a toolchain with Cortex-A7/-A53/-A72 support. A toolchain, which works for all of these, can be downloaded [here](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads). Circle has been tested with the version *15.2.Rel1* (arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz) from this website. This is the recommended toolchain for AArch32 builds.
 
 First edit the file *Rules.mk* and set the Raspberry Pi version (*RASPPI*, 1, 2, 3 or 4) and the *PREFIX* of your toolchain commands. Alternatively you can create a *Config.mk* file (which is ignored by git) and set the Raspberry Pi version and the *PREFIX* variable to the prefix of your compiler like this (don't forget the dash at the end):
 
@@ -200,7 +212,7 @@ AArch64
 
 Circle supports building 64-bit applications, which can be run on the Raspberry Pi 3, 4 or 5. There are also Raspberry Pi 2 versions and the Raspberry Pi Zero 2, which are based on the BCM2837 SoC. These Raspberry Pi versions can be used too (with `RASPPI = 3`).
 
-The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads). Circle has been tested with the version *14.3.Rel1* (arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf.tar.xz) from this website. This is the recommended toolchain for AArch64 builds.
+The recommended toolchain to build 64-bit applications with Circle can be downloaded [here](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads). Circle has been tested with the version *15.2.Rel1* (arm-gnu-toolchain-15.2.rel1-x86_64-aarch64-none-elf.tar.xz) from this website. This is the recommended toolchain for AArch64 builds.
 
 There are distro-provided toolchains on certain Linux platforms (e.g. *g++-aarch64-linux-gnu* on Ubuntu or *gcc-c++-aarch64-linux-gnu* on Fedora), which may work with Circle and can be a quick way to use it, but you have to test this by yourself. If you encounter problems (e.g. no reaction at all, link failure with external library) using a distro-provided toolchain, please try the recommended toolchain (see above) first, before reporting an issue.
 
@@ -250,10 +262,16 @@ Classes
 
 The following C++ classes were added to Circle:
 
+Scheduler library
+
+* CPipe: Unidirectional interprocess communication channel using a FIFO
+* CPipeFile: Read or Write endpoint of a CPipe channel
+ 
 Net library
 
-* CIGMPHandler: IGMP version 2 protocol handler
-* CmDNSDaemon: mDNS responder task
+* CNetBuffer: Generic frame/packet buffer for network protocol handling
+* CNetBufferQueue: FIFO queue for CNetBuffer objects
+* CReassemblyQueue: Reassembly queue for the TCP receiver
 
 The available Circle classes are listed in the file [doc/classes.txt](doc/classes.txt). If you have Doxygen installed on your computer you can build a [class documentation](doc/html/index.html) in doc/html/ using:
 

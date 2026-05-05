@@ -1,0 +1,24 @@
+README
+
+This sample demonstrates the CSSD1309Display driver for SSD1309-controlled OLED
+displays using the I2C interface (graphics mode). The SSD1309 is similar to the
+SSD1306 but requires a mandatory hardware reset pin and uses an external VBAT
+supply (no internal charge pump).
+
+Before building you have to configure the program in kernel.h according to the
+hardware of your display. You have to set the I2C address (typically 0x3C or
+0x3D) and the GPIO number of the reset pin. The default configuration is:
+
+Display		Raspberry Pi	Comment
+		GPIO
+
+SDA	<--	SDA	2	I2C data
+SCL	<--	SCL	3	I2C clock
+RST	<--		25	Reset (active low, active pull required)
+VCC	<--	3.3V		Power supply
+GND	<-->	GND
+
+The sample program runs a series of graphics tests on the 128x64 display:
+clearing, filling, drawing lines and rectangles, diagonal lines, a checkerboard
+pattern, display on/off cycling, and a final center box. Progress is logged to
+the screen and serial port (115200 baud).

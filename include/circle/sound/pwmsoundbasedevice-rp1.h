@@ -2,7 +2,7 @@
 // pwmsoundbasedevice-rp1.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,7 +37,8 @@ class CPWMSoundBaseDevice : public CSoundBaseDevice
 public:
 	CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 			     unsigned	       nSampleRate = 44100,
-			     unsigned	       nChunkSize  = 2048);
+			     unsigned	       nChunkSize  = 2048,
+			     boolean	       bMSMode     = TRUE);
 
 	virtual ~CPWMSoundBaseDevice (void);
 
@@ -71,6 +72,7 @@ private:
 
 private:
 	unsigned m_nChunkSize;
+	boolean  m_bMSMode;
 	unsigned m_nRange;
 
 	unsigned   m_nChannel1;

@@ -22,11 +22,14 @@
 
 #include <circle/net/netconfig.h>
 #include <circle/net/linklayer.h>
+#include <circle/net/netbuffer.h>
+#include <circle/net/netbufferqueue.h>
 #include <circle/net/netqueue.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/icmphandler.h>
 #include <circle/net/igmphandler.h>
 #include <circle/net/routecache.h>
+#include <circle/net/sizes.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -58,6 +61,8 @@ struct TIPHeader
 }
 PACKED;
 
+ASSERT_STATIC (sizeof (TIPHeader) == IP_HEADER_LEN);
+
 struct TNetworkPrivateData
 {
 	u8	nProtocol;
@@ -75,12 +80,14 @@ public:
 
 	void Process (void);
 
-	boolean Send (const CIPAddress &rReceiver, const void *pPacket, unsigned nLength,
+	boolean Send (const CIPAddress &rReceiver, CNetBuffer *pPacket,
 		      int nProtocol, boolean bRouterAlert = FALSE);
 
-	// pBuffer must have size FRAME_BUFFER_SIZE
-	boolean Receive (void *pBuffer, unsigned *pResultLength,
-			 CIPAddress *pSender, CIPAddress *pReceiver, int *pProtocol);
+	// for sending ICMP ping requests
+	boolean Send (const CIPAddress &rReceiver, const void *pPacket, unsigned nLength,
+		      int nProtocol);
+
+	CNetBuffer *Receive (CIPAddress *pSender, CIPAddress *pReceiver, int *pProtocol);
 
 	boolean ReceiveNotification (TICMPNotificationType *pType,
 				     CIPAddress *pSender, CIPAddress *pReceiver,
@@ -101,7 +108,7 @@ private:
 	friend class CICMPHandler;
 
 	// post IP packet to the ICMP handler for notification
-	void SendFailed (unsigned nICMPCode, const void *pReturnedPacket, unsigned nLength);
+	void SendFailed (unsigned nICMPCode, CNetBuffer *pReturnedPacket);
 	friend class CLinkLayer;
 
 private:
@@ -110,12 +117,12 @@ private:
 	CICMPHandler *m_pICMPHandler;
 	CIGMPHandler *m_pIGMPHandler;
 
-	CNetQueue m_RxQueue;
-	CNetQueue m_ICMPRxQueue;
+	CNetBufferQueue m_RxQueue;
+	CNetBufferQueue m_ICMPRxQueue;
 	CNetQueue m_ICMPNotificationQueue;
-	CNetQueue m_IGMPRxQueue;
+	CNetBufferQueue m_IGMPRxQueue;
 
-	CNetQueue *m_pICMPRxQueue2;
+	CNetBufferQueue *m_pICMPRxQueue2;
 
 	CRouteCache m_RouteCache;
 };

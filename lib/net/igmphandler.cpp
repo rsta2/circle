@@ -43,7 +43,7 @@ static const u8 AllSystemsGroup[] = {224, 0, 0, 1};
 static const u8 AllRoutersGroup[] = {224, 0, 0, 2};
 
 CIGMPHandler::CIGMPHandler (CNetConfig *pNetConfig, CNetworkLayer *pNetworkLayer,
-			    CLinkLayer *pLinkLayer, CNetQueue *pRxQueue)
+			    CLinkLayer *pLinkLayer, CNetBufferQueue *pRxQueue)
 :	m_pNetConfig (pNetConfig),
 	m_pNetworkLayer (pNetworkLayer),
 	m_pLinkLayer (pLinkLayer),
@@ -91,35 +91,38 @@ void CIGMPHandler::Process (void)
 
 	unsigned nTicks = CTimer::Get ()->GetTicks ();
 
-	u8 Buffer[FRAME_BUFFER_SIZE];
-	unsigned nLength;
-	void *pParam;
 	assert (m_pRxQueue != 0);
-	while ((nLength = m_pRxQueue->Dequeue (Buffer, &pParam)) != 0)
+	CNetBuffer *pNetBuffer;
+	while ((pNetBuffer = m_pRxQueue->Dequeue ()) != 0)
 	{
-		TNetworkPrivateData *pData = (TNetworkPrivateData *) pParam;
+		size_t nLength = pNetBuffer->GetLength ();
+
+		TNetworkPrivateData *pData = (TNetworkPrivateData *) pNetBuffer->GetPrivateData ();
 		assert (pData != 0);
 		assert (pData->nProtocol == IPPROTO_IGMP);
 
 		// CIPAddress SourceIP (pData->SourceAddress);
 		CIPAddress DestIP (pData->DestinationAddress);
 
-		delete pData;
-		pData = 0;
-
 		if (!DestIP.IsMulticast ())
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
 
 		if (nLength < sizeof (TIGMPPacket))
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
-		TIGMPPacket *pIGMPPacket = (TIGMPPacket *) Buffer;
+		TIGMPPacket *pIGMPPacket = (TIGMPPacket *) pNetBuffer->GetPtr ();
 
-		if (CChecksumCalculator::SimpleCalculate (Buffer, nLength) != CHECKSUM_OK)
+		if (CChecksumCalculator::SimpleCalculate (pIGMPPacket, nLength) != CHECKSUM_OK)
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
 
@@ -194,6 +197,8 @@ void CIGMPHandler::Process (void)
 			}
 			break;
 		}
+
+		delete pNetBuffer;
 	}
 
 	if (nTicks - m_nLastTicks >= HZ/10)
@@ -336,8 +341,11 @@ boolean CIGMPHandler::SendPacket (boolean bMembershipReport, const CIPAddress &r
 	Packet.usChecksum = 0;
 	Packet.usChecksum = CChecksumCalculator::SimpleCalculate (&Packet, sizeof Packet);
 
+	CNetBuffer *pNetBuffer = new CNetBuffer (CNetBuffer::IGMPSend, sizeof Packet, &Packet);
+	assert (pNetBuffer != 0);
+
 	assert (m_pNetworkLayer != 0);
-	return m_pNetworkLayer->Send (DestIP, &Packet, sizeof Packet, IPPROTO_IGMP, TRUE);
+	return m_pNetworkLayer->Send (DestIP, pNetBuffer, IPPROTO_IGMP, TRUE);
 }
 
 unsigned CIGMPHandler::GetRandom (unsigned nMax)

@@ -2,7 +2,7 @@
 // scheduler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <circle/logger.h>
 #include <circle/string.h>
 #include <circle/util.h>
+#include <circle/startup.h>
 #include <assert.h>
 
 static const char FromScheduler[] = "sched";
@@ -342,19 +343,23 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 	// Remove this task from the wait list in case was woken by timeout and
 	// not by the event signalling (in which case the list will already be 
 	// cleared and the following is a no-op)
-	CTask* pPrev = 0;
-	CTask* p = *ppWaitListHead;
-	while (p)
+	// We only dereference ppWaitListHead if we were actually woken by a timeout.
+	if (nMicroSeconds > 0 && m_pCurrent->GetWakeTicks() == 0)
 	{
-		if (p == m_pCurrent)
+		CTask* pPrev = 0;
+		CTask* p = *ppWaitListHead;
+		while (p)
 		{
-			if (pPrev)
-				pPrev->m_pWaitListNext = p->m_pWaitListNext;
-			else
-				*ppWaitListHead = p->m_pWaitListNext;
+			if (p == m_pCurrent)
+			{
+				if (pPrev)
+					pPrev->m_pWaitListNext = p->m_pWaitListNext;
+				else
+					*ppWaitListHead = p->m_pWaitListNext;
+			}
+			pPrev = p;
+			p = p->m_pWaitListNext;
 		}
-		pPrev = p;
-		p = p->m_pWaitListNext;
 	}
 	m_pCurrent->m_pWaitListNext = nullptr;
 
@@ -450,6 +455,13 @@ unsigned CScheduler::GetNextTask (void)
 			return nTask;
 
 		case TaskStateTerminated:
+			if (pTask == m_pCurrent)
+			{
+				// Cannot delete the currently executing task (we are running on its stack!)
+				// Wait for another task to yield and sweep it.
+				continue;
+			}
+
 			if (m_pTaskTerminationHandler != 0)
 			{
 				(*m_pTaskTerminationHandler) (pTask);
@@ -471,4 +483,17 @@ CScheduler *CScheduler::Get (void)
 {
 	assert (s_pThis != 0);
 	return s_pThis;
+}
+
+TStackInfo GetCurrentStack (void)
+{
+	TStackInfo StackInfo = __GetCurrentStackNoWeak ();
+
+	if (   !CScheduler::IsActive ()
+	    || StackInfo.Top != MEM_KERNEL_STACK)
+	{
+		return StackInfo;
+	}
+
+	return CScheduler::Get ()->GetCurrentTask ()->GetStack ();
 }

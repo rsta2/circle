@@ -2,7 +2,7 @@
 // icmphandler.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ PACKED;
 static const char FromICMP[] = "icmp";
 
 CICMPHandler::CICMPHandler (CNetConfig *pNetConfig, CNetworkLayer *pNetworkLayer,
-			    CNetQueue *pRxQueue, CNetQueue *pNotificationQueue)
+			    CNetBufferQueue *pRxQueue, CNetQueue *pNotificationQueue)
 :	m_pNetConfig (pNetConfig),
 	m_pNetworkLayer (pNetworkLayer),
 	m_pRxQueue (pRxQueue),
@@ -72,37 +72,40 @@ CICMPHandler::~CICMPHandler (void)
 
 void CICMPHandler::Process (void)
 {
-	u8 Buffer[FRAME_BUFFER_SIZE];
-	unsigned nLength;
-	void *pParam;
 	assert (m_pRxQueue != 0);
-	while ((nLength = m_pRxQueue->Dequeue (Buffer, &pParam)) != 0)
+	CNetBuffer *pNetBuffer;
+	while ((pNetBuffer = m_pRxQueue->Dequeue ()) != 0)
 	{
-		TNetworkPrivateData *pData = (TNetworkPrivateData *) pParam;
+		size_t nLength = pNetBuffer->GetLength ();
+
+		TNetworkPrivateData *pData = (TNetworkPrivateData *) pNetBuffer->GetPrivateData ();
 		assert (pData != 0);
 		assert (pData->nProtocol == IPPROTO_ICMP);
 
 		CIPAddress SourceIP (pData->SourceAddress);
 		CIPAddress DestIP (pData->DestinationAddress);
 
-		delete pData;
-		pData = 0;
-
 		assert (m_pNetConfig != 0);
 		if (   DestIP.IsBroadcast ()
 		    || DestIP == *m_pNetConfig->GetBroadcastAddress ())
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
 
 		if (nLength < sizeof (TICMPHeader))
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
-		TICMPHeader *pICMPHeader = (TICMPHeader *) Buffer;
+		TICMPHeader *pICMPHeader = (TICMPHeader *) pNetBuffer->GetPtr ();
 
-		if (CChecksumCalculator::SimpleCalculate (Buffer, nLength) != CHECKSUM_OK)
+		if (CChecksumCalculator::SimpleCalculate (pICMPHeader, nLength) != CHECKSUM_OK)
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
 
@@ -115,10 +118,11 @@ void CICMPHandler::Process (void)
 				pICMPHeader->nType     = ICMP_TYPE_ECHO_REPLY;
 				pICMPHeader->nCode     = ICMP_CODE_ECHO;
 				pICMPHeader->nChecksum = 0;
-				pICMPHeader->nChecksum = CChecksumCalculator::SimpleCalculate (Buffer, nLength);
+				pICMPHeader->nChecksum =
+					CChecksumCalculator::SimpleCalculate (pICMPHeader, nLength);
 
 				assert (m_pNetworkLayer != 0);
-				m_pNetworkLayer->Send (SourceIP, Buffer, nLength, IPPROTO_ICMP);
+				m_pNetworkLayer->Send (SourceIP, pNetBuffer, IPPROTO_ICMP);
 			}
 
 			continue;
@@ -127,14 +131,20 @@ void CICMPHandler::Process (void)
 		// handle ERROR messages next
 		if (nLength <= sizeof (TICMPHeader) + sizeof (TIPHeader))
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
-		TIPHeader *pIPHeader = (TIPHeader *) (Buffer + sizeof (TICMPHeader));
+
+		TIPHeader *pIPHeader = (TIPHeader *) pNetBuffer->RemoveHeader (sizeof (TICMPHeader));
+		assert (pIPHeader != 0);
 
 		unsigned nIPHeaderLength = pIPHeader->nVersionIHL & 0xF;
 		if (   nIPHeaderLength < IP_HEADER_LENGTH_DWORD_MIN
 		    || nIPHeaderLength > IP_HEADER_LENGTH_DWORD_MAX)
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
 		nIPHeaderLength *= 4;
@@ -142,15 +152,19 @@ void CICMPHandler::Process (void)
 		if (   (pIPHeader->nVersionIHL >> 4) != IP_VERSION
 		    || *m_pNetConfig->GetIPAddress () != pIPHeader->SourceAddress)
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
 
 		if (nLength < sizeof (TICMPHeader) + nIPHeaderLength + sizeof (TICMPDataDatagramHeader))
 		{
+			delete pNetBuffer;
+
 			continue;
 		}
 		TICMPDataDatagramHeader *pDatagramHeader =
-			(TICMPDataDatagramHeader *) ((u8 *) pIPHeader + nIPHeaderLength);
+			(TICMPDataDatagramHeader *) pNetBuffer->RemoveHeader (nIPHeaderLength);
 
 		switch (pICMPHeader->nType)
 		{
@@ -192,15 +206,17 @@ void CICMPHandler::Process (void)
 		default:
 			break;
 		}
+
+		delete pNetBuffer;
 	}
 }
 
-void CICMPHandler::DestinationUnreachable (unsigned nCode, const void *pReturnedIPPacket,
-					   unsigned nLength)
+void CICMPHandler::DestinationUnreachable (unsigned nCode, CNetBuffer *pReturnedIPPacket)
 {
 	assert (pReturnedIPPacket != 0);
+	unsigned nLength = pReturnedIPPacket->GetLength ();
 	assert (nLength > sizeof (TIPHeader));
-	TIPHeader *pIPHeader = (TIPHeader *) pReturnedIPPacket;
+	TIPHeader *pIPHeader = (TIPHeader *) pReturnedIPPacket->GetPtr ();
 
 	unsigned nIPHeaderLength = pIPHeader->nVersionIHL & 0xF;
 	assert (   nIPHeaderLength >= IP_HEADER_LENGTH_DWORD_MIN
@@ -228,6 +244,8 @@ void CICMPHandler::DestinationUnreachable (unsigned nCode, const void *pReturned
 				pDest, (const char *) IPString);
 
 	EnqueueNotification (ICMPNotificationDestUnreach, pIPHeader, pDatagramHeader);
+
+	delete pReturnedIPPacket;
 }
 
 void CICMPHandler::EnqueueNotification (TICMPNotificationType Type, TIPHeader *pIPHeader,

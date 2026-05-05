@@ -7,7 +7,7 @@
 //	Licensed under GPL-2.0+
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -757,6 +757,15 @@ int CBcmPCIeHostBridge::enable_device (u32 nClassCode, unsigned nSlot, unsigned 
 	write32 (conf + PCI_BASE_ADDRESS_0,   lower_32_bits (m_out_wins[0].pcie_addr)
 					    | PCI_BASE_ADDRESS_MEM_TYPE_64);
 	write32 (conf + PCI_BASE_ADDRESS_1, upper_32_bits (m_out_wins[0].pcie_addr));
+
+#if RASPPI >= 5
+	if (m_nBus == PCIE_BUS_ONBOARD)
+	{
+		// another window for RP1 SRAM
+		write32 (conf + PCI_BASE_ADDRESS_2, lower_32_bits (MEM_PCIE_RANGE_PCIE_START2));
+		write32 (conf + PCI_BASE_ADDRESS_3, upper_32_bits (MEM_PCIE_RANGE_PCIE_START2));
+	}
+#endif
 
 #if 0
 	uintptr msi_conf = find_pci_capability (conf, PCI_CAP_ID_MSI);

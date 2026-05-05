@@ -2,7 +2,7 @@
 // icmphandler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@
 #define _circle_net_icmphandler_h
 
 #include <circle/net/netconfig.h>
+#include <circle/net/netbuffer.h>
+#include <circle/net/netbufferqueue.h>
 #include <circle/net/netqueue.h>
 #include <circle/net/ipaddress.h>
 #include <circle/types.h>
@@ -84,13 +86,12 @@ class CICMPHandler
 {
 public:
 	CICMPHandler (CNetConfig *pNetConfig, CNetworkLayer *pNetworkLayer,
-		      CNetQueue *pRxQueue, CNetQueue *pNotificationQueue);
+		      CNetBufferQueue *pRxQueue, CNetQueue *pNotificationQueue);
 	~CICMPHandler (void);
 
 	void Process (void);
 
-	void DestinationUnreachable (unsigned nCode,
-				     const void *pReturnedIPPacket, unsigned nLength);
+	void DestinationUnreachable (unsigned nCode, CNetBuffer *pReturnedIPPacket);
 
 private:
 	void EnqueueNotification (TICMPNotificationType Type, TIPHeader *pIPHeader,
@@ -99,7 +100,7 @@ private:
 private:
 	CNetConfig	*m_pNetConfig;
 	CNetworkLayer	*m_pNetworkLayer;
-	CNetQueue	*m_pRxQueue;
+	CNetBufferQueue	*m_pRxQueue;
 	CNetQueue	*m_pNotificationQueue;
 };
 

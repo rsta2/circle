@@ -2,7 +2,7 @@
 // config.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@
 
 #define SAMPLE_RATE	48000		// overall system clock
 
-#define WRITE_FORMAT	1		// 0: 8-bit unsigned, 1: 16-bit signed, 2: 24-bit signed
+#define WRITE_FORMAT	1		// 0: 8-bit unsigned, 1: 16-bit signed, 2: 24-bit signed,
+					// 3: 32-bit float
 #define WRITE_CHANNELS	2		// 1: Mono, 2: Stereo, max. 32
 
 #define VOLUME		0.5		// [0.0, 1.0]

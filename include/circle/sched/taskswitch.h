@@ -2,7 +2,7 @@
 // taskswitch.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ struct TTaskRegisters
 	u32	sp;
 	u32	lr;
 	u64	d[16];
+	u32	tpidr;
 }
 PACKED;
 
@@ -86,6 +87,8 @@ struct TTaskRegisters
 
 	u64	fpcr;	// floating-point control register
 	u64	fpsr;	// floating-point status register
+
+	u64	tpidr_el0;
 }
 PACKED;
 

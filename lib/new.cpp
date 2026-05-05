@@ -2,7 +2,7 @@
 // new.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ void *operator new[] (size_t nSize, int nType)
 	return CMemorySystem::HeapAllocate (nSize, nType);
 }
 
-#if STDLIB_SUPPORT != 3
+#if STDLIB_SUPPORT < 3
 
 void *operator new (size_t nSize, void *pMem)
 {
@@ -75,6 +75,15 @@ void operator delete[] (void *pBlock, size_t nSize) noexcept
 // Aligned new and delete (C++17):
 
 #if __cplusplus >= 201703L
+
+#ifdef __clang__
+
+namespace std
+{
+	enum class align_val_t : size_t {};
+}
+
+#endif
 
 void *operator new (size_t nSize, std::align_val_t Align)
 {

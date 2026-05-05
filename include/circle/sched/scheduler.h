@@ -38,7 +38,7 @@ typedef void TSchedulerTaskHandler (CTask *pTask);
 
 /// \note This scheduler uses the round-robin policy, without priorities.
 
-class CScheduler /// Cooperative non-preemtive scheduler, which controls which task runs at a time
+class CScheduler /// Cooperative non-preemptive scheduler, which controls which task runs at a time
 {
 public:
 	CScheduler (void);

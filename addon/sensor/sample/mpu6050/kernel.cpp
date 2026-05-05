@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,12 +20,22 @@
 #include "kernel.h"
 #include <circle/machineinfo.h>
 
+#ifdef USE_GRAPHICS
+	#include "3dblock.h"
+#endif
+
 // may change this on Raspberry Pi 4 to select a specific master device and configuration
 #define I2C_MASTER_DEVICE	(CMachineInfo::Get ()->GetDevice (DeviceI2CMaster))
 #define I2C_MASTER_CONFIG	0
 
 #define MPU6050_I2C_ADDRESS	0x68
 #define MPU6050_I2C_CLOCKHZ	400000
+
+#define ACCELERATION_RANGE	CMPU6050::AccelerationRange4g
+#define GYROSCOPE_RANGE		CMPU6050::GyroscopeRange1000		// degrees per second
+#define FILTER_BANDWIDTH 	CMPU6050::FilterBandwidth21Hz
+
+#define PI			3.1415926
 
 static const char FromKernel[] = "kernel";
 
@@ -62,7 +72,11 @@ boolean CKernel::Initialize (void)
 		CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
 		if (pTarget == 0)
 		{
+#ifdef USE_GRAPHICS
+			pTarget = &m_Serial;
+#else
 			pTarget = &m_Screen;
+#endif
 		}
 
 		bOK = m_Logger.Initialize (pTarget);
@@ -95,24 +109,49 @@ TShutdownMode CKernel::Run (void)
 {
 	m_Logger.Write (FromKernel, LogNotice, "Compile time: " __DATE__ " " __TIME__);
 
+	m_MPU6050.WriteAccelerationRange (ACCELERATION_RANGE);
+	m_MPU6050.WriteGyroscopeRange (GYROSCOPE_RANGE);
+	m_MPU6050.WriteFilterBandwidth (FILTER_BANDWIDTH);
+
+#ifdef USE_GRAPHICS
+	C3DBlock Block (1.5, 2.0, 0.15);
+#endif
+
 	while (1)
 	{
+#ifdef USE_GRAPHICS
+		m_Screen.ClearScreen (CDisplay::Black);
+#endif
+
 		if (m_MPU6050.DoMeasurement ())
 		{
-			m_Logger.Write (FromKernel, LogNotice, "Acceleration %d/%d/%d, Gyroscope %d/%d/%d",
-					(int) m_MPU6050.GetAccelerationX (),
-					(int) m_MPU6050.GetAccelerationY (),
-					(int) m_MPU6050.GetAccelerationZ (),
-					(int) m_MPU6050.GetGyroscopeOutputX (),
-					(int) m_MPU6050.GetGyroscopeOutputY (),
-					(int) m_MPU6050.GetGyroscopeOutputZ ());
+			CMPU6050::TResult Accel = m_MPU6050.GetAcceleration ();
+			CMPU6050::TResult Gyro = m_MPU6050.GetGyroscopeOutput ();
+			float fTemp = m_MPU6050.GetTemperature ();
+
+			m_Logger.Write (FromKernel, LogNotice,
+					"Accel %.1f/%.1f/%.1f Gyro %.1f/%.1f/%.1f Temp %.1f",
+					Accel.x, Accel.y, Accel.z, Gyro.x, Gyro.y, Gyro.z, fTemp);
+
+#ifdef USE_GRAPHICS
+			double x = -Accel.z * PI/2.0;
+			double z = (Accel.y-1.0) * PI/2.0;
+
+			Block.SetRotation (x, 0.0, z);
+
+			Block.Draw (&m_Screen, CDisplay::BrightGreen);
+#endif
 		}
 		else
 		{
 			m_Logger.Write (FromKernel, LogWarning, "Measurement failed");
 		}
 
+#ifdef USE_GRAPHICS
+		m_Screen.UpdateDisplay ();
+#else
 		m_Timer.MsDelay (500);
+#endif
 	}
 
 	return ShutdownHalt;

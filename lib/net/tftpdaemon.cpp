@@ -2,7 +2,7 @@
 // tftpdaemon.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -253,7 +253,7 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 	}
 
 	CRetransmissionTimeoutCalculator RTCalc;
-	RTCalc.Initialize (0);
+	RTCalc.Initialize (0, 1 * MAX_DATA_LEN, MAX_DATA_LEN);
 
 	int nDataLength = MAX_DATA_LEN;
 	for (u16 usBlockNumber = 1; nDataLength == MAX_DATA_LEN; usBlockNumber++)
@@ -336,7 +336,7 @@ boolean CTFTPDaemon::DoRead (const char *pFileName)
 			}
 			else
 			{
-				RTCalc.RetransmissionTimerExpired ();
+				RTCalc.RetransmissionTimerExpired ((u32) (usBlockNumber-1) * MAX_DATA_LEN);
 			}
 		}
 

@@ -51,7 +51,7 @@ enum TUSBSerialParity
 class CUSBSerialDevice : public CDevice		/// Interface device for USB serial devices
 {
 public:
-	CUSBSerialDevice (void);
+	CUSBSerialDevice (CDevice *pParent = nullptr);
 	~CUSBSerialDevice (void);
 
 	boolean Configure (void);

@@ -2,7 +2,7 @@
 // koptions.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -335,6 +335,24 @@ unsigned CKernelOptions::GetAppOptionDecimal (const char *pOption, unsigned nDef
 	}
 
 	return nValue;
+}
+
+int CKernelOptions::GetAppOptionSignedDecimal (const char *pOption, int nDefault) const
+{
+	const char *pValue = GetAppOptionString (pOption, nullptr);
+	if (!pValue)
+	{
+		return nDefault;
+	}
+
+	char *pEnd = nullptr;
+	unsigned long ulValue = strtoul (pValue, &pEnd, 10);
+	if (pEnd && *pEnd != '\0')
+	{
+		return nDefault;
+	}
+
+	return static_cast<int> (ulValue);
 }
 
 CKernelOptions *CKernelOptions::Get (void)

@@ -22,7 +22,8 @@
 
 #include <circle/net/netconfig.h>
 #include <circle/netdevice.h>
-#include <circle/net/netqueue.h>
+#include <circle/net/netbuffer.h>
+#include <circle/net/netbufferqueue.h>
 #include <circle/bcm54213.h>
 #include <circle/macb.h>
 #include <circle/types.h>
@@ -40,8 +41,8 @@ public:
 	// returns 0, if net device is not available yet
 	const CMACAddress *GetMACAddress (void) const;
 
-	void Send (const void *pBuffer, unsigned nLength);
-	boolean Receive (void *pBuffer, unsigned *pResultLength);
+	void Send (CNetBuffer *pNetBuffer);
+	CNetBuffer *Receive (void);
 
 	boolean IsRunning (void) const;		// is net device available and link up?
 
@@ -53,8 +54,10 @@ private:
 	CNetConfig *m_pNetConfig;
 	CNetDevice *m_pDevice;
 
-	CNetQueue m_TxQueue;
-	CNetQueue m_RxQueue;
+	CNetBufferQueue m_TxQueue;
+	CNetBufferQueue m_RxQueue;
+
+	CNetBuffer *m_pRxBuffer;
 
 #if RASPPI == 4
 	CBcm54213Device m_Bcm54213;

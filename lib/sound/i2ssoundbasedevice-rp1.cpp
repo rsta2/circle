@@ -15,7 +15,7 @@
 //	Licensed under GPLv2
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,9 +41,6 @@
 
 #define CHANS		2			// 2 I2S stereo channels (per stream)
 #define CHANLEN		32			// width of a channel slot in bits
-
-#define DMA_CHANNEL_TX	0			// TODO: allocate dynamically
-#define DMA_CHANNEL_RX	4
 
 /* common register for all channel */
 #define IER		0x000
@@ -175,8 +172,8 @@ CI2SSoundBaseDevice::CI2SSoundBaseDevice (CInterruptSystem *pInterrupt,
 #endif
 	m_State (StateIdle),
 #ifndef USE_I2S_SOUND_IRQ
-	m_DMAChannelTX (DMA_CHANNEL_TX, pInterrupt),
-	m_DMAChannelRX (DMA_CHANNEL_RX, pInterrupt),
+	m_DMAChannelTX (DMA_CHANNEL_RP1_NORMAL, pInterrupt),
+	m_DMAChannelRX (DMA_CHANNEL_RP1_NORMAL, pInterrupt),
 	m_pDMABufferTX {new u32[m_nChunkSize], new u32[m_nChunkSize]},
 	m_pDMABufferRX {new u32[m_nChunkSize], new u32[m_nChunkSize]},
 #endif
@@ -599,7 +596,7 @@ void CI2SSoundBaseDevice::DMACompletionRoutine (unsigned nChannel, unsigned nBuf
 	assert (nBuffer < 2);
 	assert (m_nChunkSize);
 
-	if (nChannel == DMA_CHANNEL_TX)
+	if (nChannel == m_DMAChannelTX.GetChannelNumber ())
 	{
 		assert (m_DeviceMode != DeviceModeRXOnly);
 		assert (m_pDMABufferTX[nBuffer]);
@@ -617,7 +614,7 @@ void CI2SSoundBaseDevice::DMACompletionRoutine (unsigned nChannel, unsigned nBuf
 		}
 	}
 
-	if (nChannel == DMA_CHANNEL_RX)
+	if (nChannel == m_DMAChannelRX.GetChannelNumber ())
 	{
 		assert (m_DeviceMode != DeviceModeTXOnly);
 		assert (m_pDMABufferRX[nBuffer]);

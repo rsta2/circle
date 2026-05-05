@@ -3,8 +3,46 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+The 51st Step
+-------------
+
+This release offers a significantly improved implementation of the TCP/IP network stack. It supports TCP congestion control according to RFC 5681 with Fast Retransmit and Fast Recovery. Also the unnecessary copying of frames and data in the stack is largely prevented. This improves throughput very much, especially when a Raspberry Pi with 100 MBps Ethernet is connected to a Gigabit network.
+
+The socket API is nearly unchanged, but the new `MSG_MORE` flag can be specified, when calling `CSocket::Send()` on TCP sockets, which prevents the immediate delivery of received data on the receiver side, when more data follows. `CSocket::Bind()` can be called with port 0 to bind to an ephemeral port, which can be requested using `CSocket::GetOwnPort()`. `CSocket::SendTo()` without preceding `Bind()` or `Connect()` is allowed too, which automatically assigns an ephemeral port.
+
+Circle supports the extended C++ standard library support (LLVM libc++ port) in the [circle-stdlib](https://codeberg.org/larchcone/circle-stdlib) project in several ways (e.g. with the new `STDLIB_SUPPORT=4` level).
+
+The recommended toolchain to build Circle applications is now based on GCC 15.2.Rel1. See the link in the Build section! Circle is built with `-std=c++17` by default now. There are options for selecting C++14 (previous default) and C++20 for the `configure` tool, beside the new `--kernel-max-size`, `--clang` and `--kasan` options. Enter `./configure --help` for more info!
+
+The recommended firmware has been updated in *boot/*.
+
+More new features:
+
+* A `CDevice` instance can have property strings for vendor, product, serial number and function (e.g. the USB interface) now. These strings are assigned for all USB- and for NVMe devices, and can be used to distinguish devices of the same class. `CDeviceNameService::ListDevices()` can show these properties.
+* The system option `USE_GPIO_MANAGER_FIQ` has been added. When an application needs multiple FIQ-triggered GPIO interrupt pins, the class `CGPIOPinFIQ` cannot be used. It is also not possible to use `CGPIOPinFIQ` together with the class `CGPIOManager` to handle more GPIO pins with IRQ. Now one can define this option to enable `CGPIOManager` and all GPIO pins, which use an interrupt, to use the FIQ to reduce GPIO interrupt latency. The GPIO interrupt handler will run at `FIQ_LEVEL` then.
+* `CGPIOClock::StartRate()` can use fractional dividers on Raspberry 1-4. Before only integer dividers were supported. Now automatically a fractional divider will be used with MASH 1, if necessary.
+* The class `CPipe` (an unidirectional inter-process communication channel using
+a FIFO) and the methods `CMutex::TryAcquire()` and `CSemaphore::DownWithTimeout()` have been added to the scheduler library. `CSemaphore` objects can have the initial count of zero now. *test/pipe* demonstrates `CPipe`.
+* Sound devices allow writing and reading samples in the `SoundFormatFloat32` now. Samples must be of the data type `float` in the range \[-1.0 .. 1.0\] in this case. *sample/34-sounddevices* and *test/sound-controller* can be configured to use this.
+* The class `CPWMSoundBaseDevice` supports the M/S PWM mode, which is also the default now. This should lead to a better audio quality and suppresses hum, when the PWM signal is delivered via the GPIO header.
+* The class `CEMMCDevice` in [addon/SDCard](addon/SDCard) supports external SDIO breakout boards at GPIO22-27 now as device "emmc2" and "SD2:" in FatFs. This does work with the EMMC host only (not with `USE_SDHOST`). On the Raspberry Pi 4 and CM4 the class can be instantiated twice with different device selector parameter specified to the constructor.
+* A `CSSD1309Display` graphics-mode driver for the SSD1309 128x64 OLED display controller (I2C and SPI) has been added to [addon/display](addon/display).
+* A `CMCP23017` driver for the MCP23017 16-bit I2C GPIO expander has been added to the [addon/gpio](addon/gpio).
+* The MPU-6050 driver in [addon/sensor](addon/sensor) has been extended and returns a scaled acceleration and gyroscope output now. The acceleration and gyroscope range and digital low-pass filter bandwidth can be configured. The sample adds a graphics mode.
+* The serial bootloader images are much smaller now and are able to load kernel images of up to about 8 MB.
+
+A number of fixes have been applied:
+
+* `CGPIOClock::Stop()` was operating on the wrong clock. This caused a stop of the UART clock, when GPIOClock2 was started.
+* `CMachineInfo::GetClockRate()` now favors the firmware function `GET_CLOCK_RATE_MEASURED` over `GET_CLOCK_RATE`, which reported a wrong Core clock rate, when `CCPUThrottle` was used. The reported value is rounded to the closest MHz value.
+* The *cmdline.txt* option `wm8960tune=` has been added as a workaround. Add the given value to the fractional (K) part of PLL1 input/output frequency ratio (treated as 24-digit binary number) of the WM8960 Codec to suppress clicks/pops (range -10000 to 10000, default 0).
+* There have been multiple issues with the handling of TCP FIN packets, which were leading to a delayed termination of connections.
+* There was a problem found in the scheduler using KASan, which was accessing a task object after deleting it.
+
 Release 50.1
 ------------
+
+2026-02-01
 
 New features:
 

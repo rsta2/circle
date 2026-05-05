@@ -2,7 +2,7 @@
 // string.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // ftoa() inspired by Arjan van Vught <info@raspberrypi-dmx.nl>
 //
@@ -225,6 +225,22 @@ int CString::Find (char chChar) const
 	}
 
 	return -1;
+}
+
+void CString::TrimRight (const char *pTargets)
+{
+	if (m_pBuffer)
+	{
+		for (int i = (int) strlen (m_pBuffer)-1; i >= 0; i--)
+		{
+			if (!strchr (pTargets, m_pBuffer[i]))
+			{
+				break;
+			}
+
+			m_pBuffer[i] = '\0';
+		}
+	}
 }
 
 int CString::Replace (const char *pOld, const char *pNew)

@@ -2,7 +2,7 @@
 // semaphore.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,14 +23,14 @@
 
 CSemaphore::CSemaphore (unsigned nInitialCount)
 :	m_nCount (nInitialCount),
-	m_Event (TRUE)
+	m_Event (m_nCount > 0)
 {
-	assert (m_nCount > 0);
+	assert (m_nCount >= 0);
 }
 
 CSemaphore::~CSemaphore (void)
 {
-	assert (m_nCount > 0);
+	assert (m_nCount >= 0);
 }
 
 unsigned CSemaphore::GetState (void) const
@@ -50,6 +50,26 @@ void CSemaphore::Down (void)
 		assert (m_Event.GetState ());
 		m_Event.Clear ();
 	}
+}
+
+boolean CSemaphore::DownWithTimeout (unsigned nMicroSeconds)
+{
+	while (AtomicGet (&m_nCount) == 0)
+	{
+		if (   m_Event.WaitWithTimeout (nMicroSeconds)
+		    && !m_Event.GetState ())
+		{
+			return TRUE;
+		}
+	}
+
+	if (AtomicDecrement (&m_nCount) == 0)
+	{
+		assert (m_Event.GetState ());
+		m_Event.Clear ();
+	}
+
+	return FALSE;
 }
 
 void CSemaphore::Up (void)

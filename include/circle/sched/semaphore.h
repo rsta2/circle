@@ -2,7 +2,7 @@
 // semaphore.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,6 +36,11 @@ public:
 
 	/// \brief Decrement semaphore count; block task, if count is already 0
 	void Down (void);
+
+	/// \brief Decrement semaphore count; block task with timeout, if count is already 0
+	/// \param nMicroSeconds Timeout in micro seconds
+	/// \return TRUE if timed out
+	boolean DownWithTimeout (unsigned nMicroSeconds);
 
 	/// \brief Increment semaphore count; wake another waiting task, if count was 0
 	/// \note Can be called from interrupt context.

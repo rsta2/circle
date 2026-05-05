@@ -23,6 +23,7 @@
 #include <circle/timer.h>
 #include <circle/synchronize.h>
 #include <circle/macros.h>
+#include <circle/util.h>
 #include <assert.h>
 
 const char FromNetDev[] = "netdev";
@@ -30,12 +31,17 @@ const char FromNetDev[] = "netdev";
 CNetDeviceLayer::CNetDeviceLayer (CNetConfig *pNetConfig, TNetDeviceType DeviceType)
 :	m_DeviceType (DeviceType),
 	m_pNetConfig (pNetConfig),
-	m_pDevice (0)
+	m_pDevice (0),
+	m_TxQueue (TRUE),
+	m_pRxBuffer (new CNetBuffer (CNetBuffer::Receive, FRAME_BUFFER_SIZE))
 {
 }
 
 CNetDeviceLayer::~CNetDeviceLayer (void)
 {
+	delete m_pRxBuffer;
+	m_pRxBuffer = 0;
+
 	m_pDevice = 0;
 	m_pNetConfig = 0;
 }
@@ -108,21 +114,54 @@ void CNetDeviceLayer::Process (void)
 
 	DMA_BUFFER (u8, Buffer, FRAME_BUFFER_SIZE);
 	unsigned nLength;
+	CNetBuffer *pTxBuffer;
 	while (   m_pDevice->IsSendFrameAdvisable ()
-	       && (nLength = m_TxQueue.Dequeue (Buffer)) > 0)
+	       && (pTxBuffer = m_TxQueue.Dequeue ()) != 0)
 	{
-		if (!m_pDevice->SendFrame (Buffer, nLength))
+		void *pBuffer = pTxBuffer->GetPtr ();
+		nLength = pTxBuffer->GetLength ();
+		assert (pBuffer != 0);
+		assert (nLength != 0);
+
+		if (unlikely (!IS_CACHE_ALIGNED (pBuffer, 0)))
+		{
+			memcpy (Buffer, pBuffer, nLength);
+			pBuffer = Buffer;
+
+			static boolean bShowOnce = FALSE;
+			if (!bShowOnce)
+			{
+				CLogger::Get ()->Write (FromNetDev, LogWarning,
+							"Buffer is not cache aligned");
+
+				pTxBuffer->Dump (FromNetDev);
+
+				bShowOnce = TRUE;
+			}
+		}
+
+		if (!m_pDevice->SendFrame (pBuffer, nLength))
 		{
 			CLogger::Get ()->Write (FromNetDev, LogWarning, "Frame dropped");
 
+			delete pTxBuffer;
+
 			break;
 		}
+
+		delete pTxBuffer;
 	}
 
-	while (m_pDevice->ReceiveFrame (Buffer, &nLength))
+	assert (m_pRxBuffer != 0);
+	while (m_pDevice->ReceiveFrame (m_pRxBuffer->GetPtr (), &nLength))
 	{
-		assert (nLength > 0);
-		m_RxQueue.Enqueue (Buffer, nLength);
+		assert (nLength < FRAME_BUFFER_SIZE);
+		m_pRxBuffer->RemoveTrailer (FRAME_BUFFER_SIZE - nLength);
+
+		m_RxQueue.Enqueue (m_pRxBuffer);
+
+		m_pRxBuffer = new CNetBuffer (CNetBuffer::Receive, FRAME_BUFFER_SIZE);
+		assert (m_pRxBuffer != 0);
 	}
 }
 
@@ -136,23 +175,14 @@ const CMACAddress *CNetDeviceLayer::GetMACAddress (void) const
 	return m_pDevice->GetMACAddress ();
 }
 
-void CNetDeviceLayer::Send (const void *pBuffer, unsigned nLength)
+void CNetDeviceLayer::Send (CNetBuffer *pNetBuffer)
 {
-	m_TxQueue.Enqueue (pBuffer, nLength);
+	m_TxQueue.Enqueue (pNetBuffer);
 }
 
-boolean CNetDeviceLayer::Receive (void *pBuffer, unsigned *pResultLength)
+CNetBuffer *CNetDeviceLayer::Receive (void)
 {
-	unsigned nLength = m_RxQueue.Dequeue (pBuffer);
-	if (nLength == 0)
-	{
-		return FALSE;
-	}
-
-	assert (pResultLength != 0);
-	*pResultLength = nLength;
-
-	return TRUE;
+	return m_RxQueue.Dequeue ();
 }
 
 boolean CNetDeviceLayer::IsRunning (void) const

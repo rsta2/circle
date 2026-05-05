@@ -2,7 +2,7 @@
 // tcpconnection.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,10 @@
 #include <circle/net/networklayer.h>
 #include <circle/net/ipaddress.h>
 #include <circle/net/icmphandler.h>
+#include <circle/net/netbuffer.h>
+#include <circle/net/netbufferqueue.h>
+#include <circle/net/reassemblyqueue.h>
 #include <circle/net/netqueue.h>
-#include <circle/net/retransmissionqueue.h>
 #include <circle/net/retranstimeoutcalc.h>
 #include <circle/sched/synchronizationevent.h>
 #include <circle/timer.h>
@@ -76,12 +78,13 @@ public:
 	int Accept (CIPAddress *pForeignIP, u16 *pForeignPort);
 	int Close (void);
 	
-	int Send (const void *pData, unsigned nLength, int nFlags);
-	int Receive (void *pBuffer, int nFlags);
+	int Send (CNetBuffer *pData, int nFlags);
+	int Receive (CNetBuffer **ppBuffer, int nFlags);
 
-	int SendTo (const void *pData, unsigned nLength, int nFlags,
+	int SendTo (CNetBuffer *pData, int nFlags,
 		    const CIPAddress &rForeignIP, u16 nForeignPort);
-	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP, u16 *pForeignPort);
+	int ReceiveFrom (CNetBuffer **ppBuffer, int nFlags,
+			 CIPAddress *pForeignIP, u16 *pForeignPort);
 
 	int SetOptionReceiveTimeout (unsigned nMicroSeconds);
 	int SetOptionSendTimeout (unsigned nMicroSeconds);
@@ -97,7 +100,7 @@ public:
 	void Process (void);
 	
 	// returns: -1: invalid packet, 0: not to me, 1: packet consumed
-	int PacketReceived (const void *pPacket, unsigned nLength,
+	int PacketReceived (CNetBuffer *pPacket,
 			    CIPAddress &rSenderIP, CIPAddress &rReceiverIP, int nProtocol);
 
 	// returns: 0: not to me, 1: notification consumed
@@ -109,8 +112,13 @@ public:
 	TStatus GetStatus (void) const;
 
 private:
+	boolean SendNewSegment (u32 nAdditionalCWND = 0);	// returns if segment has been sent
+
+	void OnDuplicateAck (void);
+	void ResendSegment (void);
+
 	boolean SendSegment (unsigned nFlags, u32 nSequenceNumber, u32 nAcknowledgmentNumber = 0,
-			     const void *pData = 0, unsigned nDataLength = 0);
+			     CNetBuffer *pData = 0);
 
 	void ScanOptions (TTCPHeader *pHeader);
 	
@@ -133,14 +141,16 @@ private:
 
 	volatile int m_nErrno;			// signalize error to the user
 
-	CNetQueue m_TxQueue;
-	CNetQueue m_RxQueue;
+	CNetBufferQueue m_TxQueue;
+	CNetBufferQueue m_RxQueue;
+	CReassemblyQueue m_ReassemblyQueue;
 
-	CRetransmissionQueue m_RetransmissionQueue;
 	volatile boolean m_bRetransmit;		// reset m_RetransmissionQueue and send
 	volatile boolean m_bSendSYN;		// send SYN when in TCPStateSynSent or TCPStateSynReceived
 	volatile boolean m_bFINQueued;		// send FIN when TX and retransmission queues are empty
 	TTCPState m_StateAfterFIN;		//	and go to this state
+	volatile boolean m_bFINSent;		// FIN was sent, do not increase m_nSND_NXT any more
+	volatile boolean m_bFINReceived;	// FIN received, do not increase m_nRCV_NXT any more
 
 	volatile unsigned m_nRetransmissionCount;
 	volatile boolean m_bTimedOut;		// abort connection and close
@@ -171,6 +181,15 @@ private:
 	u16 m_nSND_MSS;		// send maximum segment size
 
 	CRetransmissionTimeoutCalculator m_RTOCalculator;
+
+	// Congestion Control Variables
+	u32 m_nIW;			// initial congestion window (bytes)
+	u32 m_nCWND;			// congestion window (bytes)
+	u32 m_nSSThresh;		// slow-start threshold (bytes)
+	unsigned m_nDupAckCount;	// count of consecutive duplicate ACKs
+	boolean m_bFastRecovery;	// fast recovery state flag
+	u32 m_nRecover;			// highest SEQ sent when entering fast recovery
+	unsigned m_nLastSendTicks; 	// time of last data transmission
 
 	unsigned m_nReceiveTimeout;	// us
 	unsigned m_nSendTimeout;	// us

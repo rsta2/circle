@@ -18,7 +18,7 @@ SAMPLES
 16-i2cping		Transfering data blocks between two Raspberry Pis connected via I2C
 17-fractal	[5]	Displaying a fractal image from a Mandelbrot set (may be build for single- or multi-core)
 18-ntptime	[PnP,5]	Setting the system time from an Internet time (NTP) server, reducing boot time
-19-tasks	[5]	Demonstrating the cooperative non-preemtive scheduler
+19-tasks	[5]	Demonstrating the cooperative non-preemptive scheduler
 20-tcpsimple	[5]	Simple TCP echo server
 21-webserver	[5]	Simple HTTP webserver which controls the Act LED
 23-spisimple	[5]	Transfers some data bytes to/from a SPI slave device. Dumps the received bytes.

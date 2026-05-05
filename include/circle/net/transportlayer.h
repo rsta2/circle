@@ -2,7 +2,7 @@
 // transportlayer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 #include <circle/net/netconnection.h>
 #include <circle/net/tcprejector.h>
 #include <circle/net/ipaddress.h>
-#include <circle/net/netqueue.h>
+#include <circle/net/netbuffer.h>
 #include <circle/device.h>
 #include <circle/ptrarray.h>
 #include <circle/spinlock.h>
@@ -41,7 +41,7 @@ public:
 
 	void Process (void);
 
-	// nOwnPort must not be 0
+	// nOwnPort may be 0 (ephemeral port assignment, UDP only)
 	int Bind (u16 nOwnPort, int nProtocol);
 
 	// nOwnPort may be 0 (dynamic port assignment)
@@ -52,16 +52,14 @@ public:
 
 	int Disconnect (int hConnection);
 
-	int Send (const void *pData, unsigned nLength, int nFlags, int hConnection);
+	int Send (CNetBuffer *pData, int nFlags, int hConnection);
 
-	// pBuffer must have size FRAME_BUFFER_SIZE
-	int Receive (void *pBuffer, int nFlags, int hConnection);
+	int Receive (CNetBuffer **ppBuffer, int nFlags, int hConnection);
 
-	int SendTo (const void *pData, unsigned nLength, int nFlags,
+	int SendTo (CNetBuffer *pData, int nFlags,
 		    const CIPAddress &rForeignIP, u16 nForeignPort, int hConnection);
 
-	// pBuffer must have size FRAME_BUFFER_SIZE
-	int ReceiveFrom (void *pBuffer, int nFlags, CIPAddress *pForeignIP,
+	int ReceiveFrom (CNetBuffer **ppBuffer, int nFlags, CIPAddress *pForeignIP,
 			 u16 *pForeignPort, int hConnection);
 
 	int SetOptionReceiveTimeout (unsigned nMicroSeconds, int hConnection);
@@ -74,6 +72,8 @@ public:
 
 	boolean IsConnected (int hConnection) const;
 	const u8 *GetForeignIP (int hConnection) const;		// returns 0 if not connected
+	u16 GetOwnPort (int hConnection) const;			// returns 0 if not assigned
+	u16 GetMSS (int hConnection) const;
 
 	CNetConnection::TStatus GetStatus (int hConnection) const;
 

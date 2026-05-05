@@ -2,7 +2,7 @@
 // dmachannel-rp1.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2024-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_dmachannel_rp1_h
 
 #include <circle/interrupt.h>
+#include <circle/machineinfo.h>
 #include <circle/spinlock.h>
 #include <circle/macros.h>
 #include <circle/types.h>
@@ -48,6 +49,15 @@ public:
 		DREQSourceI2S1RX	= 33,
 		DREQSourceI2S1TX	= 34,
 
+		DREQSourcePIO0TX	= 56,
+		DREQSourcePIO0RX	= 57,
+		DREQSourcePIO1TX	= 58,
+		DREQSourcePIO1RX	= 59,
+		DREQSourcePIO2TX	= 60,
+		DREQSourcePIO2RX	= 61,
+		DREQSourcePIO3TX	= 62,
+		DREQSourcePIO3RX	= 63,
+
 		DREQSourceNone		= 64
 	};
 
@@ -60,7 +70,7 @@ public:
 					 boolean bStatus, void *pParam);
 
 public:
-	/// \param nChannel Explicit channel number (0-7)
+	/// \param nChannel DMA_CHANNEL_RP1_NORMAL, _FAST or an explicit channel number
 	/// \param pInterruptSystem Pointer to the interrupt system object
 	CDMAChannelRP1 (unsigned nChannel, CInterruptSystem *pInterruptSystem);
 
@@ -124,6 +134,9 @@ public:
 
 	/// \brief Cancel running DMA transfer and wait for termination
 	void Cancel (void);
+
+	/// \return The assigned DMA channel number (0-7)
+	unsigned GetChannelNumber (void) const			{ return m_nChannel; }
 
 #ifndef NDEBUG
 	void DumpStatus (void);

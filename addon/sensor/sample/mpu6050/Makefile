@@ -4,7 +4,7 @@
 
 CIRCLEHOME = ../../../..
 
-OBJS	= main.o kernel.o
+OBJS	= main.o kernel.o 3dblock.o
 
 LIBS	= ../../libsensor.a \
 	  $(CIRCLEHOME)/lib/libcircle.a

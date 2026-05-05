@@ -2,7 +2,7 @@
 // retranstimeoutcalc.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,29 +32,44 @@ public:
 
 	unsigned GetRTO (void) const;
 
-	void Initialize (u32 nISN);
+	void Initialize (u32 nISN, unsigned nMaxWindow, unsigned nMinMSS);
 
 	void SegmentSent (u32 nSequenceNumber, u32 nLength = 1);
-	void SegmentAcknowledged (u32 nAcknowledgmentNumber);		// called for valid ACKs only
+	void SegmentAcknowledged (u32 nAcknowledgmentNumber);
 
-	void RetransmissionTimerExpired (void);
+	void RetransmissionTimerExpired (u32 nSegmentNumberExpected);
 
 private:
 	void Calculate (unsigned nRTT);
 
 private:
+	struct TSegmentInfo
+	{
+		boolean bUsed;
+		u32 nSequenceNumber;
+		unsigned nStartTicks;
+		unsigned nRetransmissions;
+	};
+
+	unsigned CalculateHash (u32 nSequenceNumber)
+	{
+		return (nSequenceNumber % m_nMaxWindow) / (m_nMinMSS / 2);
+	}
+
+private:
 	CTimer *m_pTimer;
 
 	u32 m_nISN;
+	unsigned m_nMaxWindow;
+	unsigned m_nMinMSS;
 	unsigned m_nRTO;
 
 	boolean m_bFirstMeasurement;
 	unsigned m_nSRTT;
 	unsigned m_nRTTVAR;
 
-	boolean m_bMeasurementRuns;
-	unsigned m_nStartTicks;
-	unsigned m_nRetransmissions;
+	unsigned m_nSegmentMapSize;
+	TSegmentInfo *m_SegmentMap;
 
 	CSpinLock m_SpinLock;
 };

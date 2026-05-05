@@ -2,7 +2,7 @@
 // device.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _circle_device_h
 
 #include <circle/ptrlist.h>
+#include <circle/string.h>
 #include <circle/types.h>
 
 class CDevice;
@@ -30,7 +31,20 @@ typedef void TDeviceRemovedHandler (CDevice *pDevice, void *pContext);
 class CDevice		/// Base class for all devices
 {
 public:
-	CDevice (void);
+	enum TProperty
+	{
+		PropertyVendor,
+		PropertyProduct,
+		PropertySerialNumber,
+		PropertyFunction,	///< Sub-function in a device (e.g. USB interface)
+
+		PropertyUnknown
+	};
+
+public:
+	/// \param pParent Parent device object (if any) to copy device properties from
+	CDevice (CDevice *pParent = nullptr);
+
 	virtual ~CDevice (void);
 
 	/// \param pBuffer Buffer, where read data will be placed
@@ -75,8 +89,19 @@ public:
 	/// \param hRegistration Handle returned by RegisterRemovedHandler()
 	void UnregisterRemovedHandler (TRegistrationHandle hRegistration);
 
+public:
+	/// \param Property Property selector
+	/// \param pString Property string to set
+	void SetProperty (TProperty Property, const char *pString);
+
+	/// \param Property Property selector
+	/// \return Property string
+	const char *GetProperty (TProperty Property) const;
+
 private:
 	CPtrList m_RemovedHandlerList;
+
+	CString m_Property[PropertyUnknown];
 };
 
 #endif

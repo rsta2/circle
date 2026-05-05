@@ -12,7 +12,7 @@
 //	Controller Identifier (CNTID) 0 only
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2025-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -353,6 +353,7 @@ bool CNVMeDevice::Initialize(void)
 	}
 
 	// Identify namespace and controller
+	char SerialNumber[20+1] = "";
 	char ModelNumber[40+1] = "";
 
 	u8 *pIdBuf = static_cast<u8 *> (m_Allocator.Allocate(4096, NVME_PAGE_SIZE));
@@ -406,12 +407,18 @@ bool CNVMeDevice::Initialize(void)
 		else
 		{
 			// Controller
+			memcpy (SerialNumber, &pIdBuf[4], sizeof SerialNumber-1);
+			SerialNumber[sizeof SerialNumber-1] = '\0';
+
 			memcpy (ModelNumber, &pIdBuf[24], sizeof ModelNumber-1);
 			ModelNumber[sizeof ModelNumber-1] = '\0';
 		}
 	}
 
 	m_Allocator.Free(pIdBuf);
+
+	SetProperty (PropertyProduct, ModelNumber);
+	SetProperty (PropertySerialNumber, SerialNumber);
 
 	LOGNOTE("%luGB NVMe Model %s", m_ulNamespaceSize / GIGABYTE, ModelNumber);
 

@@ -179,8 +179,10 @@ FAT FS library
 Scheduler library
 
 * CMutex: Provides a method to provide mutual exclusion (critical sections) across tasks.
+* CPipe: Unidirectional interprocess communication channel using a FIFO.
+* CPipeFile: Read or Write endpoint of a CPipe channel.
 * CTask: Overload this class, define the Run() method to implement your own task and call new on it to start it.
-* CScheduler: Cooperative non-preemtive scheduler which controls which task runs at a time.
+* CScheduler: Cooperative non-preemptive scheduler which controls which task runs at a time.
 * CSemaphore: Implements a semaphore synchronization class.
 * CSynchronizationEvent: Provides a method to synchronize the execution of a task with an event.
 
@@ -201,6 +203,8 @@ Net library
 * CMQTTClient: Client for the MQTT IoT protocol.
 * CMQTTReceivePacket: MQTT helper class.
 * CMQTTSendPacket: MQTT helper class.
+* CNetBuffer: Generic frame/packet buffer for network protocol handling.
+* CNetBufferQueue: FIFO queue for CNetBuffer objects.
 * CNetConfig: Encapsulates the network configuration.
 * CNetConnection: Virtual transport layer connection (UDP or TCP (not yet available)).
 * CNetDeviceLayer: Encapsulates the network device support layer. Queues TX/RX frames before/after transmission.
@@ -212,7 +216,7 @@ Net library
 * CNTPClient: A NTP client which gets the current time from an Internet time server.
 * CNTPDaemon: Background task which uses CNTPClient to update the system time every 15 minutes.
 * CPHYTask: Background task which continuously updates the PHY of the used net device.
-* CRetransmissionQueue: The TCP retransmission queue.
+* CReassemblyQueue: Reassembly queue for the TCP receiver.
 * CRetransmissionTimeoutCalculator: Calculates the TCP retransmission timeout according to RFC 6298.
 * CRouteCache: Caches special routes, received via ICMP redirect requests.
 * CSocket: Network application interface (socket) class.

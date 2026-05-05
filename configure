@@ -19,9 +19,14 @@ function usage()
 	echo "  --realtime         Enable real time mode to improve IRQ latency"
 	echo "  --keymap <country> Set default USB keymap (DE, ES, FR, IT, UK, US)"
 	echo "  --qemu             Build for running under QEMU"
+	echo "  --kernel-max-size <megabytes>"
+	echo "                     Set maximum size of the kernel image (default: 2)"
 	echo "  -d <option>, --define <option> "
 	echo "                     Define additional system option"
-	echo "  --c++17            Use C++17 standard for compiling (default C++14)"
+	echo "  --c++14            Use C++14 standard for compiling (default C++17)"
+	echo "  --c++20            Use C++20 standard for compiling (default C++17)"
+	echo "  --clang            Build with Clang / LLVM"
+	echo "  --kasan            Enable Kasan address sanitizer"
 	echo "  -f, --force        Overwrite existing Config.mk file"
 	echo "  -h, --help         Show this usage message"
 	echo
@@ -38,7 +43,10 @@ MULTICORE=0
 REALTIME=0
 KEYMAP=
 QEMU=0
-CPP17=0
+KERNEL_MAX_SIZE_MB=2
+CPP=17
+CLANG=0
+KASAN=0
 DEFINE=
 FORCE=0
 SHIFT=0
@@ -51,7 +59,12 @@ while [ ${#} -gt 0 ]; do
 		--realtime) REALTIME=1 ; SHIFT=1;;
 		--keymap) KEYMAP="$2" ; SHIFT=2;;
 		--qemu) QEMU=1 ; SHIFT=1;;
-		--c++17) CPP17=1 ; SHIFT=1;;
+		--kernel-max-size) KERNEL_MAX_SIZE_MB="$2"; SHIFT=2;;
+		--c++14) CPP=14 ; SHIFT=1;;
+		--c++17) CPP=17 ; SHIFT=1;;
+		--c++20) CPP=20 ; SHIFT=1;;
+		--clang) CLANG=1 ; SHIFT=1;;
+		--kasan) KASAN=1 ; SHIFT=1;;
 		-d|--define) DEFINE="$DEFINE -D$2" ; SHIFT=2;;
 		-f|--force) FORCE=1 ; SHIFT=1;;
 		-h|--help) usage ; exit 0;;
@@ -98,6 +111,9 @@ case "$RASPPI" in
 	*) echo "Error: Unknown Raspberry Pi target: ${RASPPI}" >&2; exit 1;;
 esac
 
+KERNEL_MAX_SIZE=$(printf "0x%X" $(( KERNEL_MAX_SIZE_MB * 0x100000 )))
+KASAN_SHADOW_MAPPING_OFFSET=$(printf "0x%X" $(( KERNEL_MAX_SIZE + 0x700000 )))
+
 CONFIG_FILE="$TOPDIR/Config.mk"
 if [ -e "$CONFIG_FILE" ]
 then
@@ -110,6 +126,10 @@ then
 fi
 
 (
+	if [ $CLANG -eq 1 ]
+	then
+		echo "CLANG = 1"
+	fi
 	if [ $AARCH -eq 32 ]
 	then
 		echo "PREFIX = ${PREFIX}"
@@ -139,13 +159,33 @@ fi
 			echo "DEFINE += -DNO_PHYSICAL_COUNTER"
 		fi
 	fi
+	if [ $KERNEL_MAX_SIZE_MB -ne 2 ]
+	then
+		DEFINE="$DEFINE -DKERNEL_MAX_SIZE=$KERNEL_MAX_SIZE"
+	fi
 	if [ "$DEFINE" != "" ]
 	then
 		echo "DEFINE +=$DEFINE"
 	fi
-	if [ $CPP17 -eq 1 ]
+	if [ $CPP -eq 14 ]
 	then
-		echo "STANDARD = -std=c++17"
+		echo "STANDARD = -std=c++14 -Wno-aligned-new"
+	elif [ $CPP -eq 20 ]
+	then
+		if [ $CLANG -eq 1 ]
+		then
+			echo "STANDARD = -std=c++20 -Wno-deprecated-volatile"
+		else
+			echo "STANDARD = -std=c++20 -Wno-volatile"
+		fi
+	fi
+	if [ $KASAN -eq 1 ]
+	then
+		echo "KASAN_ENABLED = 1"
+		if [ $KERNEL_MAX_SIZE_MB -ne 2 ]
+		then
+			echo "KASAN_SHADOW_MAPPING_OFFSET = $KASAN_SHADOW_MAPPING_OFFSET"
+		fi
 	fi
 ) > "$CONFIG_FILE"
 

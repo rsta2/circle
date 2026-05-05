@@ -2,7 +2,7 @@
 // rp1int.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@
 #define RP1_IRQ_UART3		RP1_IRQ_LEVEL (44)
 #define RP1_IRQ_UART4		RP1_IRQ_LEVEL (45)
 #define RP1_IRQ_UART5		RP1_IRQ_LEVEL (46)
+#define RP1_IRQ_SYSCFG		RP1_IRQ_LEVEL (58)
 
 #define RP1_IRQ_LINES		61
 

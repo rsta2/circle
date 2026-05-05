@@ -1,0 +1,11 @@
+README
+
+This program tests the function of the classes CPipe and CPipeFile. Its
+configuration is in the file config.h and has to be set before build.
+
+The program creates multiple writer and reader tasks, which all operate on the
+same pipe. Each writer generates up to MAX_WRITES times a random number of
+random data bytes and sends them to the pipe. Each reader tries to read up to
+MAX_READS times up to MAX_READ_BYTES bytes. Sent and received data will be
+displayed via the screen or serial interface to be able to compare them
+manually, if necessary.

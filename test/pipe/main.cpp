@@ -1,9 +1,9 @@
 //
-// retransmissionqueue.h
+// main.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015  R. Stange <rsta2@o2online.de>
-// 
+// Copyright (C) 2014  R. Stange <rsta2@gmx.net>
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,37 +17,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef _circle_net_retransmissionqueue_h
-#define _circle_net_retransmissionqueue_h
+#include "kernel.h"
+#include <circle/startup.h>
 
-#include <circle/types.h>
-
-class CRetransmissionQueue
+int main (void)
 {
-public:
-	CRetransmissionQueue (unsigned nSize);
-	~CRetransmissionQueue (void);
+	// cannot return here because some destructors used in CKernel are not implemented
 
-	boolean IsEmpty (void) const;
+	CKernel Kernel;
+	if (!Kernel.Initialize ())
+	{
+		halt ();
+		return EXIT_HALT;
+	}
 	
-	unsigned GetFreeSpace (void) const;
-	void Write (const void *pBuffer, unsigned nLength);
+	TShutdownMode ShutdownMode = Kernel.Run ();
 
-	unsigned GetBytesAvailable (void) const;
-	void Read (void *pBuffer, unsigned nLength);
-	void Advance (unsigned nBytes);
-	void Reset (void);
+	switch (ShutdownMode)
+	{
+	case ShutdownReboot:
+		reboot ();
+		return EXIT_REBOOT;
 
-	void Flush (void);
-
-private:
-	unsigned m_nSize;
-
-	u8 *m_pBuffer;
-
-	unsigned m_nInPtr;
-	unsigned m_nOutPtr;
-	unsigned m_nPreOutPtr;
-};
-
-#endif
+	case ShutdownHalt:
+	default:
+		halt ();
+		return EXIT_HALT;
+	}
+}

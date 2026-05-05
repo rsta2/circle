@@ -2,7 +2,7 @@
 // usbmouse.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // USB mouse wheel support including HID report parser:
 // Copyright (C) 2020  H. Kocevar <hinxx@protonmail.com>
@@ -106,7 +106,7 @@ boolean CUSBMouseDevice::Configure (void)
 
 	
 	m_pMouseDevice = new CMouseDevice(m_MouseReport.items[MouseItemButtons].bitSize,
-					  m_MouseReport.items[MouseItemWheel].bitSize != 0);
+					  m_MouseReport.items[MouseItemWheel].bitSize != 0, this);
 	assert (m_pMouseDevice != 0);
 
 	return StartRequest ();

@@ -2,7 +2,7 @@
 // sysinit.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include <circle/chainboot.h>
 #include <circle/qemu.h>
 #include <circle/synchronize.h>
+#include <circle/multicore.h>
 #include <circle/sysconfig.h>
 #include <circle/memorymap.h>
 #include <circle/version.h>
@@ -67,8 +68,12 @@ void __cxa_atexit (void *pThis, void (*pFunc)(void *pThis), void *pHandle)
 
 #endif
 
-#if STDLIB_SUPPORT >= 2
+#if STDLIB_SUPPORT >= 2 && !defined (__clang__)
 
+// Clang provides __sync_synchronize as a builtin and rejects a user-space
+// definition. The builtin emits "dmb sy" whereas DataSyncBarrier() emits the
+// stronger "dsb sy", but clang's barrier is sufficient for the cooperative
+// scheduler and avoids the build error.
 void __sync_synchronize (void)
 {
 	DataSyncBarrier ();
@@ -92,6 +97,48 @@ static int s_nExitStatus = EXIT_STATUS_SUCCESS;
 void set_qemu_exit_status (int nStatus)
 {
 	s_nExitStatus = nStatus;
+}
+
+TStackInfo __GetCurrentStackNoWeak (void)
+{
+#ifdef ARM_ALLOW_MULTI_CORE
+	unsigned nCore = CMultiCoreSupport::ThisCore ();
+#else
+	unsigned nCore = 0;
+#endif
+
+#if AARCH == 32
+	u32 nCPSR;
+	asm volatile ("mrs %0, cpsr" : "=r" (nCPSR));
+	switch (nCPSR & 0x1F)
+	{
+	case 0x11:
+		return {MEM_FIQ_STACK + nCore*EXCEPTION_STACK_SIZE, EXCEPTION_STACK_SIZE};
+
+	case 0x12:
+		return {MEM_IRQ_STACK + nCore*EXCEPTION_STACK_SIZE, EXCEPTION_STACK_SIZE};
+
+	case 0x17:
+	case 0x1B:
+		return {MEM_ABORT_STACK + nCore*EXCEPTION_STACK_SIZE, EXCEPTION_STACK_SIZE};
+	}
+#else
+	u64 ulSPSR_EL1;
+	asm volatile ("mrs %0, spsr_el1" : "=r" (ulSPSR_EL1));
+	if ((ulSPSR_EL1 & 0x0F) == 0x05)	// in EL1h ?
+	{
+		return {MEM_EXCEPTION_STACK + nCore*EXCEPTION_STACK_SIZE, EXCEPTION_STACK_SIZE};
+	}
+#endif
+
+	return {MEM_KERNEL_STACK + nCore*KERNEL_STACK_SIZE, KERNEL_STACK_SIZE};
+}
+
+TStackInfo GetCurrentStack (void) WEAK;
+
+TStackInfo GetCurrentStack (void)
+{
+	return __GetCurrentStackNoWeak ();
 }
 
 void halt (void)
@@ -279,11 +326,17 @@ void sysinit (void)
 
 	// clear BSS
 	extern unsigned char __bss_start;
-	extern unsigned char _end;
-	memset (&__bss_start, 0, &_end - &__bss_start);
+	extern unsigned char __bss_end;
+	memset (&__bss_start, 0, &__bss_end - &__bss_start);
+
+	// clear TBSS
+	extern unsigned char __tbss_start;
+	extern unsigned char __tbss_end;
+	memset (&__tbss_start, 0, &__tbss_end - &__tbss_start);
 
 	// halt, if KERNEL_MAX_SIZE is not properly set
 	// cannot inform the user here
+	extern unsigned char _end;
 	if (MEM_KERNEL_END < reinterpret_cast<uintptr> (&_end))
 	{
 		halt ();

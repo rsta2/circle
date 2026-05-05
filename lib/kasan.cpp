@@ -24,6 +24,7 @@
 #include <circle/heapallocator.h>
 #include <circle/logger.h>
 #include <circle/string.h>
+#include <circle/startup.h>
 
 typedef u8 uint8_t;
 typedef char int8_t;
@@ -38,6 +39,9 @@ typedef char int8_t;
 #define ASAN_SHADOW_HEAP_HEAD_REDZONE_MAGIC 0xfa
 #define ASAN_SHADOW_HEAP_TAIL_REDZONE_MAGIC 0xfb
 #define ASAN_SHADOW_HEAP_FREE_MAGIC 0xfd
+#define ASAN_SHADOW_CONTAINER_OVERFLOW_MAGIC 0xfc
+#define ASAN_SHADOW_ALLOCA_LEFT_MAGIC 0xca
+#define ASAN_SHADOW_ALLOCA_RIGHT_MAGIC 0xcb
 
 #define CALLER_PC ((uintptr)__builtin_return_address(0))
 
@@ -164,6 +168,47 @@ static inline int kasan_check_memory(uintptr addr, size_t size,
     return 0;
 }
 
+// Annotates the transition of a region boundary from old_addr to new_addr:
+//   new_addr > old_addr: unpoison [old_addr, new_addr)
+//   new_addr < old_addr: poison [new_addr, old_addr) as container overflow
+static void annotate_range_transition(uintptr old_addr, uintptr new_addr)
+{
+    if (new_addr > old_addr)
+    {
+        // Region grew: unpoison [old_addr, new_addr).
+        // Align down to cover the partial shadow byte at old_addr.
+        uintptr const aligned_start = old_addr & ~static_cast<uintptr>(KASAN_SHADOW_MASK);
+        unpoison_shadow(aligned_start, new_addr - aligned_start);
+    }
+    else if (new_addr < old_addr)
+    {
+        // Region shrank: poison [new_addr, old_addr).
+        // Handle partial shadow byte at new_addr's block.
+        size_t const new_partial = new_addr & KASAN_SHADOW_MASK;
+        if (new_partial != 0)
+        {
+            *reinterpret_cast<uint8_t *>(KASAN_MEM_TO_SHADOW(new_addr)) =
+                static_cast<uint8_t>(new_partial);
+        }
+        // Poison all complete 8-byte blocks between the two aligned boundaries.
+        uintptr const new_aligned_next =
+            (new_addr + KASAN_SHADOW_MASK) & ~static_cast<uintptr>(KASAN_SHADOW_MASK);
+        uintptr const old_aligned = old_addr & ~static_cast<uintptr>(KASAN_SHADOW_MASK);
+        if (new_aligned_next < old_aligned)
+        {
+            poison_shadow(new_aligned_next, old_aligned - new_aligned_next,
+                          ASAN_SHADOW_CONTAINER_OVERFLOW_MAGIC);
+        }
+        // If old_addr is not 8-byte aligned and falls in a block beyond new_addr's
+        // block, poison that block entirely.
+        if ((old_addr & KASAN_SHADOW_MASK) != 0 && old_aligned >= new_aligned_next)
+        {
+            *reinterpret_cast<uint8_t *>(KASAN_MEM_TO_SHADOW(old_addr)) =
+                ASAN_SHADOW_CONTAINER_OVERFLOW_MAGIC;
+        }
+    }
+}
+
 // Implement necessary routines for KASan sanitization of globals.
 
 // See struct __asan_global definition at
@@ -204,8 +249,25 @@ extern "C"
 
     void __asan_unregister_globals(void *globals, size_t size) {}
 
-    // Empty placeholder implementation to supress linker error for undefined symbol
-    void __asan_handle_no_return(void) {}
+    // Clear red zones from the current stack frame up to the top of the stack.
+    void __asan_handle_no_return(void)
+    {
+        if (!g_kasan_initialized)
+        {
+            return;
+        }
+
+        char stack_probe;
+        uintptr const sp = reinterpret_cast<uintptr>(&stack_probe);
+        uintptr const top = GetCurrentStack().Top;
+
+        if (top > sp)
+        {
+            uintptr const start_aligned = sp & ~static_cast<uintptr>(KASAN_SHADOW_MASK);
+            uintptr const top_aligned = (top + KASAN_SHADOW_MASK) & ~static_cast<uintptr>(KASAN_SHADOW_MASK);
+            unpoison_shadow(start_aligned, top_aligned - start_aligned);
+        }
+    }
 
     // KASan memcpy/memset hooks.
 
@@ -462,11 +524,111 @@ extern "C"
     DEFINE_KASAN_SET_SHADOW_ROUTINE(f5) // guessed from current LLVM code in asan_poisoning.cc
     DEFINE_KASAN_SET_SHADOW_ROUTINE(f8) // guessed from current LLVM code in asan_poisoning.cc
 
+    void __asan_alloca_poison(uintptr addr, size_t size)
+    {
+        uintptr const left_redzone_size = 32;
+        uintptr const left_redzone_addr = addr - left_redzone_size;
+        uintptr const partial_rz_addr = addr + size;
+        uintptr const right_rz_addr = (partial_rz_addr + 31) & ~static_cast<uintptr>(31);
+        uintptr const partial_rz_aligned = partial_rz_addr & ~static_cast<uintptr>(7);
+
+        poison_shadow(left_redzone_addr, left_redzone_size, ASAN_SHADOW_ALLOCA_LEFT_MAGIC);
+
+        size_t const partial = partial_rz_addr & KASAN_SHADOW_MASK;
+        if (partial != 0)
+        {
+            *reinterpret_cast<uint8_t *>(KASAN_MEM_TO_SHADOW(partial_rz_aligned)) = static_cast<uint8_t>(partial);
+            size_t const right_size = right_rz_addr - partial_rz_aligned - KASAN_SHADOW_GRANULE_SIZE;
+            if (right_size > 0)
+            {
+                poison_shadow(partial_rz_aligned + KASAN_SHADOW_GRANULE_SIZE,
+                              right_size,
+                              ASAN_SHADOW_ALLOCA_RIGHT_MAGIC);
+            }
+        }
+        else
+        {
+            size_t const right_size = right_rz_addr - partial_rz_aligned;
+            if (right_size > 0)
+            {
+                poison_shadow(partial_rz_aligned, right_size, ASAN_SHADOW_ALLOCA_RIGHT_MAGIC);
+            }
+        }
+
+        poison_shadow(right_rz_addr, left_redzone_size, ASAN_SHADOW_ALLOCA_RIGHT_MAGIC);
+    }
+
+    void __asan_allocas_unpoison(uintptr top, uintptr bottom)
+    {
+        if (!g_kasan_initialized || top == 0 || top >= bottom)
+        {
+            return;
+        }
+
+        __kasan_memset(reinterpret_cast<void *>(KASAN_MEM_TO_SHADOW(top)),
+                       ASAN_SHADOW_UNPOISONED_MAGIC,
+                       (bottom - top) >> KASAN_SHADOW_SHIFT);
+    }
+
     /* Further functions that appear with non-optimized code */
     void __asan_before_dynamic_init(const char *module_name)
     {
     }
     void __asan_after_dynamic_init()
     {
+    }
+
+    void __sanitizer_annotate_contiguous_container(
+        void const* beg, void const* /*end*/,
+        void const* old_mid, void const* new_mid)
+    {
+        if (!g_kasan_initialized || beg == nullptr)
+            return;
+        annotate_range_transition(reinterpret_cast<uintptr>(old_mid),
+                                  reinterpret_cast<uintptr>(new_mid));
+    }
+
+    void __sanitizer_annotate_double_ended_contiguous_container(
+        void const* storage_beg, void const* /*storage_end*/,
+        void const* old_container_beg, void const* old_container_end,
+        void const* new_container_beg, void const* new_container_end)
+    {
+        if (!g_kasan_initialized || storage_beg == nullptr)
+            return;
+        // Front boundary: swap old/new because moving right = shrinking from left.
+        annotate_range_transition(reinterpret_cast<uintptr>(new_container_beg),
+                                  reinterpret_cast<uintptr>(old_container_beg));
+        // Back boundary: normal direction, moving right = growing.
+        annotate_range_transition(reinterpret_cast<uintptr>(old_container_end),
+                                  reinterpret_cast<uintptr>(new_container_end));
+    }
+
+    int __sanitizer_verify_double_ended_contiguous_container(
+        void const* storage_beg, void const* container_beg,
+        void const* container_end, void const* /*storage_end*/)
+    {
+        if (!g_kasan_initialized || storage_beg == nullptr)
+            return 1;
+
+        uintptr const beg_addr = reinterpret_cast<uintptr>(container_beg);
+        uintptr const end_addr = reinterpret_cast<uintptr>(container_end);
+
+        if (beg_addr >= end_addr)
+            return 1;
+
+        // Check all complete 8-byte blocks fully within [container_beg, container_end).
+        uintptr const beg_aligned =
+            (beg_addr + KASAN_SHADOW_MASK) & ~static_cast<uintptr>(KASAN_SHADOW_MASK);
+        uintptr const end_aligned =
+            end_addr & ~static_cast<uintptr>(KASAN_SHADOW_MASK);
+
+        for (uintptr addr = beg_aligned; addr < end_aligned;
+             addr += KASAN_SHADOW_GRANULE_SIZE)
+        {
+            if (*reinterpret_cast<uint8_t const*>(KASAN_MEM_TO_SHADOW(addr)) != 0)
+                return 0;
+        }
+
+        return 1;
     }
 }
