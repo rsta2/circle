@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 500100
+CIRCLEVER = 510000
 
 CIRCLEHOME ?= ..
 
@@ -179,8 +179,10 @@ ifneq ($(strip $(LIBGCC_EH)),"libgcc_eh.a")
 EXTRALIBS += $(LIBGCC_EH)
 endif
 ifeq ($(strip $(AARCH)),64)
+ifneq ($(strip $(CLANG)),1)
 CRTBEGIN = "$(shell $(CPP) $(ARCH) -print-file-name=crtbegin.o)"
 CRTEND   = "$(shell $(CPP) $(ARCH) -print-file-name=crtend.o)"
+endif
 endif
 else
 CPPFLAGS  += -fno-exceptions -fno-rtti
@@ -192,8 +194,33 @@ endif
 ifeq ($(strip $(STDLIB_SUPPORT)),0)
 CFLAGS	  += -nostdinc
 else
+# For Clang builds with STDLIB_SUPPORT>=1 we need a compiler runtime that
+# provides ARM EABI helpers (__aeabi_uidiv, __aeabi_uldivmod, ...).
+#
+# Prefer compiler-rt builtins if the bare-metal archive is actually present
+# on disk. clang -print-libgcc-file-name reports the *expected* path even
+# when the file is missing, so a wildcard probe is required.
+#
+# When compiler-rt is absent, only the standalone Circle build (STDLIB_SUPPORT=1
+# per doc/clang-support.txt) falls back to libgcc from the GNU toolchain, which
+# also supplies libm via the STDLIB_SUPPORT=1 block just below. Higher levels
+# are used by the circle-stdlib top-level build, which provides its own
+# compiler-rt builtins via CIRCLE_STDLIB_LIBS - no toolchain libgcc is needed
+# (and PREFIX may point at a 32-bit GNU toolchain on aarch64 builds, which
+# would link in an incompatible archive).
+ifeq ($(strip $(CLANG)),1)
+LIBGCC_PATH := $(shell $(CC) $(ARCH) -print-libgcc-file-name)
+ifneq ($(wildcard $(LIBGCC_PATH)),)
+LIBGCC	  = "$(LIBGCC_PATH)"
+EXTRALIBS += $(LIBGCC)
+else ifeq ($(strip $(STDLIB_SUPPORT)),1)
 LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
 EXTRALIBS += $(LIBGCC)
+endif
+else
+LIBGCC	  = "$(shell $(PREFIX)gcc $(ARCHCPU) -print-file-name=libgcc.a)"
+EXTRALIBS += $(LIBGCC)
+endif
 endif
 
 ifeq ($(strip $(STDLIB_SUPPORT)),1)

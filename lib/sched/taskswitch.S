@@ -40,6 +40,11 @@ TaskSwitch:					/* r0: pOldRegs, r1: pNewRegs */
 
 	bx	lr
 
+	.globl	__aeabi_read_tp
+__aeabi_read_tp:
+	mrc	p15, 0, r0, c13, c0, 3
+	bx	lr
+
 #else
 
 	.globl	TaskSwitch
