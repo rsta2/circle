@@ -503,12 +503,13 @@ LOGMODULE ("rp1dsi");
 
 CRP1DSIHostController::CRP1DSIHostController (CInterruptSystem *pInterrupt,
 					      unsigned nDepth, unsigned nDisplay,
-					      const drm_display_mode *pMode)
+					      unsigned nDataLanes)
 :	mipi_dsi_host {&s_host_ops},
 	m_pInterrupt (pInterrupt),
 	m_nDepth (nDepth),
 	m_nDisplay (nDisplay),
-	m_pMode (pMode),
+	m_nDataLanes (nDataLanes),
+	m_pMode (nullptr),
 	m_ulDMABase (nDisplay ? ARM_MIPI1_DMA_BASE : ARM_MIPI0_DMA_BASE),
 	m_ulDSIBase (nDisplay ? ARM_MIPI1_DSI_BASE : ARM_MIPI0_DSI_BASE),
 	m_ulCFGBase (nDisplay ? ARM_MIPI1_CFG_BASE : ARM_MIPI0_CFG_BASE),
@@ -520,7 +521,7 @@ CRP1DSIHostController::CRP1DSIHostController (CInterruptSystem *pInterrupt,
 	 * To defeat rounding errors, specify explicitly which source to use.
 	 */
 	m_DPIClock (nDisplay ? GPIOClockMIPI1DPI : GPIOClockMIPI0DPI,
-		      (nDepth == 16 ? 16 : 24) >= 8 * DataLanes
+		      (nDepth == 16 ? 16 : 24) >= 8 * nDataLanes
 		    ? GPIOClockSourceMIPIDSIByteClock
 		    : GPIOClockSourcePLLSys),
 	m_display_flags (  MIPI_DSI_MODE_VIDEO
@@ -534,6 +535,7 @@ CRP1DSIHostController::CRP1DSIHostController (CInterruptSystem *pInterrupt,
 	m_pVBlankHandler (nullptr)
 {
 	assert (m_nDepth == 16 || m_nDepth == 32);
+	assert (m_nDataLanes == 1 || m_nDataLanes == 2);
 }
 
 CRP1DSIHostController::~CRP1DSIHostController (void)
@@ -557,8 +559,12 @@ CRP1DSIHostController::~CRP1DSIHostController (void)
 	m_CFGClock.Stop ();
 }
 
-boolean CRP1DSIHostController::Initialize (void)
+boolean CRP1DSIHostController::Initialize (const drm_display_mode *pMode)
 {
+	assert (!m_pMode);
+	m_pMode = pMode;
+	assert (m_pMode);
+
 	assert (!m_bDSIRunning);
 
 	if (!m_CFGClock.StartRate (25000000))
@@ -847,10 +853,10 @@ int CRP1DSIHostController::rp1dsi_dsi_setup (drm_display_mode const *mode)
 	int cmdtim, ret;
 	u32 timeout, mask, clkdiv;
 	unsigned int bpp = mipi_dsi_pixel_format_to_bpp(m_display_format);
-	u32 byte_clock = clamp((bpp * 125 * min(mode->clock, RP1DSI_DPI_MAX_KHZ)) / DataLanes,
+	u32 byte_clock = clamp((bpp * 125 * min(mode->clock, RP1DSI_DPI_MAX_KHZ)) / m_nDataLanes,
 			       RP1DSI_BYTE_CLK_MIN, RP1DSI_BYTE_CLK_MAX);
 
-	DSI_WRITE(DSI_PHY_IF_CFG, DataLanes - 1);
+	DSI_WRITE(DSI_PHY_IF_CFG, m_nDataLanes - 1);
 	DSI_WRITE(DSI_DPI_CFG_POL, 0);
 	DSI_WRITE(DSI_GEN_VCID, VC);
 	DSI_WRITE(DSI_DPI_COLOR_CODING, get_colorcode(m_display_format));
@@ -871,7 +877,7 @@ int CRP1DSIHostController::rp1dsi_dsi_setup (drm_display_mode const *mode)
 		mask |= DSI_VID_MODE_BURST;
 	else if (!(m_display_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE))
 		mask |= DSI_VID_MODE_SYNC_EVENTS;
-	else if (8 * DataLanes > bpp)
+	else if (8 * m_nDataLanes > bpp)
 		mask &= ~DSI_VID_MODE_LP_HBP_EN; /* PULSE && inexact DPICLK => fix HBP time */
 	DSI_WRITE(DSI_VID_MODE_CFG, mask);
 	DSI_WRITE(DSI_CMD_MODE_CFG,
@@ -884,7 +890,7 @@ int CRP1DSIHostController::rp1dsi_dsi_setup (drm_display_mode const *mode)
 	DSI_WRITE(DSI_MODE_CFG, 1);
 
 	/* Set timeouts and clock dividers */
-	timeout = (bpp * mode->htotal * mode->vdisplay) / (7 * RP1DSI_TO_CLK_DIV * DataLanes);
+	timeout = (bpp * mode->htotal * mode->vdisplay) / (7 * RP1DSI_TO_CLK_DIV * m_nDataLanes);
 	if (timeout > 0xFFFFu)
 		timeout = 0;
 	DSI_WRITE(DSI_TO_CNT_CFG, (timeout << 16) | RP1DSI_LPRX_TO_VAL);
@@ -898,10 +904,10 @@ int CRP1DSIHostController::rp1dsi_dsi_setup (drm_display_mode const *mode)
 	DSI_WRITE(DSI_VID_NUM_CHUNKS, 0);
 	DSI_WRITE(DSI_VID_NULL_SIZE, 0);
 	DSI_WRITE(DSI_VID_HSA_TIME,
-		  (bpp * (mode->hsync_end - mode->hsync_start)) / (8 * DataLanes));
+		  (bpp * (mode->hsync_end - mode->hsync_start)) / (8 * m_nDataLanes));
 	DSI_WRITE(DSI_VID_HBP_TIME,
-		  (bpp * (mode->htotal - mode->hsync_end)) / (8 * DataLanes));
-	DSI_WRITE(DSI_VID_HLINE_TIME, (bpp * mode->htotal) / (8 * DataLanes));
+		  (bpp * (mode->htotal - mode->hsync_end)) / (8 * m_nDataLanes));
+	DSI_WRITE(DSI_VID_HLINE_TIME, (bpp * mode->htotal) / (8 * m_nDataLanes));
 	DSI_WRITE(DSI_VID_VSA_LINES, (mode->vsync_end - mode->vsync_start));
 	DSI_WRITE(DSI_VID_VBP_LINES, (mode->vtotal - mode->vsync_end));
 	DSI_WRITE(DSI_VID_VFP_LINES, (mode->vsync_start - mode->vdisplay));
@@ -921,7 +927,7 @@ int CRP1DSIHostController::rp1dsi_dsi_setup (drm_display_mode const *mode)
 	cmdtim = mode->htotal;
 	if (m_display_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE)
 		cmdtim -= mode->hsync_end - mode->hsync_start;
-	cmdtim = (bpp * cmdtim - 64) / (8 * DataLanes);      /* byte clocks after HSS and EoTp */
+	cmdtim = (bpp * cmdtim - 64) / (8 * m_nDataLanes);      /* byte clocks after HSS and EoTp */
 	cmdtim -= s_hsfreq_table[m_hsfreq_index].data_hs2lp;
 	cmdtim -= s_hsfreq_table[m_hsfreq_index].data_lp2hs;
 	cmdtim = (cmdtim / clkdiv) - 24;                      /* escape clocks for commands */
@@ -946,7 +952,7 @@ int CRP1DSIHostController::rp1dsi_dsi_setup (drm_display_mode const *mode)
 	DSI_WRITE(DSI_PWR_UP, 0x1);		/* power up */
 
 	/* Now it should be safe to start the external DPI clock divider */
-	ret = rp1dsi_dpiclk_start(byte_clock, bpp, DataLanes);
+	ret = rp1dsi_dpiclk_start(byte_clock, bpp, m_nDataLanes);
 	if (ret < 0)
 	{
 		LOGERR ("Cannot start DPI clock (%d)", ret);
@@ -955,11 +961,11 @@ int CRP1DSIHostController::rp1dsi_dsi_setup (drm_display_mode const *mode)
 
 	/* Wait for all lane(s) to be in Stopstate */
 	mask = (1 << 4);
-	if (DataLanes >= 2)
+	if (m_nDataLanes >= 2)
 		mask |= (1 << 7);
-	if (DataLanes >= 3)
+	if (m_nDataLanes >= 3)
 		mask |= (1 << 9);
-	if (DataLanes >= 4)
+	if (m_nDataLanes >= 4)
 		mask |= (1 << 11);
 	for (timeout = (1 << 10); timeout != 0; --timeout) {
 		usleep_range(10, 50);

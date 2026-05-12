@@ -30,10 +30,10 @@ class CRP1DSIHostController : public mipi_dsi_host  /// Driver for DSI output on
 {
 public:
 	CRP1DSIHostController (CInterruptSystem *pInterrupt, unsigned nDepth, unsigned nDisplay,
-			       const drm_display_mode *pMode);
+			       unsigned nDataLanes);
 	~CRP1DSIHostController (void);
 
-	boolean Initialize (void);
+	boolean Initialize (const drm_display_mode *pMode);
 
 	boolean Start (void *pFrameBuffer, unsigned nPitch);
 
@@ -41,7 +41,6 @@ public:
 	void RegisterVBlankHandler (TVBlankHandler *pHandler, void *pParam);
 
 private:
-	static const u8 DataLanes = 1;
 	static const u32 LanePolarities = 0;	// for all lanes
 	static const u8 VC = 0;			// channel
 
@@ -91,6 +90,7 @@ private:
 	CInterruptSystem *m_pInterrupt;
 	unsigned m_nDepth;
 	unsigned m_nDisplay;
+	unsigned m_nDataLanes;
 	const drm_display_mode *m_pMode;
 
 	uintptr m_ulDMABase;

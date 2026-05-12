@@ -25,14 +25,12 @@
 #include <circle/interrupt.h>
 #include <circle/screen.h>
 #include <circle/i2cmaster.h>
-#include <circle/string.h>
 #include <circle/types.h>
-#include "drm_mipi_dsi.h"
-#include "attinyregulator.h"
+#include "rpitouchscreen1.h"
+#include "rpitouchscreen2.h"
 #include "rp1dsihostcontroller.h"
-#include "tc358762dsibridge.h"
 
-class CRPiTouchScreen : public CDisplay, mipi_dsi_device  /// EDT FT5x06 I2C Touchscreen Driver
+class CRPiTouchScreen : public CDisplay
 {
 public:
 	/// \param pInterrupt Pointer to interrupt system object
@@ -45,7 +43,7 @@ public:
 
 	~CRPiTouchScreen (void);
 
-	/// \brief Set the global rotation of the display
+	/// \brief Set the global rotation of the display (v1 display only)
 	/// \param nDegrees Rotation in degrees (0, 180, default 0)
 	/// \note Must be set before calling Initialize().
 	void SetRotation (unsigned nDegrees)	{ m_nRotation = nDegrees; }
@@ -56,11 +54,11 @@ public:
 	boolean Initialize (void);
 
 	/// \return Display width in number of pixels
-	unsigned GetWidth (void) const;
+	unsigned GetWidth (void) const		{ return m_nWidth; }
 	/// \return Display height in number of pixels
-	unsigned GetHeight (void) const;
+	unsigned GetHeight (void) const		{ return m_nHeight; }
 	/// \return Number of bits per pixels
-	unsigned GetDepth (void) const;
+	unsigned GetDepth (void) const		{ return m_nDepth; }
 
 	/// \brief Set a single pixel to color
 	/// \param nPosX X-position (0..Width-1)
@@ -88,36 +86,10 @@ public:
 	void RegisterVerticalSyncHandler (TVerticalSyncHandler *pHandler, void *pParam = nullptr);
 
 private:
-	int edt_ft5x06_ts_identify (void);
-	void edt_ft5x06_ts_isr (void);
-
-	int regmap_read (u8 reg, int *pval);
-	int regmap_bulk_read (u8 reg, void *buf, size_t buflen);
-
-	static void UpdateStub (void *pParam);
+	u8 GetRegID (void);
 
 private:
-	static const u8 I2CAddress = 0x38;
-
-	static const unsigned Width = 800;
-	static const unsigned Height = 480;
-
-	static const int MaxTouchPoints = 10;
-
-	// for GENERIC_FT
-	static const u8 tdata_cmd = 0;
-	static const unsigned tdata_len = 3;
-	static const unsigned tdata_offset = tdata_len;
-	static const unsigned point_len = 6;
-
-	enum edt_ver
-	{
-		EDT_M06,
-		EDT_M09,
-		EDT_M12,
-		EV_FT,
-		GENERIC_FT,
-	};
+	static const u8 I2CAddress = 0x45;	// of regulator
 
 private:
 	CInterruptSystem *m_pInterrupt;
@@ -127,27 +99,15 @@ private:
 
 	unsigned m_nRotation;
 
-	boolean m_bATTinyInitialized;
+	unsigned m_nWidth;
+	unsigned m_nHeight;
+	unsigned m_nPitch;
+	u8 *m_pFrameBuffer;
 
 	CI2CMaster m_I2C;
-	CATTinyRegulator m_ATTiny;
-	CRP1DSIHostController m_DSI;
-	CTC358762DSIBridge m_Bridge;
 
-	u8 *m_pFrameBuffer;
-	unsigned m_nPitch;
-
-	CString m_model_name;
-	edt_ver m_version;
-
-	int m_init_td_status;
-	unsigned m_nKnownIDs;
-	unsigned m_nPosX[MaxTouchPoints];
-	unsigned m_nPosY[MaxTouchPoints];
-
-	CTouchScreenDevice *m_pInterface;
-
-	static const drm_display_mode s_raspberrypi_7inch_mode;
+	CRPiTouchScreen1 *m_pTouchScreen1;
+	CRPiTouchScreen2 *m_pTouchScreen2;
 };
 
 #endif

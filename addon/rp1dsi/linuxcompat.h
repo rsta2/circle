@@ -3,8 +3,13 @@
 
 #include <circle/sched/scheduler.h>
 #include <circle/sysconfig.h>
+#include <circle/alloc.h>
 #include <circle/timer.h>
 #include <circle/types.h>
+
+#ifndef NULL
+	#define NULL	0
+#endif
 
 #ifndef EINVAL
 	#define EINVAL	1
@@ -16,6 +21,18 @@
 
 #ifndef ENOSYS
 	#define ENOSYS	3
+#endif
+
+#ifndef ENOMEM
+	#define ENOMEM	4
+#endif
+
+#ifndef EPROTO
+	#define EPROTO	5
+#endif
+
+#ifndef ENOMSG
+	#define ENOMSG	6
 #endif
 
 #define ARRAY_SIZE(a)			(sizeof(a) / sizeof ((a)[0]))
@@ -33,6 +50,9 @@
 #define EXPORT_SYMBOL(s)
 
 #ifndef NO_BUSY_WAIT
+
+#define kmalloc(size, flags)		malloc (size)
+#define kfree(ptr)			free (ptr)
 
 static inline void usleep_range(unsigned min, unsigned max)
 {

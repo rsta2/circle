@@ -872,6 +872,8 @@ ssize_t mipi_dsi_generic_read(struct mipi_dsi_device *dsi, const void *params,
 }
 EXPORT_SYMBOL(mipi_dsi_generic_read);
 
+#endif
+
 /**
  * mipi_dsi_dcs_write_buffer() - transmit a DCS command with payload
  * @dsi: DSI peripheral device
@@ -913,6 +915,8 @@ ssize_t mipi_dsi_dcs_write_buffer(struct mipi_dsi_device *dsi,
 	return mipi_dsi_device_transfer(dsi, &msg);
 }
 EXPORT_SYMBOL(mipi_dsi_dcs_write_buffer);
+
+#ifndef __circle__
 
 /**
  * mipi_dsi_dcs_write_buffer_chatty - mipi_dsi_dcs_write_buffer() w/ an error log
@@ -970,6 +974,8 @@ void mipi_dsi_dcs_write_buffer_multi(struct mipi_dsi_multi_context *ctx,
 }
 EXPORT_SYMBOL(mipi_dsi_dcs_write_buffer_multi);
 
+#endif
+
 /**
  * mipi_dsi_dcs_write() - send DCS write command
  * @dsi: DSI peripheral device
@@ -1013,6 +1019,8 @@ ssize_t mipi_dsi_dcs_write(struct mipi_dsi_device *dsi, u8 cmd,
 	return err;
 }
 EXPORT_SYMBOL(mipi_dsi_dcs_write);
+
+#ifndef __circle__
 
 /**
  * mipi_dsi_dcs_read() - send DCS read request command
@@ -1129,6 +1137,8 @@ int mipi_dsi_dcs_get_pixel_format(struct mipi_dsi_device *dsi, u8 *format)
 }
 EXPORT_SYMBOL(mipi_dsi_dcs_get_pixel_format);
 
+#endif
+
 /**
  * mipi_dsi_dcs_enter_sleep_mode() - disable all unnecessary blocks inside the
  *    display module except interface communication
@@ -1213,6 +1223,8 @@ int mipi_dsi_dcs_set_display_on(struct mipi_dsi_device *dsi)
 }
 EXPORT_SYMBOL(mipi_dsi_dcs_set_display_on);
 
+#ifndef __circle__
+
 /**
  * mipi_dsi_dcs_set_column_address() - define the column extent of the frame
  *    memory accessed by the host processor
@@ -1286,6 +1298,8 @@ int mipi_dsi_dcs_set_tear_off(struct mipi_dsi_device *dsi)
 }
 EXPORT_SYMBOL(mipi_dsi_dcs_set_tear_off);
 
+#endif
+
 /**
  * mipi_dsi_dcs_set_tear_on() - turn on the display module's Tearing Effect
  *    output signal on the TE signal line.
@@ -1310,6 +1324,8 @@ int mipi_dsi_dcs_set_tear_on(struct mipi_dsi_device *dsi,
 	return 0;
 }
 EXPORT_SYMBOL(mipi_dsi_dcs_set_tear_on);
+
+#ifndef __circle__
 
 /**
  * mipi_dsi_dcs_set_pixel_format() - sets the pixel format for the RGB image

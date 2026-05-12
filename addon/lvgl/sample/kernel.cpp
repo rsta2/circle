@@ -130,9 +130,6 @@ boolean CKernel::Initialize (void)
 	if (bOK)
 	{
 #ifdef DSI_DISPLAY
-		m_RPiTouchScreen.SetRotation (0);		// or 180
-		m_RPiTouchScreen.SetBacklightBrightness (200);	// 0 .. 255
-
 		bOK =
 #endif
 			m_RPiTouchScreen.Initialize ();
