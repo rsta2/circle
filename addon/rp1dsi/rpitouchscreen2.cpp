@@ -20,7 +20,6 @@
 #include "linuxcompat.h"
 #include <circle/logger.h>
 #include <circle/macros.h>
-#include <circle/timer.h>
 #include <circle/util.h>
 #include <assert.h>
 
@@ -33,7 +32,6 @@
 	#define GOODIX_MAX_CONTACTS		5
 
 #define GOODIX_BUFFER_STATUS_READY	BIT(7)
-#define GOODIX_BUFFER_STATUS_TIMEOUT	20
 
 struct TGoodixContact
 {
@@ -259,7 +257,6 @@ void CRPiTouchScreen2::goodix_process_events (void)
 
 int CRPiTouchScreen2::goodix_ts_read_input_report (u8 *data)
 {
-	unsigned start_ticks;
 	int touch_num;
 	int error;
 	u16 addr = GOODIX_READ_COOR_ADDR;
@@ -270,44 +267,30 @@ int CRPiTouchScreen2::goodix_ts_read_input_report (u8 *data)
 	 */
 	const int header_contact_keycode_size = 1 + GOODIX_CONTACT_SIZE + 1;
 
-	/*
-	 * The 'buffer status' bit, which indicates that the data is valid, is
-	 * not set as soon as the interrupt is raised, but slightly after.
-	 * This takes around 10 ms to happen, so we poll for 20 ms.
-	 */
-	start_ticks = CTimer::GetClockTicks();
-	do {
-		error = goodix_i2c_read(addr, data,
-					header_contact_keycode_size);
-		if (error)
-			return error;
+	error = goodix_i2c_read(addr, data,
+				header_contact_keycode_size);
+	if (error)
+		return error;
 
-		if (data[0] & GOODIX_BUFFER_STATUS_READY) {
-			touch_num = data[0] & 0x0f;
-			if (touch_num > GOODIX_MAX_CONTACTS)
-				return -EPROTO;
+	if (data[0] & GOODIX_BUFFER_STATUS_READY) {
+		touch_num = data[0] & 0x0f;
+		if (touch_num > GOODIX_MAX_CONTACTS)
+			return -EPROTO;
 
-			if (touch_num > 1) {
-				addr += header_contact_keycode_size;
-				data += header_contact_keycode_size;
-				error = goodix_i2c_read(
-						addr, data,
-						GOODIX_CONTACT_SIZE *
-							(touch_num - 1));
-				if (error)
-					return error;
-			}
-
-			return touch_num;
+		if (touch_num > 1) {
+			addr += header_contact_keycode_size;
+			data += header_contact_keycode_size;
+			error = goodix_i2c_read(
+					addr, data,
+					GOODIX_CONTACT_SIZE *
+						(touch_num - 1));
+			if (error)
+				return error;
 		}
 
-		usleep_range(1000, 2000); /* Poll every 1 - 2 ms */
-	} while (CTimer::GetClockTicks() - start_ticks < GOODIX_BUFFER_STATUS_TIMEOUT * 1000);
+		return touch_num;
+	}
 
-	/*
-	 * The Goodix panel will send spurious interrupts after a
-	 * 'finger up' event, which will always cause a timeout.
-	 */
 	return -ENOMSG;
 }
 
