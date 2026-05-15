@@ -1,7 +1,7 @@
 README
 
 In this directory an addon library for the RP1 DSI hosts of the Raspberry Pi 5
-is build, which can be used with the official 7-inch Touchscreen (version 1).
+is build, which can be used with the official Touchscreens (version 1 and 2).
 
 There is not a specific sample program for this library, but the following
 programs can be used with it:
