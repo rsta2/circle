@@ -2,7 +2,7 @@
 // gpioclock-rp1.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2024-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,12 +33,19 @@ enum TGPIOClock
 	GPIOClockAudioIn	= 8,
 	GPIOClockAudioOut	= 9,
 	GPIOClockI2S		= 10,
+	GPIOClockMIPI0CFG	= 11,
+	GPIOClockMIPI1CFG	= 12,
 
 	GPIOClock0		= 22,		// on GPIO4 Alt0 or GPIO20 Alt3
 	GPIOClock1		= 23,		// on GPIO5 Alt0, GPIO18 Alt8 or GPIO21 Alt3
 	GPIOClock2		= 24,		// on GPIO6 Alt0
 
-	GPIOClockUnknown	= 28
+	GPIOClockVideoBase	= 28,		// different base address from here
+
+	GPIOClockMIPI0DPI	= 30,
+	GPIOClockMIPI1DPI	= 31,
+
+	GPIOClockUnknown
 };
 
 enum TGPIOClockSource
@@ -55,6 +62,8 @@ enum TGPIOClockSource
 	GPIOClockSourcePLLAudio,		// varies
 
 	GPIOClockSourceClkSys,			// 200 MHz
+
+	GPIOClockSourceMIPIDSIByteClock,	// set with SetMIPIDSIByteClockRate()
 
 	GPIOClockSourceUnknown
 };
@@ -74,12 +83,14 @@ public:
 
 	void Stop (void);
 
+	void SetMIPIDSIByteClockRate (unsigned nRateHZ);
+
 #ifndef NDEBUG
 	static void DumpStatus (boolean bEnabledOnly = TRUE);
 #endif
 	
 private:
-	static boolean EnablePLLAudioCore (unsigned long ulRate);
+	boolean EnablePLLAudioCore (unsigned long ulRate);
 	static boolean EnablePLLAudio (unsigned long ulRate, unsigned long ulParentRate);
 
 	static unsigned long GetPLLCoreDivider (unsigned long rate, unsigned long parent_rate,
@@ -87,7 +98,7 @@ private:
 	static void GetPLLDividers (unsigned long rate, unsigned long parent_rate,
 				    u32 *divider1, u32 *divider2);
 
-	static unsigned GetSourceRate (unsigned nSourceId, unsigned nClockI2SRate = 0);
+	unsigned GetSourceRate (unsigned nSourceId, unsigned nClockI2SRate = 0);
 
 	struct TAudioClock
 	{
@@ -106,6 +117,8 @@ private:
 	unsigned m_nAuxSrc;
 
 	unsigned m_nRateHZ;
+
+	unsigned m_nMIPIDSIByteClockRate;
 
 	static const unsigned MaxParents = 16;
 	static const u8 s_ParentAux[GPIOClockUnknown][MaxParents];

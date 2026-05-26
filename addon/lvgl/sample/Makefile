@@ -6,6 +6,7 @@
 #SPI_DISPLAY = DISPLAY_TYPE_ST7789
 #SPI_DISPLAY = DISPLAY_TYPE_ILI9341
 #I2C_DISPLAY = DISPLAY_TYPE_SSD1306
+#DSI_DISPLAY = 0			# DISP# port to use
 
 CIRCLEHOME = ../../..
 
@@ -25,6 +26,10 @@ else ifneq ($(strip $(I2C_DISPLAY)),)
 LIBS	+= $(CIRCLEHOME)/addon/display/libdisplay.a
 
 CFLAGS	+= -DI2C_DISPLAY=$(I2C_DISPLAY)
+else ifneq ($(strip $(DSI_DISPLAY)),)
+LIBS	+= $(CIRCLEHOME)/addon/rp1dsi/librp1dsi.a
+
+CFLAGS	+= -DDSI_DISPLAY=$(DSI_DISPLAY)
 endif
 
 include $(CIRCLEHOME)/Rules.mk

@@ -11,7 +11,7 @@
 //	SPDX-License-Identifier: GPL-2.0-or-later
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2023-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
 
 #define CLOCK_SYS_RATE_KHZ	200000
 
-#define DEVICES			4
+#define DEVICES			7
 #define CONFIGS			3
 
 #define GPIOS			2
@@ -132,7 +132,10 @@ static uintptr s_BaseAddress[DEVICES] =
 	0x1F00070000UL,
 	0x1F00074000UL,
 	0x1F00078000UL,
-	0x1F0007C000UL
+	0x1F0007C000UL,
+	0x1F00080000UL,
+	0,
+	0x1F00088000UL
 };
 
 #define NONE	{10000, 10000}
@@ -143,10 +146,14 @@ static unsigned s_GPIOConfig[DEVICES][CONFIGS][GPIOS] =
 	{{ 0,  1}, { 8,  9},   NONE }, // ALT3
 	{{ 2,  3}, {10, 11},   NONE }, // ALT3
 	{{ 4,  5}, {12, 13},   NONE }, // ALT3
-	{{ 6,  7}, {14, 15}, {22, 23}} // ALT3
+	{{ 6,  7}, {14, 15}, {22, 23}},// ALT3
+	{{40, 41},   NONE,     NONE }, // ALT2
+	{  NONE,     NONE,     NONE },
+	{{38, 39},   NONE,     NONE }  // ALT3
 };
 
-#define ALT_FUNC(device, config)	GPIOModeAlternateFunction3
+#define ALT_FUNC(device, config)	((device) == 4 ? GPIOModeAlternateFunction2 \
+						       : GPIOModeAlternateFunction3)
 
 CI2CMaster::CI2CMaster (unsigned nDevice, boolean bFastMode, unsigned nConfig)
 :	m_nDevice (nDevice),

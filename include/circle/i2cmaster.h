@@ -2,7 +2,7 @@
 /// \file i2cmaster.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,9 @@
 /// 1         | GPIO2  GPIO3  | GPIO10 GPIO11 |               | Raspberry Pi 5 only
 /// 2         | GPIO4  GPIO5  | GPIO12 GPIO13 |               | Raspberry Pi 5 only
 /// 3         | GPIO6  GPIO7  | GPIO14 GPIO15 | GPIO22 GPIO23 | Raspberry Pi 5 only
+/// 4         | GPIO40 GPIO41 |               |               | Raspberry Pi 5 only
+/// 5         |               |               |               | None
+/// 6         | GPIO38 GPIO39 |               |               | Raspberry Pi 5 only
 
 // returned by Read/Write as negative value
 #define I2C_MASTER_INALID_PARM	1	///< Invalid parameter

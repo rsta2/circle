@@ -8,7 +8,7 @@
 //	SPDX-License-Identifier: GPL-2.0+
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2024-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,18 +32,22 @@
 #include <circle/macros.h>
 #include <assert.h>
 
-#define CLK_CTRL(clk)			(ARM_GPIO_CLK_BASE + 0x10 + (clk)*0x10 + 0x04)
+#define CLK_BASE(clk)			(  (clk) < GPIOClockVideoBase	\
+					 ? ARM_GPIO_CLK_BASE + 0x14	\
+					 : ARM_GPIO_CLK_VIDEO_BASE - GPIOClockVideoBase*0x10)
+
+#define CLK_CTRL(clk)			(CLK_BASE (clk) + (clk)*0x10 + 0x00)
 	#define CLK_CTRL_ENABLE__MASK	BIT(11)
 	#define CLK_CTRL_AUXSRC__SHIFT	5
 	#define CLK_CTRL_AUXSRC__MASK	(0x0F << 5)
 	#define CLK_CTRL_SRC__SHIFT	0
 		#define AUX_SEL			1
-#define CLK_DIV_INT(clk)		(ARM_GPIO_CLK_BASE + 0x10 + (clk)*0x10 + 0x08)
+#define CLK_DIV_INT(clk)		(CLK_BASE (clk) + (clk)*0x10 + 0x04)
 	#define DIV_INT_8BIT_MAX	0xFFU
 	#define DIV_INT_16BIT_MAX	0xFFFFU
-#define CLK_DIV_FRAC(clk)		(ARM_GPIO_CLK_BASE + 0x10 + (clk)*0x10 + 0x0C)
+#define CLK_DIV_FRAC(clk)		(CLK_BASE (clk) + (clk)*0x10 + 0x08)
 	#define CLK_DIV_FRAC_BITS	16
-#define CLK_SEL(clk)			(ARM_GPIO_CLK_BASE + 0x10 + (clk)*0x10 + 0x10)
+#define CLK_SEL(clk)			(CLK_BASE (clk) + (clk)*0x10 + 0x0C)
 
 #define PLL_AUDIO_CORE_CS		(ARM_GPIO_CLK_BASE + 0x0C000)
 	#define PLL_CS_LOCK		BIT(31)
@@ -90,9 +94,9 @@ const u8 CGPIOClock::s_ParentAux[GPIOClockUnknown][MaxParents] =
 	{0, 0, 0, 0, GPIOClockSourceXOscillator},	// AudioIn
 	{0, 0, 0, GPIOClockSourceXOscillator},		// AudioOut
 	{GPIOClockSourceXOscillator, GPIOClockSourcePLLAudio}, // I2S
+	{GPIOClockSourceXOscillator},			// MIPI0CFG
+	{GPIOClockSourceXOscillator},			// MIPI1CFG
 
-	{0},
-	{0},
 	{0},
 	{0},
 	{0},
@@ -106,6 +110,14 @@ const u8 CGPIOClock::s_ParentAux[GPIOClockUnknown][MaxParents] =
 	{GPIOClockSourceXOscillator, 0, 0, 0, 0, 0, GPIOClockSourcePLLSys},	// GP0
 	{0, 0, 0, 0, 0, 0, GPIOClockSourcePLLSysPriPh},				// GP1
 	{0, 0, 0, 0, 0, 0, GPIOClockSourcePLLSysSec, 0, 0, 0, 0, 0, 0, 0, 0, GPIOClockSourceClkSys},	// GP2
+	{0},
+	{0},
+	{0},
+
+	{0},
+	{0},
+	{GPIOClockSourcePLLSys, 0, 0, GPIOClockSourceMIPIDSIByteClock},		// MIPI0DPI
+	{GPIOClockSourcePLLSys, 0, 0, GPIOClockSourceMIPIDSIByteClock},		// MIPI1DPI
 };
 
 const CGPIOClock::TAudioClock CGPIOClock::s_AudioClock[] =
@@ -135,7 +147,8 @@ CGPIOClock::CGPIOClock (TGPIOClock Clock, TGPIOClockSource Source)
 	m_nDivIntMax (0),
 	m_nFreqMax (0),
 	m_nAuxSrc (MaxParents),
-	m_nRateHZ (0)
+	m_nRateHZ (0),
+	m_nMIPIDSIByteClockRate (0)
 {
 	switch (Clock)
 	{
@@ -164,12 +177,26 @@ CGPIOClock::CGPIOClock (TGPIOClock Clock, TGPIOClockSource Source)
 		m_nFreqMax = 50000000;
 		break;
 
+	case GPIOClockMIPI0CFG:
+	case GPIOClockMIPI1CFG:
+		m_nDivIntMax = DIV_INT_8BIT_MAX;
+		m_bHasFrac = FALSE;
+		m_nFreqMax = 50000000;
+		break;
+
 	case GPIOClock0:
 	case GPIOClock1:
 	case GPIOClock2:
 		m_nDivIntMax = DIV_INT_16BIT_MAX;
 		m_bHasFrac = TRUE;
 		m_nFreqMax = 100000000;
+		break;
+
+	case GPIOClockMIPI0DPI:
+	case GPIOClockMIPI1DPI:
+		m_nDivIntMax = DIV_INT_8BIT_MAX;
+		m_bHasFrac = TRUE;
+		m_nFreqMax = 200000000;
 		break;
 
 	default:
@@ -393,6 +420,11 @@ void CGPIOClock::Stop (void)
 	}
 }
 
+void CGPIOClock::SetMIPIDSIByteClockRate (unsigned nRateHZ)
+{
+	m_nMIPIDSIByteClockRate = nRateHZ;
+}
+
 boolean CGPIOClock::EnablePLLAudioCore (unsigned long ulRate)
 {
 	// is PLL already on and locked?
@@ -513,6 +545,11 @@ done:
 
 unsigned CGPIOClock::GetSourceRate (unsigned nSourceId, unsigned nClockI2SRate)
 {
+	if (nSourceId == GPIOClockSourceMIPIDSIByteClock)
+	{
+		return m_nMIPIDSIByteClockRate;
+	}
+
 	if (   nSourceId != GPIOClockSourcePLLAudioCore
 	    && nSourceId != GPIOClockSourcePLLAudio)
 	{
