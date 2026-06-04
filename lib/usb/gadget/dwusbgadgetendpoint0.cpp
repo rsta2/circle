@@ -21,7 +21,10 @@
 #include <circle/usb/gadget/dwusbgadget.h>
 #include <circle/usb/dwhci.h>
 #include <circle/util.h>
+#include <circle/logger.h>
 #include <assert.h>
+
+static const char FromEP0[] = "ep0";
 
 CDWUSBGadgetEndpoint0::CDWUSBGadgetEndpoint0 (size_t nMaxPacketSize, CDWUSBGadget *pGadget)
 :	CDWUSBGadgetEndpoint (nMaxPacketSize, pGadget),
@@ -37,7 +40,12 @@ void CDWUSBGadgetEndpoint0::OnActivate (void)
 {
 	m_State = StateIdle;
 
-	BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+	// SETUP reception may already have been armed in HandleUSBReset() (see
+	// there). Do not arm it twice.
+	if (!IsTransferActive ())
+	{
+		BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+	}
 }
 
 void CDWUSBGadgetEndpoint0::OnDeactivate (void)
@@ -55,6 +63,14 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 
 	// copy setup packet to be used in OnTransferComplete()
 	memcpy (&m_SetupData, pSetupData, sizeof m_SetupData);
+
+	// Trace: always log every SETUP request (diagnosis for issue #591)
+	CLogger::Get ()->Write (FromEP0, LogNotice,
+				"SETUP bmRequestType 0x%02X bRequest 0x%02X wValue 0x%04X wLength %u",
+				(unsigned) pSetupData->bmRequestType,
+				(unsigned) pSetupData->bRequest,
+				(unsigned) pSetupData->wValue,
+				(unsigned) pSetupData->wLength);
 
 	if (pSetupData->bmRequestType & REQUEST_IN)
 	{
