@@ -175,6 +175,7 @@ struct Ctlr {
 	int	chanid;
 	uchar	bssid[Eaddrlen];
 	char	essid[WNameLen + 1];
+	char	scanssid[WNameLen + 1];	/* directed SSID for hidden-net scan */
 	WKey	keys[WNKeys];
 	Block	*rsp;
 	Block	*scanb;
@@ -250,7 +251,7 @@ static Cmdtab cmds[] = {
 	{CMdebug,	"debug", 2},
 	{CMjoin,	"join", 5},
 	{CMdisassoc,	"disassoc", 2},
-	{CMescan,	"escan", 2},
+	{CMescan,	"escan", 3},
 	{CMcountry,	"country", 2},
 	{CMcreate,	"create", 4},
 	{CMdown,	"down", 1},
@@ -1946,34 +1947,58 @@ wlcreateAP(Ctlr *ctl, char *ssid, int channel, int hidden)	/* by @sebastienNEC *
 }
 
 static void
-wlscanstart(Ctlr *ctl)
+wlscanstart(Ctlr *ctl, char *ssid)
 {
 	/* version[4] action[2] sync_id[2] ssidlen[4] ssid[32] bssid[6] bss_type[1]
 		scan_type[1] nprobes[4] active_time[4] passive_time[4] home_time[4]
-		nchans[2] nssids[2] chans[nchans][2] ssids[nssids][32] */
+		nchans[2] nssids[2] chans[nchans][2] ssids[nssids][4+32] */
+	/* each ssids[] entry is brcmf_ssid_le { le32 len; uchar ssid[32]; } */
 	/* hack - this is only correct on a little-endian cpu */
-	static uchar params[4+2+2+4+32+6+1+1+4*4+2+2+14*2+32+4] = {
-		1,0,0,0,
-		1,0,
-		0x34,0x12,
-		0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0xff,0xff,0xff,0xff,0xff,0xff,
-		2,
-		0,
-		0xff,0xff,0xff,0xff,
-		0xff,0xff,0xff,0xff,
-		0xff,0xff,0xff,0xff,
-		0xff,0xff,0xff,0xff,
-		14,0,
-		1,0,
+	static const uchar chanspecs[14*2] = {
 		0x01,0x2b,0x02,0x2b,0x03,0x2b,0x04,0x2b,0x05,0x2e,0x06,0x2e,0x07,0x2e,
 		0x08,0x2b,0x09,0x2b,0x0a,0x2b,0x0b,0x2b,0x0c,0x2b,0x0d,0x2b,0x0e,0x2b,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	};
+	uchar params[4+2+2+4+32+6+1+1+4*4+2+2+14*2 + 2*(4+32)];
+	uchar *p;
+	int ssidlen, nssids;
 
-	wlcmdint(ctl, 49, 0);	/* PASSIVE_SCAN */
-	wlsetvar(ctl, "escan", params, sizeof params);
+	ssidlen = ssid != nil ? strlen(ssid) : 0;
+	ssidlen = MIN(ssidlen, 32);
+	/* always probe with a wildcard entry so visible APs are still found;
+	   add a directed entry to also probe a hidden SSID when one is set */
+	nssids = ssidlen > 0 ? 2 : 1;
+
+	memset(params, 0, sizeof params);
+	p = params;
+	p = put4(p, 1);			/* version */
+	p = put2(p, 1);			/* action = WL_SCAN_ACTION_START */
+	p = put2(p, 0x1234);		/* sync_id */
+	p = put4(p, 0);			/* top-level ssidlen (wildcard) */
+	p += 32;			/* top-level ssid[32] (unused) */
+	memset(p, 0xff, Eaddrlen);	/* bssid = broadcast */
+	p += Eaddrlen;
+	*p++ = 2;			/* bss_type = DOT11_BSSTYPE_ANY */
+	*p++ = 0;			/* scan_type = active (send probe reqs) */
+	p = put4(p, -1);		/* nprobes (firmware default) */
+	p = put4(p, -1);		/* active_time */
+	p = put4(p, -1);		/* passive_time */
+	p = put4(p, -1);		/* home_time */
+	p = put2(p, 14);		/* nchans (channel_num, low half) */
+	p = put2(p, nssids);		/* nssids (channel_num, high half) */
+	memmove(p, chanspecs, sizeof chanspecs);
+	p += sizeof chanspecs;
+	/* ssids[0]: wildcard entry (len 0) */
+	p = put4(p, 0);
+	p += 32;
+	if(ssidlen > 0){
+		/* ssids[1]: directed probe for the hidden network */
+		p = put4(p, ssidlen);
+		memmove(p, ssid, ssidlen);
+		p += 32;
+	}
+
+	wlcmdint(ctl, 49, 0);	/* PASSIVE_SCAN off => active scan */
+	wlsetvar(ctl, "escan", params, p - params);
 }
 
 #ifndef __circle__
@@ -2130,7 +2155,7 @@ lproc(void *a)
 				if(waserror())
 					ctlr->scansecs = 0;
 				else{
-					wlscanstart(ctlr);
+					wlscanstart(ctlr, ctlr->scanssid);
 					poperror();
 				}
 				secs = ctlr->scansecs;
@@ -2492,7 +2517,12 @@ etherbcmctl(Ether* edev, const void* buf, long n)
 		if (ctlr->status != Disconnected)
 			wlcmdint(ctlr, 52, atoi(cb->f[1]));	/* DISASSOC */
 		break;
-	case CMescan:		/* escan seconds */
+	case CMescan:		/* escan seconds [ssid] */
+		if(cb->argc > 2 && cb->f[2] != nil)
+			strncpy(ctlr->scanssid, cb->f[2], sizeof(ctlr->scanssid) - 1);
+		else
+			ctlr->scanssid[0] = '\0';
+		ctlr->scanssid[sizeof(ctlr->scanssid) - 1] = '\0';
 		etherbcmscan(edev, atoi(cb->f[1]));
 		break;
 	case CMcountry:		/* country alpha2 */
