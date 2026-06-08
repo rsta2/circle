@@ -33,7 +33,8 @@ public:
 	enum TDeviceSpeed
 	{
 		FullSpeed,
-		HighSpeed
+		HighSpeed,
+		DeviceSpeedUnknown
 	};
 
 public:
@@ -63,6 +64,15 @@ public:
 
 	/// \brief Create application interface device (API)
 	virtual void CreateDevice (void) = 0;
+
+	/// \brief Get the speed, which has been negotiated with the host
+	/// \return Negotiated speed (FullSpeed or HighSpeed) or DeviceSpeedUnknown
+	TDeviceSpeed GetNegotiatedUSBSpeed (void) const;
+
+	/// \brief A speed has been negotiated with the host (on enumeration done)
+	/// \param Speed Negotiated speed (FullSpeed or HighSpeed)
+	/// \note May override this to update EP parameters (e.g. max. packet size).
+	virtual void OnNegotiatedSpeed (TDeviceSpeed Speed) {}
 
 	/// \brief Device connection has been suspended / removed
 	/// \note Have to undo AddEndpoints() and CreateDevice() here.
