@@ -69,6 +69,8 @@ public:
 
 	u8 GetLEDStatus (void) const;
 
+	CKeyMap *GetKeyMap (void)	{ return &m_KeyMap; }	// Zircon: runtime layout switch
+
 private:
 	void GenerateKeyEvent (u8 ucKeyCode);
 

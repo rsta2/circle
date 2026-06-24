@@ -130,6 +130,10 @@ public:
 
 	u8 GetLEDStatus (void) const;
 
+	// Zircon: switch to another compiled-in country map at runtime ("US","UK","DE",
+	// "FR","ES","IT","DV"). Returns FALSE if the locale is unknown.
+	boolean LoadMap (const char *pLocale);
+
 private:
 	static const void *LookupDefaultMap (const char *pLocale);
 

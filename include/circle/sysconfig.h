@@ -273,7 +273,8 @@
 // MAX_TASKS is the maximum number of tasks in the system.
 
 #ifndef MAX_TASKS
-#define MAX_TASKS		20
+#define MAX_TASKS		40		// Onyx: bumped from 20 -- net stack adds
+						// background tasks (net/DHCP/WPA + NTP/IRC)
 #endif
 
 // TASK_STACK_SIZE is the stack size for each task.

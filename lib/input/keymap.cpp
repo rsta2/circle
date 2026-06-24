@@ -156,6 +156,18 @@ CKeyMap::~CKeyMap (void)
 {
 }
 
+// Zircon: replace the active map with another compiled-in country map at runtime.
+boolean CKeyMap::LoadMap (const char *pLocale)
+{
+	const void *pMap = LookupDefaultMap (pLocale);
+	if (pMap == 0)
+	{
+		return FALSE;
+	}
+	memcpy (m_KeyMap, pMap, sizeof m_KeyMap);
+	return TRUE;
+}
+
 boolean CKeyMap::ClearTable (u8 nTable)
 {
 	if (nTable > K_CTRLTAB)
