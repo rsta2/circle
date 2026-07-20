@@ -106,31 +106,37 @@ boolean CDWHCIRootPort::ReScanDevices (void)
 
 boolean CDWHCIRootPort::RemoveDevice (void)
 {
-	assert (m_pHost != 0);
-	m_pHost->DisableRootPort (FALSE);
+    m_pHost->DisableRootPort (FALSE);
+	
+	if (m_pDevice != 0)
+    {
+        m_pHost->CancelDeviceTransactions (m_pDevice);   // ← 追加：進行中のチャンネルを解放してから削除する
+    }
 
-	delete m_pDevice;
-	m_pDevice = 0;
+	m_pHost->ResetRecoveryState ();
 
-	return TRUE;
+    delete m_pDevice;
+    m_pDevice = 0;
+
+    return TRUE;
 }
 
 void CDWHCIRootPort::HandlePortStatusChange (void)
 {
-	assert (m_pHost != 0);
+    assert (m_pHost != 0);
 
-	if (m_pHost->DeviceConnected ())
-	{
-		if (m_pDevice == 0)
-		{
-			m_pHost->ReScanDevices ();
-		}
-	}
-	else
-	{
-		if (m_pDevice != 0)
-		{
-			RemoveDevice ();
-		}
-	}
+    if (m_pHost->DeviceConnected ())
+    {
+        if (m_pDevice == 0)
+        {
+            m_pHost->ReScanDevices ();
+        }
+    }
+    else
+    {
+        if (m_pDevice != 0)
+        {
+            RemoveDevice ();
+        }
+    }
 }

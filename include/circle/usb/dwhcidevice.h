@@ -55,12 +55,27 @@ public:
 
 	void CancelDeviceTransactions (CUSBDevice *pUSBDevice);
 
+	boolean UpdatePlugAndPlay (void) override;   // NEW: override to drive cold-boot recovery
+
+    void ResetRecoveryState (void)                // NEW: called on genuine unplug
+    {
+        m_nRecoveryAttempts = 0;
+        m_bRecoveryGiveUp   = FALSE;
+    }
+
 private:
 	boolean DeviceConnected (void);
 	TUSBSpeed GetPortSpeed (void);
 	boolean OvercurrentDetected (void);
 	void DisableRootPort (boolean bPowerOff = TRUE);
 	friend class CDWHCIRootPort;
+
+	unsigned m_nRecoveryAttempts;      // 現在までの再試行回数
+    unsigned m_nRecoveryRetryAtTicks;  // 次回再試行が許可される時刻 (CTimer ticks)
+    boolean  m_bRecoveryGiveUp;        // 上限到達フラグ
+
+    void BeginRecoveryBackoff (void);
+	void AbortActiveChannels (void);
 
 private:
 	boolean InitCore (void);
