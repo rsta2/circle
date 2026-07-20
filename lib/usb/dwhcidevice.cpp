@@ -47,6 +47,13 @@
 	#define MAX_TARGET_LEVEL	IRQ_LEVEL
 #endif
 
+#define USB_BOOT_RECOVERY_MAX_ATTEMPTS   3     // 最大再試行回数
+#define USB_BOOT_RECOVERY_BACKOFF_MS     200   // 基本バックオフ (attempt数に比例して延長)
+// コンストラクタ初期化リストに追加
+// m_nRecoveryAttempts (0),
+// m_nRecoveryRetryAtTicks (0),
+// m_bRecoveryGiveUp (FALSE),
+
 enum TStageState
 {
 	StageStateNoSplitTransfer,
@@ -72,6 +79,9 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, 
 	m_nChannels (0),
 	m_nChannelAllocated (0),
 	m_ChannelSpinLock (MAX_TARGET_LEVEL),
+	m_nRecoveryAttempts (0),
+	m_nRecoveryRetryAtTicks (0),
+	m_bRecoveryGiveUp (FALSE),
 #ifdef USE_USB_SOF_INTR
 	m_TransactionQueue (DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL),
 #endif
@@ -205,30 +215,85 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 
 void CDWHCIDevice::ReScanDevices (void)
 {
-	PeripheralEntry ();
+    PeripheralEntry ();
 
-	if (!m_bRootPortEnabled)
-	{
-		if (EnableRootPort ())
-		{
-			m_bRootPortEnabled = TRUE;
+    if (!m_bRootPortEnabled)
+    {
+        if (EnableRootPort ())
+        {
+            m_bRootPortEnabled = TRUE;
 
-			if (!m_RootPort.Initialize ())
-			{
-				LOGERR ("Cannot initialize root port");
-			}
-		}
-		else
-		{
-			LOGWARN ("No device connected to root port");
-		}
-	}
-	else
-	{
-		m_RootPort.ReScanDevices ();
-	}
+            if (m_RootPort.Initialize ())
+            {
+                if (m_nRecoveryAttempts > 0)
+                {
+                    LOGNOTE ("USB boot recovery succeeded (attempt %u)",
+                             m_nRecoveryAttempts + 1);
+                }
+                m_nRecoveryAttempts = 0;
+                m_bRecoveryGiveUp   = FALSE;
+            }
+            else
+            {
+                LOGWARN ("Device enumeration failed (attempt %u)",
+                         m_nRecoveryAttempts + 1);
 
-	PeripheralExit ();
+                DisableRootPort (FALSE);
+                BeginRecoveryBackoff ();
+            }
+        }
+        else
+        {
+            LOGWARN ("No device connected to root port (attempt %u)",
+                     m_nRecoveryAttempts + 1);
+
+            BeginRecoveryBackoff ();          // NEW: こちらの失敗経路にもバックオフを適用
+        }
+    }
+    else
+    {
+        m_RootPort.ReScanDevices ();
+    }
+
+    PeripheralExit ();
+}
+
+void CDWHCIDevice::BeginRecoveryBackoff (void)
+{
+    m_nRecoveryAttempts++;
+
+    if (m_nRecoveryAttempts >= USB_BOOT_RECOVERY_MAX_ATTEMPTS)
+    {
+        LOGERR ("USB boot recovery gave up after %u attempts", m_nRecoveryAttempts);
+        m_bRecoveryGiveUp = TRUE;
+        return;
+    }
+
+    unsigned nBackoffMs = USB_BOOT_RECOVERY_BACKOFF_MS * m_nRecoveryAttempts;
+    m_nRecoveryRetryAtTicks = m_pTimer->GetClockTicks () + MSEC2HZ (nBackoffMs);
+
+    LOGNOTE ("USB boot recovery: retry %u/%u scheduled in %u ms",
+             m_nRecoveryAttempts, USB_BOOT_RECOVERY_MAX_ATTEMPTS, nBackoffMs);
+}
+
+// NEW: TASK_LEVELで保証されて呼ばれるフックに便乗する
+boolean CDWHCIDevice::UpdatePlugAndPlay (void)
+{
+    boolean bResult = CUSBHostController::UpdatePlugAndPlay ();  // 既存のHot Plug処理は無変更
+
+    if (   !m_bRootPortEnabled
+        && !m_bRecoveryGiveUp
+        && m_nRecoveryAttempts > 0)
+    {
+        unsigned nNow = m_pTimer->GetClockTicks ();
+        if ((int) (nNow - m_nRecoveryRetryAtTicks) >= 0)
+        {
+            ReScanDevices ();
+            bResult = TRUE;
+        }
+    }
+
+    return bResult;
 }
 
 boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
@@ -328,6 +393,40 @@ void CDWHCIDevice::CancelDeviceTransactions (CUSBDevice *pUSBDevice)
 #ifdef USE_USB_SOF_INTR
 	m_TransactionQueue.FlushDevice (pUSBDevice);
 #endif
+	AbortActiveChannels ();
+}
+
+void CDWHCIDevice::AbortActiveChannels (void)
+{
+	// Force-disable any channel which is still actively transferring for a
+	// device that is being removed. Once !m_bRootPortEnabled (already set by
+	// DisableRootPort() before this is called), the resulting HALTED channel
+	// interrupt will be picked up by the existing cleanup path at the top of
+	// ChannelInterruptHandler(), which completes the URB with USBErrorAborted
+	// and frees the channel. Without this, a blocking control transfer that
+	// was in flight when the device disappeared would spin forever in
+	// TransferStage()'s "while (m_bWaiting[nWaitBlock])" loop, since no
+	// further interrupt would ever arrive for that channel.
+	for (unsigned nChannel = 0; nChannel < m_nChannels; nChannel++)
+	{
+		if (m_pStageData[nChannel] == 0)
+		{
+			continue;
+		}
+
+		CDWHCIRegister Character (DWHCI_HOST_CHAN_CHARACTER (nChannel));
+		Character.Read ();
+		if (Character.IsSet (DWHCI_HOST_CHAN_CHARACTER_ENABLE))
+		{
+			Character.And (~DWHCI_HOST_CHAN_CHARACTER_ENABLE);
+			Character.Or (DWHCI_HOST_CHAN_CHARACTER_DISABLE);
+			Character.Write ();
+
+			CDWHCIRegister ChanInterruptMask (DWHCI_HOST_CHAN_INT_MASK (nChannel));
+			ChanInterruptMask.Set (DWHCI_HOST_CHAN_INT_HALTED);
+			ChanInterruptMask.Write ();
+		}
+	}
 }
 
 boolean CDWHCIDevice::DeviceConnected (void)
