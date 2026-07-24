@@ -67,7 +67,12 @@ boolean CUSBKeyboardDevice::Configure (void)
 		m_nReportSize++;
 	}
 
-	if (!CUSBHIDDevice::ConfigureHID (m_nReportSize))
+	return ConfigureKeyboard (m_nReportSize);
+}
+
+boolean CUSBKeyboardDevice::ConfigureKeyboard (unsigned nReportSize)
+{
+	if (!CUSBHIDDevice::ConfigureHID (nReportSize))
 	{
 		CLogger::Get ()->Write (FromUSBKbd, LogError, "Cannot configure HID device");
 

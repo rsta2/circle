@@ -30,6 +30,7 @@
 #include <circle/usb/usbmassdevice.h>
 #include <circle/usb/usbfloppydevice.h>
 #include <circle/usb/usbkeyboard.h>
+#include <circle/usb/usbkeyboard8bitdo.h>
 #include <circle/usb/usbmouse.h>
 #include <circle/usb/usbgamepadstandard.h>
 #include <circle/usb/usbgamepadps3.h>
@@ -91,7 +92,12 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
 		assert (pVendor != 0);
 
-		if (pVendor->Compare ("ven3f0-1198") != 0)	// HP USB 1000dpi Laser Mouse
+		if (   pVendor->Compare ("ven2dc8-5200") == 0
+		    || pVendor->Compare ("ven2dc8-5201") == 0)
+		{
+			pResult = new CUSBKeyboard8BitDoDevice (pParent);
+		}
+		else if (pVendor->Compare ("ven3f0-1198") != 0)	// HP USB 1000dpi Laser Mouse
 		{
 			pResult = new CUSBKeyboardDevice (pParent);
 		}
