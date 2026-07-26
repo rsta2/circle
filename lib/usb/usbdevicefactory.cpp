@@ -96,7 +96,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		assert (pVendor != 0);
 
 		if (   pVendor->Compare ("ven2dc8-5200") == 0
-		    || pVendor->Compare ("ven2dc8-5201") == 0)
+		    || pVendor->Compare ("ven2dc8-5201") == 0)  // 8bitDo Retro Keyboard
 		{
 			pResult = new CUSBKeyboard8BitDoDevice (pParent);
 		}
@@ -111,7 +111,16 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 #ifndef EXCLUDE_USB_MOUSE
 	else if (pName->Compare ("int3-1-2") == 0)
 	{
-		pResult = new CUSBMouseDevice (pParent);
+		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
+		assert (pVendor != 0);
+
+		if (   pVendor->Compare ("ven2dc8-5200") != 0
+		    && pVendor->Compare ("ven2dc8-5201") != 0) // 8bitDo Retro Keyboard
+		{
+			pResult = new CUSBMouseDevice (pParent);
+		}
+
+		delete pVendor;
 	}
 #endif
 	else if (   pName->Compare ("int3-0-0") == 0
