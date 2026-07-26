@@ -38,6 +38,7 @@
 #include <circle/usb/usbgamepad8bitdopro.h>
 #include <circle/usb/usbgamepad8bitdoxinput.h>
 #include <circle/usb/usbgamepadxbox360.h>
+#include <circle/usb/usbgamepadxbox360pcwireless.h>
 #include <circle/usb/usbgamepadxboxone.h>
 #include <circle/usb/usbgamepadswitchpro.h>
 #include <circle/usb/usbprinter.h>
@@ -149,6 +150,11 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		 || pName->Compare ("ven45e-28f") == 0)
 	{
 		pResult = new CUSBGamePadXbox360Device (pParent);
+	}
+	else if (pName->Compare ("ven45e-719") == 0 	// Xbox 360 PC Wireless Gaming Receiver
+		 || pName->Compare ("ven45e-2a9") == 0)  	// Xbox 360 PC Wireless Gaming Receiver (Clone device)
+	{
+		pResult = new CUSBGamePadXbox360PCWirelessDevice (pParent);
 	}
 	else if (   pName->Compare ("ven45e-2d1") == 0		// XBox One Controller
 		 || pName->Compare ("ven45e-2dd") == 0		// XBox One Controller (FW 2015)
