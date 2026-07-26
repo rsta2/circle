@@ -35,6 +35,8 @@
 #include <circle/usb/usbgamepadstandard.h>
 #include <circle/usb/usbgamepadps3.h>
 #include <circle/usb/usbgamepadps4.h>
+#include <circle/usb/usbgamepad8bitdopro.h>
+#include <circle/usb/usbgamepad8bitdoxinput.h>
 #include <circle/usb/usbgamepadxbox360.h>
 #include <circle/usb/usbgamepadxboxone.h>
 #include <circle/usb/usbgamepadswitchpro.h>
@@ -134,6 +136,14 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		 || pName->Compare ("ven54c-9cc") == 0)
 	{
 		pResult = new CUSBGamePadPS4Device (pParent);
+	}
+	else if (pName->Compare ("ven2dc8-310b") == 0) // 8BitDo Pro 3 Bluetooth Gamepad, 8BitDo Ultimate 2.4G Controller, etc
+	{
+		pResult = new CUSBGamePad8BitDoProDevice(pParent);
+	}
+	else if (pName->Compare ("ven2dc8-3106") == 0) // 8BitDo Ultimate C 2.4G, 8BitDo USB Wireless Adapter 2, etc
+	{
+		pResult = new CUSBGamePad8BitDoXInputDevice (pParent);
 	}
 	else if (   pName->Compare ("ven45e-28e") == 0
 		 || pName->Compare ("ven45e-28f") == 0)
