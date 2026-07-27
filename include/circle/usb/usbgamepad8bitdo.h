@@ -42,9 +42,6 @@ protected:
 	void ReportHandler (const u8 *pReport, unsigned nReportSize);
 
 	void DecodeReport (const u8 *pReportBuffer);
-
-private:
-	boolean m_bInputSeen;
 };
 
 #endif

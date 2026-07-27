@@ -56,7 +56,6 @@ PACKED;
 CUSBGamePad8bitdoDevice::CUSBGamePad8bitdoDevice (CUSBFunction *pFunction)
 : CUSBGamePadDevice (pFunction)
 {
-	m_bInputSeen = FALSE;
 }
 
 CUSBGamePad8bitdoDevice::~CUSBGamePad8bitdoDevice (void)
