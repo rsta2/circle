@@ -8,6 +8,17 @@ Circle is a C++ bare metal programming environment for the Raspberry Pi. It shou
 
 Circle includes bigger (optional) third-party C-libraries for specific purposes in addon/ now. This is the reason why GitHub rates the project as a C-language-project. The main Circle libraries are written in C++ using classes instead. That's why it is called a C++ programming environment.
 
+Disclaimer
+----------
+
+Circle is a free open-source project created by makers for makers. Because it targets bare-metal systems and is developed without formal QA or access to every hardware variant, it may not work as expected in all environments.
+
+- **No warranty:** Circle is provided "as is" without any express or implied warranties, including merchantability, fitness for a particular purpose, or noninfringement.
+- **Limited testing:** Contributors and maintainers test to the best of their ability but do not operate a dedicated testing department and cannot validate Circle on every device, bootloader version, or model revision.
+- **User responsibility:** If you integrate Circle into a project - especially a commercial product - you are responsible for thoroughly testing the software in your target environment and for any consequences of its use.
+- **Source-only distribution:** We publish Circle only as source code; no official binary releases are provided.
+- **Risk acknowledgement:** By using Circle you acknowledge the residual risks associated with bare-metal development and accept responsibility for verifying suitability and safety for your use case.
+
 The 51st Step
 -------------
 
