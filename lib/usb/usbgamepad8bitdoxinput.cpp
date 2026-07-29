@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/usbgamepad8bitdoxinput.h>
+#include <circle/usb/usbdevice.h>
 
 static const char FromUSBPad8BitDoXInput[] = "usbpad8bitdoxinput";
 
@@ -44,12 +45,25 @@ boolean CUSBGamePad8BitDoXInputDevice::Configure (void)
 		return FALSE;
 	}
 
+	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
+	assert (pDeviceDesc != 0);
+	if (pDeviceDesc->bcdDevice == 0x0100)
+	{
+		// Receiver firmware 1.00 is a bootstrap personality. After this init
+		// command it disconnects and re-enumerates as the idle 3107 receiver,
+		// or as runtime 3106 once a controller connects. Do not start interrupt
+		// polling or issue the runtime status request before that transition.
+		CLogger::Get ()->Write (FromUSBPad8BitDoXInput, LogDebug,
+						"Waiting for receiver re-enumeration");
+		return FALSE;
+	}
+
 	if (!StartRequest()) {
 	    return FALSE;
 	}
 
 	DMA_BUFFER(u8, Response, 20);
-	int result = GetHost()->ControlMessage(
+	GetHost()->ControlMessage(
 		GetEndpoint0(),
 		REQUEST_IN | REQUEST_VENDOR | REQUEST_TO_INTERFACE,
 		0x01, 0x0100, GetInterfaceNumber(), Response, 20);

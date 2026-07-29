@@ -155,6 +155,12 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBGamePad8BitDoXInputDevice (pParent);
 	}
+	else if (	pName->Compare ("ven2dc8-3107") == 0
+		 || pName->Compare ("ven2dc8-3109") == 0
+		 || pName->Compare ("ven2dc8-3016") == 0)	// 8BitDo idle receiver
+	{
+		pResult = new CUSBFunction (pParent);
+	}
 	else if (   pName->Compare ("ven45e-28e") == 0
 		 || pName->Compare ("ven45e-28f") == 0)
 	{
