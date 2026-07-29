@@ -56,11 +56,9 @@ void CUSBKeyboard8BitDoDevice::ReportHandler (const u8 *pReport, unsigned nRepor
 
 		for (unsigned nUsage = 0x04; nUsage <= 0x77 && nSlots < 6; nUsage++)
 		{
-			// The physical up-arrow can be reported as keypad up (0x60), so map it
-			// to the normal up-arrow usage (0x52).
 			if (pReport[2 + nUsage / 8] & (1U << (nUsage % 8)))
 			{
-				Report[2 + nSlots++] = nUsage == 0x60 ? 0x52 : nUsage;
+				Report[2 + nSlots++] = nUsage;
 			}
 		}
 
