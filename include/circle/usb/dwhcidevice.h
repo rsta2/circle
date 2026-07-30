@@ -55,13 +55,13 @@ public:
 
 	void CancelDeviceTransactions (CUSBDevice *pUSBDevice);
 
-	boolean UpdatePlugAndPlay (void) override;   // NEW: override to drive cold-boot recovery
+	boolean UpdatePlugAndPlay (void) override;	// override to drive cold-boot recovery
 
-    void ResetRecoveryState (void)                // NEW: called on genuine unplug
-    {
-        m_nRecoveryAttempts = 0;
-        m_bRecoveryGiveUp   = FALSE;
-    }
+	void ResetRecoveryState (void)			// called on genuine unplug
+	{
+		m_nRecoveryAttempts = 0;
+		m_bRecoveryGiveUp   = FALSE;
+	}
 
 private:
 	boolean DeviceConnected (void);
@@ -70,11 +70,11 @@ private:
 	void DisableRootPort (boolean bPowerOff = TRUE);
 	friend class CDWHCIRootPort;
 
-	unsigned m_nRecoveryAttempts;      // 現在までの再試行回数
-    unsigned m_nRecoveryRetryAtTicks;  // 次回再試行が許可される時刻 (CTimer ticks)
-    boolean  m_bRecoveryGiveUp;        // 上限到達フラグ
+	unsigned m_nRecoveryAttempts;		// number of retries so far
+	unsigned m_nRecoveryRetryAtTicks;	// tick count (HZ units) at which the next retry is allowed
+	boolean  m_bRecoveryGiveUp;		// set once the retry limit has been reached
 
-    void BeginRecoveryBackoff (void);
+	void BeginRecoveryBackoff (void);
 	void AbortActiveChannels (void);
 
 private:
