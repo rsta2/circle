@@ -20,9 +20,9 @@
 #include <circle/usb/usbgamepad8bitdo.h>
 #include <circle/logger.h>
 #include <circle/macros.h>
+#include <circle/util.h>
 #include <circle/debug.h>
 #include <assert.h>
-#include <string.h>
 
 static const char FromUSBPad8BitDo[] = "usbpad8bitdo";
 
