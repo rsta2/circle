@@ -30,11 +30,15 @@
 #include <circle/usb/usbmassdevice.h>
 #include <circle/usb/usbfloppydevice.h>
 #include <circle/usb/usbkeyboard.h>
+#include <circle/usb/usbkeyboard8bitdo.h>
 #include <circle/usb/usbmouse.h>
 #include <circle/usb/usbgamepadstandard.h>
 #include <circle/usb/usbgamepadps3.h>
 #include <circle/usb/usbgamepadps4.h>
+#include <circle/usb/usbgamepad8bitdopro.h>
+#include <circle/usb/usbgamepad8bitdoxinput.h>
 #include <circle/usb/usbgamepadxbox360.h>
+#include <circle/usb/usbgamepadxbox360pcwireless.h>
 #include <circle/usb/usbgamepadxboxone.h>
 #include <circle/usb/usbgamepadswitchpro.h>
 #include <circle/usb/usbprinter.h>
@@ -91,7 +95,12 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
 		assert (pVendor != 0);
 
-		if (pVendor->Compare ("ven3f0-1198") != 0)	// HP USB 1000dpi Laser Mouse
+		if (   pVendor->Compare ("ven2dc8-5200") == 0
+		    || pVendor->Compare ("ven2dc8-5201") == 0)  // 8bitDo Retro Keyboard
+		{
+			pResult = new CUSBKeyboard8BitDoDevice (pParent);
+		}
+		else if (pVendor->Compare ("ven3f0-1198") != 0)	// HP USB 1000dpi Laser Mouse
 		{
 			pResult = new CUSBKeyboardDevice (pParent);
 		}
@@ -102,7 +111,16 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 #ifndef EXCLUDE_USB_MOUSE
 	else if (pName->Compare ("int3-1-2") == 0)
 	{
-		pResult = new CUSBMouseDevice (pParent);
+		CString *pVendor = pParent->GetDevice ()->GetName (DeviceNameVendor);
+		assert (pVendor != 0);
+
+		if (   pVendor->Compare ("ven2dc8-5200") != 0
+		    && pVendor->Compare ("ven2dc8-5201") != 0) // 8bitDo Retro Keyboard
+		{
+			pResult = new CUSBMouseDevice (pParent);
+		}
+
+		delete pVendor;
 	}
 #endif
 	else if (   pName->Compare ("int3-0-0") == 0
@@ -129,10 +147,29 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	{
 		pResult = new CUSBGamePadPS4Device (pParent);
 	}
+	else if (pName->Compare ("ven2dc8-310b") == 0) // 8BitDo Pro 3 Bluetooth Gamepad, 8BitDo Ultimate 2.4G Controller, etc
+	{
+		pResult = new CUSBGamePad8BitDoProDevice(pParent);
+	}
+	else if (pName->Compare ("ven2dc8-3106") == 0) // 8BitDo Ultimate C 2.4G, 8BitDo USB Wireless Adapter 2, etc
+	{
+		pResult = new CUSBGamePad8BitDoXInputDevice (pParent);
+	}
+	else if (	pName->Compare ("ven2dc8-3107") == 0
+		 || pName->Compare ("ven2dc8-3109") == 0
+		 || pName->Compare ("ven2dc8-3016") == 0)	// 8BitDo idle receiver
+	{
+		pResult = new CUSBFunction (pParent);
+	}
 	else if (   pName->Compare ("ven45e-28e") == 0
 		 || pName->Compare ("ven45e-28f") == 0)
 	{
 		pResult = new CUSBGamePadXbox360Device (pParent);
+	}
+	else if (pName->Compare ("ven45e-719") == 0 	// Xbox 360 PC Wireless Gaming Receiver
+		 || pName->Compare ("ven45e-2a9") == 0)  	// Xbox 360 PC Wireless Gaming Receiver (Clone device)
+	{
+		pResult = new CUSBGamePadXbox360PCWirelessDevice (pParent);
 	}
 	else if (   pName->Compare ("ven45e-2d1") == 0		// XBox One Controller
 		 || pName->Compare ("ven45e-2dd") == 0		// XBox One Controller (FW 2015)
