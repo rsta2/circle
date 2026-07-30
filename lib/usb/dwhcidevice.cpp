@@ -47,9 +47,9 @@
 	#define MAX_TARGET_LEVEL	IRQ_LEVEL
 #endif
 
-#define USB_BOOT_RECOVERY_MAX_ATTEMPTS   3     // 最大再試行回数
-#define USB_BOOT_RECOVERY_BACKOFF_MS     200   // 基本バックオフ (attempt数に比例して延長)
-// コンストラクタ初期化リストに追加
+#define USB_BOOT_RECOVERY_MAX_ATTEMPTS   3     // maximum number of retries
+#define USB_BOOT_RECOVERY_BACKOFF_MS     200   // base backoff, scaled by attempt count
+// Added to the constructor initializer list:
 // m_nRecoveryAttempts (0),
 // m_nRecoveryRetryAtTicks (0),
 // m_bRecoveryGiveUp (FALSE),
@@ -215,85 +215,85 @@ boolean CDWHCIDevice::Initialize (boolean bScanDevices)
 
 void CDWHCIDevice::ReScanDevices (void)
 {
-    PeripheralEntry ();
+	PeripheralEntry ();
 
-    if (!m_bRootPortEnabled)
-    {
-        if (EnableRootPort ())
-        {
-            m_bRootPortEnabled = TRUE;
+	if (!m_bRootPortEnabled)
+	{
+		if (EnableRootPort ())
+		{
+			m_bRootPortEnabled = TRUE;
 
-            if (m_RootPort.Initialize ())
-            {
-                if (m_nRecoveryAttempts > 0)
-                {
-                    LOGNOTE ("USB boot recovery succeeded (attempt %u)",
-                             m_nRecoveryAttempts + 1);
-                }
-                m_nRecoveryAttempts = 0;
-                m_bRecoveryGiveUp   = FALSE;
-            }
-            else
-            {
-                LOGWARN ("Device enumeration failed (attempt %u)",
-                         m_nRecoveryAttempts + 1);
+			if (m_RootPort.Initialize ())
+			{
+				if (m_nRecoveryAttempts > 0)
+				{
+					LOGNOTE ("USB boot recovery succeeded (attempt %u)",
+						 m_nRecoveryAttempts + 1);
+				}
+				m_nRecoveryAttempts = 0;
+				m_bRecoveryGiveUp   = FALSE;
+			}
+			else
+			{
+				LOGWARN ("Device enumeration failed (attempt %u)",
+					 m_nRecoveryAttempts + 1);
 
-                DisableRootPort (FALSE);
-                BeginRecoveryBackoff ();
-            }
-        }
-        else
-        {
-            LOGWARN ("No device connected to root port (attempt %u)",
-                     m_nRecoveryAttempts + 1);
+				DisableRootPort (FALSE);
+				BeginRecoveryBackoff ();
+			}
+		}
+		else
+		{
+			LOGWARN ("No device connected to root port (attempt %u)",
+				 m_nRecoveryAttempts + 1);
 
-            BeginRecoveryBackoff ();          // NEW: こちらの失敗経路にもバックオフを適用
-        }
-    }
-    else
-    {
-        m_RootPort.ReScanDevices ();
-    }
+			BeginRecoveryBackoff ();		// also back off on this failure path
+		}
+	}
+	else
+	{
+		m_RootPort.ReScanDevices ();
+	}
 
-    PeripheralExit ();
+	PeripheralExit ();
 }
 
 void CDWHCIDevice::BeginRecoveryBackoff (void)
 {
-    m_nRecoveryAttempts++;
+	m_nRecoveryAttempts++;
 
-    if (m_nRecoveryAttempts >= USB_BOOT_RECOVERY_MAX_ATTEMPTS)
-    {
-        LOGERR ("USB boot recovery gave up after %u attempts", m_nRecoveryAttempts);
-        m_bRecoveryGiveUp = TRUE;
-        return;
-    }
+	if (m_nRecoveryAttempts >= USB_BOOT_RECOVERY_MAX_ATTEMPTS)
+	{
+		LOGERR ("USB boot recovery gave up after %u attempts", m_nRecoveryAttempts);
+		m_bRecoveryGiveUp = TRUE;
+		return;
+	}
 
-    unsigned nBackoffMs = USB_BOOT_RECOVERY_BACKOFF_MS * m_nRecoveryAttempts;
-    m_nRecoveryRetryAtTicks = m_pTimer->GetClockTicks () + MSEC2HZ (nBackoffMs);
+	unsigned nBackoffMs = USB_BOOT_RECOVERY_BACKOFF_MS * m_nRecoveryAttempts;
+	m_nRecoveryRetryAtTicks = m_pTimer->GetTicks () + MSEC2HZ (nBackoffMs);
 
-    LOGNOTE ("USB boot recovery: retry %u/%u scheduled in %u ms",
-             m_nRecoveryAttempts, USB_BOOT_RECOVERY_MAX_ATTEMPTS, nBackoffMs);
+	LOGNOTE ("USB boot recovery: retry %u/%u scheduled in %u ms",
+		 m_nRecoveryAttempts, USB_BOOT_RECOVERY_MAX_ATTEMPTS, nBackoffMs);
 }
 
-// NEW: TASK_LEVELで保証されて呼ばれるフックに便乗する
+// Piggy-backs on this hook, which is guaranteed to be called at TASK_LEVEL
 boolean CDWHCIDevice::UpdatePlugAndPlay (void)
 {
-    boolean bResult = CUSBHostController::UpdatePlugAndPlay ();  // 既存のHot Plug処理は無変更
+	boolean bResult = CUSBHostController::UpdatePlugAndPlay ();	// existing hot-plug handling is unchanged
 
-    if (   !m_bRootPortEnabled
-        && !m_bRecoveryGiveUp
-        && m_nRecoveryAttempts > 0)
-    {
-        unsigned nNow = m_pTimer->GetClockTicks ();
-        if ((int) (nNow - m_nRecoveryRetryAtTicks) >= 0)
-        {
-            ReScanDevices ();
-            bResult = TRUE;
-        }
-    }
+	if (   !m_bRootPortEnabled
+	    && !m_bRecoveryGiveUp
+	    && m_nRecoveryAttempts > 0)
+	{
+		unsigned nNow = m_pTimer->GetTicks ();
+		if ((int) (nNow - m_nRecoveryRetryAtTicks) >= 0)
+		{
+			ReScanDevices ();
+			bResult = TRUE;
+		}
+	}
 
-    return bResult;
+	return bResult;
 }
 
 boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
