@@ -508,7 +508,7 @@ void CDWUSBGadget::HandleUSBSuspend (void)
 #endif
 
 	// Trace: always log suspend with current state (diagnosis for issue #591)
-	LOGNOTE ("USB suspend (state %u)", (unsigned) m_State);
+	LOGTRACE ("USB suspend (state %u)", (unsigned) m_State);
 
 	if (   m_State != StatePowered
 	    && m_State != StateSuspended)
@@ -543,7 +543,7 @@ void CDWUSBGadget::HandleUSBReset (void)
 #endif
 
 	// Trace: always log bus reset with current state (diagnosis for issue #591)
-	LOGNOTE ("USB reset (state %u)", (unsigned) m_State);
+	LOGTRACE ("USB reset (state %u)", (unsigned) m_State);
 
 	switch (m_State)
 	{
@@ -648,7 +648,7 @@ void CDWUSBGadget::HandleEnumerationDone (void)
 	// hosts that bounce between High-Speed and Full-Speed (issue #591)
 	{
 		TDeviceSpeed Speed = GetNegotiatedUSBSpeed ();
-		LOGNOTE ("Enumeration done at %s (state %u)",
+		LOGTRACE ("Enumeration done at %s (state %u)",
 			   Speed == FullSpeed ? "Full-Speed"
 			 : Speed == HighSpeed ? "High-Speed" : "Unknown",
 			 (unsigned) m_State);

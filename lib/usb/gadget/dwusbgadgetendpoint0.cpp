@@ -65,7 +65,7 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 	memcpy (&m_SetupData, pSetupData, sizeof m_SetupData);
 
 	// Trace: always log every SETUP request (diagnosis for issue #591)
-	CLogger::Get ()->Write (FromEP0, LogNotice,
+	CLogger::Get ()->Write (FromEP0, LogTrace,
 				"SETUP bmRequestType 0x%02X bRequest 0x%02X wValue 0x%04X wLength %u",
 				(unsigned) pSetupData->bmRequestType,
 				(unsigned) pSetupData->bRequest,
