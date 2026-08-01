@@ -2,7 +2,7 @@
 // dwhcidevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,10 +49,6 @@
 
 #define USB_BOOT_RECOVERY_MAX_ATTEMPTS   3     // maximum number of retries
 #define USB_BOOT_RECOVERY_BACKOFF_MS     200   // base backoff, scaled by attempt count
-// Added to the constructor initializer list:
-// m_nRecoveryAttempts (0),
-// m_nRecoveryRetryAtTicks (0),
-// m_bRecoveryGiveUp (FALSE),
 
 enum TStageState
 {
@@ -79,9 +75,6 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, 
 	m_nChannels (0),
 	m_nChannelAllocated (0),
 	m_ChannelSpinLock (MAX_TARGET_LEVEL),
-	m_nRecoveryAttempts (0),
-	m_nRecoveryRetryAtTicks (0),
-	m_bRecoveryGiveUp (FALSE),
 #ifdef USE_USB_SOF_INTR
 	m_TransactionQueue (DWHCI_MAX_CHANNELS, MAX_TARGET_LEVEL),
 #endif
@@ -90,6 +83,9 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, 
 	m_WaitBlockSpinLock (TASK_LEVEL),
 	m_RootPort (this),
 	m_bRootPortEnabled (FALSE),
+	m_nRecoveryAttempts (0),
+	m_nRecoveryRetryAtTicks (0),
+	m_bRecoveryGiveUp (FALSE),
 #ifdef USE_USB_FIQ
 	m_nPortStatusChanged (0),
 	m_CompletionQueue (DWHCI_MAX_CHANNELS*2),
@@ -227,16 +223,16 @@ void CDWHCIDevice::ReScanDevices (void)
 			{
 				if (m_nRecoveryAttempts > 0)
 				{
-					LOGNOTE ("USB boot recovery succeeded (attempt %u)",
-						 m_nRecoveryAttempts + 1);
+					LOGTRACE ("USB boot recovery succeeded (attempt %u)",
+						  m_nRecoveryAttempts + 1);
 				}
 				m_nRecoveryAttempts = 0;
 				m_bRecoveryGiveUp   = FALSE;
 			}
 			else
 			{
-				LOGWARN ("Device enumeration failed (attempt %u)",
-					 m_nRecoveryAttempts + 1);
+				LOGTRACE ("Device enumeration failed (attempt %u)",
+					  m_nRecoveryAttempts + 1);
 
 				DisableRootPort (FALSE);
 				BeginRecoveryBackoff ();
@@ -244,8 +240,8 @@ void CDWHCIDevice::ReScanDevices (void)
 		}
 		else
 		{
-			LOGWARN ("No device connected to root port (attempt %u)",
-				 m_nRecoveryAttempts + 1);
+			LOGTRACE ("No device connected to root port (attempt %u)",
+				  m_nRecoveryAttempts + 1);
 
 			BeginRecoveryBackoff ();		// also back off on this failure path
 		}
@@ -264,7 +260,7 @@ void CDWHCIDevice::BeginRecoveryBackoff (void)
 
 	if (m_nRecoveryAttempts >= USB_BOOT_RECOVERY_MAX_ATTEMPTS)
 	{
-		LOGERR ("USB boot recovery gave up after %u attempts", m_nRecoveryAttempts);
+		LOGWARN ("No device connected to root port (%u attempts)", m_nRecoveryAttempts);
 		m_bRecoveryGiveUp = TRUE;
 		return;
 	}
@@ -272,8 +268,8 @@ void CDWHCIDevice::BeginRecoveryBackoff (void)
 	unsigned nBackoffMs = USB_BOOT_RECOVERY_BACKOFF_MS * m_nRecoveryAttempts;
 	m_nRecoveryRetryAtTicks = m_pTimer->GetTicks () + MSEC2HZ (nBackoffMs);
 
-	LOGNOTE ("USB boot recovery: retry %u/%u scheduled in %u ms",
-		 m_nRecoveryAttempts, USB_BOOT_RECOVERY_MAX_ATTEMPTS, nBackoffMs);
+	LOGTRACE ("USB boot recovery: retry %u/%u scheduled in %u ms",
+		  m_nRecoveryAttempts, USB_BOOT_RECOVERY_MAX_ATTEMPTS, nBackoffMs);
 }
 
 // Piggy-backs on this hook, which is guaranteed to be called at TASK_LEVEL
