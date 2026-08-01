@@ -2,7 +2,7 @@
 // dwhcidevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,6 +53,8 @@ public:
 	boolean SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 	boolean SubmitAsyncRequest (CUSBRequest *pURB, unsigned nTimeoutMs = USB_TIMEOUT_NONE);
 
+	boolean UpdatePlugAndPlay (void);		// override to drive cold-boot recovery
+
 	void CancelDeviceTransactions (CUSBDevice *pUSBDevice);
 
 private:
@@ -61,6 +63,15 @@ private:
 	boolean OvercurrentDetected (void);
 	void DisableRootPort (boolean bPowerOff = TRUE);
 	friend class CDWHCIRootPort;
+
+	void BeginRecoveryBackoff (void);
+	void AbortActiveChannels (void);
+
+	void ResetRecoveryState (void)			// called on genuine unplug
+	{
+		m_nRecoveryAttempts = 0;
+		m_bRecoveryGiveUp   = FALSE;
+	}
 
 private:
 	boolean InitCore (void);
@@ -152,6 +163,10 @@ private:
 
 	CDWHCIRootPort m_RootPort;
 	volatile boolean m_bRootPortEnabled;
+
+	unsigned m_nRecoveryAttempts;		// number of retries so far
+	unsigned m_nRecoveryRetryAtTicks;	// tick count (HZ units) at which the next retry is allowed
+	boolean  m_bRecoveryGiveUp;		// set once the retry limit has been reached
 
 #ifdef USE_USB_FIQ
 	volatile int m_nPortStatusChanged;
