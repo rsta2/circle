@@ -14,7 +14,8 @@ logdev=ttyS1			Set device used for log messages
 
 loglevel=4			Control amount of generated log messages
 				(0: only panic, 1: also errors, 2: also warnings,
-				 3: also notices, 4: also debug output (default))
+				 3: also notices, 4: also debug output (default),
+				 5: also trace messages)
 
 keymap=UK			Select keyboard mapping ("DE", "DV" (Dvorak), "ES", "FR", "IT",
 				"UK" or "US")

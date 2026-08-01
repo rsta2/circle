@@ -139,7 +139,10 @@ void CLogger::WriteV (const char *pSource, TLogSeverity Severity, const char *pM
 	CString Message;
 	Message.FormatV (pMessage, Args);
 
-	WriteEvent (pSource, Severity, Message);
+	if (Severity < LogTrace)
+	{
+		WriteEvent (pSource, Severity, Message);
+	}
 
 	if (Severity > m_nLogLevel)
 	{

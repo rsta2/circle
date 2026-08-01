@@ -93,7 +93,7 @@ CKernelOptions::CKernelOptions (void)
 		{
 			unsigned nValue;
 			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
-			    && nValue <= LogDebug)
+			    && nValue <= LogTrace)
 			{
 				m_nLogLevel = nValue;
 			}
