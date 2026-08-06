@@ -1230,12 +1230,6 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 					m_bFINQueued = FALSE;
 				}
 
-				if (   m_State == TCPStateEstablished
-				    && nBytesAck == 1)
-				{
-					nBytesAck--;
-				}
-				
 				if (nBytesAck > 0)
 				{
 					m_TxQueue.Flush (nBytesAck);
@@ -1299,7 +1293,19 @@ int CTCPConnection::PacketReceived (CNetBuffer	*pPacket,
 			}
 			else if (le (nSEG_ACK, m_nSND_UNA))	// RFC 1122 section 4.2.2.20 (g)
 			{
-				OnDuplicateAck ();
+				// RFC 5681: a duplicate ACK is a pure ACK for SND.UNA,
+				// with an unchanged advertised window and data outstanding.
+				if (   nSEG_ACK == m_nSND_UNA
+				    && FLIGHT_SIZE > 0
+				    && nSEG_LEN == 0
+				    && nSEG_WND == m_nSND_WND)
+				{
+					OnDuplicateAck ();
+				}
+				else
+				{
+					m_nDupAckCount = 0;
+				}
 				
 				// RFC 1122 section 4.2.2.20 (g)
 				if (bwlh (m_nSND_UNA, nSEG_ACK, m_nSND_NXT))
