@@ -61,8 +61,12 @@ boolean CUSBKeyboardDevice::Configure (void)
 	// which has to be ignored.
 	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
 	assert (pDeviceDesc != 0);
+	const TUSBHIDDescriptor *pHIDDesc =
+		(const TUSBHIDDescriptor *) GetDescriptor (DESCRIPTOR_HID);
 	if (   pDeviceDesc->idVendor == 0x1C59
-	    && pDeviceDesc->idProduct == 0x99)
+	    && pDeviceDesc->idProduct == 0x99
+	    && pHIDDesc != 0
+	    && pHIDDesc->wReportDescriptorLength == 78)
 	{
 		m_nReportSize++;
 	}
