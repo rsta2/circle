@@ -16,7 +16,7 @@ options STDLIB_SUPPORT=2, STDLIB_SUPPORT=3 and STDLIB_SUPPORT=4. This is mainly
 realized by the following project (newlib and libc++ ports for Circle) by
 Stephan Muehlstrasser:
 
-	https://codeberg.org/larchcone/circle-stdlib
+	https://github.com/smuehlst/circle-stdlib
 
 Circle is included as a Git sub-module into this project, which provides a configure
 script and makefiles to build all required libraries (including the
