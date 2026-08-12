@@ -307,7 +307,8 @@ void CScheduler::RemoveTask (CTask *pTask)
 	assert (0);
 }
 
-boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
+boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds,
+				const volatile boolean *pState)
 {
 	assert (ppWaitListHead != 0);
 	assert (m_pCurrent->m_pWaitListNext == 0);
@@ -315,6 +316,28 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 	assert (m_pCurrent->GetState () == TaskStateReady);
 
 	m_SpinLock.Acquire ();
+
+	// aarch64pi note (2026-08-12): the real fix - re-check *pState here,
+	// inside the same critical section WakeTasks()/Set() use to walk
+	// and update the wait list, instead of only in the caller
+	// (CSynchronizationEvent::Wait/WaitWithTimeout) *before* acquiring
+	// this lock. That outer check was the actual race: Set() could run
+	// between it and this function's registration below, see *this*
+	// wait list as still empty (nothing to wake), and never fire again
+	// (Set() only calls WakeTasks() once, guarded by its own
+	// if (!m_bState) - once true, a second Set() is a no-op) - while
+	// this task, having already decided to block based on the stale
+	// pre-lock check, still goes ahead and blocks anyway right after,
+	// with nothing left that will ever wake it. Returning
+	// nMicroSeconds == 0 here matches WaitWithTimeout()'s existing
+	// already-true fast path exactly (see synchronizationevent.cpp) -
+	// this is that same fast path, just moved to where it's actually
+	// race-free.
+	if (pState != 0 && *pState)
+	{
+		m_SpinLock.Release ();
+		return nMicroSeconds == 0;
+	}
 
 	// Add current task to waiting task list
 	m_pCurrent->m_pWaitListNext = *ppWaitListHead;
