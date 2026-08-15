@@ -10,7 +10,7 @@ This release offers a significantly improved implementation of the TCP/IP networ
 
 The socket API is nearly unchanged, but the new `MSG_MORE` flag can be specified, when calling `CSocket::Send()` on TCP sockets, which prevents the immediate delivery of received data on the receiver side, when more data follows. `CSocket::Bind()` can be called with port 0 to bind to an ephemeral port, which can be requested using `CSocket::GetOwnPort()`. `CSocket::SendTo()` without preceding `Bind()` or `Connect()` is allowed too, which automatically assigns an ephemeral port.
 
-Circle supports the extended C++ standard library support (LLVM libc++ port) in the [circle-stdlib](https://codeberg.org/larchcone/circle-stdlib) project in several ways (e.g. with the new `STDLIB_SUPPORT=4` level).
+Circle supports the extended C++ standard library support (LLVM libc++ port) in the [circle-stdlib](https://github.com/smuehlst/circle-stdlib) project in several ways (e.g. with the new `STDLIB_SUPPORT=4` level).
 
 The recommended toolchain to build Circle applications is now based on GCC 15.2.Rel1. See the link in the Build section! Circle is built with `-std=c++17` by default now. There are options for selecting C++14 (previous default) and C++20 for the `configure` tool, beside the new `--kernel-max-size`, `--clang` and `--kasan` options. Enter `./configure --help` for more info!
 
