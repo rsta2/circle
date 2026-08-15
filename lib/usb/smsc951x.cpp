@@ -130,7 +130,8 @@ static const char FromSMSC951x[] = "smsc951x";
 CSMSC951xDevice::CSMSC951xDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_pEndpointBulkIn (0),
-	m_pEndpointBulkOut (0)
+	m_pEndpointBulkOut (0),
+	m_bLinkUp (FALSE)
 {
 }
 
@@ -274,6 +275,11 @@ boolean CSMSC951xDevice::SendFrame (const void *pBuffer, unsigned nLength)
 
 boolean CSMSC951xDevice::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 {
+	if (!m_bLinkUp)
+	{
+		return FALSE;
+	}
+
 	assert (m_pEndpointBulkIn != 0);
 	assert (pBuffer != 0);
 	CUSBRequest URB (m_pEndpointBulkIn, pBuffer, FRAME_BUFFER_SIZE);
@@ -318,13 +324,20 @@ boolean CSMSC951xDevice::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 
 boolean CSMSC951xDevice::IsLinkUp (void)
 {
+	return m_bLinkUp;
+}
+
+boolean CSMSC951xDevice::UpdatePHY (void)
+{
 	u16 usPHYModeStatus;
 	if (!PHYRead (0x01, &usPHYModeStatus))
 	{
-		return FALSE;
+		return TRUE;
 	}
 
-	return usPHYModeStatus & (1 << 2) ? TRUE : FALSE;
+	m_bLinkUp = usPHYModeStatus & (1 << 2) ? TRUE : FALSE;
+
+	return TRUE;
 }
 
 TNetDeviceSpeed CSMSC951xDevice::GetLinkSpeed (void)

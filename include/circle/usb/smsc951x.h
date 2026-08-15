@@ -44,6 +44,7 @@ public:
 	
 	// returns TRUE if PHY link is up
 	boolean IsLinkUp (void);
+	boolean UpdatePHY (void);
 
 	TNetDeviceSpeed GetLinkSpeed (void);
 
@@ -69,6 +70,7 @@ private:
 	CUSBEndpoint *m_pEndpointBulkOut;
 
 	CMACAddress m_MACAddress;
+	volatile boolean m_bLinkUp;
 };
 
 #endif
