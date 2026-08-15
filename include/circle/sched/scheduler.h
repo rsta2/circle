@@ -2,7 +2,7 @@
 /// \file scheduler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -111,17 +111,9 @@ private:
 	void AddTask (CTask *pTask);
 	friend class CTask;
 
-	// pState (optional, default null) closes a real lost-wakeup race -
-	// see the implementation in scheduler.cpp for the full story
-	// (confirmed via GDB on a real hang, ARM_ALLOW_MULTI_CORE: a worker
-	// CTask left permanently Blocked on an event whose state was already
-	// true, because another core's Set() call ran - and found the wait
-	// list still empty - in the gap between the caller's own state check
-	// and this function's wait-list registration below, which used to be
-	// unprotected by any lock). When pState is given, *pState is
-	// re-checked under the same m_SpinLock WakeTasks()/Set() use,
-	// atomically with the registration - if already true, this returns
-	// immediately instead of blocking at all.
+	// pState is an optional pointer to a synchronization event variable, which is
+	// atomically checked with the blocking operation. When is specified and is set,
+	// the method returns silently.
 	boolean BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds,
 			    const volatile boolean *pState = 0);
 	void WakeTasks (CTask **ppWaitListHead); // can be called from interrupt context

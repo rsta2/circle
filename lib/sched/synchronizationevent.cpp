@@ -2,7 +2,7 @@
 // synchronizationevent.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,28 +76,12 @@ void CSynchronizationEvent::Pulse (void)
 	CScheduler::Get ()->WakeTasks (&m_pWaitListHead);
 }
 
-
 void CSynchronizationEvent::Wait (void)
 {
-	// This used to check !m_bState here, then call BlockTask()
-	// unconditionally if it looked unset - two separate, unsynchronized
-	// steps. Set() (from another core, with ARM_ALLOW_MULTI_CORE) could
-	// run in the gap between them: it would see the wait list still
-	// empty (this task hasn't registered on it yet), wake nobody, and
-	// latch its own "already fired" guard so a *later* Set() call
-	// becomes a no-op - while this task, having already decided to
-	// block based on the now-stale check, goes ahead and blocks anyway
-	// right after, with nothing left that will ever wake it.
-	//
-	// BlockTask() now takes the state pointer directly and re-checks it
-	// itself under the same lock used to walk/update the wait list -
-	// the check and the registration are one atomic operation there, so
-	// there is nothing left to check out here.
 	CScheduler::Get ()->BlockTask (&m_pWaitListHead, 0, &m_bState);
 }
 
 boolean CSynchronizationEvent::WaitWithTimeout (unsigned nMicroSeconds)
 {
-	// See the comment in Wait() above - same fix, same reasoning.
 	return CScheduler::Get ()->BlockTask (&m_pWaitListHead, nMicroSeconds, &m_bState);
 }
