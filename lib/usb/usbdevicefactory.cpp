@@ -303,8 +303,10 @@ CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 		return 0;
 	}
 
-	// If we find a Usage Page (Digitizer) item anywhere in the HID report descriptor,
-	// then use the touch screen driver, otherwise the gamepad standard driver.
+	// If we find a Usage Page (Digitizer) item, use the touch screen driver.
+	// Same idea for a Usage Page (Generic Desktop) + Usage (Mouse) pair: try
+	// CUSBMouseDevice before falling back to the gamepad driver.
+	boolean bSawGenericDesktopPage = FALSE;
 	const u8 *pDesc = ReportDescriptor;
 	for (u16 nDescSize = usReportDescriptorLength; nDescSize;)
 	{
@@ -346,6 +348,19 @@ CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 		{
 			return new CUSBTouchScreenDevice (pParent);
 		}
+
+#ifndef EXCLUDE_USB_MOUSE
+		if (ucItem == 0x04)		// Usage Page
+		{
+			bSawGenericDesktopPage = (nArg == 0x01);	// Generic Desktop
+		}
+		else if (   ucItem == 0x08	// Usage
+			 && nArg == 0x02	// Mouse
+			 && bSawGenericDesktopPage)
+		{
+			return new CUSBMouseDevice (pParent);
+		}
+#endif
 	}
 #endif
 
