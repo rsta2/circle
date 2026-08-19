@@ -265,6 +265,7 @@ LDFLAGS	+= --no-warn-rwx-segments
 endif
 else
 LDFLAGS	+= -Wl,--section-start=.init=$(LOADADDR)
+LDFLAGS	+= -Wl,--no-warn-rwx-segments -Wl,--no-warn-execstack
 endif
 
 ifeq ($(strip $(CHECK_DEPS)),1)
