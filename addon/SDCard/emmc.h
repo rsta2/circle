@@ -65,6 +65,14 @@ public:
 	static const TDeviceSelector DefaultDevice = EmbeddedMMC;
 #endif
 
+	/// \brief Select the device to be used on the current machine
+	/// \return EmbeddedMMC on Compute Modules with on-board eMMC memory,
+	///	    which are detected at run-time (currently the CM5), otherwise
+	///	    DefaultDevice
+	/// \note This allows to use the same kernel image on a Raspberry Pi with
+	///	  SD card and on a Compute Module with on-board eMMC memory.
+	static TDeviceSelector GetDefaultDeviceForMachine (void);
+
 public:
 	CEMMCDevice (CInterruptSystem	*pInterruptSystem,
 		     CTimer		*pTimer,
@@ -107,6 +115,15 @@ private:
 
 	int CardReset (void);
 	int CardInit (void);
+
+#ifndef USE_SDHOST
+	// eMMC (MMC) specific helpers, used when m_Device == EmbeddedMMC
+	int MMCWaitReady (unsigned nTimeoutMs);
+	int MMCSwitch (u32 nIndex, u32 nValue);
+	int MMCReadExtCSD (u8 *pExtCSD);
+	int MMCSetBusWidth (unsigned nWidth);
+	void MMCSetupCapacity (const u8 *pExtCSD);
+#endif
 
 	int EnsureDataMode (void);
 	int DoDataCommand (int is_write, u8 *buf, size_t buf_size, u32 block_no);

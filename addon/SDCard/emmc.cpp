@@ -36,6 +36,7 @@
 #include "emmc.h"
 #include <circle/devicenameservice.h>
 #include <circle/util.h>
+#include <circle/macros.h>
 #include <circle/stdarg.h>
 #include <assert.h>
 #ifndef USE_SDHOST
@@ -340,12 +341,12 @@ const u32 CEMMCDevice::emmc_commands[] =
 	SD_CMD_INDEX(0),
 	SD_CMD_INDEX(1) | SD_RESP_R3,
 	SD_CMD_INDEX(2) | SD_RESP_R2,
-	SD_CMD_INDEX(3) | SD_RESP_R6,
+	SD_CMD_INDEX(3) | SD_RESP_R1,		// SET_RELATIVE_ADDR returns R1 on MMC
 	SD_CMD_INDEX(4),
 	SD_CMD_INDEX(5) | SD_RESP_R4,
-	SD_CMD_INDEX(6) | SD_RESP_R1,
+	SD_CMD_INDEX(6) | SD_RESP_R1b,		// SWITCH returns R1b on MMC
 	SD_CMD_INDEX(7) | SD_RESP_R1b,
-	SD_CMD_INDEX(8) | SD_RESP_R7,
+	SD_CMD_INDEX(8) | SD_RESP_R1 | SD_DATA_READ,	// SEND_EXT_CSD on MMC
 	SD_CMD_INDEX(9) | SD_RESP_R2,
 	SD_CMD_INDEX(10) | SD_RESP_R2,
 	SD_CMD_INDEX(11) | SD_RESP_R1,
@@ -518,6 +519,53 @@ const u32 CEMMCDevice::sd_acommands[] =
 #define SET_CLR_CARD_DETECT     (42 | IS_APP_CMD)
 #define SEND_SCR                (51 | IS_APP_CMD)
 
+//
+// eMMC (MMC) specific definitions (see JEDEC standard JESD84-B51)
+//
+#define SEND_EXT_CSD		8		// CMD8 is SEND_EXT_CSD on MMC
+
+// Relative card address assigned by the host to the eMMC device. RCA 0 is
+// reserved to deselect all devices and must not be used here.
+#define MMC_RCA			1
+
+// Argument of CMD1 (SEND_OP_COND): sector access mode + 2.7-3.6V window.
+// The bits, which are used for SD cards (S18R, XPC), are reserved on MMC.
+#define MMC_OCR_SECTOR_MODE	0x40000000
+#define MMC_OCR_VOLTAGE_WINDOW	0x00FF8000
+#define MMC_OCR_BUSY		0x80000000
+#define MMC_OCR_ACCESS_MODE	0x60000000	// 10b: sector mode
+
+// Argument of CMD6 (SWITCH): write byte at EXT_CSD[index] with value
+#define MMC_SWITCH_WRITE_BYTE(index, value)	(  (3 << 24) \
+						 | ((index) << 16) \
+						 | ((value) << 8))
+
+// EXT_CSD byte indices and values
+#define EXT_CSD_BUS_WIDTH	183
+	#define EXT_CSD_BUS_WIDTH_1	0
+	#define EXT_CSD_BUS_WIDTH_4	1
+	#define EXT_CSD_BUS_WIDTH_8	2
+#define EXT_CSD_HS_TIMING	185
+	#define EXT_CSD_HS_TIMING_LEGACY	0
+	#define EXT_CSD_HS_TIMING_HS		1
+#define EXT_CSD_CARD_TYPE	196
+	#define EXT_CSD_CARD_TYPE_HS_26		(1 << 0)
+	#define EXT_CSD_CARD_TYPE_HS_52		(1 << 1)
+#define EXT_CSD_SEC_COUNT	212		// 4 bytes, little endian
+#define EXT_CSD_SIZE		512
+
+// Card status bits (R1 response)
+#define MMC_STATUS_SWITCH_ERROR		(1 << 7)
+#define MMC_STATUS_READY_FOR_DATA	(1 << 8)
+#define MMC_STATUS_CURRENT_STATE(status)	(((status) >> 9) & 0xF)
+	#define MMC_STATE_STBY		3
+	#define MMC_STATE_TRAN		4
+#define MMC_STATUS_ERROR_MASK		0xFDF9A080U	// error bits in R1
+
+// Enable the MMC high speed mode (up to 52 MHz), if the device supports it.
+// Undefine this, if you want to bring-up the eMMC access at 25 MHz.
+#define MMC_HIGH_SPEED
+
 #ifndef USE_SDHOST
 
 #define SD_RESET_CMD            (1 << 25)
@@ -529,6 +577,21 @@ const u32 CEMMCDevice::sd_acommands[] =
 #endif
 
 #define SD_BLOCK_SIZE		512
+
+CEMMCDevice::TDeviceSelector CEMMCDevice::GetDefaultDeviceForMachine (void)
+{
+#if RASPPI >= 5 && !defined (USE_SDHOST)
+	// The Compute Module 5 has its eMMC memory on the same SDHCI controller,
+	// which drives the SD card on the Raspberry Pi 5. The CM5 Lite has no
+	// on-board eMMC memory and uses an SD card instead.
+	if (CMachineInfo::Get ()->GetMachineModel () == MachineModelCM5)
+	{
+		return EmbeddedMMC;
+	}
+#endif
+
+	return DefaultDevice;
+}
 
 CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CActLED *pActLED,
 			  TDeviceSelector Device)
@@ -1503,6 +1566,172 @@ u32 CEMMCDevice::GetCSDField (unsigned start, unsigned width) const
 	return result;
 }
 
+#ifndef USE_SDHOST
+
+//
+// eMMC (MMC) specific helper methods (see JEDEC standard JESD84-B51)
+//
+
+// Wait until the device has completed its operation and is in transfer state
+int CEMMCDevice::MMCWaitReady (unsigned nTimeoutMs)
+{
+	for (unsigned nTry = 0; nTry <= nTimeoutMs; nTry++)
+	{
+		if (!IssueCommand (SEND_STATUS, m_card_rca << 16))
+		{
+			LogWrite (LogError, "error sending CMD13");
+
+			return -1;
+		}
+
+		u32 nStatus = m_last_r0;
+		if (nStatus & MMC_STATUS_ERROR_MASK)
+		{
+			LogWrite (LogError, "Device signals an error (status %08x)", nStatus);
+
+			return -1;
+		}
+
+		if (   (nStatus & MMC_STATUS_READY_FOR_DATA)
+		    && MMC_STATUS_CURRENT_STATE (nStatus) == MMC_STATE_TRAN)
+		{
+			return 0;
+		}
+
+		usDelay (1000);
+	}
+
+	LogWrite (LogError, "Device remains busy");
+
+	return -1;
+}
+
+// Write one byte into the modifiable section of the EXT_CSD register (CMD6)
+int CEMMCDevice::MMCSwitch (u32 nIndex, u32 nValue)
+{
+	if (!IssueCommand (SWITCH_FUNC, MMC_SWITCH_WRITE_BYTE (nIndex, nValue)))
+	{
+		LogWrite (LogError, "error sending CMD6 (index %u, value %u)", nIndex, nValue);
+
+		return -1;
+	}
+
+	// The SWITCH_ERROR bit is set in the status of the following command
+	return MMCWaitReady (1000);
+}
+
+// Read the 512 bytes EXT_CSD register (CMD8) over the data lines
+int CEMMCDevice::MMCReadExtCSD (u8 *pExtCSD)
+{
+	assert (pExtCSD != 0);
+	assert (((uintptr) pExtCSD & 3) == 0);
+
+	m_buf = pExtCSD;
+	m_block_size = EXT_CSD_SIZE;
+	m_blocks_to_transfer = 1;
+
+	IssueCommand (SEND_EXT_CSD, 0, 1000000);
+
+	m_block_size = SD_BLOCK_SIZE;
+
+	if (FAIL)
+	{
+		LogWrite (LogError, "Error sending SEND_EXT_CSD");
+
+		return -1;
+	}
+
+	return 0;
+}
+
+// Switch device and host controller to the given data bus width and verify it
+int CEMMCDevice::MMCSetBusWidth (unsigned nWidth)
+{
+	u32 nValue;
+	u32 nControl0Mode;
+	switch (nWidth)
+	{
+	case 8:
+		nValue = EXT_CSD_BUS_WIDTH_8;
+		nControl0Mode = 1 << 5;
+		break;
+
+	case 4:
+		nValue = EXT_CSD_BUS_WIDTH_4;
+		nControl0Mode = 1 << 1;
+		break;
+
+	default:
+		assert (nWidth == 1);
+		nValue = EXT_CSD_BUS_WIDTH_1;
+		nControl0Mode = 0;
+		break;
+	}
+
+#ifdef EMMC_DEBUG2
+	LogWrite (LogDebug, "Switching to %u-bit data mode", nWidth);
+#endif
+
+	// Disable card interrupt in host
+	u32 old_irpt_mask = read32 (EMMC_IRPT_MASK);
+	write32 (EMMC_IRPT_MASK, old_irpt_mask & ~(1 << 8));
+
+	int nResult = MMCSwitch (EXT_CSD_BUS_WIDTH, nValue);
+	if (nResult == 0)
+	{
+		// Change the data bus width of the host controller
+		u32 control0 = read32 (EMMC_CONTROL0);
+		control0 &= ~((1 << 5) | (1 << 1));
+		control0 |= nControl0Mode;
+		write32 (EMMC_CONTROL0, control0);
+
+		// Read the EXT_CSD register back over the data lines to be sure,
+		// that device and host controller do agree on the bus width
+		u8 ExtCSD[EXT_CSD_SIZE] ALIGN (4);
+		if (   MMCReadExtCSD (ExtCSD) != 0
+		    || ExtCSD[EXT_CSD_BUS_WIDTH] != nValue)
+		{
+			nResult = -1;
+		}
+	}
+
+	// Re-enable card interrupt in host
+	write32 (EMMC_IRPT_MASK, old_irpt_mask);
+
+	return nResult;
+}
+
+// Determine the capacity of devices greater than 2 GByte from the EXT_CSD
+void CEMMCDevice::MMCSetupCapacity (const u8 *pExtCSD)
+{
+	assert (pExtCSD != 0);
+
+	u32 nSectorCount =    (u32) pExtCSD[EXT_CSD_SEC_COUNT]
+			   | ((u32) pExtCSD[EXT_CSD_SEC_COUNT+1] << 8)
+			   | ((u32) pExtCSD[EXT_CSD_SEC_COUNT+2] << 16)
+			   | ((u32) pExtCSD[EXT_CSD_SEC_COUNT+3] << 24);
+
+	if (nSectorCount != 0)
+	{
+		m_capacity = (u64) nSectorCount * SD_BLOCK_SIZE;
+	}
+
+	if (m_capacity != (u64) -1)
+	{
+#if RASPPI == 1
+		LogWrite (LogDebug, "Capacity is %llu MBytes", m_capacity / 0x100000);
+#else
+		LogWrite (LogDebug, "Capacity is %lu MBytes", m_capacity / 0x100000);
+#endif
+	}
+	else
+	{
+		LogWrite (LogWarning, "Unknown device capacity");
+	}
+}
+
+#endif	// #ifndef USE_SDHOST
+
 int CEMMCDevice::CardReset (void)
 {
 #ifndef USE_SDHOST
@@ -1544,9 +1773,19 @@ int CEMMCDevice::CardReset (void)
 	u32 status_reg = read32 (EMMC_STATUS);
 	if ((status_reg & (1 << 16)) == 0)
 	{
-		LogWrite (LogWarning, "no card inserted");
+		// The on-board eMMC memory of a Compute Module is not removable and
+		// its card detect signal is not connected (e.g. "broken-cd" for the
+		// CM5). The card inserted bit is meaningless then.
+		if (m_Device != EmbeddedMMC)
+		{
+			LogWrite (LogWarning, "no card inserted");
 
-		return -1;
+			return -1;
+		}
+
+#ifdef EMMC_DEBUG2
+		LogWrite (LogDebug, "card detect is not available (status %08x)", status_reg);
+#endif
 	}
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "status: %08x", status_reg);
@@ -1771,6 +2010,7 @@ int CEMMCDevice::CardReset (void)
 	}
 
 	// Call an inquiry ACMD41 (voltage window = 0) to get the OCR
+	// (CMD1 with argument 0 for eMMC devices)
 #ifdef EMMC_DEBUG2
 	LogWrite (LogDebug, "sending inquiry ACMD41");
 #endif
@@ -1784,49 +2024,71 @@ int CEMMCDevice::CardReset (void)
 	LogWrite (LogDebug, "inquiry ACMD41 returned %08x", m_last_r0);
 #endif
 
-	// Call initialization ACMD41
+	// Call initialization ACMD41 (CMD1 for eMMC devices). The eMMC device may
+	// need some time to initialize, so this is retried for up to two seconds.
 	int card_is_busy = 1;
-	while (card_is_busy)
+	for (unsigned nTries = 4; card_is_busy && nTries > 0; nTries--)
 	{
-		u32 v2_flags = 0;
-		assert (v2_later >= 0);
-		if (v2_later)
+		u32 nArgument;
+		if (m_Device == EmbeddedMMC)
 		{
-			// Set SDHC support
-			v2_flags |= (1 << 30);
-
-			// Set 1.8v support
-#ifdef SD_1_8V_SUPPORT
-			if (!m_failed_voltage_switch)
+			// The bits, which are used for SD cards (S18R, XPC), are
+			// reserved on MMC and must not be set here.
+			nArgument = MMC_OCR_SECTOR_MODE | MMC_OCR_VOLTAGE_WINDOW;
+		}
+		else
+		{
+			u32 v2_flags = 0;
+			assert (v2_later >= 0);
+			if (v2_later)
 			{
-				v2_flags |= (1 << 24);
-			}
+				// Set SDHC support
+				v2_flags |= (1 << 30);
+
+				// Set 1.8v support
+#ifdef SD_1_8V_SUPPORT
+				if (!m_failed_voltage_switch)
+				{
+					v2_flags |= (1 << 24);
+				}
 #endif
 #ifdef SDXC_MAXIMUM_PERFORMANCE
-			// Enable SDXC maximum performance
-			v2_flags |= (1 << 28);
+				// Enable SDXC maximum performance
+				v2_flags |= (1 << 28);
 #endif
+			}
+
+			nArgument = 0x00ff8000 | v2_flags;
 		}
 
-		if (!IssueCommand (m_Device == EmbeddedMMC ? SEND_OP_COND : ACMD(41),
-				   0x00ff8000 | v2_flags))
+		if (!IssueCommand (m_Device == EmbeddedMMC ? SEND_OP_COND : ACMD(41), nArgument))
 		{
 			LogWrite (LogError, "Error issuing ACMD41");
 
 			return -1;
 		}
 
-		if ((m_last_r0 >> 31) & 1)
+		if (m_last_r0 & MMC_OCR_BUSY)
 		{
 			// Initialization is complete
 			m_card_ocr = (m_last_r0 >> 8) & 0xffff;
-			m_card_supports_sdhc = (m_last_r0 >> 30) & 0x1;
-#ifdef SD_1_8V_SUPPORT
-			if (!m_failed_voltage_switch)
+
+			if (m_Device == EmbeddedMMC)
 			{
-				m_card_supports_18v = (m_last_r0 >> 24) & 0x1;
+				// Sector addressing is used, if the access mode is 10b
+				m_card_supports_sdhc =
+					(m_last_r0 & MMC_OCR_ACCESS_MODE) == MMC_OCR_SECTOR_MODE;
 			}
+			else
+			{
+				m_card_supports_sdhc = (m_last_r0 >> 30) & 0x1;
+#ifdef SD_1_8V_SUPPORT
+				if (!m_failed_voltage_switch)
+				{
+					m_card_supports_18v = (m_last_r0 >> 24) & 0x1;
+				}
 #endif
+			}
 
 			card_is_busy = 0;
 		}
@@ -1838,6 +2100,13 @@ int CEMMCDevice::CardReset (void)
 #endif
 			usDelay (500000);
 		}
+	}
+
+	if (card_is_busy)
+	{
+		LogWrite (LogError, "Card did not leave the busy state (OCR %08x)", m_last_r0);
+
+		return -1;
 	}
 
 #ifdef EMMC_DEBUG2
@@ -1967,52 +2236,82 @@ int CEMMCDevice::CardReset (void)
 				m_device_id[3], m_device_id[2], m_device_id[1], m_device_id[0]);
 #endif
 
-	// Send CMD3 to enter the data state
-	if (!IssueCommand (SEND_RELATIVE_ADDR, 0))
+	// Send CMD3 to enter the data state. On SD cards the card publishes its
+	// relative card address (RCA) in the R6 response. On MMC devices the host
+	// assigns the RCA in the argument and gets the card status (R1) back.
+	u32 status;
+	if (m_Device == EmbeddedMMC)
 	{
-		LogWrite (LogError, "error sending SEND_RELATIVE_ADDR");
+		if (!IssueCommand (SEND_RELATIVE_ADDR, MMC_RCA << 16))
+		{
+			LogWrite (LogError, "error sending SET_RELATIVE_ADDR");
 
-		return -1;
-	}
+			return -1;
+		}
 
-	u32 cmd3_resp = m_last_r0;
+		u32 cmd3_resp = m_last_r0;
 #ifdef EMMC_DEBUG2
-	LogWrite (LogDebug, "CMD3 response: %08x", cmd3_resp);
+		LogWrite (LogDebug, "CMD3 response: %08x", cmd3_resp);
 #endif
 
-	m_card_rca = (cmd3_resp >> 16) & 0xffff;
-	u32 crc_error = (cmd3_resp >> 15) & 0x1;
-	u32 illegal_cmd = (cmd3_resp >> 14) & 0x1;
-	u32 error = (cmd3_resp >> 13) & 0x1;
-	u32 status = (cmd3_resp >> 9) & 0xf;
-	u32 ready = (cmd3_resp >> 8) & 0x1;
+		if (cmd3_resp & MMC_STATUS_ERROR_MASK)
+		{
+			LogWrite (LogError, "error setting RCA (status %08x)", cmd3_resp);
 
-	if (crc_error)
-	{
-		LogWrite (LogError, "CRC error");
+			return -1;
+		}
 
-		return -1;
+		m_card_rca = MMC_RCA;
+		status = MMC_STATUS_CURRENT_STATE (cmd3_resp);
 	}
-
-	if (illegal_cmd)
+	else
 	{
-		LogWrite (LogError, "illegal command");
+		if (!IssueCommand (SEND_RELATIVE_ADDR, 0))
+		{
+			LogWrite (LogError, "error sending SEND_RELATIVE_ADDR");
 
-		return -1;
-	}
+			return -1;
+		}
 
-	if (error)
-	{
-		LogWrite (LogError, "generic error");
+		u32 cmd3_resp = m_last_r0;
+#ifdef EMMC_DEBUG2
+		LogWrite (LogDebug, "CMD3 response: %08x", cmd3_resp);
+#endif
 
-		return -1;
-	}
+		m_card_rca = (cmd3_resp >> 16) & 0xffff;
+		u32 crc_error = (cmd3_resp >> 15) & 0x1;
+		u32 illegal_cmd = (cmd3_resp >> 14) & 0x1;
+		u32 error = (cmd3_resp >> 13) & 0x1;
+		status = (cmd3_resp >> 9) & 0xf;
+		u32 ready = (cmd3_resp >> 8) & 0x1;
 
-	if (!ready)
-	{
-		LogWrite (LogError, "not ready for data");
+		if (crc_error)
+		{
+			LogWrite (LogError, "CRC error");
 
-		return -1;
+			return -1;
+		}
+
+		if (illegal_cmd)
+		{
+			LogWrite (LogError, "illegal command");
+
+			return -1;
+		}
+
+		if (error)
+		{
+			LogWrite (LogError, "generic error");
+
+			return -1;
+		}
+
+		if (!ready)
+		{
+			LogWrite (LogError, "not ready for data");
+
+			return -1;
+		}
 	}
 
 #ifdef EMMC_DEBUG2
@@ -2062,6 +2361,37 @@ int CEMMCDevice::CardReset (void)
 #else
 		LogWrite (LogDebug, "Capacity is %lu MBytes", m_capacity / 0x100000);
 #endif
+	}
+	else
+	{
+		// Send CMD9 to get the CSD of the eMMC device
+		if (!IssueCommand (SEND_CSD, m_card_rca << 16))
+		{
+			LogWrite (LogError, "error sending CMD9");
+
+			return -1;
+		}
+		m_csd[0] = m_last_r0;
+		m_csd[1] = m_last_r1;
+		m_csd[2] = m_last_r2;
+		m_csd[3] = m_last_r3;
+#ifdef EMMC_DEBUG2
+		LogWrite (LogDebug, "Card CSD: %08x%08x%08x%08x", m_csd[3], m_csd[2], m_csd[1], m_csd[0]);
+#endif
+
+		// Devices greater than 2 GByte have C_SIZE set to 0xFFF and report
+		// their capacity in the SEC_COUNT field of the EXT_CSD register,
+		// which can be read in the transfer state only (see below).
+		unsigned nCSize = GetCSDField (62, 12);
+		if (nCSize != 0xFFF)
+		{
+			unsigned nSizeMult = GetCSDField (47, 3);
+			unsigned nReadBlLen = GetCSDField (80, 4);
+
+			m_capacity =   (u64) (nCSize + 1)
+				     * (1U << (nSizeMult + 2))
+				     * (1U << nReadBlLen);
+		}
 	}
 
 	// Now select the card (toggles it to transfer state)
@@ -2217,6 +2547,20 @@ int CEMMCDevice::CardReset (void)
 		m_pSCR->sd_bus_widths = 4;
 #endif
 		m_block_size = SD_BLOCK_SIZE;
+
+#ifndef USE_SDHOST
+		// Read the EXT_CSD register of the eMMC device. It provides the
+		// capacity of devices greater than 2 GByte and the supported speeds.
+		u8 ExtCSD[EXT_CSD_SIZE] ALIGN (4);
+		if (MMCReadExtCSD (ExtCSD) != 0)
+		{
+			return -1;
+		}
+
+		MMCSetupCapacity (ExtCSD);
+
+		m_card_supports_hs = !!(ExtCSD[EXT_CSD_CARD_TYPE] & EXT_CSD_CARD_TYPE_HS_52);
+#endif
 	}
 
 	if (m_Device != EmbeddedMMC)
@@ -2271,44 +2615,63 @@ int CEMMCDevice::CardReset (void)
 #ifdef USE_SDHOST
 		assert (0);
 #else
-		if (m_pSCR->sd_bus_widths & (4 | 8))
+		// Set the widest data bus mode, which works (CMD6). The device and
+		// the host controller have to be switched together, so the result
+		// is verified and a narrower bus (8, 4, 1 bit) is tried on failure.
+		unsigned nBusWidth = m_pSCR->sd_bus_widths >= 8 ? 8 : 4;
+		while (MMCSetBusWidth (nBusWidth) != 0)
 		{
-			// Set 4/8-bit transfer mode (CMD6)
+			if (nBusWidth == 1)
+			{
+				LogWrite (LogError, "Cannot set the data bus width");
+
+				return -1;
+			}
+
+			LogWrite (LogWarning, "Switch to %u-bit data mode failed", nBusWidth);
+
+			nBusWidth = nBusWidth == 8 ? 4 : 1;
+		}
+
+		m_pSCR->sd_bus_widths = nBusWidth;
+
 #ifdef EMMC_DEBUG2
-			LogWrite (LogDebug, "Switching to %u-bit data mode", m_pSCR->sd_bus_widths);
+		LogWrite (LogDebug, "Using %u-bit data mode", nBusWidth);
 #endif
 
-			// Disable card interrupt in host
-			u32 old_irpt_mask = read32(EMMC_IRPT_MASK);
-			u32 new_iprt_mask = old_irpt_mask & ~(1 << 8);
-			write32(EMMC_IRPT_MASK, new_iprt_mask);
+		unsigned nClockRate = SD_CLOCK_NORMAL;
 
-			// Send CMD6 to change the card's bit mode
-			if (!IssueCommand (SWITCH_FUNC, (m_pSCR->sd_bus_widths & 8) ? 0x3B70200 : 0x3B70100))
+#ifdef MMC_HIGH_SPEED
+		// Switch the device to the high speed mode (up to 52 MHz), if supported
+		if (m_card_supports_hs)
+		{
+			if (MMCSwitch (EXT_CSD_HS_TIMING, EXT_CSD_HS_TIMING_HS) == 0)
 			{
-				LogWrite (LogError, "Switch to %u-bit data mode failed",
-					m_pSCR->sd_bus_widths);
+				nClockRate = SD_CLOCK_HIGH;
 			}
 			else
 			{
-				// Change bit mode for Host
-				u32 control0 = read32(EMMC_CONTROL0);
-				control0 |= (m_pSCR->sd_bus_widths & 8) ? 1 << 5 : 0x2;
-				write32(EMMC_CONTROL0, control0);
+				LogWrite (LogWarning, "Switch to high speed mode failed");
 
-				// Re-enable card interrupt in host
-				write32(EMMC_IRPT_MASK, old_irpt_mask);
-
-#ifdef EMMC_DEBUG2
-				LogWrite (LogDebug, "switch to %u-bit complete", m_pSCR->sd_bus_widths);
-#endif
+				m_card_supports_hs = 0;
 			}
 		}
+#endif
 
-		SwitchClockRate (base_clock, SD_CLOCK_NORMAL);
+		SwitchClockRate (base_clock, nClockRate);
 		usDelay (5000);
 
-		LogWrite (LogNotice, "Found a valid eMMC chip");
+		// Check that the device is still accessible with the new settings
+		if (   !IssueCommand (SEND_STATUS, m_card_rca << 16)
+		    || (m_last_r0 & MMC_STATUS_ERROR_MASK))
+		{
+			LogWrite (LogError, "eMMC device is not accessible");
+
+			return -1;
+		}
+
+		LogWrite (LogNotice, "Found a valid eMMC chip (%u bit, %u MHz)",
+			  nBusWidth, nClockRate / 1000000);
 #endif	// #ifdef USE_SDHOST
 	}
 
