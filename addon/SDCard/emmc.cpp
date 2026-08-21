@@ -87,6 +87,10 @@
 // Requires 150 mA power so disabled on the RPi for now
 #define SDXC_MAXIMUM_PERFORMANCE
 
+// Enable the MMC high speed mode (up to 52 MHz), if the device supports it.
+// Undefine this, if you want to bring-up the eMMC access at 25 MHz.
+#define MMC_HIGH_SPEED
+
 #ifndef USE_SDHOST
 
 // Enable card interrupts
@@ -561,10 +565,6 @@ const u32 CEMMCDevice::sd_acommands[] =
 	#define MMC_STATE_STBY		3
 	#define MMC_STATE_TRAN		4
 #define MMC_STATUS_ERROR_MASK		0xFDF9A080U	// error bits in R1
-
-// Enable the MMC high speed mode (up to 52 MHz), if the device supports it.
-// Undefine this, if you want to bring-up the eMMC access at 25 MHz.
-#define MMC_HIGH_SPEED
 
 #ifndef USE_SDHOST
 
