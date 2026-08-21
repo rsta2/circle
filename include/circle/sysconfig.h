@@ -4,7 +4,7 @@
 // Configurable system options
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -396,8 +396,8 @@
 #endif
 
 // USE_EMBEDDED_MMC_CM enables access to the on-board embedded MMC
-// memory on Compute Modules 3+ and 4. Does not work with SD card on
-// CM3+ Lite and CM4 Lite.
+// memory on Compute Modules 3+, 4 and 5. Does not work with SD card on
+// CM3+ Lite, CM4 Lite and CM5 Lite.
 
 //#define USE_EMBEDDED_MMC_CM
 
