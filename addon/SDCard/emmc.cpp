@@ -578,21 +578,6 @@ const u32 CEMMCDevice::sd_acommands[] =
 
 #define SD_BLOCK_SIZE		512
 
-CEMMCDevice::TDeviceSelector CEMMCDevice::GetDefaultDeviceForMachine (void)
-{
-#if RASPPI >= 5 && !defined (USE_SDHOST)
-	// The Compute Module 5 has its eMMC memory on the same SDHCI controller,
-	// which drives the SD card on the Raspberry Pi 5. The CM5 Lite has no
-	// on-board eMMC memory and uses an SD card instead.
-	if (CMachineInfo::Get ()->GetMachineModel () == MachineModelCM5)
-	{
-		return EmbeddedMMC;
-	}
-#endif
-
-	return DefaultDevice;
-}
-
 CEMMCDevice::CEMMCDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, CActLED *pActLED,
 			  TDeviceSelector Device)
 :	m_pInterruptSystem (pInterruptSystem),

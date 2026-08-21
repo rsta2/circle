@@ -65,14 +65,6 @@ public:
 	static const TDeviceSelector DefaultDevice = EmbeddedMMC;
 #endif
 
-	/// \brief Select the device to be used on the current machine
-	/// \return EmbeddedMMC on Compute Modules with on-board eMMC memory,
-	///	    which are detected at run-time (currently the CM5), otherwise
-	///	    DefaultDevice
-	/// \note This allows to use the same kernel image on a Raspberry Pi with
-	///	  SD card and on a Compute Module with on-board eMMC memory.
-	static TDeviceSelector GetDefaultDeviceForMachine (void);
-
 public:
 	CEMMCDevice (CInterruptSystem	*pInterruptSystem,
 		     CTimer		*pTimer,
