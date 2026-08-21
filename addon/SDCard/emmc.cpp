@@ -1670,14 +1670,17 @@ int CEMMCDevice::MMCSetBusWidth (unsigned nWidth)
 		control0 |= nControl0Mode;
 		write32 (EMMC_CONTROL0, control0);
 
+#if RASPPI >= 5
 		// Read the EXT_CSD register back over the data lines to be sure,
 		// that device and host controller do agree on the bus width
+		// Do not check this on CM1..4, because it returns an invalid value
 		u8 ExtCSD[EXT_CSD_SIZE] ALIGN (4);
 		if (   MMCReadExtCSD (ExtCSD) != 0
 		    || ExtCSD[EXT_CSD_BUS_WIDTH] != nValue)
 		{
 			nResult = -1;
 		}
+#endif
 	}
 
 	// Re-enable card interrupt in host
