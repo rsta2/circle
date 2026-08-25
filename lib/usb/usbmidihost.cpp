@@ -223,6 +223,10 @@ boolean CUSBMIDIHostDevice::StartRequest (void)
 	assert (pURB != 0);
 	pURB->SetCompletionRoutine (CompletionStub, 0, this);
 
+#if defined (USB_MIDI_FIQ_COMPLETION) && defined (USE_USB_FIQ)
+	pURB->SetCompleteImmediately ();
+#endif
+
 	if (!(CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_NO_COMPLETE_ON_NAK))
 	{
 		pURB->SetCompleteOnNAK (); // do not retry if request cannot be served immediately

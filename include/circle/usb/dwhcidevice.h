@@ -136,6 +136,8 @@ private:
 
 	void LogTransactionFailed (u32 nStatus);
 
+	void CompleteRequest (CUSBRequest *pURB);
+
 #ifndef NDEBUG
 	void DumpRegister (const char *pName, u32 nAddress);
 	void DumpStatus (unsigned nChannel = 0);

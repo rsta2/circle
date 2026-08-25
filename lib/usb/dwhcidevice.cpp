@@ -1155,11 +1155,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-		pURB->CallCompletionRoutine ();
-#else
-		m_CompletionQueue.Enqueue (pURB);
-#endif
+		CompleteRequest (pURB);
 
 		return;
 	}
@@ -1306,11 +1302,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-		pURB->CallCompletionRoutine ();
-#else
-		m_CompletionQueue.Enqueue (pURB);
-#endif
+		CompleteRequest (pURB);
 		break;
 
 	case StageStateStartSplit:
@@ -1331,11 +1323,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-			pURB->CallCompletionRoutine ();
-#else
-			m_CompletionQueue.Enqueue (pURB);
-#endif
+			CompleteRequest (pURB);
 			break;
 		}
 
@@ -1381,11 +1369,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-			pURB->CallCompletionRoutine ();
-#else
-			m_CompletionQueue.Enqueue (pURB);
-#endif
+			CompleteRequest (pURB);
 			break;
 		}
 		
@@ -1439,11 +1423,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 					FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-					pURB->CallCompletionRoutine ();
-#else
-					m_CompletionQueue.Enqueue (pURB);
-#endif
+					CompleteRequest (pURB);
 				}
 				else
 				{
@@ -1478,11 +1458,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-		pURB->CallCompletionRoutine ();
-#else
-		m_CompletionQueue.Enqueue (pURB);
-#endif
+		CompleteRequest (pURB);
 		break;
 
 	default:
@@ -1840,6 +1816,24 @@ void CDWHCIDevice::LogTransactionFailed (u32 nStatus)
 	{
 		LOGWARN ("Transaction failed (status 0x%X)", nStatus);
 	}
+}
+
+void CDWHCIDevice::CompleteRequest (CUSBRequest *pURB)
+{
+	assert (pURB != 0);
+
+#ifndef USE_USB_FIQ
+	pURB->CallCompletionRoutine ();
+#else
+	if (pURB->IsCompleteImmediately ())
+	{
+		pURB->CallCompletionRoutine ();
+	}
+	else
+	{
+		m_CompletionQueue.Enqueue (pURB);
+	}
+#endif
 }
 
 #ifndef NDEBUG
