@@ -5,7 +5,7 @@
 // 	Copyright (C) 2016  J. Otto <joshua.t.otto@gmail.com>
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2017-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2017-2026  R. Stange <rsta2@o2online.de>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,7 +56,9 @@ private:
 	CUSBEndpoint *m_pEndpointOut;
 
 	u16 m_usBufferSize;
-	u8 *m_pPacketBuffer;
+	static const unsigned RXBufferCount = 2;
+	u8 *m_pPacketBuffer[RXBufferCount];
+	unsigned m_nNextBuffer;
 
 	TKernelTimerHandle m_hTimer;
 };

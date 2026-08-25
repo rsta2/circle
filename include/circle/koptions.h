@@ -44,7 +44,8 @@ public:
 #define USB_MIDI_BOOST_NONE			0	// default
 #define USB_MIDI_BOOST_NO_DELAY_ON_IDLE		1	// do not delay to relax bus (same as "true")
 #define USB_MIDI_BOOST_NO_COMPLETE_ON_NAK	2	// do not complete on NAK
-#define USB_MIDI_BOOST_MAX			3
+#define USB_MIDI_BOOST_EARLY_RESUBMIT		4	// restart receive before event processing
+#define USB_MIDI_BOOST_MAX			7
 	const char *GetUSBIgnore (void) const;		// defaults to empty string
 
 	const unsigned *GetUSBSoundChannels (void) const; // returns 2 values
