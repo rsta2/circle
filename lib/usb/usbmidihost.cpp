@@ -208,7 +208,10 @@ boolean CUSBMIDIHostDevice::StartRequest (void)
 	assert (pURB != 0);
 	pURB->SetCompletionRoutine (CompletionStub, 0, this);
 
-	pURB->SetCompleteOnNAK ();	// do not retry if request cannot be served immediately
+	if (!(CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_NO_COMPLETE_ON_NAK))
+	{
+		pURB->SetCompleteOnNAK (); // do not retry if request cannot be served immediately
+	}
 
 	return GetHost ()->SubmitAsyncRequest (pURB);
 }
@@ -242,7 +245,7 @@ void CUSBMIDIHostDevice::CompletionRoutine (CUSBRequest *pURB)
 	delete pURB;
 
 	if (   bRestart
-	    || CKernelOptions::Get ()->GetUSBBoost ())
+	    || (CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_NO_DELAY_ON_IDLE))
 	{
 		StartRequest ();
 	}

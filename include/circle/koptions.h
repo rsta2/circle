@@ -40,7 +40,11 @@ public:
 
 	unsigned GetUSBPowerDelay (void) const;
 	boolean GetUSBFullSpeed (void) const;
-	boolean GetUSBBoost (void) const;
+	unsigned GetUSBBoost (void) const;		// bit mask of the following values:
+#define USB_MIDI_BOOST_NONE			0	// default
+#define USB_MIDI_BOOST_NO_DELAY_ON_IDLE		1	// do not delay to relax bus (same as "true")
+#define USB_MIDI_BOOST_NO_COMPLETE_ON_NAK	2	// do not complete on NAK
+#define USB_MIDI_BOOST_MAX			3
 	const char *GetUSBIgnore (void) const;		// defaults to empty string
 
 	const unsigned *GetUSBSoundChannels (void) const; // returns 2 values
@@ -87,7 +91,7 @@ private:
 
 	unsigned m_nUSBPowerDelay;
 	boolean m_bUSBFullSpeed;
-	boolean m_bUSBBoost;
+	unsigned m_nUSBBoost;
 	char m_USBIgnore[20];
 
 	unsigned m_USBSoundChannels[2];
