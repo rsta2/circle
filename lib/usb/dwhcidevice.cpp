@@ -889,7 +889,30 @@ boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolea
 #ifndef USE_USB_SOF_INTR
 	StartTransaction (pStageData);
 #else
-	QueueTransaction (pStageData);
+	if (   (CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_NOSPLIT_BULK_IMMEDIATE)
+	    && !pStageData->IsSplit ()
+	    && !pStageData->IsPeriodic ())
+	{
+		nChannel = AllocateChannel ();
+		if (nChannel < m_nChannels)
+		{
+			pStageData->SetChannelNumber (nChannel);
+
+			assert (m_pStageData[nChannel] == 0);
+			m_pStageData[nChannel] = pStageData;
+
+			EnableChannelInterrupt (nChannel);
+			StartTransaction (pStageData);
+		}
+		else
+		{
+			QueueTransaction (pStageData);
+		}
+	}
+	else
+	{
+		QueueTransaction (pStageData);
+	}
 #endif
 	
 	return TRUE;
