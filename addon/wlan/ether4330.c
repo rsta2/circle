@@ -2384,8 +2384,11 @@ setauth(Ctlr *ctlr, Cmdbuf *cb, char *a)
 	uchar wpaie[32];
 	int i;
 
-	i = parsehex((char*)wpaie, sizeof wpaie, a);
-	if(i < 2 || i != wpaie[1] + 2)
+	i = parsehex((char*)wpaie, 2, a);
+	if(i != 2 || wpaie[1] > sizeof wpaie - 2)
+		cmderror(cb, "bad wpa ie syntax");
+	i = parsehex((char*)wpaie, wpaie[1] + 2, a);
+	if(i != wpaie[1] + 2)
 		cmderror(cb, "bad wpa ie syntax");
 	if(wpaie[0] == 0xdd)
 		ctlr->cryptotype = Wpa;
