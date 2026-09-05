@@ -30,9 +30,17 @@ usbspeed=full			Set speed of the whole USB to full speed (12 Mbps) instead of
 				high speed (480 Mbps) as workaround in case of problems
 				(does work on Raspberry Pi 1-3 and Zero only)
 
-usbboost=true			Speed-up handling of USB bulk split transactions to the maximum.
+usbboost=15			Speed-up different aspects of USB MIDI Bulk transactions.
 				This may be especially important for USB MIDI keyboards, which
 				lose MIDI events (does work on Raspberry Pi 1-3 and Zero only).
+				The parameter is a decimal number (default 0) with the following
+				values or'ed together: 1 (Do not insert a delay, when no MIDI event
+				has been received, same as when "true" is specified), 2 (restart
+				receiving MIDI events, before the previous received events have
+				been processed), 4 (do complete on NAK and relax the USB, when
+				no MIDI event is available, this may break other attached devices),
+				8 (immediately start no-split Bulk requests without queuing, this
+				may break the standard USB timing).
 
 usbignore=int3-0-0		Prevent loading a driver for an USB interface or device, which
 				is normally supported by Circle, but does not functioning with

@@ -2,7 +2,7 @@
 // usbrequest.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -63,6 +63,10 @@ public:
 	// do not retry if request cannot be served immediately (for Bulk in only)
 	void SetCompleteOnNAK (void);
 	boolean IsCompleteOnNAK (void) const;
+
+	// complete from the primary USB interrupt path, if the host driver supports it
+	void SetCompleteImmediately (void);
+	boolean IsCompleteImmediately (void) const;
 	
 private:
 	CUSBEndpoint *m_pEndpoint;
@@ -83,6 +87,7 @@ private:
 	void *m_pCompletionContext;
 
 	boolean m_bCompleteOnNAK;
+	boolean m_bCompleteImmediately;
 
 	DECLARE_CLASS_ALLOCATOR
 };

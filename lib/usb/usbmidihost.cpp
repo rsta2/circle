@@ -40,9 +40,14 @@ CUSBMIDIHostDevice::CUSBMIDIHostDevice (CUSBFunction *pFunction)
 	m_pInterface (0),
 	m_pEndpointIn (0),
 	m_pEndpointOut (0),
-	m_pPacketBuffer (0),
+	m_nNextBuffer (0),
 	m_hTimer (0)
 {
+	for (unsigned i = 0; i < RXBufferCount; i++)
+	{
+		m_pPacketBuffer[i] = 0;
+	}
+
 	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
 	assert (pDeviceDesc != 0);
 
@@ -68,8 +73,11 @@ CUSBMIDIHostDevice::~CUSBMIDIHostDevice (void)
 	delete m_pInterface;
 	m_pInterface = 0;
 
-	delete [] m_pPacketBuffer;
-	m_pPacketBuffer = 0;
+	for (unsigned i = 0; i < RXBufferCount; i++)
+	{
+		delete [] m_pPacketBuffer[i];
+		m_pPacketBuffer[i] = 0;
+	}
 
 	delete m_pEndpointIn;
 	m_pEndpointIn = 0;
@@ -136,9 +144,12 @@ boolean CUSBMIDIHostDevice::Configure (void)
 			m_usBufferSize -=   pEndpointDesc->wMaxPacketSize
 					  % CUSBMIDIDevice::EventPacketSize;
 
-			assert (m_pPacketBuffer == 0);
-			m_pPacketBuffer = new u8[m_usBufferSize];
-			assert (m_pPacketBuffer != 0);
+			for (unsigned i = 0; i < RXBufferCount; i++)
+			{
+				assert (m_pPacketBuffer[i] == 0);
+				m_pPacketBuffer[i] = new u8[m_usBufferSize];
+				assert (m_pPacketBuffer[i] != 0);
+			}
 		}
 		else							// Output EP
 		{
@@ -201,14 +212,25 @@ boolean CUSBMIDIHostDevice::SendEventsHandler (const u8 *pData, unsigned nLength
 boolean CUSBMIDIHostDevice::StartRequest (void)
 {
 	assert (m_pEndpointIn != 0);
-	assert (m_pPacketBuffer != 0);
+	assert (m_nNextBuffer < RXBufferCount);
+	assert (m_pPacketBuffer[m_nNextBuffer] != 0);
 
 	assert (m_usBufferSize > 0);
-	CUSBRequest *pURB = new CUSBRequest (m_pEndpointIn, m_pPacketBuffer, m_usBufferSize);
+	u8 *pPacketBuffer = m_pPacketBuffer[m_nNextBuffer];
+	m_nNextBuffer = (m_nNextBuffer + 1) % RXBufferCount;
+
+	CUSBRequest *pURB = new CUSBRequest (m_pEndpointIn, pPacketBuffer, m_usBufferSize);
 	assert (pURB != 0);
 	pURB->SetCompletionRoutine (CompletionStub, 0, this);
 
-	pURB->SetCompleteOnNAK ();	// do not retry if request cannot be served immediately
+#if defined (USB_MIDI_FIQ_COMPLETION) && defined (USE_USB_FIQ)
+	pURB->SetCompleteImmediately ();
+#endif
+
+	if (!(CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_NO_COMPLETE_ON_NAK))
+	{
+		pURB->SetCompleteOnNAK (); // do not retry if request cannot be served immediately
+	}
 
 	return GetHost ()->SubmitAsyncRequest (pURB);
 }
@@ -219,14 +241,22 @@ void CUSBMIDIHostDevice::CompletionRoutine (CUSBRequest *pURB)
 	assert (m_pInterface != 0);
 
 	boolean bRestart = FALSE;
+	u8 *pPacketBuffer = static_cast<u8 *> (pURB->GetBuffer ());
+	unsigned nResultLength = pURB->GetStatus () ? pURB->GetResultLength () : 0;
 
 	if (   pURB->GetStatus () != 0
-	    && pURB->GetResultLength () % CUSBMIDIDevice::EventPacketSize == 0)
+	    && nResultLength % CUSBMIDIDevice::EventPacketSize == 0)
 	{
-		assert (m_pPacketBuffer != 0);
+		if (   (CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_EARLY_RESUBMIT)
+		    && nResultLength > 0)
+		{
+			m_pInterface->CallPacketHandler (pPacketBuffer, nResultLength);
+			delete pURB;
+			StartRequest ();
+			return;
+		}
 
-		bRestart = m_pInterface->CallPacketHandler (m_pPacketBuffer,
-							    pURB->GetResultLength ());
+		bRestart = m_pInterface->CallPacketHandler (pPacketBuffer, nResultLength);
 	}
 	else if (   m_pInterface->GetAllSoundOffOnUSBError ()
 		 && !pURB->GetStatus ()
@@ -242,7 +272,7 @@ void CUSBMIDIHostDevice::CompletionRoutine (CUSBRequest *pURB)
 	delete pURB;
 
 	if (   bRestart
-	    || CKernelOptions::Get ()->GetUSBBoost ())
+	    || (CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_NO_DELAY_ON_IDLE))
 	{
 		StartRequest ();
 	}

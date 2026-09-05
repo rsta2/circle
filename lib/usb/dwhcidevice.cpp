@@ -889,7 +889,30 @@ boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolea
 #ifndef USE_USB_SOF_INTR
 	StartTransaction (pStageData);
 #else
-	QueueTransaction (pStageData);
+	if (   (CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_NOSPLIT_BULK_IMMEDIATE)
+	    && !pStageData->IsSplit ()
+	    && pStageData->GetEndpointType () == DWHCI_HOST_CHAN_CHARACTER_EP_TYPE_BULK)
+	{
+		nChannel = AllocateChannel ();
+		if (nChannel < m_nChannels)
+		{
+			pStageData->SetChannelNumber (nChannel);
+
+			assert (m_pStageData[nChannel] == 0);
+			m_pStageData[nChannel] = pStageData;
+
+			EnableChannelInterrupt (nChannel);
+			StartTransaction (pStageData);
+		}
+		else
+		{
+			QueueTransaction (pStageData);
+		}
+	}
+	else
+	{
+		QueueTransaction (pStageData);
+	}
 #endif
 	
 	return TRUE;
@@ -1132,11 +1155,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-		pURB->CallCompletionRoutine ();
-#else
-		m_CompletionQueue.Enqueue (pURB);
-#endif
+		CompleteRequest (pURB);
 
 		return;
 	}
@@ -1283,11 +1302,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-		pURB->CallCompletionRoutine ();
-#else
-		m_CompletionQueue.Enqueue (pURB);
-#endif
+		CompleteRequest (pURB);
 		break;
 
 	case StageStateStartSplit:
@@ -1308,11 +1323,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-			pURB->CallCompletionRoutine ();
-#else
-			m_CompletionQueue.Enqueue (pURB);
-#endif
+			CompleteRequest (pURB);
 			break;
 		}
 
@@ -1358,11 +1369,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-			pURB->CallCompletionRoutine ();
-#else
-			m_CompletionQueue.Enqueue (pURB);
-#endif
+			CompleteRequest (pURB);
 			break;
 		}
 		
@@ -1416,11 +1423,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 					FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-					pURB->CallCompletionRoutine ();
-#else
-					m_CompletionQueue.Enqueue (pURB);
-#endif
+					CompleteRequest (pURB);
 				}
 				else
 				{
@@ -1455,11 +1458,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-		pURB->CallCompletionRoutine ();
-#else
-		m_CompletionQueue.Enqueue (pURB);
-#endif
+		CompleteRequest (pURB);
 		break;
 
 	default:
@@ -1817,6 +1816,24 @@ void CDWHCIDevice::LogTransactionFailed (u32 nStatus)
 	{
 		LOGWARN ("Transaction failed (status 0x%X)", nStatus);
 	}
+}
+
+void CDWHCIDevice::CompleteRequest (CUSBRequest *pURB)
+{
+	assert (pURB != 0);
+
+#ifndef USE_USB_FIQ
+	pURB->CallCompletionRoutine ();
+#else
+	if (pURB->IsCompleteImmediately ())
+	{
+		pURB->CallCompletionRoutine ();
+	}
+	else
+	{
+		m_CompletionQueue.Enqueue (pURB);
+	}
+#endif
 }
 
 #ifndef NDEBUG

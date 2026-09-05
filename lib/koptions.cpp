@@ -32,7 +32,7 @@ CKernelOptions::CKernelOptions (void)
 	m_nLogLevel (LogDebug),
 	m_nUSBPowerDelay (0),
 	m_bUSBFullSpeed (FALSE),
-	m_bUSBBoost (FALSE),
+	m_nUSBBoost (USB_MIDI_BOOST_NONE),
 	m_USBSoundChannels {0, 0},
 	m_nSoundOption (0),
 	m_CPUSpeed (CPUSpeedLow),
@@ -121,9 +121,15 @@ CKernelOptions::CKernelOptions (void)
 		}
 		else if (strcmp (pOption, "usbboost") == 0)
 		{
+			unsigned nValue;
 			if (strcmp (pValue, "true") == 0)
 			{
-				m_bUSBBoost = TRUE;
+				m_nUSBBoost = USB_MIDI_BOOST_NO_DELAY_ON_IDLE;
+			}
+			else if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
+			         && nValue <= USB_MIDI_BOOST_MAX)
+			{
+				m_nUSBBoost = nValue;
 			}
 		}
 		else if (strcmp (pOption, "usbignore") == 0)
@@ -257,9 +263,9 @@ boolean CKernelOptions::GetUSBFullSpeed (void) const
 	return m_bUSBFullSpeed;
 }
 
-boolean CKernelOptions::GetUSBBoost (void) const
+unsigned CKernelOptions::GetUSBBoost (void) const
 {
-	return m_bUSBBoost;
+	return m_nUSBBoost;
 }
 
 const char *CKernelOptions::GetUSBIgnore (void) const
