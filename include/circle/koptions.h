@@ -43,8 +43,8 @@ public:
 	unsigned GetUSBBoost (void) const;		// bit mask of the following values:
 #define USB_MIDI_BOOST_NONE			0	// default
 #define USB_MIDI_BOOST_NO_DELAY_ON_IDLE		1	// do not delay to relax bus (same as "true")
-#define USB_MIDI_BOOST_NO_COMPLETE_ON_NAK	2	// do not complete on NAK
-#define USB_MIDI_BOOST_EARLY_RESUBMIT		4	// restart receive before event processing
+#define USB_MIDI_BOOST_EARLY_RESUBMIT		2	// restart receive before event processing
+#define USB_MIDI_BOOST_NO_COMPLETE_ON_NAK	4	// do not complete on NAK
 #define USB_MIDI_BOOST_NOSPLIT_BULK_IMMEDIATE	8	// do not queue Bulk URBs, start immediately
 #define USB_MIDI_BOOST_MAX			15
 	const char *GetUSBIgnore (void) const;		// defaults to empty string
