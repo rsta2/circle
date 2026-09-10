@@ -3,8 +3,35 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 51.1
+------------
+
+This release comes with **support for the Official 5" and 7" Touchscreens (v1 and v2)** with DSI interface **on the Raspberry Pi 5** in [addon/rp1dsi/](addon/rp1dsi). This can be tested with *sample/28-touchscreen* and *addon/lvgl/sample*. You have to set the `DSI_DISPLAY` variable in the respective *Makefile* to use the DSI displays.
+
+Another attempt to **overcome the dropped USB MIDI events problem** on the Raspberry Pi 1-3 and Zero has been made. The *cmdline.txt* option `usbboost=` has been extended and gets a bit-masked decimal parameter now, where each bit 0-3 enables an option, which can help to fix such problems. See the [doc/cmdline.txt](doc/cmdline.txt) for a detailed description. `usbboost=15` enables all options, but does work only, when the USB MIDI controller is directly connected to the USB root port (without hub). `usbboost=3` can be used in any case.
+
+If you are using USB in FIQ mode on the Raspberry Pi 1-3 and Zero with the system option `USE_USB_FIQ`, you can try to enable the option `USB_MIDI_FIQ_COMPLETION` too to reduce the latency on delivering received MIDI events to the minimum. Your MIDI event packet handler must be able to run on `FIQ_LEVEL` in this case. Normally it runs on `IRQ_LEVEL`. Additionally you can define `USB_MIDI_CHECK_INCOMING` to validate incoming MIDI event packets, before calling the MIDI event packet handler.
+
+More news:
+
+* A new log severity `LogTrace` for frequent trace messages is introduced. Messages with this severity can be generated with the macro `LOGTRACE()`. Log messages of this kind are only displayed, when the option `loglevel=5` is specified in the file *cmdline.txt* on the SD card.
+* A number of 8BitDo Xbox360 gamepads and keyboards is supported now.
+* Support for USB mice with generic HID interface (3-0-0) has been added.
+* FatFs has been updated to R0.16 with patch 2.
+
+Fixes:
+
+* An invalid handling of TCP ACK for fragmented modem sessions has been corrected. This also solved the issue of sending scrambled TCP data over low-speed/-quality network links.
+* A race condition in `CSynchronizationEvent::Wait()` has been fixed, which could cause lost wake events, when this method had been called from an IRQ handler.
+* A spurious hang caused by unexpected USB Disconnect events on cold boot has been fixed.
+* Hidden WLAN SSIDs are supported now. You have to add the `scan_ssid=1` option for the hidden SSID to the file *wpa_supplicant.conf*.
+* USB mass-storage gadget has speed auto-negotiation and a robust host reset/suspend handling now.
+* Fixed that WLAN was unable to connect to eero7 router.
+
 The 51st Step
 -------------
+
+2026-05-05
 
 This release offers a significantly improved implementation of the TCP/IP network stack. It supports TCP congestion control according to RFC 5681 with Fast Retransmit and Fast Recovery. Also the unnecessary copying of frames and data in the stack is largely prevented. This improves throughput very much, especially when a Raspberry Pi with 100 MBps Ethernet is connected to a Gigabit network.
 
