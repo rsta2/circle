@@ -18,8 +18,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/usbkeyboard8bitdo.h>
+#include <circle/synchronize.h>
 
 #define USBKEYB8BITDO_REPORT_SIZE	17
+#define USBKEYB8BITDO_REPORT_ID	1
 
 CUSBKeyboard8BitDoDevice::CUSBKeyboard8BitDoDevice (CUSBFunction *pFunction)
 : 	CUSBKeyboardDevice (pFunction)
@@ -33,6 +35,18 @@ CUSBKeyboard8BitDoDevice::~CUSBKeyboard8BitDoDevice (void)
 boolean CUSBKeyboard8BitDoDevice::Configure (void)
 {
 	return ConfigureKeyboard (USBKEYB8BITDO_REPORT_SIZE);
+}
+
+// This device's Output (LED) report needs Report ID 1, not the default 0.
+boolean CUSBKeyboard8BitDoDevice::SetLEDs (u8 ucStatus)
+{
+	DMA_BUFFER (u8, Buffer, 2) = {USBKEYB8BITDO_REPORT_ID, ucStatus};
+
+	return GetHost ()->ControlMessage (GetEndpoint0 (),
+					   REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+					   SET_REPORT,
+					   (REPORT_TYPE_OUTPUT << 8) | USBKEYB8BITDO_REPORT_ID,
+					   GetInterfaceNumber (), Buffer, 2) >= 0;
 }
 
 void CUSBKeyboard8BitDoDevice::ReportHandler (const u8 *pReport, unsigned nReportSize)
