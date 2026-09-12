@@ -23,8 +23,6 @@
 #define USBKEYB8BITDO_REPORT_SIZE	17
 #define USBKEYB8BITDO_REPORT_ID	1
 
-static const char FromUSBKbd8BitDo[] = "ukbd8bitdo";
-
 CUSBKeyboard8BitDoDevice::CUSBKeyboard8BitDoDevice (CUSBFunction *pFunction)
 : 	CUSBKeyboardDevice (pFunction)
 {
