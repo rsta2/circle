@@ -29,6 +29,7 @@ public:
 	~CUSBKeyboard8BitDoDevice (void);
 
 	boolean Configure (void);
+	boolean SetLEDs (u8 ucStatus);		// this device expects report ID 1, not the default 0
 
 protected:
 	void ReportHandler (const u8 *pReport, unsigned nReportSize);
