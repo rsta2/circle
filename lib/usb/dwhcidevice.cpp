@@ -1504,6 +1504,18 @@ void CDWHCIDevice::SOFInterruptHandler (void)
 		unsigned nChannel = AllocateChannel ();
 		assert (nChannel < m_nChannels);	// too many parallel transactions otherwise
 
+		if (nChannel >= m_nChannels)
+		{
+			// No free channel this SOF. The assert() above is
+			// compiled out in release builds, so nChannel (== m_nChannels,
+			// out of range) was used as an array index anyway - silent
+			// out-of-bounds write into m_pStageData[]. Re-queue for the
+			// next frame instead.
+			QueueTransaction (pStageData);
+
+			break;
+		}
+
 		pStageData->SetChannelNumber (nChannel);
 
 		assert (m_pStageData[nChannel] == 0);
