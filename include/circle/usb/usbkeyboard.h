@@ -60,7 +60,7 @@ public:
 	void UnregisterKeyStatusHandlerRaw (void);
 
 	// works in cooked and raw mode
-	boolean SetLEDs (u8 ucStatus);		// must not be called in interrupt context
+	virtual boolean SetLEDs (u8 ucStatus);		// must not be called in interrupt context
 
 
 protected:
