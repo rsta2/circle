@@ -242,6 +242,18 @@
 #define USE_USB_SOF_INTR
 #endif
 
+// USE_USB_FIQ_PERIODIC_SPLIT_COMPATIBILITY only has an effect together with
+// USE_USB_FIQ. Under USE_USB_FIQ, a periodic split transaction's first
+// Complete-Split is scheduled 1 microframe after its Start-Split ACK instead
+// of the 2 microframes used everywhere else, since the FIQ's low latency
+// normally makes that safe. Some Full/Low-Speed hub/device combinations
+// don't respond in time for that tighter schedule and see persistent
+// transaction errors on their interrupt endpoint(s) as a result; this option
+// widens it back to 2 microframes, matching the non-FIQ timing, while
+// leaving the rest of USE_USB_FIQ's behaviour untouched.
+
+//#define USE_USB_FIQ_PERIODIC_SPLIT_COMPATIBILITY
+
 // SCREEN_DMA_BURST_LENGTH enables using DMA for scrolling the screen
 // contents and set the burst length parameter for the DMA controller.
 // Using DMA speeds up the scrolling, especially with a burst length
