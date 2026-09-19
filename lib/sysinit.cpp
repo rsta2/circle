@@ -92,11 +92,15 @@ int *__errno (void)
 
 #endif
 
+#ifdef LEAVE_QEMU_ON_HALT
 static int s_nExitStatus = EXIT_STATUS_SUCCESS;
+#endif
 
 void set_qemu_exit_status (int nStatus)
 {
+#ifdef LEAVE_QEMU_ON_HALT
 	s_nExitStatus = nStatus;
+#endif
 }
 
 TStackInfo __GetCurrentStackNoWeak (void)
