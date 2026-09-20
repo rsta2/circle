@@ -5,5 +5,5 @@ contact_links:
     url: https://github.com/rsta2/circle/discussions
     about: "Please create a new issue only when you think, there is a real problem in Circle, or if you want a new feature! Otherwise please use the Discussions forum!"
   - name: Project circle-stdlib
-    url: https://codeberg.org/larchcone/circle-stdlib/issues
+    url: https://github.com/smuehlst/circle-stdlib/issues
     about: "If you are using Stephan Mühlstrasser's circle-stdlib project together with Circle, and it is likely, that the problem has to be fixed there, please use this link! This also affects the Mbed TLS support."
