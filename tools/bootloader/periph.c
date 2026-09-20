@@ -253,7 +253,7 @@ unsigned get_clock (unsigned nClockID)
 	{
 		8*4,
 		CODE_REQUEST,
-		PROPTAG_GET_CLOCK_RATE,
+		PROPTAG_GET_CLOCK_RATE_MEASURED,
 		4*4,
 		1*4,
 		nClockID,
@@ -272,7 +272,7 @@ unsigned get_clock (unsigned nClockID)
 	{
 		8*4,
 		CODE_REQUEST,
-		PROPTAG_GET_CLOCK_RATE_MEASURED,
+		PROPTAG_GET_CLOCK_RATE,
 		4*4,
 		1*4,
 		nClockID,
