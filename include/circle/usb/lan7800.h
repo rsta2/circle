@@ -45,6 +45,7 @@ public:
 
 	// returns TRUE if PHY link is up
 	boolean IsLinkUp (void);
+	boolean UpdatePHY (void);
 	
 	TNetDeviceSpeed GetLinkSpeed (void);
 
@@ -75,6 +76,7 @@ private:
 	CMACAddress m_MACAddress;
 
 	u32 m_FilterTable[33][2];
+	volatile boolean m_bLinkUp;
 };
 
 #endif

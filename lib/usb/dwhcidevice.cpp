@@ -2,7 +2,7 @@
 // dwhcidevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,9 @@
 	#define MAX_TARGET_LEVEL	IRQ_LEVEL
 #endif
 
+#define USB_BOOT_RECOVERY_MAX_ATTEMPTS   3     // maximum number of retries
+#define USB_BOOT_RECOVERY_BACKOFF_MS     200   // base backoff, scaled by attempt count
+
 enum TStageState
 {
 	StageStateNoSplitTransfer,
@@ -80,6 +83,9 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, 
 	m_WaitBlockSpinLock (TASK_LEVEL),
 	m_RootPort (this),
 	m_bRootPortEnabled (FALSE),
+	m_nRecoveryAttempts (0),
+	m_nRecoveryRetryAtTicks (0),
+	m_bRecoveryGiveUp (FALSE),
 #ifdef USE_USB_FIQ
 	m_nPortStatusChanged (0),
 	m_CompletionQueue (DWHCI_MAX_CHANNELS*2),
@@ -213,14 +219,31 @@ void CDWHCIDevice::ReScanDevices (void)
 		{
 			m_bRootPortEnabled = TRUE;
 
-			if (!m_RootPort.Initialize ())
+			if (m_RootPort.Initialize ())
 			{
-				LOGERR ("Cannot initialize root port");
+				if (m_nRecoveryAttempts > 0)
+				{
+					LOGTRACE ("USB boot recovery succeeded (attempt %u)",
+						  m_nRecoveryAttempts + 1);
+				}
+				m_nRecoveryAttempts = 0;
+				m_bRecoveryGiveUp   = FALSE;
+			}
+			else
+			{
+				LOGTRACE ("Device enumeration failed (attempt %u)",
+					  m_nRecoveryAttempts + 1);
+
+				DisableRootPort (FALSE);
+				BeginRecoveryBackoff ();
 			}
 		}
 		else
 		{
-			LOGWARN ("No device connected to root port");
+			LOGTRACE ("No device connected to root port (attempt %u)",
+				  m_nRecoveryAttempts + 1);
+
+			BeginRecoveryBackoff ();		// also back off on this failure path
 		}
 	}
 	else
@@ -229,6 +252,44 @@ void CDWHCIDevice::ReScanDevices (void)
 	}
 
 	PeripheralExit ();
+}
+
+void CDWHCIDevice::BeginRecoveryBackoff (void)
+{
+	m_nRecoveryAttempts++;
+
+	if (m_nRecoveryAttempts >= USB_BOOT_RECOVERY_MAX_ATTEMPTS)
+	{
+		LOGWARN ("No device connected to root port (%u attempts)", m_nRecoveryAttempts);
+		m_bRecoveryGiveUp = TRUE;
+		return;
+	}
+
+	unsigned nBackoffMs = USB_BOOT_RECOVERY_BACKOFF_MS * m_nRecoveryAttempts;
+	m_nRecoveryRetryAtTicks = m_pTimer->GetTicks () + MSEC2HZ (nBackoffMs);
+
+	LOGTRACE ("USB boot recovery: retry %u/%u scheduled in %u ms",
+		  m_nRecoveryAttempts, USB_BOOT_RECOVERY_MAX_ATTEMPTS, nBackoffMs);
+}
+
+// Piggy-backs on this hook, which is guaranteed to be called at TASK_LEVEL
+boolean CDWHCIDevice::UpdatePlugAndPlay (void)
+{
+	boolean bResult = CUSBHostController::UpdatePlugAndPlay ();	// existing hot-plug handling is unchanged
+
+	if (   !m_bRootPortEnabled
+	    && !m_bRecoveryGiveUp
+	    && m_nRecoveryAttempts > 0)
+	{
+		unsigned nNow = m_pTimer->GetTicks ();
+		if ((int) (nNow - m_nRecoveryRetryAtTicks) >= 0)
+		{
+			ReScanDevices ();
+			bResult = TRUE;
+		}
+	}
+
+	return bResult;
 }
 
 boolean CDWHCIDevice::SubmitBlockingRequest (CUSBRequest *pURB, unsigned nTimeoutMs)
@@ -328,6 +389,40 @@ void CDWHCIDevice::CancelDeviceTransactions (CUSBDevice *pUSBDevice)
 #ifdef USE_USB_SOF_INTR
 	m_TransactionQueue.FlushDevice (pUSBDevice);
 #endif
+	AbortActiveChannels ();
+}
+
+void CDWHCIDevice::AbortActiveChannels (void)
+{
+	// Force-disable any channel which is still actively transferring for a
+	// device that is being removed. Once !m_bRootPortEnabled (already set by
+	// DisableRootPort() before this is called), the resulting HALTED channel
+	// interrupt will be picked up by the existing cleanup path at the top of
+	// ChannelInterruptHandler(), which completes the URB with USBErrorAborted
+	// and frees the channel. Without this, a blocking control transfer that
+	// was in flight when the device disappeared would spin forever in
+	// TransferStage()'s "while (m_bWaiting[nWaitBlock])" loop, since no
+	// further interrupt would ever arrive for that channel.
+	for (unsigned nChannel = 0; nChannel < m_nChannels; nChannel++)
+	{
+		if (m_pStageData[nChannel] == 0)
+		{
+			continue;
+		}
+
+		CDWHCIRegister Character (DWHCI_HOST_CHAN_CHARACTER (nChannel));
+		Character.Read ();
+		if (Character.IsSet (DWHCI_HOST_CHAN_CHARACTER_ENABLE))
+		{
+			Character.And (~DWHCI_HOST_CHAN_CHARACTER_ENABLE);
+			Character.Or (DWHCI_HOST_CHAN_CHARACTER_DISABLE);
+			Character.Write ();
+
+			CDWHCIRegister ChanInterruptMask (DWHCI_HOST_CHAN_INT_MASK (nChannel));
+			ChanInterruptMask.Set (DWHCI_HOST_CHAN_INT_HALTED);
+			ChanInterruptMask.Write ();
+		}
+	}
 }
 
 boolean CDWHCIDevice::DeviceConnected (void)
@@ -794,7 +889,30 @@ boolean CDWHCIDevice::TransferStageAsync (CUSBRequest *pURB, boolean bIn, boolea
 #ifndef USE_USB_SOF_INTR
 	StartTransaction (pStageData);
 #else
-	QueueTransaction (pStageData);
+	if (   (CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_NOSPLIT_BULK_IMMEDIATE)
+	    && !pStageData->IsSplit ()
+	    && pStageData->GetEndpointType () == DWHCI_HOST_CHAN_CHARACTER_EP_TYPE_BULK)
+	{
+		nChannel = AllocateChannel ();
+		if (nChannel < m_nChannels)
+		{
+			pStageData->SetChannelNumber (nChannel);
+
+			assert (m_pStageData[nChannel] == 0);
+			m_pStageData[nChannel] = pStageData;
+
+			EnableChannelInterrupt (nChannel);
+			StartTransaction (pStageData);
+		}
+		else
+		{
+			QueueTransaction (pStageData);
+		}
+	}
+	else
+	{
+		QueueTransaction (pStageData);
+	}
 #endif
 	
 	return TRUE;
@@ -1037,11 +1155,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-		pURB->CallCompletionRoutine ();
-#else
-		m_CompletionQueue.Enqueue (pURB);
-#endif
+		CompleteRequest (pURB);
 
 		return;
 	}
@@ -1188,11 +1302,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-		pURB->CallCompletionRoutine ();
-#else
-		m_CompletionQueue.Enqueue (pURB);
-#endif
+		CompleteRequest (pURB);
 		break;
 
 	case StageStateStartSplit:
@@ -1213,11 +1323,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-			pURB->CallCompletionRoutine ();
-#else
-			m_CompletionQueue.Enqueue (pURB);
-#endif
+			CompleteRequest (pURB);
 			break;
 		}
 
@@ -1263,11 +1369,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 			FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-			pURB->CallCompletionRoutine ();
-#else
-			m_CompletionQueue.Enqueue (pURB);
-#endif
+			CompleteRequest (pURB);
 			break;
 		}
 		
@@ -1321,11 +1423,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 					FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-					pURB->CallCompletionRoutine ();
-#else
-					m_CompletionQueue.Enqueue (pURB);
-#endif
+					CompleteRequest (pURB);
 				}
 				else
 				{
@@ -1360,11 +1458,7 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 		FreeChannel (nChannel);
 
-#ifndef USE_USB_FIQ
-		pURB->CallCompletionRoutine ();
-#else
-		m_CompletionQueue.Enqueue (pURB);
-#endif
+		CompleteRequest (pURB);
 		break;
 
 	default:
@@ -1409,6 +1503,18 @@ void CDWHCIDevice::SOFInterruptHandler (void)
 
 		unsigned nChannel = AllocateChannel ();
 		assert (nChannel < m_nChannels);	// too many parallel transactions otherwise
+
+		if (nChannel >= m_nChannels)
+		{
+			// No free channel this SOF. The assert() above is
+			// compiled out in release builds, so nChannel (== m_nChannels,
+			// out of range) was used as an array index anyway - silent
+			// out-of-bounds write into m_pStageData[]. Re-queue for the
+			// next frame instead.
+			QueueTransaction (pStageData);
+
+			break;
+		}
 
 		pStageData->SetChannelNumber (nChannel);
 
@@ -1722,6 +1828,24 @@ void CDWHCIDevice::LogTransactionFailed (u32 nStatus)
 	{
 		LOGWARN ("Transaction failed (status 0x%X)", nStatus);
 	}
+}
+
+void CDWHCIDevice::CompleteRequest (CUSBRequest *pURB)
+{
+	assert (pURB != 0);
+
+#ifndef USE_USB_FIQ
+	pURB->CallCompletionRoutine ();
+#else
+	if (pURB->IsCompleteImmediately ())
+	{
+		pURB->CallCompletionRoutine ();
+	}
+	else
+	{
+		m_CompletionQueue.Enqueue (pURB);
+	}
+#endif
 }
 
 #ifndef NDEBUG

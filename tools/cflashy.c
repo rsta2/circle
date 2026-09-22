@@ -2,7 +2,7 @@
  * cflashy.c
  *
  * Circle - A C++ bare metal environment for Raspberry Pi
- * Copyright (C) 2024  R. Stange <rsta2@o2online.de>
+ * Copyright (C) 2024-2026  R. Stange <rsta2@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -488,7 +488,7 @@ int main (int nArgC, char **ppArgV)
 
 	while (nArgC > 0)
 	{
-		const char *pOption = *ppArgV++;
+		char *pOption = *ppArgV++;
 		nArgC--;
 
 		if (pOption[0] == '-' && pOption[1] == '-')

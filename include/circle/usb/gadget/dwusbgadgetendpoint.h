@@ -65,6 +65,10 @@ public:
 	/// \note Override this to abort pending transfers.
 	virtual void OnSuspend (void) {}
 
+	/// \brief Set the maximum packet size of this EP (e.g. after speed negotiation)
+	/// \param nMaxPacketSize New maximum packet size in bytes
+	void SetMaxPacketSize (size_t nMaxPacketSize);
+
 protected:
 	/// \return Endpoint number (0-15)
 	unsigned GetEPNumber (void) const
@@ -117,6 +121,12 @@ protected:
 
 	/// \brief Cancel a began transfer
 	void CancelTransfer (void);
+
+	/// \return Is a transfer currently armed / in flight on this EP?
+	boolean IsTransferActive (void) const
+	{
+		return m_TransferMode != TransferUnknown;
+	}
 
 	/// \brief Send STALL response
 	/// \param bIn STALL next IN request, or OUT otherwise?

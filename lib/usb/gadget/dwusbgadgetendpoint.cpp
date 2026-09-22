@@ -65,6 +65,22 @@ CDWUSBGadgetEndpoint::~CDWUSBGadgetEndpoint (void)
 	m_pGadget->RemoveEndpoint (m_nEP);
 }
 
+void CDWUSBGadgetEndpoint::SetMaxPacketSize (size_t nMaxPacketSize)
+{
+	m_nMaxPacketSize = nMaxPacketSize;
+
+	if (m_nEP != 0)
+	{
+		CDWHCIRegister EPCtrl (  m_Direction == DirectionIn
+				       ? DWHCI_DEV_IN_EP_CTRL (m_nEP)
+				       : DWHCI_DEV_OUT_EP_CTRL (m_nEP));
+		EPCtrl.Read ();
+		EPCtrl.And (~DWHCI_DEV_EP_CTRL_MAX_PACKET_SIZ__MASK);
+		EPCtrl.Or (m_nMaxPacketSize << DWHCI_DEV_EP_CTRL_MAX_PACKET_SIZ__SHIFT);
+		EPCtrl.Write ();
+	}
+}
+
 void CDWUSBGadgetEndpoint::OnUSBReset (void)
 {
 	InitTransfer ();
@@ -356,13 +372,20 @@ void CDWUSBGadgetEndpoint::HandleOutInterrupt (void)
 		OutEPIntAck.Set (DWHCI_DEV_OUT_EP_INT_SETUP_DONE);
 		OutEPIntAck.Write ();
 
-#ifndef NDEBUG
-		size_t nLength =
-#endif
-			FinishTransfer ();
-		assert (nLength == sizeof (TSetupData));
-
-		OnControlMessage ();
+		size_t nLength = FinishTransfer ();
+		if (nLength == sizeof (TSetupData))
+		{
+			OnControlMessage ();
+		}
+		else
+		{
+			// A SETUP can complete against a stale/partial transfer during a
+			// host warm-reboot or aborted control transfer. Do not crash the
+			// system: drop the malformed SETUP and re-arm EP0 (OnActivate) to
+			// receive the next one cleanly.
+			LOGWARN ("Ignoring SETUP with unexpected length %u", (unsigned) nLength);
+			OnActivate ();
+		}
 
 		OutEPInt.And (~DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE);
 	}

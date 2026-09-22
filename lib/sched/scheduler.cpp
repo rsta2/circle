@@ -308,7 +308,8 @@ void CScheduler::RemoveTask (CTask *pTask)
 	assert (0);
 }
 
-boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
+boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds,
+				const volatile boolean *pState)
 {
 	assert (ppWaitListHead != 0);
 	assert (m_pCurrent->m_pWaitListNext == 0);
@@ -316,6 +317,13 @@ boolean CScheduler::BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds)
 	assert (m_pCurrent->GetState () == TaskStateReady);
 
 	m_SpinLock.Acquire ();
+
+	// Atomically check the synchronization state variable, if specified
+	if (pState != 0 && *pState)
+	{
+		m_SpinLock.Release ();
+		return nMicroSeconds == 0;
+	}
 
 	// Add current task to waiting task list
 	m_pCurrent->m_pWaitListNext = *ppWaitListHead;

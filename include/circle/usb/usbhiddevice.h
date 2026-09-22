@@ -66,6 +66,9 @@ private:
 	CUSBEndpoint *m_pEndpointOut;		// interrupt out EP (optional)
 
 	u8 *m_pReportBuffer;
+
+	unsigned m_nErrorCount;		// see CompletionRoutine()
+	unsigned m_nLastErrorTicksHZ;	// see CompletionRoutine()
 };
 
 #endif

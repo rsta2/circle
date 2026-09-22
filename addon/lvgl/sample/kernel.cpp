@@ -23,7 +23,10 @@
 static const char FromKernel[] = "kernel";
 
 CKernel::CKernel (void)
-:	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
+:
+#ifndef DSI_DISPLAY
+	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
+#endif
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer, TRUE),
@@ -35,6 +38,9 @@ CKernel::CKernel (void)
 	m_I2CMaster (I2C_MASTER_DEVICE, TRUE),			// TRUE: I2C fast mode
 	m_I2CDisplay (&m_I2CMaster, DISPLAY_PARAMETERS),
 	m_GUI (&m_I2CDisplay)
+#elif defined (DSI_DISPLAY)
+	m_RPiTouchScreen (&m_Interrupt, DEPTH, DSI_DISPLAY),
+	m_GUI (&m_RPiTouchScreen)
 #else
 	m_GUI (&m_Screen)
 #endif
@@ -50,10 +56,12 @@ boolean CKernel::Initialize (void)
 {
 	boolean bOK = TRUE;
 
+#ifndef DSI_DISPLAY
 	if (bOK)
 	{
 		bOK = m_Screen.Initialize ();
 	}
+#endif
 
 	if (bOK)
 	{
@@ -65,7 +73,11 @@ boolean CKernel::Initialize (void)
 		CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
 		if (pTarget == 0)
 		{
+#ifndef DSI_DISPLAY
 			pTarget = &m_Screen;
+#else
+			pTarget = &m_Serial;
+#endif
 		}
 
 		bOK = m_Logger.Initialize (pTarget);
@@ -117,7 +129,10 @@ boolean CKernel::Initialize (void)
 #else
 	if (bOK)
 	{
-		m_RPiTouchScreen.Initialize ();
+#ifdef DSI_DISPLAY
+		bOK =
+#endif
+			m_RPiTouchScreen.Initialize ();
 	}
 #endif
 

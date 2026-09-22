@@ -1,0 +1,19 @@
+README
+
+In this directory an addon library for the RP1 DSI hosts of the Raspberry Pi 5
+is build, which can be used with the official Touchscreens (version 1 and 2).
+
+There is not a specific sample program for this library, but the following
+programs can be used with it:
+
+* sample/28-touchscreen
+* addon/lvgl/sample
+
+You have to enable the following line in the sample's Makefile and set the used
+DISP# port (0 or 1) with it:
+
+	DSI_DISPLAY = 0
+
+Before building the sample, the Circle base libraries and the library in this
+directory must be build. For the LVGL sample also the library in addon/lvgl/ is
+necessary.

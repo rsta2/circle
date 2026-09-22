@@ -21,16 +21,30 @@
 #include <circle/usb/usbhid.h>
 #include <circle/logger.h>
 #include <circle/util.h>
+#include <circle/timer.h>
 #include <assert.h>
 
 static const char FromUSBHID[] = "usbhid";
+
+// Consecutive report-endpoint errors (excluding frame overrun) to tolerate
+// before giving up on that endpoint - see CompletionRoutine().
+static const unsigned MaxConsecutiveErrors = 50;
+
+// An idle endpoint rarely completes a request successfully, so it rarely
+// gets a chance to reset m_nErrorCount via a success. Without this, isolated
+// errors far apart in time would still accumulate towards
+// MaxConsecutiveErrors. Treat an error as the start of a fresh run if it's
+// been at least this long since the last one.
+static const unsigned ErrorDecayMs = 2000;
 
 CUSBHIDDevice::CUSBHIDDevice (CUSBFunction *pFunction, unsigned nMaxReportSize)
 :	CUSBFunction (pFunction),
 	m_nMaxReportSize (nMaxReportSize),
 	m_pReportEndpoint (0),
 	m_pEndpointOut (0),
-	m_pReportBuffer (0)
+	m_pReportBuffer (0),
+	m_nErrorCount (0),
+	m_nLastErrorTicksHZ (0)
 {
 	if (m_nMaxReportSize > 0)
 	{
@@ -215,6 +229,8 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 
 	if (pURB->GetStatus () != 0)
 	{
+		m_nErrorCount = 0;
+
 		ReportHandler (m_pReportBuffer, pURB->GetResultLength ());
 	}
 	else
@@ -223,9 +239,17 @@ void CUSBHIDDevice::CompletionRoutine (CUSBRequest *pURB)
 		{
 			ReportHandler (0, 0);
 		}
-		else
+		else if (pURB->GetUSBError () != USBErrorFrameOverrun)
 		{
-			if (pURB->GetUSBError () != USBErrorFrameOverrun)
+			unsigned nNowHZ = CTimer::Get ()->GetTicks ();
+			if (   m_nErrorCount > 0
+			    && nNowHZ - m_nLastErrorTicksHZ >= MSEC2HZ (ErrorDecayMs))
+			{
+				m_nErrorCount = 0;
+			}
+			m_nLastErrorTicksHZ = nNowHZ;
+
+			if (++m_nErrorCount >= MaxConsecutiveErrors)
 			{
 				bRestart = FALSE;
 			}

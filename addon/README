@@ -25,6 +25,7 @@ microbit [5]	Library providing access to features of the micro:bit computer
 nvme	[5]	Driver for NVMe SSD access using the external PCIe interface (Raspberry Pi 5)
 pico	[5]	Library providing access to features of the Raspberry Pi Pico (e.g. RAM loader)
 profile	[5]	Software profiling library for performance analysis
+rp1dsi	[5]	DSI display support for the Raspberry Pi 5
 rtc	[5]	Library providing drivers for real-time clocks (RTC)
 SDCard	[5]	Driver for SD card access using the internal EMMC controller (by John Cronin)
 sensor	[5]	Drivers for I2C and other sensor devices

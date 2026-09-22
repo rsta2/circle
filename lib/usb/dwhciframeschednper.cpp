@@ -2,7 +2,7 @@
 // dwhciframeschednper.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -164,7 +164,7 @@ u16 CDWHCIFrameSchedulerNonPeriodic::GetFrameNumber (void)
 	CDWHCIRegister FrameNumber (DWHCI_HOST_FRM_NUM);
 	u16 usFrameNumber = DWHCI_HOST_FRM_NUM_NUMBER (FrameNumber.Read ());
 
-	if (CKernelOptions::Get ()->GetUSBBoost ())
+	if (CKernelOptions::Get ()->GetUSBBoost () & USB_MIDI_BOOST_NO_DELAY_ON_IDLE)
 	{
 		return usFrameNumber;
 	}

@@ -400,7 +400,6 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 		{
 			continue;
 		}
-		m_bPortConfigured[nPort] = TRUE;
 
 		if (!m_pDevice[nPort]->Configure ())
 		{
@@ -412,6 +411,9 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 
 			continue;
 		}
+
+		// Leave failed configurations eligible for retry on the next scan.
+		m_bPortConfigured[nPort] = TRUE;
 		
 		CLogger::Get ()->Write (FromHub, LogDebug, "Port %u: Device configured", nPort+1);
 	}

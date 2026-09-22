@@ -270,6 +270,14 @@ void CUSBEndpoint::ResetPID (void)
 		|| m_Type == EndpointTypeBulk);
 
 	m_NextPID = m_Type == EndpointTypeControl ? USBPIDSetup : USBPIDData0;
+#else
+	assert (   m_Type == EndpointTypeControl
+		|| m_Type == EndpointTypeBulk);
+
+	// Recover from a Stall/error: the xHC halts the endpoint at the hardware level
+	// (even EP0), and every later transfer on it silently times out until this runs.
+	assert (m_pXHCIEndpoint != 0);
+	m_pXHCIEndpoint->ResetFromHalted ();
 #endif
 }
 

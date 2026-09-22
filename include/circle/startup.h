@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-int main (void);
+int MAINPROC (void);
 #define EXIT_HALT	0
 #define EXIT_REBOOT	1
 #if RASPPI >= 5

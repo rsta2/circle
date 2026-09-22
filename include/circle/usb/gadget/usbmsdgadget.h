@@ -189,6 +189,8 @@ private:
 
 	int OnClassOrVendorRequest (const TSetupData *pSetupData, u8 *pData) override;
 
+	void OnNegotiatedSpeed (TDeviceSpeed Speed) override;
+
 private:
 	friend class CUSBMSDGadgetEndpoint;
 
@@ -231,6 +233,10 @@ private:
 	PACKED;
 
 	static const TUSBMSTGadgetConfigurationDescriptor s_ConfigurationDescriptor;
+
+	// Copy of s_ConfigurationDescriptor with the bulk max packet size
+	// adapted to the USB speed, which has been negotiated with the host
+	TUSBMSTGadgetConfigurationDescriptor m_ConfigurationDescriptor;
 
 	static const char *const s_StringDescriptor[];
 

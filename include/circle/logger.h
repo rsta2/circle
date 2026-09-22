@@ -39,7 +39,8 @@ enum TLogSeverity
 	LogError,	///< Severe error in this component, system may continue to work
 	LogWarning,	///< Non-severe problem, component continues to work
 	LogNotice,	///< Informative message, which is interesting for the system user
-	LogDebug	///< Message, which is only interesting for debugging this component
+	LogDebug,	///< Message, which is only interesting for debugging this component
+	LogTrace	///< Message, which is only interesting to trace this component
 };
 
 struct TLogEvent;
@@ -143,5 +144,6 @@ private:
 #define LOGWARN(...)		CLogger::Get ()->Write (From, LogWarning, __VA_ARGS__)
 #define LOGNOTE(...)		CLogger::Get ()->Write (From, LogNotice, __VA_ARGS__)
 #define LOGDBG(...)		CLogger::Get ()->Write (From, LogDebug, __VA_ARGS__)
+#define LOGTRACE(...)		CLogger::Get ()->Write (From, LogTrace, __VA_ARGS__)
 
 #endif

@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,13 @@ static const char FromKernel[] = "kernel";
 CKernel *CKernel::s_pThis = 0;
 
 CKernel::CKernel (void)
-:	m_Screen (0, 0),	// auto-detect size
+:
+#ifndef DSI_DISPLAY
+	m_Screen (0, 0),	// auto-detect size
+#else
+	m_RPiTouchScreen (&m_Interrupt, DEPTH, DSI_DISPLAY),
+	m_Screen (&m_RPiTouchScreen),
+#endif
 	m_Timer (&m_Interrupt),
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer)
@@ -47,6 +53,18 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
+		bOK = m_Interrupt.Initialize ();
+	}
+
+#ifdef DSI_DISPLAY
+	if (bOK)
+	{
+		bOK = m_RPiTouchScreen.Initialize ();
+	}
+#endif
+
+	if (bOK)
+	{
 		bOK = m_Screen.Initialize ();
 	}
 
@@ -64,11 +82,6 @@ boolean CKernel::Initialize (void)
 		}
 
 		bOK = m_Logger.Initialize (pTarget);
-	}
-
-	if (bOK)
-	{
-		bOK = m_Interrupt.Initialize ();
 	}
 
 	if (bOK)
@@ -102,7 +115,11 @@ TShutdownMode CKernel::Run (void)
 		m_Logger.Write (FromKernel, LogPanic, "Touchscreen not found");
 	}
 
+#ifndef DSI_DISPLAY
 	pTouchScreen->Setup (m_Screen.GetFrameBuffer ());
+#else
+	pTouchScreen->Setup (&m_RPiTouchScreen);
+#endif
 
 	const unsigned *pCalibration = m_Options.GetTouchScreen ();
 	if (pCalibration != 0)
@@ -121,7 +138,9 @@ TShutdownMode CKernel::Run (void)
 	{
 		pTouchScreen->Update ();
 
+#ifndef DSI_DISPLAY
 		m_Screen.Rotor (0, nCount);
+#endif
 		m_Timer.MsDelay (1000/60);
 	}
 

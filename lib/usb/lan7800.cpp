@@ -232,7 +232,8 @@ static const char FromLAN7800[] = "lan7800";
 CLAN7800Device::CLAN7800Device (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_pEndpointBulkIn (0),
-	m_pEndpointBulkOut (0)
+	m_pEndpointBulkOut (0),
+	m_bLinkUp (FALSE)
 {
 }
 
@@ -445,6 +446,11 @@ boolean CLAN7800Device::SendFrame (const void *pBuffer, unsigned nLength)
 
 boolean CLAN7800Device::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 {
+	if (!m_bLinkUp)
+	{
+		return FALSE;
+	}
+
 	assert (m_pEndpointBulkIn != 0);
 	assert (pBuffer != 0);
 	CUSBRequest URB (m_pEndpointBulkIn, pBuffer, FRAME_BUFFER_SIZE);
@@ -489,13 +495,20 @@ boolean CLAN7800Device::ReceiveFrame (void *pBuffer, unsigned *pResultLength)
 
 boolean CLAN7800Device::IsLinkUp (void)
 {
+	return m_bLinkUp;
+}
+
+boolean CLAN7800Device::UpdatePHY (void)
+{
 	u16 usPHYModeStatus;
 	if (!PHYRead (0x01, &usPHYModeStatus))
 	{
-		return FALSE;
+		return TRUE;
 	}
 
-	return usPHYModeStatus & (1 << 2) ? TRUE : FALSE;
+	m_bLinkUp = usPHYModeStatus & (1 << 2) ? TRUE : FALSE;
+
+	return TRUE;
 }
 
 TNetDeviceSpeed CLAN7800Device::GetLinkSpeed (void)

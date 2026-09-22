@@ -2,7 +2,7 @@
 /// \file scheduler.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@o2online.de>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -111,7 +111,11 @@ private:
 	void AddTask (CTask *pTask);
 	friend class CTask;
 
-	boolean BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds);
+	// pState is an optional pointer to a synchronization event variable, which is
+	// atomically checked with the blocking operation. When is specified and is set,
+	// the method returns silently.
+	boolean BlockTask (CTask **ppWaitListHead, unsigned nMicroSeconds,
+			    const volatile boolean *pState = 0);
 	void WakeTasks (CTask **ppWaitListHead); // can be called from interrupt context
 	friend class CSynchronizationEvent;
 
