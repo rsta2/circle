@@ -29,6 +29,9 @@ public:
 	~CUSBGamePad8BitDoXInputDevice (void);
 
 	boolean Configure (void);
+
+private:
+	boolean m_bInterfaceOK;
 };
 
 #endif
