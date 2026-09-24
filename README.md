@@ -19,6 +19,11 @@ Circle is a free open-source project created by makers for makers. Because it ta
 - **Source-only distribution:** We publish Circle only as source code; no official binary releases are provided.
 - **Risk acknowledgement:** By using Circle you acknowledge the residual risks associated with bare-metal development and accept responsibility for verifying suitability and safety for your use case.
 
+Release 51.1.1
+--------------
+
+This hotfix release reverts a commit, which does not allow to use lld as the linker with Clang, which is planned to be used with circle-stdlib. Furthermore it comes with an additional sanity check for the 8BitDo gamepad drivers.
+
 Release 51.1
 ------------
 

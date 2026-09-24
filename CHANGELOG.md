@@ -3,8 +3,15 @@ Change Log
 
 This file contains the release notes (the major changes) since Circle Step30 for quick access. For earlier releases please checkout the respective git tag and look into README.md. More info is attached to the release tags (git cat-file tag StepNN) and is available in the git commit log.
 
+Release 51.1.1
+--------------
+
+This hotfix release reverts a commit, which does not allow to use lld as the linker with Clang, which is planned to be used with circle-stdlib. Furthermore it comes with an additional sanity check for the 8BitDo gamepad drivers.
+
 Release 51.1
 ------------
+
+2026-09-22
 
 This release comes with **support for the Official 5" and 7" Touchscreens (v1 and v2)** with DSI interface **on the Raspberry Pi 5** in [addon/rp1dsi/](addon/rp1dsi). This can be tested with *sample/28-touchscreen* and *addon/lvgl/sample*. You have to set the `DSI_DISPLAY` variable in the respective *Makefile* to use the DSI displays.
 
