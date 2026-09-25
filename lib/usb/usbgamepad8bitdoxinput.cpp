@@ -23,7 +23,8 @@
 static const char FromUSBPad8BitDoXInput[] = "usbpad8bitdoxinput";
 
 CUSBGamePad8BitDoXInputDevice::CUSBGamePad8BitDoXInputDevice (CUSBFunction *pFunction)
-: CUSBGamePad8bitdoDevice (pFunction)
+: CUSBGamePad8bitdoDevice (pFunction),
+	m_bInterfaceOK (SelectInterfaceByClass (0xFF, 0x5D, 0x01, 1))
 {
 }
 
@@ -33,6 +34,13 @@ CUSBGamePad8BitDoXInputDevice::~CUSBGamePad8BitDoXInputDevice (void)
 
 boolean CUSBGamePad8BitDoXInputDevice::Configure (void)
 {
+	if (!m_bInterfaceOK)
+	{
+		ConfigurationError (FromUSBPad8BitDoXInput);
+
+		return FALSE;
+	}
+
 	if (!CUSBGamePad8bitdoDevice::Configure ())
 	{
 		return FALSE;

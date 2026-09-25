@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CIRCLEVER = 510100
+CIRCLEVER = 510101
 
 CIRCLEHOME ?= ..
 
@@ -265,7 +265,6 @@ LDFLAGS	+= --no-warn-rwx-segments
 endif
 else
 LDFLAGS	+= -Wl,--section-start=.init=$(LOADADDR)
-LDFLAGS	+= -Wl,--no-warn-rwx-segments -Wl,--no-warn-execstack
 endif
 
 ifeq ($(strip $(CHECK_DEPS)),1)
