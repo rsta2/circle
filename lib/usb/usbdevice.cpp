@@ -51,7 +51,8 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CUSBHCIRootP
 	m_pTTHubDevice (0),
 	m_pDeviceDesc (0),
 	m_pConfigDesc (0),
-	m_pConfigParser (0)
+	m_pConfigParser (0),
+	m_bIdle (FALSE)
 {
 	assert (m_pHost != 0);
 	assert (m_pRootPort != 0);
@@ -82,7 +83,8 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
 	m_pEndpoint0 (0),
 	m_pDeviceDesc (0),
 	m_pConfigDesc (0),
-	m_pConfigParser (0)
+	m_pConfigParser (0),
+	m_bIdle (FALSE)
 {
 	assert (m_pHost != 0);
 	assert (m_pHub != 0);
@@ -490,7 +492,13 @@ boolean CUSBDevice::Initialize (void)
 			LogWrite (LogWarning, "Cannot reset configuration");
 		}
 
-		return FALSE;
+		// Keep the device (unconfigured) instead of deleting it. Deleting it
+		// would free its address number while the device still answers at that
+		// address, so the next device could get the same address and both would
+		// reply at once. It would also be re-enumerated on every hub scan.
+		m_bIdle = TRUE;
+
+		return TRUE;
 	}
 
 	return TRUE;
@@ -504,6 +512,11 @@ boolean CUSBDevice::Configure (void)
 	if (m_pConfigDesc == 0)		// not initialized
 	{
 		return FALSE;
+	}
+
+	if (m_bIdle)			// no driver: nothing to configure
+	{
+		return TRUE;
 	}
 
 	boolean bResult = FALSE;
