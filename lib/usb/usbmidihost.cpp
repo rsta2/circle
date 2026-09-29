@@ -258,6 +258,13 @@ void CUSBMIDIHostDevice::CompletionRoutine (CUSBRequest *pURB)
 
 		bRestart = m_pInterface->CallPacketHandler (pPacketBuffer, nResultLength);
 	}
+	else if (   !pURB->GetStatus ()
+		 && (   pURB->GetUSBError () == USBErrorAborted
+		     || pURB->GetUSBError () == USBErrorStall))
+	{
+		delete pURB;
+		return;
+	}
 	else if (   m_pInterface->GetAllSoundOffOnUSBError ()
 		 && !pURB->GetStatus ()
 		 && pURB->GetUSBError () != USBErrorUnknown)

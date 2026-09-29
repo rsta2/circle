@@ -389,39 +389,45 @@ void CDWHCIDevice::CancelDeviceTransactions (CUSBDevice *pUSBDevice)
 #ifdef USE_USB_SOF_INTR
 	m_TransactionQueue.FlushDevice (pUSBDevice);
 #endif
-	AbortActiveChannels ();
+	AbortActiveChannels (pUSBDevice);
 }
 
-void CDWHCIDevice::AbortActiveChannels (void)
+void CDWHCIDevice::AbortActiveChannels (CUSBDevice *pUSBDevice)
 {
 	// Force-disable any channel which is still actively transferring for a
-	// device that is being removed. Once !m_bRootPortEnabled (already set by
-	// DisableRootPort() before this is called), the resulting HALTED channel
-	// interrupt will be picked up by the existing cleanup path at the top of
-	// ChannelInterruptHandler(), which completes the URB with USBErrorAborted
-	// and frees the channel. Without this, a blocking control transfer that
-	// was in flight when the device disappeared would spin forever in
-	// TransferStage()'s "while (m_bWaiting[nWaitBlock])" loop, since no
-	// further interrupt would ever arrive for that channel.
+	// device that is being removed. Without this, a blocking control transfer
+	// that was in flight when the device disappeared would spin forever in
+	// TransferStage()'s "while (m_bWaiting[nWaitBlock])" loop, since no further
+	// interrupt would ever arrive for that channel.
 	for (unsigned nChannel = 0; nChannel < m_nChannels; nChannel++)
 	{
-		if (m_pStageData[nChannel] == 0)
+		DisableChannelInterrupt (nChannel);
+
+		CDWHCITransferStageData *pStageData = m_pStageData[nChannel];
+		if (pStageData == 0)
 		{
 			continue;
 		}
 
-		CDWHCIRegister Character (DWHCI_HOST_CHAN_CHARACTER (nChannel));
-		Character.Read ();
-		if (Character.IsSet (DWHCI_HOST_CHAN_CHARACTER_ENABLE))
+		if (pStageData->GetDevice () != pUSBDevice)
 		{
-			Character.And (~DWHCI_HOST_CHAN_CHARACTER_ENABLE);
-			Character.Or (DWHCI_HOST_CHAN_CHARACTER_DISABLE);
-			Character.Write ();
+			EnableChannelInterrupt (nChannel);
 
-			CDWHCIRegister ChanInterruptMask (DWHCI_HOST_CHAN_INT_MASK (nChannel));
-			ChanInterruptMask.Set (DWHCI_HOST_CHAN_INT_HALTED);
-			ChanInterruptMask.Write ();
+			continue;
 		}
+
+		CUSBRequest *pURB = pStageData->GetURB ();
+		assert (pURB != 0);
+
+		pURB->SetStatus (0);
+		pURB->SetUSBError (USBErrorAborted);
+
+		delete pStageData;
+		m_pStageData[nChannel] = 0;
+
+		FreeChannel (nChannel);
+
+		CompleteRequest (pURB);
 	}
 }
 

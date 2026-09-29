@@ -65,7 +65,7 @@ private:
 	friend class CDWHCIRootPort;
 
 	void BeginRecoveryBackoff (void);
-	void AbortActiveChannels (void);
+	void AbortActiveChannels (CUSBDevice *pUSBDevice);
 
 	void ResetRecoveryState (void)			// called on genuine unplug
 	{
