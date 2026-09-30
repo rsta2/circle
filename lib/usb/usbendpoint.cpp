@@ -2,7 +2,7 @@
 // usbendpoint.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,14 +28,14 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice)
 	m_Type (EndpointTypeControl),
 	m_bDirectionIn (FALSE),
 	m_nMaxPacketSize (USB_DEFAULT_MAX_PACKET_SIZE)
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	, m_nInterval (1),
 	m_NextPID (USBPIDSetup)
 #endif
 {
 	assert (m_pDevice != 0);
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	m_pXHCIEndpoint = new CXHCIEndpoint ((CXHCIUSBDevice *) m_pDevice,
 					     (CXHCIDevice *) m_pDevice->GetHost ());
 #endif
@@ -43,7 +43,7 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice)
 
 CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *pDesc)
 :	m_pDevice (pDevice)
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	, m_nInterval (1),
 	m_NextPID (USBPIDData0)
 #endif
@@ -77,7 +77,7 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 	m_bDirectionIn   = pDesc->bEndpointAddress & 0x80 ? TRUE : FALSE;
 	m_nMaxPacketSize = pDesc->wMaxPacketSize & 0x7FF;
 
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	if (   m_Type == EndpointTypeInterrupt
 	    || m_Type == EndpointTypeIsochronous)
 	{
@@ -133,7 +133,7 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 			m_nMaxPacketSize = 8;
 		}
 
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 #ifdef USE_USB_SOF_INTR
 		m_nInterval = 1;
 #else
@@ -142,7 +142,7 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 #endif
 	}
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	m_pXHCIEndpoint = new CXHCIEndpoint ((CXHCIUSBDevice *) m_pDevice, pDesc,
 					     (CXHCIDevice *) m_pDevice->GetHost ());
 #endif
@@ -150,7 +150,7 @@ CUSBEndpoint::CUSBEndpoint (CUSBDevice *pDevice, const TUSBEndpointDescriptor *p
 
 CUSBEndpoint::~CUSBEndpoint (void)
 {
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	delete m_pXHCIEndpoint;
 	m_pXHCIEndpoint = 0;
 #endif
@@ -183,7 +183,7 @@ boolean CUSBEndpoint::SetMaxPacketSize (u32 nMaxPacketSize)
 {
 	m_nMaxPacketSize = nMaxPacketSize;
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	assert (m_pXHCIEndpoint != 0);
 	return m_pXHCIEndpoint->SetMaxPacketSize (nMaxPacketSize);
 #else
@@ -196,7 +196,7 @@ u32 CUSBEndpoint::GetMaxPacketSize (void) const
 	return m_nMaxPacketSize;
 }
 
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 
 unsigned CUSBEndpoint::GetInterval (void) const
 {
@@ -265,7 +265,7 @@ void CUSBEndpoint::SkipPID (unsigned nPackets, boolean bStatusStage)
 
 void CUSBEndpoint::ResetPID (void)
 {
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	assert (   m_Type == EndpointTypeControl
 		|| m_Type == EndpointTypeBulk);
 
@@ -281,7 +281,7 @@ void CUSBEndpoint::ResetPID (void)
 #endif
 }
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 
 CXHCIEndpoint *CUSBEndpoint::GetXHCIEndpoint (void)
 {

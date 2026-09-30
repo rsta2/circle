@@ -17,6 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+#if RASPPI <= 3 || defined (USE_DWHCI)
+
 #include <circle/usb/dwhcidevice.h>
 #include <circle/usb/dwhciframeschednper.h>
 #include <circle/usb/dwhciframeschednsplit.h>
@@ -37,9 +39,15 @@
 // Configuration
 //
 #define DWC_CFG_DYNAMIC_FIFO				// re-program FIFOs with these sizes:
+#if RASPPI <= 3
 	#define DWC_CFG_HOST_RX_FIFO_SIZE	1024	// number of 32 bit words
 	#define DWC_CFG_HOST_NPER_TX_FIFO_SIZE	1024	// number of 32 bit words
 	#define DWC_CFG_HOST_PER_TX_FIFO_SIZE	1024	// number of 32 bit words
+#else
+	#define DWC_CFG_HOST_RX_FIFO_SIZE	558	// number of 32 bit words
+	#define DWC_CFG_HOST_NPER_TX_FIFO_SIZE	32	// number of 32 bit words
+	#define DWC_CFG_HOST_PER_TX_FIFO_SIZE	256	// number of 32 bit words
+#endif
 
 #ifdef USE_USB_FIQ
 	#define MAX_TARGET_LEVEL	FIQ_LEVEL
@@ -670,6 +678,7 @@ boolean CDWHCIDevice::EnableRootPort (void)
 
 boolean CDWHCIDevice::PowerOn (void)
 {
+#if RASPPI <= 3
 	CBcmPropertyTags Tags;
 	TPropertyTagPowerState PowerState;
 	PowerState.nDeviceId = DEVICE_ID_USB_HCD;
@@ -680,7 +689,8 @@ boolean CDWHCIDevice::PowerOn (void)
 	{
 		return FALSE;
 	}
-	
+#endif
+
 	return TRUE;
 }
 
@@ -1037,8 +1047,13 @@ void CDWHCIDevice::StartChannel (CDWHCITransferStageData *pStageData)
 	TransferSize.Write ();
 
 	// set DMA address
+#if RASPPI <= 3
 	CDWHCIRegister DMAAddress (DWHCI_HOST_CHAN_DMA_ADDR (nChannel),
 				   BUS_ADDRESS (pStageData->GetDMAAddress ()));
+#else
+	CDWHCIRegister DMAAddress (DWHCI_HOST_CHAN_DMA_ADDR (nChannel),
+				   pStageData->GetDMAAddress ());
+#endif
 	DMAAddress.Write ();
 
 	CleanAndInvalidateDataCacheRange (pStageData->GetDMAAddress (), pStageData->GetBytesToTransfer ());
@@ -1856,7 +1871,7 @@ void CDWHCIDevice::CompleteRequest (CUSBRequest *pURB)
 
 #ifndef NDEBUG
 
-void CDWHCIDevice::DumpRegister (const char *pName, u32 nAddress)
+void CDWHCIDevice::DumpRegister (const char *pName, uintptr nAddress)
 {
 	CDWHCIRegister Register (nAddress);
 
@@ -1891,5 +1906,7 @@ void CDWHCIDevice::DumpStatus (unsigned nChannel)
 	DumpRegister ("HOST_CHAN_XFER_SIZ(n)",   DWHCI_HOST_CHAN_XFER_SIZ (nChannel));
 	DumpRegister ("HOST_CHAN_DMA_ADDR(n)",   DWHCI_HOST_CHAN_DMA_ADDR (nChannel));
 }
+
+#endif
 
 #endif

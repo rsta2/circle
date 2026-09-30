@@ -17,6 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+#if RASPPI <= 3 || defined (USE_DWHCI)
+
 #include <circle/usb/dwhcixferstagedata.h>
 #include <circle/usb/dwhciframeschedper.h>
 #include <circle/usb/dwhciframeschednper.h>
@@ -618,3 +620,5 @@ CDWHCIFrameScheduler *CDWHCITransferStageData::GetFrameScheduler (void) const
 }
 
 IMPLEMENT_CLASS_ALLOCATOR (CDWHCITransferStageData)
+
+#endif

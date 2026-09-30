@@ -2,7 +2,7 @@
 // usbhostcontroller.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ public:
 	// returns TRUE if device tree might have been updated (always TRUE on first call)
 	boolean UpdatePlugAndPlay (void) override;
 
-#if RASPPI <= 4
+#if RASPPI <= 4 || defined (USE_DWHCI)
 	static boolean IsActive (void)
 	{
 		return s_pThis != 0 ? TRUE : FALSE;
@@ -102,7 +102,7 @@ private:
 	CPtrList  m_HubList;
 	CSpinLock m_SpinLock;
 
-#if RASPPI <= 4
+#if RASPPI <= 4 || defined (USE_DWHCI)
 	static CUSBHostController *s_pThis;
 #endif
 };

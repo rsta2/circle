@@ -2,7 +2,7 @@
 // usbstandardhub.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
 	m_pStatusChangeBuffer (0),
 	m_nPorts (0),
 	m_bPowerIsOn (FALSE)
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	, m_pHubInfo (0)
 #endif
 	, m_nDeviceNumber (0)		// not assigned
@@ -62,7 +62,7 @@ CUSBStandardHub::~CUSBStandardHub (void)
 		s_DeviceNumberPool.FreeNumber (m_nDeviceNumber);
 	}
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	delete m_pHubInfo;
 	m_pHubInfo = 0;
 #endif
@@ -128,7 +128,7 @@ boolean CUSBStandardHub::Initialize (void)
 		return FALSE;
 	}
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	m_pHubInfo = new TUSBHubInfo;
 	assert (m_pHubInfo != 0);
 
@@ -232,7 +232,7 @@ boolean CUSBStandardHub::DisablePort (unsigned nPortIndex)
 	return TRUE;
 }
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 
 const TUSBHubInfo *CUSBStandardHub::GetHubInfo (void) const
 {
@@ -372,7 +372,7 @@ boolean CUSBStandardHub::EnumeratePorts (void)
 		}
 
 		assert (m_pDevice[nPort] == 0);
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 		m_pDevice[nPort] = new CUSBDevice (pHost, Speed, this, nPort);
 #else
 		m_pDevice[nPort] = new CXHCIUSBDevice ((CXHCIDevice *) pHost, Speed, this, nPort);

@@ -2,7 +2,7 @@
 // usbstring.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ boolean CUSBString::GetFromDescriptor (u8 ucID, u16 usLanguageID)
 	assert (ucID > 0);
 
 	delete [] m_pUSBString;
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	const unsigned nRequestLength = USBSTR_MAX_LENGTH;
 #else
 	const unsigned nRequestLength = USBSTR_MIN_LENGTH;
@@ -91,7 +91,7 @@ boolean CUSBString::GetFromDescriptor (u8 ucID, u16 usLanguageID)
 	}
 
 	u8 ucLength = m_pUSBString->bLength;
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	if ((unsigned) nResult < ucLength)
 	{
 		return FALSE;
@@ -162,7 +162,7 @@ const char *CUSBString::Get (void) const
 
 u16 CUSBString::GetLanguageID (void)
 {
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	const unsigned nRequestLength = USBSTR_MAX_LENGTH;
 #else
 	const unsigned nRequestLength = USBSTR_MIN_LENGTH;
@@ -182,7 +182,7 @@ u16 CUSBString::GetLanguageID (void)
 	}
 
 	u8 ucLength = pLanguageIDs->bLength;
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	if ((unsigned) nResult < ucLength)
 	{
 		delete [] pLanguageIDs;

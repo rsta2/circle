@@ -2,7 +2,7 @@
 // xhciusbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+#if RASPPI >= 4 && !defined (USE_DWHCI)
+
 #include <circle/usb/xhciusbdevice.h>
 #include <circle/usb/xhcidevice.h>
 #include <circle/usb/xhcirootport.h>
@@ -325,3 +327,5 @@ void CXHCIUSBDevice::FreeInputContext (void)
 	delete [] m_pInputContextBuffer;
 	m_pInputContextBuffer = 0;
 }
+
+#endif

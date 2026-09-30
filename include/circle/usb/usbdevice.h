@@ -2,7 +2,7 @@
 // usbdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@ public:
 
 	void LogWrite (TLogSeverity Severity, const char *pMessage, ...);
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	virtual boolean EnableHubFunction (void) = 0;
 
 	unsigned GetRootHubPortID (void) const		{ return m_nRootHubPortID; }
@@ -99,7 +99,7 @@ protected:
 	void SetAddress (u8 ucAddress);		// xHCI: set slot ID
 
 private:
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	static u32 AppendPortToRouteString (u32 nRouteString, unsigned nPort);
 #endif
 
@@ -127,12 +127,12 @@ private:
 
 	CUSBFunction *m_pFunction[USBDEV_MAX_FUNCTIONS];
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	unsigned m_nRootHubPortID;
 	u32	 m_nRouteString;
 #endif
 
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	static CNumberPool s_DeviceAddressPool;
 #endif
 };

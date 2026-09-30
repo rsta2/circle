@@ -2,7 +2,7 @@
 // usbendpoint.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2019  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ public:
 	boolean SetMaxPacketSize (u32 nMaxPacketSize);
 	u32 GetMaxPacketSize (void) const;
 
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	unsigned GetInterval (void) const;		// Milliseconds
 
 	TUSBPID GetNextPID (boolean bStatusStage);
@@ -57,7 +57,7 @@ public:
 #endif
 	void ResetPID (void);
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	CXHCIEndpoint *GetXHCIEndpoint (void);
 #endif
 
@@ -67,12 +67,12 @@ private:
 	TEndpointType	 m_Type;
 	boolean		 m_bDirectionIn;
 	u32		 m_nMaxPacketSize;
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	unsigned	 m_nInterval;			// Milliseconds
 	TUSBPID		 m_NextPID;
 #endif
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	CXHCIEndpoint	*m_pXHCIEndpoint;
 #endif
 };

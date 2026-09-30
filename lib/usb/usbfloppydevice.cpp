@@ -2,7 +2,7 @@
 // usbfloppydevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -468,7 +468,7 @@ int CUSBFloppyDiskDevice::WaitUnitReady (void)
 			return 0;
 		}
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 		if (!GetEndpoint0 ()->GetXHCIEndpoint ()->ResetFromHalted ())
 		{
 			LOGERR ("Endpoint reset failed");

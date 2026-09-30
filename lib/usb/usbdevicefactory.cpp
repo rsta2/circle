@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -217,7 +217,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	}
 #endif
 #ifndef EXCLUDE_USB_AUDIO
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	else if (   pName->Compare ("int1-1-0") == 0
 		 || pName->Compare ("int1-1-20") == 0)
 	{

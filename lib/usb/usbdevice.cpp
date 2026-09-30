@@ -34,7 +34,7 @@
 
 static const char FromDevice[] = "usbdev";
 
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 CNumberPool CUSBDevice::s_DeviceAddressPool (USB_FIRST_DEDICATED_ADDRESS, USB_MAX_ADDRESS);
 #endif
 
@@ -57,7 +57,7 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CUSBHCIRootP
 	assert (m_pHost != 0);
 	assert (m_pRootPort != 0);
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
         m_nRootHubPortID = m_pRootPort->GetPortID ();
 	m_nRouteString = 0;
 #endif
@@ -92,7 +92,7 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
 	CUSBDevice *pHubDevice = pHub->GetDevice ();
 	assert (pHubDevice != 0);
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 	m_nRootHubPortID = pHubDevice->GetRootHubPortID ();
 	m_nRouteString = AppendPortToRouteString (pHubDevice->GetRouteString (), nHubPortIndex+1);
 #endif
@@ -145,7 +145,7 @@ CUSBDevice::~CUSBDevice (void)
 		delete pNames;
 	}
 
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	if (m_ucAddress != USB_DEFAULT_ADDRESS)
 	{
 		s_DeviceAddressPool.FreeNumber (m_ucAddress);
@@ -169,7 +169,7 @@ CUSBDevice::~CUSBDevice (void)
 
 boolean CUSBDevice::Initialize (void)
 {
-#if RASPPI <= 3 && defined (REALTIME) && !defined (USE_USB_SOF_INTR)
+#if (RASPPI <= 3  || defined (USE_DWHCI)) && defined (REALTIME) && !defined (USE_USB_SOF_INTR)
 	if (m_Speed != USBSpeedHigh)
 	{
 		LogWrite (LogWarning, "Device speed is not allowed with REALTIME"
@@ -238,7 +238,7 @@ boolean CUSBDevice::Initialize (void)
 	//debug_hexdump (m_pDeviceDesc, sizeof *m_pDeviceDesc, FromDevice);
 #endif
 
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	unsigned nAddress = s_DeviceAddressPool.AllocateNumber (FALSE);
 	if (nAddress == CNumberPool::Invalid)
 	{
@@ -641,7 +641,7 @@ CString *CUSBDevice::GetNames (void) const
 
 void CUSBDevice::SetAddress (u8 ucAddress)
 {
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	assert (ucAddress <= USB_MAX_ADDRESS);
 #else
 	assert (XHCI_IS_SLOTID (ucAddress));
@@ -732,7 +732,7 @@ void CUSBDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 	assert (pMessage != 0);
 
 	CString Source;
-#if RASPPI <= 3
+#if RASPPI <= 3 || defined (USE_DWHCI)
 	Source.Format ("%s%u-%u", FromDevice, (unsigned) m_ucHubAddress, (unsigned) m_ucHubPortNumber);
 #else
 	Source.Format ("%s%u", FromDevice, m_nRootHubPortID);
@@ -760,7 +760,7 @@ void CUSBDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 	va_end (var);
 }
 
-#if RASPPI >= 4
+#if RASPPI >= 4 && !defined (USE_DWHCI)
 
 u32 CUSBDevice::AppendPortToRouteString (u32 nRouteString, unsigned nPort)
 {
