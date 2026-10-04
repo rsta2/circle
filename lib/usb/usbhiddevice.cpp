@@ -124,8 +124,7 @@ boolean CUSBHIDDevice::ConfigureHID (unsigned nMaxReportSize)
 	{
 		if (GetHost ()->ControlMessage (GetEndpoint0 (),
 						REQUEST_OUT | REQUEST_CLASS | REQUEST_TO_INTERFACE,
-						SET_PROTOCOL,   GetInterfaceProtocol () == 2
-							      ? REPORT_PROTOCOL : BOOT_PROTOCOL,
+						SET_PROTOCOL, GetHIDProtocol (),
 						GetInterfaceNumber (), 0, 0) < 0)
 		{
 			CLogger::Get ()->Write (FromUSBHID, LogError, "Cannot set protocol");
@@ -145,6 +144,11 @@ boolean CUSBHIDDevice::ConfigureHID (unsigned nMaxReportSize)
 	assert (m_pReportBuffer != 0);
 
 	return TRUE;
+}
+
+u16 CUSBHIDDevice::GetHIDProtocol (void) const
+{
+	return GetInterfaceProtocol () == 2 ? REPORT_PROTOCOL : BOOT_PROTOCOL;
 }
 
 boolean CUSBHIDDevice::SendToEndpointOut (const void *pBuffer, unsigned nBufSize, unsigned nTimeoutMs)
