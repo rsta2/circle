@@ -31,6 +31,7 @@
 #include <circle/usb/usbfloppydevice.h>
 #include <circle/usb/usbkeyboard.h>
 #include <circle/usb/usbkeyboard8bitdo.h>
+#include <circle/usb/usbkeyboardbolt.h>
 #include <circle/usb/usbmouse.h>
 #include <circle/usb/usbgamepadstandard.h>
 #include <circle/usb/usbgamepadps3.h>
@@ -99,6 +100,10 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		    || pVendor->Compare ("ven2dc8-5201") == 0)  // 8bitDo Retro Keyboard
 		{
 			pResult = new CUSBKeyboard8BitDoDevice (pParent);
+		}
+		else if (pVendor->Compare ("ven46d-c548") == 0)	// Logi Bolt receiver
+		{
+			pResult = new CUSBKeyboardBoltDevice (pParent);
 		}
 		else if (pVendor->Compare ("ven3f0-1198") != 0)	// HP USB 1000dpi Laser Mouse
 		{

@@ -36,6 +36,8 @@ public:
 	boolean ConfigureHID (unsigned nMaxReportSize = 0);
 
 protected:
+	virtual u16 GetHIDProtocol (void) const;
+
 	// has to be called from Configure() in derived class, when initialization is done
 	boolean StartRequest (void);
 
