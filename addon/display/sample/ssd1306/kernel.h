@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,7 +32,8 @@
 #include <circle/usb/usbhcidevice.h>
 #include <circle/types.h>
 #include <circle/i2cmaster.h>
-#include <display/ssd1306device.h>
+#include <circle/terminal.h>
+#include <display/ssd1306display.h>
 
 enum TShutdownMode
 {
@@ -70,7 +71,8 @@ private:
 	CUSBHCIDevice		m_USBHCI;
 	CI2CMaster		m_I2CMaster;
 
-	CSSD1306Device		m_LCD;
+	CSSD1306Display		m_Display;
+	CTerminalDevice		m_LCD;
 };
 
 #endif

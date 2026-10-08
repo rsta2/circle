@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,14 +37,13 @@
 #define RESET_PIN		23		// or CST7789Display::None
 #define BACKLIGHT_PIN	CST7789Display::None
 
-#define COLS  15	// Max 40
-#define ROWS  4		// Max 10
+#define COLS  15
+#define ROWS  4
 #define ROT   0 	// 0,90,180,270
 #define FONT		Font8x16
-#define WIDECHARS	TRUE	// Set to false for thin characters
-#define TALLCHARS	TRUE	// Set to false for short characters
 
-#define MY_COLOR		ST7789_COLOR (31, 31, 15)	// any color
+// FontFlagsNone, FontFlagsDoubleWidth, FontFlagsDoubleHeight or FontFlagsDoubleBoth
+#define FONTFLAGS	CCharGenerator::FontFlagsDoubleBoth
 
 static const char FromKernel[] = "kernel";
 
@@ -56,7 +55,7 @@ CKernel::CKernel (void)
 	m_SPIMaster (SPI_CLOCK_SPEED, SPI_CPOL, SPI_CPHA, SPI_MASTER_DEVICE),
 	m_Display (&m_SPIMaster, DC_PIN, RESET_PIN, BACKLIGHT_PIN, WIDTH, HEIGHT,
 		   SPI_CPOL, SPI_CPHA, SPI_CLOCK_SPEED, SPI_CHIP_SELECT),
-	m_pLCD (nullptr)
+	m_LCD (&m_Display, 1 /* tty2 */, FONT, FONTFLAGS)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -118,11 +117,7 @@ boolean CKernel::Initialize (void)
 
 	if (bOK)
 	{
-		// Cannot instantiate the ST7789 device until the disply has been initialised
-		m_pLCD = new CST7789Device (&m_SPIMaster, &m_Display, COLS, ROWS,
-					    FONT, WIDECHARS, TALLCHARS);
-		assert (m_pLCD);
-		bOK = m_pLCD->Initialize ();
+		bOK = m_LCD.Initialize ();
 	}
 
 	return bOK;
@@ -165,7 +160,7 @@ TShutdownMode CKernel::Run (void)
 		int nResult = Keyboard.Read (Buffer, sizeof Buffer);
 		if (nResult > 0)
 		{
-			m_pLCD->Write (Buffer, nResult);
+			m_LCD.Write (Buffer, nResult);
 		}
 
 		m_Screen.Rotor (0, nCount);
@@ -203,5 +198,5 @@ void CKernel::TimeDemo (void)
 
 void CKernel::LCDWrite (const char *pString)
 {
-	m_pLCD->Write (pString, strlen (pString));
+	m_LCD.Write (pString, strlen (pString));
 }

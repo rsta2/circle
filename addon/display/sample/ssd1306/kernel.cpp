@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,14 +30,14 @@
 #define WIDTH	128
 
 #define I2C_ADDR 0x3C
+#define I2C_CLOCK 400000	// Hz
 
 #define I2C_MASTER_DEVICE	(CMachineInfo::Get ()->GetDevice (DeviceI2CMaster))
 
 static const char FromKernel[] = "kernel";
 
-// Set to true to enable rotated or mirrored displays
-#define ROTATED   false
-#define MIRRORED  false
+// Set to 180 to enable rotated display
+#define ROTATION	0	// or 180 (degrees)
 
 CKernel::CKernel (void)
 :	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
@@ -45,7 +45,8 @@ CKernel::CKernel (void)
 	m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_USBHCI (&m_Interrupt, &m_Timer),
 	m_I2CMaster (I2C_MASTER_DEVICE),
-	m_LCD (WIDTH, HEIGHT, &m_I2CMaster, I2C_ADDR, ROTATED, MIRRORED)
+	m_Display (&m_I2CMaster, WIDTH, HEIGHT, I2C_ADDR, I2C_CLOCK),
+	m_LCD (&m_Display, 1 /* tty2 */, Font6x7, CCharGenerator::FontFlagsDoubleHeight)
 {
 	m_ActLED.Blink (5);	// show we are alive
 }
@@ -97,6 +98,13 @@ boolean CKernel::Initialize (void)
 	if (bOK)
 	{
 		bOK = m_I2CMaster.Initialize ();
+	}
+
+	if (bOK)
+	{
+		m_Display.SetRotation (ROTATION);
+
+		bOK = m_Display.Initialize ();
 	}
 
 	if (bOK)

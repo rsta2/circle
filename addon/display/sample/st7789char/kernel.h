@@ -2,7 +2,7 @@
 // kernel.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 #include <circle/spimaster.h>
 #include <circle/types.h>
 #include <display/st7789display.h>
-#include <display/st7789device.h>
+#include <circle/terminal.h>
 
 enum TShutdownMode
 {
@@ -71,7 +71,7 @@ private:
 	CUSBHCIDevice		m_USBHCI;
 	CSPIMaster		m_SPIMaster;
 	CST7789Display		m_Display;
-	CST7789Device		*m_pLCD;
+	CTerminalDevice		m_LCD;
 };
 
 #endif
