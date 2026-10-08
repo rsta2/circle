@@ -108,6 +108,15 @@ private:
 	int CardReset (void);
 	int CardInit (void);
 
+#ifndef USE_SDHOST
+	// eMMC (MMC) specific helpers, used when m_Device == EmbeddedMMC
+	int MMCWaitReady (unsigned nTimeoutMs);
+	int MMCSwitch (u32 nIndex, u32 nValue);
+	int MMCReadExtCSD (u8 *pExtCSD);
+	int MMCSetBusWidth (unsigned nWidth);
+	void MMCSetupCapacity (const u8 *pExtCSD);
+#endif
+
 	int EnsureDataMode (void);
 	int DoDataCommand (int is_write, u8 *buf, size_t buf_size, u32 block_no);
 	int DoRead (u8 *buf, size_t buf_size, u32 block_no);
