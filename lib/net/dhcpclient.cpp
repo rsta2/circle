@@ -74,6 +74,7 @@ struct TDHCPOption
 #define DHCP_OPTION_ROUTER	3
 #define DHCP_OPTION_DNSSERVER	6
 #define DHCP_OPTION_HOSTNAME	12
+#define DHCP_OPTION_NTPSERVER	42
 #define DHCP_OPTION_REQIPADDR	50
 #define DHCP_OPTION_LEASETIME	51
 	#define DHCP_OPTION_LEASETIME_INFINITE	((u32) -1)
@@ -300,6 +301,7 @@ TDHCPStatus CDHCPClient::SelectAndRequest (void)
 	m_pNetConfig->SetNetMask (m_nRxSubnetMask);
 	m_pNetConfig->SetDefaultGateway (m_nRxRouter);
 	m_pNetConfig->SetDNSServer (m_nRxDNSServer);
+	m_pNetConfig->SetNTPServer (m_nRxNTPServer);
 
 	m_nIPAddressLeaseTime = m_nRxIPAddressLeaseTime;
 	m_nRenewalTimeValue   = m_nRxRenewalTimeValue;
@@ -520,13 +522,14 @@ boolean CDHCPClient::SendRequest (u32 nCIAddr)
 #define REQ_OFFSET_SERVERID	5
 			DHCP_OPTION_REQIPADDR, 4, 0, 0, 0, 0,
 #define REQ_OFFSET_REQIPADDR	11
-			DHCP_OPTION_PARMLIST,  6,
+			DHCP_OPTION_PARMLIST,  7,
 				DHCP_OPTION_SUBNETMASK,
 				DHCP_OPTION_ROUTER,
 				DHCP_OPTION_DNSSERVER,
 				DHCP_OPTION_LEASETIME,
 				DHCP_OPTION_RENEWALTIME,
 				DHCP_OPTION_REBINDTIME,
+				DHCP_OPTION_NTPSERVER, 0, 0, 0, 0,
 			DHCP_OPTION_END
 		};
 
@@ -541,13 +544,14 @@ boolean CDHCPClient::SendRequest (u32 nCIAddr)
 		const static u8 Options[] =
 		{
 			DHCP_OPTION_MSGTYPE,   1, DHCP_OPTION_MSGTYPE_REQUEST,
-			DHCP_OPTION_PARMLIST,  6,
+			DHCP_OPTION_PARMLIST,  7,
 				DHCP_OPTION_SUBNETMASK,
 				DHCP_OPTION_ROUTER,
 				DHCP_OPTION_DNSSERVER,
 				DHCP_OPTION_LEASETIME,
 				DHCP_OPTION_RENEWALTIME,
 				DHCP_OPTION_REBINDTIME,
+				DHCP_OPTION_NTPSERVER,
 			DHCP_OPTION_END
 		};
 
@@ -659,6 +663,7 @@ boolean CDHCPClient::ReceiveMessage (void)
 	m_nRxServerIdentifier	= 0;
 	m_nRxRenewalTimeValue	= 0;
 	m_nRxRebindingTimeValue	= 0;
+	m_nRxNTPServer		= 0;
 
 	ScanOptions (pMessage->Options, nMessageSize-DHCP_HEADER_SIZE);
 
@@ -775,6 +780,14 @@ void CDHCPClient::ScanOptions (const u8 *pOptions, unsigned nOptionsSize)
 				m_nRxRebindingTimeValue = be2le32 (GetUnaligned (pOption->Value));
 			}
 			goto Skip;
+		case DHCP_OPTION_NTPSERVER:
+			if (   pOption->Len >= 4
+			    && (u8 *) pOption+4+2 <= pOptionsEnd)
+			{
+				m_nRxNTPServer = GetUnaligned (pOption->Value);	// take the 1st NTP server
+			}
+			goto Skip;
+
 
 		Skip:
 		default:

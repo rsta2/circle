@@ -21,6 +21,7 @@
 
 CNetConfig::CNetConfig (void)
 :	m_bUseDHCP (TRUE)
+,	m_bHasNTPServer (FALSE)
 {
 	Reset ();
 }
@@ -37,7 +38,7 @@ void CNetConfig::Reset (void)
 	m_NetMask.Set (NullAddress);
 	m_DefaultGateway.Set (NullAddress);
 	m_DNSServer.Set (NullAddress);
-
+	m_NTPServer.Set ((u32)0);
 	UpdateBroadcastAddress ();
 }
 
@@ -68,6 +69,19 @@ void CNetConfig::SetDefaultGateway (u32 nAddress)
 void CNetConfig::SetDNSServer (u32 nAddress)
 {
 	m_DNSServer.Set (nAddress);
+}
+
+void CNetConfig::SetNTPServer (u32 nAddress)
+{
+	if (nAddress != 0)
+	{
+		m_bHasNTPServer = TRUE;
+		m_NTPServer.Set (nAddress);
+	}
+	else
+	{
+		m_bHasNTPServer = FALSE;
+	}
 }
 
 void CNetConfig::SetIPAddress (const u8 *pAddress)
@@ -104,6 +118,11 @@ boolean CNetConfig::IsDHCPUsed (void) const
 	return m_bUseDHCP;
 }
 
+boolean CNetConfig::HasNTPServer (void) const
+{
+	return m_bHasNTPServer;
+}
+
 const u8 *CNetConfig::GetNetMask (void) const
 {
 	return m_NetMask.Get ();
@@ -122,6 +141,11 @@ const CIPAddress *CNetConfig::GetDNSServer (void) const
 const CIPAddress *CNetConfig::GetBroadcastAddress (void) const
 {
 	return &m_BroadcastAddress;
+}
+
+const CIPAddress *CNetConfig::GetNTPServer (void) const
+{
+	return &m_NTPServer;
 }
 
 void CNetConfig::UpdateBroadcastAddress (void)

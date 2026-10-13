@@ -39,6 +39,7 @@ private:
 private:
 	CString		 m_NTPServer;
 	CNetSubSystem	*m_pNetSubSystem;
+	boolean          m_bUseIP;
 };
 
 #endif
