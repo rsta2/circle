@@ -30,12 +30,20 @@ static const char FromNTPDaemon[] = "ntpd";
 
 CNTPDaemon::CNTPDaemon (const char *pNTPServer, CNetSubSystem *pNetSubSystem)
 :	m_NTPServer (pNTPServer),
-	m_pNetSubSystem (pNetSubSystem)
+	m_pNetSubSystem (pNetSubSystem),
+	m_bUseIP(FALSE)
 {
 	assert (m_pNetSubSystem != 0);
-
+	// If using DHCP, then we may have an NTP server IP
+	// already provided, so try and use it when UpdateTime gets called.
+	CNetConfig* pNC = pNetSubSystem->GetConfig();
+	if (pNC->IsDHCPUsed() && pNC->HasNTPServer())
+	{
+		m_bUseIP = TRUE;
+	}
 	SetName (FromNTPDaemon);
 }
+
 
 CNTPDaemon::~CNTPDaemon (void)
 {
@@ -57,22 +65,42 @@ unsigned CNTPDaemon::UpdateTime (void)
 	assert (m_pNetSubSystem != 0);
 
 	CIPAddress NTPServerIP;
-	CDNSClient DNSClient (m_pNetSubSystem);
-	if (!DNSClient.Resolve (m_NTPServer, &NTPServerIP))
+	// Don't resolve the server address if we have one provided by DHCP
+	if (m_bUseIP)
 	{
-		CLogger::Get ()->Write (FromNTPDaemon, LogWarning, "Cannot resolve: %s",
-					(const char *) m_NTPServer);
-
-		return 300;
+		CNetConfig* pNC = m_pNetSubSystem->GetConfig();
+		NTPServerIP = *(pNC->GetNTPServer());
 	}
+	else
+	{
+		CDNSClient DNSClient (m_pNetSubSystem);
+		if (!DNSClient.Resolve (m_NTPServer, &NTPServerIP))
+		{
+			CLogger::Get ()->Write (FromNTPDaemon, LogWarning, "Cannot resolve: %s",
+						(const char *) m_NTPServer);
+
+			return 300;
+		}
+  }
 	
 	CNTPClient NTPClient (m_pNetSubSystem);
+        
+	CString IPString;
+	NTPServerIP.Format (&IPString);
+	CLogger::Get ()->Write (FromNTPDaemon, LogNotice, "using \"%s\" as NTP server",
+			(const char *) IPString);
 	unsigned nTime = NTPClient.GetTime (NTPServerIP);
 	if (nTime == 0)
 	{
 		CLogger::Get ()->Write (FromNTPDaemon, LogWarning, "Cannot get time from %s",
 					(const char *) m_NTPServer);
 
+		// If the server didn't respond, and it was provided by DHCP, next time
+		// fall back to using the one provided by code.
+		if (m_bUseIP)
+		{
+			m_bUseIP = FALSE;
+		}
 		return 300;
 	}
 

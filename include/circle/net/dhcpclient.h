@@ -106,6 +106,7 @@ private:
 	u32 m_nRxServerIdentifier;	// 54
 	u32 m_nRxRenewalTimeValue;	// 58
 	u32 m_nRxRebindingTimeValue;	// 59
+	u32 m_nRxNTPServer;		// 42 
 
 	static const unsigned s_TimeoutHZ[];
 };

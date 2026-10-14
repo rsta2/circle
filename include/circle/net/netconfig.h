@@ -37,6 +37,7 @@ public:
 	void SetNetMask (u32 nNetMask);
 	void SetDefaultGateway (u32 nAddress);
 	void SetDNSServer (u32 nAddress);
+	void SetNTPServer (u32 nAddress);
 
 	void SetIPAddress (const u8 *pAddress);
 	void SetNetMask (const u8 *pNetMask);
@@ -44,24 +45,28 @@ public:
 	void SetDNSServer (const u8 *pAddress);
 
 	boolean IsDHCPUsed (void) const;
+	boolean HasNTPServer (void) const;
 
 	const CIPAddress *GetIPAddress (void) const;
 	const u8 *GetNetMask (void) const;
 	const CIPAddress *GetDefaultGateway (void) const;
 	const CIPAddress *GetDNSServer (void) const;
 	const CIPAddress *GetBroadcastAddress (void) const;		// directed broadcast
+	const CIPAddress *GetNTPServer (void) const;
 
 private:
 	void UpdateBroadcastAddress (void);
 
 private:
 	boolean m_bUseDHCP;
+	boolean m_bHasNTPServer;
 
 	CIPAddress m_IPAddress;
 	CIPAddress m_NetMask;
 	CIPAddress m_DefaultGateway;
 	CIPAddress m_DNSServer;
 	CIPAddress m_BroadcastAddress;
+	CIPAddress m_NTPServer;
 };
 
 #endif
