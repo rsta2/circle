@@ -28,16 +28,23 @@
 
 static const char FromNTPDaemon[] = "ntpd";
 
-CNTPDaemon::CNTPDaemon (const char *pNTPServer, CNetSubSystem *pNetSubSystem)
+CNTPDaemon::CNTPDaemon (const char *pNTPServer, CNetSubSystem *pNetSubSystem,
+			boolean bUseDHCPsupplied)
 :	m_NTPServer (pNTPServer),
 	m_pNetSubSystem (pNetSubSystem),
 	m_bUseIP(FALSE)
 {
 	assert (m_pNetSubSystem != 0);
-	// If using DHCP, then we may have an NTP server IP
-	// already provided, so try and use it when UpdateTime gets called.
+
+	// If using DHCP, then we may have an NTP server IP provided.
+	// Previous behaviour was not to request it from the DHCP server
+	// and only use the named server from this constructor.
+	// To preserve that behaviour, either pass bUseDHCPsupplied as
+	// FALSE, or omit it and allow it to default.
+	// To use the DHCP-supplied value (if any), pass bUseDHCPsupplied
+	// as TRUE.
 	CNetConfig* pNC = pNetSubSystem->GetConfig();
-	if (pNC->IsDHCPUsed() && pNC->HasNTPServer())
+	if (bUseDHCPsupplied && pNC->IsDHCPUsed() && pNC->HasNTPServer())
 	{
 		m_bUseIP = TRUE;
 	}

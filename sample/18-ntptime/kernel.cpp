@@ -119,7 +119,15 @@ TShutdownMode CKernel::Run (void)
 
 	m_Timer.SetTimeZone (nTimeZone);
 
-	new CNTPDaemon (NTPServer, &m_Net);
+	// To force use of the named NTP server, use either:
+	//    new CNTPDaemon (NTPServer, &m_Net)
+	//  or:
+	//    new CNTPDaemon (NTPServer, &m_Net, FALSE)
+	// To allow use of the NTP server address supplied by DHCP,
+	// use:
+	//    new CNTPDaemon (NTPServer, &m_Net, TRUE);
+
+	new CNTPDaemon (NTPServer, &m_Net, TRUE);
 
 	for (unsigned nCount = 0; 1; nCount++)
 	{
