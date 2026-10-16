@@ -28,7 +28,8 @@ class CNTPDaemon : public CTask
 {
 public:
 	CNTPDaemon (const char	  *pNTPServer,		// Hostname
-		    CNetSubSystem *pNetSubSystem);
+		    CNetSubSystem *pNetSubSystem,
+		    boolean bUseDHCPsupplied = FALSE);
 	~CNTPDaemon (void);
 
 	void Run (void);
