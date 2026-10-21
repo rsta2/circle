@@ -310,6 +310,12 @@ size_t CDWUSBGadgetEndpoint::FinishTransfer (void)
 	assert (nXferSize <= m_nTransferLength);
 	nXferSize = m_nTransferLength - nXferSize;
 
+	// Discard cache lines refilled while DMA owned the receive buffer.
+	if (m_TransferMode != TransferDataIn && nXferSize)
+	{
+		CleanAndInvalidateDataCacheRange ((uintptr) m_pTransferBuffer, nXferSize);
+	}
+
 #ifdef USB_GADGET_DEBUG
 	LOGDBG ("%u byte(s) transferred", nXferSize);
 
