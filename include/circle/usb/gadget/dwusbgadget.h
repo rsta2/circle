@@ -93,7 +93,7 @@ private:
 	boolean Reset (void);
 	void EnableCommonInterrupts (void);
 	void EnableDeviceInterrupts (void);
-	void FlushTxFIFO (unsigned nFIFO);
+	boolean FlushTxFIFO (unsigned nFIFO, unsigned nUsPollDelay = 1000);
 	void FlushRxFIFO (void);
 
 	void HandleUSBSuspend (void);
@@ -105,7 +105,7 @@ private:
 	static void InterruptStub (void *pParam);
 
 	boolean WaitForBit (CDWHCIRegister *pRegister, u32 nMask, boolean bWaitUntilSet,
-			    unsigned nMsTimeout);
+			    unsigned nMsTimeout, unsigned nUsPollDelay = 1000);
 
 	void AssignEndpoint (unsigned nEP, CDWUSBGadgetEndpoint *pEP);
 	void RemoveEndpoint (unsigned nEP);

@@ -445,7 +445,7 @@ void CDWUSBGadget::EnableDeviceInterrupts (void)
 	IntMask.Write ();
 }
 
-void CDWUSBGadget::FlushTxFIFO (unsigned nFIFO)
+boolean CDWUSBGadget::FlushTxFIFO (unsigned nFIFO, unsigned nUsPollDelay)
 {
 	CDWHCIRegister Reset (DWHCI_CORE_RESET, 0);
 	Reset.Or (DWHCI_CORE_RESET_TX_FIFO_FLUSH);
@@ -453,12 +453,14 @@ void CDWUSBGadget::FlushTxFIFO (unsigned nFIFO)
 	Reset.Or (nFIFO << DWHCI_CORE_RESET_TX_FIFO_NUM__SHIFT);
 	Reset.Write ();
 
-	if (!WaitForBit (&Reset, DWHCI_CORE_RESET_TX_FIFO_FLUSH, FALSE, 10))
+	if (!WaitForBit (&Reset, DWHCI_CORE_RESET_TX_FIFO_FLUSH, FALSE, 10, nUsPollDelay))
 	{
-		return;
+		return FALSE;
 	}
 
 	CTimer::Get ()->usDelay (1);		// Wait for 3 PHY clocks
+
+	return TRUE;
 }
 
 void CDWUSBGadget::FlushRxFIFO (void)
@@ -478,17 +480,20 @@ void CDWUSBGadget::FlushRxFIFO (void)
 boolean CDWUSBGadget::WaitForBit (CDWHCIRegister *pRegister,
 				  u32		  nMask,
 				  boolean	  bWaitUntilSet,
-				  unsigned	  nMsTimeout)
+				  unsigned	  nMsTimeout,
+				  unsigned	  nUsPollDelay)
 {
 	assert (pRegister != 0);
 	assert (nMask != 0);
 	assert (nMsTimeout > 0);
+	assert (nUsPollDelay > 0);
+
+	CTimer *pTimer = CTimer::Get ();
+	unsigned nStart = pTimer->GetClockTicks ();
 
 	while ((pRegister->Read () & nMask) ? !bWaitUntilSet : bWaitUntilSet)
 	{
-		CTimer::Get ()->MsDelay (1);
-
-		if (--nMsTimeout == 0)
+		if (pTimer->GetClockTicks () - nStart >= nMsTimeout * 1000)
 		{
 			LOGWARN ("Timeout");
 #ifndef NDEBUG
@@ -496,6 +501,8 @@ boolean CDWUSBGadget::WaitForBit (CDWHCIRegister *pRegister,
 #endif
 			return FALSE;
 		}
+
+		pTimer->usDelay (nUsPollDelay);
 	}
 
 	return TRUE;
