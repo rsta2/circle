@@ -25,6 +25,9 @@ enum gpio_mode_t
 	Alt3 = 7,
 	Alt4 = 3,
 	Alt5 = 2
+#if RASPPI <=2 && defined(USE_REDBEAR_IOT)
+	, Output = 1
+#endif
 #else
 	Output,
 	Func1,
@@ -37,6 +40,9 @@ enum gpio_mode_t
 	Func8
 #endif
 };
+#if RASPPI <=2 && defined(USE_REDBEAR_IOT)
+void gpiowrite (unsigned pin, unsigned val);
+#endif
 
 void gpiosel (unsigned pin, enum gpio_mode_t mode);
 

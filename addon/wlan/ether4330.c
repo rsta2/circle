@@ -490,6 +490,74 @@ sdioset(int fn, int addr, int bits)
 	sdiowr(fn, addr, sdiord(fn, addr) | bits);
 }
 
+/*
+ * Provide support for Redbear IOT pHAT
+ * This is an add-on hat with WiFi/BT designed for the RPI Zero,
+ * and works with earlier RPI models with a 40-pin GPIO connector.
+ * Since many boards already have WiFi/BT on-board, it does not
+ * seem sensible to support Pi 3 or later.
+ */
+#if RASPPI <=2 && defined(USE_REDBEAR_IOT)
+
+static void
+sdioinit(void)
+{
+	ulong ocr, rca;
+	int i;
+
+	/* disconnect emmc from SD card (connect sdhost instead) */
+	for(i = 48; i <= 53; i++)
+		gpiosel(i, Alt0);
+	/* disconnect emmc from on-board WiFi */
+	for(i = 34; i <= 39; i++)
+		gpiosel(i, Alt0);
+	/* connect emmc to wifi on IOT board */
+	for(i = 22; i <= 27; i++){
+		gpiosel(i, Alt3);
+		if(i == 22)
+			gpiopulloff(i);
+		else
+			gpiopullup(i);
+	}
+	/* ensure WL_REG_ON (regulator) is powered up */
+	gpiosel(6, Output);
+	gpiowrite( 6, TRUE);
+	/* give WL time to settle */
+	delay(150);
+
+	sdio.init();
+	sdio.enable();
+	sdiocmd(GO_IDLE_STATE, 0);
+	ocr = trysdiocmd(IO_SEND_OP_COND, 0);
+	i = 0;
+	while((ocr & (1<<31)) == 0){
+		if(++i > 5){
+			print("ether4330: no response to sdio access: ocr = %lx\n", ocr);
+			error(Eio);
+		}
+		ocr = trysdiocmd(IO_SEND_OP_COND, V3_3);
+		tsleep(&up->sleep, return0, nil, 100);
+	}
+	rca = sdiocmd(SEND_RELATIVE_ADDR, 0) >> Rcashift;
+	sdiocmd(SELECT_CARD, rca << Rcashift);
+	sdioset(Fn0, Highspeed, 2);
+	sdioset(Fn0, Busifc, 2);	/* bus width 4 */
+	sdiowr(Fn0, Fbr1+Blksize, 64);
+	sdiowr(Fn0, Fbr1+Blksize+1, 64>>8);
+	sdiowr(Fn0, Fbr2+Blksize, 512);
+	sdiowr(Fn0, Fbr2+Blksize+1, 512>>8);
+	sdioset(Fn0, Ioenable, 1<<Fn1);
+	sdiowr(Fn0, Intenable, 0);
+	for(i = 0; !(sdiord(Fn0, Ioready) & 1<<Fn1); i++){
+		if(i == 10){
+			print("ether4330: can't enable SDIO function\n");
+			error(Eio);
+		}
+		tsleep(&up->sleep, return0, nil, 100);
+	}
+}
+#else
+
 static void
 sdioinit(void)
 {
@@ -554,6 +622,7 @@ sdioinit(void)
 		tsleep(&up->sleep, return0, nil, 100);
 	}
 }
+#endif
 
 static void
 sdioreset(void)

@@ -122,6 +122,21 @@ void gpiopullup (unsigned pin)
 #endif
 }
 
+#if RASPPI <= 2 && defined(USE_REDBEAR_IOT)
+void gpiowrite (unsigned pin, unsigned val)
+{
+	assert (pin < 32);
+	if (val)
+	{
+		write32 (ARM_GPIO_GPSET0, read32 (ARM_GPIO_GPSET0) | BIT (pin));
+	}
+	else
+	{
+		write32 (ARM_GPIO_GPSET0, read32 (ARM_GPIO_GPSET0) & ~BIT (pin));
+	}
+}
+#endif
+
 #if RASPPI >= 5
 
 void gpioset (unsigned pin, unsigned val)
