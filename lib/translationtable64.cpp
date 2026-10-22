@@ -2,7 +2,7 @@
 // translationtable64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -162,3 +162,32 @@ TARMV8MMU_LEVEL3_DESCRIPTOR *CTranslationTable::CreateLevel3Table (uintptr nBase
 
 	return pTable;
 }
+
+#if RASPPI >= 4
+
+void CTranslationTable::UnmapUnusedPages (size_t nMemSizeHigh)
+{
+	assert (m_pTable != 0);
+
+	for (unsigned nEntry = 2; nEntry < LEVEL2_TABLE_ENTRIES; nEntry++) // entries a 512MB from 1GB on
+	{
+		u64 nBaseAddress = (u64) nEntry * ARMV8MMU_TABLE_ENTRIES * ARMV8MMU_LEVEL3_PAGE_SIZE;
+
+		if (nBaseAddress < MEM_HIGHMEM_START + nMemSizeHigh)
+		{
+			continue;
+		}
+
+		if (nBaseAddress >= MEM_HIGHMEM_END)
+		{
+			break;
+		}
+
+		TARMV8MMU_LEVEL2_INVALID_DESCRIPTOR *pDesc = &m_pTable[nEntry].Invalid;
+		pDesc->Value0 = 0;
+	}
+
+	DataSyncBarrier ();
+}
+
+#endif

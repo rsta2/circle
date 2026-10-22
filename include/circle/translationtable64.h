@@ -2,7 +2,7 @@
 // translationtable64.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2018  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,6 +36,10 @@ public:
 	~CTranslationTable (void);
 
 	uintptr GetBaseAddress (void) const;
+
+#if RASPPI >= 4
+	void UnmapUnusedPages (size_t nMemSizeHigh);
+#endif
 
 private:
 	TARMV8MMU_LEVEL3_DESCRIPTOR *CreateLevel3Table (uintptr nBaseAddress) NOOPT;

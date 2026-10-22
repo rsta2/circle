@@ -2,7 +2,7 @@
 // memory64.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -145,6 +145,16 @@ void CMemorySystem::SetupHighMem (void)
 		m_nMemSizeHigh = (size_t) nHighSize;
 
 		m_HeapHigh.Setup (MEM_HIGHMEM_START, (size_t) nHighSize, 0);
+	}
+
+	if (m_bEnableMMU)
+	{
+		assert (m_pTranslationTable != 0);
+		m_pTranslationTable->UnmapUnusedPages (m_nMemSizeHigh);
+
+		asm volatile ("tlbi vmalle1" : : : "memory");
+		DataSyncBarrier ();
+		InstructionSyncBarrier ();
 	}
 }
 
