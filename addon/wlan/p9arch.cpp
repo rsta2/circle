@@ -126,14 +126,7 @@ void gpiopullup (unsigned pin)
 void gpiowrite (unsigned pin, unsigned val)
 {
 	assert (pin < 32);
-	if (val)
-	{
-		write32 (ARM_GPIO_GPSET0, read32 (ARM_GPIO_GPSET0) | BIT (pin));
-	}
-	else
-	{
-		write32 (ARM_GPIO_GPSET0, read32 (ARM_GPIO_GPSET0) & ~BIT (pin));
-	}
+	write32 (val ? ARM_GPIO_GPSET0 : ARM_GPIO_GPCLR0, BIT(pin));
 }
 #endif
 
