@@ -490,6 +490,7 @@ sdioset(int fn, int addr, int bits)
 	sdiowr(fn, addr, sdiord(fn, addr) | bits);
 }
 
+
 static void
 sdioinit(void)
 {
@@ -500,6 +501,31 @@ sdioinit(void)
 	/* disconnect emmc from SD card (connect sdhost instead) */
 	for(i = 48; i <= 53; i++)
 		gpiosel(i, Alt0);
+	/*
+	 * Provide support for Redbear IOT pHAT
+	 * This is an add-on hat with WiFi/BT designed for the RPI Zero,
+	 * and works with earlier RPI models with a 40-pin GPIO connector.
+	 * Since many boards already have WiFi/BT on-board, it does not
+	 * seem sensible to support Pi 3 or later.
+	 */
+  #if RASPPI <= 2 && defined(USE_REDBEAR_IOT)
+	/* disconnect emmc from on-board WiFi */
+	for(i = 34; i <= 39; i++)
+		gpiosel(i, Alt0);
+	/* connect emmc to wifi on IOT board */
+	for(i = 22; i <= 27; i++){
+		gpiosel(i, Alt3);
+		if(i == 22)
+			gpiopulloff(i);
+		else
+			gpiopullup(i);
+	}
+	/* ensure WL_REG_ON (regulator) is powered up */
+	gpiosel(6, Output);
+	gpiowrite(6, TRUE);
+	/* give WL time to settle */
+	delay(150);
+  #else
 	/* connect emmc to wifi */
 	for(i = 34; i <= 39; i++){
 		gpiosel(i, Alt3);
@@ -508,6 +534,8 @@ sdioinit(void)
 		else
 			gpiopullup(i);
 	}
+  #endif
+
 #else
 	/* See: https://forums.raspberrypi.com/viewtopic.php?t=362326#p2173647 */
 	gpiosel(28, Output);
