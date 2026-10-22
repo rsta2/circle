@@ -2,7 +2,7 @@
 // netconfig.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2016  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 
 CNetConfig::CNetConfig (void)
 :	m_bUseDHCP (TRUE)
-,	m_bHasNTPServer (FALSE)
 {
 	Reset ();
 }
@@ -38,7 +37,7 @@ void CNetConfig::Reset (void)
 	m_NetMask.Set (NullAddress);
 	m_DefaultGateway.Set (NullAddress);
 	m_DNSServer.Set (NullAddress);
-	m_NTPServer.Set ((u32)0);
+	m_NTPServer.Set (NullAddress);
 	UpdateBroadcastAddress ();
 }
 
@@ -73,15 +72,7 @@ void CNetConfig::SetDNSServer (u32 nAddress)
 
 void CNetConfig::SetNTPServer (u32 nAddress)
 {
-	if (nAddress != 0)
-	{
-		m_bHasNTPServer = TRUE;
-		m_NTPServer.Set (nAddress);
-	}
-	else
-	{
-		m_bHasNTPServer = FALSE;
-	}
+	m_NTPServer.Set (nAddress);
 }
 
 void CNetConfig::SetIPAddress (const u8 *pAddress)
@@ -108,6 +99,11 @@ void CNetConfig::SetDNSServer (const u8 *pAddress)
 	m_DNSServer.Set (pAddress);
 }
 
+void CNetConfig::SetNTPServer (const u8 *pAddress)
+{
+	m_NTPServer.Set (pAddress);
+}
+
 const CIPAddress *CNetConfig::GetIPAddress (void) const
 {
 	return &m_IPAddress;
@@ -116,11 +112,6 @@ const CIPAddress *CNetConfig::GetIPAddress (void) const
 boolean CNetConfig::IsDHCPUsed (void) const
 {
 	return m_bUseDHCP;
-}
-
-boolean CNetConfig::HasNTPServer (void) const
-{
-	return m_bHasNTPServer;
 }
 
 const u8 *CNetConfig::GetNetMask (void) const

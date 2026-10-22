@@ -2,7 +2,7 @@
 // ntpdaemon.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2015-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2015-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ CNTPDaemon::CNTPDaemon (const char *pNTPServer, CNetSubSystem *pNetSubSystem,
 	// To use the DHCP-supplied value (if any), pass bUseDHCPsupplied
 	// as TRUE.
 	CNetConfig* pNC = pNetSubSystem->GetConfig();
-	if (bUseDHCPsupplied && pNC->IsDHCPUsed() && pNC->HasNTPServer())
+	if (bUseDHCPsupplied && pNC->IsDHCPUsed() && !pNC->GetNTPServer()->IsNull())
 	{
 		m_bUseIP = TRUE;
 	}
@@ -88,13 +88,13 @@ unsigned CNTPDaemon::UpdateTime (void)
 
 			return 300;
 		}
-  }
+	}
 	
 	CNTPClient NTPClient (m_pNetSubSystem);
         
 	CString IPString;
 	NTPServerIP.Format (&IPString);
-	CLogger::Get ()->Write (FromNTPDaemon, LogNotice, "using \"%s\" as NTP server",
+	CLogger::Get ()->Write (FromNTPDaemon, LogNotice, "Using \"%s\" as NTP server",
 			(const char *) IPString);
 	unsigned nTime = NTPClient.GetTime (NTPServerIP);
 	if (nTime == 0)
