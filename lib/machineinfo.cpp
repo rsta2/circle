@@ -174,6 +174,8 @@ s_DTBInfo[] =
 
 	{"/system",					"linux,revision",		4},
 
+	{"/chosen",					"rpi-sdram-size-gbit",		4},
+
 #if RASPPI == 4
 	{"/scb/pcie@7d500000",				"dma-ranges",			1*7*4},
 #else
@@ -316,7 +318,31 @@ CMachineInfo::CMachineInfo (void)
 		m_nModelMajor    = s_NewInfo[i].nMajor;
 		m_nModelRevision = (m_nRevisionRaw & 0xF) + 1;
 		m_SoCType        = (TSoCType) ((m_nRevisionRaw >> 12) & 0xF);
-		m_nRAMSize       = 256 << ((m_nRevisionRaw >> 20) & 7);
+
+		unsigned nMemorySize = (m_nRevisionRaw >> 20) & 7;
+		if (nMemorySize < 7)
+		{
+			m_nRAMSize = 256 << nMemorySize;
+		}
+		else
+		{
+#if RASPPI >= 4
+			const TDeviceTreeNode *pChosenNode;
+			const TDeviceTreeProperty *pSDRAMSize;
+			if (   m_pDTB
+			    && (pChosenNode = m_pDTB->FindNode ("/chosen"))
+			    && (pSDRAMSize = m_pDTB->FindProperty (pChosenNode, "rpi-sdram-size-gbit")))
+			{
+				m_nRAMSize = m_pDTB->GetPropertyValueWord (pSDRAMSize, 0) * 1024 / 8;
+			}
+			else
+			{
+				m_nRAMSize = 1024;
+			}
+#else
+			m_nRAMSize = 256;
+#endif
+		}
 
 		if (m_SoCType >= SoCTypeUnknown)
 		{
