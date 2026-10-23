@@ -2,7 +2,7 @@
 // usbdevicefactory.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -278,7 +278,7 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 
 CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 {
-#ifndef EXCLUDE_USB_TOUCHSCREEN
+#if !defined (EXCLUDE_USB_TOUCHSCREEN) || !defined (EXCLUDE_USB_MOUSE)
 	// Must copy parent function here, because we consume the HID report descriptor,
 	// which is requested again later by the HID Use Page specific driver class.
 	CUSBFunction TempFunction (pParent);
@@ -308,10 +308,13 @@ CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 		return 0;
 	}
 
+#ifndef EXCLUDE_USB_MOUSE
 	// If we find a Usage Page (Digitizer) item, use the touch screen driver.
 	// Same idea for a Usage Page (Generic Desktop) + Usage (Mouse) pair: try
 	// CUSBMouseDevice before falling back to the gamepad driver.
 	boolean bSawGenericDesktopPage = FALSE;
+	boolean bSawMouseUsage = FALSE;
+#endif
 	const u8 *pDesc = ReportDescriptor;
 	for (u16 nDescSize = usReportDescriptorLength; nDescSize;)
 	{
@@ -348,11 +351,13 @@ CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 
 		ucItem &= 0xFC;
 
+#ifndef EXCLUDE_USB_TOUCHSCREEN
 		if (   ucItem == 0x04		// Usage Page (Digitizer)
 		    && nArg == 0x0D)
 		{
 			return new CUSBTouchScreenDevice (pParent);
 		}
+#endif
 
 #ifndef EXCLUDE_USB_MOUSE
 		if (ucItem == 0x04)		// Usage Page
@@ -363,9 +368,16 @@ CUSBFunction *CUSBDeviceFactory::GetGenericHIDDevice (CUSBFunction *pParent)
 			 && nArg == 0x02	// Mouse
 			 && bSawGenericDesktopPage)
 		{
-			return new CUSBMouseDevice (pParent);
+			bSawMouseUsage = TRUE;
 		}
 #endif
+	}
+#endif
+
+#ifndef EXCLUDE_USB_MOUSE
+	if (bSawMouseUsage)
+	{
+		return new CUSBMouseDevice (pParent);
 	}
 #endif
 
