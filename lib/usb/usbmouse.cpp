@@ -23,6 +23,7 @@
 #include <circle/usb/usbmouse.h>
 #include <circle/usb/usbhid.h>
 #include <circle/logger.h>
+#include <circle/util.h>
 #include <assert.h>
 
 // HID Report Items from HID 1.11 Section 6.2.2
@@ -89,6 +90,7 @@ boolean CUSBMouseDevice::Configure (void)
 		return FALSE;
 	}
 
+	memset (&m_MouseReport, 0, sizeof m_MouseReport);
 	DecodeReport ();
 
 	// ignoring unsupported HID interface
