@@ -239,7 +239,11 @@ void CUSBMIDIGadget::AddEndpoints (void)
 
 void CUSBMIDIGadget::CreateDevice (void)
 {
-	assert (!m_pInterface);
+	// The interface and endpoints survive bus reset and reconfiguration.
+	if (m_pInterface)
+	{
+		return;
+	}
 	m_pInterface = new CUSBMIDIDevice;
 	assert (m_pInterface);
 
