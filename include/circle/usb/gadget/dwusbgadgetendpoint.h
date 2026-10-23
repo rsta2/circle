@@ -117,6 +117,8 @@ protected:
 	/// \param nLength Number of bytes to be sent, or max. bytes to be received
 	/// \note pBuffer may be nullptr and nLength zero to transfer empty packets.
 	/// \note The buffer must be declared as DMA_BUFFER
+	/// \note Do not access the buffer or its cache lines until the transfer completes
+	///       or is canceled. DMA receive data is synchronized before OnTransferComplete().
 	void BeginTransfer (TTransferMode Mode, void *pBuffer, size_t nLength);
 
 	/// \brief Cancel a began transfer
