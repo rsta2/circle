@@ -273,6 +273,103 @@ void CDWUSBGadgetEndpoint::BeginTransfer (TTransferMode Mode, void *pBuffer, siz
 
 void CDWUSBGadgetEndpoint::CancelTransfer (void)
 {
+	// EP0 retains its existing reset/control-transfer handling below.
+	if (m_nEP)
+	{
+		// Completion must not replace the transfer while it is being canceled.
+		EnterCritical (IRQ_LEVEL);
+		if (m_TransferMode == TransferUnknown)
+		{
+			LeaveCritical ();
+			return;
+		}
+
+		boolean bIn = m_TransferMode == TransferDataIn;
+		CDWHCIRegister EPCtrl (bIn ? DWHCI_DEV_IN_EP_CTRL (m_nEP)
+					 : DWHCI_DEV_OUT_EP_CTRL (m_nEP));
+		CDWHCIRegister EPInt (bIn ? DWHCI_DEV_IN_EP_INT (m_nEP)
+					: DWHCI_DEV_OUT_EP_INT (m_nEP));
+		boolean bGlobalOutNAK = FALSE;
+
+		if (EPCtrl.Read () & DWHCI_DEV_EP_CTRL_EP_ENABLE)
+		{
+			// Do not mistake a previous disable for this cancellation completing.
+			EPInt.Set (DWHCI_DEV_IN_EP_INT_EP_DISABLED);
+			EPInt.Write ();
+
+			if (bIn)
+			{
+				EPInt.Set (DWHCI_DEV_IN_EP_INT_IN_EP_NAK_EFF);
+				EPInt.Write ();
+
+				// Dedicated IN FIFO: stop accepting tokens before disabling.
+				EPCtrl.And (~DWHCI_DEV_EP_CTRL_CLEAR_NAK);
+				EPCtrl.Or (DWHCI_DEV_EP_CTRL_SET_NAK);
+				EPCtrl.Write ();
+				if (!m_pGadget->WaitForBit (&EPInt,
+					DWHCI_DEV_IN_EP_INT_IN_EP_NAK_EFF, TRUE, 10, 1))
+				{
+					LOGPANIC ("EP%u IN NAK timeout", m_nEP);
+				}
+			}
+			else
+			{
+				CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT);
+				if (!(IntStatus.Read () & DWHCI_CORE_INT_STAT_GLOBAL_OUT_NAK_EFF))
+				{
+					CDWHCIRegister DeviceCtrl (DWHCI_DEV_CTRL);
+					DeviceCtrl.Read ();
+					DeviceCtrl.And (~DWHCI_DEV_CTRL_CLEAR_GLOBAL_OUT_NAK);
+					DeviceCtrl.Or (DWHCI_DEV_CTRL_SET_GLOBAL_OUT_NAK);
+					DeviceCtrl.Write ();
+					bGlobalOutNAK = TRUE;
+				}
+				if (!m_pGadget->WaitForBit (&IntStatus,
+					DWHCI_CORE_INT_STAT_GLOBAL_OUT_NAK_EFF, TRUE, 10, 1))
+				{
+					LOGPANIC ("EP%u OUT NAK timeout", m_nEP);
+				}
+			}
+
+			// EPDIS is a command: preserve EPENA until hardware completes it.
+			// The transfer may have completed while NAK was taking effect.
+			if (EPCtrl.Read () & DWHCI_DEV_EP_CTRL_EP_ENABLE)
+			{
+				EPCtrl.And (~DWHCI_DEV_EP_CTRL_CLEAR_NAK);
+				EPCtrl.Or (  DWHCI_DEV_EP_CTRL_EP_DISABLE
+					   | DWHCI_DEV_EP_CTRL_SET_NAK);
+				EPCtrl.Write ();
+				if (!m_pGadget->WaitForBit (&EPInt,
+					DWHCI_DEV_IN_EP_INT_EP_DISABLED, TRUE, 10, 1))
+				{
+					LOGPANIC ("EP%u disable timeout", m_nEP);
+				}
+			}
+		}
+
+		// A canceled transfer must not later complete against a new buffer.
+		EPInt.Set (DWHCI_DEV_IN_EP_INT_EP_DISABLED | DWHCI_DEV_IN_EP_INT_XFER_COMPLETE);
+		EPInt.Write ();
+		if (bIn)
+		{
+			if (!m_pGadget->FlushTxFIFO (m_nEP, 1))
+			{
+				LOGPANIC ("EP%u IN FIFO flush timeout", m_nEP);
+			}
+		}
+		if (bGlobalOutNAK)
+		{
+			CDWHCIRegister DeviceCtrl (DWHCI_DEV_CTRL);
+			DeviceCtrl.Read ();
+			DeviceCtrl.And (~DWHCI_DEV_CTRL_SET_GLOBAL_OUT_NAK);
+			DeviceCtrl.Or (DWHCI_DEV_CTRL_CLEAR_GLOBAL_OUT_NAK);
+			DeviceCtrl.Write ();
+		}
+
+		InitTransfer ();
+		LeaveCritical ();
+		return;
+	}
 	if (m_TransferMode == TransferDataIn)
 	{
 		CDWHCIRegister InEPCtrl (DWHCI_DEV_IN_EP_CTRL (m_nEP), 0);

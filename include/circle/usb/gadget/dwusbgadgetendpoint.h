@@ -120,6 +120,8 @@ protected:
 	void BeginTransfer (TTransferMode Mode, void *pBuffer, size_t nLength);
 
 	/// \brief Cancel a began transfer
+	/// \note Non-control transfers are stopped before the DMA buffer can be reused.
+	/// \note A hardware cancellation timeout is fatal; the buffer remains owned by the EP.
 	void CancelTransfer (void);
 
 	/// \return Is a transfer currently armed / in flight on this EP?
