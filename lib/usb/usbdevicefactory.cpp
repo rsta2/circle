@@ -216,7 +216,8 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 #ifndef EXCLUDE_USB_MIDI
 	else if (   pName->Compare ("int1-3-0") == 0
 		 || pName->Compare ("ven582-12a") == 0		// Roland UM-ONE MIDI interface
-		 || pName->Compare ("ven582-28c") == 0)		// Roland JD-08
+		 || pName->Compare ("ven582-28c") == 0		// Roland JD-08
+		 || pName->Compare ("ven582-22b") == 0)		// Roland MC-101
 	{
 		pResult = new CUSBMIDIHostDevice (pParent);
 	}

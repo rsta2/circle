@@ -51,9 +51,10 @@ CUSBMIDIHostDevice::CUSBMIDIHostDevice (CUSBFunction *pFunction)
 	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
 	assert (pDeviceDesc != 0);
 
-	// special handling for Roland JD-08
+	// special handling for Roland JD-08 and MC-101
 	if (   pDeviceDesc->idVendor  == 0x0582
-	    && pDeviceDesc->idProduct == 0x028C)
+	    && (   pDeviceDesc->idProduct == 0x028C
+	        || pDeviceDesc->idProduct == 0x022B))
 	{
 		if (!SelectInterfaceByClass (255, 3, 0))
 		{
@@ -95,12 +96,13 @@ boolean CUSBMIDIHostDevice::Configure (void)
 		return FALSE;
 	}
 
-	// special handling for Roland UM-ONE and JD-08
+	// special handling for Roland UM-ONE, JD-08 and MC-101
 	const TUSBDeviceDescriptor *pDeviceDesc = GetDevice ()->GetDeviceDescriptor ();
 	assert (pDeviceDesc != 0);
 	boolean bIsRoland =    pDeviceDesc->idVendor == 0x0582
 			    && (   pDeviceDesc->idProduct == 0x012A
-			        || pDeviceDesc->idProduct == 0x028C);
+			        || pDeviceDesc->idProduct == 0x028C
+			        || pDeviceDesc->idProduct == 0x022B);
 
 	// Our strategy for now is simple: we'll take the first MIDI streaming
 	// bulk-in endpoint on this interface we can find.  To distinguish
