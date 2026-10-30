@@ -44,12 +44,14 @@
 	#define HID_USAGE_TOUCH_SCREEN		0x04
 	#define HID_USAGE_FINGER		0x22
 	#define HID_USAGE_TIP_PRESSURE		0x30
+	#define HID_USAGE_IN_RANGE		0x32
 	#define HID_USAGE_TIP_SWITCH		0x42
 	#define HID_USAGE_WIDTH			0x48
 	#define HID_USAGE_CONTACT_IDENTIFIER 	0x51
 	#define HID_USAGE_CONTACT_COUNT		0x54
 	#define HID_USAGE_SCAN_TIME		0x56
 
+#define HID_COLLECTION_PHYSICAL		0x00
 #define HID_COLLECTION_APPLICATION	0x01
 #define HID_COLLECTION_LOGICAL		0x02
 
@@ -287,7 +289,7 @@ boolean CUSBTouchScreenDevice::DecodeReportDescriptor (const u8 *pDesc, unsigned
 		switch (ucItem)
 		{
 		case HID_USAGE_PAGE:	nUsagePage = nArg;	break;
-		case HID_USAGE:		nUsage = nArg;		break;
+		case HID_USAGE:		if (nArg != HID_USAGE_IN_RANGE) nUsage = nArg;	break;
 		case HID_REPORT_SIZE:	nReportSize = nArg;	break;
 		case HID_REPORT_ID:	nReportID = nArg;	break;
 		case HID_REPORT_COUNT:	nReportCount = nArg;	break;
@@ -320,11 +322,13 @@ boolean CUSBTouchScreenDevice::DecodeReportDescriptor (const u8 *pDesc, unsigned
 				break;
 
 			case HID_COLLECTION:
-				if (   nArg == HID_COLLECTION_LOGICAL
+				if (   (   nArg == HID_COLLECTION_PHYSICAL
+					|| nArg == HID_COLLECTION_LOGICAL)
 				    && nUsagePage == HID_USAGE_PAGE_DIGITIZER
 				    && nUsage == HID_USAGE_FINGER)
 				{
-					if (m_Report.ReportID == 0)
+					if (   m_Report.ReportID == 0
+					    && nReportID != 0)
 					{
 						m_Report.ReportID = nReportID;
 						nBitOffset += 8;
@@ -376,7 +380,12 @@ boolean CUSBTouchScreenDevice::DecodeReportDescriptor (const u8 *pDesc, unsigned
 							break;
 
 						case HID_USAGE_TIP_SWITCH:
-							DO_INPUT (m_Report.Finger[nFinger].TipSwitch);
+							if (nReportCount < 1) return FALSE;
+							if (nFinger < MaxContactCount)
+							{
+								m_Report.Finger[nFinger].TipSwitch.BitOffset = nBitOffset;
+								m_Report.Finger[nFinger].TipSwitch.BitSize = nReportSize;
+							}
 							break;
 
 						case HID_USAGE_CONTACT_IDENTIFIER:
