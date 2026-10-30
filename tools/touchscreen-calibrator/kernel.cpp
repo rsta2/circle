@@ -2,7 +2,7 @@
 // kernel.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2016-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2016-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -140,10 +140,10 @@ TShutdownMode CKernel::Run (void)
 
 		Print (ClearScreen);
 
-		if (   abs (Point[0].nTouchX - Point[2].nTouchX) > 100
-		    || abs (Point[1].nTouchX - Point[3].nTouchX) > 100
-		    || abs (Point[0].nTouchY - Point[1].nTouchY) > 100
-		    || abs (Point[2].nTouchY - Point[3].nTouchY) > 100
+		if (   abs (Point[0].nTouchX - Point[2].nTouchX) > 250
+		    || abs (Point[1].nTouchX - Point[3].nTouchX) > 250
+		    || abs (Point[0].nTouchY - Point[1].nTouchY) > 200
+		    || abs (Point[2].nTouchY - Point[3].nTouchY) > 200
 		    || Point[0].nTouchX >= Point[1].nTouchX
 		    || Point[0].nTouchY >= Point[2].nTouchY)
 		{
