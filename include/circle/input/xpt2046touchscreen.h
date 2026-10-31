@@ -33,8 +33,10 @@ public:
 	/// \param nChipSelect Chip select to use (CS#)
 	/// \param pGPIOManager Pointer to GPIO manager object
 	/// \param nIRQPin SoC GPIO pin number, where T_IRQ pin is connected
+	/// \param nSPIClockSpeed SPI clock frequency (in Hz)
 	CXPT2046TouchScreen (CSPIMaster *pSPIMaster, unsigned nChipSelect,
-			     CGPIOManager *pGPIOManager, unsigned nIRQPin);
+			     CGPIOManager *pGPIOManager, unsigned nIRQPin,
+			     unsigned nSPIClockSpeed = 2000000);
 
 	~CXPT2046TouchScreen (void);
 
@@ -55,7 +57,6 @@ private:
 	static s16 BestTwoAvg (s16 x, s16 y, s16 z);
 
 private:
-	static const unsigned SPIClockSpeed = 2000000;		// Hz
 
 	static const unsigned ThresholdMicros = 15000;
 
@@ -67,6 +68,7 @@ private:
 	unsigned m_nChipSelect;
 
 	CGPIOPin m_IRQPin;
+	unsigned m_nSPIClockSpeed;
 	boolean m_bInterruptConnected;
 
 	unsigned m_nRotation;
