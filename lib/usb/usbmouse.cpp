@@ -31,6 +31,7 @@
 #define HID_USAGE           0x08
 #define HID_COLLECTION      0xA0
 #define HID_END_COLLECTION  0xC0
+#define HID_LOGICAL_MINIMUM 0x14
 #define HID_REPORT_COUNT    0x94
 #define HID_REPORT_SIZE     0x74
 #define HID_INPUT           0x80
@@ -345,6 +346,21 @@ void CUSBMouseDevice::DecodeReport (void)
 				itemIndexes[itemIndex] = MouseItemWheel;
 				itemIndex++;
 				break;
+			}
+			break;
+		case HID_LOGICAL_MINIMUM:
+			assert(itemIndex < MouseItemCount);
+			for (u32 index = 0; index < itemIndex; index++)
+			{
+				u32 item = itemIndexes[index];
+				assert(item < MouseItemCount);
+				if (   item != MouseItemButtons
+				    && arg >= 0)
+				{
+					CLogger::Get ()->Write (FromUSBMouse, LogError,
+								"Non-differential mode not supported");
+					// TODO: return;
+				}
 			}
 			break;
 		case HID_REPORT_SIZE:
