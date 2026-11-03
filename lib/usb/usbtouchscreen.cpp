@@ -22,6 +22,7 @@
 #include <circle/usb/usbhid.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
+#include <circle/string.h>
 #include <circle/macros.h>
 #include <circle/debug.h>
 #include <circle/util.h>
@@ -115,6 +116,27 @@ boolean CUSBTouchScreenDevice::Configure (void)
 
 		return FALSE;
 	}
+
+	CString *pVendor = GetDevice ()->GetName (DeviceNameVendor);
+	assert (pVendor != 0);
+
+	// some touchscreens require a feature GET_REPORT request to work
+	if (   pVendor->Compare ("veneef-5") == 0	// e.g. KeDei 7" display
+	    || pVendor->Compare ("ven222a-1") == 0)	// ILITEK TP 7" and 8" displays
+	{
+		DMA_BUFFER (u8, ReportBuffer, 2);
+		if (GetHost ()->ControlMessage (GetEndpoint0 (),
+						REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE,
+						GET_REPORT, 0x302, GetInterfaceNumber (),
+						ReportBuffer, 2) < 0)
+		{
+			LOGERR ("Cannot get feature report");
+
+			return FALSE;
+		}
+	}
+
+	delete pVendor;
 
 	if (!StartRequest ())
 	{
