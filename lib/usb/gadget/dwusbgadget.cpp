@@ -555,11 +555,13 @@ void CDWUSBGadget::HandleUSBReset (void)
 	switch (m_State)
 	{
 	case StateConfigured:
+	case StateSuspended:
+		// Suspend retains endpoints and may leave transfers armed. Deactivate
+		// them before reset discards transfer state and flushes the TX FIFOs.
 		SetConfiguration (0);
 		// fall through
 
 	case StateEnumDone:
-	case StateSuspended:
 	case StateResetDone:
 		// A reset arriving from StateSuspended (host warm reboot) or from
 		// StateResetDone (host reset storm) must also cancel EP0's possibly
