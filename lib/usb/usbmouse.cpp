@@ -284,6 +284,13 @@ void CUSBMouseDevice::DecodeReport (void)
 			if (arg == HID_USAGE_MOUSE)
 			{
 				foundMouseUsage = TRUE;
+
+				// some mice (e.g. Microsoft 045e:0737) declare the buttons
+				// before the Pointer usage, so start parsing here
+				if (id == 0)
+				{
+					parse = TRUE;
+				}
 			}
 			else if (arg == HID_USAGE_POINTER)
 			{
