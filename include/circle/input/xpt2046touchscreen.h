@@ -39,7 +39,10 @@ public:
 	~CXPT2046TouchScreen (void);
 
 	/// \param nDegrees Counterclockwise rotation in degrees (0, 90, 180, 270)
-	void SetRotation (unsigned nDegrees);
+	/// \param bFlipHorizontal Select whether to flip the horizontal axis (from left ro right)
+	/// \param bFlipVertical Select whether to flip the vertical axis (from top to bottom)
+	void SetRotation (unsigned nDegrees, boolean nFlipHorizontal = FALSE,
+			  boolean nFlipVertical = FALSE);
 	/// \return Counterclockwise rotation in degrees (0, 90, 180, 270)
 	unsigned GetRotation (void)		{ return m_nRotation; }
 
@@ -70,6 +73,8 @@ private:
 	boolean m_bInterruptConnected;
 
 	unsigned m_nRotation;
+	boolean m_bFlipHorizontal;
+	boolean m_bFlipVertical;
 
 	CTouchScreenDevice *m_pDevice;
 
