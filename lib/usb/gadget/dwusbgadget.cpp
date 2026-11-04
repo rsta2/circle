@@ -552,26 +552,13 @@ void CDWUSBGadget::HandleUSBReset (void)
 	// Trace: always log bus reset with current state (diagnosis for issue #591)
 	LOGTRACE ("USB reset (state %u)", (unsigned) m_State);
 
-	switch (m_State)
+	if (m_State == StateConfigured)
 	{
-	case StateConfigured:
 		SetConfiguration (0);
-		// fall through
-
-	case StateEnumDone:
-	case StateSuspended:
-	case StateResetDone:
-		// A reset arriving from StateSuspended (host warm reboot) or from
-		// StateResetDone (host reset storm) must also cancel EP0's possibly
-		// still-armed SETUP transfer. Otherwise the next SETUP completes
-		// against the stale transfer and is dropped with a wrong length.
-		assert (m_pEP[0]);
-		m_pEP[0]->OnDeactivate ();
-		break;
-
-	default:
-		break;
 	}
+	// OnUSBReset() retires EP0 below. Do not use ordinary deactivation:
+	// EP0 OUT cannot be disabled, and an asynchronous disable must never
+	// be left pending when the next SETUP is armed.
 
 	// Set NAK for all OUT EPs
 	for (unsigned i = 0; i <= NumberOfOutEPs; i++)
@@ -580,8 +567,6 @@ void CDWUSBGadget::HandleUSBReset (void)
 		OutEPCtrl.Or (DWHCI_DEV_EP_CTRL_SET_NAK);
 		OutEPCtrl.Write ();
 	}
-
-	FlushTxFIFO (0x10);
 
 	// Flush learning queue
 	CDWHCIRegister Reset (DWHCI_CORE_RESET, DWHCI_CORE_RESET_IN_TOKEN_QUEUE_FLUSH);
@@ -627,6 +612,13 @@ void CDWUSBGadget::HandleUSBReset (void)
 		{
 			m_pEP[i]->OnUSBReset ();
 		}
+	}
+
+	// EP0 IN has now stopped as well. Do not flush a FIFO still owned by
+	// a transfer, or continue enumeration after a failed flush.
+	if (!FlushTxFIFO (0x10))
+	{
+		LOGPANIC ("USB reset FIFO flush timeout");
 	}
 
 	m_State = StateResetDone;
@@ -699,6 +691,7 @@ void CDWUSBGadget::HandleInEPInterrupt (void)
 #endif
 
 	assert (   m_State == StateSuspended
+		|| m_State == StateResetDone
 		|| m_State == StateEnumDone
 		|| m_State == StateConfigured);
 
@@ -710,7 +703,9 @@ void CDWUSBGadget::HandleInEPInterrupt (void)
 	{
 		if (nInEPStat & 1)
 		{
-			if (m_State != StateSuspended)
+			// EP0 is armed in HandleUSBReset, before ENUMDONE.
+			if (   m_State != StateSuspended
+			    && (m_State != StateResetDone || nEP == 0))
 			{
 				assert (nEP <= NumberOfEPs);
 				assert (m_pEP[nEP]);
@@ -734,6 +729,7 @@ void CDWUSBGadget::HandleOutEPInterrupt (void)
 #endif
 
 	assert (   m_State == StateSuspended
+		|| m_State == StateResetDone
 		|| m_State == StateEnumDone
 		|| m_State == StateConfigured);
 
@@ -745,7 +741,9 @@ void CDWUSBGadget::HandleOutEPInterrupt (void)
 	{
 		if (nOutEPStat & 1)
 		{
-			if (m_State != StateSuspended)
+			// EP0 is armed in HandleUSBReset, before ENUMDONE.
+			if (   m_State != StateSuspended
+			    && (m_State != StateResetDone || nEP == 0))
 			{
 				assert (nEP <= NumberOfEPs);
 				assert (m_pEP[nEP]);
