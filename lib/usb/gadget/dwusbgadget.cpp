@@ -552,8 +552,11 @@ void CDWUSBGadget::HandleUSBReset (void)
 	// Trace: always log bus reset with current state (diagnosis for issue #591)
 	LOGTRACE ("USB reset (state %u)", (unsigned) m_State);
 
-	if (m_State == StateConfigured)
+	if (   m_State == StateConfigured
+	    || m_State == StateSuspended)
 	{
+		// Suspend retains endpoints and may leave transfers armed. Deactivate
+		// them before reset discards transfer state and flushes the TX FIFOs.
 		SetConfiguration (0);
 	}
 	// OnUSBReset() retires EP0 below. Do not use ordinary deactivation:
