@@ -61,10 +61,12 @@
 LOGMODULE ("xpt2046");
 
 CXPT2046TouchScreen::CXPT2046TouchScreen (CSPIMaster *pSPIMaster, unsigned nChipSelect,
-					  CGPIOManager *pGPIOManager, unsigned nIRQPin)
+					  CGPIOManager *pGPIOManager, unsigned nIRQPin,
+					  unsigned nSPIClockSpeed)
 :	m_pSPIMaster (pSPIMaster),
 	m_nChipSelect (nChipSelect),
 	m_IRQPin (nIRQPin, GPIOModeInputPullUp, pGPIOManager),
+	m_nSPIClockSpeed (nSPIClockSpeed),
 	m_bInterruptConnected (FALSE),
 	m_nRotation (0),
         m_bFlipHorizontal(FALSE),
@@ -142,7 +144,7 @@ void CXPT2046TouchScreen::Update (void)
 	u8 ReadBuffer[sizeof WriteBuffer];
 
 	assert (m_pSPIMaster);
-	m_pSPIMaster->SetClock (SPIClockSpeed);
+	m_pSPIMaster->SetClock (m_nSPIClockSpeed);
 	m_pSPIMaster->SetMode (0, 0);
 
 	if (m_pSPIMaster->WriteRead (m_nChipSelect, WriteBuffer, ReadBuffer,
