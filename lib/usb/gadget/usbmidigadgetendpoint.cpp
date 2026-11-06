@@ -71,10 +71,12 @@ void CUSBMIDIGadgetEndpoint::OnActivate (void)
 
 void CUSBMIDIGadgetEndpoint::OnDeactivate (void)
 {
-	if (GetDirection () == DirectionOut)
-	{
-		CancelTransfer ();
-	}
+	// Do not retain queued packets or an active IN flag across reconfiguration.
+	OnSuspend ();
+
+	// Both directions may own an armed DMA transfer. Cancellation is also
+	// safe when idle, and must finish before reset reuses the endpoint.
+	CancelTransfer ();
 }
 
 void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
