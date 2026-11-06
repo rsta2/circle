@@ -38,12 +38,12 @@ CDWUSBGadgetEndpoint0::~CDWUSBGadgetEndpoint0 (void)
 
 void CDWUSBGadgetEndpoint0::OnActivate (void)
 {
-	m_State = StateIdle;
-
 	// SETUP reception may already have been armed in HandleUSBReset() (see
-	// there). Do not arm it twice.
+	// there), or it may already have advanced to a data/status phase. Leave
+	// the state as well as the transfer intact on repeated activation.
 	if (!IsTransferActive ())
 	{
+		m_State = StateIdle;
 		BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
 	}
 }

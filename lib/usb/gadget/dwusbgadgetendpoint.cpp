@@ -83,6 +83,25 @@ void CDWUSBGadgetEndpoint::SetMaxPacketSize (size_t nMaxPacketSize)
 
 void CDWUSBGadgetEndpoint::OnUSBReset (void)
 {
+	if (!m_nEP)
+	{
+		// USB reset ends the OUT transaction. EP0 OUT cannot be disabled:
+		// issuing EPDIS here can leave a delayed event for the next SETUP.
+		// An IN transfer, however, must finish its disable handshake before
+		// its FIFO or software ownership can be reused.
+		if (m_TransferMode == TransferDataIn)
+		{
+			CancelTransfer ();
+		}
+
+		// Both directions belong to the old control transaction. Retire all
+		// latched status before publishing new transfer metadata below.
+		CDWHCIRegister InEPInt (DWHCI_DEV_IN_EP_INT (0), ~0U);
+		InEPInt.Write ();
+		CDWHCIRegister OutEPInt (DWHCI_DEV_OUT_EP_INT (0), ~0U);
+		OutEPInt.Write ();
+	}
+
 	InitTransfer ();
 
 	if (!m_nEP)
@@ -273,8 +292,8 @@ void CDWUSBGadgetEndpoint::BeginTransfer (TTransferMode Mode, void *pBuffer, siz
 
 void CDWUSBGadgetEndpoint::CancelTransfer (void)
 {
-	// EP0 retains its existing reset/control-transfer handling below.
-	if (m_nEP)
+	// EP0 IN must also stop before its FIFO or DMA buffer is reused.
+	if (m_nEP || m_TransferMode == TransferDataIn)
 	{
 		// Completion must not replace the transfer while it is being canceled.
 		EnterCritical (IRQ_LEVEL);
@@ -472,7 +491,9 @@ void CDWUSBGadgetEndpoint::HandleOutInterrupt (void)
 	{
 		assert (m_nEP == 0);
 		CDWHCIRegister OutEPIntAck (DWHCI_DEV_OUT_EP_INT (m_nEP));
-		OutEPIntAck.Set (DWHCI_DEV_OUT_EP_INT_SETUP_DONE);
+		// Retire coalesced completion before the callback arms a new phase.
+		OutEPIntAck.Set (DWHCI_DEV_OUT_EP_INT_SETUP_DONE
+				| (OutEPInt.Get () & DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE));
 		OutEPIntAck.Write ();
 
 		size_t nLength = FinishTransfer ();
