@@ -61,12 +61,16 @@
 LOGMODULE ("xpt2046");
 
 CXPT2046TouchScreen::CXPT2046TouchScreen (CSPIMaster *pSPIMaster, unsigned nChipSelect,
-					  CGPIOManager *pGPIOManager, unsigned nIRQPin)
+					  CGPIOManager *pGPIOManager, unsigned nIRQPin,
+					  unsigned nSPIClockSpeed)
 :	m_pSPIMaster (pSPIMaster),
 	m_nChipSelect (nChipSelect),
 	m_IRQPin (nIRQPin, GPIOModeInputPullUp, pGPIOManager),
+	m_nSPIClockSpeed (nSPIClockSpeed),
 	m_bInterruptConnected (FALSE),
 	m_nRotation (0),
+        m_bFlipHorizontal(FALSE),
+        m_bFlipVertical(FALSE),
 	m_pDevice (nullptr),
 	m_bActive (FALSE),
 	m_nLastTicks (0),
@@ -86,11 +90,15 @@ CXPT2046TouchScreen::~CXPT2046TouchScreen (void)
 	m_pDevice = nullptr;
 }
 
-void CXPT2046TouchScreen::SetRotation (unsigned nDegrees)
+void CXPT2046TouchScreen::SetRotation (unsigned nDegrees,
+					boolean bFlipHorizontal,
+					boolean bFlipVertical)
 {
 	assert (nDegrees < 360 && nDegrees % 90 == 0);
 
 	m_nRotation = nDegrees;
+        m_bFlipHorizontal = bFlipHorizontal;
+        m_bFlipVertical = bFlipVertical;
 }
 
 boolean CXPT2046TouchScreen::Initialize (void)
@@ -136,7 +144,7 @@ void CXPT2046TouchScreen::Update (void)
 	u8 ReadBuffer[sizeof WriteBuffer];
 
 	assert (m_pSPIMaster);
-	m_pSPIMaster->SetClock (SPIClockSpeed);
+	m_pSPIMaster->SetClock (m_nSPIClockSpeed);
 	m_pSPIMaster->SetMode (0, 0);
 
 	if (m_pSPIMaster->WriteRead (m_nChipSelect, WriteBuffer, ReadBuffer,
@@ -177,6 +185,16 @@ void CXPT2046TouchScreen::Update (void)
 	default:
 		assert (0);
 		break;
+	}
+
+	// Flipping (mirroring) of the axes independent of the rotation?
+	if (m_bFlipHorizontal)
+	{
+		x = MAX_ADC_VALUE - x;
+	}
+	if (m_bFlipVertical)
+	{
+		y = MAX_ADC_VALUE - y;
 	}
 
 	if (z < Z_Threshold_Active)

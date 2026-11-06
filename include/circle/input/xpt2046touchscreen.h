@@ -33,13 +33,18 @@ public:
 	/// \param nChipSelect Chip select to use (CS#)
 	/// \param pGPIOManager Pointer to GPIO manager object
 	/// \param nIRQPin SoC GPIO pin number, where T_IRQ pin is connected
+	/// \param nSPIClockSpeed SPI clock frequency (in Hz)
 	CXPT2046TouchScreen (CSPIMaster *pSPIMaster, unsigned nChipSelect,
-			     CGPIOManager *pGPIOManager, unsigned nIRQPin);
+			     CGPIOManager *pGPIOManager, unsigned nIRQPin,
+			     unsigned nSPIClockSpeed = 2000000);
 
 	~CXPT2046TouchScreen (void);
 
 	/// \param nDegrees Counterclockwise rotation in degrees (0, 90, 180, 270)
-	void SetRotation (unsigned nDegrees);
+	/// \param bFlipHorizontal Select whether to flip the horizontal axis (from left ro right)
+	/// \param bFlipVertical Select whether to flip the vertical axis (from top to bottom)
+	void SetRotation (unsigned nDegrees, boolean nFlipHorizontal = FALSE,
+			  boolean nFlipVertical = FALSE);
 	/// \return Counterclockwise rotation in degrees (0, 90, 180, 270)
 	unsigned GetRotation (void)		{ return m_nRotation; }
 
@@ -55,7 +60,6 @@ private:
 	static s16 BestTwoAvg (s16 x, s16 y, s16 z);
 
 private:
-	static const unsigned SPIClockSpeed = 2000000;		// Hz
 
 	static const unsigned ThresholdMicros = 15000;
 
@@ -67,9 +71,12 @@ private:
 	unsigned m_nChipSelect;
 
 	CGPIOPin m_IRQPin;
+	unsigned m_nSPIClockSpeed;
 	boolean m_bInterruptConnected;
 
 	unsigned m_nRotation;
+	boolean m_bFlipHorizontal;
+	boolean m_bFlipVertical;
 
 	CTouchScreenDevice *m_pDevice;
 
