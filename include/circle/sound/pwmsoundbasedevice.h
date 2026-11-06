@@ -77,18 +77,20 @@ protected:
 	/// virtual unsigned GetChunk (u32 *pBuffer, unsigned nChunkSize);
 
 private:
-	boolean GetNextChunk (void);
-
 	void RunPWM (void);
 	void StopPWM (void);
 
 	static unsigned ChunkCompletedHandler (boolean bStatus, u32 *pBuffer,
 					       unsigned nChunkSize, void *pParam);
 
+	// We only use a range of [0, 2^N-1], which fits into the hardware range
+	static unsigned CalculateRangeUsed (unsigned nSampleRate);
+
 private:
 	unsigned m_nChunkSize;
 	boolean	 m_bMSMode;
 	unsigned m_nRange;
+	unsigned m_nRangeUsed;		// power of 2
 
 	CGPIOPin   m_Audio1;
 	CGPIOPin   m_Audio2;

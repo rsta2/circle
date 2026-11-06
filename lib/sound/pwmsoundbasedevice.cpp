@@ -102,11 +102,12 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 					  unsigned	    nChunkSize,
 					  boolean	    bMSMode)
 :	CSoundBaseDevice (SoundFormatUnsigned32,
-			  (CLOCK_RATE + nSampleRate/2) / nSampleRate, nSampleRate,
+			  CalculateRangeUsed (nSampleRate), nSampleRate,
 			  CMachineInfo::Get ()->ArePWMChannelsSwapped ()),
 	m_nChunkSize (nChunkSize),
 	m_bMSMode (bMSMode),
 	m_nRange ((CLOCK_RATE + nSampleRate/2) / nSampleRate),
+	m_nRangeUsed (CalculateRangeUsed (nSampleRate)),
 #ifdef USE_GPIO18_FOR_LEFT_PWM_ON_ZERO
 	m_Audio1 (GPIOPinAudioLeft, GPIOModeAlternateFunction5),
 #else
@@ -119,7 +120,7 @@ CPWMSoundBaseDevice::CPWMSoundBaseDevice (CInterruptSystem *pInterrupt,
 #endif // USE_GPIO19_FOR_RIGHT_PWM_ON_ZERO
 	m_Clock (GPIOClockPWM),
 	m_bError (FALSE),
-	m_DMABuffers (TRUE, PWM_FIF1, DREQ_SOURCE, nChunkSize, pInterrupt)
+	m_DMABuffers (TRUE, PWM_FIF1, DREQ_SOURCE, nChunkSize, pInterrupt, m_nRangeUsed/2)
 {
 	assert (m_nChunkSize > 0);
 	assert ((m_nChunkSize & 1) == 0);
@@ -145,7 +146,7 @@ int CPWMSoundBaseDevice::GetRangeMin (void) const
 
 int CPWMSoundBaseDevice::GetRangeMax (void) const
 {
-	return (int) (m_nRange-1);
+	return (int) (m_nRangeUsed-1);
 }
 
 boolean CPWMSoundBaseDevice::Start (void)
@@ -253,5 +254,34 @@ unsigned CPWMSoundBaseDevice::ChunkCompletedHandler (boolean bStatus, u32 *pBuff
 		return 0;
 	}
 
-	return pThis->GetChunk (pBuffer, nChunkSize);
+	unsigned nResult = pThis->GetChunk (pBuffer, nChunkSize);
+	if (nResult == 0)
+	{
+		// avoid clicks
+		PeripheralEntry ();
+		write32 (PWM_CTL, read32 (PWM_CTL) | ARM_PWM_CTL_RPTL1 | ARM_PWM_CTL_RPTL2);
+		PeripheralExit ();
+	}
+
+	return nResult;
+}
+
+unsigned CPWMSoundBaseDevice::CalculateRangeUsed (unsigned nSampleRate)
+{
+	unsigned nRange = (CLOCK_RATE + nSampleRate/2) / nSampleRate;
+
+	unsigned nBits;
+	for (nBits = 2; nBits < 16; nBits++)
+	{
+		if ((nRange-1) < (1U << nBits))
+		{
+			nBits--;
+
+			break;
+		}
+	}
+
+	assert (nBits < 16);
+
+	return 1 << nBits;
 }

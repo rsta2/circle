@@ -2,7 +2,7 @@
 // dmasoundbuffers.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021-2025  R. Stange <rsta2@gmx.net>
+// Copyright (C) 2021-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,12 +32,14 @@ CDMASoundBuffers::CDMASoundBuffers (boolean	      bDirectionOut,
 				    u32		      nIOAddress,
 				    TDREQ	      DREQ,
 				    unsigned	      nChunkSize,
-				    CInterruptSystem *pInterruptSystem)
+				    CInterruptSystem *pInterruptSystem,
+				    u32		      nNullLevel)
 :	m_bDirectionOut {bDirectionOut},
 	m_nIOAddress {nIOAddress},
 	m_DREQ {DREQ},
 	m_nChunkSize {nChunkSize},
 	m_pInterruptSystem {pInterruptSystem},
+	m_nNullLevel (nNullLevel),
 	m_pHandler {0},
 	m_bIRQConnected {FALSE},
 	m_State {StateCreated},
@@ -258,7 +260,12 @@ boolean CDMASoundBuffers::GetNextChunk (boolean bFirstCall)
 	else
 	{
 		nChunkSize = m_nChunkSize;
-		memset (m_pDMABuffer[m_nNextBuffer], 0, nChunkSize * sizeof (u32));
+
+		u32 *p = m_pDMABuffer[m_nNextBuffer];
+		for (unsigned i = 0; i < nChunkSize; i++)
+		{
+			*p++ = m_nNullLevel;
+		}
 	}
 
 	unsigned nTransferLength = nChunkSize * sizeof (u32);
