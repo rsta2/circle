@@ -1,0 +1,4 @@
+#pragma once
+#define ARM_USB_CORE_BASE 0x10000000U
+
+#define ARM_USB_DEV_BASE (ARM_USB_CORE_BASE + 0x800U)
