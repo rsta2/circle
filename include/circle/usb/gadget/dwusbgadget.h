@@ -78,6 +78,27 @@ public:
 	/// \note Have to undo AddEndpoints() and CreateDevice() here.
 	virtual void OnSuspend (void) = 0;
 
+	/// \brief Opt in to bus resume without a USB reset or re-enumeration
+	/// \return TRUE to retain configuration, endpoint transfers and EP0 phase
+	/// \note Default FALSE preserves the existing reset-only suspend policy.
+	/// \note Called at IRQ level; the policy must remain constant while suspended.
+	virtual boolean RetainTransfersOnSuspend (void) const { return FALSE; }
+
+	/// \brief The bus suspended with transfers retained
+	/// \note Called at IRQ level only when RetainTransfersOnSuspend() is TRUE.
+	/// \note Must not reconfigure endpoints or release/reuse their DMA buffers.
+	/// \note Pending endpoint completion callbacks may still run while suspended.
+	/// \note Stop scheduling application traffic until OnBusResume() or reset.
+	virtual void OnBusSuspend (void) {}
+
+	/// \brief The bus resumed without reset; the previous device state is restored
+	/// \note Called at IRQ level only after a retained suspend, not after reset.
+	/// \note Must not recreate endpoints or restart already armed transfers.
+	virtual void OnBusResume (void) {}
+
+	/// \return TRUE while an opted-in gadget is suspended with transfers retained
+	boolean IsBusSuspended (void) const { return m_bRetainedSuspend; }
+
 	/// \brief A class or vendor request has been received on EP0
 	/// \param pSetupData Contents of the Setup packet
 	/// \param pData Received data (host-to-device), or buffer for data to be sent
@@ -97,6 +118,7 @@ private:
 	void FlushRxFIFO (void);
 
 	void HandleUSBSuspend (void);
+	void HandleUSBResume (void);
 	void HandleUSBReset (void);
 	void HandleEnumerationDone (void);
 	void HandleInEPInterrupt (void);
@@ -133,6 +155,8 @@ private:
 	};
 
 	TState m_State;
+	TState m_PreSuspendState;
+	boolean m_bRetainedSuspend;
 
 	enum TPnPEvent
 	{
