@@ -31,6 +31,7 @@ CUSBMIDIGadgetEndpoint::CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pD
 						CUSBMIDIGadget *pGadget)
 :	CDWUSBGadgetEndpoint (pDesc, pGadget),
 	m_pInterface (nullptr),
+	m_bConfigured (FALSE),
 	m_bInActive (FALSE),
 	m_pQueue (nullptr),
 	m_nInPtr (0),
@@ -61,12 +62,21 @@ void CUSBMIDIGadgetEndpoint::AttachInterface (CUSBMIDIDevice *pInterface)
 	}
 }
 
+void CUSBMIDIGadgetEndpoint::OnUSBReset (void)
+{
+	OnSuspend ();
+	CDWUSBGadgetEndpoint::OnUSBReset ();
+}
+
 void CUSBMIDIGadgetEndpoint::OnActivate (void)
 {
+	m_SpinLock.Acquire ();
+	m_bConfigured = TRUE;
 	if (GetDirection () == DirectionOut)
 	{
 		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
 	}
+	m_SpinLock.Release ();
 }
 
 void CUSBMIDIGadgetEndpoint::OnDeactivate (void)
@@ -83,6 +93,13 @@ void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 {
 	if (!bIn)
 	{
+		m_SpinLock.Acquire ();
+		boolean bConfigured = m_bConfigured;
+		m_SpinLock.Release ();
+		if (!bConfigured)
+		{
+			return;
+		}
 #ifndef NDEBUG
 		//debug_hexdump (m_OutBuffer, nLength, From);
 #endif
@@ -93,13 +110,19 @@ void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 			m_pInterface->CallPacketHandler (m_OutBuffer, nLength);
 		}
 
-		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
+		// The application callback may have deactivated this endpoint.
+		m_SpinLock.Acquire ();
+		if (m_bConfigured)
+		{
+			BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
+		}
+		m_SpinLock.Release ();
 	}
 	else
 	{
 		m_SpinLock.Acquire ();
 
-		if (m_bInActive)
+		if (m_bConfigured && m_bInActive)
 		{
 			unsigned nBytesAvail = GetQueueBytesAvail ();
 			if (nBytesAvail)
@@ -125,16 +148,15 @@ void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 
 void CUSBMIDIGadgetEndpoint::OnSuspend (void)
 {
+	m_SpinLock.Acquire ();
+	m_bConfigured = FALSE;
 	if (GetDirection () == DirectionIn)
 	{
-		m_SpinLock.Acquire ();
-
 		m_bInActive = FALSE;
 		m_nInPtr = 0;
 		m_nOutPtr = 0;
-
-		m_SpinLock.Release ();
 	}
+	m_SpinLock.Release ();
 }
 
 boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLength)
@@ -144,6 +166,12 @@ boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLe
 	assert (!(nLength % CUSBMIDIDevice::EventPacketSize));
 
 	m_SpinLock.Acquire ();
+
+	if (!m_bConfigured)
+	{
+		m_SpinLock.Release ();
+		return FALSE;
+	}
 
 	unsigned nBytesFree = GetQueueBytesFree ();
 	if (nLength > nBytesFree)
@@ -174,9 +202,11 @@ boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLe
 
 	Dequeue (m_InBuffer, nBytesAvail);
 
-	m_SpinLock.Release ();
-
+	// Publish the transfer before releasing the lock. Otherwise a suspend/reset
+	// IRQ can retire the queue here, followed by this stale transfer starting.
 	BeginTransfer (TransferDataIn, m_InBuffer, nBytesAvail);
+
+	m_SpinLock.Release ();
 
 	return TRUE;
 }

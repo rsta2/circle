@@ -37,6 +37,7 @@ public:
 
 	void AttachInterface (CUSBMIDIDevice *pInterface);
 
+	void OnUSBReset (void) override;
 	void OnActivate (void) override;
 	void OnDeactivate (void) override;
 
@@ -56,6 +57,8 @@ private:
 private:
 	CUSBMIDIDevice *m_pInterface;
 
+	// Protected by m_SpinLock together with the IN queue and transfer start.
+	boolean m_bConfigured;
 	volatile boolean m_bInActive;
 
 	static const size_t QueueSize = 8192+1;
