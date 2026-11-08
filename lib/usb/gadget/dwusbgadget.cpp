@@ -43,6 +43,8 @@ CDWUSBGadget::CDWUSBGadget (CInterruptSystem *pInterruptSystem, TDeviceSpeed Dev
 :	m_pInterruptSystem (pInterruptSystem),
 	m_DeviceSpeed (DeviceSpeed),
 	m_State (StatePowered),
+	m_PreSuspendState (StatePowered),
+	m_bRetainedSuspend (FALSE),
 	m_bPnPEvent {FALSE, FALSE}
 {
 	for (unsigned i = 0; i <= NumberOfEPs; i++)
@@ -437,6 +439,7 @@ void CDWUSBGadget::EnableDeviceInterrupts (void)
 
 	// Enable interrupts
 	IntMask.Or (DWHCI_CORE_INT_MASK_USB_SUSPEND);
+	IntMask.Or (DWHCI_CORE_INT_MASK_WKUP_INTR);
 	IntMask.Or (DWHCI_CORE_INT_MASK_USB_RESET_INTR);
 	IntMask.Or (DWHCI_CORE_INT_MASK_ENUM_DONE);
 	IntMask.Or (DWHCI_CORE_INT_MASK_IN_EP_INTR);
@@ -520,19 +523,25 @@ void CDWUSBGadget::HandleUSBSuspend (void)
 	if (   m_State != StatePowered
 	    && m_State != StateSuspended)
 	{
-		// Do NOT tear down the core or disable interrupts here. Treating a
-		// bus suspend as a disconnect (PnP event -> EP teardown and full core
-		// re-init in UpdatePlugAndPlay) leaves the device deaf for >100 ms.
-		// A host, which resets and enumerates during that window (e.g. a PC
-		// BIOS on warm reboot), then talks to a device, whose hardware ACKs,
-		// but whose software never sees ENUMDONE or SETUP interrupts. Only
-		// abort the in-flight transfers and wait for the next USB reset,
-		// which re-initializes the EPs at IRQ level.
-		for (unsigned i = 0; i <= NumberOfEPs; i++)
+		m_PreSuspendState = m_State;
+		m_bRetainedSuspend = RetainTransfersOnSuspend ();
+		if (m_bRetainedSuspend)
 		{
-			if (m_pEP[i])
+			// A bus suspend is not a reset: preserve endpoint toggles, DMA
+			// buffers and EP0 phase. The host may resume without enumeration.
+			OnBusSuspend ();
+		}
+		else
+		{
+			// Legacy gadgets abort transfers and wait for the next reset.
+			// Do not tear down the core or queue PnP removal: a host may
+			// reset and enumerate before deferred reinitialization finishes.
+			for (unsigned i = 0; i <= NumberOfEPs; i++)
 			{
-				m_pEP[i]->OnSuspend ();
+				if (m_pEP[i])
+				{
+					m_pEP[i]->OnSuspend ();
+				}
 			}
 		}
 
@@ -543,8 +552,21 @@ void CDWUSBGadget::HandleUSBSuspend (void)
 	IntStatus.Write ();
 }
 
+void CDWUSBGadget::HandleUSBResume (void)
+{
+	CDWHCIRegister Ack (DWHCI_CORE_INT_STAT, DWHCI_CORE_INT_MASK_WKUP_INTR);
+	Ack.Write ();
+	if (m_State == StateSuspended && m_bRetainedSuspend)
+	{
+		m_State = m_PreSuspendState;
+		m_bRetainedSuspend = FALSE;
+		OnBusResume ();
+	}
+}
+
 void CDWUSBGadget::HandleUSBReset (void)
 {
+	m_bRetainedSuspend = FALSE;
 #ifdef USB_GADGET_DEBUG
 	LOGDBG ("USB reset");
 #endif
@@ -707,7 +729,7 @@ void CDWUSBGadget::HandleInEPInterrupt (void)
 		if (nInEPStat & 1)
 		{
 			// EP0 is armed in HandleUSBReset, before ENUMDONE.
-			if (   m_State != StateSuspended
+			if (   (m_State != StateSuspended || m_bRetainedSuspend)
 			    && (m_State != StateResetDone || nEP == 0))
 			{
 				assert (nEP <= NumberOfEPs);
@@ -745,7 +767,7 @@ void CDWUSBGadget::HandleOutEPInterrupt (void)
 		if (nOutEPStat & 1)
 		{
 			// EP0 is armed in HandleUSBReset, before ENUMDONE.
-			if (   m_State != StateSuspended
+			if (   (m_State != StateSuspended || m_bRetainedSuspend)
 			    && (m_State != StateResetDone || nEP == 0))
 			{
 				assert (nEP <= NumberOfEPs);
@@ -775,16 +797,24 @@ void CDWUSBGadget::InterruptHandler (void)
 	LOGDBG ("IRQ (status 0x%08X, state %u)", nIntStatus, (unsigned) m_State);
 #endif
 
-	if (nIntStatus & DWHCI_CORE_INT_MASK_USB_SUSPEND)
-	{
-		HandleUSBSuspend ();
-
-		nIntStatus = 0;
-	}
-
+	// Reset wins over coalesced suspend/wake status. Never resurrect an old
+	// configuration after reset. Pending completions retain their owners.
 	if (nIntStatus & DWHCI_CORE_INT_MASK_USB_RESET_INTR)
 	{
 		HandleUSBReset ();
+		CDWHCIRegister Ack (DWHCI_CORE_INT_STAT,
+			DWHCI_CORE_INT_MASK_USB_SUSPEND | DWHCI_CORE_INT_MASK_WKUP_INTR);
+		Ack.Write ();
+	}
+	else if (nIntStatus & DWHCI_CORE_INT_MASK_WKUP_INTR)
+	{
+		HandleUSBResume ();
+		CDWHCIRegister Ack (DWHCI_CORE_INT_STAT, DWHCI_CORE_INT_MASK_USB_SUSPEND);
+		Ack.Write ();
+	}
+	else if (nIntStatus & DWHCI_CORE_INT_MASK_USB_SUSPEND)
+	{
+		HandleUSBSuspend ();
 	}
 
 	if (nIntStatus & DWHCI_CORE_INT_MASK_ENUM_DONE)
