@@ -754,9 +754,9 @@ void CDWUSBGadget::HandleOutEPInterrupt (void)
 			}
 			else
 			{
-				CDWHCIRegister OutEPIntAck (DWHCI_DEV_OUT_EP_INT (nEP));
-				OutEPIntAck.Set (  DWHCI_DEV_OUT_EP_INT_SETUP_DONE
-						 | DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE);
+				// Retire all status for an ignored endpoint, as for IN. Leaving
+				// EP_DISABLED or AHB_ERROR pending can keep its IRQ asserted.
+				CDWHCIRegister OutEPIntAck (DWHCI_DEV_OUT_EP_INT (nEP), ~0U);
 				OutEPIntAck.Write ();
 			}
 		}
