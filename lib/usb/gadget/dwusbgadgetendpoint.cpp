@@ -346,7 +346,10 @@ void CDWUSBGadgetEndpoint::CancelTransfer (void)
 				if (!m_pGadget->WaitForBit (&IntStatus,
 					DWHCI_CORE_INT_STAT_GLOBAL_OUT_NAK_EFF, TRUE, 10, 1))
 				{
-					LOGPANIC ("EP%u OUT NAK timeout", m_nEP);
+					// A missing global NAK acknowledgement does not prove
+					// DMA has stopped. Still attempt endpoint disable;
+					// buffer reuse requires its confirmation below.
+					LOGWARN ("EP%u OUT NAK timeout; attempting disable", m_nEP);
 				}
 			}
 
