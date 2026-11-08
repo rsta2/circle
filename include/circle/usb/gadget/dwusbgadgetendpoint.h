@@ -137,7 +137,9 @@ protected:
 	void Stall (boolean bIn);
 
 private:
-	size_t FinishTransfer (void);
+	// nResidual is an optional, already validated hardware byte-count snapshot.
+	// The default reads the counter for ordinary data/status completions.
+	size_t FinishTransfer (size_t nResidual = (size_t) -1);
 	void InitTransfer (void);
 
 	virtual void OnControlMessage (void);

@@ -411,13 +411,13 @@ void CDWUSBGadgetEndpoint::CancelTransfer (void)
 	InitTransfer ();
 }
 
-size_t CDWUSBGadgetEndpoint::FinishTransfer (void)
+size_t CDWUSBGadgetEndpoint::FinishTransfer (size_t nResidual)
 {
 	assert (m_TransferMode < TransferUnknown);
 	CDWHCIRegister EPXferSize (  m_TransferMode == TransferDataIn
 				   ? DWHCI_DEV_IN_EP_XFER_SIZ (m_nEP)
 				   : DWHCI_DEV_OUT_EP_XFER_SIZ (m_nEP));
-	size_t nXferSize = EPXferSize.Read ();
+	size_t nXferSize = nResidual != (size_t) -1 ? nResidual : EPXferSize.Read ();
 
 	nXferSize &= !m_nEP ? DWHCI_DEV_EP0_XFER_SIZ_XFER_SIZ__MASK
 			    : DWHCI_DEV_EP_XFER_SIZ_XFER_SIZ__MASK;
@@ -496,7 +496,38 @@ void CDWUSBGadgetEndpoint::HandleOutInterrupt (void)
 				| (OutEPInt.Get () & DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE));
 		OutEPIntAck.Write ();
 
-		size_t nLength = FinishTransfer ();
+		// SETUP can abort any control phase, not only a SETUP receive.
+		// In that case the single transfer record describes the old phase
+		// (possibly IN), and must not be used to finish this OUT request.
+		// Captured on BCM2837: SETUP_DONE during TransferDataOut with an
+		// unexpected DOEPTSIZ0 residual of 120. Discard ambiguous requests
+		// and let the host retry from a fresh SETUP receive.
+		CDWHCIRegister SetupSize (DWHCI_DEV_OUT_EP_XFER_SIZ (0));
+		u32 nRemaining = (SetupSize.Read () & DWHCI_DEV_EP0_XFER_SIZ_XFER_SIZ__MASK)
+				 >> DWHCI_DEV_EP_XFER_SIZ_XFER_SIZ__SHIFT;
+		if (m_TransferMode != TransferSetupOut
+		    || nRemaining > m_nTransferLength
+		    || m_nTransferLength - nRemaining != sizeof (TSetupData))
+		{
+			LOGWARN ("EP0: discarding SETUP mode %u residual %u armed %u",
+				 (unsigned) m_TransferMode, (unsigned) nRemaining,
+				 (unsigned) m_nTransferLength);
+			// Do not free a live IN buffer or flush its FIFO until the
+			// synchronous disable completes. EP0 OUT must not get EPDIS.
+			if (m_TransferMode == TransferDataIn)
+			{
+				CancelTransfer ();
+			}
+			CDWHCIRegister InEPIntAck (DWHCI_DEV_IN_EP_INT (0), ~0U);
+			InEPIntAck.Write ();
+			InitTransfer ();
+			OnActivate ();
+			return;
+		}
+
+		// Use exactly the counter snapshot validated above. Hardware can
+		// receive another SETUP between validation and a second MMIO read.
+		size_t nLength = FinishTransfer (nRemaining);
 		if (nLength == sizeof (TSetupData))
 		{
 			OnControlMessage ();
