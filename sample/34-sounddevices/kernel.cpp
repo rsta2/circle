@@ -153,6 +153,10 @@ TShutdownMode CKernel::Run (void)
 		m_pSound = new CHDMISoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE);
 	}
 #if RASPPI >= 4
+	else if (strcmp (pSoundDevice, "sndhdmi1") == 0)
+	{
+		m_pSound = new CHDMISoundBaseDevice (&m_Interrupt, SAMPLE_RATE, CHUNK_SIZE, 1);
+	}
 	else if (strcmp (pSoundDevice, "sndusb") == 0)
 	{
 		m_pSound = new CUSBSoundBaseDevice (SAMPLE_RATE);

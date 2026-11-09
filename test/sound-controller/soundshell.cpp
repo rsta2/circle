@@ -59,7 +59,7 @@ const char CSoundShell::HelpMsg[] =
 	"Command\t\tDescription\t\t\t\t\t\tAlias\n"
 	"\n"
 	"start DEV [MODE] [CLK] [I2C]\n"
-	"\t\tStart sound device (snd{pwm|i2s|hdmi"
+	"\t\tStart sound device (snd{pwm|i2s|hdmi[1]"
 #if RASPPI >= 4
 	"|usb"
 #endif
@@ -434,6 +434,17 @@ boolean CSoundShell::Start (void)
 		}
 
 		m_pSound[nMode] = new CHDMISoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE);
+	}
+	else if (strcmp (Token, "sndhdmi1") == 0)
+	{
+		if (nMode != ModeOutput)
+		{
+			Print ("Device mode is not supported\n");
+
+			return FALSE;
+		}
+
+		m_pSound[nMode] = new CHDMISoundBaseDevice (m_pInterrupt, SAMPLE_RATE, CHUNK_SIZE, 1);
 	}
 #if RASPPI >= 4
 	else if (strcmp (Token, "sndusb") == 0)

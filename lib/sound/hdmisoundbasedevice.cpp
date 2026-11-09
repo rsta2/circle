@@ -2,7 +2,7 @@
 // hdmisoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 #include <circle/sound/hdmisoundbasedevice.h>
 #include <circle/devicenameservice.h>
 #include <circle/bcm2835.h>
-#include <circle/memio.h>
 #include <circle/synchronize.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
@@ -33,13 +32,13 @@
 
 #if RASPPI <= 3
 	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
-					static const uintptr Reg##name = (base) + (offset);
+		static const uintptr Reg##name = ((CHDMISoundBaseDevice::base) << 16) | (offset);
 #elif RASPPI == 4
 	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
-					static const uintptr Reg##name = (base4) + (offset4);
+		static const uintptr Reg##name = ((CHDMISoundBaseDevice::base4) << 16) | (offset4);
 #else
 	#define REG(name, base, offset, base4, offset4, base5, offset5)	\
-					static const uintptr Reg##name = (base5) + (offset5);
+		static const uintptr Reg##name = ((CHDMISoundBaseDevice::base5) << 16) | (offset5);
 #endif
 
 #define REGBIT(reg, name, bitnr)	static const u32 Bit##reg##name = 1U << (bitnr);
@@ -49,22 +48,23 @@
 
 #define UNUSED		0
 
-REG (AudioPacketConfig, ARM_HDMI_BASE, 0x9C, ARM_HDMI_BASE, 0xB8, ARM_HDMI_BASE, 0xC0);
+REG (AudioPacketConfig, RegHDMI, 0x9C, RegHDMI, 0xB8, RegHDMI, 0xC0);
 	REGSHIFT (AudioPacketConfig, CeaMask, 0);
 	REGSHIFT (AudioPacketConfig, BFrameIdentifier, 10);
 	REGBIT (AudioPacketConfig, ZeroDataOnInactiveChannels, 24);
 	REGBIT (AudioPacketConfig, ZeroDataOnSampleFlat, 29);
-REG (CrpConfig, ARM_HDMI_BASE, 0xA8, ARM_HDMI_BASE, 0xC8, ARM_HDMI_BASE, 0xD0);	// clock recover
+REG (CrpConfig, RegHDMI, 0xA8, RegHDMI, 0xC8, RegHDMI, 0xD0);	// clock recover
 	REGBIT (CrpConfig, ExternalCtsEnable, 24);
 	REGSHIFT (CrpConfig, ConfigN, 0);
-REG (Cts0, ARM_HDMI_BASE, 0xAC, ARM_HDMI_BASE, 0xCC, ARM_HDMI_BASE, 0xD4); 	// clock time stamp
-REG (Cts1, ARM_HDMI_BASE, 0xB0, ARM_HDMI_BASE, 0xD0, ARM_HDMI_BASE, 0xD8);
-REG (MaiChannelMap, ARM_HDMI_BASE, 0x90, ARM_HDMI_BASE, 0x9C, ARM_HDMI_BASE, 0xA4);
-REG (MaiConfig, ARM_HDMI_BASE, 0x94, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xA8);
+REG (Cts0, RegHDMI, 0xAC, RegHDMI, 0xCC, RegHDMI, 0xD4); 	// clock time stamp
+REG (Cts1, RegHDMI, 0xB0, RegHDMI, 0xD0, RegHDMI, 0xD8);
+REG (MaiChannelMap, RegHDMI, 0x90, RegHDMI, 0x9C, RegHDMI, 0xA4);
+REG (MaiConfig, RegHDMI, 0x94, RegHDMI, 0xA0, RegHDMI, 0xA8);
 	REGSHIFT (MaiConfig, ChannelMask, 0);
 	REGBIT (MaiConfig, BitReverse, 26);
 	REGBIT (MaiConfig, FormatReverse, 27);
-REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10, ARM_HD_BASE, 0x10);
+REG (MaiControl0, RegHD, 0x14, RegHD, 0x10, RegHD, 0x10);	// HDMI0
+REG (MaiControl1, RegHD, UNUSED, RegHD, 0x30, RegHD, 0x30);	// HDMI1
 	REGBIT (MaiControl, Reset, 0);
 	REGBIT (MaiControl, ErrorFull, 1);
 	REGBIT (MaiControl, ErrorEmpty, 2);
@@ -77,19 +77,23 @@ REG (MaiControl, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x10, ARM_HD_BASE, 0x10);
 	REGBIT (MaiControl, ChannelAlign, 13);
 	//REGBIT (MaiControl, Busy, 14);
 	REGBIT (MaiControl, Delayed, 15);
-REG (MaiData, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x1C, ARM_HD_BASE, 0x1C);
-REG (MaiFormat, ARM_HD_BASE, 0x1C, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x18);
+REG (MaiData0, RegHD, 0x20, RegHD, 0x1C, RegHD, 0x1C);		// HDMI0
+REG (MaiData1, RegHD, UNUSED, RegHD, 0x3C, RegHD, 0x3C);	// HDMI1
+REG (MaiFormat0, RegHD, 0x1C, RegHD, 0x18, RegHD, 0x18);	// HDMI0
+REG (MaiFormat1, RegHD, UNUSED, RegHD, 0x38, RegHD, 0x38);	// HDMI1
 	REGSHIFT (MaiFormat, SampleRate, 8);
 		REGVALUE (MaiFormat, SampleRate, NotIndicated, 0);
 		REGVALUE (MaiFormat, SampleRate, 8000, 1);
 	REGSHIFT (MaiFormat, AudioFormat, 16);
 		REGVALUE (MaiFormat, AudioFormat, PCM, 2);
-REG (MaiSampleRate, ARM_HD_BASE, 0x2C, ARM_HD_BASE, 0x20, ARM_HD_BASE, 0x20);
+REG (MaiSampleRate0, RegHD, 0x2C, RegHD, 0x20, RegHD, 0x20);	// HDMI0
+REG (MaiSampleRate1, RegHD, UNUSED, RegHD, 0x40, RegHD, 0x40);	// HDMI1
 	REGSHIFT (MaiSampleRate, M, 0);
 	REGMASK (MaiSampleRate, M, 0xFFU);
 	REGSHIFT (MaiSampleRate, N, 8);
 	REGMASK (MaiSampleRate, N, 0xFFFFFF00U);
-REG (MaiThreshold, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x14);
+REG (MaiThreshold0, RegHD, 0x18, RegHD, 0x14, RegHD, 0x14);	// HDMI0
+REG (MaiThreshold1, RegHD, UNUSED, RegHD, 0x34, RegHD, 0x34);	// HDMI1
 	REGSHIFT (MaiThreshold, DREQLow, 0);
 	REGSHIFT (MaiThreshold, DREQHigh, 8);
 	REGSHIFT (MaiThreshold, PanicLow, 16);
@@ -101,21 +105,35 @@ REG (MaiThreshold, ARM_HD_BASE, 0x18, ARM_HD_BASE, 0x14, ARM_HD_BASE, 0x14);
 	REGSHIFT (MaiThreshold, PanicHighD0, 23);
 #endif
 		REGVALUE (MaiThreshold, Any, Default, 16);
-REG (RamPacketAudio0, ARM_HDMI_BASE, 0x490, ARM_RAM_BASE, 0x90, ARM_RAM_BASE, 0x90);
-REG (RamPacketAudio1, ARM_HDMI_BASE, 0x494, ARM_RAM_BASE, 0x94, ARM_RAM_BASE, 0x94);
-REG (RamPacketAudio2, ARM_HDMI_BASE, 0x498, ARM_RAM_BASE, 0x98, ARM_RAM_BASE, 0x98);
-REG (RamPacketAudio8, ARM_HDMI_BASE, 0x4B0, ARM_RAM_BASE, 0xB0, ARM_RAM_BASE, 0xB0);
-REG (RamPacketConfig, ARM_HDMI_BASE, 0xA0, ARM_HDMI_BASE, 0xBC, ARM_HDMI_BASE, 0xC4);
+REG (RamPacketAudio0, RegHDMI, 0x490, RegRAM, 0x90, RegRAM, 0x90);
+REG (RamPacketAudio1, RegHDMI, 0x494, RegRAM, 0x94, RegRAM, 0x94);
+REG (RamPacketAudio2, RegHDMI, 0x498, RegRAM, 0x98, RegRAM, 0x98);
+REG (RamPacketAudio8, RegHDMI, 0x4B0, RegRAM, 0xB0, RegRAM, 0xB0);
+REG (RamPacketConfig, RegHDMI, 0xA0, RegHDMI, 0xBC, RegHDMI, 0xC4);
 	REGBIT (RamPacketConfig, AudioPacketIdentifier, 4);
 	REGBIT (RamPacketConfig, Enable, 16);
-REG (RamPacketStatus, ARM_HDMI_BASE, 0xA4, ARM_HDMI_BASE, 0xC4, ARM_HDMI_BASE, 0xCC);
+REG (RamPacketStatus, RegHDMI, 0xA4, RegHDMI, 0xC4, RegHDMI, 0xCC);
 	REGBIT (RamPacketStatus, AudioPacketIdentifier, 4);
 #if RASPPI <= 3
-REG (TxPhyControl0, ARM_HDMI_BASE, 0x2C4, UNUSED, UNUSED, 0, 0);
+REG (TxPhyControl0, RegHDMI, 0x2C4, UNUSED, UNUSED, 0, 0);
 	REGBIT (TxPhyControl0, RngPowerDown, 25);
 #elif RASPPI == 4
-REG (TxPhyPowerDownControl, UNUSED, UNUSED, ARM_PHY_BASE, 0x04, 0, 0);
+REG (TxPhyPowerDownControl, UNUSED, UNUSED, RegPHY, 0x04, 0, 0);
 	REGBIT (TxPhyPowerDownControl, RngGenPowerDown, 4);
+#endif
+
+#if RASPPI <= 3
+	#define RegMaiControl		RegMaiControl0
+	#define RegMaiData		RegMaiData0
+	#define RegMaiFormat		RegMaiFormat0
+	#define RegMaiSampleRate	RegMaiSampleRate0
+	#define RegMaiThreshold		RegMaiThreshold0
+#else
+	#define RegMaiControl		(m_nDevice ? RegMaiControl1 : RegMaiControl0)
+	#define RegMaiData		(m_nDevice ? RegMaiData1 : RegMaiData0)
+	#define RegMaiFormat		(m_nDevice ? RegMaiFormat1 : RegMaiFormat0)
+	#define RegMaiSampleRate	(m_nDevice ? RegMaiSampleRate1 : RegMaiSampleRate0)
+	#define RegMaiThreshold		(m_nDevice ? RegMaiThreshold1 : RegMaiThreshold0)
 #endif
 
 static const char DeviceName[] = "sndhdmi";
@@ -123,11 +141,28 @@ static const char From[] = "sndhdmi";
 
 CHDMISoundBaseDevice::CHDMISoundBaseDevice (CInterruptSystem *pInterrupt,
 					    unsigned nSampleRate,
-					    unsigned nChunkSize)
+					    unsigned nChunkSize,
+					    unsigned nDevice)
 :	CSoundBaseDevice (SoundFormatIEC958, 0, nSampleRate),
 	m_pInterruptSystem (pInterrupt),
 	m_nSampleRate (nSampleRate),
 	m_nChunkSize (nChunkSize),
+	m_nDevice (nDevice),
+	m_ulBase {
+#if RASPPI <= 3
+		ARM_HDMI_BASE,
+		ARM_HD_BASE
+#else
+		(nDevice ? ARM_HDMI1_BASE : ARM_HDMI_BASE),
+		(nDevice ? ARM_HD1_BASE : ARM_HD_BASE),
+#endif
+#if RASPPI == 4
+		(nDevice ? ARM_PHY1_BASE : ARM_PHY_BASE),
+#endif
+#if RASPPI >= 4
+		(nDevice ? ARM_RAM1_BASE : ARM_RAM_BASE)
+#endif
+	},
 	m_ulAudioClockRate (0),
 	m_ulPixelClockRate (0),
 	m_bUsePolling (FALSE),
@@ -139,15 +174,32 @@ CHDMISoundBaseDevice::CHDMISoundBaseDevice (CInterruptSystem *pInterrupt,
 	assert (m_pInterruptSystem != 0);
 	assert (m_nSampleRate > 0);
 	assert (m_nChunkSize % IEC958_SUBFRAMES_PER_BLOCK == 0);
+	assert (m_nDevice <= 1);
 
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 }
 
-CHDMISoundBaseDevice::CHDMISoundBaseDevice (unsigned nSampleRate)
+CHDMISoundBaseDevice::CHDMISoundBaseDevice (unsigned nSampleRate, unsigned nDevice)
 :	CSoundBaseDevice (SoundFormatIEC958, 0, nSampleRate),
 	m_pInterruptSystem (0),
 	m_nSampleRate (nSampleRate),
 	m_nChunkSize (0),
+	m_nDevice (nDevice),
+	m_ulBase {
+#if RASPPI <= 3
+		ARM_HDMI_BASE,
+		ARM_HD_BASE
+#else
+		(nDevice ? ARM_HDMI1_BASE : ARM_HDMI_BASE),
+		(nDevice ? ARM_HD1_BASE : ARM_HD_BASE),
+#endif
+#if RASPPI == 4
+		(nDevice ? ARM_PHY1_BASE : ARM_PHY_BASE),
+#endif
+#if RASPPI >= 4
+		(nDevice ? ARM_RAM1_BASE : ARM_RAM_BASE)
+#endif
+	},
 	m_ulAudioClockRate (0),
 	m_ulPixelClockRate (0),
 	m_bUsePolling (TRUE),
@@ -157,6 +209,7 @@ CHDMISoundBaseDevice::CHDMISoundBaseDevice (unsigned nSampleRate)
 	m_pDMAChannel (0)
 {
 	assert (m_nSampleRate > 0);
+	assert (m_nDevice <= 1);
 
 	CDeviceNameService::Get ()->AddDevice (DeviceName, this, FALSE);
 }
@@ -195,9 +248,20 @@ boolean CHDMISoundBaseDevice::Start (void)
 
 	if (m_State == HDMISoundCreated)
 	{
+#if RASPPI <= 3
+		if (m_nDevice != 0)
+		{
+			CLogger::Get ()->Write (From, LogError, "Port HDMI1 is not available");
+
+			m_State = HDMISoundError;
+
+			return FALSE;
+		}
+#endif
+
 		PeripheralEntry ();
 
-		if (!(read32 (RegRamPacketConfig) & BitRamPacketConfigEnable))
+		if (!(RegRead32 (RegRamPacketConfig) & BitRamPacketConfigEnable))
 		{
 			CLogger::Get ()->Write (From, LogError,
 						"Requires HDMI display with audio support");
@@ -262,13 +326,30 @@ boolean CHDMISoundBaseDevice::Start (void)
 		const void *Buffers[2] = {m_pDMABuffer[0], m_pDMABuffer[1]};
 		assert (m_pDMAChannel != 0);
 		TDREQ DREQ = DREQSourceHDMI;
-#if RASPPI == 5
+#if RASPPI == 4
+		if (m_nDevice == 1)
+		{
+			DREQ = DREQSourceHDMI1;
+		}
+#elif RASPPI == 5
 		if (CMachineInfo::Get ()->GetSoCStepping () >= SoCSteppingD0)
 		{
 			DREQ = DREQSourceHDMI_D0;
+			if (m_nDevice == 1)
+			{
+				DREQ = DREQSourceHDMI1_D0;
+			}
+		}
+		else
+		{
+			if (m_nDevice == 1)
+			{
+				DREQ = DREQSourceHDMI1;
+			}
 		}
 #endif
-		m_pDMAChannel->SetupCyclicIOWrite (RegMaiData, Buffers, 2, ulBufferLength, DREQ);
+		m_pDMAChannel->SetupCyclicIOWrite (HDMI_REG_ADDRESS (RegMaiData),
+						   Buffers, 2, ulBufferLength, DREQ);
 
 		m_pDMAChannel->SetCompletionRoutine (DMACompletionStub, this);
 		m_pDMAChannel->Start ();
@@ -278,16 +359,16 @@ boolean CHDMISoundBaseDevice::Start (void)
 	PeripheralEntry ();
 
 #if RASPPI <= 3
-	write32 (RegTxPhyControl0, read32 (RegTxPhyControl0) & ~BitTxPhyControl0RngPowerDown);
+	RegWrite32 (RegTxPhyControl0, RegRead32 (RegTxPhyControl0) & ~BitTxPhyControl0RngPowerDown);
 #elif RASPPI == 4
-	write32 (RegTxPhyPowerDownControl,
-		 read32 (RegTxPhyPowerDownControl) & ~BitTxPhyPowerDownControlRngGenPowerDown);
+	RegWrite32 (RegTxPhyPowerDownControl,
+		    RegRead32 (RegTxPhyPowerDownControl) & ~BitTxPhyPowerDownControlRngGenPowerDown);
 #endif
 
-	write32 (RegMaiControl,  IEC958_HW_CHANNELS << ShiftMaiControlChannelNumber
-			       | BitMaiControlWholSample
-			       | BitMaiControlChannelAlign
-			       | BitMaiControlEnable);
+	RegWrite32 (RegMaiControl,  IEC958_HW_CHANNELS << ShiftMaiControlChannelNumber
+				  | BitMaiControlWholSample
+				  | BitMaiControlChannelAlign
+				  | BitMaiControlEnable);
 
 	PeripheralExit ();
 
@@ -340,7 +421,7 @@ boolean CHDMISoundBaseDevice::IsWritable (void)
 
 	PeripheralEntry ();
 
-	boolean bResult = !(read32 (RegMaiControl) & BitMaiControlFull);
+	boolean bResult = !(RegRead32 (RegMaiControl) & BitMaiControlFull);
 
 	PeripheralExit ();
 
@@ -353,7 +434,7 @@ void CHDMISoundBaseDevice::WriteSample (s32 nSample)
 
 	PeripheralEntry ();
 
-	write32 (RegMaiData, ConvertIEC958Sample (nSample, m_nSubFrame / IEC958_HW_CHANNELS));
+	RegWrite32 (RegMaiData, ConvertIEC958Sample (nSample, m_nSubFrame / IEC958_HW_CHANNELS));
 
 	PeripheralExit ();
 
@@ -428,14 +509,14 @@ void CHDMISoundBaseDevice::RunHDMI (void)
 
 	for (unsigned i = 0; InitValues[i].nReg != 0; i++)
 	{
-		write32 (InitValues[i].nReg, InitValues[i].nValue);
+		RegWrite32 (InitValues[i].nReg, InitValues[i].nValue);
 	}
 
 #ifdef HDMI_DEBUG
 	for (unsigned i = 0; InitValues[i].nReg != 0; i++)
 	{
 		CLogger::Get ()->Write (From, LogDebug, "%08X: %08X",
-					InitValues[i].nReg, read32 (InitValues[i].nReg));
+					InitValues[i].nReg, RegRead32 (InitValues[i].nReg));
 	}
 #endif
 
@@ -451,13 +532,13 @@ void CHDMISoundBaseDevice::StopHDMI (void)
 {
 	PeripheralEntry ();
 
-	write32 (RegMaiControl, BitMaiControlDelayed | BitMaiControlErrorEmpty | BitMaiControlErrorFull);
+	RegWrite32 (RegMaiControl, BitMaiControlDelayed | BitMaiControlErrorEmpty | BitMaiControlErrorFull);
 
 #if RASPPI <= 3
-	write32 (RegTxPhyControl0, read32 (RegTxPhyControl0) | BitTxPhyControl0RngPowerDown);
+	RegWrite32 (RegTxPhyControl0, RegRead32 (RegTxPhyControl0) | BitTxPhyControl0RngPowerDown);
 #elif RASPPI == 4
-	write32 (RegTxPhyPowerDownControl,
-		 read32 (RegTxPhyPowerDownControl) | BitTxPhyPowerDownControlRngGenPowerDown);
+	RegWrite32 (RegTxPhyPowerDownControl,
+		    RegRead32 (RegTxPhyPowerDownControl) | BitTxPhyPowerDownControlRngGenPowerDown);
 #endif
 
 	PeripheralExit ();
@@ -517,48 +598,48 @@ void CHDMISoundBaseDevice::ResetHDMI (void)
 {
 	PeripheralEntry ();
 
-	write32 (RegRamPacketConfig,
-		 read32 (RegRamPacketConfig) & ~BitRamPacketConfigAudioPacketIdentifier);
+	RegWrite32 (RegRamPacketConfig,
+		    RegRead32 (RegRamPacketConfig) & ~BitRamPacketConfigAudioPacketIdentifier);
 	if (!WaitForBit (RegRamPacketStatus, BitRamPacketStatusAudioPacketIdentifier, FALSE, 100))
 	{
 		CLogger::Get ()->Write (From, LogWarning, "Cannot stop audio infoframe");
 	}
 
-	write32 (RegMaiControl, BitMaiControlReset);
-	write32 (RegMaiControl, BitMaiControlErrorFull);
-	write32 (RegMaiControl, BitMaiControlFlush);
+	RegWrite32 (RegMaiControl, BitMaiControlReset);
+	RegWrite32 (RegMaiControl, BitMaiControlErrorFull);
+	RegWrite32 (RegMaiControl, BitMaiControlFlush);
 
 	PeripheralExit ();
 }
 
 boolean CHDMISoundBaseDevice::SetAudioInfoFrame (void)
 {
-	assert (read32 (RegRamPacketConfig) & BitRamPacketConfigEnable);
+	assert (RegRead32 (RegRamPacketConfig) & BitRamPacketConfigEnable);
 
-	write32 (RegRamPacketConfig,
-		 read32 (RegRamPacketConfig) & ~BitRamPacketConfigAudioPacketIdentifier);
+	RegWrite32 (RegRamPacketConfig,
+		    RegRead32 (RegRamPacketConfig) & ~BitRamPacketConfigAudioPacketIdentifier);
 	if (!WaitForBit (RegRamPacketStatus, BitRamPacketStatusAudioPacketIdentifier, FALSE, 100))
 	{
 		return FALSE;
 	}
 
-	write32 (RegRamPacketAudio0, 0x0A0184);		// type, version, length
-	write32 (RegRamPacketAudio1, 0x0170);		// checksum, channels-1
+	RegWrite32 (RegRamPacketAudio0, 0x0A0184);		// type, version, length
+	RegWrite32 (RegRamPacketAudio1, 0x0170);		// checksum, channels-1
 
 	for (uintptr nReg = RegRamPacketAudio2; nReg <= RegRamPacketAudio8; nReg += 4)
 	{
-		write32 (nReg, 0);
+		RegWrite32 (nReg, 0);
 	}
 
 #ifdef HDMI_DEBUG
 	for (uintptr nReg = RegRamPacketAudio0; nReg <= RegRamPacketAudio8; nReg += 4)
 	{
-		CLogger::Get ()->Write (From, LogDebug, "%08X: %08X", nReg, read32 (nReg));
+		CLogger::Get ()->Write (From, LogDebug, "%08X: %08X", nReg, RegRead32 (nReg));
 	}
 #endif
 
-	write32 (RegRamPacketConfig,
-		 read32 (RegRamPacketConfig) | BitRamPacketConfigAudioPacketIdentifier);
+	RegWrite32 (RegRamPacketConfig,
+		    RegRead32 (RegRamPacketConfig) | BitRamPacketConfigAudioPacketIdentifier);
 	return WaitForBit (RegRamPacketStatus, BitRamPacketStatusAudioPacketIdentifier, TRUE, 100);
 }
 
@@ -581,13 +662,13 @@ u32 CHDMISoundBaseDevice::SampleRateToHWFormat (unsigned nSampleRate)
 	return MaiFormatSampleRateNotIndicated;
 }
 
-boolean CHDMISoundBaseDevice::WaitForBit (uintptr nIOAddress, u32 nMask, boolean bWaitUntilSet,
+boolean CHDMISoundBaseDevice::WaitForBit (unsigned nRegIndex, u32 nMask, boolean bWaitUntilSet,
 					  unsigned nMsTimeout)
 {
 	assert (nMask != 0);
 	assert (nMsTimeout > 0);
 
-	while ((read32 (nIOAddress) & nMask) ? !bWaitUntilSet : bWaitUntilSet)
+	while ((RegRead32 (nRegIndex) & nMask) ? !bWaitUntilSet : bWaitUntilSet)
 	{
 		CTimer::Get ()->MsDelay (1);
 

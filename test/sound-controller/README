@@ -54,7 +54,7 @@ Sound IO> help
 Command         Description                                             Alias
 
 start DEV [MODE] [CLK] [I2C]
-                Start sound device (snd{pwm|i2s|hdmi|usb})
+                Start sound device (snd{pwm|i2s|hdmi[1]|usb})
                 [for input (i), output (o, default) or both (io)]
                 [with slave (s, default) or master (m) I2S clock]
                 [and I2C slave address of DAC]

@@ -2,7 +2,7 @@
 // hdmisoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2021-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2021-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,11 @@
 #include <circle/gpioclock.h>
 #include <circle/dmachannel.h>
 #include <circle/spinlock.h>
+#include <circle/memio.h>
 #include <circle/types.h>
+
+// Register index has the set index in the upper 16 bits and the offset in the lower 16 bits.
+#define HDMI_REG_ADDRESS(reg)	(m_ulBase[(reg) >> 16] + ((reg) & 0xFFFF))
 
 enum THDMISoundState
 {
@@ -37,8 +41,6 @@ enum THDMISoundState
 	HDMISoundUnknown
 };
 
-/// \note This driver does not support HDMI1 on Raspberry Pi 4 (HDMI0 only).
-
 class CHDMISoundBaseDevice : public CSoundBaseDevice	/// Low level access to the HDMI sound device
 {
 public:
@@ -48,13 +50,17 @@ public:
 	/// \param nChunkSize	twice the number of samples (words) to be handled\n
 	///			with one call to GetChunk() (one word per stereo channel),\n
 	///			must be a multiple of 384
+	/// \param nDevice	select HDMI0 (0) or HDMI1 (1, Raspberry 4 and 5 only)
 	CHDMISoundBaseDevice (CInterruptSystem *pInterrupt,
 			      unsigned	        nSampleRate = 48000,
-			      unsigned	        nChunkSize  = 384 * 10);
+			      unsigned	        nChunkSize  = 384 * 10,
+			      unsigned	        nDevice = 0);
 
 	/// \brief Construct driver object in polling mode.
 	/// \param nSampleRate sample rate in Hz
-	CHDMISoundBaseDevice (unsigned nSampleRate = 48000);
+	/// \param nDevice     select HDMI0 (0) or HDMI1 (1, Raspberry 4 and 5 only)
+	CHDMISoundBaseDevice (unsigned nSampleRate = 48000,
+			      unsigned nDevice = 0);
 
 	virtual ~CHDMISoundBaseDevice (void);
 
@@ -107,8 +113,8 @@ private:
 	boolean SetAudioInfoFrame (void);
 	static u32 SampleRateToHWFormat (unsigned nSampleRate);
 
-	static boolean WaitForBit (uintptr nIOAddress, u32 nMask, boolean bWaitUntilSet,
-				   unsigned nMsTimeout);
+	boolean WaitForBit (unsigned nRegIndex, u32 nMask, boolean bWaitUntilSet,
+			    unsigned nMsTimeout);
 
 #if RASPPI <= 3
 	unsigned long GetHSMClockRate (void);
@@ -120,10 +126,37 @@ private:
 		unsigned long max_numerator, unsigned long max_denominator,
 		unsigned long *best_numerator, unsigned long *best_denominator);
 
+	u32 RegRead32 (unsigned nRegIndex)
+	{
+		return read32 (HDMI_REG_ADDRESS (nRegIndex));
+	}
+
+	void RegWrite32 (unsigned nRegIndex, u32 nValue)
+	{
+		write32 (HDMI_REG_ADDRESS (nRegIndex), nValue);
+	}
+
+public:
+	enum TRegSet
+	{
+		RegHDMI,
+		RegHD,
+#if RASPPI == 4
+		RegPHY,
+#endif
+#if RASPPI >= 4
+		RegRAM,
+#endif
+		RegUnknown
+	};
+
 private:
 	CInterruptSystem *m_pInterruptSystem;
 	unsigned m_nSampleRate;
 	unsigned m_nChunkSize;
+	unsigned m_nDevice;
+
+	uintptr m_ulBase[RegUnknown];
 
 	unsigned long m_ulAudioClockRate;
 	unsigned long m_ulPixelClockRate;

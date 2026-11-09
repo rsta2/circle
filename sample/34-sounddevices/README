@@ -5,8 +5,7 @@ devices:
 
 * PWM sound device via the 3.5mm headphone jack (with adapter on Raspberry Pi 5)
 * I2S sound device using external hardware (tested with PCM5102A and PCM5122 DACs)
-* HDMI sound device via sound-capable HDMI monitor (without VCHIQ, HDMI0 only,
-  not on Raspberry Pi 5)
+* HDMI sound device via sound-capable HDMI monitor (without VCHIQ)
 * VCHIQ sound device via sound-capable HDMI monitor or headphone jack (optional)
 * USB sound device using external hardware (supporting USB audio class spec.,
   for Raspberry Pi 4 and 5 only)
@@ -34,6 +33,7 @@ and write one of the following lines into it:
 	sounddev=sndi2s			or
 
 	sounddev=sndhdmi		or
+	sounddev=sndhdmi1		or
 
 	sounddev=sndvchiq soundopt=0	or
 

@@ -2,7 +2,7 @@
 // bcm2835.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -380,10 +380,17 @@
 #define ARM_HD_BASE		(ARM_IO_BASE + 0xF20000)
 #define ARM_PHY_BASE		(ARM_IO_BASE + 0xF00F00)
 #define ARM_RAM_BASE		(ARM_IO_BASE + 0xF01B00)
+#define ARM_HDMI1_BASE		(ARM_IO_BASE + 0xF05700)
+#define ARM_HD1_BASE		ARM_HD_BASE
+#define ARM_PHY1_BASE		(ARM_IO_BASE + 0xF05F00)
+#define ARM_RAM1_BASE		(ARM_IO_BASE + 0xF06B00)
 #else
 #define ARM_HDMI_BASE		(ARM_IO_BASE + 0x701400)
 #define ARM_HD_BASE		(ARM_IO_BASE + 0x720000)
 #define ARM_RAM_BASE		(ARM_IO_BASE + 0x703800)
+#define ARM_HDMI1_BASE		(ARM_IO_BASE + 0x706400)
+#define ARM_HD1_BASE		ARM_HD_BASE
+#define ARM_RAM1_BASE		(ARM_IO_BASE + 0x708800)
 #endif
 
 //
