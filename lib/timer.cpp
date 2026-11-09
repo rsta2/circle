@@ -184,8 +184,9 @@ boolean CTimer::SetTime (unsigned nTime, boolean bLocal)
 
 	if (!bLocal)
 	{
+		// nTime is compared unsigned, so a time from 2038 on does not count as negative
 		if (    nSecondsDiff < 0
-		    && -nSecondsDiff > (int) nTime)
+		    && nTime < (unsigned) -nSecondsDiff)
 		{
 			return FALSE;
 		}
@@ -333,7 +334,9 @@ unsigned CTimer::GetUniversalTime (void) const
 	unsigned nResult = m_nTime;
 
 	int nSecondsDiff = m_nMinutesDiff * 60;
-	if (nSecondsDiff > (int) nResult)
+	// only a time zone east of UTC can lead before 1970; nResult is compared unsigned,
+	// so that a time from 2038 on does not count as negative
+	if (nSecondsDiff > 0 && (unsigned) nSecondsDiff > nResult)
 	{
 		return 0;
 	}
@@ -351,7 +354,8 @@ boolean CTimer::GetUniversalTime (unsigned *pSeconds, unsigned *pMicroSeconds)
 	m_TimeSpinLock.Release ();
 
 	int nSecondsDiff = m_nMinutesDiff * 60;
-	if (nSecondsDiff > (int) nTime)
+	// the same check as in GetUniversalTime (void) above
+	if (nSecondsDiff > 0 && (unsigned) nSecondsDiff > nTime)
 	{
 		return FALSE;
 	}

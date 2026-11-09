@@ -82,7 +82,7 @@ unsigned CNTPClient::GetTime (CIPAddress &rServerIP)
 			return 0;
 		}
 
-		if (nResult >= 44)
+		if (nResult >= NTP_PACKET_SIZE)		// the Transmit Timestamp ends the packet
 		{
 			break;
 		}
@@ -95,17 +95,25 @@ unsigned CNTPClient::GetTime (CIPAddress &rServerIP)
 		return 0;
 	}
 
+	// RFC 4330 section 5: a reply with a Transmit Timestamp of 0 is to be discarded;
+	// seconds of 0 with a fraction are a valid time at the start of the 2036 era
+	static const u8 NoTimestamp[8] = {0};
+	if (memcmp (RecvPacket+40, NoTimestamp, sizeof NoTimestamp) == 0)
+	{
+		CLogger::Get ()->Write (FromNTPClient, LogError, "No transmit timestamp");
+
+		return 0;
+	}
+
 	unsigned nSecondsSince1900;
 	nSecondsSince1900  =   (unsigned) RecvPacket[40] << 24
 			     | (unsigned) RecvPacket[41] << 16
 			     | (unsigned) RecvPacket[42] << 8
 			     | (unsigned) RecvPacket[43];
 
-	if (nSecondsSince1900 < SEVENTY_YEARS)
-	{
-		return 0;
-	}
-
+	// The NTP seconds wrap at 2036. Unsigned subtraction maps era 0 from 1970
+	// on and era 1 to Unix time through 2106; era 0 from 1968 to 1970, which
+	// has no Unix time, falls on 2104 to 2106.
 	unsigned nTime = nSecondsSince1900 - SEVENTY_YEARS;
 	
 	return nTime;
