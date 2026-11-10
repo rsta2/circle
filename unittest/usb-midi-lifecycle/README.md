@@ -4,8 +4,8 @@ Run from the Circle root with Python 3 and a C++17 compiler supporting
 AddressSanitizer and UndefinedBehaviorSanitizer:
 
 ```sh
-python3 test/usb-midi-lifecycle/run.py
-python3 test/usb-midi-lifecycle/run.py --source /path/to/other/circle
+python3 unittest/usb-midi-lifecycle/run.py
+python3 unittest/usb-midi-lifecycle/run.py --source /path/to/other/circle
 ```
 
 `CXX` selects the compiler. The harness compiles the actual MIDI endpoint source
