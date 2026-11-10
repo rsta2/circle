@@ -72,6 +72,10 @@ public:
 			u16		 nOwnPort);
 	~CTCPConnection (void);
 
+	/// Set receive window for new connections; call before CSocket::Connect() or Listen().
+	/// \param nSegments Local MSS-sized segments (clamped to 1-44, default 10)
+	static void SetReceiveWindow (unsigned nSegments);
+
 	const char *GetStateName (void) const;
 
 	int Connect (void);
@@ -195,6 +199,7 @@ private:
 	unsigned m_nSendTimeout;	// us
 
 	static unsigned s_nConnections;
+	static u32 s_nReceiveWindow;
 
 	static const char *s_pStateName[];
 };
