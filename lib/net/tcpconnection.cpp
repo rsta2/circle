@@ -131,6 +131,16 @@ PACKED;
 
 unsigned CTCPConnection::s_nConnections = 0;
 
+u32 CTCPConnection::s_nReceiveWindow = TCP_CONFIG_WINDOW;
+
+void CTCPConnection::SetReceiveWindow (unsigned nSegments)
+{
+	// Without window scaling, the advertised window must fit in the 16-bit TCP field.
+	const unsigned nMaxSegments = 0xFFFF / TCP_CONFIG_MSS;
+	nSegments = min (max (nSegments, 1U), nMaxSegments);
+	s_nReceiveWindow = nSegments * TCP_CONFIG_MSS;
+}
+
 const char *CTCPConnection::s_pStateName[] =	// must match TTCPState
 {
 	"CLOSED",
@@ -159,7 +169,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nErrno (0),
 	m_TxQueue (TRUE),
 	m_RxQueue (TRUE),
-	m_ReassemblyQueue (&m_RxQueue, TCP_CONFIG_WINDOW),
+	m_ReassemblyQueue (&m_RxQueue, s_nReceiveWindow),
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
@@ -171,7 +181,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nSND_WND (TCP_CONFIG_WINDOW),
 	m_nSND_UP (0),
 	m_nRCV_NXT (0),
-	m_nRCV_WND (TCP_CONFIG_WINDOW),
+	m_nRCV_WND (s_nReceiveWindow),
 	m_nIRS (0),
 	m_nSND_MSS (536),	// RFC 1122 section 4.2.2.6
 	m_nIW (4 * m_nSND_MSS),
@@ -216,7 +226,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nErrno (0),
 	m_TxQueue (TRUE),
 	m_RxQueue (TRUE),
-	m_ReassemblyQueue (&m_RxQueue, TCP_CONFIG_WINDOW),
+	m_ReassemblyQueue (&m_RxQueue, s_nReceiveWindow),
 	m_bRetransmit (FALSE),
 	m_bSendSYN (FALSE),
 	m_bFINQueued (FALSE),
@@ -228,7 +238,7 @@ CTCPConnection::CTCPConnection (CNetConfig	*pNetConfig,
 	m_nSND_WND (TCP_CONFIG_WINDOW),
 	m_nSND_UP (0),
 	m_nRCV_NXT (0),
-	m_nRCV_WND (TCP_CONFIG_WINDOW),
+	m_nRCV_WND (s_nReceiveWindow),
 	m_nIRS (0),
 	m_nSND_MSS (536),	// RFC 1122 section 4.2.2.6
 	m_nIW (4 * m_nSND_MSS),
