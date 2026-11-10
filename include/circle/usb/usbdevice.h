@@ -2,7 +2,7 @@
 // usbdevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -82,6 +82,9 @@ public:
 
 	void LogWrite (TLogSeverity Severity, const char *pMessage, ...);
 
+	typedef u8 TGetUserConfigurationHandler (TUSBDeviceDescriptor *pDeviceDesc);
+	static void SetGetUserConfigurationHandler (TGetUserConfigurationHandler *pHandler);
+
 #if RASPPI >= 4
 	virtual boolean EnableHubFunction (void) = 0;
 
@@ -131,6 +134,8 @@ private:
 	unsigned m_nRootHubPortID;
 	u32	 m_nRouteString;
 #endif
+
+	static TGetUserConfigurationHandler *m_pGetUserConfigurationHandler;
 
 #if RASPPI <= 3
 	static CNumberPool s_DeviceAddressPool;

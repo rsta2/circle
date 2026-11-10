@@ -34,6 +34,8 @@
 
 static const char FromDevice[] = "usbdev";
 
+CUSBDevice::TGetUserConfigurationHandler *CUSBDevice::m_pGetUserConfigurationHandler = 0;
+
 #if RASPPI <= 3
 CNumberPool CUSBDevice::s_DeviceAddressPool (USB_FIRST_DEDICATED_ADDRESS, USB_MAX_ADDRESS);
 #endif
@@ -265,6 +267,9 @@ boolean CUSBDevice::Initialize (void)
 
 	u8 ucConfigIndex = DESCRIPTOR_INDEX_DEFAULT;
 
+	// allow user to select a specific configuration index
+	if (   m_pGetUserConfigurationHandler == 0
+	    || (ucConfigIndex = (*m_pGetUserConfigurationHandler) (m_pDeviceDesc)) == 0)
 #ifndef EXCLUDE_USB_NET
 	// special support for CDC Ethernet devices
 	if (   (   m_pDeviceDesc->idVendor  == 0x0525	// NetChip
@@ -274,7 +279,7 @@ boolean CUSBDevice::Initialize (void)
 	    || (   m_pDeviceDesc->idVendor  == 0x0BDA	// Realtek
 	        && m_pDeviceDesc->idProduct == 0x8153))	// RTL8153
 	{
-		ucConfigIndex++;
+		ucConfigIndex = DESCRIPTOR_INDEX_DEFAULT + 1;
 	}
 #endif
 
@@ -758,6 +763,11 @@ void CUSBDevice::LogWrite (TLogSeverity Severity, const char *pMessage, ...)
 	CLogger::Get ()->WriteV (Source, Severity, pMessage, var);
 
 	va_end (var);
+}
+
+void CUSBDevice::SetGetUserConfigurationHandler (TGetUserConfigurationHandler *pHandler)
+{
+	m_pGetUserConfigurationHandler = pHandler;
 }
 
 #if RASPPI >= 4
