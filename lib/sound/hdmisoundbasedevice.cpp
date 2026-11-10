@@ -64,7 +64,9 @@ REG (MaiConfig, RegHDMI, 0x94, RegHDMI, 0xA0, RegHDMI, 0xA8);
 	REGBIT (MaiConfig, BitReverse, 26);
 	REGBIT (MaiConfig, FormatReverse, 27);
 REG (MaiControl0, RegHD, 0x14, RegHD, 0x10, RegHD, 0x10);	// HDMI0
+#if RASPPI >= 4
 REG (MaiControl1, RegHD, UNUSED, RegHD, 0x30, RegHD, 0x30);	// HDMI1
+#endif
 	REGBIT (MaiControl, Reset, 0);
 	REGBIT (MaiControl, ErrorFull, 1);
 	REGBIT (MaiControl, ErrorEmpty, 2);
@@ -78,22 +80,30 @@ REG (MaiControl1, RegHD, UNUSED, RegHD, 0x30, RegHD, 0x30);	// HDMI1
 	//REGBIT (MaiControl, Busy, 14);
 	REGBIT (MaiControl, Delayed, 15);
 REG (MaiData0, RegHD, 0x20, RegHD, 0x1C, RegHD, 0x1C);		// HDMI0
+#if RASPPI >= 4
 REG (MaiData1, RegHD, UNUSED, RegHD, 0x3C, RegHD, 0x3C);	// HDMI1
+#endif
 REG (MaiFormat0, RegHD, 0x1C, RegHD, 0x18, RegHD, 0x18);	// HDMI0
+#if RASPPI >= 4
 REG (MaiFormat1, RegHD, UNUSED, RegHD, 0x38, RegHD, 0x38);	// HDMI1
+#endif
 	REGSHIFT (MaiFormat, SampleRate, 8);
 		REGVALUE (MaiFormat, SampleRate, NotIndicated, 0);
 		REGVALUE (MaiFormat, SampleRate, 8000, 1);
 	REGSHIFT (MaiFormat, AudioFormat, 16);
 		REGVALUE (MaiFormat, AudioFormat, PCM, 2);
 REG (MaiSampleRate0, RegHD, 0x2C, RegHD, 0x20, RegHD, 0x20);	// HDMI0
+#if RASPPI >= 4
 REG (MaiSampleRate1, RegHD, UNUSED, RegHD, 0x40, RegHD, 0x40);	// HDMI1
+#endif
 	REGSHIFT (MaiSampleRate, M, 0);
 	REGMASK (MaiSampleRate, M, 0xFFU);
 	REGSHIFT (MaiSampleRate, N, 8);
 	REGMASK (MaiSampleRate, N, 0xFFFFFF00U);
 REG (MaiThreshold0, RegHD, 0x18, RegHD, 0x14, RegHD, 0x14);	// HDMI0
+#if RASPPI >= 4
 REG (MaiThreshold1, RegHD, UNUSED, RegHD, 0x34, RegHD, 0x34);	// HDMI1
+#endif
 	REGSHIFT (MaiThreshold, DREQLow, 0);
 	REGSHIFT (MaiThreshold, DREQHigh, 8);
 	REGSHIFT (MaiThreshold, PanicLow, 16);
