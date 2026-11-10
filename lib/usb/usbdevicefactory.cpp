@@ -57,6 +57,8 @@
 #include <circle/usb/usbserialft231x.h>
 #include <circle/usb/usbtouchscreen.h>
 
+CUSBDeviceFactory::TUserFactory *CUSBDeviceFactory::s_pUserFactory = 0;
+
 CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pName)
 {
 	assert (pParent != 0);
@@ -69,13 +71,21 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 		CLogger::Get ()->Write ("ufactory", LogWarning,
 					"Ignoring device/interface %s", pUSBIgnore);
 
+		delete pName;
+
 		return 0;
 	}
 
 	CUSBFunction *pResult = 0;
 
-	if (   pName->Compare ("int9-0-0") == 0
-	    || pName->Compare ("int9-0-2") == 0)
+	if (   s_pUserFactory != 0
+	    && (pResult = (*s_pUserFactory) (pParent, pName)) != 0)
+	{
+		CLogger::Get ()->Write ("ufactory", LogDebug, "User device created for %s",
+					(const char *) *pName);
+	}
+	else if (   pName->Compare ("int9-0-0") == 0
+		 || pName->Compare ("int9-0-2") == 0)
 	{
 		pResult = new CUSBStandardHub (pParent);
 	}
@@ -407,4 +417,9 @@ boolean CUSBDeviceFactory::FindDeviceID (CString *pName, const TUSBDeviceID *pID
 	}
 
 	return FALSE;
+}
+
+void CUSBDeviceFactory::SetUserFactory (TUserFactory *pUserFactory)
+{
+	s_pUserFactory = pUserFactory;
 }

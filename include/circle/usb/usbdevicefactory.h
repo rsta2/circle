@@ -2,7 +2,7 @@
 // usbdevicefactory.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,6 +42,15 @@ private:
 	static CUSBFunction *GetGenericHIDDevice (CUSBFunction *pParent);
 
 	static boolean FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable);
+
+private:
+	// allow creating of user devices
+	typedef CUSBFunction *TUserFactory (CUSBFunction *pParent, CString *pName);
+
+	/// \param pUserFactory User factory function (0 to disable)
+	static void SetUserFactory (TUserFactory *pUserFactory);
+
+	static TUserFactory *s_pUserFactory;
 };
 
 #endif
