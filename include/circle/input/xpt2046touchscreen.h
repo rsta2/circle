@@ -2,7 +2,7 @@
 // xpt2046touchscreen.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2024-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,8 +43,8 @@ public:
 	/// \param nDegrees Counterclockwise rotation in degrees (0, 90, 180, 270)
 	/// \param bFlipHorizontal Select whether to flip the horizontal axis (from left ro right)
 	/// \param bFlipVertical Select whether to flip the vertical axis (from top to bottom)
-	void SetRotation (unsigned nDegrees, boolean nFlipHorizontal = FALSE,
-			  boolean nFlipVertical = FALSE);
+	void SetRotation (unsigned nDegrees, boolean bFlipHorizontal = FALSE,
+			  boolean bFlipVertical = FALSE);
 	/// \return Counterclockwise rotation in degrees (0, 90, 180, 270)
 	unsigned GetRotation (void)		{ return m_nRotation; }
 
