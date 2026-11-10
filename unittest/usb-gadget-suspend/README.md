@@ -31,7 +31,7 @@ No existing gadget is opted in by this patch.
 From the Circle root, with Python 3 and a C++17 compiler supporting ASan/UBSan:
 
 ```sh
-python3 test/usb-gadget-suspend/run.py
+python3 unittest/usb-gadget-suspend/run.py
 ```
 
 `CXX` selects the compiler. `--source /path/to/circle` runs the same harness
