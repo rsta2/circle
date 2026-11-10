@@ -1,0 +1,4 @@
+README
+
+The tests in this directory run on the development machine. They mostly need
+python3 for that purpose. Tested on Linux.

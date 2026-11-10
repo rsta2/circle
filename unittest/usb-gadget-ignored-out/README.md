@@ -3,8 +3,8 @@
 Run from the Circle root with Python 3 and a C++17 compiler supporting ASan/UBSan:
 
 ```sh
-python3 test/usb-gadget-ignored-out/run.py
-python3 test/usb-gadget-ignored-out/run.py --source /path/to/other/circle
+python3 unittest/usb-gadget-ignored-out/run.py
+python3 unittest/usb-gadget-ignored-out/run.py --source /path/to/other/circle
 ```
 
 `CXX` selects the compiler. No hardware is required.

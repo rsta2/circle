@@ -4,7 +4,7 @@ Run from the Circle root with Python 3 and a C++17 compiler supporting
 AddressSanitizer and UndefinedBehaviorSanitizer:
 
 ```sh
-python3 test/usb-gadget-ep0-phase/run.py
+python3 unittest/usb-gadget-ep0-phase/run.py
 ```
 
 `CXX` selects the compiler. `--source /path/to/circle` tests another checkout
