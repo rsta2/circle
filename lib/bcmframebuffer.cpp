@@ -2,7 +2,7 @@
 // bcmframebuffer.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2020  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -461,4 +461,23 @@ unsigned CBcmFrameBuffer::GetNumDisplays (void)
 #else
 	return 1;
 #endif
+}
+
+CBcmFrameBuffer::TDisplayPort CBcmFrameBuffer::GetDisplayPort (unsigned nDisplay)
+{
+	CBcmPropertyTags Tags;
+	TPropertyTagSimple TagGetDisplayID;
+	TagGetDisplayID.nValue = nDisplay;
+	if (Tags.GetTag (PROPTAG_GET_DISPLAY_ID, &TagGetDisplayID, sizeof TagGetDisplayID))
+	{
+		switch (TagGetDisplayID.nValue)
+		{
+		case 0:		return DisplayDSI0;
+		case 1:		return DisplayDSI1;
+		case 2:		return DisplayHDMI0;
+		case 7:		return DisplayHDMI1;
+		}
+	}
+
+	return DisplayUnknown;
 }

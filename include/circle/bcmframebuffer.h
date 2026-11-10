@@ -2,7 +2,7 @@
 // bcmframebuffer.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -79,6 +79,19 @@ public:
 	boolean SetBacklightBrightness(unsigned nBrightness);
 
 	static unsigned GetNumDisplays (void);
+
+	enum TDisplayPort
+	{
+		DisplayHDMI0,
+		DisplayHDMI1,
+		DisplayDSI0,	///< Main LCD / Touchscreen
+		DisplayDSI1,	///< Aux LCD / Touchscreen
+		DisplayUnknown
+	};
+
+	/// \param nDisplay Display index (0 .. N)
+	/// \returns Connected display at this index, or DisplayUnknown (not connected)
+	static TDisplayPort GetDisplayPort (unsigned nDisplay);
 
 private:
 	void SetDisplay (void);

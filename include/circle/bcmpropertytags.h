@@ -2,7 +2,7 @@
 // bcmpropertytags.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2024  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,6 +59,7 @@
 #define PROPTAG_GET_TOUCHBUF		0x0004000F
 #define PROPTAG_GET_GPIO_VIRTBUF	0x00040010
 #define PROPTAG_GET_NUM_DISPLAYS	0x00040013
+#define PROPTAG_GET_DISPLAY_ID		0x00040016
 #define PROPTAG_SET_PHYS_WIDTH_HEIGHT	0x00048003
 #define PROPTAG_SET_VIRT_WIDTH_HEIGHT	0x00048004
 #define PROPTAG_SET_DEPTH		0x00048005
