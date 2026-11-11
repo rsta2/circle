@@ -20,7 +20,7 @@
 #ifndef _config_h
 #define _config_h
 
-//#define USE_USB			// use USB audio instead of I2S
+#define USE_USB			// use USB audio instead of I2S
 
 #define SAMPLE_RATE	48000		// overall system clock
 

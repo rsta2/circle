@@ -372,7 +372,7 @@
 // applications you should just not use the CScreenDevice class instead
 // and direct the logger output to CSerialDevice or CNullDevice.
 
-//#define SCREEN_HEADLESS
+#define SCREEN_HEADLESS
 
 // USE_LOG_COLORS enables the use of different ANSI colors for different
 // severities in the system log (bright red for LogPanic, bright magenta
