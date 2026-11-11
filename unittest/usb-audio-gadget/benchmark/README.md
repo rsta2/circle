@@ -3,7 +3,7 @@
 Run from the Circle root:
 
 ```sh
-python3 test/usb-audio-buffer-benchmark/run.py --baseline cca5cb2 --output /tmp/circle-buffer-results
+python3 unittest/usb-audio-gadget/benchmark/run.py --baseline <reference-commit> --output /tmp/circle-buffer-results
 ```
 
 The baseline must contain the pre-optimization buffer and have a compatible

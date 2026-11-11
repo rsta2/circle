@@ -20,7 +20,7 @@ static void Regression ()
 	std::mt19937 Random (821);
 	unsigned nCases = 0;
 	for (unsigned nChannels = 1; nChannels <= 8; nChannels++)
-	for (unsigned nCapacity : {16U, 17U, 257U, 512U})
+	for (unsigned nCapacity : {24U, 25U, 257U, 512U})
 	for (unsigned nFormat = 0; nFormat < 5; nFormat++)
 	for (unsigned nRate : {8000U, 24000U})
 	{
