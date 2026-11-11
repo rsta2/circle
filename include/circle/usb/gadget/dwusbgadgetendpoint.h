@@ -94,7 +94,7 @@ protected:
 		TypeControl,
 		TypeBulk,
 		//TypeInterrupt,
-		//TypeIsochronous
+		TypeIsochronous
 	};
 
 	/// \return Endpoint type

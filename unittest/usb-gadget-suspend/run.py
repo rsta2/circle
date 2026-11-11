@@ -17,7 +17,8 @@ args = parser.parse_args()
 source = args.source.resolve()
 gadget = (source / 'lib/usb/gadget/dwusbgadget.cpp').read_text()
 helpers = []
-for marker in ('boolean CDWUSBGadget::FlushTxFIFO (',
+for marker in ('u8 CDWUSBGadget::GetConfiguration (',
+               'boolean CDWUSBGadget::FlushTxFIFO (',
                'boolean CDWUSBGadget::WaitForBit (',
                'void CDWUSBGadget::EnableDeviceInterrupts (',
                'void CDWUSBGadget::HandleUSBSuspend (',

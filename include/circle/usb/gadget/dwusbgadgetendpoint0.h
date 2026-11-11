@@ -53,9 +53,10 @@ private:
 	TState m_State;
 
 	size_t m_nBytesLeft;
+	boolean m_bSendZeroPacket;
 	u8 *m_pBufPtr;
 
-	static const size_t BufferSize = 512;
+	static const size_t BufferSize = 1024;
 	DMA_BUFFER (u8, m_OutBuffer, BufferSize);
 	DMA_BUFFER (u8, m_InBuffer, BufferSize);
 
