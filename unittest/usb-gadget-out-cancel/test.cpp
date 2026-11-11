@@ -319,11 +319,11 @@ int main ()
 			u32 parity = frame & 1 ? DWHCI_DEV_EP_CTRL_SETDPID_D0 : DWHCI_DEV_EP_CTRL_SETDPID_D1;
 			require ((ctrl & (DWHCI_DEV_EP_CTRL_SETDPID_D0 | DWHCI_DEV_EP_CTRL_SETDPID_D1)) == parity,
 				 "wrong ISO frame parity");
-			m.allowNak = false;
+			m.allowNak = true;
 			ep.OnDeactivate ();
-			require (!ep.IsTransferActive () && m.disables == 1 && !m.nakReads && !m.clears,
-				 "ISO waited for nonexistent NAK or reused live DMA");
-			require (m.now < 100, "ISO cancellation waited for global NAK");
+			require (!ep.IsTransferActive () && m.disables == 1 && !m.nakReads && m.clears == 1,
+				 "ISO OUT did not finish the global NAK and disable sequence");
+			require (m.now < 100, "unexpected ISO cancellation timeout");
 		});
 	}
 	std::cout << passed << " passed, " << failed << " failed\n";

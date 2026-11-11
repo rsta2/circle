@@ -344,9 +344,10 @@ void CDWUSBGadgetEndpoint::CancelTransfer (void)
 					LOGPANIC ("EP%u IN NAK timeout", m_nEP);
 				}
 			}
-			else if (m_Type != TypeIsochronous)
+			else
 			{
-				// ISO OUT does not NAK; disable it directly and wait for DMA stop.
+				// Quiesce the controller OUT path before disabling the endpoint.
+				// This handshake also applies to isochronous OUT with DMA.
 				CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT);
 				if (!(IntStatus.Read () & DWHCI_CORE_INT_STAT_GLOBAL_OUT_NAK_EFF))
 				{
