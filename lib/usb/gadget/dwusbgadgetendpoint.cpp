@@ -47,11 +47,13 @@ CDWUSBGadgetEndpoint::CDWUSBGadgetEndpoint (const TUSBEndpointDescriptor *pDesc,
 					    CDWUSBGadget *pGadget)
 :	m_pGadget (pGadget),
 	m_Direction (pDesc->bEndpointAddress & 0x80 ? DirectionIn : DirectionOut),
-	m_Type (TypeBulk),
+	m_Type ((pDesc->bmAttributes & 3) == 1 ? TypeIsochronous : TypeBulk),
 	m_nEP (pDesc->bEndpointAddress & 0xF),
 	m_nMaxPacketSize (pDesc->wMaxPacketSize & 0x7FF)
 {
-	assert ((pDesc->bmAttributes & 0x03) == 2);	// Bulk
+	assert ((pDesc->bmAttributes & 3) == 2
+		|| ((pDesc->bmAttributes & 3) == 1 && m_Direction == DirectionOut));
+	assert (m_Type != TypeIsochronous || m_nMaxPacketSize <= 1023);
 
 	InitTransfer ();
 
@@ -143,10 +145,11 @@ void CDWUSBGadgetEndpoint::OnUSBReset (void)
 		EPCtrl.And (~DWHCI_DEV_EP_CTRL_MAX_PACKET_SIZ__MASK);
 		EPCtrl.Or (m_nMaxPacketSize << DWHCI_DEV_EP_CTRL_MAX_PACKET_SIZ__SHIFT);
 
-		assert (m_Type == TypeBulk);	// TODO: Bulk only
+		assert (m_Type == TypeBulk || (m_Type == TypeIsochronous && m_Direction == DirectionOut));
 		EPCtrl.And (~DWHCI_DEV_EP_CTRL_EP_TYPE__MASK);
-		EPCtrl.Or (DWHCI_DEV_EP_CTRL_EP_TYPE_BULK << DWHCI_DEV_EP_CTRL_EP_TYPE__SHIFT);
-		EPCtrl.Or (DWHCI_DEV_EP_CTRL_SETDPID_D0);
+		EPCtrl.Or ((m_Type == TypeIsochronous ? DWHCI_DEV_EP_CTRL_EP_TYPE_ISOCH
+			: DWHCI_DEV_EP_CTRL_EP_TYPE_BULK) << DWHCI_DEV_EP_CTRL_EP_TYPE__SHIFT);
+		if (m_Type == TypeBulk) EPCtrl.Or (DWHCI_DEV_EP_CTRL_SETDPID_D0);
 
 		EPCtrl.Or (DWHCI_DEV_EP_CTRL_ACTIVE_EP);
 
@@ -284,6 +287,16 @@ void CDWUSBGadgetEndpoint::BeginTransfer (TTransferMode Mode, void *pBuffer, siz
 
 		CDWHCIRegister OutEPCtrl (DWHCI_DEV_OUT_EP_CTRL (m_nEP));
 		OutEPCtrl.Read ();
+		if (m_Type == TypeIsochronous)
+		{
+			// Full-speed, one packet per frame. Select parity of the NEXT frame.
+			assert (nPacketCount == 1);
+			CDWHCIRegister Status (DWHCI_DEV_STS);
+			unsigned nFrame = (Status.Read () >> 8) & 0x3FFF;
+			OutEPCtrl.And (~(DWHCI_DEV_EP_CTRL_SETDPID_D0 | DWHCI_DEV_EP_CTRL_SETDPID_D1));
+			OutEPCtrl.Or ((nFrame & 1) ? DWHCI_DEV_EP_CTRL_SETDPID_D0
+						: DWHCI_DEV_EP_CTRL_SETDPID_D1);
+		}
 		OutEPCtrl.Or (DWHCI_DEV_EP_CTRL_EP_ENABLE);
 		OutEPCtrl.Or (DWHCI_DEV_EP_CTRL_CLEAR_NAK);
 		OutEPCtrl.Write ();
@@ -333,6 +346,8 @@ void CDWUSBGadgetEndpoint::CancelTransfer (void)
 			}
 			else
 			{
+				// Quiesce the controller OUT path before disabling the endpoint.
+				// This handshake also applies to isochronous OUT with DMA.
 				CDWHCIRegister IntStatus (DWHCI_CORE_INT_STAT);
 				if (!(IntStatus.Read () & DWHCI_CORE_INT_STAT_GLOBAL_OUT_NAK_EFF))
 				{
@@ -546,6 +561,19 @@ void CDWUSBGadgetEndpoint::HandleOutInterrupt (void)
 		}
 
 		OutEPInt.And (~DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE);
+	}
+
+	if (m_Type == TypeIsochronous && (OutEPInt.Get () & DWHCI_DEV_OUT_EP_INT_EP_DISABLED))
+	{
+		// Retire disabled status before a completion callback re-arms the EP.
+		CDWHCIRegister Ack (DWHCI_DEV_OUT_EP_INT (m_nEP), DWHCI_DEV_OUT_EP_INT_EP_DISABLED);
+		Ack.Write ();
+		OutEPInt.And (~DWHCI_DEV_OUT_EP_INT_EP_DISABLED);
+		if (!(OutEPInt.Get () & DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE))
+		{
+			InitTransfer ();
+			OnTransferComplete (FALSE, 0); // Dropped frame; allow the next frame to proceed
+		}
 	}
 
 	if (OutEPInt.Get () & DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE)

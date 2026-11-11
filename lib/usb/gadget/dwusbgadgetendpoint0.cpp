@@ -28,7 +28,8 @@ static const char FromEP0[] = "ep0";
 
 CDWUSBGadgetEndpoint0::CDWUSBGadgetEndpoint0 (size_t nMaxPacketSize, CDWUSBGadget *pGadget)
 :	CDWUSBGadgetEndpoint (nMaxPacketSize, pGadget),
-	m_State (StateDisconnect)
+	m_State (StateDisconnect),
+	m_bSendZeroPacket (FALSE)
 {
 }
 
@@ -63,6 +64,7 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 
 	// copy setup packet to be used in OnTransferComplete()
 	memcpy (&m_SetupData, pSetupData, sizeof m_SetupData);
+	m_bSendZeroPacket = FALSE;
 
 	// Trace: always log every SETUP request (diagnosis for issue #591)
 	CLogger::Get ()->Write (FromEP0, LogTrace,
@@ -74,14 +76,14 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 
 	if (pSetupData->bmRequestType & REQUEST_IN)
 	{
-		switch (pSetupData->bRequest)
+		switch ((pSetupData->bmRequestType & 0x60) ? 0x100 : pSetupData->bRequest)
 		{
 		case GET_DESCRIPTOR: {
 			size_t nLength;
 			const void *pDesc = m_pGadget->GetDescriptor (pSetupData->wValue,
 								      pSetupData->wIndex,
 								      &nLength);
-			if (!pDesc)
+			if (!pDesc || pSetupData->bmRequestType != 0x80)
 			{
 				Stall (TRUE);
 
@@ -90,7 +92,12 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 				return;
 			}
 
-			assert (nLength <= BufferSize);
+			if (nLength > BufferSize)
+			{
+				Stall (TRUE);
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+				return;
+			}
 			memcpy (m_InBuffer, pDesc, nLength);
 
 			if (nLength > pSetupData->wLength)
@@ -102,6 +109,8 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 
 			// EP0 can transfer only up to 127 bytes at once. Therefore we split greater
 			// descriptors into multiple transfers, with up to max. packet size each.
+			m_bSendZeroPacket = nLength && nLength < pSetupData->wLength
+				&& nLength % m_nMaxPacketSize == 0;
 			m_nBytesLeft = nLength;
 			m_pBufPtr = m_InBuffer;
 
@@ -110,8 +119,41 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 				       ? m_nBytesLeft : m_nMaxPacketSize);
 			} break;
 
+		case 8: // GET_CONFIGURATION
+			if (pSetupData->bmRequestType != 0x80 || pSetupData->wIndex
+			    || pSetupData->wValue || pSetupData->wLength != 1)
+			{
+				Stall (TRUE);
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+				return;
+			}
+			m_InBuffer[0] = m_pGadget->GetConfiguration ();
+			m_State = StateInDataPhase;
+			m_nBytesLeft = 1;
+			m_pBufPtr = m_InBuffer;
+			BeginTransfer (TransferDataIn, m_pBufPtr, 1);
+			break;
+
+		case 10: // GET_INTERFACE
+		{
+			int nAlternate = m_pGadget->GetInterface (pSetupData->wIndex);
+			if (pSetupData->bmRequestType != 0x81 || pSetupData->wValue
+			    || pSetupData->wLength != 1 || nAlternate < 0)
+			{
+				Stall (TRUE);
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+				return;
+			}
+			m_InBuffer[0] = (u8) nAlternate;
+			m_State = StateInDataPhase;
+			m_nBytesLeft = 1;
+			m_pBufPtr = m_InBuffer;
+			BeginTransfer (TransferDataIn, m_pBufPtr, 1);
+			break;
+		}
 		case GET_STATUS:
-			if (pSetupData->wLength != 2)
+			if (pSetupData->wLength != 2 || pSetupData->wValue
+			    || (pSetupData->bmRequestType & 0x7C))
 			{
 				Stall (TRUE);
 
@@ -131,19 +173,22 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			break;
 
 		default:
-			if (   pSetupData->bmRequestType & (REQUEST_CLASS | REQUEST_VENDOR)
+			if (   ((pSetupData->bmRequestType & 0x60) == REQUEST_CLASS
+			       || (pSetupData->bmRequestType & 0x60) == REQUEST_VENDOR)
 			    && pSetupData->wLength > 0
 			    && pSetupData->wLength <= BufferSize)
 			{
 				assert (m_pGadget);
 				int nLen = m_pGadget->OnClassOrVendorRequest (pSetupData, m_InBuffer);
-				if (nLen > 0)
+				if (nLen > 0 && (unsigned) nLen <= BufferSize && nLen <= pSetupData->wLength)
 				{
 					m_State = StateInDataPhase;
 
 					// EP0 can transfer only up to 127 bytes at once. Therefore
 					// we split greater transfers into multiple transfers, with
 					// up to max. packet size each.
+					m_bSendZeroPacket = nLen < pSetupData->wLength
+						&& nLen % m_nMaxPacketSize == 0;
 					m_nBytesLeft = nLen;
 					m_pBufPtr = m_InBuffer;
 
@@ -161,9 +206,16 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 	}
 	else
 	{
-		switch (pSetupData->bRequest)
+		switch ((pSetupData->bmRequestType & 0x60) ? 0x100 : pSetupData->bRequest)
 		{
 		case SET_ADDRESS:
+			if (pSetupData->bmRequestType || pSetupData->wIndex
+			    || pSetupData->wLength || pSetupData->wValue > 127)
+			{
+				Stall (TRUE);
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+				return;
+			}
 			m_pGadget->SetDeviceAddress (pSetupData->wValue & 0xFF);
 
 			m_State = StateInStatusPhase;
@@ -171,8 +223,22 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			BeginTransfer (TransferDataIn, nullptr, 0);
 			break;
 
+		case SET_INTERFACE:
+			if (pSetupData->bmRequestType != 0x01 || pSetupData->wLength
+			    || !m_pGadget->SetInterface (pSetupData->wIndex, pSetupData->wValue))
+			{
+				Stall (TRUE);
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+				return;
+			}
+			m_State = StateInStatusPhase;
+			BeginTransfer (TransferDataIn, nullptr, 0);
+			break;
+
 		case SET_CONFIGURATION:
-			if (!m_pGadget->SetConfiguration (pSetupData->wValue & 0xFF))
+			if (pSetupData->bmRequestType || pSetupData->wIndex || pSetupData->wLength
+			    || pSetupData->wValue > 1
+			    || !m_pGadget->SetConfiguration (pSetupData->wValue))
 			{
 				Stall (TRUE);
 
@@ -187,6 +253,13 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			break;
 
 		default:
+			if ((pSetupData->bmRequestType & 0x60) != REQUEST_CLASS
+			    && (pSetupData->bmRequestType & 0x60) != REQUEST_VENDOR)
+			{
+				Stall (TRUE);
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+				return;
+			}
 			if (pSetupData->wLength)
 			{
 				// EP0 can transfer only up to 127 bytes at once. Therefore
@@ -214,6 +287,13 @@ void CDWUSBGadgetEndpoint0::OnControlMessage (void)
 			}
 			else
 			{
+				if (!(pSetupData->bmRequestType & (REQUEST_CLASS | REQUEST_VENDOR))
+				    || m_pGadget->OnClassOrVendorRequest (pSetupData, m_OutBuffer) < 0)
+				{
+					Stall (TRUE);
+					BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+					return;
+				}
 				m_State = StateInStatusPhase;
 
 				BeginTransfer (TransferDataIn, nullptr, 0);
@@ -241,36 +321,54 @@ void CDWUSBGadgetEndpoint0::OnTransferComplete (boolean bIn, size_t nLength)
 			break;
 		}
 
+		if (m_bSendZeroPacket)
+		{
+			m_bSendZeroPacket = FALSE;
+			BeginTransfer (TransferDataIn, nullptr, 0);
+			break;
+		}
+
 		m_State = StateOutStatusPhase;
 		BeginTransfer (TransferDataOut, nullptr, 0);
 		break;
 
 	case StateOutDataPhase:
-		assert (m_nBytesLeft >= nLength);
+		if (nLength > m_nBytesLeft)
+		{
+			Stall (TRUE);
+			m_State = StateIdle;
+			BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+			break;
+		}
 		m_nBytesLeft -= nLength;
 		if (m_nBytesLeft)
 		{
+			if (nLength < m_nMaxPacketSize)
+			{
+				// Truncated host-to-device parameter block: never apply partial data.
+				Stall (TRUE);
+				m_State = StateIdle;
+				BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+				break;
+			}
 			m_pBufPtr += nLength;
-
 			BeginTransfer (TransferDataOut, m_pBufPtr,
-				         m_nBytesLeft <= m_nMaxPacketSize
-				       ? m_nBytesLeft : m_nMaxPacketSize);
-
+				m_nBytesLeft <= m_nMaxPacketSize ? m_nBytesLeft : m_nMaxPacketSize);
 			break;
 		}
-
+		if (!(m_SetupData.bmRequestType & (REQUEST_CLASS | REQUEST_VENDOR))
+		    || m_pGadget->OnClassOrVendorRequest (&m_SetupData, m_OutBuffer) < 0)
+		{
+			Stall (TRUE);
+			m_State = StateIdle;
+			BeginTransfer (TransferSetupOut, m_OutBuffer, sizeof (TSetupData));
+			break;
+		}
 		m_State = StateInStatusPhase;
 		BeginTransfer (TransferDataIn, nullptr, 0);
 		break;
 
 	case StateInStatusPhase:
-		assert (m_pGadget);
-		if (   m_SetupData.bmRequestType & (REQUEST_CLASS | REQUEST_VENDOR)
-		    && m_pGadget->OnClassOrVendorRequest (&m_SetupData, m_OutBuffer) < 0)
-		{
-			Stall (TRUE);
-		}
-		// fall through
 
 	case StateOutStatusPhase:
 		m_State = StateIdle;

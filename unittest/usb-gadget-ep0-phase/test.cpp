@@ -214,6 +214,14 @@ void complete (CDWUSBGadgetEndpoint0 &ep, bool in)
 		ep.HandleOutInterrupt ();
 	}
 }
+void rawsetup (CDWUSBGadgetEndpoint0 &ep, TSetupData s)
+{
+	std::memcpy (ep.m_OutBuffer, &s, sizeof s);
+	m.regs[DWHCI_DEV_OUT_EP_CTRL (0)] &= ~DWHCI_DEV_EP_CTRL_EP_ENABLE;
+	m.regs[DWHCI_DEV_OUT_EP_XFER_SIZ (0)] = 0;
+	m.regs[DWHCI_DEV_OUT_EP_INT (0)] |= DWHCI_DEV_OUT_EP_INT_SETUP_DONE;
+	ep.HandleOutInterrupt ();
+}
 int main ()
 {
 	unsigned passed = 0, failed = 0;
@@ -232,6 +240,38 @@ int main ()
 			std::cout << "FAIL " << name << ": " << e.what () << '\n';
 		}
 	};
+	for (unsigned requested : {64U, 128U})
+	{
+		test (requested == 64 ? "exact-length IN needs no ZLP" : "short IN needs terminating ZLP",
+		      [requested]
+		{
+			CDWUSBGadget g;
+			g.descriptorSize = 64;
+			CDWUSBGadgetEndpoint0 ep (64, &g);
+			ep.OnActivate ();
+			rawsetup (ep, {0x80, GET_DESCRIPTOR, 0x100, 0, (u16) requested});
+			complete (ep, true);
+			if (requested > 64)
+			{
+				require (ep.m_State == ep.StateInDataPhase, "missing ZLP");
+				require (ep.m_nBytesLeft == 0, "ZLP must contain no data");
+				complete (ep, true);
+			}
+			require (ep.m_State == ep.StateOutStatusPhase, "missing OUT status");
+			complete (ep, false);
+		});
+	}
+	test ("GET_CONFIGURATION reflects selection", []
+	{
+		CDWUSBGadget g;
+		CDWUSBGadgetEndpoint0 ep (64, &g);
+		ep.OnActivate ();
+		rawsetup (ep, {0, SET_CONFIGURATION, 1, 0, 0});
+		complete (ep, true);
+		rawsetup (ep, {0x80, 8, 0, 0, 1});
+		require (ep.m_InBuffer[0] == 1, "wrong configuration");
+		complete (ep, true); complete (ep, false);
+	});
 	test ("repeated activation preserves 274-byte IN phase and final 18 bytes",
 	      []
 	      {
@@ -421,6 +461,73 @@ int main ()
 				     "cancellation timeout is not bounded");
 		    });
 	}
+	test ("class SET validated once before IN status acknowledgement", []
+	{
+		CDWUSBGadget g; CDWUSBGadgetEndpoint0 ep (64, &g); ep.OnActivate ();
+		rawsetup (ep, {0x22, 1, 0x100, 1, 3});
+		require (!g.classCalls, "class callback before data received");
+		g.handler = [&] (const TSetupData *s, u8 *p)
+		{
+			require (s->wLength == 3 && p[0] == 0x80, "wrong parameter block");
+			require (!(m.regs[DWHCI_DEV_IN_EP_CTRL (0)] & DWHCI_DEV_EP_CTRL_EP_ENABLE),
+				 "status ACK sent before validation");
+			return 0;
+		};
+		ep.m_OutBuffer[0] = 0x80; complete (ep, false);
+		require (g.classCalls == 1 && ep.m_State == CDWUSBGadgetEndpoint0::StateInStatusPhase,
+			 "accepted SET lacks status");
+		complete (ep, true); require (g.classCalls == 1, "SET applied twice");
+	});
+	test ("invalid class SET stalls without acknowledging success", []
+	{
+		CDWUSBGadget g; g.classResult = -1;
+		CDWUSBGadgetEndpoint0 ep (64, &g); ep.OnActivate ();
+		rawsetup (ep, {0x22, 1, 0x100, 1, 3}); complete (ep, false);
+		require (g.classCalls == 1 && ep.m_TransferMode == CDWUSBGadgetEndpoint::TransferSetupOut,
+			 "invalid SET sent success");
+		require (m.regs[DWHCI_DEV_IN_EP_CTRL (0)] & DWHCI_DEV_EP_CTRL_STALL, "no STALL");
+	});
+	test ("truncated class parameter block is not applied", []
+	{
+		CDWUSBGadget g; CDWUSBGadgetEndpoint0 ep (64, &g); ep.OnActivate ();
+		rawsetup (ep, {0x22, 1, 0x100, 1, 3});
+		m.regs[DWHCI_DEV_OUT_EP_CTRL (0)] &= ~DWHCI_DEV_EP_CTRL_EP_ENABLE;
+		m.regs[DWHCI_DEV_OUT_EP_XFER_SIZ (0)] = 1;
+		m.regs[DWHCI_DEV_OUT_EP_INT (0)] |= DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE;
+		ep.HandleOutInterrupt ();
+		require (!g.classCalls && ep.m_TransferMode == CDWUSBGadgetEndpoint::TransferSetupOut,
+			 "partial SET accepted");
+	});
+	test ("class request number cannot alias standard SET_ADDRESS", []
+	{
+		CDWUSBGadget g; CDWUSBGadgetEndpoint0 ep (64, &g); ep.OnActivate ();
+		rawsetup (ep, {0x21, SET_ADDRESS, 0, 0, 0});
+		require (g.classCalls == 1 && !g.addresses, "class request dispatched as standard");
+	});
+	test ("alternate setting request validates recipient and length", []
+	{
+		CDWUSBGadget g; CDWUSBGadgetEndpoint0 ep (64, &g); ep.OnActivate ();
+		require (g.GetInterface (1) < 0, "unconfigured interface accepted");
+		g.SetConfiguration (1);
+		require (g.GetInterface (0) == 0 && !g.SetInterface (1, 1)
+			 && !g.SetInterface (2, 0), "invalid interface or alternate accepted");
+		rawsetup (ep, {0x81, 10, 0, 1, 1});
+		require (ep.m_State == CDWUSBGadgetEndpoint0::StateInDataPhase && ep.m_InBuffer[0] == 0,
+			 "GET_INTERFACE failed");
+		complete (ep, true); complete (ep, false);
+		rawsetup (ep, {0x01, SET_INTERFACE, 0, 1, 0});
+		require (ep.m_State == CDWUSBGadgetEndpoint0::StateInStatusPhase, "SET_INTERFACE failed");
+		complete (ep, true);
+		rawsetup (ep, {0x00, SET_INTERFACE, 1, 1, 0});
+		require (ep.m_TransferMode == CDWUSBGadgetEndpoint::TransferSetupOut, "wrong recipient accepted");
+	});
+	test ("oversized class IN reply is rejected", []
+	{
+		CDWUSBGadget g; g.classResult = 4;
+		CDWUSBGadgetEndpoint0 ep (64, &g); ep.OnActivate ();
+		rawsetup (ep, {0xA2, 0x81, 0x100, 1, 3});
+		require (ep.m_TransferMode == CDWUSBGadgetEndpoint::TransferSetupOut, "oversized reply accepted");
+	});
 	std::cout << passed << " passed, " << failed << " failed\n";
 	return failed ? 1 : 0;
 }

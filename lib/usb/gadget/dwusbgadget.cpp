@@ -950,3 +950,29 @@ CDWUSBGadget::TDeviceSpeed CDWUSBGadget::GetNegotiatedUSBSpeed (void) const
 		return DeviceSpeedUnknown;
 	}
 }
+
+boolean CDWUSBGadget::SetInterface (u16 nInterface, u16 nAlternate)
+{
+	return nAlternate == 0 && GetInterface (nInterface) == 0;
+}
+
+int CDWUSBGadget::GetInterface (u16 nInterface)
+{
+	if (!GetConfiguration ())
+	{
+		return -1;
+	}
+
+	size_t nLength = 0;
+	const auto *pConfig = static_cast<const TUSBConfigurationDescriptor *>
+		(GetDescriptor (DESCRIPTOR_CONFIGURATION << 8, 0, &nLength));
+	return pConfig && nLength >= sizeof *pConfig && nInterface < pConfig->bNumInterfaces
+		? 0 : -1;
+}
+
+u8 CDWUSBGadget::GetConfiguration (void) const
+{
+	return m_State == StateConfigured
+		|| (m_State == StateSuspended && m_bRetainedSuspend
+		    && m_PreSuspendState == StateConfigured) ? 1 : 0;
+}

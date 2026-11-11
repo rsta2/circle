@@ -19,3 +19,11 @@ struct TSetupData
 #define SET_ADDRESS 5
 #define SET_INTERFACE 11
 #define SET_CONFIGURATION 9
+
+#define DESCRIPTOR_CONFIGURATION 2
+struct __attribute__((packed)) TUSBConfigurationDescriptor
+{
+	u8 bLength, bDescriptorType;
+	u16 wTotalLength;
+	u8 bNumInterfaces, bConfigurationValue, iConfiguration, bmAttributes, bMaxPower;
+};

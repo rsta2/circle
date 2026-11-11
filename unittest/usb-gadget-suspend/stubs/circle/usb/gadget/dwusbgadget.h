@@ -60,6 +60,7 @@ class CDWUSBGadget
 	void SetDeviceAddress (u8)
 	{
 	}
+	u8 GetConfiguration (void) const;
 	boolean SetConfiguration (u8 n)
 	{
 		if (!n)
