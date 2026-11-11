@@ -37,17 +37,17 @@ class CDWUSBGadget
 		}
 		return true;
 	}
-	boolean SetInterface (u16, u16)
-	{
-		return true;
-	}
-	int GetInterface (u16)
-	{
-		return 0;
-	}
+	boolean SetInterface (u16 nInterface, u16 nAlternate);
+	int GetInterface (u16 nInterface);
 	size_t descriptorSize = 18;
-	const void *GetDescriptor (u16, u16, size_t *size)
+	const void *GetDescriptor (u16 value, u16, size_t *size)
 	{
+		if (value == (DESCRIPTOR_CONFIGURATION << 8))
+		{
+			static const TUSBConfigurationDescriptor config = {9,2,9,2,1,0,0x80,50};
+			*size = sizeof config;
+			return &config;
+		}
 		static const u8 desc[1024] = {18, 1};
 		*size = descriptorSize;
 		return desc;

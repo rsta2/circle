@@ -101,10 +101,8 @@ public:
 
 	/// Alternate-interface requests; called in IRQ context.
 	/// Override for gadgets with alternate settings or multiple interfaces.
-	virtual boolean SetInterface (u16 nInterface, u16 nAlternate)
-	{ return nInterface == 0 && nAlternate == 0; }
-	virtual int GetInterface (u16 nInterface)
-	{ return nInterface == 0 ? 0 : -1; }
+	virtual boolean SetInterface (u16 nInterface, u16 nAlternate);
+	virtual int GetInterface (u16 nInterface);
 
 	/// \brief A class or vendor request has been received on EP0
 	/// \param pSetupData Contents of the Setup packet
