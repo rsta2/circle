@@ -468,7 +468,7 @@ CBcmFrameBuffer::TDisplayPort CBcmFrameBuffer::GetDisplayPort (unsigned nDisplay
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple TagGetDisplayID;
 	TagGetDisplayID.nValue = nDisplay;
-	if (Tags.GetTag (PROPTAG_GET_DISPLAY_ID, &TagGetDisplayID, sizeof TagGetDisplayID))
+	if (Tags.GetTag (PROPTAG_GET_DISPLAY_ID, &TagGetDisplayID, sizeof TagGetDisplayID, 4))
 	{
 		switch (TagGetDisplayID.nValue)
 		{
