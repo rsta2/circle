@@ -35,6 +35,7 @@ CKernelOptions::CKernelOptions (void)
 	m_nUSBBoost (USB_MIDI_BOOST_NONE),
 	m_USBSoundChannels {0, 0},
 	m_nSoundOption (0),
+	m_nUSBSoundSubslot (0),
 	m_CPUSpeed (CPUSpeedLow),
 	m_nSoCMaxTemp (60),
 	m_nGPIOFanPin (0),
@@ -157,6 +158,15 @@ CKernelOptions::CKernelOptions (void)
 			    && (nValue <= 2 || nValue == 16 || nValue == 24))
 			{
 				m_nSoundOption = nValue;
+			}
+		}
+		else if (strcmp (pOption, "usbsoundsubslot") == 0)
+		{
+			unsigned nValue;
+			if (   (nValue = GetDecimal (pValue)) != INVALID_VALUE
+			    && nValue == 4)
+			{
+				m_nUSBSoundSubslot = nValue;
 			}
 		}
 		else if (strcmp (pOption, "fast") == 0)
@@ -288,6 +298,10 @@ unsigned CKernelOptions::GetSoundOption (void) const
 	return m_nSoundOption;
 }
 
+unsigned CKernelOptions::GetUSBSoundSubslot (void) const
+{
+	return m_nUSBSoundSubslot;
+}
 TCPUSpeed CKernelOptions::GetCPUSpeed (void) const
 {
 	return m_CPUSpeed;

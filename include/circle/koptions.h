@@ -53,6 +53,7 @@ public:
 
 	const char *GetSoundDevice (void) const;	// defaults to empty string
 	unsigned GetSoundOption (void) const;
+	unsigned GetUSBSoundSubslot (void) const;
 
 	TCPUSpeed GetCPUSpeed (void) const;
 	unsigned GetSoCMaxTemp (void) const;
@@ -100,6 +101,7 @@ private:
 
 	char m_SoundDevice[20];
 	unsigned m_nSoundOption;
+	unsigned m_nUSBSoundSubslot;
 
 	TCPUSpeed m_CPUSpeed;
 	unsigned m_nSoCMaxTemp;
