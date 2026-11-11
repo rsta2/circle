@@ -43,13 +43,14 @@ private:
 
 	static boolean FindDeviceID (CString *pName, const TUSBDeviceID *pIDTable);
 
-private:
+public:
 	// allow creating of user devices
 	typedef CUSBFunction *TUserFactory (CUSBFunction *pParent, CString *pName);
 
 	/// \param pUserFactory User factory function (0 to disable)
 	static void SetUserFactory (TUserFactory *pUserFactory);
 
+private:
 	static TUserFactory *s_pUserFactory;
 };
 
