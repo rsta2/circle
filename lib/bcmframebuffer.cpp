@@ -448,7 +448,7 @@ unsigned CBcmFrameBuffer::GetNumDisplays (void)
 
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple TagGetNumDisplays;
-	if (Tags.GetTag (PROPTAG_GET_NUM_DISPLAYS, &TagGetNumDisplays, 4))
+	if (Tags.GetTag (PROPTAG_GET_NUM_DISPLAYS, &TagGetNumDisplays, sizeof TagGetNumDisplays))
 	{
 		s_nDisplays = TagGetNumDisplays.nValue;
 	}
@@ -468,7 +468,7 @@ CBcmFrameBuffer::TDisplayPort CBcmFrameBuffer::GetDisplayPort (unsigned nDisplay
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple TagGetDisplayID;
 	TagGetDisplayID.nValue = nDisplay;
-	if (Tags.GetTag (PROPTAG_GET_DISPLAY_ID, &TagGetDisplayID, 4))
+	if (Tags.GetTag (PROPTAG_GET_DISPLAY_ID, &TagGetDisplayID, sizeof TagGetDisplayID))
 	{
 		switch (TagGetDisplayID.nValue)
 		{
