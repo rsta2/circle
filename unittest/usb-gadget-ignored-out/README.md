@@ -33,7 +33,7 @@ four flags enabled by the current reset implementation. Endpoint handlers are
 counting stubs; device states and endpoint pointers are a small harness fixture.
 No controller DMA, cache, bus transactions or physical IRQ timing are simulated.
 
-Twenty cases cover individual and coalesced causes on suspended EP0/non-control
+The original twenty cases cover individual and coalesced causes on suspended EP0/non-control
 endpoints, non-control endpoints before enumeration, normal active dispatch,
 masked endpoints, multiple endpoints in one summary, and a second dispatch after
 acknowledgement to check that the ignored status does not cause repeated work.
@@ -42,6 +42,9 @@ acknowledgement to check that the ignored status does not cause repeated work.
 | --- | ---: | ---: |
 | Unmodified develop 4215d68 | 10 | 10 |
 | With this patch | 20 | 0 |
+
+An additional case on the feature branch checks that retained suspend dispatches
+pending OUT status to the endpoint.
 
 The existing EP0 and OUT-cancellation suites also pass (21 additional tests).
 The ARM32 `RASPPI=3` gadget library builds. Sanitizers are enabled for host tests.
