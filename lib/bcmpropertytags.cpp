@@ -37,8 +37,11 @@ struct TPropertyBuffer
 }
 PACKED;
 
+CSpinLock CBcmPropertyTags::s_SpinLock (TASK_LEVEL);
+
 CBcmPropertyTags::CBcmPropertyTags (boolean bEarlyUse)
-:	m_MailBox (BCM_MAILBOX_PROP_OUT, bEarlyUse)
+:	m_MailBox (BCM_MAILBOX_PROP_OUT, bEarlyUse),
+	m_bEarlyUse (bEarlyUse)
 {
 }
 
@@ -80,6 +83,12 @@ boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
 	TPropertyBuffer *pBuffer =
 		(TPropertyBuffer *) CMemorySystem::GetCoherentPage (COHERENT_SLOT_PROP_MAILBOX);
 
+	// all cores share the buffer, so it is held from the request until the response is copied
+	if (!m_bEarlyUse)
+	{
+		s_SpinLock.Acquire ();
+	}
+
 	pBuffer->nBufferSize = nBufferSize;
 	pBuffer->nCode = CODE_REQUEST;
 	memcpy (pBuffer->Tags, pTags, nTagsSize);
@@ -89,20 +98,25 @@ boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
 
 	DataSyncBarrier ();
 
+	boolean bResult = FALSE;
+
 	u32 nBufferAddress = BUS_ADDRESS ((uintptr) pBuffer);
-	if (m_MailBox.WriteRead (nBufferAddress) != nBufferAddress)
+	if (m_MailBox.WriteRead (nBufferAddress) == nBufferAddress)
 	{
-		return FALSE;
+		DataMemBarrier ();
+
+		if (pBuffer->nCode == CODE_RESPONSE_SUCCESS)
+		{
+			memcpy (pTags, pBuffer->Tags, nTagsSize);
+
+			bResult = TRUE;
+		}
 	}
 
-	DataMemBarrier ();
-
-	if (pBuffer->nCode != CODE_RESPONSE_SUCCESS)
+	if (!m_bEarlyUse)
 	{
-		return FALSE;
+		s_SpinLock.Release ();
 	}
 
-	memcpy (pTags, pBuffer->Tags, nTagsSize);
-
-	return TRUE;
+	return bResult;
 }

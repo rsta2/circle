@@ -21,6 +21,7 @@
 #define _circle_bcmpropertytags_h
 
 #include <circle/bcmmailbox.h>
+#include <circle/spinlock.h>
 #include <circle/macros.h>
 #include <circle/types.h>
 
@@ -326,6 +327,9 @@ public:
 
 private:
 	CBcmMailBox m_MailBox;
+	boolean m_bEarlyUse;
+
+	static CSpinLock s_SpinLock;	// guards the property buffer, which all cores share
 };
 
 #endif
