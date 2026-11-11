@@ -29,6 +29,8 @@ class CUSBAudioGadgetEndpoint : public CDWUSBGadgetEndpoint
 public:
 	CUSBAudioGadgetEndpoint (const TUSBEndpointDescriptor *pDescriptor,
 				CDWUSBGadget *pGadget, CUSBAudioGadgetFunction *pFunction);
+	/// Apply the interface request and arm DMA only for a streaming alternate.
+	boolean SetInterface (u16 nInterface, u16 nAlternate);
 	void OnUSBReset (void) override;
 	void OnActivate (void) override;
 	void OnDeactivate (void) override;

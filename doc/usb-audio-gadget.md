@@ -105,7 +105,8 @@ composite device's class strategy. Do not include the standalone wrapper's
 configuration header. Each function owns its own descriptor configuration and
 control state; there is no global audio singleton.
 
-Delegate SetInterface/GetInterface according to the interface number. Route
+Forward SetInterface to the audio endpoint and GetInterface to its function.
+The endpoint cancels and rearms DMA when the streaming alternate changes. Route
 class requests by interface/entity or endpoint address to ControlRequest.
 Create a CUSBAudioGadgetEndpoint for the function in AddEndpoints, using its
 GetMaxPacketSize, isochronous/adaptive attributes (9) and interval 1. Propagate

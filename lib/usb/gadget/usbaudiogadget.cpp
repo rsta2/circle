@@ -41,11 +41,32 @@ void CUSBAudioGadgetEndpoint::OnUSBReset (void)
 void CUSBAudioGadgetEndpoint::OnActivate (void)
 {
 	m_pFunction->SetConfigured (TRUE);
-	m_bActive = TRUE;
-	if (!IsTransferActive ())
+	// SET_CONFIGURATION selects the zero-bandwidth alternate.
+}
+
+boolean CUSBAudioGadgetEndpoint::SetInterface (u16 nInterface, u16 nAlternate)
+{
+	if (!m_pFunction->SetInterface (nInterface, nAlternate))
+	{
+		return FALSE;
+	}
+	if (nInterface != m_pFunction->GetStreamingInterface ())
+	{
+		return TRUE;
+	}
+
+	m_bActive = FALSE;
+	if (IsTransferActive ())
+	{
+		CancelTransfer ();
+	}
+	m_nPacketSize = m_pFunction->GetAlternatePacketSize (nAlternate);
+	m_bActive = m_nPacketSize != 0;
+	if (m_bActive)
 	{
 		BeginTransfer (TransferDataOut, m_Buffer, m_nPacketSize);
 	}
+	return TRUE;
 }
 
 void CUSBAudioGadgetEndpoint::OnDeactivate (void)
@@ -161,7 +182,7 @@ const void *CUSBAudioGadget::GetDescriptor (u16 wValue, u16 wIndex, size_t *pLen
 
 boolean CUSBAudioGadget::SetInterface (u16 nInterface, u16 nAlternate)
 {
-	return m_Function.SetInterface (nInterface, nAlternate);
+	return m_pEndpoint && m_pEndpoint->SetInterface (nInterface, nAlternate);
 }
 
 int CUSBAudioGadget::GetInterface (u16 nInterface)

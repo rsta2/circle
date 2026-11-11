@@ -102,6 +102,9 @@ public:
 	/// Returns bytes written, zero on invalid config/insufficient capacity.
 	unsigned GetDescriptor (void *pBuffer, unsigned nSize) const;
 	unsigned GetMaxPacketSize (void) const;
+	unsigned GetStreamingInterface (void) const { return m_Config.nStreamingInterface; }
+	/// Maximum packet length for this USB alternate, zero for idle or invalid.
+	unsigned GetAlternatePacketSize (unsigned nAlternate) const;
 
 	boolean SetInterface (unsigned nInterface, unsigned nAlternate);
 	int GetInterface (unsigned nInterface);
