@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 
 here = Path(__file__).resolve().parent
-root = here.parents[1]
+root = here.parents[2]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--baseline', required=True)
 parser.add_argument('--output', required=True, type=Path)

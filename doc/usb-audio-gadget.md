@@ -131,20 +131,9 @@ numerically and exports a WAV preview, with optional playback on macOS. QEMU
 does not emulate the Raspberry Pi USB gadget controller or PWM audio, so this
 is software-path validation, not enumeration, DMA or real-time validation.
 
-The [QEMU harness](../test/usb-audio-qemu/README.md) boots real Circle ARM
-code and tests the production function and adaptive buffer with 15,000 simulated
-USB packets across five formats and three input rates. It checks rendered audio
-numerically and exports a WAV preview, with optional playback on macOS. QEMU
-does not emulate the Raspberry Pi USB gadget controller or PWM audio, so this
-is software-path validation, not enumeration, DMA or real-time validation.
-
-This extracted implementation has **not yet been loaded onto hardware**.
-Earlier application/lab results do not validate this new wrapper or adaptive
-sink. Before upstream merge, test enumeration, controls, all selected formats,
-packet timing, channel order, suspend/resume, cable reconnects and long drift
-on real hardware and multiple host operating systems. Capture evidence before
-recovering a failure. No changes to an application's SD image are required to
-perform a later RAM test.
+For hardware validation, exercise play/stop, alternate changes and suspend/resume
+on the target host. PWM output fidelity and long-term clock drift need separate
+measurements. The QEMU checks do not replace USB compliance testing.
 
 Not implemented: capture/isochronous IN, full duplex, UAC2, high-speed audio,
 explicit feedback endpoints, hardware-specific clock switching, per-channel
