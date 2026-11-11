@@ -61,6 +61,7 @@ boolean CUSBAudioGadgetBuffer::Configure (const TFunction::TStream &Stream)
 {
 	Stop ();
 	if (!m_pBuffer || Stream.nChannels != m_nChannels
+	    || (Stream.nSampleRate + 999ULL) / 1000 > m_nCapacity
 	    || !TFunction::GetPacketSize (Stream.nSampleRate, Stream.nChannels, Stream.Format))
 	{
 		return FALSE;

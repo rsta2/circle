@@ -290,12 +290,21 @@ void Buffer ()
 			unsigned n = b.ReadFrames (out, 48); if (i > 100) assert (n == 48);
 		}
 	}
+	for (unsigned rate : {44100u, 48000u})
+	{
+		unsigned frames = (rate + 999) / 1000;
+		F::TStream stream {F::PCM16, 2, rate};
+		B tooSmall (48000, 2, frames-1), exact (48000, 2, frames);
+		u8 packet[48*4] {};
+		assert (!tooSmall.Configure (stream));
+		assert (exact.Configure (stream) && exact.Write (packet, frames, stream));
+	}
 	// PCM32 exact endpoints, deliberately unaligned input and a non-power-of-two
 	// ring. Repeated four-frame writes cross both contiguous and split spans.
 	for (unsigned channels = 1; channels <= 8; channels++)
 	{
-		B b (24000, channels, 17);
-		F::TStream stream {F::PCM32, channels, 24000};
+		B b (16000, channels, 17);
+		F::TStream stream {F::PCM32, channels, 16000};
 		assert (b.Configure (stream));
 		std::vector<u8> input (17*channels*4+1, 0);
 		for (unsigned frame = 0; frame < 17; frame++)
