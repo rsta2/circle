@@ -507,11 +507,15 @@ int main ()
 	test ("alternate setting request validates recipient and length", []
 	{
 		CDWUSBGadget g; CDWUSBGadgetEndpoint0 ep (64, &g); ep.OnActivate ();
+		require (g.GetInterface (1) < 0, "unconfigured interface accepted");
+		g.SetConfiguration (1);
+		require (g.GetInterface (0) == 0 && !g.SetInterface (1, 1)
+			 && !g.SetInterface (2, 0), "invalid interface or alternate accepted");
 		rawsetup (ep, {0x81, 10, 0, 1, 1});
 		require (ep.m_State == CDWUSBGadgetEndpoint0::StateInDataPhase && ep.m_InBuffer[0] == 0,
 			 "GET_INTERFACE failed");
 		complete (ep, true); complete (ep, false);
-		rawsetup (ep, {0x01, SET_INTERFACE, 1, 1, 0});
+		rawsetup (ep, {0x01, SET_INTERFACE, 0, 1, 0});
 		require (ep.m_State == CDWUSBGadgetEndpoint0::StateInStatusPhase, "SET_INTERFACE failed");
 		complete (ep, true);
 		rawsetup (ep, {0x00, SET_INTERFACE, 1, 1, 0});

@@ -17,7 +17,9 @@ args = parser.parse_args()
 source = args.source.resolve()
 gadget = (source / 'lib/usb/gadget/dwusbgadget.cpp').read_text()
 helpers = []
-for marker in ('boolean CDWUSBGadget::FlushTxFIFO (',
+for marker in ('int CDWUSBGadget::GetInterface (',
+               'boolean CDWUSBGadget::SetInterface (',
+               'boolean CDWUSBGadget::FlushTxFIFO (',
                'boolean CDWUSBGadget::WaitForBit ('):
     start = gadget.index(marker)
     end = gadget.index('{', start) + 1
