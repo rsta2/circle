@@ -1,0 +1,25 @@
+USB Audio Class 1 playback
+==========================
+
+This sample is a standalone Circle audio device with stereo PWM output.
+It advertises signed 8/16/24/32-bit PCM and 32-bit float at 32, 44.1 and 48 kHz.
+The USB device connector must be available to the DesignWare gadget controller;
+use a supported gadget-capable board and the Circle gadget configuration.
+The output uses the board's normal PWM sound routing (analog jack where present).
+A Zero without an analog jack needs suitable PWM output hardware; this sample
+does not control the BioSynth I2S DAC, ADC or Pico.
+
+Build the Circle core, USB, input, fs, sound and usb/gadget libraries, then run
+make here. See doc/usb-audio-gadget.md for the architecture and limitations.
+
+The default USB IDs follow Circle's development examples. They are not an
+allocation for distributing a new product. Supply your own IDs when appropriate.
+
+After loading, select UAC1 Playback on the host. Start at low amplifier volume.
+The sample adapts USB audio to a fixed 48 kHz PWM output using a simple linear
+resampler. Prefer 48 kHz for comparisons; it is not a reference-quality SRC.
+Master mute and volume controls are supported. Counters are logged every five
+seconds. Callbacks and processing are bounded; no audio logging runs in IRQ.
+
+The initial branch has passed host regression tests and an ARM build only.
+Hardware validation of this standalone sample is still required.

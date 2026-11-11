@@ -153,6 +153,9 @@ class CBulkOutTest : public CDWUSBGadgetEndpoint
 	{
 	}
 	u8 buffer[64] = {};
+	bool rearm = false;
+	unsigned completions = 0;
+	size_t lastLength = 0;
 	void OnActivate () override
 	{
 		BeginTransfer (TransferDataOut, buffer, 64);
@@ -163,8 +166,10 @@ class CBulkOutTest : public CDWUSBGadgetEndpoint
 	{
 		CancelTransfer ();
 	}
-	void OnTransferComplete (boolean, size_t) override
+	void OnTransferComplete (boolean, size_t length) override
 	{
+		++completions; lastLength = length;
+		if (rearm) BeginTransfer (TransferDataOut, buffer, 64);
 	}
 };
 int main ()
@@ -281,6 +286,46 @@ int main ()
 			       "unnecessary stop sequence");
 		      require (!m.regs[DWHCI_DEV_OUT_EP_INT (1)], "stale completion retained");
 	      });
+	for (bool completed : {false, true})
+	{
+		test (completed ? "ISO coalesced disable/completion rearms once" : "ISO missed frame rearms once", [&]
+		{
+			CDWUSBGadget g;
+			auto d = CBulkOutTest::Descriptor ();
+			d.bmAttributes = 9;
+			CBulkOutTest ep (&g, &d);
+			ep.OnActivate ();
+			ep.rearm = true;
+			m.regs[DWHCI_DEV_OUT_EP_CTRL (1)] &= ~DWHCI_DEV_EP_CTRL_EP_ENABLE;
+			m.regs[DWHCI_DEV_OUT_EP_COMMON_INT_MASK] = ~0U;
+			m.regs[DWHCI_DEV_OUT_EP_XFER_SIZ (1)] = 0;
+			m.regs[DWHCI_DEV_OUT_EP_INT (1)] = DWHCI_DEV_OUT_EP_INT_EP_DISABLED
+				| (completed ? DWHCI_DEV_OUT_EP_INT_XFER_COMPLETE : 0);
+			ep.HandleOutInterrupt ();
+			require (ep.completions == 1 && ep.lastLength == (completed ? 64U : 0U), "wrong completion");
+			require (ep.IsTransferActive () && !m.regs[DWHCI_DEV_OUT_EP_INT (1)], "stale status or no rearm");
+			ep.OnDeactivate ();
+		});
+	}
+	for (unsigned frame : {0u, 1u, 16382u, 16383u})
+	{
+		test (("ISO next-frame parity and synchronous cancellation " + std::to_string(frame)).c_str(), [&]
+		{
+			CDWUSBGadget g; auto d = CBulkOutTest::Descriptor (); d.bmAttributes = 9;
+			CBulkOutTest ep (&g, &d);
+			m.regs[DWHCI_DEV_STS] = frame << 8;
+			ep.OnActivate ();
+			u32 ctrl = m.regs[DWHCI_DEV_OUT_EP_CTRL (1)];
+			u32 parity = frame & 1 ? DWHCI_DEV_EP_CTRL_SETDPID_D0 : DWHCI_DEV_EP_CTRL_SETDPID_D1;
+			require ((ctrl & (DWHCI_DEV_EP_CTRL_SETDPID_D0 | DWHCI_DEV_EP_CTRL_SETDPID_D1)) == parity,
+				 "wrong ISO frame parity");
+			m.allowNak = false;
+			ep.OnDeactivate ();
+			require (!ep.IsTransferActive () && m.disables == 1 && !m.nakReads && !m.clears,
+				 "ISO waited for nonexistent NAK or reused live DMA");
+			require (m.now < 100, "ISO cancellation waited for global NAK");
+		});
+	}
 	std::cout << passed << " passed, " << failed << " failed\n";
 	return failed ? 1 : 0;
 }

@@ -950,3 +950,11 @@ CDWUSBGadget::TDeviceSpeed CDWUSBGadget::GetNegotiatedUSBSpeed (void) const
 		return DeviceSpeedUnknown;
 	}
 }
+
+// The retained suspend state preserves the selected configuration.
+u8 CDWUSBGadget::GetConfiguration (void) const
+{
+	return m_State == StateConfigured
+		|| (m_State == StateSuspended && m_bRetainedSuspend
+		    && m_PreSuspendState == StateConfigured) ? 1 : 0;
+}

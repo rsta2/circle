@@ -99,6 +99,13 @@ public:
 	/// \return TRUE while an opted-in gadget is suspended with transfers retained
 	boolean IsBusSuspended (void) const { return m_bRetainedSuspend; }
 
+	/// Alternate-interface requests; called in IRQ context.
+	/// Override for gadgets with alternate settings or multiple interfaces.
+	virtual boolean SetInterface (u16 nInterface, u16 nAlternate)
+	{ return nInterface == 0 && nAlternate == 0; }
+	virtual int GetInterface (u16 nInterface)
+	{ return nInterface == 0 ? 0 : -1; }
+
 	/// \brief A class or vendor request has been received on EP0
 	/// \param pSetupData Contents of the Setup packet
 	/// \param pData Received data (host-to-device), or buffer for data to be sent
@@ -133,6 +140,7 @@ private:
 	void RemoveEndpoint (unsigned nEP);
 	void SetDeviceAddress (u8 uchAddress);
 	boolean SetConfiguration (u8 uchConfiguration);
+	u8 GetConfiguration (void) const;
 	friend class CDWUSBGadgetEndpoint;
 	friend class CDWUSBGadgetEndpoint0;
 

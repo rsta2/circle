@@ -355,6 +355,10 @@
 #define USB_GADGET_DEVICE_ID_MSD	(USB_GADGET_DEVICE_ID_BASE+2)
 #endif
 
+#ifndef USB_GADGET_DEVICE_ID_AUDIO
+#define USB_GADGET_DEVICE_ID_AUDIO	(USB_GADGET_DEVICE_ID_BASE+3)
+#endif
+
 ///////////////////////////////////////////////////////////////////////
 //
 // Other
