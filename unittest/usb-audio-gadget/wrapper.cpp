@@ -29,9 +29,10 @@ void WrapperTests (void)
  F::TConfiguration c {};
  c.nControlInterface=0; c.nStreamingInterface=1; c.nEndpoint=1;
  c.nInputTerminal=1; c.nFeatureUnit=2; c.nOutputTerminal=3;
- c.nChannels=2; c.wChannelConfig=3; c.nAlternates=1;
+ c.nChannels=2; c.wChannelConfig=3; c.nAlternates=2;
  c.Alternates[0].Format=F::PCM16;
  c.Alternates[0].nRates=1; c.Alternates[0].Rates[0]=48000;
+ c.Alternates[1]=c.Alternates[0]; c.Alternates[1].Format=F::Float32;
  CInterruptSystem irq;
  CUSBAudioGadgetBuffer sink (48000,2,512);
  CUSBAudioGadget g (&irq,c,&sink,0x1234,0x5678);
@@ -48,6 +49,7 @@ void WrapperTests (void)
  auto ep=g.endpoint;
  assert(ep && !ep->active);
  ep->OnUSBReset(); ep->OnActivate();
+ assert(!ep->active && ep->arms==0 && g.GetInterface(1)==0);
  assert(g.SetInterface(1,1)); g.Process();
  assert(ep->active && ep->length==192 && g.GetInterface(1)==1);
  memset(ep->buffer,0,192);
@@ -59,8 +61,14 @@ void WrapperTests (void)
  g.OnBusResume(); g.Process();
  ep->active=false; ep->OnTransferComplete(false,192); g.Process();
  assert(sink.GetBufferedFrames()==48);
+ assert(g.SetInterface(1,2)); g.Process();
+ assert(ep->active && ep->length==384 && ep->cancels==1);
+ assert(!g.SetInterface(1,3) && ep->active && ep->cancels==1);
+ assert(g.SetInterface(0,0) && ep->active && ep->cancels==1);
+ assert(g.SetInterface(1,0)); g.Process();
+ assert(!ep->active && g.GetInterface(1)==0);
  ep->OnDeactivate(); g.Process();
- assert(!ep->active && ep->cancels==1 && sink.GetBufferedFrames()==0);
+ assert(!ep->active && ep->cancels==2 && sink.GetBufferedFrames()==0);
  ep->OnTransferComplete(false,192); assert(!ep->active);
  g.OnSuspend(); assert(!g.endpoint);
  g.AddEndpoints(); g.endpoint->OnUSBReset(); g.endpoint->OnActivate(); g.Process();

@@ -159,6 +159,12 @@ unsigned CUSBAudioGadgetFunction::PacketSize (unsigned nAlternate) const
 	return GetPacketSize (Alt.Rates[Alt.nRates-1], m_Config.nChannels, Alt.Format);
 }
 
+unsigned CUSBAudioGadgetFunction::GetAlternatePacketSize (unsigned nAlternate) const
+{
+	return m_bValid && nAlternate && nAlternate <= m_Config.nAlternates
+		? PacketSize (nAlternate-1) : 0;
+}
+
 unsigned CUSBAudioGadgetFunction::GetMaxPacketSize (void) const
 {
 	unsigned nMaximum = 0;
