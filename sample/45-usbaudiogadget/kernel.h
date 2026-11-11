@@ -23,7 +23,6 @@
 #include <circle/actled.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
-#include <circle/screen.h>
 #include <circle/serial.h>
 #include <circle/exceptionhandler.h>
 #include <circle/interrupt.h>
@@ -55,7 +54,6 @@ private:
 	CActLED m_ActLED;
 	CKernelOptions m_Options;
 	CDeviceNameService m_DeviceNameService;
-	CScreenDevice m_Screen;
 	CSerialDevice m_Serial;
 	CExceptionHandler m_ExceptionHandler;
 	CInterruptSystem m_Interrupt;

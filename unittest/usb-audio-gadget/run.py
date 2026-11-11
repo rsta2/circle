@@ -9,7 +9,7 @@ here = Path(__file__).resolve().parent
 root = here.parents[1]
 with tempfile.TemporaryDirectory(prefix='circle-uac1-') as tmp:
     binary = Path(tmp) / 'test'
-    subprocess.run([os.environ.get('CXX', 'c++'), '-std=c++14', '-Wall', '-Wextra',
+    subprocess.run([os.environ.get('CXX', 'c++'), '-std=c++17', '-Wall', '-Wextra',
                     '-Werror', '-fsanitize=address,undefined', '-fno-omit-frame-pointer',
                     '-I', str(here/'stubs'), '-I', str(root/'include'),
                     str(here/'test.cpp'), str(here/'strings.cpp'),

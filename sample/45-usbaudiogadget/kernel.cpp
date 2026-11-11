@@ -69,8 +69,7 @@ unsigned CAudioOutput::GetChunk (u32 *pBuffer, unsigned nWords)
 }
 
 CKernel::CKernel (void)
-:	m_Screen (m_Options.GetWidth (), m_Options.GetHeight ()),
-	m_Timer (&m_Interrupt), m_Logger (m_Options.GetLogLevel (), &m_Timer),
+:	m_Timer (&m_Interrupt), m_Logger (m_Options.GetLogLevel (), &m_Timer),
 	m_Buffer (48000, 2, 1024), m_Output (&m_Interrupt, &m_Buffer),
 	// Development-only IDs following Circle's MIDI sample. Obtain IDs for distribution.
 	m_Gadget (&m_Interrupt, GetConfiguration (), &m_Buffer,
@@ -81,16 +80,11 @@ CKernel::CKernel (void)
 
 boolean CKernel::Initialize (void)
 {
-	if (!m_Screen.Initialize () || !m_Serial.Initialize (115200))
+	if (!m_Serial.Initialize (115200))
 	{
 		return FALSE;
 	}
-	CDevice *pTarget = m_DeviceNameService.GetDevice (m_Options.GetLogDevice (), FALSE);
-	if (!pTarget)
-	{
-		pTarget = &m_Screen;
-	}
-	return m_Logger.Initialize (pTarget) && m_Interrupt.Initialize ()
+	return m_Logger.Initialize (&m_Serial) && m_Interrupt.Initialize ()
 		&& m_Timer.Initialize () && m_Buffer.IsValid () && m_Gadget.Initialize ();
 }
 
