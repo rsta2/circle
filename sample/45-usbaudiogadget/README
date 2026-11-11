@@ -12,8 +12,9 @@ does not control the BioSynth I2S DAC, ADC or Pico.
 Build the Circle core, USB, input, fs, sound and usb/gadget libraries, then run
 make here. See doc/usb-audio-gadget.md for the architecture and limitations.
 
-The default USB IDs follow Circle's development examples. They are not an
-allocation for distributing a new product. Supply your own IDs when appropriate.
+Before building, set USB_GADGET_VENDOR_ID and USB_GADGET_DEVICE_ID_AUDIO
+in Config.mk using DEFINE += -D... for each value. Use IDs authorized for
+your device. Circle's default vendor ID is zero and initialization refuses it.
 
 After loading, select UAC1 Playback on the host. Start at low amplifier volume.
 The sample adapts USB audio to a fixed 48 kHz PWM output using a simple linear
