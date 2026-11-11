@@ -94,6 +94,7 @@ public:
 	};
 	static constexpr unsigned NumberOfEPs = 3;
 	TState m_State = StateConfigured;
+	bool m_bRetainedSuspend = false;
 	Endpoint *m_pEP[NumberOfEPs + 1]{};
 	void HandleOutEPInterrupt (void);
 };
@@ -169,6 +170,20 @@ int main ()
 			     Check (M.Writes[n] == 0);
 		     });
 	}
+	Run ("retained suspend dispatches pending OUT status",
+	     []
+	     {
+		     CDWUSBGadget g;
+		     Endpoint ep;
+		     g.m_State = g.StateSuspended;
+		     g.m_bRetainedSuspend = true;
+		     g.m_pEP[1] = &ep;
+		     M.Status[1] = Causes;
+		     g.HandleOutEPInterrupt ();
+		     Check (ep.Calls == 1);
+		     Check (M.Writes[1] == 0);
+		     Check (M.Status[1] == Causes);
+	     });
 	Run ("masked endpoint untouched",
 	     []
 	     {
