@@ -21,5 +21,4 @@ resampler. Prefer 48 kHz for comparisons; it is not a reference-quality SRC.
 Master mute and volume controls are supported. Counters are logged every five
 seconds. Callbacks and processing are bounded; no audio logging runs in IRQ.
 
-The initial branch has passed host regression tests and an ARM build only.
-Hardware validation of this standalone sample is still required.
+Diagnostics are available on the UART at 115200 baud; HDMI is optional.

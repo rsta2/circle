@@ -45,3 +45,9 @@ struct __attribute__((packed)) TUSBEndpointDescriptor
 };
 
 #define DESCRIPTOR_CS_INTERFACE 36
+#define DESCRIPTOR_CS_ENDPOINT 37
+#define DESCRIPTOR_INTERFACE 4
+#define REQUEST_CLASS 0x20
+#define REQUEST_IN 0x80
+#define REQUEST_TO_ENDPOINT 2
+#define REQUEST_TO_INTERFACE 1

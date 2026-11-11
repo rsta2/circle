@@ -201,18 +201,18 @@ unsigned CUSBAudioGadgetFunction::GetDescriptor (void *pBuffer, unsigned nSize) 
 	}
 	CDescriptorWriter W ((u8 *) pBuffer);
 	// AudioControl interface and header.
-	W.Byte (9); W.Byte (4); W.Byte (m_Config.nControlInterface);
+	W.Byte (9); W.Byte (DESCRIPTOR_INTERFACE); W.Byte (m_Config.nControlInterface);
 	W.Byte (0); W.Byte (0); W.Byte (1); W.Byte (1);
 	W.Byte (USB_PROTO_AUDIO_VER_100); W.Byte (0);
-	W.Byte (9); W.Byte (0x24); W.Byte (USB_AUDIO_CTL_IFACE_SUBTYPE_HEADER);
+	W.Byte (9); W.Byte (DESCRIPTOR_CS_INTERFACE); W.Byte (USB_AUDIO_CTL_IFACE_SUBTYPE_HEADER);
 	W.Word (USB_AUDIO_CTL_IFACE_BCDADC_100);
 	W.Word (nControlSize); W.Byte (1); W.Byte (m_Config.nStreamingInterface);
 	// USB streaming Input Terminal, master mute/volume Feature Unit, speaker OT.
-	W.Byte (12); W.Byte (0x24);
+	W.Byte (12); W.Byte (DESCRIPTOR_CS_INTERFACE);
 	W.Byte (USB_AUDIO_CTL_IFACE_SUBTYPE_INPUT_TERMINAL); W.Byte (m_Config.nInputTerminal);
 	W.Word (USB_AUDIO_TERMINAL_TYPE_USB_STREAMING); W.Byte (0); W.Byte (m_Config.nChannels);
 	W.Word (m_Config.wChannelConfig); W.Byte (0); W.Byte (0);
-	W.Byte (nFeatureSize); W.Byte (0x24);
+	W.Byte (nFeatureSize); W.Byte (DESCRIPTOR_CS_INTERFACE);
 	W.Byte (USB_AUDIO_CTL_IFACE_SUBTYPE_FEATURE_UNIT); W.Byte (m_Config.nFeatureUnit);
 	W.Byte (m_Config.nInputTerminal); W.Byte (1);
 	W.Byte ((1 << (USB_AUDIO_FU_MUTE_CONTROL-1)) | (1 << (USB_AUDIO_FU_VOLUME_CONTROL-1)));
@@ -221,34 +221,34 @@ unsigned CUSBAudioGadgetFunction::GetDescriptor (void *pBuffer, unsigned nSize) 
 		W.Byte (0);
 	}
 	W.Byte (0);
-	W.Byte (9); W.Byte (0x24);
+	W.Byte (9); W.Byte (DESCRIPTOR_CS_INTERFACE);
 	W.Byte (USB_AUDIO_CTL_IFACE_SUBTYPE_OUTPUT_TERMINAL); W.Byte (m_Config.nOutputTerminal);
 	W.Word (USB_AUDIO_TERMINAL_TYPE_SPEAKER); W.Byte (0); W.Byte (m_Config.nFeatureUnit); W.Byte (0);
 	// Zero-bandwidth alternate is mandatory.
-	W.Byte (9); W.Byte (4); W.Byte (m_Config.nStreamingInterface);
+	W.Byte (9); W.Byte (DESCRIPTOR_INTERFACE); W.Byte (m_Config.nStreamingInterface);
 	W.Byte (0); W.Byte (0); W.Byte (1); W.Byte (2);
 	W.Byte (USB_PROTO_AUDIO_VER_100); W.Byte (0);
 	for (unsigned i = 0; i < m_Config.nAlternates; i++)
 	{
 		const TAlternate &Alt = m_Config.Alternates[i];
 		unsigned nBytes = GetSubframeSize (Alt.Format);
-		W.Byte (9); W.Byte (4); W.Byte (m_Config.nStreamingInterface);
+		W.Byte (9); W.Byte (DESCRIPTOR_INTERFACE); W.Byte (m_Config.nStreamingInterface);
 		W.Byte (i+1); W.Byte (1); W.Byte (1); W.Byte (2);
 		W.Byte (USB_PROTO_AUDIO_VER_100); W.Byte (0);
-		W.Byte (7); W.Byte (0x24); W.Byte (USB_AUDIO_STREAMING_GENERAL);
+		W.Byte (7); W.Byte (DESCRIPTOR_CS_INTERFACE); W.Byte (USB_AUDIO_STREAMING_GENERAL);
 		W.Byte (m_Config.nInputTerminal);
 		W.Byte (0); W.Word (Alt.Format == Float32 ? 3 : 1);
-		W.Byte (8 + 3*Alt.nRates); W.Byte (0x24);
+		W.Byte (8 + 3*Alt.nRates); W.Byte (DESCRIPTOR_CS_INTERFACE);
 		W.Byte (USB_AUDIO_FORMAT_TYPE); W.Byte (USB_AUDIO_FORMAT_TYPE_I);
 		W.Byte (m_Config.nChannels); W.Byte (nBytes); W.Byte (8*nBytes); W.Byte (Alt.nRates);
 		for (unsigned j = 0; j < Alt.nRates; j++)
 		{
 			W.Triple (Alt.Rates[j]);
 		}
-		W.Byte (9); W.Byte (5); W.Byte (m_Config.nEndpoint);
+		W.Byte (9); W.Byte (DESCRIPTOR_ENDPOINT); W.Byte (m_Config.nEndpoint);
 		W.Byte (9); // Isochronous, adaptive OUT; no explicit feedback endpoint
 		W.Word (PacketSize (i)); W.Byte (1); W.Byte (0); W.Byte (0);
-		W.Byte (7); W.Byte (0x25); W.Byte (1); W.Byte (1);
+		W.Byte (7); W.Byte (DESCRIPTOR_CS_ENDPOINT); W.Byte (1); W.Byte (1);
 		W.Byte (0); W.Word (0); // No advertised hardware lock delay
 	}
 	return W.Length ();
@@ -344,7 +344,7 @@ int CUSBAudioGadgetFunction::ControlRequest (const TSetupData *pSetup, u8 *pData
 	if (!m_bConfigured || m_bSuspended)
 	{
 	}
-	else if ((nType == 0x22 || nType == 0xA2) && pSetup->wIndex == m_Config.nEndpoint
+	else if ((nType == (REQUEST_CLASS | REQUEST_TO_ENDPOINT) || nType == (REQUEST_IN | REQUEST_CLASS | REQUEST_TO_ENDPOINT)) && pSetup->wIndex == m_Config.nEndpoint
 		 && pSetup->wValue == (USB_AUDIO_CS_SAM_FREQ_CONTROL << 8) && pSetup->wLength == 3)
 	{
 		unsigned nAlt = m_nAlternate ? m_nAlternate-1 : 0;
@@ -385,7 +385,7 @@ int CUSBAudioGadgetFunction::ControlRequest (const TSetupData *pSetup, u8 *pData
 			}
 		}
 	}
-	else if ((nType == 0x21 || nType == 0xA1)
+	else if ((nType == (REQUEST_CLASS | REQUEST_TO_INTERFACE) || nType == (REQUEST_IN | REQUEST_CLASS | REQUEST_TO_INTERFACE))
 		 && pSetup->wIndex == ((m_Config.nFeatureUnit<<8) | m_Config.nControlInterface))
 	{
 		if (pSetup->wValue == (USB_AUDIO_FU_MUTE_CONTROL << 8) && pSetup->wLength == 1)
@@ -544,7 +544,9 @@ void CUSBAudioGadgetFunction::Process (void)
 			m_Lock.Release ();
 			break;
 		}
-		Packet = m_Queue[m_nTail];
+		const TPacket &Queued = m_Queue[m_nTail];
+		Packet.nLength = Queued.nLength;
+		memcpy (Packet.Data, Queued.Data, Packet.nLength);
 		m_nTail = (m_nTail+1) % QueuePackets;
 		--m_nCount;
 		m_Lock.Release ();
