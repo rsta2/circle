@@ -31,7 +31,8 @@ OBJS	= lan7800.o smsc951x.o usbbluetooth.o usbcdcethernet.o usbfloppydevice.o \
 	  usbgamepadxbox360.o usbgamepadxbox360pcwireless.o usbgamepadxboxone.o usbhiddevice.o usbhostcontroller.o \
 	  usbkeyboard.o usbkeyboard8bitdo.o usbkeyboardbolt.o usbmassdevice.o usbmidi.o usbmidihost.o usbmouse.o usbprinter.o usbrequest.o \
 	  usbstandardhub.o usbstring.o usbserial.o usbserialhost.o usbserialch341.o usbserialcp210x.o \
-	  usbserialpl2303.o usbserialft231x.o usbserialcdc.o usbtouchscreen.o dwhciregister.o
+	  usbserialpl2303.o usbserialft231x.o usbserialcdc.o usbtouchscreen.o dwhciregister.o \
+	  usbrpdisp.o
 
 ifneq ($(filter 1 2 3,$(RASPPI)),)
 OBJS	+= dwhcidevice.o dwhciframeschednper.o dwhciframeschednsplit.o dwhciframeschedper.o \

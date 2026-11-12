@@ -56,6 +56,7 @@
 #include <circle/usb/usbserialpl2303.h>
 #include <circle/usb/usbserialft231x.h>
 #include <circle/usb/usbtouchscreen.h>
+#include <circle/usb/usbrpdisp.h>
 
 CUSBDeviceFactory::TUserFactory *CUSBDeviceFactory::s_pUserFactory = 0;
 
@@ -276,6 +277,12 @@ CUSBFunction *CUSBDeviceFactory::GetDevice (CUSBFunction *pParent, CString *pNam
 	}
 #endif
 	// new devices follow
+#if defined (USE_USB_ROBOPEAK)
+	else if (pName->Compare ("venfccf-a001") == 0)	// RoboPeak RP-USBDISP
+	{
+		pResult = new CUSBRoboPeakDispDevice (pParent);
+	}
+#endif
 
 	if (pResult != 0)
 	{
