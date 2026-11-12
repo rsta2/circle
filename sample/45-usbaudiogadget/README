@@ -16,6 +16,14 @@ Before building, set USB_GADGET_VENDOR_ID and USB_GADGET_DEVICE_ID_AUDIO
 in Config.mk using DEFINE += -D... for each value. Use IDs authorized for
 your device. Circle's default vendor ID is zero and initialization refuses it.
 
+On the Raspberry Pi 3A+, clean PWM playback in the hardware test required
+lower IRQ latency. Add the following line to Config.mk and rebuild Circle's
+libraries as well as the sample so the option applies throughout:
+
+    DEFINE += -DREALTIME
+
+The configure option --realtime also sets this define.
+
 After loading, select UAC1 Playback on the host. Start at low amplifier volume.
 The sample adapts USB audio to a fixed 48 kHz PWM output using a simple linear
 resampler. Prefer 48 kHz for comparisons; it is not a reference-quality SRC.
