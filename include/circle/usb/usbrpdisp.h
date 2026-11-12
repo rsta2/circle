@@ -78,7 +78,7 @@ public:
 	CUSBRoboPeakDispDevice (CUSBFunction *pFunction);
 	~CUSBRoboPeakDispDevice (void);
 
-	boolean Configure (void);
+	boolean Configure (void) override;
 
 	unsigned GetWidth (void) const override { return 320; }
 	unsigned GetHeight (void) const override { return 240; }
