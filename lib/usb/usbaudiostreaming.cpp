@@ -117,8 +117,8 @@ CUSBAudioStreamingDevice::CUSBAudioStreamingDevice (CUSBFunction *pFunction)
 :	CUSBFunction (pFunction),
 	m_nBitResolution (CKernelOptions::Get ()->GetSoundOption () == 24 ? 24 : 16),
 	m_nSubframeSize (   m_nBitResolution == 24
-                 && CKernelOptions::Get ()->GetUSBSoundSubslot () == 4
-                 ? 4 : m_nBitResolution / 8),
+                && CKernelOptions::Get ()->GetUSBSoundSubslot () == 4
+                ? 4 : m_nBitResolution / 8),
 	m_pEndpointData (nullptr),
 	m_pEndpointSync (nullptr),
 	m_nChannels (0),

@@ -46,6 +46,8 @@ usbignore=int3-0-0		Prevent loading a driver for an USB interface or device, whi
 				is normally supported by Circle, but does not functioning with
 				a specific USB device. Can be specified only once.
 
+usbsoundsubslot			if your audio interface use 4byte sub-slot, you write 4.
+
 usbsoundchannels=6,2		Select specific number of sound channels for output,input for
 				"sounddev=sndusb". By default 0,0 is set, which selects the first
 				found USB interfaces. The selected number of channels (max. 32)

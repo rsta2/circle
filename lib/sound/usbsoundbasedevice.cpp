@@ -34,7 +34,9 @@ static const char DeviceName[] = "sndusb";
 CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode DeviceMode,
 					  unsigned nDevice)
 :	m_nBitResolution (CKernelOptions::Get ()->GetSoundOption () == 24 ? 24 : 16),
-	m_nSubframeSize (m_nBitResolution / 8),
+	m_nSubframeSize (   m_nBitResolution == 24
+                && CKernelOptions::Get ()->GetUSBSoundSubslot () == 4
+                ? 4 : m_nBitResolution / 8),
 	m_nSampleRate (nSampleRate),
 	m_DeviceMode (DeviceMode),
 	m_nDevice (nDevice),
@@ -70,7 +72,7 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode Devi
 		}
 	}
 
-	Setup (m_nBitResolution == 24 ? SoundFormatSigned24 : SoundFormatSigned16, 0,
+	Setup (m_nBitResolution == 24 ? m_nSubframeSize == 4 ? SoundFormatSigned24_32 : SoundFormatSigned24 : SoundFormatSigned16, 0,
 		m_nSampleRate, nHWTXChannels, nHWRXChannels, FALSE);
 
 	if (!m_nDevice)
@@ -343,6 +345,17 @@ boolean CUSBSoundBaseDevice::SendChunk (void)
 		nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
 				       nChunkSizeBytes / m_nSubframeSize);
 	}
+	else if (m_nSubframeSize == 4)
+	{
+		nChunkSize = GetChunk (reinterpret_cast<u32 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
+				       nChunkSizeBytes / m_nSubframeSize);
+
+		u32 *pSample = reinterpret_cast<u32 *> (m_pTXBuffer[m_nTXCurrentBuffer]);
+		for (unsigned i = 0; i < nChunkSize; i++)
+		{
+			pSample[i] <<= 8;
+		}
+	}
 	else
 	{
 		assert (m_nSubframeSize == 3);
@@ -506,6 +519,18 @@ void CUSBSoundBaseDevice::RXCompletionRoutine (unsigned nBytesTransferred)
 		{
 			PutChunk (reinterpret_cast<s16 *> (m_pRXBuffer[nRXCurrentBuffer]),
 							   nBytesTransferred / m_nSubframeSize);
+		}
+		else if (m_nSubframeSize == 4)
+		{
+			s32 *pSample = reinterpret_cast<s32 *> (m_pRXBuffer[nRXCurrentBuffer]);
+			unsigned nSamples = nBytesTransferred / m_nSubframeSize;
+			for (unsigned i = 0; i < nSamples; i++)
+			{
+				pSample[i] >>= 8;
+			}
+
+			PutChunk (reinterpret_cast<u32 *> (m_pRXBuffer[nRXCurrentBuffer]),
+				  nSamples);
 		}
 		else
 		{
