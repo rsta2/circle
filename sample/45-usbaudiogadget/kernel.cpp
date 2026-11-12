@@ -34,7 +34,7 @@ static CUSBAudioGadgetFunction::TConfiguration GetConfiguration (void)
 	Config.nChannels = 2;
 	Config.wChannelConfig = 3;
 	// Front left/right
-	Config.nAlternates = 5;
+	Config.nAlternates = CUSBAudioGadgetFunction::MaxAlternates;
 	for (unsigned i = 0; i < Config.nAlternates; i++)
 	{
 		Config.Alternates[i].Format = (CUSBAudioGadgetFunction::TFormat) i;
@@ -53,6 +53,8 @@ CAudioOutput::CAudioOutput (CInterruptSystem *pInterrupt, CUSBAudioGadgetBuffer 
 
 unsigned CAudioOutput::GetChunk (u32 *pBuffer, unsigned nWords)
 {
+	// The sink always returns logical left/right; PWM FIFO order is board-specific.
+	const unsigned nSwap = AreChannelsSwapped () ? 1 : 0;
 	s32 Samples[64];
 	unsigned nDone = 0;
 	while (nDone < nWords)
@@ -61,7 +63,7 @@ unsigned CAudioOutput::GetChunk (u32 *pBuffer, unsigned nWords)
 		m_pBuffer->ReadFrames (Samples, n/2);
 		for (unsigned i = 0; i < n; i++)
 		{
-			u32 nUnsigned = (u32) Samples[i] ^ 0x80000000;
+			u32 nUnsigned = (u32) Samples[i ^ nSwap] ^ 0x80000000;
 			pBuffer[nDone++] = (u32) ((u64) nUnsigned * (GetRangeMax ()+1) >> 32);
 		}
 	}
