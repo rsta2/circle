@@ -132,7 +132,8 @@ unsigned CUSBAudioGadgetFunction::GetSubframeSize (TFormat Format)
 {
 	switch (Format)
 	{
-	case PCM8: return 1;
+	case PCM8:
+	case U8: return 1;
 	case PCM16: return 2;
 	case PCM24: return 3;
 	case PCM32:
@@ -237,7 +238,17 @@ unsigned CUSBAudioGadgetFunction::GetDescriptor (void *pBuffer, unsigned nSize) 
 		W.Byte (USB_PROTO_AUDIO_VER_100); W.Byte (0);
 		W.Byte (7); W.Byte (DESCRIPTOR_CS_INTERFACE); W.Byte (USB_AUDIO_STREAMING_GENERAL);
 		W.Byte (m_Config.nInputTerminal);
-		W.Byte (0); W.Word (Alt.Format == Float32 ? 3 : 1);
+		W.Byte (0);
+		unsigned nTag = USB_AUDIO_FORMAT_TAG_PCM;
+		if (Alt.Format == U8)
+		{
+			nTag = USB_AUDIO_FORMAT_TAG_PCM8;
+		}
+		else if (Alt.Format == Float32)
+		{
+			nTag = USB_AUDIO_FORMAT_TAG_IEEE_FLOAT;
+		}
+		W.Word (nTag);
 		W.Byte (8 + 3*Alt.nRates); W.Byte (DESCRIPTOR_CS_INTERFACE);
 		W.Byte (USB_AUDIO_FORMAT_TYPE); W.Byte (USB_AUDIO_FORMAT_TYPE_I);
 		W.Byte (m_Config.nChannels); W.Byte (nBytes); W.Byte (8*nBytes); W.Byte (Alt.nRates);

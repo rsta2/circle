@@ -30,14 +30,15 @@
 class CUSBAudioGadgetFunction
 {
 public:
-	static const unsigned MaxAlternates = 5;
+	static const unsigned MaxAlternates = 6;
 	static const unsigned MaxRates = 16;
 	static const unsigned MaxChannels = 8;
 	static const unsigned MaxPacketSize = 1023;
-	static const unsigned MaxDescriptorSize = 512;
+	static const unsigned MaxDescriptorSize = 56 + MaxChannels
+						  + MaxAlternates * (40 + 3*MaxRates);
 	static const unsigned QueuePackets = 8;
 
-	enum TFormat { PCM8, PCM16, PCM24, PCM32, Float32 };
+	enum TFormat { PCM8, PCM16, PCM24, PCM32, Float32, U8 };
 
 	struct TAlternate
 	{

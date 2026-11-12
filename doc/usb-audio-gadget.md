@@ -27,10 +27,11 @@ USB frame. There is no explicit feedback endpoint.
 Construct a `TConfiguration` and a sink before the gadget. The configuration is
 copied and must remain unchanged for the device lifetime. Check `Initialize()`.
 
-Formats are signed PCM8, PCM16, packed PCM24, PCM32, and IEEE float32, all
-little-endian, interleaved. PCM8 here is signed PCM (format tag 1), not the
-unsigned PCM8 format tag. Float32 uses format tag 3. One through eight channels,
-up to five distinct formats and up to sixteen sorted, unique rates per format
+Formats are interleaved U8, signed PCM8/16/24/32 and IEEE float32.
+Multibyte samples are little-endian. U8 uses the UAC1 PCM8 tag (2) with
+silence at 0x80. Signed formats use the PCM tag (1), float32 uses tag 3.
+One through eight channels,
+up to six distinct formats and up to sixteen sorted, unique rates per format
 are supported. All alternates share the channel cluster. A zero channel map
 means unspecified channels. Invalid identifiers, duplicate formats/rates and
 profiles exceeding the 1023-byte full-speed packet limit are rejected.
@@ -118,15 +119,15 @@ function. The caller must prevent endpoint/interface collisions with MIDI/CDC.
 
 Host tests compile the production function, adaptive buffer and controller
 sources with narrow platform/MMIO substitutes, warnings-as-errors and address/
-undefined-behavior sanitizers. They cover 320 format/channel/rate profiles,
+undefined-behavior sanitizers. They cover 384 format/channel/rate profiles,
 100,000 deterministic malformed-control/lifecycle interleavings, bounded queues,
 clock-drift simulations, EP0 request/status ordering and packet termination,
 isochronous parity/cancellation/rearm, and the existing MIDI/suspend regressions.
 The PWM sample cross-builds and links for AArch32 RASPPI=3.
 
 The [QEMU harness](../test/usb-audio-qemu/README.md) boots real Circle ARM
-code and tests the production function and adaptive buffer with 15,000 simulated
-USB packets across five formats and three input rates. It checks rendered audio
+code and tests the production function and adaptive buffer with 18,000 simulated
+USB packets across six formats and three input rates. It checks rendered audio
 numerically and exports a WAV preview, with optional playback on macOS. QEMU
 does not emulate the Raspberry Pi USB gadget controller or PWM audio, so this
 is software-path validation, not enumeration, DMA or real-time validation.

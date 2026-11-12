@@ -5,7 +5,7 @@ The test builds the actual function and buffer sources using a host C++ compiler
 ASan/UBSan and warnings-as-errors. Platform stubs model single-core critical
 sections and reject application callbacks invoked under the function lock.
 
-Coverage includes descriptor lengths and topology across 320 profiles, rejected
+Coverage includes descriptor lengths and topology across 384 profiles, rejected
 configurations, buffer boundaries, exact control recipient/selector/length
 validation, deferred transitions, configure failure, reset during callbacks,
 suspend/resume, alternate zero, queue overflow, invalid packet lengths, and

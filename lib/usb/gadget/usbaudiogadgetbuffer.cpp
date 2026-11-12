@@ -101,6 +101,10 @@ s32 CUSBAudioGadgetBuffer::DecodeSample (const u8 *p, TFunction::TFormat Format)
 	{
 		return 0;
 	}
+	if (Format == TFunction::U8)
+	{
+		return ((s32) p[0]-128) * 16777216;
+	}
 	if (Format == TFunction::PCM8)
 	{
 		return (p[0] >= 128 ? (s32) p[0]-256 : (s32) p[0]) * 16777216;

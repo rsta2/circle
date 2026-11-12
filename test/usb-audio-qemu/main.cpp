@@ -51,9 +51,9 @@ int main (void)
 	Config.nOutputTerminal = 3;
 	Config.nChannels = 2;
 	Config.wChannelConfig = 3;
-	Config.nAlternates = 5;
+	Config.nAlternates = F::MaxAlternates;
 	const unsigned Rates[] = {32000, 44100, 48000};
-	for (unsigned i = 0; i < 5; i++)
+	for (unsigned i = 0; i < Config.nAlternates; i++)
 	{
 		Config.Alternates[i].Format = (F::TFormat) i;
 		Config.Alternates[i].nRates = 3;
@@ -77,7 +77,7 @@ int main (void)
 		u32 PacketStorage[97];
 		u8 *Packet = (u8 *) PacketStorage+1; // Exercise unaligned USB data, including PCM32.
 		s32 Samples[96];
-		for (unsigned i = 0; i < 5; i++)
+		for (unsigned i = 0; i < Config.nAlternates; i++)
 		{
 			for (unsigned j = 0; j < 3; j++)
 			{
@@ -124,9 +124,9 @@ int main (void)
 	Check (Buffer.GetBufferedFrames () == 0);
 	F::TStatistics Statistics;
 	Function.GetStatistics (&Statistics);
-	Check (Statistics.nPackets == 15000 && !Statistics.nMalformed
+	Check (Statistics.nPackets == 18000 && !Statistics.nMalformed
 	       && !Statistics.nDropped && !Statistics.nFailures);
-	Message ("PASS 15000 packets; no drops, malformed packets or failed transitions\n");
+	Message ("PASS 18000 packets; no drops, malformed packets or failed transitions\n");
 	Message ("PASS mute, suspend/resume and alternate zero\n");
 	SemihostingExit (0);
 	return EXIT_HALT;
