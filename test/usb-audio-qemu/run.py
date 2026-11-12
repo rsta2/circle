@@ -27,7 +27,7 @@ for program in ('arm-none-eabi-g++', 'qemu-system-arm', 'make'):
         raise SystemExit('Missing tool: ' + program)
 
 with (p/'input.bin').open('wb') as f:
-    for fmt in range(5):
+    for fmt in range(6):
         for rate in (32000, 44100, 48000):
             for i in range(rate):
                 env = min(1, i/(rate*.03), (rate-1-i)/(rate*.03))
@@ -35,6 +35,8 @@ with (p/'input.bin').open('wb') as f:
                     v = .08*env*math.sin(2*math.pi*hz*i/rate)
                     if fmt == 4:
                         f.write(struct.pack('<f', v))
+                    elif fmt == 5:
+                        f.write(bytes([128 + round(v * 127)]))
                     else:
                         size = fmt+1
                         q = round(v*((1 << (size*8-1))-1))
@@ -68,15 +70,15 @@ with tempfile.TemporaryDirectory(prefix='circle-uac1-qemu-') as temp:
         subprocess.run(cmd, cwd=p, stdout=log, stderr=subprocess.STDOUT,
                        timeout=60, check=True)
     log = (p/'qemu.log').read_text()
-    if 'PASS 15000 packets' not in log or 'FAIL' in log:
+    if 'PASS 18000 packets' not in log or 'FAIL' in log:
         raise SystemExit('QEMU guest did not complete its checks: ' + log)
     print(log)
 
 a=array.array('i');a.frombytes((p/'rendered.s32').read_bytes())
 if sys.byteorder!='little':a.byteswap()
-assert len(a)==15*48000*2
+assert len(a)==18*48000*2
 report=[]
-for fmt in range(5):
+for fmt in range(6):
  for ri,rate in enumerate((32000,44100,48000)):
   case=fmt*3+ri
   channels=[]
@@ -92,9 +94,9 @@ for fmt in range(5):
    assert abs(freq-hz)<1,(fmt,rate,ch,freq)
    assert sep>35,(fmt,rate,ch,sep)
    channels.append(dict(frequency_hz=freq,rms=rms,peak=peak,other_tone_rejection_db=sep))
-  report.append(dict(format=['PCM8','PCM16','PCM24','PCM32','Float32'][fmt],rate=rate,channels=channels))
+  report.append(dict(format=['PCM8','PCM16','PCM24','PCM32','Float32','U8'][fmt],rate=rate,channels=channels))
 preview=array.array('h')
-for fmt in range(5):
+for fmt in range(6):
  case=fmt*3+2
  for mode in (0,1,2):
   count=12000
@@ -108,8 +110,8 @@ if sys.byteorder!='little':preview.byteswap()
 with wave.open(str(p/'qemu-uac1-preview.wav'),'wb') as w:
  w.setparams((2,2,48000,0,'NONE','not compressed'));w.writeframes(preview.tobytes())
 (p/'analysis.json').write_text(json.dumps(report,indent=2)+'\n')
-print('PASS 15 stereo cases: RMS, peak, 440/660 Hz pitch and >35 dB channel separation')
-print('Preview: 4.25 seconds, five formats; each has left, right, then both, with faded edges.')
+print('PASS 18 stereo cases: RMS, peak, 440/660 Hz pitch and >35 dB channel separation')
+print('Preview: 5.1 seconds, six formats; each has left, right, then both, with faded edges.')
 
 metadata = {
     'scope': 'Circle ARM software path; simulated USB packets; semihosted output',

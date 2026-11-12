@@ -21,8 +21,8 @@ python3 test/usb-audio-qemu/run.py --output /tmp/circle-uac1-audio-results
 
 The output contains the ARM image, build/guest logs, input packets, signed 32-bit
 rendered samples, numerical analysis, source hashes and a stereo WAV preview.
-The test covers five formats (signed PCM8/16/24/32 and float32) at 32/44.1/48 kHz,
-15,000 deliberately unaligned packets, transitions, mute, suspend/resume and
+The test covers six formats (signed PCM8/16/24/32, float32 and unsigned U8) at 32/44.1/48 kHz,
+18,000 deliberately unaligned packets, transitions, mute, suspend/resume and
 alternate zero. It checks
 post-prefill continuity, counters, output RMS/peak, 440/660 Hz pitch within 1 Hz,
 and more than 35 dB separation between the channel test tones.
@@ -31,7 +31,7 @@ For a short audible demonstration on macOS, add `--play`. This compiles the
 optional CoreAudio player and selects `BuiltInSpeakerDevice` explicitly. It does
 not change the system's default audio device, sample rate or speaker volume.
 The queue volume is 50%, with source tones peaking at 8% and faded boundaries.
-The 4.25-second preview plays left, right, then both for each of the five formats.
+The 5.1-second preview plays left, right, then both for each of the six formats.
 Audio service access may require running outside an application sandbox.
 
 Semihosting gives the emulated guest access to host files. Run only this trusted

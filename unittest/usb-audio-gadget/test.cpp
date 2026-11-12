@@ -61,8 +61,8 @@ F::TConfiguration Configuration (unsigned channels = 2)
 	F::TConfiguration c {};
 	c.nControlInterface = 4; c.nStreamingInterface = 9; c.nEndpoint = 5;
 	c.nInputTerminal = 7; c.nFeatureUnit = 8; c.nOutputTerminal = 10;
-	c.nChannels = channels; c.nAlternates = 5;
-	for (unsigned i = 0; i < 5; i++)
+	c.nChannels = channels; c.nAlternates = F::MaxAlternates;
+	for (unsigned i = 0; i < c.nAlternates; i++)
 	{
 		c.Alternates[i].Format = (F::TFormat) i;
 		c.Alternates[i].nRates = 3;
@@ -81,7 +81,7 @@ int Request (F &f, unsigned type, unsigned req, unsigned value,
 void Descriptors ()
 {
 	for (unsigned channels = 1; channels <= 8; channels++)
-	for (unsigned fmt = 0; fmt < 5; fmt++)
+	for (unsigned fmt = 0; fmt < F::MaxAlternates; fmt++)
 	for (unsigned rate : {8000u, 16000u, 24000u, 32000u, 44100u, 48000u, 96000u, 192000u})
 	{
 		auto c = Configuration (channels);
@@ -116,7 +116,7 @@ void Descriptors ()
 			assert (pFeature->GetControlStatus (ch, CUSBAudioFeatureUnit::MuteControl) == Expected);
 			assert (pFeature->GetControlStatus (ch, CUSBAudioFeatureUnit::VolumeControl) == Expected);
 		}
-		unsigned interface = 255, alt = 0, eps = 0, types = 0, controls = 0;
+		unsigned interface = 255, alt = 0, eps = 0, tags = 0, types = 0, controls = 0;
 		for (unsigned pos = 0; pos < size; pos += d[pos])
 		{
 			unsigned n = d[pos]; assert (n >= 2 && pos+n <= size);
@@ -125,6 +125,12 @@ void Descriptors ()
 			{
 				unsigned end = pos + d[pos+5] + (unsigned (d[pos+6])<<8);
 				assert (d[end] == 9 && d[end+1] == 4 && d[end+2] == 9); ++controls;
+			}
+			if (interface == 9 && d[pos+1] == 0x24 && d[pos+2] == 1)
+			{
+				unsigned tag = d[pos+5] | (unsigned) d[pos+6]<<8;
+				assert (tag == (fmt == F::U8 ? 2u : fmt == F::Float32 ? 3u : 1u));
+				++tags;
 			}
 			if (interface == 9 && d[pos+1] == 0x24 && d[pos+2] == 2)
 			{
@@ -138,7 +144,7 @@ void Descriptors ()
 				assert ((d[pos+4] | unsigned(d[pos+5])<<8) == packet); ++eps;
 			}
 		}
-		assert (eps == 1 && types == 1 && controls == 1);
+		assert (eps == 1 && tags == 1 && types == 1 && controls == 1);
 		for (unsigned cap = 0; cap < size; cap++)
 		{
 			memset (d, 0xA5, sizeof d); assert (!f.GetDescriptor (d, cap));
@@ -147,6 +153,15 @@ void Descriptors ()
 	}
 	CSink sink;
 	auto c = Configuration (); F all (c, &sink); u8 d[512]; assert (all.GetDescriptor (d, 512));
+	auto largest = Configuration (F::MaxChannels);
+	for (auto &alternate : largest.Alternates)
+	{
+		alternate.nRates = F::MaxRates;
+		for (unsigned i = 0; i < F::MaxRates; i++) alternate.Rates[i] = 8000 + i*1000;
+	}
+	F maximum (largest, &sink);
+	u8 full[F::MaxDescriptorSize];
+	assert (maximum.IsValid () && maximum.GetDescriptor (full, sizeof full) == sizeof full);
 	c.Alternates[1].Format = F::PCM8; assert (!F (c, &sink).IsValid ());
 	c = Configuration (); c.Alternates[0].Rates[1] = 24000; assert (!F (c, &sink).IsValid ());
 	c = Configuration (); c.nEndpoint = 0x85; assert (!F (c, &sink).IsValid ());
@@ -154,7 +169,7 @@ void Descriptors ()
 	c = Configuration (); c.wChannelConfig = 7; assert (!F (c, &sink).IsValid ());
 	assert (!F::GetPacketSize (~0u, 2, F::PCM16));
 	assert (!F::GetPacketSize (48000, ~0u, F::PCM16));
-	puts ("PASS descriptors: 320 channel/format/rate profiles; bounds and production host topology parser");
+	puts ("PASS descriptors: 384 channel/format/rate profiles; bounds and production host topology parser");
 }
 void ControlsAndLifecycle ()
 {
@@ -163,7 +178,7 @@ void ControlsAndLifecycle ()
 	assert (Request (f, 0xA2, 0x81, 0x100, 5, 3, data) == -1);
 	f.SetConfigured (true); assert (f.GetInterface (9) == 0);
 	assert (f.SetInterface (4, 0) && !f.SetInterface (4, 1));
-	assert (!f.SetInterface (8, 1) && !f.SetInterface (9, 6));
+	assert (!f.SetInterface (8, 1) && !f.SetInterface (9, F::MaxAlternates+1));
 	assert (f.SetInterface (9, 2)); f.Process ();
 	assert (sink.active && sink.stream.Format == F::PCM16 && sink.stream.nSampleRate == 24000);
 	data[0] = 0x44; data[1] = 0xAC; data[2] = 0;
@@ -246,6 +261,7 @@ void Buffer ()
 	for (unsigned n = 0; n < 256; n++)
 	{
 		bytes[0] = n;
+		assert (B::DecodeSample (bytes, F::U8) == (int(n)-128)*16777216);
 		assert (B::DecodeSample (bytes, F::PCM8) == (int(n)-((n&128)?256:0))*16777216);
 	}
 	for (int drift : {-800, 0, 800})

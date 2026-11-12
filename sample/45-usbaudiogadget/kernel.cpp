@@ -34,7 +34,7 @@ static CUSBAudioGadgetFunction::TConfiguration GetConfiguration (void)
 	Config.nChannels = 2;
 	Config.wChannelConfig = 3;
 	// Front left/right
-	Config.nAlternates = 5;
+	Config.nAlternates = CUSBAudioGadgetFunction::MaxAlternates;
 	for (unsigned i = 0; i < Config.nAlternates; i++)
 	{
 		Config.Alternates[i].Format = (CUSBAudioGadgetFunction::TFormat) i;

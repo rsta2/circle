@@ -2,7 +2,7 @@ USB Audio Class 1 playback
 ==========================
 
 This sample is a standalone Circle audio device with stereo PWM output.
-It advertises signed 8/16/24/32-bit PCM and 32-bit float at 32, 44.1 and 48 kHz.
+It advertises unsigned 8-bit PCM (ALSA U8), signed 8/16/24/32-bit PCM and 32-bit float at 32, 44.1 and 48 kHz.
 The USB device connector must be available to the DesignWare gadget controller;
 use a supported gadget-capable board and the Circle gadget configuration.
 The output uses the board's normal PWM sound routing (analog jack where present).
