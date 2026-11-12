@@ -282,7 +282,13 @@ boolean CUSBDevice::Initialize (void)
 		ucConfigIndex = DESCRIPTOR_INDEX_DEFAULT + 1;
 	}
 #endif
-
+#if defined (USE_USB_ROBOPEAK)
+	if (   (   m_pDeviceDesc->idVendor  == 0xfccf	// RoboPeak
+	        && m_pDeviceDesc->idProduct == 0xa001))	// RP-USBDISP
+	{
+		ucConfigIndex = DESCRIPTOR_INDEX_DEFAULT + 1;
+	}
+#endif
 	if (m_pHost->GetDescriptor (m_pEndpoint0,
 				    DESCRIPTOR_CONFIGURATION, ucConfigIndex,
 				    m_pConfigDesc, sizeof *m_pConfigDesc)
