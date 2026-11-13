@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/gadget/usbaudiogadgetbuffer.h>
+#include <circle/atomic.h>
 #include <circle/util.h>
 
 using TFunction = CUSBAudioGadgetFunction;
@@ -90,9 +91,7 @@ void CUSBAudioGadgetBuffer::SetControls (boolean bMute, int nVolume)
 	{
 		nGain = (unsigned) ((u64) nGain * 58409 / 65536);
 	}
-	m_Lock.Acquire ();
-	m_nGain = bMute ? 0 : nGain;
-	m_Lock.Release ();
+	AtomicSet (&m_nGain, bMute ? 0 : nGain);
 }
 
 s32 CUSBAudioGadgetBuffer::DecodeSample (const u8 *p, TFunction::TFormat Format)
@@ -215,6 +214,7 @@ unsigned CUSBAudioGadgetBuffer::ReadFrames (s32 *pBuffer, unsigned nFrames)
 		return 0;
 	}
 	m_Lock.Acquire ();
+	const int nGain = AtomicGet (&m_nGain);
 	unsigned nRendered = 0;
 	if (m_bConfigured && !m_bStarted && m_nCount >= m_nCapacity/2)
 	{
@@ -261,7 +261,7 @@ unsigned CUSBAudioGadgetBuffer::ReadFrames (s32 *pBuffer, unsigned nFrames)
 				s64 a = m_pBuffer[m_nTail*m_nChannels+j];
 				s64 b = m_pBuffer[nNext*m_nChannels+j];
 				s64 nSample = a + (b-a)*nFraction/65536;
-				*pBuffer++ = (s32) (nSample*m_nGain/65536);
+				*pBuffer++ = (s32) (nSample*nGain/65536);
 			}
 			++nRendered;
 			m_nPhase += nStep;
