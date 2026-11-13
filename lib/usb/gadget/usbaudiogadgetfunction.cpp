@@ -27,7 +27,7 @@ namespace
 const int VolumeMinimum = -96 * 256;
 const int VolumeResolution = 256;
 
-// The descriptors are assembled bytewise: no packed/unaligned host accesses.
+// Emit multibyte USB descriptor fields in little-endian order.
 class CDescriptorWriter
 {
 public:
