@@ -367,6 +367,13 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate,
 	unsigned nFractDiv = nFractDiv2 / 2 + nFractDiv2 % 2;
 	assert (nFractDiv <= 0x3F);
 
+	// A previous kernel may have left a UART interrupt pending on chain boot.
+	// Quiesce this device before connecting the interrupt controller.
+	PeripheralEntry ();
+	write32 (ARM_UART_IMSC, 0);
+	write32 (ARM_UART_ICR,  0x7FF);
+	PeripheralExit ();
+
 	if (m_pInterruptSystem != 0)		// do we want to use interrupts?
 	{
 #if RASPPI <= 4
@@ -426,8 +433,6 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate,
 
 	PeripheralEntry ();
 
-	write32 (ARM_UART_IMSC, 0);
-	write32 (ARM_UART_ICR,  0x7FF);
 	write32 (ARM_UART_IBRD, nIntDiv);
 	write32 (ARM_UART_FBRD, nFractDiv);
 
@@ -482,11 +487,11 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate,
 		write32 (ARM_UART_IFLS,   IFLS_IFSEL_1_4 << IFLS_TXIFSEL_SHIFT
 					| IFLS_IFSEL_1_4 << IFLS_RXIFSEL_SHIFT);
 		write32 (ARM_UART_LCRH, nLCRH);
-		write32 (ARM_UART_IMSC, INT_RX | INT_RT | INT_OE);
 
 		// add device to interrupt handling
 		s_nInterruptDeviceMask |= 1 << m_nDevice;
 		DataSyncBarrier ();
+		write32 (ARM_UART_IMSC, INT_RX | INT_RT | INT_OE);
 	}
 	else
 	{
