@@ -64,6 +64,9 @@ public:
 
 	~CDMASoundBuffers (void);
 
+	/// \brief Prepare an idle DMA channel and its buffers without starting transfers
+	boolean Prepare (void);
+
 	/// \brief Start DMA operation
 	/// \param pHandler Callback handler, which gets called, when one chunk was completed
 	/// \param pParam User parameter, which will be handed over to the handler
