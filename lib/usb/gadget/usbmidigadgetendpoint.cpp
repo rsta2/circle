@@ -35,7 +35,8 @@ CUSBMIDIGadgetEndpoint::CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pD
 	m_bInActive (FALSE),
 	m_pQueue (nullptr),
 	m_nInPtr (0),
-	m_nOutPtr (0)
+	m_nOutPtr (0),
+	m_nRejectedSends (0)
 {
 	if (GetDirection () == DirectionIn)
 	{
@@ -155,6 +156,7 @@ void CUSBMIDIGadgetEndpoint::OnSuspend (void)
 		m_bInActive = FALSE;
 		m_nInPtr = 0;
 		m_nOutPtr = 0;
+		m_nRejectedSends = 0;
 	}
 	m_SpinLock.Release ();
 }
@@ -176,37 +178,42 @@ boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLe
 	unsigned nBytesFree = GetQueueBytesFree ();
 	if (nLength > nBytesFree)
 	{
+		boolean bFirst = m_nRejectedSends == 0;
+		if (m_nRejectedSends != ~0U)
+		{
+			++m_nRejectedSends;
+		}
 		m_SpinLock.Release ();
-
-		LOGWARN ("Trying to send %u bytes (max %u)", nLength, nBytesFree);
-
+		if (bFirst)
+		{
+			LOGWARN ("MIDI IN queue: cannot enqueue %u bytes (%u free)", nLength, nBytesFree);
+		}
 		return FALSE;
 	}
 
+	unsigned nRejected = m_nRejectedSends;
+	m_nRejectedSends = 0;
 	Enqueue (pData, nLength);
 
-	if (m_bInActive)
+	if (!m_bInActive)
 	{
-		m_SpinLock.Release ();
+		m_bInActive = TRUE;
+		unsigned nBytesAvail = GetQueueBytesAvail ();
+		if (nBytesAvail > MaxInMessageSize)
+		{
+			nBytesAvail = MaxInMessageSize;
+		}
+		Dequeue (m_InBuffer, nBytesAvail);
 
-		return TRUE;
+		// Publish the transfer before releasing the lock so reset cannot retire it first.
+		BeginTransfer (TransferDataIn, m_InBuffer, nBytesAvail);
 	}
-
-	m_bInActive = TRUE;
-
-	unsigned nBytesAvail = GetQueueBytesAvail ();
-	if (nBytesAvail > MaxInMessageSize)
-	{
-		nBytesAvail = MaxInMessageSize;
-	}
-
-	Dequeue (m_InBuffer, nBytesAvail);
-
-	// Publish the transfer before releasing the lock. Otherwise a suspend/reset
-	// IRQ can retire the queue here, followed by this stale transfer starting.
-	BeginTransfer (TransferDataIn, m_InBuffer, nBytesAvail);
-
 	m_SpinLock.Release ();
+
+	if (nRejected)
+	{
+		LOGNOTE ("MIDI IN queue accepting events again after %u rejected sends", nRejected);
+	}
 
 	return TRUE;
 }
