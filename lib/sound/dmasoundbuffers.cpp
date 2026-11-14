@@ -333,6 +333,25 @@ void CDMASoundBuffers::InterruptHandler (void)
 	switch (m_State)
 	{
 	case StateRunning:
+	{
+		// Completion interrupts can coalesce. Only touch the buffer which
+		// the DMA controller has already left.
+		PeripheralEntry ();
+		u32 nActive = read32 (ARM_DMACHAN_CONBLK_AD (m_nDMAChannel));
+		PeripheralExit ();
+		if (nActive == BUS_ADDRESS ((uintptr) m_pControlBlock[0]))
+		{
+			m_nNextBuffer = 1;
+		}
+		else if (nActive == BUS_ADDRESS ((uintptr) m_pControlBlock[1]))
+		{
+			m_nNextBuffer = 0;
+		}
+		else
+		{
+			break;
+		}
+	}
 		if (m_bDirectionOut)
 		{
 			if (GetNextChunk (FALSE))
