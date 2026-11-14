@@ -20,10 +20,13 @@ struct Fixture
 	TUSBEndpointDescriptor Descriptor;
 	CUSBMIDIDevice Interface;
 	CUSBMIDIGadgetEndpoint EP;
-	Fixture (bool in = true)
+	Fixture (bool in = true, bool attach = true)
 	    : Descriptor{static_cast<u8> (in ? 0x81 : 1)}, EP (&Descriptor, &Gadget)
 	{
-		EP.AttachInterface (&Interface);
+		if (attach)
+		{
+			EP.AttachInterface (&Interface);
+		}
 	}
 	bool Send ()
 	{
@@ -158,6 +161,28 @@ int main ()
 		     Check (f.EP.Packets.size () == 2);
 		     Check (f.EP.Packets[0] == std::vector<u8> (Event, Event + 4));
 		     Check (f.EP.Packets[1] == std::vector<u8> (next, next + 4));
+	     });
+	Run ("OUT activation before attachment waits for receiver",
+	     []
+	     {
+		     Fixture f (false, false);
+		     f.EP.OnActivate ();
+		     Check (f.EP.Starts == 0);
+		     f.EP.AttachInterface (&f.Interface);
+		     Check (f.EP.Starts == 1);
+		     f.EP.OnTransferComplete (false, 4);
+		     Check (f.Interface.Received == 1 && f.EP.Starts == 2);
+	     });
+	Run ("reset before attachment postpones OUT until reconfiguration",
+	     []
+	     {
+		     Fixture f (false, false);
+		     f.EP.OnActivate ();
+		     f.EP.OnUSBReset ();
+		     f.EP.AttachInterface (&f.Interface);
+		     Check (f.EP.Starts == 0);
+		     f.EP.OnActivate ();
+		     Check (f.EP.Starts == 1);
 	     });
 	Run ("late OUT completion stays stopped",
 	     []
