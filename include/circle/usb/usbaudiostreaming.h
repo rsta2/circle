@@ -2,7 +2,7 @@
 // usbaudiostreaming.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ public:
 	{
 		boolean IsOutput;		///< Direction output (or input)
 		unsigned NumChannels;		///< Number of audio channels
+		unsigned SubframeSize;		///< Number of bytes per sub-frame
 
 		unsigned SampleRateRanges;	///< Number of valid entries in SampleRateRange[]
 		struct
