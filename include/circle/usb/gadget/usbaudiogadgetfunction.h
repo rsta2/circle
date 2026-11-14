@@ -68,6 +68,7 @@ public:
 		unsigned nSampleRate;
 	};
 
+	/// Each counter is sampled independently.
 	struct TStatistics
 	{
 		unsigned nPackets;
@@ -147,7 +148,11 @@ private:
 	unsigned m_nHead;
 	unsigned m_nTail;
 	unsigned m_nCount;
-	TStatistics m_Statistics;
+	int m_nPackets;
+	int m_nMalformed;
+	int m_nDropped;
+	int m_nTransitions;
+	int m_nFailures;
 };
 
 #endif

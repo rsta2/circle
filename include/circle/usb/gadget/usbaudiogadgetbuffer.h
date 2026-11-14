@@ -64,7 +64,7 @@ private:
 	u64 m_nPhase;
 	u64 m_nStep;
 	int m_nCorrectionPPM;
-	unsigned m_nGain;
+	int m_nGain;
 };
 
 #endif

@@ -19,6 +19,7 @@
 //
 #include <circle/usb/gadget/usbaudiogadgetfunction.h>
 #include <circle/usb/usbaudio.h>
+#include <circle/atomic.h>
 #include <circle/util.h>
 
 namespace
@@ -26,7 +27,7 @@ namespace
 const int VolumeMinimum = -96 * 256;
 const int VolumeResolution = 256;
 
-// The descriptors are assembled bytewise: no packed/unaligned host accesses.
+// Emit multibyte USB descriptor fields in little-endian order.
 class CDescriptorWriter
 {
 public:
@@ -70,7 +71,7 @@ CUSBAudioGadgetFunction::CUSBAudioGadgetFunction (const TConfiguration &Config, 
 	m_nAlternate (0), m_nRate (0), m_nRevision (1), m_nAppliedRevision (0),
 	m_bMute (FALSE), m_nVolume (0), m_bControlsPending (TRUE),
 	m_Stream {PCM16, 0, 0}, m_nHead (0), m_nTail (0), m_nCount (0),
-	m_Statistics {}
+	m_nPackets (0), m_nMalformed (0), m_nDropped (0), m_nTransitions (0), m_nFailures (0)
 {
 	if (!pSink || Config.nControlInterface > 255 || Config.nStreamingInterface > 255
 	    || Config.nControlInterface == Config.nStreamingInterface
@@ -469,24 +470,24 @@ void CUSBAudioGadgetFunction::Receive (const void *pData, unsigned nLength)
 	{
 		if (nLength)
 		{
-			++m_Statistics.nDropped;
+			AtomicIncrement (&m_nDropped);
 		}
 	}
 	else if (!pData || nLength > GetPacketSize (m_Stream.nSampleRate,
 						 m_Stream.nChannels, m_Stream.Format)
 		 || nLength % (m_Stream.nChannels * GetSubframeSize (m_Stream.Format)))
 	{
-		++m_Statistics.nMalformed;
+		AtomicIncrement (&m_nMalformed);
 	}
 	else
 	{
-		++m_Statistics.nPackets;
+		AtomicIncrement (&m_nPackets);
 		if (m_nCount == QueuePackets)
 		{
 			// Prefer bounded latency: discard oldest packet, never overwrite DMA.
 			m_nTail = (m_nTail+1) % QueuePackets;
 			--m_nCount;
-			++m_Statistics.nDropped;
+			AtomicIncrement (&m_nDropped);
 		}
 		TPacket &Packet = m_Queue[m_nHead];
 		Packet.nLength = nLength;
@@ -530,10 +531,10 @@ void CUSBAudioGadgetFunction::Process (void)
 			m_nAppliedRevision = nRevision;
 			m_Stream = Stream;
 			m_bReady = bOK && bActive;
-			++m_Statistics.nTransitions;
+			AtomicIncrement (&m_nTransitions);
 			if (!bOK)
 			{
-				++m_Statistics.nFailures;
+				AtomicIncrement (&m_nFailures);
 			}
 		}
 		m_Lock.Release ();
@@ -564,9 +565,7 @@ void CUSBAudioGadgetFunction::Process (void)
 		if (!m_pSink->Write (Packet.Data,
 			Packet.nLength / (Stream.nChannels * GetSubframeSize (Stream.Format)), Stream))
 		{
-			m_Lock.Acquire ();
-			++m_Statistics.nDropped;
-			m_Lock.Release ();
+			AtomicIncrement (&m_nDropped);
 		}
 	}
 }
@@ -577,7 +576,9 @@ void CUSBAudioGadgetFunction::GetStatistics (TStatistics *pStatistics)
 	{
 		return;
 	}
-	m_Lock.Acquire ();
-	*pStatistics = m_Statistics;
-	m_Lock.Release ();
+	pStatistics->nPackets = (unsigned) AtomicGet (&m_nPackets);
+	pStatistics->nMalformed = (unsigned) AtomicGet (&m_nMalformed);
+	pStatistics->nDropped = (unsigned) AtomicGet (&m_nDropped);
+	pStatistics->nTransitions = (unsigned) AtomicGet (&m_nTransitions);
+	pStatistics->nFailures = (unsigned) AtomicGet (&m_nFailures);
 }
