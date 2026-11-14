@@ -65,6 +65,7 @@ private:
 	u8 *m_pQueue;
 	volatile unsigned m_nInPtr;
 	volatile unsigned m_nOutPtr;
+	unsigned m_nRejectedSends;
 
 	static const size_t MaxOutMessageSize = 512;
 	static const size_t MaxInMessageSize = 512;

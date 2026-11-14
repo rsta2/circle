@@ -14,6 +14,18 @@ static void Check (bool value)
 		throw std::runtime_error ("unexpected endpoint state or packet data");
 	}
 }
+static unsigned Warnings, Recoveries, LastRejected;
+void TestMidiWarning (const char *, unsigned, unsigned)
+{
+	Check (LockDepth == 0);
+	++Warnings;
+}
+void TestMidiRecovery (const char *, unsigned nRejected)
+{
+	Check (LockDepth == 0);
+	++Recoveries;
+	LastRejected = nRejected;
+}
 struct Fixture
 {
 	CUSBMIDIGadget Gadget;
@@ -203,6 +215,33 @@ int main ()
 		     f.Complete ();
 		     Check (f.EP.Starts == 1);
 		     Check (!f.EP.Armed);
+	     });
+	Run ("one warning per blocked episode, recovery count and reset",
+	     []
+	     {
+		     Fixture f;
+		     f.EP.OnActivate ();
+		     std::vector<u8> full (8192);
+		     for (unsigned episode = 0; episode < 2; ++episode)
+		     {
+			     Check (f.Send ());
+			     Check (f.Interface.SendEvents (full.data (), full.size ()));
+			     for (unsigned i = 0; i < 1000; ++i)
+			     {
+				     Check (!f.Send ());
+			     }
+			     Check (Warnings == episode + 1);
+			     if (episode == 0)
+			     {
+				     f.Complete ();
+				     Check (f.Send ());
+				     Check (Recoveries == 1 && LastRejected == 1000);
+			     }
+			     f.EP.OnUSBReset ();
+			     f.EP.OnActivate ();
+		     }
+		     Check (f.Send ());
+		     Check (Recoveries == 1);
 	     });
 	Run ("queue capacity rejection and ordered wraparound",
 	     []
