@@ -86,7 +86,7 @@ CDMASoundBuffers::~CDMASoundBuffers (void)
 	delete [] m_pDMABuffer[1];
 }
 
-boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)
+boolean CDMASoundBuffers::Prepare (void)
 {
 	if (m_State == StateCreated)
 	{
@@ -143,7 +143,15 @@ boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)
 		m_State = StateIdle;
 	}
 
-	assert (m_State == StateIdle);
+	return m_State == StateIdle;
+}
+
+boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)
+{
+	if (!Prepare ())
+	{
+		return FALSE;
+	}
 
 	assert (pHandler != 0);
 	m_pHandler = pHandler;

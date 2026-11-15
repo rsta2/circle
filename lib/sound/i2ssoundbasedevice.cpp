@@ -178,6 +178,15 @@ boolean CI2SSoundBaseDevice::Start (void)
 		m_bControllerInited = TRUE;
 	}
 
+	// Neither channel may start until both directions have their DMA resources.
+	if (   (m_DeviceMode != DeviceModeRXOnly && !m_TXBuffers.Prepare ())
+	    || (m_DeviceMode != DeviceModeTXOnly && !m_RXBuffers.Prepare ()))
+	{
+		m_bError = TRUE;
+
+		return FALSE;
+	}
+
 	// enable I2S DMA operation
 	PeripheralEntry ();
 
