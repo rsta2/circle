@@ -53,6 +53,7 @@ CUSBMIDIGadgetEndpoint::~CUSBMIDIGadgetEndpoint (void)
 
 void CUSBMIDIGadgetEndpoint::AttachInterface (CUSBMIDIDevice *pInterface)
 {
+	m_SpinLock.Acquire ();
 	assert (!m_pInterface);
 	m_pInterface = pInterface;
 	assert (m_pInterface);
@@ -61,6 +62,12 @@ void CUSBMIDIGadgetEndpoint::AttachInterface (CUSBMIDIDevice *pInterface)
 	{
 		m_pInterface->RegisterSendEventsHandler (SendEventsHandler, this);
 	}
+	else if (m_bConfigured)
+	{
+		// Configuration may precede interface creation in UpdatePlugAndPlay().
+		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
+	}
+	m_SpinLock.Release ();
 }
 
 void CUSBMIDIGadgetEndpoint::OnUSBReset (void)
@@ -73,7 +80,7 @@ void CUSBMIDIGadgetEndpoint::OnActivate (void)
 {
 	m_SpinLock.Acquire ();
 	m_bConfigured = TRUE;
-	if (GetDirection () == DirectionOut)
+	if (GetDirection () == DirectionOut && m_pInterface)
 	{
 		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
 	}
