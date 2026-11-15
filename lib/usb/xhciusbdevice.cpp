@@ -2,7 +2,7 @@
 // xhciusbdevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2019-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2019-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -148,8 +148,8 @@ boolean CXHCIUSBDevice::EnableHubFunction (void)
 	TXHCIInputContext *pInputContext = GetInputContextEnableHubFunction ();
 	assert (pInputContext != 0);
 
-	int nResult = m_pXHCIDevice->GetCommandManager ()->EvaluateContext (m_uchSlotID,
-									    pInputContext);
+	int nResult = m_pXHCIDevice->GetCommandManager ()->ConfigureEndpoint (m_uchSlotID,
+									      pInputContext, FALSE);
 
 	FreeInputContext ();
 
@@ -298,11 +298,13 @@ TXHCIInputContext *CXHCIUSBDevice::GetInputContextEnableHubFunction (void)
 
 	// set input control context
 	pInputContext->Control.AddContextFlags = 1;	// set A0
-	pInputContext->Control.DropContextFlags = 1;	// set D0
 
 	// set slot context
 	const TUSBHubInfo *pHubInfo = GetHubInfo ();
 	assert (pHubInfo != 0);
+
+	pInputContext->Device.Slot.USBDeviceAddress = 0;
+	pInputContext->Device.Slot.SlotState = 0;
 
 	pInputContext->Device.Slot.Hub = 1;
 	pInputContext->Device.Slot.NumberOfPorts = pHubInfo->NumberOfPorts;
