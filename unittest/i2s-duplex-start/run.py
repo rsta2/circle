@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the BCM I2S startup path with simulated DMA allocation and registers."""
+"""Exercise the BCM I2S and PWM startup paths with simulated DMA allocation and registers."""
 import os
 from pathlib import Path
 import subprocess
@@ -9,11 +9,18 @@ here = Path(__file__).resolve().parent
 lib = here.parents[1] / "lib/sound"
 dma = (lib / "dmasoundbuffers.cpp").read_text()
 i2s = (lib / "i2ssoundbasedevice.cpp").read_text()
+pwm = (lib / "pwmsoundbasedevice.cpp").read_text()
 # Include Prepare when present so the same regression can run on the parent commit.
 start = dma.find("boolean CDMASoundBuffers::Prepare (")
 if start == -1:
     start = dma.index("boolean CDMASoundBuffers::Start (")
-methods = dma[start:dma.index("void CDMASoundBuffers::Cancel (")]
+methods = dma[start:dma.index("void CDMASoundBuffers::ZeroBuffers")]
+methods += dma[dma.index("boolean CDMASoundBuffers::GetNextChunk ("):
+               dma.index("void CDMASoundBuffers::InterruptStub (")]
+methods += pwm[pwm.index("boolean CPWMSoundBaseDevice::Start ("):
+               pwm.index("void CPWMSoundBaseDevice::Flush")]
+methods += pwm[pwm.index("unsigned CPWMSoundBaseDevice::ChunkCompletedHandler ("):
+               pwm.index("unsigned CPWMSoundBaseDevice::CalculateRangeUsed (")]
 methods += i2s[i2s.index("boolean CI2SSoundBaseDevice::Start ("):
                i2s.index("void CI2SSoundBaseDevice::Cancel (")]
 with tempfile.TemporaryDirectory() as tmp:
