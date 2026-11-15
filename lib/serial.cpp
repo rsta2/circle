@@ -283,18 +283,20 @@ CSerialDevice::~CSerialDevice (void)
 
 	CDeviceNameService::Get ()->RemoveDevice ("ttyS", m_nDevice+1, FALSE);
 
-	// remove device from interrupt handling
-	s_nInterruptDeviceMask &= ~(1 << m_nDevice);
-	DataSyncBarrier ();
-
+	// Stop the source before removing this device from the shared dispatcher.
 	PeripheralEntry ();
 	write32 (ARM_UART_IMSC, 0);
 	write32 (ARM_UART_CR, 0);
 	PeripheralExit ();
+	DataSyncBarrier ();
+
+	boolean bUsedInterrupt = (s_nInterruptDeviceMask & (1U << m_nDevice)) != 0;
+	s_nInterruptDeviceMask &= ~(1U << m_nDevice);
+	DataSyncBarrier ();
 
 #if RASPPI <= 4
 	// disconnect interrupt, if this is the last device, which uses interrupts
-	if (   m_pInterruptSystem != 0
+	if (   bUsedInterrupt
 	    && --s_nInterruptUseCount == 0)
 	{
 		assert (s_pInterruptSystem != 0);
@@ -311,7 +313,7 @@ CSerialDevice::~CSerialDevice (void)
 		s_bUseFIQ = FALSE;
 	}
 #else
-	if (s_pInterruptSystem != 0)
+	if (bUsedInterrupt)
 	{
 		s_pInterruptSystem->DisconnectIRQ (s_IRQ[m_nDevice]);
 
@@ -367,36 +369,29 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate,
 	unsigned nFractDiv = nFractDiv2 / 2 + nFractDiv2 % 2;
 	assert (nFractDiv <= 0x3F);
 
-	// A previous kernel may have left a UART interrupt pending on chain boot.
-	// Quiesce this device before connecting the interrupt controller.
+	if (   m_pInterruptSystem != 0 && s_nInterruptUseCount != 0
+	    && (m_pInterruptSystem != s_pInterruptSystem || m_bUseFIQ != s_bUseFIQ))
+	{
+		s_pThis[m_nDevice] = 0;
+		m_bValid = FALSE;
+		return FALSE;
+	}
+
+	// Mask only this PL011. A chain loader may have left its TX source
+	// asserted before the new kernel has installed the dispatcher.
 	PeripheralEntry ();
 	write32 (ARM_UART_IMSC, 0);
 	write32 (ARM_UART_ICR,  0x7FF);
 	PeripheralExit ();
+	DataSyncBarrier ();
 
-	if (m_pInterruptSystem != 0)		// do we want to use interrupts?
+	if (m_pInterruptSystem != 0)
 	{
-#if RASPPI <= 4
-		if (s_nInterruptUseCount > 0)
+		if (s_nInterruptUseCount == 0)
 		{
-			// if there is already an interrupt enabled device,
-			// interrupt configuration must be the same
-			if (   m_pInterruptSystem != s_pInterruptSystem
-			    || m_bUseFIQ != s_bUseFIQ)
-			{
-				s_pThis[m_nDevice] = 0;
-				m_bValid = FALSE;
-
-				return FALSE;
-			}
-		}
-		else
-		{
-			// if we are the first interrupt enabled device,
-			// connect interrupt with our configuration
 			s_pInterruptSystem = m_pInterruptSystem;
+#if RASPPI <= 4
 			s_bUseFIQ = m_bUseFIQ;
-
 			if (!s_bUseFIQ)
 			{
 				s_pInterruptSystem->ConnectIRQ (ARM_IRQ_UART, InterruptStub, 0);
@@ -405,28 +400,12 @@ boolean CSerialDevice::Initialize (unsigned nBaudrate,
 			{
 				s_pInterruptSystem->ConnectFIQ (ARM_FIQ_UART, InterruptStub, 0);
 			}
+#endif
 		}
-#else
+#if RASPPI >= 5
 		assert (!m_bUseFIQ);
-
-		if (s_nInterruptUseCount > 0)
-		{
-			if (m_pInterruptSystem != s_pInterruptSystem)
-			{
-				s_pThis[m_nDevice] = 0;
-				m_bValid = FALSE;
-
-				return FALSE;
-			}
-		}
-		else
-		{
-			s_pInterruptSystem = m_pInterruptSystem;
-		}
-
 		s_pInterruptSystem->ConnectIRQ (s_IRQ[m_nDevice], InterruptStub, 0);
 #endif
-
 		assert (s_nInterruptUseCount < SERIAL_DEVICES);
 		s_nInterruptUseCount++;
 	}
