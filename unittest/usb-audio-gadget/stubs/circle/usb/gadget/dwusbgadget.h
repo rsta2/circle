@@ -48,7 +48,7 @@ public:
 class CDWUSBGadgetEndpoint
 {
 public:
- enum TTransferMode { TransferDataOut };
+ enum TTransferMode { TransferDataOut, TransferDataIn };
  bool active = false;
  unsigned arms = 0, cancels = 0;
  void *buffer = nullptr;
