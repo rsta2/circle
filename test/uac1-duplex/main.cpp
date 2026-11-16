@@ -12,7 +12,7 @@
 #include <circle/usb/gadget/usbaudiogadgetcapture.h>
 #include <circle/util.h>
 
-#include "../uac1-capture-adc/adc.h"
+#include "../uac1-gadget-simplex/adc.h"
 #include <circle/usb/gadget/usbaudiogadgetbuffer.h>
 #include <circle/usb/gadget/usbaudiogadget.h>
 
