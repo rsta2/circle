@@ -29,7 +29,7 @@ OBJS	= usbstringdescriptor.o dwusbgadget.o dwusbgadgetendpoint.o dwusbgadgetendp
 	  usbmidigadget.o usbmidigadgetendpoint.o \
 	  usbcdcgadget.o usbcdcgadgetendpoint.o \
 	  usbmsdgadget.o usbmsdgadgetendpoint.o \
-	  usbaudiogadgetfunction.o usbaudiogadgetbuffer.o usbaudiogadget.o
+	  usbaudiogadgetfunction.o usbaudiogadgetbuffer.o usbaudiogadget.o usbaudiogadgetcapture.o
 
 endif
 

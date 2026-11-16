@@ -16,6 +16,6 @@ with tempfile.TemporaryDirectory(prefix='circle-uac1-') as tmp:
                     str(root/'lib/usb/gadget/usbstringdescriptor.cpp'),
                     str(root/'lib/usb/usbaudiofunctopology.cpp'), str(root/'lib/usb/gadget/usbaudiogadgetfunction.cpp'),
                     str(root/'lib/usb/gadget/usbaudiogadgetbuffer.cpp'),
-                    str(root/'lib/usb/gadget/usbaudiogadget.cpp'), str(here/'wrapper.cpp'),
+                    str(root/'lib/usb/gadget/usbaudiogadget.cpp'), str(here/'wrapper.cpp'), str(here/'capture.cpp'),                    str(root/'lib/usb/gadget/usbaudiogadgetcapture.cpp'),
                     '-o', str(binary)], check=True)
     subprocess.run([str(binary)], check=True)
