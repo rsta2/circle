@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Uncomment to record an external I2S ADC instead of the built-in stereo tone.
+// #define CAPTURE_ADC
+
 #include <circle/startup.h>
 #include <circle/koptions.h>
 #include <circle/devicenameservice.h>
