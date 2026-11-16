@@ -345,6 +345,7 @@ void Buffer ()
 	}
 	puts ("PASS adaptive buffer: signed/float conversion, controls, rates, 120-second +/-800 ppm simulations");
 }
+void CaptureTests (void);
 void WrapperTests (void);
 void StringTests ();
-int main () { StringTests (); Descriptors (); ControlsAndLifecycle (); Fuzz (); Buffer (); WrapperTests (); }
+int main () { StringTests (); Descriptors (); ControlsAndLifecycle (); Fuzz (); Buffer (); WrapperTests (); CaptureTests (); }
