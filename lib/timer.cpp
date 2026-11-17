@@ -234,7 +234,7 @@ unsigned CTimer::GetClockTicks (void)
 	u64 nCNTFRQ;
 	asm volatile ("mrs %0, CNTFRQ_EL0" : "=r" (nCNTFRQ));
 
-	return (unsigned) (nCNTPCT * CLOCKHZ / nCNTFRQ);
+	return (unsigned) CounterToClockTicks (nCNTPCT, nCNTFRQ);
 #endif
 #endif
 }
@@ -272,7 +272,7 @@ u64 CTimer::GetClockTicks64 (void)
 	u64 nCNTFRQ;
 	asm volatile ("mrs %0, CNTFRQ_EL0" : "=r" (nCNTFRQ));
 
-	return nCNTPCT * CLOCKHZ / nCNTFRQ;
+	return CounterToClockTicks (nCNTPCT, nCNTFRQ);
 #endif
 #endif
 }

@@ -71,6 +71,20 @@ public:
 	static u64 GetClockTicks64 (void);
 #define CLOCKHZ	1000000
 
+	/// \brief Converts a count of the CPU's counter into clock ticks of CLOCKHZ
+	/// \param nCount	Count of the counter, any value
+	/// \param nFrequency	Counts per second of the counter, from 1 up to 2^64 / CLOCKHZ
+	/// \return nCount * CLOCKHZ / nFrequency rounded down, exact modulo 2^64 for every count
+	/// \note The product nCount * CLOCKHZ overflows 64 bits from a count of 2^64 / CLOCKHZ on,
+	///	  which a 54 MHz counter reaches after less than four days. Whole seconds and
+	///	  the rest of a second are converted apart. The product of the rest stays below
+	///	  nFrequency * CLOCKHZ, which fits 64 bits for every nFrequency in its range.
+	static u64 CounterToClockTicks (u64 nCount, u64 nFrequency)
+	{
+		return   nCount / nFrequency * CLOCKHZ
+		       + nCount % nFrequency * CLOCKHZ / nFrequency;
+	}
+
 	/// \return 1/HZ seconds since system boot, may wrap
 	unsigned GetTicks (void) const;
 	/// \return Seconds since system boot (continous)
