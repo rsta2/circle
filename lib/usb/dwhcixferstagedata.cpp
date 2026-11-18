@@ -2,7 +2,7 @@
 // dwhcixferstagedata.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2025  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,11 +27,14 @@
 #include <circle/sysconfig.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
+#include <circle/atomic.h>
 #include <assert.h>
 
 #define MAX_ISO_SPLIT_PAYLOAD	188
 
 #define MAX_BULK_TRIES		8
+
+volatile int CDWHCITransferStageData::s_nSplitTaken = 0;
 
 CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 						  CUSBRequest	*pURB,
@@ -44,6 +47,7 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 	m_bStatusStage (bStatusStage),
 	m_nTimeoutHZ (USB_TIMEOUT_NONE),
 	m_bSplitComplete (FALSE),
+	m_bSplitOwner (FALSE),
 	m_nTotalBytesTransfered (0),
 	m_nIsoPackets (0),
 	m_nState (0),
@@ -176,6 +180,8 @@ CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 
 CDWHCITransferStageData::~CDWHCITransferStageData (void)
 {
+	ReleaseSplit ();
+
 	delete m_pFrameScheduler;
 	m_pFrameScheduler = 0;
 
@@ -457,6 +463,26 @@ u32 CDWHCITransferStageData::GetPacketsToTransfer (void) const
 boolean CDWHCITransferStageData::IsSplit (void) const
 {
 	return m_bSplitTransaction;
+}
+
+boolean CDWHCITransferStageData::TryAcquireSplit (void)
+{
+	if (!m_bSplitOwner)
+	{
+		m_bSplitOwner = AtomicCompareExchange (&s_nSplitTaken, 0, 1) == 0;
+	}
+
+	return m_bSplitOwner;
+}
+
+void CDWHCITransferStageData::ReleaseSplit (void)
+{
+	if (m_bSplitOwner)
+	{
+		m_bSplitOwner = FALSE;
+
+		AtomicSet (&s_nSplitTaken, 0);
+	}
 }
 
 boolean CDWHCITransferStageData::IsSplitComplete (void) const

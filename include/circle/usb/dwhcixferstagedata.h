@@ -2,7 +2,7 @@
 // dwhcixferstagedata.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2022  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,6 +68,13 @@ public:
 
 	boolean IsSplit (void) const;
 	boolean IsSplitComplete (void) const;
+
+	// try to get the exclusive right to have a split transaction outstanding
+	// returns TRUE if this stage owns the right (also if it did already before)
+	boolean TryAcquireSplit (void);
+	// give the exclusive split right back (also done on destruction)
+	void ReleaseSplit (void);
+
 	u8 GetHubAddress (void) const;
 	u8 GetHubPortAddress (void) const;
 	u8 GetSplitPosition (void) const;
@@ -95,6 +102,7 @@ private:
 
 	boolean		 m_bSplitTransaction;
 	boolean		 m_bSplitComplete;
+	boolean		 m_bSplitOwner;
 
 	CUSBDevice	*m_pDevice;			// cached from *pURB
 	CUSBEndpoint	*m_pEndpoint;
@@ -120,6 +128,8 @@ private:
 	unsigned	 m_nStartTicksHZ;
 
 	CDWHCIFrameScheduler *m_pFrameScheduler;
+
+	static volatile int s_nSplitTaken;		// 1 while a stage owns the split right
 
 	DECLARE_CLASS_ALLOCATOR
 };

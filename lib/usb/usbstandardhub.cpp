@@ -2,7 +2,7 @@
 // usbstandardhub.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,9 +24,12 @@
 #include <circle/logger.h>
 #include <circle/timer.h>
 #include <circle/koptions.h>
+#include <circle/atomic.h>
 #include <circle/debug.h>
 #include <circle/macros.h>
 #include <assert.h>
+
+volatile int CUSBStandardHub::s_nNonMTTHubs = 0;
 
 CNumberPool CUSBStandardHub::s_DeviceNumberPool (1);
 
@@ -43,6 +46,7 @@ CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
 #if RASPPI >= 4
 	, m_pHubInfo (0)
 #endif
+	, m_bNonMTTRegistered (FALSE)
 	, m_nDeviceNumber (0)		// not assigned
 {
 	for (unsigned nPort = 0; nPort < USB_HUB_MAX_PORTS; nPort++)
@@ -55,6 +59,13 @@ CUSBStandardHub::CUSBStandardHub (CUSBFunction *pFunction)
 
 CUSBStandardHub::~CUSBStandardHub (void)
 {
+	if (m_bNonMTTRegistered)
+	{
+		m_bNonMTTRegistered = FALSE;
+
+		AtomicDecrement (&s_nNonMTTHubs);
+	}
+
 	if (m_nDeviceNumber != 0)
 	{
 		CDeviceNameService::Get ()->RemoveDevice (DevicePrefix, m_nDeviceNumber, FALSE);
@@ -141,6 +152,13 @@ boolean CUSBStandardHub::Initialize (void)
 		return FALSE;
 	}
 #endif
+
+	if (GetInterfaceProtocol () != 2)
+	{
+		m_bNonMTTRegistered = TRUE;
+
+		AtomicIncrement (&s_nNonMTTHubs);
+	}
 
 	return TRUE;
 }
@@ -240,6 +258,11 @@ const TUSBHubInfo *CUSBStandardHub::GetHubInfo (void) const
 }
 
 #endif
+
+unsigned CUSBStandardHub::GetNonMTTHubs (void)
+{
+	return AtomicGet (&s_nNonMTTHubs);
+}
 
 boolean CUSBStandardHub::EnumeratePorts (void)
 {

@@ -32,6 +32,7 @@
 #include <circle/usb/dwhciregister.h>
 #include <circle/usb/dwhci.h>
 #include <circle/usb/usb.h>
+#include <circle/ptrlistfiq.h>
 #include <circle/spinlock.h>
 #include <circle/mphi.h>
 #include <circle/sysconfig.h>
@@ -123,6 +124,8 @@ private:
 	static void TimerStub (TKernelTimerHandle hTimer, void *pParam, void *pContext);
 #endif
 
+	void SplitRetry (void);
+
 	unsigned AllocateChannel (void);
 	void FreeChannel (unsigned nChannel);
 
@@ -165,6 +168,9 @@ private:
 
 	CDWHCIRootPort m_RootPort;
 	volatile boolean m_bRootPortEnabled;
+
+	CPtrListFIQ m_SplitRetryList;
+	CSpinLock m_SplitSpinLock;
 
 	unsigned m_nRecoveryAttempts;		// number of retries so far
 	unsigned m_nRecoveryRetryAtTicks;	// tick count (HZ units) at which the next retry is allowed

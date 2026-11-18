@@ -2,7 +2,7 @@
 // usbstandardhub.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2014-2021  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2014-2026  R. Stange <rsta2@gmx.net>
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,9 @@ public:
 	const TUSBHubInfo *GetHubInfo (void) const;
 #endif
 
+	// returns number of initialized non-multi TT hubs
+	static unsigned GetNonMTTHubs (void);
+
 private:
 	boolean EnumeratePorts (void);
 
@@ -71,6 +74,9 @@ private:
 #if RASPPI >= 4
 	TUSBHubInfo *m_pHubInfo;
 #endif
+
+	boolean m_bNonMTTRegistered;
+	static volatile int s_nNonMTTHubs;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

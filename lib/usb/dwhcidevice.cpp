@@ -22,6 +22,7 @@
 #include <circle/usb/dwhciframeschednsplit.h>
 #include <circle/usb/dwhciframeschedper.h>
 #include <circle/usb/dwhciframeschediso.h>
+#include <circle/usb/usbstandardhub.h>
 #include <circle/sched/scheduler.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/bcm2835.h>
@@ -83,6 +84,8 @@ CDWHCIDevice::CDWHCIDevice (CInterruptSystem *pInterruptSystem, CTimer *pTimer, 
 	m_WaitBlockSpinLock (TASK_LEVEL),
 	m_RootPort (this),
 	m_bRootPortEnabled (FALSE),
+	m_SplitRetryList (DWHCI_MAX_CHANNELS),
+	m_SplitSpinLock (MAX_TARGET_LEVEL),
 	m_nRecoveryAttempts (0),
 	m_nRecoveryRetryAtTicks (0),
 	m_bRecoveryGiveUp (FALSE),
@@ -991,9 +994,31 @@ void CDWHCIDevice::QueueDelayedTransaction (CDWHCITransferStageData *pStageData)
 void CDWHCIDevice::StartTransaction (CDWHCITransferStageData *pStageData)
 {
 	assert (pStageData != 0);
+
+	if (   CUSBStandardHub::GetNonMTTHubs () > 0
+	    && pStageData->IsSplit ()
+	    && !pStageData->TryAcquireSplit ())
+	{
+		m_SplitSpinLock.Acquire ();
+
+		TPtrListElement *pPrevElement = 0;
+		TPtrListElement *pElement = m_SplitRetryList.GetFirst ();
+		while (pElement != 0)						// find last element
+		{
+			pPrevElement = pElement;
+			pElement = m_SplitRetryList.GetNext (pElement);
+		}
+
+		m_SplitRetryList.InsertAfter (pPrevElement, pStageData);	// append to list
+
+		m_SplitSpinLock.Release ();
+
+		return;
+	}
+
 	unsigned nChannel = pStageData->GetChannelNumber ();
 	assert (nChannel < m_nChannels);
-	
+
 	// channel must be disabled, if not already done but controller
 	CDWHCIRegister Character (DWHCI_HOST_CHAN_CHARACTER (nChannel));
 	Character.Read ();
@@ -1396,6 +1421,8 @@ void CDWHCIDevice::ChannelInterruptHandler (unsigned nChannel)
 
 	ContinueIsochronousOutSplit:
 	LeaveCompleteSplit:
+		pStageData->ReleaseSplit ();
+
 		if (!pStageData->IsStageComplete ())
 		{
 			if (   !pStageData->IsPeriodic ()
@@ -1507,6 +1534,30 @@ void CDWHCIDevice::SOFInterruptHandler (void)
 		}
 #endif
 
+		if (   CUSBStandardHub::GetNonMTTHubs () > 0
+		    && pStageData->IsSplit ()
+		    && !pStageData->TryAcquireSplit ())
+		{
+			// Reschedule the Start-Split, so that the frame scheduler state (e.g.
+			// the micro-frame, which is used to compute the Complete-Split tries)
+			// matches the new start time. This must be done in the next frame at
+			// the earliest, otherwise this stage would be dequeued again at once.
+			CDWHCIFrameScheduler *pFrameScheduler = pStageData->GetFrameScheduler ();
+			assert (pFrameScheduler != 0);
+
+			pFrameScheduler->StartSplit ();
+
+			u16 usNextFrame = pFrameScheduler->GetFrameNumber ();
+			if (usNextFrame == usFrameNumber)
+			{
+				usNextFrame = (usNextFrame+1) & DWHCI_MAX_FRAME_NUMBER;
+			}
+
+			m_TransactionQueue.Enqueue (pStageData, usNextFrame);
+
+			continue;
+		}
+
 		unsigned nChannel = AllocateChannel ();
 		assert (nChannel < m_nChannels);	// too many parallel transactions otherwise
 
@@ -1572,6 +1623,8 @@ void CDWHCIDevice::InterruptHandler (void)
 
 			nChannelMask <<= 1;
 		}
+
+		SplitRetry ();
 	}
 
 	if (IsPlugAndPlay ())
@@ -1695,6 +1748,41 @@ void CDWHCIDevice::TimerStub (TKernelTimerHandle /* hTimer */, void *pParam, voi
 }
 
 #endif
+
+void CDWHCIDevice::SplitRetry (void)
+{
+	m_SplitSpinLock.Acquire ();
+
+	CDWHCITransferStageData *pStageData = 0;
+	TPtrListElement *pElement = m_SplitRetryList.GetFirst ();
+	if (pElement != 0)
+	{
+		pStageData = (CDWHCITransferStageData *) m_SplitRetryList.GetPtr (pElement);
+		assert (pStageData != 0);
+
+		m_SplitRetryList.Remove (pElement);
+	}
+
+	m_SplitSpinLock.Release ();
+
+	if (pStageData != 0)
+	{
+		// the transfer may have been aborted meanwhile
+		unsigned nChannel;
+		for (nChannel = 0; nChannel < m_nChannels; nChannel++)
+		{
+			if (m_pStageData[nChannel] == pStageData)
+			{
+				break;
+			}
+		}
+
+		if (nChannel < m_nChannels)
+		{
+			StartTransaction (pStageData);
+		}
+	}
+}
 
 #ifdef USE_USB_FIQ
 
