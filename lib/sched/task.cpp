@@ -50,7 +50,7 @@ CTask::CTask (unsigned nStackSize, boolean bCreateSuspended)
 
 	m_Name.Format ("@%lp", this);
 
-	CScheduler::Get ()->AddTask (this);
+	CScheduler::Get ()->AddTask (this, __builtin_return_address (0));
 }
 
 CTask::~CTask (void)
@@ -89,6 +89,9 @@ void CTask::Run (void)		// dummy method which is never called
 
 void CTask::Terminate (void)
 {
+	// callable from this task only, and a secondary core runs no task
+	CScheduler::Get ()->PanicOnSecondaryCore ("Terminate", __builtin_return_address (0));
+
 	m_State = TaskStateTerminated;
 	m_Event.Set ();
 	CScheduler::Get ()->Yield ();
@@ -98,6 +101,11 @@ void CTask::Terminate (void)
 
 void CTask::WaitForTermination (void)
 {
+	// callable from another task only, and a secondary core runs no task.
+	// There core 0 could also delete this task, while the task list is read.
+	CScheduler::Get ()->PanicOnSecondaryCore ("WaitForTermination",
+						  __builtin_return_address (0));
+
 	// Before accessing any of our member variables
 	// make sure this task object hasn't been deleted by 
 	// checking it's still registered with the scheduler

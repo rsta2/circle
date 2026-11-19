@@ -38,11 +38,16 @@ unsigned CSemaphore::GetState (void) const
 	return AtomicGet (&m_nCount);
 }
 
+// The waits pass the return address of the caller of CSemaphore, which the
+// scheduler names for a wait on a secondary core.
+
 void CSemaphore::Down (void)
 {
+	const void *pCaller = __builtin_return_address (0);
+
 	while (AtomicGet (&m_nCount) == 0)
 	{
-		m_Event.Wait ();
+		m_Event.Wait (pCaller);
 	}
 
 	if (AtomicDecrement (&m_nCount) == 0)
@@ -54,9 +59,11 @@ void CSemaphore::Down (void)
 
 boolean CSemaphore::DownWithTimeout (unsigned nMicroSeconds)
 {
+	const void *pCaller = __builtin_return_address (0);
+
 	while (AtomicGet (&m_nCount) == 0)
 	{
-		if (   m_Event.WaitWithTimeout (nMicroSeconds)
+		if (   m_Event.WaitWithTimeout (nMicroSeconds, pCaller)
 		    && !m_Event.GetState ())
 		{
 			return TRUE;

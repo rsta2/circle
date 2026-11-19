@@ -38,9 +38,13 @@ CMutex::~CMutex (void)
     assert(m_pOwningTask == 0);
 }
 
+// The calls of the scheduler and of the event pass the return address of the
+// caller of CMutex, which a system panic on a secondary core names.
+
 void CMutex::Acquire (void)
 {
-    CTask* pTask = CScheduler::Get()->GetCurrentTask();
+    const void *pCaller = __builtin_return_address(0);
+    CTask* pTask = CScheduler::Get()->GetCurrentTask(pCaller);
 
     while (true)
     {
@@ -55,13 +59,13 @@ void CMutex::Acquire (void)
             m_iReentrancyCount++;
             return;
         }
-        m_event.Wait();
+        m_event.Wait(pCaller);
     }
 }
 
 boolean CMutex::TryAcquire (void)
 {
-    CTask* pTask = CScheduler::Get()->GetCurrentTask();
+    CTask* pTask = CScheduler::Get()->GetCurrentTask(__builtin_return_address(0));
 
     if (m_pOwningTask == nullptr)
     {
@@ -79,7 +83,11 @@ boolean CMutex::TryAcquire (void)
 
 void CMutex::Release (void)
 {
-    assert(m_pOwningTask == CScheduler::Get()->GetCurrentTask());
+    // asked in every build, a secondary core owns no mutex
+    CTask* pTask = CScheduler::Get()->GetCurrentTask(__builtin_return_address(0));
+    assert(m_pOwningTask == pTask);
+    (void) pTask;   // to suppress the warning with NDEBUG
+
     m_iReentrancyCount--;
     if (m_iReentrancyCount == 0)
     {

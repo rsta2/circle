@@ -58,6 +58,13 @@ private:
 	void Pulse (void);	// wakes all waiting tasks without actually setting the event
 	friend class CMutex;
 
+	// The waits for CMutex and CSemaphore. pCaller is the return address the
+	// scheduler names for a wait on a secondary core, which is the one of the
+	// caller of these classes.
+	void Wait (const void *pCaller);
+	boolean WaitWithTimeout (unsigned nMicroSeconds, const void *pCaller);
+	friend class CSemaphore;
+
 private:
 	volatile boolean m_bState;
 	CTask	*m_pWaitListHead;	// Linked list of waiting tasks

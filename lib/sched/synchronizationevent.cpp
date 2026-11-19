@@ -78,10 +78,21 @@ void CSynchronizationEvent::Pulse (void)
 
 void CSynchronizationEvent::Wait (void)
 {
-	CScheduler::Get ()->BlockTask (&m_pWaitListHead, 0, &m_bState);
+	Wait (__builtin_return_address (0));
 }
 
 boolean CSynchronizationEvent::WaitWithTimeout (unsigned nMicroSeconds)
 {
-	return CScheduler::Get ()->BlockTask (&m_pWaitListHead, nMicroSeconds, &m_bState);
+	return WaitWithTimeout (nMicroSeconds, __builtin_return_address (0));
+}
+
+void CSynchronizationEvent::Wait (const void *pCaller)
+{
+	CScheduler::Get ()->BlockTask (&m_pWaitListHead, 0, pCaller, &m_bState);
+}
+
+boolean CSynchronizationEvent::WaitWithTimeout (unsigned nMicroSeconds, const void *pCaller)
+{
+	return CScheduler::Get ()->BlockTask (&m_pWaitListHead, nMicroSeconds, pCaller,
+					      &m_bState);
 }

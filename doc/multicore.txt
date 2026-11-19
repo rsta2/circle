@@ -61,4 +61,19 @@ continuously executing a short delay in your program flow from time to time.
 
 The cooperative non-preemptive scheduler is intended to allow multiple threads of
 operation on a single core. It cannot be used on more than one core at a time
-and should always run on core 0.
+and should always run on core 0. A call of CScheduler::Yield() or of one of the
+sleep methods on a secondary core does not switch the task: Yield() returns at
+once and the sleep methods delay the calling core for the given time. A wait for
+a CSynchronizationEvent that is already set returns there as on core 0. These
+calls are counted (see CScheduler::GetSecondaryCoreCalls()), and the first call
+from each return address is logged with its core, for up to
+MAX_SECONDARY_CORE_CALLERS return addresses. A secondary core has no current
+task. Calling CScheduler::GetCurrentTask(), acquiring or releasing a CMutex,
+waiting for a CSynchronizationEvent that is clear, creating a CTask, or calling
+CTask::Terminate() or WaitForTermination() there is a system panic condition,
+which is logged with the core and the return address of the call. For a new
+CTask that address lies in the constructor of the class derived from CTask.
+CSemaphore::Down() and DownWithTimeout() wait for an event, so they are a panic
+condition there only while the count is 0. The methods of CScheduler and CTask
+not named here are not checked. Except for CScheduler::Get(), IsActive() and
+GetSecondaryCoreCalls() they have to be called on core 0 too.
