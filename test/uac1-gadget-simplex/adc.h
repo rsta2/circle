@@ -2,14 +2,18 @@
 #pragma once
 #include <circle/sound/i2ssoundbasedevice.h>
 #include <circle/usb/gadget/usbaudiogadgetcapture.h>
+#include <circle/i2cmaster.h>
 #include <circle/logger.h>
 #include <circle/atomic.h>
 
 class CADCSource : public CI2SSoundBaseDevice, public CUSBAudioCaptureBuffer
 {
 public:
-	explicit CADCSource (CInterruptSystem *pInterrupt, TDeviceMode Mode = DeviceModeRXOnly)
-	: CI2SSoundBaseDevice (pInterrupt, 48000, 128, TRUE, nullptr, 0, Mode) {}
+	explicit CADCSource (CInterruptSystem *pInterrupt,
+			     CI2CMaster *pI2CMaster = nullptr,
+			     boolean bSlave = TRUE,
+			     TDeviceMode Mode = DeviceModeRXOnly)
+	: CI2SSoundBaseDevice (pInterrupt, 48000, 128, bSlave, pI2CMaster, 0, Mode) {}
 
 	void SetRecording (boolean bActive) override
 	{
