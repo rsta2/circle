@@ -12,7 +12,9 @@ and connect its USB data port to a host with a stereo recorder.
   supplying 48 kHz LRCK and 64 × sample-rate BCK at 3.3 V logic levels. On the
   Zero 2 W connect BCK to GPIO18, LRCK to GPIO19, ADC data out to GPIO20
   (PCM DIN), and share ground. Feed a line-level signal to the ADC and record
-  from **Circle ADC Capture**.
+  from **Circle ADC Capture**. When you `#define CAPTURE_RPI_SLAVE FALSE`, the
+  I2S ADC is clocked from the Raspberry Pi, which is the clocking master then
+  (tested with a Waveshare WM8960 HAT).
 
 With Circle and its libraries built for the target, run
 `make -C test/uac1-gadget-simplex` from the Circle root and boot the resulting
