@@ -1,0 +1,5 @@
+README
+
+The tests in this directory are running on the real hardware
+of a Raspberry Pi. For unit tests, which run on the development
+host use unittest/.
