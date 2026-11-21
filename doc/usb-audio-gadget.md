@@ -1,9 +1,11 @@
-# USB Audio Class 1 playback gadget
+# USB Audio Class 1 playback and recording gadgets
 
-This experimental feature branch provides full-speed UAC1 **playback** on the
-DesignWare USB device controller. It is independent of any synthesizer, codec,
-I2S clock generator, display or MIDI routing policy. It follows Circle's gadget
-lifetime and UpdatePlugAndPlay conventions.
+This experimental feature branch provides full-speed UAC1 playback and recording
+on the DesignWare USB device controller. Playback supports configurable formats
+and rates; recording currently supports 48 kHz stereo signed PCM16. The duplex
+test combines both directions with independently controlled USB streams.
+The library follows Circle's gadget lifetime and UpdatePlugAndPlay conventions.
+Applications supply their audio hardware and routing policy.
 
 ## Components
 
@@ -14,15 +16,25 @@ lifetime and UpdatePlugAndPlay conventions.
 * `CUSBAudioGadget` is the standalone, two-interface device wrapper.
 * `CUSBAudioGadgetBuffer` is an optional software-adaptive sink producing signed
   32-bit interleaved frames for a fixed-rate sound device.
+* `TUSBAudioCaptureDescriptors` describes a recording function's terminals and
+  streaming interface.
+* `CUSBAudioCaptureSource` supplies recording packets, and
+  `CUSBAudioCaptureBuffer` adapts an independently clocked PCM16 producer.
+* `CUSBAudioCaptureEndpoint` owns the aligned transmit DMA buffer and rearms IN
+  transfers.
 * `sample/45-usbaudiogadget` demonstrates stereo playback through PWM.
+* [Simplex recording](../test/uac1-gadget-simplex/README.md) demonstrates a
+  generated stereo tone or an I2S ADC.
+* [Duplex audio](../test/uac1-gadget-duplex/README.md) combines I2S playback and
+  capture, including independent stream stop/restart.
 
-The descriptor topology is USB streaming input terminal -> master mute/volume
-feature unit -> speaker output terminal. Alternate zero has no endpoint; each
+The playback descriptor topology is USB streaming input terminal -> master
+mute/volume feature unit -> speaker output terminal. Alternate zero has no endpoint; each
 nonzero alternate advertises one sample format and its discrete rate list.
 The audio streaming endpoint is adaptive isochronous OUT, one packet per 1 ms
 USB frame. There is no explicit feedback endpoint.
 
-## Configuration and limits
+## Playback configuration and limits
 
 Construct a `TConfiguration` and a sink before the gadget. The configuration is
 copied and must remain unchanged for the device lifetime. Check `Initialize()`.
@@ -43,7 +55,7 @@ on other devices and functions and remains the host's scheduling decision.
 Descriptors are generated without unaligned stores and without partial output
 on insufficient capacity. EP0 has a bounded 1024-byte descriptor buffer.
 
-## Control and lifecycle contract
+## Playback control and lifecycle contract
 
 The function supports GET/SET_INTERFACE, endpoint sampling-frequency
 GET_CUR/MIN/MAX/RES and SET_CUR, master mute GET_CUR/SET_CUR, and master volume
@@ -80,7 +92,7 @@ The receive queue holds eight USB packets. Overflow drops the oldest packet to
 bound latency. Malformed packet lengths are rejected before decoding. A stalled
 application therefore loses audio instead of growing an unbounded backlog.
 
-## Clock adaptation
+## Playback clock adaptation
 
 An adaptive endpoint must consume samples at the host's average rate. A fixed
 free-running DAC without adaptation will eventually underflow or overflow.
@@ -97,7 +109,7 @@ sections are proportional to the requested frame count; use small bounded
 chunks as the sample does. The capacity and prefill policy are not a promise of
 minimum latency. Neither NEON nor floating-point ABI support is required.
 
-## Composite integration
+## Playback composite integration
 
 Allocate unique interface numbers, terminal/unit IDs and an unused OUT endpoint.
 Append the bytes from GetDescriptor to the composite configuration descriptor,
@@ -115,6 +127,80 @@ configured/reset/suspend/resume lifecycle and call Process in the task loop.
 The standalone wrapper is the concrete implementation of these steps for one
 function. The caller must prevent endpoint/interface collisions with MIDI/CDC.
 
+## Recording configuration and integration
+
+Include `<circle/usb/gadget/usbaudiogadgetcapture.h>`. The capture API is separate
+from the configurable playback function and standalone playback wrapper.
+It advertises two interleaved signed 16-bit little-endian channels at 48 kHz,
+with a left/right channel map. The topology is a physical input terminal feeding
+a USB streaming output terminal. Capture has no feature unit, mute/volume
+controls or sampling-frequency control. Its fixed rate is in the format
+descriptor; alternate zero is idle and alternate one records.
+
+Construct `TUSBAudioCaptureDescriptors` with the streaming interface number, IN
+endpoint number (1 through 7, without the direction bit), distinct input/output
+terminal IDs, and the physical input terminal type. Reserve these identifiers
+within the enclosing gadget. Append `Terminals` to the AudioControl topology and
+include their length in its class-specific total length. Add the recording
+interface to the AudioControl header's collection, then append `Streaming` after
+the AudioControl interface. Adjust the enclosing configuration's total length
+and interface count. The test gadgets provide complete descriptor examples.
+
+Create a `CUSBAudioCaptureEndpoint` in the gadget's `AddEndpoints()`, passing the
+capture descriptors, gadget and source. Keep the source alive for the endpoint's
+lifetime. Forward the capture interface's `SetInterface()` and `GetInterface()`
+to this endpoint and propagate the controller's endpoint lifecycle. Continue
+calling `UpdatePlugAndPlay()` from the task loop.
+
+The default `Asynchronous` descriptor mode supports an independently clocked
+producer. It advertises a maximum packet size of 196 bytes (49 stereo frames)
+and an interval of one USB frame (1 ms). `Synchronous` mode advertises 192 bytes
+and requires exactly 48 stereo frames per packet; the generated-tone test uses
+this mode. Select the mode to match the source's clocking behavior.
+
+## Recording source and lifecycle contract
+
+`CUSBAudioCaptureSource::SetRecording()` and `ReadPacket()` can execute at IRQ
+level. They must finish in bounded time without blocking or waiting for hardware.
+`ReadPacket()` fills the endpoint's buffer and returns the number of initialized
+stereo frames, up to `MaxFrames` (49). The endpoint substitutes 48 frames of
+silence for an invalid count, including a count other than 48 in synchronous
+mode. It starts the first transfer when recording is enabled and rearms on each
+IN completion. Capture has no task-context `Process()` callback.
+
+Alternate zero stops recording and cancels an active transfer. Repeated selection
+of the same alternate is idempotent. Deactivation and `OnSuspend()` stop the source
+and clear configuration state. USB reset also stops an active source and resets
+endpoint transfer state. A nonzero alternate is accepted only after activation.
+Applications using retained suspend must explicitly handle its lifecycle; capture
+does not provide the playback function's retained-format resume policy.
+
+The optional `CUSBAudioCaptureBuffer` accepts stereo PCM16 through
+`WriteFrames()`, discarding input while recording is inactive. Its 1024-frame
+ring primes at 256 frames. On priming, excess backlog is discarded so a delayed
+first host IN request or a recording restart starts from the reserve level.
+Every eighth packet, queue occupancy can adjust its length to 47 or 49 frames,
+matching gradual producer/USB clock drift without interpolation. Use this buffer
+with asynchronous descriptors.
+
+Overflow discards the oldest frames. Starvation emits silence and requires
+prefill again. `WriteFrames()` bounds each lock-held block to 64 frames.
+`GetStatistics()` reports produced, sent, queued, overrun and underrun counts;
+the counters reset when recording is enabled. Produced/sent/overrun counts use
+frames, while underruns count transitions from a primed queue to starvation.
+
+## Duplex operation
+
+The duplex test combines a playback function/endpoint and a capture source/IN
+endpoint under one AudioControl interface. Both test streams use 48 kHz stereo
+PCM16. Each USB streaming interface has its own alternate setting, so either
+stream can stop and restart while the other continues.
+
+The test keeps the duplex I2S hardware running across USB stream changes.
+Playback stop silences its sink; recording stop discards capture input. Shared
+I2S clocks and DMA therefore continue serving the active direction. Applications
+that reconfigure shared hardware must coordinate both directions themselves.
+
 ## Validation and remaining hardware work
 
 Host tests compile the production function, adaptive buffer and controller
@@ -123,6 +209,10 @@ undefined-behavior sanitizers. They cover 384 format/channel/rate profiles,
 100,000 deterministic malformed-control/lifecycle interleavings, bounded queues,
 clock-drift simulations, EP0 request/status ordering and packet termination,
 isochronous parity/cancellation/rearm, and the existing MIDI/suspend regressions.
+Capture tests also cover asynchronous/synchronous descriptors, delayed first IN
+requests, restart priming, stereo continuity, clock corrections, starvation and
+endpoint activation, cancellation, suspend and reset. Run
+`python3 unittest/usb-audio-gadget/run.py` from the repository root.
 The PWM sample cross-builds and links for AArch32 RASPPI=3.
 
 The [QEMU harness](../test/usb-audio-qemu/README.md) boots real Circle ARM
@@ -136,9 +226,10 @@ For hardware validation, exercise play/stop, alternate changes and suspend/resum
 on the target host. PWM output fidelity and long-term clock drift need separate
 measurements. The QEMU checks do not replace USB compliance testing.
 
-Not implemented: capture/isochronous IN, full duplex, UAC2, high-speed audio,
-explicit feedback endpoints, hardware-specific clock switching, per-channel
-volume or USB compliance certification. Those require separate design/review;
-this branch is a complete playback path, not the entire UAC specification.
+Further work includes configurable recording formats/rates/channel counts,
+capture feature-unit controls, UAC2, high-speed audio, explicit feedback endpoints,
+hardware-specific clock switching, per-channel volume and USB compliance
+certification. The QEMU harness described above exercises playback; capture and
+duplex hardware checks use the linked test programs.
 
 Specification: [USB Device Class Definition for Audio Devices, Release 1.0](https://www.usb.org/sites/default/files/audio10.pdf).
