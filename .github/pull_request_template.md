@@ -1,1 +1,1 @@
-When creating a Pull Request, please be sure to select the *develop* branch as base, where your PR should be merged!
+When creating a Pull Request, please be sure to select the develop branch as base, where your PR should be merged! You should read the file CONTRIBUTING.md before sending the PR. Replace this text with a meaningful description of your PR!
