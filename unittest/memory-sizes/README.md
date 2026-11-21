@@ -3,7 +3,7 @@
 Run from the Circle root with Python 3 and a C++17 compiler that supports AddressSanitizer and UndefinedBehaviorSanitizer:
 
 ```sh
-python3 test/memory-sizes/run.py
+python3 unittest/memory-sizes/run.py
 ```
 
 `CXX` selects the compiler. `--source /path/to/circle` tests another checkout with this same harness. No Raspberry Pi is needed.
