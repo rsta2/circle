@@ -2,7 +2,7 @@
 // usbaudiostreaming.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -214,7 +214,7 @@ boolean CUSBAudioStreamingDevice::Initialize (void)
 	if (GetInterfaceProtocol () != USB_PROTO_AUDIO_VER_200)
 	{
 		if (   (nChannels && pFormatTypeDesc->Ver100.bNrChannels != nChannels)
-		    || pFormatTypeDesc->Ver100.bSubframeSize != m_nSubframeSize
+		    || pFormatTypeDesc->Ver100.bSubframeSize < m_nSubframeSize
 		    || pFormatTypeDesc->Ver100.bBitResolution != m_nBitResolution)
 		{
 			LOGDBG ("Ignore interface (%u chans, %u bits, %u bytes)",
@@ -228,7 +228,7 @@ boolean CUSBAudioStreamingDevice::Initialize (void)
 	else
 	{
 		if (   (nChannels && pAudioInterfaceDesc->Ver200.bNrChannels != nChannels)
-		    || pFormatTypeDesc->Ver200.bSubslotSize != m_nSubframeSize
+		    || pFormatTypeDesc->Ver200.bSubslotSize < m_nSubframeSize
 		    || pFormatTypeDesc->Ver200.bBitResolution != m_nBitResolution)
 		{
 			LOGDBG ("Ignore interface (%u chans, %u bits, %u bytes)",
@@ -301,7 +301,7 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 	{
 		if (   pFormatTypeDesc->bFormatType           != USB_AUDIO_FORMAT_TYPE_I
 		    || pFormatTypeDesc->Ver100.bNrChannels    == 0
-		    || pFormatTypeDesc->Ver100.bSubframeSize  != m_nSubframeSize
+		    || pFormatTypeDesc->Ver100.bSubframeSize  < m_nSubframeSize
 		    || pFormatTypeDesc->Ver100.bBitResolution != m_nBitResolution)
 		{
 			LOGWARN ("Unsupported audio format");
@@ -313,11 +313,12 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		}
 
 		m_nChannels = pFormatTypeDesc->Ver100.bNrChannels;
+		m_nSubframeSize = pFormatTypeDesc->Ver100.bSubframeSize;
 	}
 	else
 	{
 		if (   pFormatTypeDesc->bFormatType           != USB_AUDIO_FORMAT_TYPE_I
-		    || pFormatTypeDesc->Ver200.bSubslotSize   != m_nSubframeSize
+		    || pFormatTypeDesc->Ver200.bSubslotSize   < m_nSubframeSize
 		    || pFormatTypeDesc->Ver200.bBitResolution != m_nBitResolution
 		    || pGeneralDesc->Ver200.bNrChannels       == 0)
 		{
@@ -331,6 +332,7 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 		}
 
 		m_nChannels = pGeneralDesc->Ver200.bNrChannels;
+		m_nSubframeSize = pFormatTypeDesc->Ver200.bSubslotSize;
 	}
 
 	if (   m_bIsOutput
@@ -567,6 +569,7 @@ boolean CUSBAudioStreamingDevice::Configure (void)
 	}
 
 	m_DeviceInfo.NumTerminals = m_nTerminals;
+	m_DeviceInfo.SubframeSize = m_nSubframeSize;
 
 	if (!InitTerminalControlInfo (pControlDevice))
 	{

@@ -2,7 +2,7 @@
 // usbsoundbasedevice.h
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -108,7 +108,8 @@ private:
 
 private:
 	unsigned m_nBitResolution;
-	unsigned m_nSubframeSize;
+	unsigned m_nTXSubframeSize;
+	unsigned m_nRXSubframeSize;
 
 	unsigned m_nSampleRate;
 	TDeviceMode m_DeviceMode;

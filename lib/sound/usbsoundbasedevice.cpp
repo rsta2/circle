@@ -2,7 +2,7 @@
 // usbsoundbasedevice.cpp
 //
 // Circle - A C++ bare metal environment for Raspberry Pi
-// Copyright (C) 2022-2023  R. Stange <rsta2@o2online.de>
+// Copyright (C) 2022-2026  R. Stange <rsta2@gmx.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,8 @@ static const char DeviceName[] = "sndusb";
 CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode DeviceMode,
 					  unsigned nDevice)
 :	m_nBitResolution (CKernelOptions::Get ()->GetSoundOption () == 24 ? 24 : 16),
-	m_nSubframeSize (m_nBitResolution / 8),
+	m_nTXSubframeSize (0),
+	m_nRXSubframeSize (0),
 	m_nSampleRate (nSampleRate),
 	m_DeviceMode (DeviceMode),
 	m_nDevice (nDevice),
@@ -57,6 +58,7 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode Devi
 		{
 			CUSBAudioStreamingDevice::TDeviceInfo Info = m_pTXUSBDevice->GetDeviceInfo ();
 			nHWTXChannels = Info.NumChannels;
+			m_nTXSubframeSize = Info.SubframeSize;
 		}
 	}
 
@@ -67,11 +69,26 @@ CUSBSoundBaseDevice::CUSBSoundBaseDevice (unsigned nSampleRate, TDeviceMode Devi
 		{
 			CUSBAudioStreamingDevice::TDeviceInfo Info = m_pRXUSBDevice->GetDeviceInfo ();
 			nHWRXChannels = Info.NumChannels;
+			m_nRXSubframeSize = Info.SubframeSize;
 		}
 	}
 
-	Setup (m_nBitResolution == 24 ? SoundFormatSigned24 : SoundFormatSigned16, 0,
-		m_nSampleRate, nHWTXChannels, nHWRXChannels, FALSE);
+	TSoundFormat SoundFormat = SoundFormatSigned16;
+	if (m_nBitResolution == 24)
+	{
+		if (m_DeviceMode == DeviceModeRXOnly)
+		{
+			SoundFormat = m_nRXSubframeSize == 3 ? SoundFormatSigned24
+							     : SoundFormatSigned24_32;
+		}
+		else
+		{
+			SoundFormat = m_nTXSubframeSize == 3 ? SoundFormatSigned24
+							     : SoundFormatSigned24_32;
+		}
+	}
+
+	Setup (SoundFormat, 0, m_nSampleRate, nHWTXChannels, nHWRXChannels, FALSE);
 
 	if (!m_nDevice)
 	{
@@ -127,6 +144,15 @@ boolean CUSBSoundBaseDevice::Start (void)
 		|| m_State == StateIdle);
 	if (m_State == StateCreated)
 	{
+		if (   m_DeviceMode == DeviceModeTXRX
+		    && m_nTXSubframeSize != m_nRXSubframeSize)
+		{
+			LOGWARN ("Sub-frame size mismatch (%u/%u)",
+				 m_nTXSubframeSize, m_nRXSubframeSize);
+
+			return FALSE;
+		}
+
 		if (!m_pSoundController)
 		{
 			m_pSoundController = new CUSBSoundController (
@@ -332,22 +358,30 @@ boolean CUSBSoundBaseDevice::SendChunk (void)
 	assert (m_pTXUSBDevice);
 	unsigned nChunkSizeBytes = m_pTXUSBDevice->GetChunkSizeBytes ();
 	assert (nChunkSizeBytes);
-	assert (nChunkSizeBytes % m_nSubframeSize == 0);
+	assert (nChunkSizeBytes % m_nTXSubframeSize == 0);
 	assert (nChunkSizeBytes <= m_nTXChunkSizeBytes * 2);
 
 	assert (m_nTXCurrentBuffer < 2);
 	assert (m_pTXBuffer[m_nTXCurrentBuffer]);
 	unsigned nChunkSize;
-	if (m_nSubframeSize == 2)
+	if (m_nTXSubframeSize == 2)
 	{
 		nChunkSize = GetChunk (reinterpret_cast<s16 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
-				       nChunkSizeBytes / m_nSubframeSize);
+				       nChunkSizeBytes / m_nTXSubframeSize);
 	}
 	else
 	{
-		assert (m_nSubframeSize == 3);
-		nChunkSize = GetChunk (reinterpret_cast<u32 *> (m_pTXBuffer[m_nTXCurrentBuffer]),
-				       nChunkSizeBytes / m_nSubframeSize);
+		assert (m_nTXSubframeSize == 3 || m_nTXSubframeSize == 4);
+		u32 *pSample = reinterpret_cast<u32 *> (m_pTXBuffer[m_nTXCurrentBuffer]);
+		nChunkSize = GetChunk (pSample, nChunkSizeBytes / m_nTXSubframeSize);
+
+		if (m_nTXSubframeSize == 4)
+		{
+			for (unsigned i = 0; i < nChunkSize; i++)
+			{
+				pSample[i] <<= 8;
+			}
+		}
 	}
 
 	if (!nChunkSize)
@@ -357,7 +391,7 @@ boolean CUSBSoundBaseDevice::SendChunk (void)
 
 	AtomicIncrement (&m_nOutstanding);
 
-	if (!m_pTXUSBDevice->SendChunk (m_pTXBuffer[m_nTXCurrentBuffer], nChunkSize * m_nSubframeSize,
+	if (!m_pTXUSBDevice->SendChunk (m_pTXBuffer[m_nTXCurrentBuffer], nChunkSize * m_nTXSubframeSize,
 				        TXCompletionStub, this))
 	{
 		AtomicDecrement (&m_nOutstanding);
@@ -375,7 +409,7 @@ boolean CUSBSoundBaseDevice::ReceiveChunk (void)
 	assert (m_pRXUSBDevice);
 	unsigned nChunkSizeBytes = m_pRXUSBDevice->GetChunkSizeBytes ();
 	assert (nChunkSizeBytes);
-	assert (nChunkSizeBytes % m_nSubframeSize == 0);
+	assert (nChunkSizeBytes % m_nRXSubframeSize == 0);
 	assert (nChunkSizeBytes <= m_nRXChunkSizeBytes * 2);
 
 	AtomicIncrement (&m_nOutstanding);
@@ -487,7 +521,7 @@ void CUSBSoundBaseDevice::RXCompletionRoutine (unsigned nBytesTransferred)
 
 	if (nBytesTransferred)
 	{
-		assert (nBytesTransferred % m_nSubframeSize == 0);
+		assert (nBytesTransferred % m_nRXSubframeSize == 0);
 		assert (nBytesTransferred <= m_nRXChunkSizeBytes * 2);
 
 #if RASPPI >= 4
@@ -502,16 +536,26 @@ void CUSBSoundBaseDevice::RXCompletionRoutine (unsigned nBytesTransferred)
 		assert (nRXCurrentBuffer < 2);
 		assert (m_pRXBuffer[nRXCurrentBuffer]);
 
-		if (m_nSubframeSize == 2)
+		if (m_nRXSubframeSize == 2)
 		{
 			PutChunk (reinterpret_cast<s16 *> (m_pRXBuffer[nRXCurrentBuffer]),
-							   nBytesTransferred / m_nSubframeSize);
+							   nBytesTransferred / m_nRXSubframeSize);
 		}
 		else
 		{
-			assert (m_nSubframeSize == 3);
-			PutChunk (reinterpret_cast<u32 *> (m_pRXBuffer[nRXCurrentBuffer]),
-							   nBytesTransferred / m_nSubframeSize);
+			assert (m_nRXSubframeSize == 3 || m_nRXSubframeSize == 4);
+			s32 *pSample = reinterpret_cast<s32 *> (m_pRXBuffer[nRXCurrentBuffer]);
+			unsigned nSamples = nBytesTransferred / m_nRXSubframeSize;
+
+			if (m_nRXSubframeSize == 4)
+			{
+				for (unsigned i = 0; i < nSamples; i++)
+				{
+					pSample[i] >>= 8;
+				}
+			}
+
+			PutChunk (reinterpret_cast<u32 *> (m_pRXBuffer[nRXCurrentBuffer]), nSamples);
 		}
 	}
 
