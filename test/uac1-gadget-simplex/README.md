@@ -16,6 +16,13 @@ and connect its USB data port to a host with a stereo recorder.
   I2S ADC is clocked from the Raspberry Pi, which is the clocking master then
   (tested with a Waveshare WM8960 HAT).
 
+You have to define your USB vendor ID by adding the following to the
+`Config.mk` file (example):
+
+```
+DEFINE += -DUSB_GADGET_VENDOR_ID=0x1209
+```
+
 With Circle and its libraries built for the target, run
 `make -C test/uac1-gadget-simplex` from the Circle root and boot the resulting
 kernel image. Select 48 kHz and stereo input 1/2 on the host.
