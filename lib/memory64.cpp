@@ -66,7 +66,7 @@ CMemorySystem::CMemorySystem (boolean bEnableMMU)
 	{
 		nRAMSize = 4096;
 	}
-	m_nShadowMemSize = nRAMSize * MEGABYTE / 8;
+	m_nShadowMemSize = (u64) nRAMSize * MEGABYTE / 8;
 
 	assert (MEM_SHADOW_START >= MEM_COHERENT_REGION + COHERENT_REGION_SIZE);
 	uintptr ulHeapMemStart = MEM_SHADOW_START + m_nShadowMemSize;
@@ -136,7 +136,7 @@ void CMemorySystem::SetupHighMem (void)
 #endif
 	if (nRAMSize > 1024)
 	{
-		u64 nHighSize = (nRAMSize - 1024) * MEGABYTE;
+		u64 nHighSize = (u64) (nRAMSize - 1024) * MEGABYTE;
 		if (nHighSize > MEM_HIGHMEM_END+1 - MEM_HIGHMEM_START)
 		{
 			nHighSize = MEM_HIGHMEM_END+1 - MEM_HIGHMEM_START;
