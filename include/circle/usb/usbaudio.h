@@ -320,6 +320,9 @@ struct TUSBAudioStreamingInterfaceDescriptor
 			unsigned char	bTerminalLink;
 			unsigned char	bDelay;
 			unsigned short	wFormatTag	PACKED;
+#define USB_AUDIO_FORMAT_TAG_PCM		0x0001
+#define USB_AUDIO_FORMAT_TAG_PCM8		0x0002	// unsigned, offset binary
+#define USB_AUDIO_FORMAT_TAG_IEEE_FLOAT		0x0003
 		}
 		Ver100;
 
@@ -374,8 +377,10 @@ PACKED;
 #define USB_AUDIO_REQ_SET_CUR		0x01
 #define USB_AUDIO_REQ_RANGE		0x02		// v2.00 only
 
+#define USB_AUDIO_REQ_GET_CUR		0x81		// v1.00 only
 #define USB_AUDIO_REQ_GET_MIN		0x82		// v1.00 only
 #define USB_AUDIO_REQ_GET_MAX		0x83		// v1.00 only
+#define USB_AUDIO_REQ_GET_RES		0x84		// v1.00 only
 
 // Audio class control selectors
 #define USB_AUDIO_CS_SAM_FREQ_CONTROL	0x01

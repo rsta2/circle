@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <circle/usb/gadget/usbmidigadget.h>
+#include <circle/usb/gadget/usbstringdescriptor.h>
 #include <circle/usb/gadget/usbmidigadgetendpoint.h>
 #include <assert.h>
 
@@ -268,24 +269,6 @@ void CUSBMIDIGadget::OnSuspend (void)
 
 const void *CUSBMIDIGadget::ToStringDescriptor (const char *pString, size_t *pLength)
 {
-	assert (pString);
-
-	size_t nLength = 2;
-	for (u8 *p = m_StringDescriptorBuffer+2; *pString; pString++)
-	{
-		assert (nLength < sizeof m_StringDescriptorBuffer-1);
-
-		*p++ = (u8) *pString;		// convert to UTF-16
-		*p++ = '\0';
-
-		nLength += 2;
-	}
-
-	m_StringDescriptorBuffer[0] = (u8) nLength;
-	m_StringDescriptorBuffer[1] = DESCRIPTOR_STRING;
-
-	assert (pLength);
-	*pLength = nLength;
-
-	return m_StringDescriptorBuffer;
+	return USBStringToDescriptor (pString, m_StringDescriptorBuffer,
+				      sizeof m_StringDescriptorBuffer, pLength);
 }

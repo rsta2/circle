@@ -2,7 +2,7 @@
 # Makefile
 #
 # Circle - A C++ bare metal environment for Raspberry Pi
-# Copyright (C) 2023-2024  R. Stange <rsta2@o2online.de>
+# Copyright (C) 2023-2026  R. Stange <rsta2@gmx.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,9 @@ ifneq ($(strip $(RASPPI)),5)
 OBJS	= dwusbgadget.o dwusbgadgetendpoint.o dwusbgadgetendpoint0.o \
 	  usbmidigadget.o usbmidigadgetendpoint.o \
 	  usbcdcgadget.o usbcdcgadgetendpoint.o \
-	  usbmsdgadget.o usbmsdgadgetendpoint.o
+	  usbmsdgadget.o usbmsdgadgetendpoint.o \
+	  usbaudiogadget.o usbaudiogadgetfunction.o usbaudiogadgetbuffer.o usbaudiogadgetcapture.o \
+	  usbstringdescriptor.o
 
 endif
 

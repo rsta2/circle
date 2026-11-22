@@ -31,10 +31,12 @@ CUSBMIDIGadgetEndpoint::CUSBMIDIGadgetEndpoint (const TUSBEndpointDescriptor *pD
 						CUSBMIDIGadget *pGadget)
 :	CDWUSBGadgetEndpoint (pDesc, pGadget),
 	m_pInterface (nullptr),
+	m_bConfigured (FALSE),
 	m_bInActive (FALSE),
 	m_pQueue (nullptr),
 	m_nInPtr (0),
-	m_nOutPtr (0)
+	m_nOutPtr (0),
+	m_nRejectedSends (0)
 {
 	if (GetDirection () == DirectionIn)
 	{
@@ -51,6 +53,7 @@ CUSBMIDIGadgetEndpoint::~CUSBMIDIGadgetEndpoint (void)
 
 void CUSBMIDIGadgetEndpoint::AttachInterface (CUSBMIDIDevice *pInterface)
 {
+	m_SpinLock.Acquire ();
 	assert (!m_pInterface);
 	m_pInterface = pInterface;
 	assert (m_pInterface);
@@ -59,14 +62,29 @@ void CUSBMIDIGadgetEndpoint::AttachInterface (CUSBMIDIDevice *pInterface)
 	{
 		m_pInterface->RegisterSendEventsHandler (SendEventsHandler, this);
 	}
+	else if (m_bConfigured)
+	{
+		// Configuration may precede interface creation in UpdatePlugAndPlay().
+		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
+	}
+	m_SpinLock.Release ();
+}
+
+void CUSBMIDIGadgetEndpoint::OnUSBReset (void)
+{
+	OnSuspend ();
+	CDWUSBGadgetEndpoint::OnUSBReset ();
 }
 
 void CUSBMIDIGadgetEndpoint::OnActivate (void)
 {
-	if (GetDirection () == DirectionOut)
+	m_SpinLock.Acquire ();
+	m_bConfigured = TRUE;
+	if (GetDirection () == DirectionOut && m_pInterface)
 	{
 		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
 	}
+	m_SpinLock.Release ();
 }
 
 void CUSBMIDIGadgetEndpoint::OnDeactivate (void)
@@ -83,6 +101,13 @@ void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 {
 	if (!bIn)
 	{
+		m_SpinLock.Acquire ();
+		boolean bConfigured = m_bConfigured;
+		m_SpinLock.Release ();
+		if (!bConfigured)
+		{
+			return;
+		}
 #ifndef NDEBUG
 		//debug_hexdump (m_OutBuffer, nLength, From);
 #endif
@@ -93,13 +118,19 @@ void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 			m_pInterface->CallPacketHandler (m_OutBuffer, nLength);
 		}
 
-		BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
+		// The application callback may have deactivated this endpoint.
+		m_SpinLock.Acquire ();
+		if (m_bConfigured)
+		{
+			BeginTransfer (TransferDataOut, m_OutBuffer, MaxOutMessageSize);
+		}
+		m_SpinLock.Release ();
 	}
 	else
 	{
 		m_SpinLock.Acquire ();
 
-		if (m_bInActive)
+		if (m_bConfigured && m_bInActive)
 		{
 			unsigned nBytesAvail = GetQueueBytesAvail ();
 			if (nBytesAvail)
@@ -125,16 +156,16 @@ void CUSBMIDIGadgetEndpoint::OnTransferComplete (boolean bIn, size_t nLength)
 
 void CUSBMIDIGadgetEndpoint::OnSuspend (void)
 {
+	m_SpinLock.Acquire ();
+	m_bConfigured = FALSE;
 	if (GetDirection () == DirectionIn)
 	{
-		m_SpinLock.Acquire ();
-
 		m_bInActive = FALSE;
 		m_nInPtr = 0;
 		m_nOutPtr = 0;
-
-		m_SpinLock.Release ();
+		m_nRejectedSends = 0;
 	}
+	m_SpinLock.Release ();
 }
 
 boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLength)
@@ -145,38 +176,51 @@ boolean CUSBMIDIGadgetEndpoint::SendEventsHandler (const u8 *pData, unsigned nLe
 
 	m_SpinLock.Acquire ();
 
-	unsigned nBytesFree = GetQueueBytesFree ();
-	if (nLength > nBytesFree)
+	if (!m_bConfigured)
 	{
 		m_SpinLock.Release ();
-
-		LOGWARN ("Trying to send %u bytes (max %u)", nLength, nBytesFree);
-
 		return FALSE;
 	}
 
+	unsigned nBytesFree = GetQueueBytesFree ();
+	if (nLength > nBytesFree)
+	{
+		boolean bFirst = m_nRejectedSends == 0;
+		if (m_nRejectedSends != ~0U)
+		{
+			++m_nRejectedSends;
+		}
+		m_SpinLock.Release ();
+		if (bFirst)
+		{
+			LOGWARN ("MIDI IN queue: cannot enqueue %u bytes (%u free)", nLength, nBytesFree);
+		}
+		return FALSE;
+	}
+
+	unsigned nRejected = m_nRejectedSends;
+	m_nRejectedSends = 0;
 	Enqueue (pData, nLength);
 
-	if (m_bInActive)
+	if (!m_bInActive)
 	{
-		m_SpinLock.Release ();
+		m_bInActive = TRUE;
+		unsigned nBytesAvail = GetQueueBytesAvail ();
+		if (nBytesAvail > MaxInMessageSize)
+		{
+			nBytesAvail = MaxInMessageSize;
+		}
+		Dequeue (m_InBuffer, nBytesAvail);
 
-		return TRUE;
+		// Publish the transfer before releasing the lock so reset cannot retire it first.
+		BeginTransfer (TransferDataIn, m_InBuffer, nBytesAvail);
 	}
-
-	m_bInActive = TRUE;
-
-	unsigned nBytesAvail = GetQueueBytesAvail ();
-	if (nBytesAvail > MaxInMessageSize)
-	{
-		nBytesAvail = MaxInMessageSize;
-	}
-
-	Dequeue (m_InBuffer, nBytesAvail);
-
 	m_SpinLock.Release ();
 
-	BeginTransfer (TransferDataIn, m_InBuffer, nBytesAvail);
+	if (nRejected)
+	{
+		LOGDBG ("MIDI IN queue accepting events again after %u rejected sends", nRejected);
+	}
 
 	return TRUE;
 }
