@@ -18,7 +18,7 @@ Some notes on this:
 
 * Be sure your your Git user info (name, email) is properly set, when creating the commit(s) for your pull request.
 
-* Please have a look at the coding style, used in Circle, before applying modifications. It is very appreciated, if you adapt the same style (use tabs, tabs are 8 characters wide, maximum line length is 100 characters, braces "{}" should be on a separate code line). Because the source code is an important reference in Circle, a unique style is vital for a good readability.
+* Please have a look at the coding style, used in Circle, before applying modifications. It is very appreciated, if you adapt the same style (use tabs, tabs are 8 characters wide, maximum line length is 100 characters, braces "{}" should be on a separate code line). See the naming conventions in [doc/naming-conventions.txt](doc/naming-conventions.txt). Because the source code is an important reference in Circle, a unique style is vital for a good readability.
 
 * If you plan greater modifications, please contact [me](https://github.com/rsta2) before proceeding. Not each update of this kind can be accepted. Circle is a light-weighted system of tightly coupled C++ classes. It's probably not that easy to consider all requirements, taken into account, when implementing new features of greater size.
 
@@ -27,6 +27,34 @@ Some notes on this:
 * Before committing your changes, please test them carefully! If you have multiple Raspberry Pi models, please use them for the tests. Normally Circle features must work on all models and in 32-bit and 64-bit mode. It is clear, that not everybody has a collection of all different Raspberry Pis, but use the models, that you have.
 
 * You must be allowed to contribute the source code, you want to provide. Of course, if you have written it by yourself, that is not a problem. But if you are using third-party source code, the situation my be different.
+
+### Using AI Coding Assistants
+
+AI large language models (LLMs) have a great influence on today's coding. This also affects pull requests, sent for Circle. When you plan to send a pull request for Circle by using an AI coding assistant, please pay attention to the following rules:
+
+* There should be only one outstanding AI-assisted pull request per GitHub user at a time, because there is only one maintainer for review and testing, who is doing this as a hobby.
+
+* All contributions must comply with the GPL-3.0-or-later license. If you create new source files, add in the first line:
+
+```
+// SPDX-License-Identifier: GPL-3.0-or-later
+```
+
+* You have to review the generated code on your own, before sending the pull request. You must understand, what it is doing and must be able to explain it.
+
+* The AI tool must respect the Circle coding style (see above).
+
+* The modified source code must be tested on at least one real Raspberry Pi hardware model by yourself. Add eventual (e.g. AI-generated) unit tests, which run on the development host, to the directory *unittest/* with a meaningful sub-directory name, if they are useful for later tests.
+
+* Add a short meaningful notice to the commits, which form the pull request. Add the following tag at the end of every AI-assisted commit, where tool / model has to be replaced with the AI tool and/or LLM, you have used:
+
+```
+AI-Assisted: tool / model
+```
+
+* AI generated descriptions are normally long. Provide a short abstract of it, when generating the pull request.
+
+* When fixing a bug, provide a description of the bug and on how it can be reproduced.
 
 ## Finally
 
