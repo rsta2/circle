@@ -166,6 +166,16 @@ boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)
 		return FALSE;
 	}
 
+	if (!m_bDirectionOut)
+	{
+		// A dirty cache line written back after DMA starts can overwrite captured samples.
+		for (unsigned i = 0; i < 2; ++i)
+		{
+			CleanAndInvalidateDataCacheRange ((uintptr) m_pDMABuffer[i],
+							  m_nChunkSize * sizeof (u32));
+		}
+	}
+
 	m_State = StateRunning;
 
 	// start DMA

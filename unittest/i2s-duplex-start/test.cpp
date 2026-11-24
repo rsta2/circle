@@ -22,13 +22,16 @@ constexpr unsigned ARM_PWM_CTL_RPTL1 = 4, ARM_PWM_CTL_RPTL2 = 4 << 8;
 static unsigned ARM_DMACHAN_CS (unsigned c) { return 32 + c; }
 static unsigned ARM_DMACHAN_CONBLK_AD (unsigned c) { return 64 + c; }
 static unsigned ARM_DMACHAN_NEXTCONBK (unsigned c) { return 96 + c; }
-static uintptr BUS_ADDRESS (uintptr p) { return p; }
+static u32 BUS_ADDRESS (uintptr p) { return static_cast<u32> (p); }
 
 struct Hardware
 {
 	unsigned reg[128] {};
 	unsigned allocations = 0, setups = 0, failAllocation = 0, failSetup = 0;
 	unsigned starts = 0, irqConnections = 0;
+	unsigned rxChannel = 0, rxBytes = 0;
+	uintptr rxBuffer[2] {};
+	bool rxClean[2] {};
 } hw;
 static unsigned read32 (unsigned reg) { return hw.reg[reg]; }
 static void write32 (unsigned reg, unsigned value)
@@ -36,14 +39,33 @@ static void write32 (unsigned reg, unsigned value)
 	if (reg == ARM_DMA_INT_STATUS) value = hw.reg[reg] & ~value;
 	if (reg >= 32 && reg < 64)
 	{
-		if ((value & CS_ACTIVE) && !(hw.reg[reg] & CS_ACTIVE)) ++hw.starts;
+		if ((value & CS_ACTIVE) && !(hw.reg[reg] & CS_ACTIVE))
+		{
+			if (reg == ARM_DMACHAN_CS (hw.rxChannel))
+			{
+				assert (hw.rxClean[0] && hw.rxClean[1]);
+				// Require a fresh handoff on the next start.
+				hw.rxClean[0] = hw.rxClean[1] = false;
+			}
+			++hw.starts;
+		}
 		value &= ~(CS_RESET | CS_INT);
 	}
 	hw.reg[reg] = value;
 }
 static void PeripheralEntry () {}
 static void PeripheralExit () {}
-static void CleanAndInvalidateDataCacheRange (uintptr, unsigned) {}
+static void CleanAndInvalidateDataCacheRange (uintptr address, unsigned bytes)
+{
+	for (unsigned i = 0; i < 2; ++i)
+	{
+		if (address == hw.rxBuffer[i])
+		{
+			assert (bytes == hw.rxBytes);
+			hw.rxClean[i] = true;
+		}
+	}
+}
 struct CTimer { static void SimpleusDelay (unsigned) {} };
 struct CMachineInfo
 {
@@ -73,6 +95,12 @@ struct CDMASoundBuffers
 	{
 		if (++hw.setups == hw.failSetup) return false;
 		m_pControlBlock[id] = &blocks[id];
+		if (!m_bDirectionOut)
+		{
+			hw.rxChannel = m_nDMAChannel;
+			hw.rxBuffer[id] = (uintptr) m_pDMABuffer[id];
+			hw.rxBytes = m_nChunkSize * sizeof (u32);
+		}
 		return true;
 	}
 	u32 samples[2][32] {};
@@ -192,5 +220,6 @@ int main ()
 		assert (hw.starts == 2*channels && hw.allocations == channels && hw.irqConnections == channels);
 	}
 	TestPWM ();
-	puts ("PASS I2S allocation failures and startup; PWM priming, refill, cancel, restart and allocation failures");
+	puts ("PASS I2S allocation failures, startup and RX cache handoff on restart; "
+	      "PWM priming, refill, cancel, restart and allocation failures");
 }
