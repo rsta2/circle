@@ -156,7 +156,10 @@ public:
 	/// \param pParam User parameter
 	typedef void TCharReceivedHandler (u8 uchChar, int nStatus, void *pParam);
 	/// \param pHandler Handler which is called, when a character has been received
+	///                 (0 to resume buffered reception)
 	/// \param pParam User parameter, which is handed over to the handler
+	/// \note A handler already selected for a character may still run after this call returns.
+	///       Its user parameter must remain valid until the handler returns.
 	/// \note Read() does not work, when this handler is registered.
 	/// \note Does only work with interrupt driver.
 	void RegisterCharReceivedHandler (TCharReceivedHandler *pHandler, void *pParam);
