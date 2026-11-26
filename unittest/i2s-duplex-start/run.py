@@ -10,11 +10,8 @@ lib = here.parents[1] / "lib/sound"
 dma = (lib / "dmasoundbuffers.cpp").read_text()
 i2s = (lib / "i2ssoundbasedevice.cpp").read_text()
 pwm = (lib / "pwmsoundbasedevice.cpp").read_text()
-# Include Prepare when present so the same regression can run on the parent commit.
-start = dma.find("boolean CDMASoundBuffers::Prepare (")
-if start == -1:
-    start = dma.index("boolean CDMASoundBuffers::Start (")
-methods = dma[start:dma.index("void CDMASoundBuffers::ZeroBuffers")]
+methods = dma[dma.index("CDMASoundBuffers::~CDMASoundBuffers ("):
+              dma.index("void CDMASoundBuffers::ZeroBuffers")]
 methods += dma[dma.index("boolean CDMASoundBuffers::GetNextChunk ("):
                dma.index("void CDMASoundBuffers::InterruptStub (")]
 methods += pwm[pwm.index("boolean CPWMSoundBaseDevice::Start ("):

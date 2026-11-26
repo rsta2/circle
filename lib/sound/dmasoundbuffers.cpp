@@ -65,10 +65,11 @@ CDMASoundBuffers::~CDMASoundBuffers (void)
 
 		PeripheralEntry ();
 
-		write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
-		while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
+		if (!ResetChannel ())
 		{
-			// do nothing
+			PeripheralExit ();
+			// DMA may still own the buffers. Keep the channel and its memory reserved.
+			return;
 		}
 
 		write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) & ~(1 << m_nDMAChannel));
@@ -99,6 +100,23 @@ boolean CDMASoundBuffers::Prepare (void)
 			return FALSE;
 		}
 
+		// enable and reset DMA channel
+		PeripheralEntry ();
+
+		write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
+		CTimer::SimpleusDelay (1000);
+
+		boolean bReset = ResetChannel ();
+
+		PeripheralExit ();
+
+		if (!bReset)
+		{
+			m_State = StateFailed;
+
+			return FALSE;
+		}
+
 		// setup and concatenate DMA buffers and control blocks
 		if (   !SetupDMAControlBlock (0)
 		    || !SetupDMAControlBlock (1))
@@ -118,21 +136,6 @@ boolean CDMASoundBuffers::Prepare (void)
 		CleanAndInvalidateDataCacheRange ((uintptr) m_pControlBlock[1],
 						  sizeof (TDMAControlBlock));
 
-		// enable and reset DMA channel
-		PeripheralEntry ();
-
-		assert (m_nDMAChannel <= DMA_CHANNEL_MAX);
-		write32 (ARM_DMA_ENABLE, read32 (ARM_DMA_ENABLE) | (1 << m_nDMAChannel));
-		CTimer::SimpleusDelay (1000);
-
-		write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
-		while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
-		{
-			// do nothing
-		}
-
-		PeripheralExit ();
-
 		// connect IRQ
 		assert (!m_bIRQConnected);
 		assert (m_pInterruptSystem != 0);
@@ -144,6 +147,22 @@ boolean CDMASoundBuffers::Prepare (void)
 	}
 
 	return m_State == StateIdle;
+}
+
+boolean CDMASoundBuffers::ResetChannel (void)
+{
+	write32 (ARM_DMACHAN_CS (m_nDMAChannel), CS_RESET);
+	unsigned nStart = CTimer::GetClockTicks ();
+	while (read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET)
+	{
+		if (CTimer::GetClockTicks () - nStart >= CLOCKHZ / 1000)	// 1 ms
+		{
+			// Reset may have completed while this code was interrupted.
+			return !(read32 (ARM_DMACHAN_CS (m_nDMAChannel)) & CS_RESET);
+		}
+	}
+
+	return TRUE;
 }
 
 boolean CDMASoundBuffers::Start (TChunkCompletedHandler *pHandler, void *pParam)

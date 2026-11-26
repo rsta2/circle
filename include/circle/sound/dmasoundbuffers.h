@@ -89,6 +89,7 @@ private:
 	void InterruptHandler (void);
 	static void InterruptStub (void *pParam);
 
+	boolean ResetChannel (void);
 	boolean SetupDMAControlBlock (unsigned nID);
 
 private:
