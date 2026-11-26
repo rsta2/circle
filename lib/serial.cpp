@@ -750,8 +750,10 @@ void CSerialDevice::RegisterCharReceivedHandler (TCharReceivedHandler *pHandler,
 {
 	assert (m_pInterruptSystem != 0);
 
+	m_SpinLock.Acquire ();
 	m_pParam = pParam;
 	m_pCharReceivedHandler = pHandler;
+	m_SpinLock.Release ();
 }
 
 void CSerialDevice::RegisterMagicReceivedHandler (const char *pMagic, TMagicReceivedHandler *pHandler)
@@ -884,7 +886,8 @@ void CSerialDevice::InterruptHandler (void)
 {
 	boolean bMagicReceived = FALSE;
 
-	boolean bCharReceived = FALSE;
+	TCharReceivedHandler *pHandler = 0;
+	void *pParam = 0;
 	u8 uchChar;
 	int nStatus;
 
@@ -944,7 +947,8 @@ void CSerialDevice::InterruptHandler (void)
 
 		if (m_pCharReceivedHandler != 0)
 		{
-			bCharReceived = TRUE;
+			pHandler = m_pCharReceivedHandler;
+			pParam = m_pParam;
 			uchChar = nDR & 0xFF;
 
 			nStatus = m_nRxStatus;
@@ -990,9 +994,9 @@ void CSerialDevice::InterruptHandler (void)
 		(*m_pMagicReceivedHandler) ();
 	}
 
-	if (bCharReceived)
+	if (pHandler != 0)
 	{
-		(*m_pCharReceivedHandler) (uchChar, nStatus, m_pParam);
+		(*pHandler) (uchChar, nStatus, pParam);
 	}
 }
 
