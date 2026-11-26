@@ -325,7 +325,10 @@ public:
 			 unsigned nTagsSize);			// size of tags struct
 
 private:
+	boolean GetTagsLocked (void *pTags, unsigned nTagsSize, unsigned nBufferSize);
+
 	CBcmMailBox m_MailBox;
+	boolean m_bEarlyUse;
 };
 
 #endif
