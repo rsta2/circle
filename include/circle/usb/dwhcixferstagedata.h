@@ -69,8 +69,9 @@ public:
 	boolean IsSplit (void) const;
 	boolean IsSplitComplete (void) const;
 
-	// try to get the exclusive right to have a split transaction outstanding
-	// returns TRUE if this stage owns the right (also if it did already before)
+	// try to get the exclusive right to have a split transaction outstanding on a single TT
+	// returns TRUE if this stage owns the right (also if it did already before or if the
+	// right is not required, because the TT is not shared)
 	boolean TryAcquireSplit (void);
 	// give the exclusive split right back (also done on destruction)
 	void ReleaseSplit (void);
@@ -128,8 +129,6 @@ private:
 	unsigned	 m_nStartTicksHZ;
 
 	CDWHCIFrameScheduler *m_pFrameScheduler;
-
-	static volatile int s_nSplitTaken;		// 1 while a stage owns the split right
 
 	DECLARE_CLASS_ALLOCATOR
 };

@@ -27,14 +27,11 @@
 #include <circle/sysconfig.h>
 #include <circle/logger.h>
 #include <circle/timer.h>
-#include <circle/atomic.h>
 #include <assert.h>
 
 #define MAX_ISO_SPLIT_PAYLOAD	188
 
 #define MAX_BULK_TRIES		8
-
-volatile int CDWHCITransferStageData::s_nSplitTaken = 0;
 
 CDWHCITransferStageData::CDWHCITransferStageData (unsigned	 nChannel,
 						  CUSBRequest	*pURB,
@@ -467,9 +464,20 @@ boolean CDWHCITransferStageData::IsSplit (void) const
 
 boolean CDWHCITransferStageData::TryAcquireSplit (void)
 {
+	assert (m_bSplitTransaction);
+
+	// split transactions only need to be serialized, if they share a single TT
+	if (!m_pDevice->IsSingleTT ())
+	{
+		return TRUE;
+	}
+
 	if (!m_bSplitOwner)
 	{
-		m_bSplitOwner = AtomicCompareExchange (&s_nSplitTaken, 0, 1) == 0;
+		CUSBDevice *pTTHubDevice = m_pDevice->GetTTHubDevice ();
+		assert (pTTHubDevice != 0);
+
+		m_bSplitOwner = pTTHubDevice->TryAcquireTT ();
 	}
 
 	return m_bSplitOwner;
@@ -481,7 +489,9 @@ void CDWHCITransferStageData::ReleaseSplit (void)
 	{
 		m_bSplitOwner = FALSE;
 
-		AtomicSet (&s_nSplitTaken, 0);
+		CUSBDevice *pTTHubDevice = m_pDevice->GetTTHubDevice ();
+		assert (pTTHubDevice != 0);
+		pTTHubDevice->ReleaseTT ();
 	}
 }
 

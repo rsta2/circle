@@ -47,9 +47,6 @@ public:
 	const TUSBHubInfo *GetHubInfo (void) const;
 #endif
 
-	// returns number of initialized non-multi TT hubs
-	static unsigned GetNonMTTHubs (void);
-
 private:
 	boolean EnumeratePorts (void);
 
@@ -74,9 +71,6 @@ private:
 #if RASPPI >= 4
 	TUSBHubInfo *m_pHubInfo;
 #endif
-
-	boolean m_bNonMTTRegistered;
-	static volatile int s_nNonMTTHubs;
 
 	unsigned m_nDeviceNumber;
 	static CNumberPool s_DeviceNumberPool;

@@ -66,6 +66,12 @@ public:
 	u8 GetHubAddress (void) const;		// xHCI: slot ID
 	u8 GetHubPortNumber (void) const;
 	CUSBDevice *GetTTHubDevice (void) const;
+	boolean IsSingleTT (void) const;	// TT hub has a single transaction translator
+
+	// Only one split transaction at a time may use a single transaction translator (TT).
+	// Called for the TT hub device. Returns TRUE if the right has been acquired.
+	boolean TryAcquireTT (void);
+	void ReleaseTT (void);
 
 	CUSBEndpoint *GetEndpoint0 (void) const;
 	CUSBHostController *GetHost (void) const;
@@ -120,6 +126,8 @@ private:
 	u8		    m_ucHubAddress;
 	u8		    m_ucHubPortNumber;
 	CUSBDevice	   *m_pTTHubDevice;
+	boolean		    m_bSingleTT;
+	volatile int	    m_nTTBusy;		// 1, while a split transaction uses the TT
 
 	TUSBDeviceDescriptor	    *m_pDeviceDesc;
 	TUSBConfigurationDescriptor *m_pConfigDesc;

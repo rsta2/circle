@@ -25,6 +25,7 @@
 #include <circle/usb/usbdevicefactory.h>
 #include <circle/usb/usbstring.h>
 #include <circle/usb/xhci.h>
+#include <circle/atomic.h>
 #include <circle/util.h>
 #include <circle/sysconfig.h>
 #include <circle/debug.h>
@@ -51,6 +52,8 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed, CUSBHCIRootP
 	m_ucHubAddress (0),
 	m_ucHubPortNumber (1),
 	m_pTTHubDevice (0),
+	m_bSingleTT (FALSE),
+	m_nTTBusy (0),
 	m_pDeviceDesc (0),
 	m_pConfigDesc (0),
 	m_pConfigParser (0),
@@ -83,6 +86,8 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
 	m_ucAddress (USB_DEFAULT_ADDRESS),
 	m_Speed (Speed),
 	m_pEndpoint0 (0),
+	m_bSingleTT (FALSE),
+	m_nTTBusy (0),
 	m_pDeviceDesc (0),
 	m_pConfigDesc (0),
 	m_pConfigParser (0),
@@ -103,6 +108,7 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
 	m_ucHubAddress    = pHubDevice->GetHubAddress ();
 	m_ucHubPortNumber = pHubDevice->GetHubPortNumber ();
 	m_pTTHubDevice    = pHubDevice->GetTTHubDevice ();
+	m_bSingleTT       = pHubDevice->IsSingleTT ();
 
 	// Is this the first high-speed hub with a non-high-speed device following in chain?
 	if (   !m_bSplitTransfer
@@ -112,8 +118,11 @@ CUSBDevice::CUSBDevice (CUSBHostController *pHost, TUSBSpeed Speed,
 		// Then enable split transfers with this hub port as translator.
 		m_bSplitTransfer  = TRUE;
 		m_ucHubAddress    = pHubDevice->GetAddress ();
-		m_ucHubPortNumber = m_nHubPortIndex+1;
 		m_pTTHubDevice    = pHubDevice;
+
+		// A hub with a single TT (bInterfaceProtocol 1) is always addressed with port 1.
+		m_bSingleTT       = pHub->GetInterfaceProtocol () != 2;
+		m_ucHubPortNumber = m_bSingleTT ? 1 : m_nHubPortIndex+1;
 	}
 
 	assert (m_pEndpoint0 == 0);
@@ -690,6 +699,21 @@ u8 CUSBDevice::GetHubPortNumber (void) const
 CUSBDevice *CUSBDevice::GetTTHubDevice (void) const
 {
 	return m_pTTHubDevice;
+}
+
+boolean CUSBDevice::IsSingleTT (void) const
+{
+	return m_bSingleTT;
+}
+
+boolean CUSBDevice::TryAcquireTT (void)
+{
+	return AtomicCompareExchange (&m_nTTBusy, 0, 1) == 0;
+}
+
+void CUSBDevice::ReleaseTT (void)
+{
+	AtomicSet (&m_nTTBusy, 0);
 }
 
 CUSBEndpoint *CUSBDevice::GetEndpoint0 (void) const

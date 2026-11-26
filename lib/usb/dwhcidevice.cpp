@@ -22,7 +22,6 @@
 #include <circle/usb/dwhciframeschednsplit.h>
 #include <circle/usb/dwhciframeschedper.h>
 #include <circle/usb/dwhciframeschediso.h>
-#include <circle/usb/usbstandardhub.h>
 #include <circle/sched/scheduler.h>
 #include <circle/bcmpropertytags.h>
 #include <circle/bcm2835.h>
@@ -995,8 +994,7 @@ void CDWHCIDevice::StartTransaction (CDWHCITransferStageData *pStageData)
 {
 	assert (pStageData != 0);
 
-	if (   CUSBStandardHub::GetNonMTTHubs () > 0
-	    && pStageData->IsSplit ()
+	if (   pStageData->IsSplit ()
 	    && !pStageData->TryAcquireSplit ())
 	{
 		m_SplitSpinLock.Acquire ();
@@ -1534,8 +1532,7 @@ void CDWHCIDevice::SOFInterruptHandler (void)
 		}
 #endif
 
-		if (   CUSBStandardHub::GetNonMTTHubs () > 0
-		    && pStageData->IsSplit ()
+		if (   pStageData->IsSplit ()
 		    && !pStageData->TryAcquireSplit ())
 		{
 			// Reschedule the Start-Split, so that the frame scheduler state (e.g.
@@ -1751,22 +1748,41 @@ void CDWHCIDevice::TimerStub (TKernelTimerHandle /* hTimer */, void *pParam, voi
 
 void CDWHCIDevice::SplitRetry (void)
 {
+	// Try each waiting stage once. StartTransaction() re-queues those, which still have
+	// to wait for their transaction translator.
 	m_SplitSpinLock.Acquire ();
 
-	CDWHCITransferStageData *pStageData = 0;
-	TPtrListElement *pElement = m_SplitRetryList.GetFirst ();
-	if (pElement != 0)
+	unsigned nWaiting = 0;
+	for (TPtrListElement *pElement = m_SplitRetryList.GetFirst ();
+	     pElement != 0;
+	     pElement = m_SplitRetryList.GetNext (pElement))
 	{
-		pStageData = (CDWHCITransferStageData *) m_SplitRetryList.GetPtr (pElement);
-		assert (pStageData != 0);
-
-		m_SplitRetryList.Remove (pElement);
+		nWaiting++;
 	}
 
 	m_SplitSpinLock.Release ();
 
-	if (pStageData != 0)
+	while (nWaiting-- > 0)
 	{
+		m_SplitSpinLock.Acquire ();
+
+		CDWHCITransferStageData *pStageData = 0;
+		TPtrListElement *pElement = m_SplitRetryList.GetFirst ();
+		if (pElement != 0)
+		{
+			pStageData = (CDWHCITransferStageData *) m_SplitRetryList.GetPtr (pElement);
+			assert (pStageData != 0);
+
+			m_SplitRetryList.Remove (pElement);
+		}
+
+		m_SplitSpinLock.Release ();
+
+		if (pStageData == 0)
+		{
+			break;
+		}
+
 		// the transfer may have been aborted meanwhile
 		unsigned nChannel;
 		for (nChannel = 0; nChannel < m_nChannels; nChannel++)
