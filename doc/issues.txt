@@ -12,6 +12,9 @@ Known issues of Circle are:
   limited split support, limited isochronous support). You should only attach the
   USB devices, which are needed for your application!
 
+* Low-speed USB devices behind a full-speed hub on a Raspberry Pi 1-3 and Zero
+  root port are not supported.
+
 * Circle is not a real-time OS. That means different simultaneous operations may
   interfere in respect of its timing behaviour. The provided samples are tested to
   work but if you try different combinations of hardware support classes this has
