@@ -23,6 +23,7 @@
 #include <circle/bcm2835.h>
 #include <circle/memory.h>
 #include <circle/macros.h>
+#include <circle/spinlock.h>
 #include <assert.h>
 
 struct TPropertyBuffer
@@ -37,8 +38,14 @@ struct TPropertyBuffer
 }
 PACKED;
 
+// The property buffer is one coherent page for every core: held from filling it until the
+// response is copied out, or a request from another core can replace it in between (and one
+// core's answer reach the other). The mailbox's own spinlock covers only the mailbox.
+static CSpinLock s_BufferLock (TASK_LEVEL);
+
 CBcmPropertyTags::CBcmPropertyTags (boolean bEarlyUse)
-:	m_MailBox (BCM_MAILBOX_PROP_OUT, bEarlyUse)
+:	m_MailBox (BCM_MAILBOX_PROP_OUT, bEarlyUse),
+	m_bEarlyUse (bEarlyUse)
 {
 }
 
@@ -77,6 +84,23 @@ boolean CBcmPropertyTags::GetTags (void *pTags, unsigned nTagsSize)
 	unsigned nBufferSize = sizeof (TPropertyBuffer) + nTagsSize + sizeof (u32);
 	assert ((nBufferSize & 3) == 0);
 
+	if (!m_bEarlyUse)
+	{
+		s_BufferLock.Acquire ();
+	}
+
+	boolean bOK = GetTagsLocked (pTags, nTagsSize, nBufferSize);
+
+	if (!m_bEarlyUse)
+	{
+		s_BufferLock.Release ();
+	}
+
+	return bOK;
+}
+
+boolean CBcmPropertyTags::GetTagsLocked (void *pTags, unsigned nTagsSize, unsigned nBufferSize)
+{
 	TPropertyBuffer *pBuffer =
 		(TPropertyBuffer *) CMemorySystem::GetCoherentPage (COHERENT_SLOT_PROP_MAILBOX);
 
